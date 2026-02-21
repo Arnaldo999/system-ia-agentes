@@ -1,16 +1,17 @@
 FROM python:3.11-slim
 
+# Directorio de trabajo en el servidor
 WORKDIR /app
 
-# Copiamos requerimientos y los instalamos
+# Copiar el archivo de requerimientos e instalar las librerías
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiamos nuestra API
-COPY main.py .
+# Copiar todo nuestro código (main.py) adentro del contenedor
+COPY . .
 
-# Exponemos el puerto 8000 para Easypanel
+# El puerto estándar que usa FastAPI
 EXPOSE 8000
 
-# Iniciamos el servidor de forma que Easypanel lo lea sin problemas
+# El comando que enciende la aplicación usando Uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
