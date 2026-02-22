@@ -303,7 +303,7 @@ def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
     try:
         headers = {
             "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
-            "LinkedIn-Version": "202412",
+            "LinkedIn-Version": "202410",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
@@ -371,7 +371,7 @@ def _publicar_linkedin_texto(texto: str) -> dict:
     try:
         headers = {
             "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
-            "LinkedIn-Version": "202412",
+            "LinkedIn-Version": "202410",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
