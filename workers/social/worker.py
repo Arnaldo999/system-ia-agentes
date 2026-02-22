@@ -3,6 +3,7 @@ import re
 import json
 import time
 import requests as req
+from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional, List
@@ -26,6 +27,52 @@ EVOLUTION_URL          = os.environ.get("EVOLUTION_API_URL", "")
 EVOLUTION_INSTANCE     = os.environ.get("EVOLUTION_INSTANCE", "")
 EVOLUTION_API_KEY      = os.environ.get("EVOLUTION_API_KEY", "")
 WHATSAPP_NOTIFY_NUMBER = os.environ.get("WHATSAPP_APPROVAL_NUMBER", "")
+
+# ── Rotación de temas (4 rubros × 6 días lunes-sábado) ───────────────────────
+_ROTACION_TEMAS = {
+    0: {  # Lunes
+        "tema": "Automatización de WhatsApp",
+        "angulo": "Cómo atender más clientes sin contratar más personal",
+        "idea_central": "Un bot de WhatsApp bien configurado puede multiplicar tu capacidad de atención ×10 sin sumar costos fijos.",
+        "prompt_imagen": "smartphone showing WhatsApp chat with automated AI responses, business automation concept, modern flat design colorful background, no text in image",
+    },
+    1: {  # Martes
+        "tema": "Automatización de CRM",
+        "angulo": "Nunca más perder un lead por falta de seguimiento",
+        "idea_central": "Un CRM automatizado hace el seguimiento perfecto aunque no estés disponible — cada lead recibe atención en el momento exacto.",
+        "prompt_imagen": "CRM pipeline dashboard with automated lead cards flowing through stages, colorful funnel, modern business software, flat design, no text in image",
+    },
+    2: {  # Miércoles
+        "tema": "Automatización de agendamiento de citas",
+        "angulo": "Eliminar el ida y vuelta de mensajes para coordinar una reunión",
+        "idea_central": "Tus clientes pueden reservar su cita sin que intervengas — 24/7, sin errores, sin olvidos.",
+        "prompt_imagen": "digital calendar with automated appointment booking flow, AI scheduling assistant icon, clean modern interface, flat design colorful, no text in image",
+    },
+    3: {  # Jueves
+        "tema": "Automatización de redes sociales",
+        "angulo": "Publicar contenido de valor todos los días sin dedicarle horas",
+        "idea_central": "La IA crea, programa y publica tu contenido mientras vos trabajás en lo que realmente importa.",
+        "prompt_imagen": "social media management dashboard with automated posts on Instagram LinkedIn Facebook, content calendar with AI robot, flat design colorful, no text in image",
+    },
+    4: {  # Viernes
+        "tema": "Automatización de WhatsApp",
+        "angulo": "Respuestas automáticas que suenan humanas y convierten clientes",
+        "idea_central": "El secreto no es el bot — es cómo está configurado: flujos inteligentes que guían al cliente hasta la venta.",
+        "prompt_imagen": "WhatsApp conversation flow diagram with AI brain icon, messaging automation arrows, professional colorful business illustration, flat design, no text in image",
+    },
+    5: {  # Sábado
+        "tema": "Automatización de CRM",
+        "angulo": "Datos que no mienten: cómo saber en qué leads enfocarte hoy",
+        "idea_central": "Un CRM automatizado califica y prioriza tus leads solo — vos solo hablás con los que realmente van a comprar.",
+        "prompt_imagen": "data analytics dashboard with lead scoring charts, automated CRM insights, business intelligence graphs, flat design colorful, no text in image",
+    },
+}
+
+
+def _get_tema_del_dia() -> dict:
+    """Retorna el dict de tema/ángulo/idea_central según el día de la semana (0=Lunes)."""
+    dia = datetime.now().weekday()  # 0=Lunes … 6=Domingo
+    return _ROTACION_TEMAS.get(dia, _ROTACION_TEMAS[0])
 
 
 class DatosCrearPost(BaseModel):
@@ -429,26 +476,39 @@ async def publicar_completo(entrada: DatosPublicarCompleto):
     marca = entrada.datos_marca
     errores = []
 
+    # ── Tema del día: rotación automática por día de semana ──────────────────
+    rotacion     = _get_tema_del_dia()
+    tema         = rotacion["tema"]
+    angulo       = rotacion["angulo"]
+    idea_central = rotacion["idea_central"]
+
     # ── 1. Generar textos IA ─────────────────────────────────────────────────
     try:
-        prompt_txt = f"""Eres el Copywriter de una agencia de automatizaciones IA para LATAM.
+        prompt_txt = f"""Eres el Copywriter jefe de una agencia de automatizaciones IA para LATAM.
 
 BRANDBOOK:
-- Industria: {marca.get('Industria', 'General')}
-- Servicio: {marca.get('Servicio Principal', 'Automatizaciones IA')}
-- Público: {marca.get('Público Objetivo', 'Emprendedores y pymes LATAM')}
-- Tono: {marca.get('Tono de Voz', 'Humano, cercano, experto')}
-- RESTRICCIONES: {marca.get('Reglas Estrictas', 'No prometer resultados garantizados')}
-- Tema del día: {marca.get('Tema del Día', 'Automatización con IA')}
-- Ángulo: {marca.get('Ángulo', 'Beneficios prácticos para el negocio')}
+- Industria: {marca.get('Industria', 'Automatización IA')}
+- Servicio: {marca.get('Servicio Principal', 'Automatizaciones con IA para negocios')}
+- Público: {marca.get('Público Objetivo', 'Emprendedores y pymes de LATAM')}
+- Tono de voz: {marca.get('Tono de Voz', 'Humano, cercano, directo y experto')}
+- RESTRICCIONES: {marca.get('Reglas Estrictas', 'Nunca prometer resultados garantizados. Nada de spam.')}
 
-Crea 3 posts únicos. Separa EXACTAMENTE con: |||
+TEMA DEL DÍA: {tema}
+ÁNGULO: {angulo}
+IDEA CENTRAL: {idea_central}
 
-1. INSTAGRAM: Hook fuerte, viñetas con emojis, 150-200 palabras, 6-8 hashtags al final.
+FILOSOFÍA DE CONTENIDO (OBLIGATORIA):
+- SIEMPRE aportar valor real y accionable: el lector debe llevarse algo útil.
+- Nunca spam, nunca clickbait vacío, nunca hipérboles sin sustento.
+- El CTA es una invitación natural — nunca agresivo ni desesperado.
+
+Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
+
+1. INSTAGRAM: Hook irresistible en primera línea, viñetas con emojis con tips prácticos y accionables, 150-200 palabras. CTA final: invitar a SEGUIR la cuenta y/o dar LIKE. 6-8 hashtags al final.
 |||
-2. LINKEDIN: Apertura con dato/reflexión, desarrollo analítico, cierre con pregunta, 300-400 palabras, max 2 emojis, 3-4 hashtags.
+2. LINKEDIN: Apertura con dato real o reflexión del sector, desarrollo con insights accionables (problema → solución → resultado), cierre con pregunta que genere debate, 300-400 palabras, máx 2 emojis. CTA final: invitar a CONECTAR y/o COMENTAR con su experiencia. 3-4 hashtags profesionales.
 |||
-3. FACEBOOK: Storytelling cercano, invita a comentar, 200-250 palabras, max 3 emojis."""
+3. FACEBOOK: Storytelling cercano como si hablaras con un amigo emprendedor, incluye un tip útil o historia de transformación real, 200-250 palabras, máx 3 emojis. CTA final: invitar a DAR LIKE, COMPARTIR con alguien que lo necesite y/o SEGUIR la página."""
 
         texto_raw = _call_gemini_text(prompt_txt, timeout=60)
         partes    = texto_raw.split("|||")
@@ -462,8 +522,11 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
     imagen_url = None
     imagen_error = None
     try:
-        prompt_img = marca.get("Estilo Visual (Prompt DALL-E/Gemini)",
-                               "professional automation business flat design colorful no text")
+        # Usar el prompt de imagen del tema rotado (más específico que Airtable)
+        prompt_img = rotacion.get("prompt_imagen", marca.get(
+            "Estilo Visual (Prompt DALL-E/Gemini)",
+            "professional automation business flat design colorful no text"
+        ))
         b64, mime = _generar_imagen_interna(prompt_img, max_intentos=3, espera=20)
         imagen_url = _subir_cloudinary(b64, mime)
     except Exception as e:
@@ -491,9 +554,11 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
 
     msg_wa = (
         f"{'✅' if not redes_fail else '⚠️'} *Post completado*\n\n"
+        f"📌 *Tema:* {tema}\n"
+        f"🎯 *Ángulo:* {angulo}\n\n"
         f"📸 {' · '.join(redes_ok) or 'Sin publicaciones exitosas'}\n"
         + (f"🖼️ {imagen_url}\n\n" if imagen_url else "🖼️ Sin imagen (Gemini no disponible)\n\n")
-        + f"📝 LI: {texto_li[:100]}..."
+        + f"📝 {texto_li[:100]}..."
     )
     if redes_fail:
         msg_wa += f"\n\n⚠️ Fallaron: {', '.join(redes_fail)}"
@@ -502,6 +567,7 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
 
     return {
         "status": "success" if not errores else "partial",
+        "tema_del_dia": {"tema": tema, "angulo": angulo},
         "imagen_url": imagen_url,
         "publicaciones": {
             "instagram": res_ig,
