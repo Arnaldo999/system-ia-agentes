@@ -366,6 +366,49 @@ def _publicar_facebook(texto: str, imagen_url: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+def _publicar_linkedin_texto(texto: str) -> dict:
+    """Publica post de solo texto en LinkedIn."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
+            "LinkedIn-Version": "202501",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Content-Type": "application/json"
+        }
+        r = req.post(
+            "https://api.linkedin.com/rest/posts",
+            headers=headers,
+            json={
+                "author": f"urn:li:person:{LINKEDIN_PERSON_ID}",
+                "commentary": texto,
+                "visibility": "PUBLIC",
+                "distribution": {"feedDistribution": "MAIN_FEED", "targetEntities": [], "thirdPartyDistributionChannels": []},
+                "lifecycleState": "PUBLISHED",
+                "isReshareDisableForOperator": False
+            },
+            timeout=30
+        )
+        r.raise_for_status()
+        return {"success": True, "post_id": "text-only"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _publicar_facebook_texto(texto: str) -> dict:
+    """Publica post de solo texto en Facebook Page."""
+    try:
+        resp = req.post(
+            f"https://graph.facebook.com/v22.0/{FACEBOOK_PAGE_ID}/feed",
+            params={"access_token": META_ACCESS_TOKEN},
+            json={"message": texto},
+            timeout=30
+        )
+        resp.raise_for_status()
+        return {"success": True, "post_id": resp.json().get("id", "")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 def _notificar_whatsapp(mensaje: str) -> dict:
     """Envía notificación vía Evolution API."""
     try:
@@ -431,6 +474,8 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
         return {"status": "error", "paso": "generacion_textos", "mensaje": str(e)}
 
     # ── 2. Generar imagen con Pollinations AI (gratis, URL directa) ──────────
+    imagen_url = None
+    imagen_error = None
     try:
         prompt_img = marca.get("Estilo Visual (Prompt DALL-E/Gemini)",
                                "professional automation business flat design colorful no text")
@@ -438,18 +483,24 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
         imagen_url = (
             "https://image.pollinations.ai/prompt/"
             + quote(prompt_seg)
-            + "?width=1080&height=1080&nologo=true&enhance=true"
+            + "?width=1080&height=1080&nologo=true"
         )
-        # Verificar que la URL responde (Pollinations genera al primer acceso)
         r_check = req.get(imagen_url, timeout=60)
         r_check.raise_for_status()
     except Exception as e:
-        return {"status": "error", "paso": "generacion_imagen", "mensaje": str(e)}
+        imagen_error = str(e)
+        imagen_url = None
 
-    # ── 4. Publicar en las 3 redes (errores no detienen el flujo) ───────────
-    res_ig = _publicar_instagram(imagen_url, texto_ig)
-    res_li = _publicar_linkedin(texto_li, imagen_url)
-    res_fb = _publicar_facebook(texto_fb, imagen_url)
+    # ── 4. Publicar en las 3 redes ───────────────────────────────────────────
+    if imagen_url:
+        res_ig = _publicar_instagram(imagen_url, texto_ig)
+        res_li = _publicar_linkedin(texto_li, imagen_url)
+        res_fb = _publicar_facebook(texto_fb, imagen_url)
+    else:
+        # Sin imagen: omitir Instagram, publicar texto en LI y FB
+        res_ig = {"success": False, "error": f"Sin imagen: {imagen_error}"}
+        res_li = _publicar_linkedin_texto(texto_li)
+        res_fb = _publicar_facebook_texto(texto_fb)
 
     for red, res in [("Instagram", res_ig), ("LinkedIn", res_li), ("Facebook", res_fb)]:
         if not res.get("success"):
@@ -462,8 +513,8 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
     msg_wa = (
         f"{'✅' if not redes_fail else '⚠️'} *Post completado*\n\n"
         f"📸 {' · '.join(redes_ok) or 'Sin publicaciones exitosas'}\n"
-        f"🖼️ {imagen_url}\n\n"
-        f"📝 IG: {texto_ig[:100]}..."
+        + (f"🖼️ {imagen_url}\n\n" if imagen_url else "🖼️ Sin imagen (Pollinations no disponible)\n\n")
+        + f"📝 LI: {texto_li[:100]}..."
     )
     if redes_fail:
         msg_wa += f"\n\n⚠️ Fallaron: {', '.join(redes_fail)}"
