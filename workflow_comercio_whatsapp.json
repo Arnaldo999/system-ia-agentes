@@ -1,0 +1,126 @@
+{
+    "name": "Agente WhatsApp: Comercio GPT-4o",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "comercio-whatsapp-in",
+                "options": {}
+            },
+            "id": "1",
+            "name": "Webhook (Evolution API In)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1.1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://TU_DOMINIO_DE_CEREBRO/comercio/procesar-whatsapp",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "mensaje",
+                            "value": "={{ $json.body.message.text }}"
+                        },
+                        {
+                            "name": "es_admin",
+                            "value": "={{ $json.body.fromMe }}"
+                        },
+                        {
+                            "name": "airtable_api_key",
+                            "value": "TU_API_KEY_DE_AIRTABLE"
+                        },
+                        {
+                            "name": "airtable_base_id",
+                            "value": "TU_BASE_ID_DE_AIRTABLE"
+                        },
+                        {
+                            "name": "airtable_table",
+                            "value": "Catalogo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "2",
+            "name": "Cerebro Central: Orquestador",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                420,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://EVOLUTION_API/message/sendText/INSTANCIA",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "number",
+                            "value": "={{ $node[\"Webhook (Evolution API In)\"].json.body.remoteJid }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ $json.respuesta_whatsapp }}"
+                        }
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "TU_API_KEY_EVOLUTION"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "3",
+            "name": "Evolution: Enviar Respuesta",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                640,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook (Evolution API In)": {
+            "main": [
+                [
+                    {
+                        "node": "Cerebro Central: Orquestador",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Cerebro Central: Orquestador": {
+            "main": [
+                [
+                    {
+                        "node": "Evolution: Enviar Respuesta",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "f960f545-0eaf-4886-ace8-636ad9bbda90"
+}

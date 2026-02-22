@@ -4,6 +4,7 @@ from workers.social.worker import router as social_router
 from workers.whatsapp.worker import router as whatsapp_router
 from workers.crm.worker import router as crm_router
 from workers.agenda.worker import router as agenda_router
+from workers.comercio.worker import router as comercio_router
 
 app = FastAPI(
     title="System IA — Cerebro Central",
@@ -14,11 +15,12 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# ── Routers de los 4 Workers ─────────────────────────────────────────────────
+# ── Routers de los 5 Workers ─────────────────────────────────────────────────
 app.include_router(social_router)
 app.include_router(whatsapp_router)
 app.include_router(crm_router)
 app.include_router(agenda_router)
+app.include_router(comercio_router)
 
 
 # ── Rutas de sistema ─────────────────────────────────────────────────────────
@@ -49,6 +51,9 @@ def root():
                 "POST /agenda/parsear-fecha",
                 "POST /agenda/verificar-slot",
                 "POST /agenda/generar-recordatorio"
+            ],
+            "comercio": [
+                "POST /comercio/procesar-whatsapp"
             ]
         }
     }
