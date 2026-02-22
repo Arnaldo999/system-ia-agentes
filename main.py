@@ -70,6 +70,31 @@ def health_check():
     }
 
 
+@app.get("/debug/linkedin-id", tags=["Sistema"])
+def debug_linkedin_id():
+    """Llama a LinkedIn con el token guardado y devuelve tu Person ID."""
+    import requests
+    token = os.environ.get("LINKEDIN_ACCESS_TOKEN", "")
+    if not token:
+        return {"error": "LINKEDIN_ACCESS_TOKEN no está configurado"}
+    try:
+        r = requests.get(
+            "https://api.linkedin.com/v2/userinfo",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10
+        )
+        data = r.json()
+        person_id = data.get("sub", "no encontrado")
+        return {
+            "LINKEDIN_PERSON_ID": person_id,
+            "instruccion": f"Copia este valor y ponlo en Easypanel como LINKEDIN_PERSON_ID={person_id}",
+            "nombre": data.get("name", ""),
+            "email": data.get("email", "")
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/debug/env", tags=["Sistema"])
 def debug_env():
     """Muestra qué variables de entorno están configuradas (sin exponer valores)."""

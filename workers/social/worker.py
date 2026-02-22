@@ -303,7 +303,7 @@ def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
     try:
         headers = {
             "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
-            "LinkedIn-Version": "202501",
+            "LinkedIn-Version": "202412",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
@@ -371,7 +371,7 @@ def _publicar_linkedin_texto(texto: str) -> dict:
     try:
         headers = {
             "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
-            "LinkedIn-Version": "202501",
+            "LinkedIn-Version": "202412",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
@@ -429,8 +429,10 @@ def _limpiar_texto_post(texto: str) -> str:
     """Elimina encabezados numerados y líneas introductorias que Gemini añade."""
     # Quitar intro tipo "Aquí tienes los 3 posts..."
     texto = re.sub(r'^.*(Aquí tienes|Here are|posts únicos|separados).*\n+', '', texto, flags=re.IGNORECASE)
-    # Quitar encabezados tipo "1. **INSTAGRAM:**", "2.  LINKEDIN:" etc.
-    texto = re.sub(r'^\s*\d+\.\s+\*{0,2}[A-ZÁÉÍÓÚ]+\*{0,2}:?\s*\n+\s*', '', texto, flags=re.MULTILINE)
+    # Quitar separadores markdown ---
+    texto = re.sub(r'^-{3,}\s*\n', '', texto, flags=re.MULTILINE)
+    # Quitar encabezados tipo "**1. INSTAGRAM**", "1. **INSTAGRAM:**", "**2. LINKEDIN**" etc.
+    texto = re.sub(r'^\*{0,2}\s*\d+\.\s*\*{0,2}\s*[A-ZÁÉÍÓÚÑ]+\s*\*{0,2}:?\*{0,2}\s*\n+', '', texto, flags=re.MULTILINE)
     return texto.strip()
 
 
