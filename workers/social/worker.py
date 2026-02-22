@@ -2,7 +2,6 @@ import os
 import re
 import json
 import time
-from urllib.parse import quote
 import requests as req
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -459,20 +458,14 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
     except Exception as e:
         return {"status": "error", "paso": "generacion_textos", "mensaje": str(e)}
 
-    # ── 2. Generar imagen con Pollinations AI (gratis, URL directa) ──────────
+    # ── 2. Generar imagen con Gemini → subir a Cloudinary ────────────────────
     imagen_url = None
     imagen_error = None
     try:
         prompt_img = marca.get("Estilo Visual (Prompt DALL-E/Gemini)",
                                "professional automation business flat design colorful no text")
-        prompt_seg = f"{prompt_img}. Professional, high quality, no text, no watermark."
-        imagen_url = (
-            "https://image.pollinations.ai/prompt/"
-            + quote(prompt_seg)
-            + "?width=1080&height=1080&nologo=true"
-        )
-        r_check = req.get(imagen_url, timeout=60)
-        r_check.raise_for_status()
+        b64, mime = _generar_imagen_interna(prompt_img, max_intentos=3, espera=20)
+        imagen_url = _subir_cloudinary(b64, mime)
     except Exception as e:
         imagen_error = str(e)
         imagen_url = None
@@ -499,7 +492,7 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
     msg_wa = (
         f"{'✅' if not redes_fail else '⚠️'} *Post completado*\n\n"
         f"📸 {' · '.join(redes_ok) or 'Sin publicaciones exitosas'}\n"
-        + (f"🖼️ {imagen_url}\n\n" if imagen_url else "🖼️ Sin imagen (Pollinations no disponible)\n\n")
+        + (f"🖼️ {imagen_url}\n\n" if imagen_url else "🖼️ Sin imagen (Gemini no disponible)\n\n")
         + f"📝 LI: {texto_li[:100]}..."
     )
     if redes_fail:
