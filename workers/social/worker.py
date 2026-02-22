@@ -298,56 +298,9 @@ def _publicar_instagram(imagen_url: str, caption: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
-    """Inicializa upload, sube imagen y crea post en LinkedIn."""
-    try:
-        headers = {
-            "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
-            "LinkedIn-Version": "202407",
-            "X-Restli-Protocol-Version": "2.0.0",
-            "Content-Type": "application/json"
-        }
-        r1 = req.post(
-            "https://api.linkedin.com/rest/images?action=initializeUpload",
-            headers=headers,
-            json={"initializeUploadRequest": {"owner": f"urn:li:person:{LINKEDIN_PERSON_ID}"}},
-            timeout=30
-        )
-        r1.raise_for_status()
-        li_data    = r1.json()["value"]
-        upload_url = li_data["uploadUrl"]
-        image_urn  = li_data["image"]
-
-        img_bytes = req.get(imagen_url, timeout=30).content
-        req.put(
-            upload_url,
-            headers={"Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}", "Content-Type": "image/jpeg"},
-            data=img_bytes,
-            timeout=60
-        )
-
-        r4 = req.post(
-            "https://api.linkedin.com/rest/posts",
-            headers=headers,
-            json={
-                "author": f"urn:li:person:{LINKEDIN_PERSON_ID}",
-                "commentary": texto,
-                "visibility": "PUBLIC",
-                "distribution": {
-                    "feedDistribution": "MAIN_FEED",
-                    "targetEntities": [],
-                    "thirdPartyDistributionChannels": []
-                },
-                "content": {"media": {"altText": "Post System IA", "id": image_urn}},
-                "lifecycleState": "PUBLISHED",
-                "isReshareDisableForOperator": False
-            },
-            timeout=30
-        )
-        r4.raise_for_status()
-        return {"success": True, "post_id": image_urn}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+def _publicar_linkedin(texto: str, imagen_url: str) -> dict:  # noqa: ARG001
+    """Publica post en LinkedIn. Imagen ignorada — usa UGC text post."""
+    return _publicar_linkedin_texto(texto)
 
 
 def _get_facebook_page_token() -> str:
@@ -382,30 +335,34 @@ def _publicar_facebook(texto: str, imagen_url: str) -> dict:
 
 
 def _publicar_linkedin_texto(texto: str) -> dict:
-    """Publica post de solo texto en LinkedIn."""
+    """Publica post en LinkedIn via UGC API (v2, sin version header)."""
     try:
         headers = {
             "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
-            "LinkedIn-Version": "202407",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
         r = req.post(
-            "https://api.linkedin.com/rest/posts",
+            "https://api.linkedin.com/v2/ugcPosts",
             headers=headers,
             json={
                 "author": f"urn:li:person:{LINKEDIN_PERSON_ID}",
-                "commentary": texto,
-                "visibility": "PUBLIC",
-                "distribution": {"feedDistribution": "MAIN_FEED", "targetEntities": [], "thirdPartyDistributionChannels": []},
                 "lifecycleState": "PUBLISHED",
-                "isReshareDisableForOperator": False
+                "specificContent": {
+                    "com.linkedin.ugc.ShareContent": {
+                        "shareCommentary": {"text": texto},
+                        "shareMediaCategory": "NONE"
+                    }
+                },
+                "visibility": {
+                    "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+                }
             },
             timeout=30
         )
         if not r.ok:
             return {"success": False, "error": f"{r.status_code}: {r.text[:300]}"}
-        return {"success": True, "post_id": "text-only"}
+        return {"success": True, "post_id": r.json().get("id", "ugc-post")}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
