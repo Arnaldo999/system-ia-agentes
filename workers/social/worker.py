@@ -9,9 +9,23 @@ from typing import Optional, List
 
 router = APIRouter(prefix="/social", tags=["Social Media"])
 
+# ── Gemini ────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_TEXT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 GEMINI_IMG_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent"
+
+# ── Publicación en redes ──────────────────────────────────────────────────────
+META_ACCESS_TOKEN      = os.environ.get("META_ACCESS_TOKEN", "")
+IG_BUSINESS_ACCOUNT_ID = os.environ.get("IG_BUSINESS_ACCOUNT_ID", "")
+FACEBOOK_PAGE_ID       = os.environ.get("FACEBOOK_PAGE_ID", "")
+LINKEDIN_ACCESS_TOKEN  = os.environ.get("LINKEDIN_ACCESS_TOKEN", "")
+LINKEDIN_PERSON_ID     = os.environ.get("LINKEDIN_PERSON_ID", "")
+CLOUDINARY_CLOUD_NAME  = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_UPLOAD_PRESET = os.environ.get("CLOUDINARY_UPLOAD_PRESET", "")
+EVOLUTION_URL          = os.environ.get("EVOLUTION_URL", "")
+EVOLUTION_INSTANCE     = os.environ.get("EVOLUTION_INSTANCE", "")
+EVOLUTION_API_KEY      = os.environ.get("EVOLUTION_API_KEY", "")
+WHATSAPP_NOTIFY_NUMBER = os.environ.get("WHATSAPP_NOTIFY_NUMBER", "")
 
 
 class DatosCrearPost(BaseModel):
@@ -208,3 +222,258 @@ Responde SOLO con este JSON, sin explicaciones previas:
         return {"status": "success", **parsed}
     except Exception as e:
         return {"status": "error", "mensaje": f"Error seleccionando tema: {str(e)}"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPERS INTERNOS para publicar-completo
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _generar_imagen_interna(prompt: str, max_intentos: int = 4, espera: int = 25):
+    """Retorna (base64_str, mime_type). Lanza Exception si todos los intentos fallan."""
+    prompt_completo = f"{prompt}. Estilo: fotografico profesional moderno, SIN texto escrito en la imagen."
+    for intento in range(1, max_intentos + 1):
+        try:
+            resp = req.post(
+                f"{GEMINI_IMG_URL}?key={GEMINI_API_KEY}",
+                json={
+                    "contents": [{"parts": [{"text": prompt_completo}]}],
+                    "generationConfig": {"responseModalities": ["image", "text"]}
+                },
+                timeout=90
+            )
+            resp.raise_for_status()
+            for part in resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", []):
+                if "inlineData" in part:
+                    return part["inlineData"]["data"], part["inlineData"].get("mimeType", "image/png")
+        except Exception:
+            pass
+        if intento < max_intentos:
+            time.sleep(espera)
+    raise Exception(f"Gemini no generó imagen tras {max_intentos} intentos.")
+
+
+def _subir_cloudinary(base64_img: str, mime_type: str) -> str:
+    """Sube imagen base64 a Cloudinary y retorna secure_url."""
+    resp = req.post(
+        f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+        data={
+            "file": f"data:{mime_type};base64,{base64_img}",
+            "upload_preset": CLOUDINARY_UPLOAD_PRESET,
+            "folder": "system-ia-posts"
+        },
+        timeout=60
+    )
+    resp.raise_for_status()
+    return resp.json()["secure_url"]
+
+
+def _publicar_instagram(imagen_url: str, caption: str) -> dict:
+    """Crea container + publica en Instagram Business."""
+    try:
+        r1 = req.post(
+            f"https://graph.facebook.com/v22.0/{IG_BUSINESS_ACCOUNT_ID}/media",
+            params={"access_token": META_ACCESS_TOKEN},
+            json={"image_url": imagen_url, "caption": caption},
+            timeout=30
+        )
+        r1.raise_for_status()
+        container_id = r1.json()["id"]
+        time.sleep(8)
+        r2 = req.post(
+            f"https://graph.facebook.com/v22.0/{IG_BUSINESS_ACCOUNT_ID}/media_publish",
+            params={"access_token": META_ACCESS_TOKEN},
+            json={"creation_id": container_id},
+            timeout=30
+        )
+        r2.raise_for_status()
+        return {"success": True, "post_id": r2.json().get("id", "")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
+    """Inicializa upload, sube imagen y crea post en LinkedIn."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
+            "LinkedIn-Version": "202501",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Content-Type": "application/json"
+        }
+        r1 = req.post(
+            "https://api.linkedin.com/rest/images?action=initializeUpload",
+            headers=headers,
+            json={"initializeUploadRequest": {"owner": f"urn:li:person:{LINKEDIN_PERSON_ID}"}},
+            timeout=30
+        )
+        r1.raise_for_status()
+        li_data    = r1.json()["value"]
+        upload_url = li_data["uploadUrl"]
+        image_urn  = li_data["image"]
+
+        img_bytes = req.get(imagen_url, timeout=30).content
+        req.put(
+            upload_url,
+            headers={"Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}", "Content-Type": "image/jpeg"},
+            data=img_bytes,
+            timeout=60
+        )
+
+        r4 = req.post(
+            "https://api.linkedin.com/rest/posts",
+            headers=headers,
+            json={
+                "author": f"urn:li:person:{LINKEDIN_PERSON_ID}",
+                "commentary": texto,
+                "visibility": "PUBLIC",
+                "distribution": {
+                    "feedDistribution": "MAIN_FEED",
+                    "targetEntities": [],
+                    "thirdPartyDistributionChannels": []
+                },
+                "content": {"media": {"altText": "Post System IA", "id": image_urn}},
+                "lifecycleState": "PUBLISHED",
+                "isReshareDisableForOperator": False
+            },
+            timeout=30
+        )
+        r4.raise_for_status()
+        return {"success": True, "post_id": image_urn}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _publicar_facebook(texto: str, imagen_url: str) -> dict:
+    """Publica foto con caption en Facebook Page."""
+    try:
+        resp = req.post(
+            f"https://graph.facebook.com/v22.0/{FACEBOOK_PAGE_ID}/photos",
+            params={"access_token": META_ACCESS_TOKEN},
+            json={"url": imagen_url, "message": texto},
+            timeout=30
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return {"success": True, "post_id": data.get("post_id") or data.get("id", "")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _notificar_whatsapp(mensaje: str) -> dict:
+    """Envía notificación vía Evolution API."""
+    try:
+        resp = req.post(
+            f"http://{EVOLUTION_URL}/message/sendText/{EVOLUTION_INSTANCE}",
+            headers={"apikey": EVOLUTION_API_KEY},
+            json={"number": WHATSAPP_NOTIFY_NUMBER, "text": mensaje},
+            timeout=15
+        )
+        return {"success": resp.status_code < 300}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /social/publicar-completo  — endpoint agéntico maestro
+# ─────────────────────────────────────────────────────────────────────────────
+
+class DatosPublicarCompleto(BaseModel):
+    datos_marca: dict  # JSON plano del registro de Airtable
+
+
+@router.post("/publicar-completo")
+async def publicar_completo(entrada: DatosPublicarCompleto):
+    """
+    Endpoint agéntico maestro. Recibe el brandbook de Airtable y ejecuta
+    TODO el flujo: generar textos → imagen → Cloudinary → publicar IG/LI/FB → notificar WA.
+    n8n solo necesita 3 nodos: Trigger → Airtable → este endpoint.
+    """
+    if not GEMINI_API_KEY:
+        return {"status": "error", "paso": "init", "mensaje": "Falta GEMINI_API_KEY"}
+
+    marca = entrada.datos_marca
+    errores = []
+
+    # ── 1. Generar textos IA ─────────────────────────────────────────────────
+    try:
+        prompt_txt = f"""Eres el Copywriter de una agencia de automatizaciones IA para LATAM.
+
+BRANDBOOK:
+- Industria: {marca.get('Industria', 'General')}
+- Servicio: {marca.get('Servicio Principal', 'Automatizaciones IA')}
+- Público: {marca.get('Público Objetivo', 'Emprendedores y pymes LATAM')}
+- Tono: {marca.get('Tono de Voz', 'Humano, cercano, experto')}
+- RESTRICCIONES: {marca.get('Reglas Estrictas', 'No prometer resultados garantizados')}
+- Tema del día: {marca.get('Tema del Día', 'Automatización con IA')}
+- Ángulo: {marca.get('Ángulo', 'Beneficios prácticos para el negocio')}
+
+Crea 3 posts únicos. Separa EXACTAMENTE con: |||
+
+1. INSTAGRAM: Hook fuerte, viñetas con emojis, 150-200 palabras, 6-8 hashtags al final.
+|||
+2. LINKEDIN: Apertura con dato/reflexión, desarrollo analítico, cierre con pregunta, 300-400 palabras, max 2 emojis, 3-4 hashtags.
+|||
+3. FACEBOOK: Storytelling cercano, invita a comentar, 200-250 palabras, max 3 emojis."""
+
+        texto_raw = _call_gemini_text(prompt_txt, timeout=60)
+        partes    = texto_raw.split("|||")
+        texto_ig  = partes[0].strip() if len(partes) > 0 else ""
+        texto_li  = partes[1].strip() if len(partes) > 1 else ""
+        texto_fb  = partes[2].strip() if len(partes) > 2 else ""
+    except Exception as e:
+        return {"status": "error", "paso": "generacion_textos", "mensaje": str(e)}
+
+    # ── 2. Generar imagen con Gemini ─────────────────────────────────────────
+    try:
+        prompt_img = marca.get("Estilo Visual (Prompt DALL-E/Gemini)",
+                               "professional automation business flat design colorful no text")
+        base64_img, mime_type = _generar_imagen_interna(prompt_img)
+    except Exception as e:
+        return {"status": "error", "paso": "generacion_imagen", "mensaje": str(e)}
+
+    # ── 3. Subir a Cloudinary ────────────────────────────────────────────────
+    try:
+        imagen_url = _subir_cloudinary(base64_img, mime_type)
+    except Exception as e:
+        return {"status": "error", "paso": "cloudinary", "mensaje": str(e)}
+
+    # ── 4. Publicar en las 3 redes (errores no detienen el flujo) ───────────
+    res_ig = _publicar_instagram(imagen_url, texto_ig)
+    res_li = _publicar_linkedin(texto_li, imagen_url)
+    res_fb = _publicar_facebook(texto_fb, imagen_url)
+
+    for red, res in [("Instagram", res_ig), ("LinkedIn", res_li), ("Facebook", res_fb)]:
+        if not res.get("success"):
+            errores.append(f"{red}: {res.get('error', 'error desconocido')}")
+
+    # ── 5. Notificación WhatsApp ─────────────────────────────────────────────
+    redes_ok   = [r for r, v in [("IG ✅", res_ig), ("LI ✅", res_li), ("FB ✅", res_fb)] if v.get("success")]
+    redes_fail = [r for r, v in [("IG ❌", res_ig), ("LI ❌", res_li), ("FB ❌", res_fb)] if not v.get("success")]
+
+    msg_wa = (
+        f"{'✅' if not redes_fail else '⚠️'} *Post completado*\n\n"
+        f"📸 {' · '.join(redes_ok) or 'Sin publicaciones exitosas'}\n"
+        f"🖼️ {imagen_url}\n\n"
+        f"📝 IG: {texto_ig[:100]}..."
+    )
+    if redes_fail:
+        msg_wa += f"\n\n⚠️ Fallaron: {', '.join(redes_fail)}"
+
+    notif = _notificar_whatsapp(msg_wa)
+
+    return {
+        "status": "success" if not errores else "partial",
+        "imagen_url": imagen_url,
+        "publicaciones": {
+            "instagram": res_ig,
+            "linkedin":  res_li,
+            "facebook":  res_fb
+        },
+        "textos": {
+            "instagram": texto_ig[:200],
+            "linkedin":  texto_li[:200],
+            "facebook":  texto_fb[:200]
+        },
+        "notificacion_wa": notif,
+        "errores": errores
+    }
