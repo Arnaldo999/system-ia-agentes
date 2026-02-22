@@ -423,6 +423,15 @@ def _notificar_whatsapp(mensaje: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+def _limpiar_texto_post(texto: str) -> str:
+    """Elimina encabezados numerados y líneas introductorias que Gemini añade."""
+    # Quitar intro tipo "Aquí tienes los 3 posts..."
+    texto = re.sub(r'^.*(Aquí tienes|Here are|posts únicos|separados).*\n+', '', texto, flags=re.IGNORECASE)
+    # Quitar encabezados tipo "1. **INSTAGRAM:**", "2.  LINKEDIN:" etc.
+    texto = re.sub(r'^\s*\d+\.\s+\*{0,2}[A-ZÁÉÍÓÚ]+\*{0,2}:?\s*\n+\s*', '', texto, flags=re.MULTILINE)
+    return texto.strip()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # POST /social/publicar-completo  — endpoint agéntico maestro
 # ─────────────────────────────────────────────────────────────────────────────
@@ -467,9 +476,9 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
 
         texto_raw = _call_gemini_text(prompt_txt, timeout=60)
         partes    = texto_raw.split("|||")
-        texto_ig  = partes[0].strip() if len(partes) > 0 else ""
-        texto_li  = partes[1].strip() if len(partes) > 1 else ""
-        texto_fb  = partes[2].strip() if len(partes) > 2 else ""
+        texto_ig  = _limpiar_texto_post(partes[0]) if len(partes) > 0 else ""
+        texto_li  = _limpiar_texto_post(partes[1]) if len(partes) > 1 else ""
+        texto_fb  = _limpiar_texto_post(partes[2]) if len(partes) > 2 else ""
     except Exception as e:
         return {"status": "error", "paso": "generacion_textos", "mensaje": str(e)}
 
