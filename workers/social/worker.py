@@ -23,10 +23,10 @@ LINKEDIN_ACCESS_TOKEN  = os.environ.get("LINKEDIN_ACCESS_TOKEN", "")
 LINKEDIN_PERSON_ID     = os.environ.get("LINKEDIN_PERSON_ID", "")
 CLOUDINARY_CLOUD_NAME  = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
 CLOUDINARY_UPLOAD_PRESET = os.environ.get("CLOUDINARY_UPLOAD_PRESET", "")
-EVOLUTION_URL          = os.environ.get("EVOLUTION_URL", "")
+EVOLUTION_URL          = os.environ.get("EVOLUTION_API_URL", "")
 EVOLUTION_INSTANCE     = os.environ.get("EVOLUTION_INSTANCE", "")
 EVOLUTION_API_KEY      = os.environ.get("EVOLUTION_API_KEY", "")
-WHATSAPP_NOTIFY_NUMBER = os.environ.get("WHATSAPP_NOTIFY_NUMBER", "")
+WHATSAPP_NOTIFY_NUMBER = os.environ.get("WHATSAPP_APPROVAL_NUMBER", "")
 
 
 class DatosCrearPost(BaseModel):
@@ -388,7 +388,8 @@ def _publicar_linkedin_texto(texto: str) -> dict:
             },
             timeout=30
         )
-        r.raise_for_status()
+        if not r.ok:
+            return {"success": False, "error": f"{r.status_code}: {r.text[:300]}"}
         return {"success": True, "post_id": "text-only"}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -403,7 +404,8 @@ def _publicar_facebook_texto(texto: str) -> dict:
             json={"message": texto},
             timeout=30
         )
-        resp.raise_for_status()
+        if not resp.ok:
+            return {"success": False, "error": f"{resp.status_code}: {resp.text[:300]}"}
         return {"success": True, "post_id": resp.json().get("id", "")}
     except Exception as e:
         return {"success": False, "error": str(e)}
