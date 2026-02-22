@@ -231,25 +231,31 @@ Responde SOLO con este JSON, sin explicaciones previas:
 def _generar_imagen_interna(prompt: str, max_intentos: int = 4, espera: int = 25):
     """Retorna (base64_str, mime_type). Lanza Exception si todos los intentos fallan."""
     prompt_completo = f"{prompt}. Estilo: fotografico profesional moderno, SIN texto escrito en la imagen."
+    ultimo_error = ""
+    ultima_respuesta = ""
     for intento in range(1, max_intentos + 1):
         try:
             resp = req.post(
                 f"{GEMINI_IMG_URL}?key={GEMINI_API_KEY}",
                 json={
                     "contents": [{"parts": [{"text": prompt_completo}]}],
-                    "generationConfig": {"responseModalities": ["image", "text"]}
+                    "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]}
                 },
                 timeout=90
             )
             resp.raise_for_status()
-            for part in resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", []):
+            data = resp.json()
+            ultima_respuesta = json.dumps(data)[:500]  # para debug
+            for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
                 if "inlineData" in part:
                     return part["inlineData"]["data"], part["inlineData"].get("mimeType", "image/png")
-        except Exception:
-            pass
+            # Si llegamos aquí, Gemini respondió sin imagen
+            ultimo_error = f"Intento {intento}: Gemini respondió sin imagen. Respuesta: {ultima_respuesta}"
+        except Exception as e:
+            ultimo_error = f"Intento {intento}: {str(e)}"
         if intento < max_intentos:
             time.sleep(espera)
-    raise Exception(f"Gemini no generó imagen tras {max_intentos} intentos.")
+    raise Exception(f"Gemini no generó imagen tras {max_intentos} intentos. Último error: {ultimo_error}")
 
 
 def _subir_cloudinary(base64_img: str, mime_type: str) -> str:
