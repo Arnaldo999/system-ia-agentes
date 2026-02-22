@@ -415,7 +415,7 @@ def _notificar_whatsapp(mensaje: str) -> dict:
     """Envía notificación vía Evolution API."""
     try:
         resp = req.post(
-            f"http://{EVOLUTION_URL}/message/sendText/{EVOLUTION_INSTANCE}",
+            f"{EVOLUTION_URL}/message/sendText/{EVOLUTION_INSTANCE}",
             headers={"apikey": EVOLUTION_API_KEY},
             json={"number": WHATSAPP_NOTIFY_NUMBER, "text": mensaje},
             timeout=15
