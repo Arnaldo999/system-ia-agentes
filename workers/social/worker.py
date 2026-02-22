@@ -2,6 +2,7 @@ import os
 import re
 import json
 import time
+from urllib.parse import quote
 import requests as req
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -429,19 +430,21 @@ Crea 3 posts únicos. Separa EXACTAMENTE con: |||
     except Exception as e:
         return {"status": "error", "paso": "generacion_textos", "mensaje": str(e)}
 
-    # ── 2. Generar imagen con Gemini ─────────────────────────────────────────
+    # ── 2. Generar imagen con Pollinations AI (gratis, URL directa) ──────────
     try:
         prompt_img = marca.get("Estilo Visual (Prompt DALL-E/Gemini)",
                                "professional automation business flat design colorful no text")
-        base64_img, mime_type = _generar_imagen_interna(prompt_img)
+        prompt_seg = f"{prompt_img}. Professional, high quality, no text, no watermark."
+        imagen_url = (
+            "https://image.pollinations.ai/prompt/"
+            + quote(prompt_seg)
+            + "?width=1080&height=1080&nologo=true&enhance=true"
+        )
+        # Verificar que la URL responde (Pollinations genera al primer acceso)
+        r_check = req.get(imagen_url, timeout=60)
+        r_check.raise_for_status()
     except Exception as e:
         return {"status": "error", "paso": "generacion_imagen", "mensaje": str(e)}
-
-    # ── 3. Subir a Cloudinary ────────────────────────────────────────────────
-    try:
-        imagen_url = _subir_cloudinary(base64_img, mime_type)
-    except Exception as e:
-        return {"status": "error", "paso": "cloudinary", "mensaje": str(e)}
 
     # ── 4. Publicar en las 3 redes (errores no detienen el flujo) ───────────
     res_ig = _publicar_instagram(imagen_url, texto_ig)
