@@ -12,7 +12,7 @@ router = APIRouter(prefix="/social", tags=["Social Media"])
 # ── Gemini ────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_TEXT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-GEMINI_IMG_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent"
+GEMINI_IMG_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
 
 # ── Publicación en redes ──────────────────────────────────────────────────────
 META_ACCESS_TOKEN      = os.environ.get("META_ACCESS_TOKEN", "")
