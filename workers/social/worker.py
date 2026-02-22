@@ -303,7 +303,7 @@ def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
     try:
         headers = {
             "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
-            "LinkedIn-Version": "202410",
+            "LinkedIn-Version": "202407",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
@@ -350,12 +350,27 @@ def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+def _get_facebook_page_token() -> str:
+    """Obtiene el Page Access Token desde el User/System User Token."""
+    try:
+        r = req.get(
+            f"https://graph.facebook.com/v22.0/{FACEBOOK_PAGE_ID}",
+            params={"fields": "access_token", "access_token": META_ACCESS_TOKEN},
+            timeout=15
+        )
+        r.raise_for_status()
+        return r.json().get("access_token", META_ACCESS_TOKEN)
+    except Exception:
+        return META_ACCESS_TOKEN
+
+
 def _publicar_facebook(texto: str, imagen_url: str) -> dict:
     """Publica foto con caption en Facebook Page."""
     try:
+        page_token = _get_facebook_page_token()
         resp = req.post(
             f"https://graph.facebook.com/v22.0/{FACEBOOK_PAGE_ID}/photos",
-            params={"access_token": META_ACCESS_TOKEN},
+            params={"access_token": page_token},
             json={"url": imagen_url, "message": texto},
             timeout=30
         )
@@ -371,7 +386,7 @@ def _publicar_linkedin_texto(texto: str) -> dict:
     try:
         headers = {
             "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
-            "LinkedIn-Version": "202410",
+            "LinkedIn-Version": "202407",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
@@ -398,9 +413,10 @@ def _publicar_linkedin_texto(texto: str) -> dict:
 def _publicar_facebook_texto(texto: str) -> dict:
     """Publica post de solo texto en Facebook Page."""
     try:
+        page_token = _get_facebook_page_token()
         resp = req.post(
             f"https://graph.facebook.com/v22.0/{FACEBOOK_PAGE_ID}/feed",
-            params={"access_token": META_ACCESS_TOKEN},
+            params={"access_token": page_token},
             json={"message": texto},
             timeout=30
         )
