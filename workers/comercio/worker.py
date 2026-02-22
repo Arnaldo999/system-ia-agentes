@@ -43,7 +43,7 @@ def guardar_producto_airtable(api_key: str, base_id: str, table: str, datos: dic
 def actualizar_producto_airtable(api_key: str, base_id: str, table: str, record_id: str, datos: dict):
     url = f"https://api.airtable.com/v0/{base_id}/{table}/{record_id}"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    payload = {"fields": {"Disponible": datos.get("Disponible")}}
+    payload = {"fields": {"Disponibilidad": datos.get("Disponibilidad")}}
     resp = requests.patch(url, headers=headers, json=payload)
     return resp.status_code == 200
 
@@ -69,7 +69,7 @@ async def procesar_whatsapp(entrada: MensajeWhatsApp):
     if entrada.es_admin:
         # 1. GPT-4o extrae la intención del dueño
         prompt_admin = f"""El dueño de la tienda envía este mensaje para gestionar su catálogo (Airtable).
-        NO usamos stock numérico, solo estado "Disponible" o "No Disponible".
+        NO usamos stock numérico, la disponibilidad es un booleano (true o false) ya que es un Checkbox.
 
         MENSAJE DEL DUEÑO: "{entrada.mensaje}"
 
@@ -77,9 +77,10 @@ async def procesar_whatsapp(entrada: MensajeWhatsApp):
         {{
           "accion": "crear_producto" | "actualizar_disponibilidad" | "desconocida",
           "datos": {{
-            "Producto": "Nombre claro del producto",
+            "Nombre": "Nombre claro del producto",
+            "Categoría": "Categoría (opcional)",
             "Precio": 120 (numero, opcional),
-            "Disponible": "Disponible" | "No Disponible" (string exactamente así)
+            "Disponibilidad": true (si está disponible/agrega) o false (si indica que está agotado)
           }}
         }}"""
         
@@ -93,25 +94,27 @@ async def procesar_whatsapp(entrada: MensajeWhatsApp):
             data_gpt = json.loads(resp_openai.choices[0].message.content)
             accion = data_gpt.get("accion")
             datos_producto = data_gpt.get("datos", {})
-            producto_nombre = datos_producto.get("Producto", "").lower()
+            producto_nombre = datos_producto.get("Nombre", "").lower()
 
             if accion == "crear_producto":
                 guardar_producto_airtable(entrada.airtable_api_key, entrada.airtable_base_id, entrada.airtable_table, datos_producto)
-                return {"status": "success", "respuesta_whatsapp": f"✅ Producto '{datos_producto.get('Producto')}' guardado en el catálogo como {datos_producto.get('Disponible')}."}
+                estado_str = "Disponible" if datos_producto.get("Disponibilidad") else "Agotado"
+                return {"status": "success", "respuesta_whatsapp": f"✅ Producto '{datos_producto.get('Nombre')}' guardado en el catálogo como {estado_str}."}
             
             elif accion == "actualizar_disponibilidad":
                 # Buscar producto en el catálogo actual para obtener su ID
                 record_id_encontrado = None
                 for record in catalogo_records:
-                    if producto_nombre in record["fields"].get("Producto", "").lower():
+                    if producto_nombre in record["fields"].get("Nombre", "").lower():
                         record_id_encontrado = record["id"]
                         break
                 
                 if record_id_encontrado:
                     actualizar_producto_airtable(entrada.airtable_api_key, entrada.airtable_base_id, entrada.airtable_table, record_id_encontrado, datos_producto)
-                    return {"status": "success", "respuesta_whatsapp": f"✅ Stock actualizado. '{datos_producto.get('Producto')}' ahora está {datos_producto.get('Disponible')}."}
+                    estado_str = "Disponible" if datos_producto.get("Disponibilidad") else "Agotado"
+                    return {"status": "success", "respuesta_whatsapp": f"✅ Stock actualizado. '{datos_producto.get('Nombre')}' ahora está {estado_str}."}
                 else:
-                    return {"status": "success", "respuesta_whatsapp": f"❌ No encontré '{datos_producto.get('Producto')}' en el catálogo para actualizarlo."}
+                    return {"status": "success", "respuesta_whatsapp": f"❌ No encontré '{datos_producto.get('Nombre')}' en el catálogo para actualizarlo."}
             else:
                 return {"status": "success", "respuesta_whatsapp": "🤖 No entendí qué quieres hacer con el catálogo."}
         
