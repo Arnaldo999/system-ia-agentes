@@ -13,7 +13,7 @@ router = APIRouter(prefix="/social", tags=["Social Media"])
 # ── Gemini ────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_TEXT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-GEMINI_IMG_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
+GEMINI_IMG_URL  = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
 
 # ── Publicación en redes ──────────────────────────────────────────────────────
 META_ACCESS_TOKEN      = os.environ.get("META_ACCESS_TOKEN", "")
@@ -96,7 +96,11 @@ class DatosSeleccionarTema(BaseModel):
 def _call_gemini_text(prompt: str, timeout: int = 60) -> str:
     """Llamada centralizada a Gemini para texto. Lanza excepción si falla."""
     resp = req.post(
-        f"{GEMINI_TEXT_URL}?key={GEMINI_API_KEY}",
+        GEMINI_TEXT_URL,
+        headers={
+            "x-goog-api-key": GEMINI_API_KEY,
+            "Content-Type": "application/json"
+        },
         json={"contents": [{"parts": [{"text": prompt}]}]},
         timeout=timeout
     )
@@ -191,15 +195,19 @@ async def generar_imagen(entrada: DatosGenerarImagen):
     for intento in range(1, entrada.max_intentos + 1):
         try:
             resp = req.post(
-                f"{GEMINI_IMG_URL}?key={GEMINI_API_KEY}",
-                json={
-                    "contents": [{"parts": [{"text": prompt_completo}]}],
-                    "generationConfig": {"responseModalities": ["image", "text"]}
+                GEMINI_IMG_URL,
+                headers={
+                    "x-goog-api-key": GEMINI_API_KEY,
+                    "Content-Type": "application/json"
                 },
+                # NOTA: gemini-2.5-flash-image no necesita generationConfig
+                # El modelo nativamente devuelve imágenes según la doc oficial
+                json={"contents": [{"parts": [{"text": prompt_completo}]}]},
                 timeout=90
             )
             resp.raise_for_status()
-            parts = resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [])
+            data = resp.json()
+            parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
 
             for part in parts:
                 if "inlineData" in part:
@@ -209,6 +217,10 @@ async def generar_imagen(entrada: DatosGenerarImagen):
                         "mimeType": part["inlineData"].get("mimeType", "image/png"),
                         "intentos": intento
                     }
+
+            # Si llegamos aquí, Gemini respondió sin imagen (solo texto)
+            respuesta_debug = json.dumps(data)[:300]
+            ultimo_error_endpoint = f"Intento {intento}: Sin imagen en respuesta. Data: {respuesta_debug}"
 
         except Exception as e:
             if intento == entrada.max_intentos:
@@ -279,30 +291,32 @@ def _generar_imagen_interna(prompt: str, max_intentos: int = 4, espera: int = 25
     """Retorna (base64_str, mime_type). Lanza Exception si todos los intentos fallan."""
     prompt_completo = f"{prompt}. Estilo: fotografico profesional moderno, SIN texto escrito en la imagen."
     ultimo_error = ""
-    ultima_respuesta = ""
     for intento in range(1, max_intentos + 1):
         try:
             resp = req.post(
-                f"{GEMINI_IMG_URL}?key={GEMINI_API_KEY}",
-                json={
-                    "contents": [{"parts": [{"text": prompt_completo}]}],
-                    "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]}
+                GEMINI_IMG_URL,
+                headers={
+                    "x-goog-api-key": GEMINI_API_KEY,
+                    "Content-Type": "application/json"
                 },
+                # NOTA: gemini-2.5-flash-image devuelve imágenes nativamente
+                # NO agregar generationConfig.responseModalities (interfiere con la respuesta)
+                json={"contents": [{"parts": [{"text": prompt_completo}]}]},
                 timeout=90
             )
             resp.raise_for_status()
             data = resp.json()
-            ultima_respuesta = json.dumps(data)[:500]  # para debug
+            debug_resp = json.dumps(data)[:500]
             for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
                 if "inlineData" in part:
                     return part["inlineData"]["data"], part["inlineData"].get("mimeType", "image/png")
-            # Si llegamos aquí, Gemini respondió sin imagen
-            ultimo_error = f"Intento {intento}: Gemini respondió sin imagen. Respuesta: {ultima_respuesta}"
+            # Si llegamos aquí, Gemini respondió sin imagen (bloqueado por safety o sin créditos)
+            ultimo_error = f"Intento {intento}: Sin imagen en la respuesta. Detalle: {debug_resp}"
         except Exception as e:
             ultimo_error = f"Intento {intento}: {str(e)}"
         if intento < max_intentos:
             time.sleep(espera)
-    raise Exception(f"Gemini no generó imagen tras {max_intentos} intentos. Último error: {ultimo_error}")
+    raise Exception(f"Gemini no generó imagen tras {max_intentos} intentos. Último: {ultimo_error}")
 
 
 def _subir_cloudinary(base64_img: str, mime_type: str) -> str:
