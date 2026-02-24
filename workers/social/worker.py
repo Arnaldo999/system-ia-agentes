@@ -520,6 +520,7 @@ FILOSOFÍA DE CONTENIDO (OBLIGATORIA):
 - SIEMPRE aportar valor real y accionable: el lector debe llevarse algo útil.
 - Nunca spam, nunca clickbait vacío, nunca hipérboles sin sustento.
 - El CTA es una invitación natural — nunca agresivo ni desesperado.
+- NUNCA uses nombres propios de personas — habla siempre como la marca {marca.get('Nombre Comercial', 'la agencia')}, de forma genérica.
 
 Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
 
