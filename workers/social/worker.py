@@ -6,6 +6,7 @@ import base64
 import requests as req
 from io import BytesIO
 from datetime import datetime
+from PIL import Image
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional, List
@@ -341,6 +342,26 @@ def _subir_cloudinary(base64_img: str, mime_type: str) -> str:
     return resp.json()["secure_url"]
 
 
+def _overlay_logo(base64_img: str, logo_url: str) -> str:
+    """Descarga logo y lo superpone en esquina inferior derecha. Retorna base64 PNG."""
+    try:
+        img = Image.open(BytesIO(base64.b64decode(base64_img))).convert("RGBA")
+        logo_resp = req.get(logo_url, timeout=15)
+        logo_resp.raise_for_status()
+        logo = Image.open(BytesIO(logo_resp.content)).convert("RGBA")
+        logo_w = min(int(img.width * 0.15), 200)
+        logo_h = int(logo.height * (logo_w / logo.width))
+        logo = logo.resize((logo_w, logo_h), Image.LANCZOS)
+        padding = 20
+        pos = (img.width - logo_w - padding, img.height - logo_h - padding)
+        img.paste(logo, pos, logo)
+        output = BytesIO()
+        img.convert("RGB").save(output, format="PNG")
+        return base64.b64encode(output.getvalue()).decode()
+    except Exception:
+        return base64_img
+
+
 def _publicar_instagram(imagen_url: str, caption: str) -> dict:
     """Crea container + publica en Instagram Business."""
     try:
@@ -365,8 +386,60 @@ def _publicar_instagram(imagen_url: str, caption: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def _publicar_linkedin(texto: str, imagen_url: str) -> dict:  # noqa: ARG001
-    """Publica post en LinkedIn. Imagen ignorada — usa UGC text post."""
+def _publicar_linkedin_imagen(texto: str, imagen_url: str) -> dict:
+    """Publica post en LinkedIn con imagen. Flujo: register → upload → post."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Content-Type": "application/json"
+        }
+        person_urn = f"urn:li:person:{LINKEDIN_PERSON_ID}"
+        # Paso 1: Registrar upload
+        r1 = req.post(
+            "https://api.linkedin.com/v2/assets?action=registerUpload",
+            headers=headers,
+            json={"registerUploadRequest": {
+                "owner": person_urn,
+                "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
+                "serviceRelationships": [{"identifier": "urn:li:userGeneratedContent", "relationshipType": "OWNER"}]
+            }},
+            timeout=30
+        )
+        if not r1.ok:
+            return _publicar_linkedin_texto(texto)
+        upload_url = r1.json()["value"]["uploadMechanism"]["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]["uploadUrl"]
+        asset_urn = r1.json()["value"]["asset"]
+        # Paso 2: Subir imagen binaria
+        img_bytes = req.get(imagen_url, timeout=30).content
+        req.put(upload_url, headers={"Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}"}, data=img_bytes, timeout=60)
+        # Paso 3: Crear post con imagen
+        r3 = req.post(
+            "https://api.linkedin.com/v2/ugcPosts",
+            headers=headers,
+            json={
+                "author": person_urn,
+                "lifecycleState": "PUBLISHED",
+                "specificContent": {"com.linkedin.ugc.ShareContent": {
+                    "shareCommentary": {"text": texto},
+                    "shareMediaCategory": "IMAGE",
+                    "media": [{"status": "READY", "media": asset_urn}]
+                }},
+                "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
+            },
+            timeout=30
+        )
+        if not r3.ok:
+            return {"success": False, "error": f"{r3.status_code}: {r3.text[:300]}"}
+        return {"success": True, "post_id": r3.json().get("id", "ugc-img")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
+    """Publica en LinkedIn con imagen si está disponible, si no texto solo."""
+    if imagen_url and LINKEDIN_ACCESS_TOKEN and LINKEDIN_PERSON_ID:
+        return _publicar_linkedin_imagen(texto, imagen_url)
     return _publicar_linkedin_texto(texto)
 
 
@@ -550,7 +623,11 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
             "professional automation business flat design colorful no text"
         ))
         b64, mime = _generar_imagen_interna(prompt_img, max_intentos=3, espera=20)
-        imagen_url = _subir_cloudinary(b64, mime)
+        logo_field = marca.get("Logo", [])
+        logo_url = logo_field[0].get("url", "") if isinstance(logo_field, list) and logo_field else ""
+        if logo_url:
+            b64 = _overlay_logo(b64, logo_url)
+        imagen_url = _subir_cloudinary(b64, "image/png")
     except Exception as e:
         imagen_error = str(e)
         imagen_url = None
