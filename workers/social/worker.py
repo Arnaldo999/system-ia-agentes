@@ -735,8 +735,10 @@ def _get_cliente_por_page_id(page_id: str) -> dict:
         resp = req.get(url, headers={"Authorization": f"Bearer {AIRTABLE_TOKEN}"},
                        params={"filterByFormula": formula}, timeout=10)
         records = resp.json().get("records", [])
+        print(f"[AIRTABLE] page_id={page_id!r} status={resp.status_code} records={len(records)}", flush=True)
         return records[0].get("fields", {}) if records else {}
-    except Exception:
+    except Exception as e:
+        print(f"[AIRTABLE] ERROR: {e}", flush=True)
         return {}
 
 
@@ -799,6 +801,8 @@ async def meta_webhook_eventos(request: Request):
         page_id = entry.get("id", "")
         cliente = _get_cliente_por_page_id(page_id) if page_id else {}
 
+        print(f"[WEBHOOK] page_id={page_id!r} cliente_found={bool(cliente)}", flush=True)
+
         for change in entry.get("changes", []):
             field = change.get("field", "")
             value = change.get("value", {})
@@ -807,18 +811,22 @@ async def meta_webhook_eventos(request: Request):
             if field == "comments":
                 texto = value.get("text", "")
                 comentario_id = value.get("id", "")
+                print(f"[WEBHOOK] IG comment id={comentario_id!r} texto={texto[:40]!r} ok={bool(texto and len(texto)>=3 and comentario_id and cliente)}", flush=True)
                 if texto and len(texto) >= 3 and comentario_id and cliente:
-                    _responder_comentario(comentario_id, texto, cliente, page_id)
+                    result = _responder_comentario(comentario_id, texto, cliente, page_id)
+                    print(f"[WEBHOOK] reply_result={result}", flush=True)
 
             # Facebook page comment
             elif field == "feed":
                 if value.get("item") == "comment" and value.get("verb") == "add":
                     texto = value.get("message", "")
                     comentario_id = value.get("comment_id", "")
+                    print(f"[WEBHOOK] FB comment id={comentario_id!r} texto={texto[:40]!r} ok={bool(texto and len(texto)>=3 and comentario_id and cliente)}", flush=True)
                     if texto and len(texto) >= 3 and comentario_id and cliente:
-                        _responder_comentario(comentario_id, texto, cliente, page_id)
+                        result = _responder_comentario(comentario_id, texto, cliente, page_id)
+                        print(f"[WEBHOOK] reply_result={result}", flush=True)
 
-    except Exception:
-        pass  # Meta exige siempre respuesta 200
+    except Exception as e:
+        print(f"[WEBHOOK] ERROR: {e}", flush=True)
 
     return PlainTextResponse("EVENT_RECEIVED", status_code=200)
