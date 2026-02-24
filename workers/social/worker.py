@@ -1070,19 +1070,21 @@ DESIGN LAYOUT (follow this EXACTLY):
   • Below the title: "{subtitulo_slide}" in medium gray text, smaller than the title but still clearly readable
   • A thin horizontal accent line in {colores or 'blue'} separating the text area from the image area
 
-- BOTTOM HALF (illustration/graphic):
-  • A beautiful, high-quality 3D illustration or professional graphic related to: {industria}, {pilar}
-  • Style: modern 3D render with vibrant colors, professional, eye-catching
-  • The illustration should be colorful and engaging, filling the bottom section completely
+- BOTTOM HALF (photo/illustration):
+  • A warm, realistic photograph or clean illustration related to: {industria}, {pilar}
+  • Style: realistic photography with natural lighting, warm tones, professional business environment
+  • Show real people working, a cozy office, hands typing on a laptop, or a friendly business meeting
+  • NOT futuristic, NOT sci-fi, NOT neon, NOT cyberpunk — keep it warm, human, and relatable
+  • The image should feel approachable and professional, like a real business photo
 
 CRITICAL RULES:
-- The title text MUST be ENORMOUS — it should be the first thing you see, bold black letters that dominate the upper half
+- TEXT SPELLING: Copy the title and subtitle EXACTLY character by character. The text is in SPANISH — write it correctly: "{titulo_slide}" and "{subtitulo_slide}"
+- The title text MUST be ENORMOUS — bold black letters that dominate the upper half
 - The number "{num}." must be clearly visible in {colores or 'brand color'}
-- The design must look like a professional Instagram carousel slide from a premium design agency
+- The design must look like a professional Instagram carousel slide
 - Clean, modern, minimalist top half with huge typography
-- Vibrant, detailed illustration in the bottom half
-- DO NOT add any extra text, watermarks, or UI elements beyond what is specified
-- The overall feel should be like a Canva Pro or Figma professional design"""
+- Warm, realistic image in the bottom half (NO futuristic/sci-fi imagery)
+- DO NOT add any extra text, watermarks, or UI elements beyond what is specified"""
 
         try:
             b64, mime = _generar_imagen_interna(slide_prompt, max_intentos=3, espera=20, raw_prompt=True)
