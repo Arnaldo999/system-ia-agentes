@@ -343,6 +343,67 @@ def _subir_cloudinary(base64_img: str, mime_type: str) -> str:
     return resp.json()["secure_url"]
 
 
+def _get_font(size: int):
+    """Intenta cargar fuente del sistema; fallback a PIL default."""
+    from PIL import ImageFont
+    font_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]
+    for path in font_paths:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except Exception:
+                pass
+    return ImageFont.load_default()
+
+
+def _overlay_texto_slide(base64_img: str, titulo: str, subtitulo: str = "") -> str:
+    """
+    Superpone titulo y subtitulo en la zona inferior de la imagen.
+    Fondo semitransparente negro para garantizar legibilidad.
+    """
+    try:
+        from PIL import ImageDraw, ImageFont
+        img = Image.open(BytesIO(base64.b64decode(base64_img))).convert("RGBA")
+        w, h = img.size
+
+        overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+
+        # Zona de texto: 30% inferior
+        zona_h = int(h * 0.32)
+        draw.rectangle([(0, h - zona_h), (w, h)], fill=(0, 0, 0, 165))
+
+        font_titulo = _get_font(max(36, w // 18))
+        font_sub    = _get_font(max(24, w // 28))
+
+        # Titulo centrado
+        titulo_corto = titulo[:60]
+        bbox = draw.textbbox((0, 0), titulo_corto, font=font_titulo)
+        txt_w = bbox[2] - bbox[0]
+        y_titulo = h - zona_h + int(zona_h * 0.18)
+        draw.text(((w - txt_w) // 2, y_titulo), titulo_corto, font=font_titulo, fill=(255, 255, 255, 255))
+
+        # Subtitulo centrado (si existe)
+        if subtitulo:
+            sub_corto = subtitulo[:80]
+            bbox2 = draw.textbbox((0, 0), sub_corto, font=font_sub)
+            txt_w2 = bbox2[2] - bbox2[0]
+            y_sub = y_titulo + (bbox[3] - bbox[1]) + 10
+            draw.text(((w - txt_w2) // 2, y_sub), sub_corto, font=font_sub, fill=(220, 220, 220, 220))
+
+        img = Image.alpha_composite(img, overlay)
+        output = BytesIO()
+        img.convert("RGB").save(output, format="PNG")
+        return base64.b64encode(output.getvalue()).decode()
+    except Exception:
+        return base64_img  # fallback: imagen sin texto si algo falla
+
+
 def _overlay_logo(base64_img: str, logo_url: str) -> str:
     """Descarga logo y lo superpone en esquina inferior derecha. Retorna base64 PNG."""
     try:
@@ -525,13 +586,14 @@ def _publicar_facebook_texto(texto: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def _notificar_whatsapp(mensaje: str) -> dict:
-    """Envía notificación vía Evolution API."""
+def _notificar_whatsapp(mensaje: str, numero: str = None) -> dict:
+    """Envía notificación vía Evolution API. Si no se pasa numero, usa WHATSAPP_NOTIFY_NUMBER."""
     try:
+        n = numero or WHATSAPP_NOTIFY_NUMBER
         resp = req.post(
             f"{EVOLUTION_URL}/message/sendText/{EVOLUTION_INSTANCE}",
             headers={"apikey": EVOLUTION_API_KEY},
-            json={"number": WHATSAPP_NOTIFY_NUMBER, "text": mensaje},
+            json={"number": n, "text": mensaje},
             timeout=15
         )
         return {"success": resp.status_code < 300}
@@ -786,6 +848,7 @@ async def publicar_carrusel(entrada: DatosPublicarCarrusel):
     colores  = marca.get("Colores de Marca", "")
     cta      = marca.get("CTA", "Seguinos para más contenido como este")
     ig_id    = marca.get("IG Business Account ID", "")
+    numero_wa = marca.get("WhatsApp Notificación", WHATSAPP_NOTIFY_NUMBER)
     token    = _build_page_token_map().get(ig_id, META_ACCESS_TOKEN)
 
     # ── 1. Generar estructura de 5 slides + captions ─────────────────────────
@@ -820,6 +883,8 @@ Responde SOLO con este JSON sin explicaciones adicionales:
 }}"""
 
         raw = _call_gemini_text(prompt_slides, timeout=60)
+        # Eliminar caracteres de control que rompen json.loads (excepto \n \r \t)
+        raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', raw)
         match = re.search(r'\{[\s\S]*\}', raw)
         if not match:
             return {"status": "error", "paso": "generar_slides", "mensaje": "Gemini no devolvió JSON válido"}
@@ -838,6 +903,8 @@ Responde SOLO con este JSON sin explicaciones adicionales:
         prompt_img = slide.get("prompt_imagen", f"{estilo}, professional, no text in image")
         try:
             b64, mime = _generar_imagen_interna(prompt_img, max_intentos=3, espera=20)
+            # Overlay texto del slide (titulo + subtitulo)
+            b64 = _overlay_texto_slide(b64, slide.get("titulo", ""), slide.get("subtitulo", ""))
             if logo_url:
                 b64 = _overlay_logo(b64, logo_url)
             imagenes_urls.append(_subir_cloudinary(b64, "image/png"))
@@ -867,7 +934,8 @@ Responde SOLO con este JSON sin explicaciones adicionales:
         f"📌 *Pilar:* {pilar}\n"
         f"🖼️ *Slides:* {len(imagenes_validas)}/5\n"
         f"📸 Instagram: {'✅' if res_ig.get('success') else '❌ ' + res_ig.get('error', '')[:60]}\n\n"
-        f"📝 {slides_data.get('titulo_carrusel', '')}"
+        f"📝 {slides_data.get('titulo_carrusel', '')}",
+        numero=numero_wa
     )
 
     return {
