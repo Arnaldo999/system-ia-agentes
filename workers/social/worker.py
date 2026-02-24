@@ -842,8 +842,9 @@ async def meta_webhook_eventos(request: Request):
                                 params={"fields": "message", "access_token": tkn},
                                 timeout=10
                             )
-                            texto = r.json().get("message", "")
-                            print(f"[WEBHOOK] FB fetched texto={texto[:40]!r}", flush=True)
+                            rj = r.json()
+                            texto = rj.get("message", "")
+                            print(f"[WEBHOOK] FB fetch raw={str(rj)[:200]}", flush=True)
                         except Exception as fe:
                             print(f"[WEBHOOK] FB fetch error: {fe}", flush=True)
                     print(f"[WEBHOOK] FB comment id={comentario_id!r} texto={texto[:40]!r} ok={bool(texto and len(texto)>=3 and comentario_id and cliente)}", flush=True)
