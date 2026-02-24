@@ -1273,7 +1273,14 @@ async def meta_webhook_eventos(request: Request):
         page_id = entry.get("id", "")
         cliente = _get_cliente_por_page_id(page_id) if page_id else {}
 
-        print(f"[WEBHOOK] page_id={page_id!r} cliente_found={bool(cliente)}", flush=True)
+        # IDs propios para evitar responder a nuestros propios comentarios (anti-loop)
+        own_ids = set()
+        token_map = _build_page_token_map()
+        own_ids.update(token_map.keys())  # todos los page_id e ig_id conocidos
+        if page_id:
+            own_ids.add(page_id)
+
+        print(f"[WEBHOOK] page_id={page_id!r} cliente_found={bool(cliente)} own_ids_count={len(own_ids)}", flush=True)
 
         for change in entry.get("changes", []):
             field = change.get("field", "")
@@ -1284,7 +1291,14 @@ async def meta_webhook_eventos(request: Request):
             if field == "comments":
                 texto = value.get("text", "")
                 comentario_id = value.get("id", "")
-                print(f"[WEBHOOK] IG comment id={comentario_id!r} texto={texto[:40]!r} ok={bool(texto and len(texto)>=3 and comentario_id and cliente)}", flush=True)
+                from_id = value.get("from", {}).get("id", "")
+
+                # ⚠️ ANTI-LOOP: ignorar comentarios hechos por nosotros mismos
+                if from_id and from_id in own_ids:
+                    print(f"[WEBHOOK] IG SKIP own comment from={from_id!r}", flush=True)
+                    continue
+
+                print(f"[WEBHOOK] IG comment id={comentario_id!r} from={from_id!r} texto={texto[:40]!r}", flush=True)
                 if texto and len(texto) >= 3 and comentario_id and cliente:
                     result = _responder_comentario(comentario_id, texto, cliente, page_id)
                     print(f"[WEBHOOK] reply_result={result}", flush=True)
@@ -1294,8 +1308,18 @@ async def meta_webhook_eventos(request: Request):
                 if value.get("item") == "comment" and value.get("verb") == "add":
                     comentario_id = value.get("comment_id", "")
                     texto = value.get("message", "")
-                    # Obtener page token (user token no tiene permisos para leer/responder)
-                    token_map = _build_page_token_map()
+                    from_id = value.get("from", {}).get("id", "")
+
+                    # ⚠️ ANTI-LOOP: ignorar comentarios hechos por la página misma
+                    if from_id and from_id in own_ids:
+                        print(f"[WEBHOOK] FB SKIP own comment from={from_id!r}", flush=True)
+                        continue
+
+                    # También ignorar si Meta dice que fue creado por la página
+                    if value.get("created_by") == "page":
+                        print(f"[WEBHOOK] FB SKIP created_by=page", flush=True)
+                        continue
+
                     user_tkn = token_map.get(page_id, META_ACCESS_TOKEN)
                     page_tkn = _get_page_token(page_id, user_tkn)
                     # Facebook no envía el texto en el webhook — hay que buscarlo via API
@@ -1303,15 +1327,20 @@ async def meta_webhook_eventos(request: Request):
                         try:
                             r = req.get(
                                 f"https://graph.facebook.com/v22.0/{comentario_id}",
-                                params={"fields": "message", "access_token": page_tkn},
+                                params={"fields": "message,from", "access_token": page_tkn},
                                 timeout=10
                             )
                             rj = r.json()
                             texto = rj.get("message", "")
+                            # Segundo check anti-loop con el from del fetch
+                            fetched_from = rj.get("from", {}).get("id", "")
+                            if fetched_from and fetched_from in own_ids:
+                                print(f"[WEBHOOK] FB SKIP own comment (fetched) from={fetched_from!r}", flush=True)
+                                continue
                             print(f"[WEBHOOK] FB fetch raw={str(rj)[:200]}", flush=True)
                         except Exception as fe:
                             print(f"[WEBHOOK] FB fetch error: {fe}", flush=True)
-                    print(f"[WEBHOOK] FB comment id={comentario_id!r} texto={texto[:40]!r} ok={bool(texto and len(texto)>=3 and comentario_id and cliente)}", flush=True)
+                    print(f"[WEBHOOK] FB comment id={comentario_id!r} from={from_id!r} texto={texto[:40]!r}", flush=True)
                     if texto and len(texto) >= 3 and comentario_id and cliente:
                         result = _responder_comentario(comentario_id, texto, cliente, page_id, token=page_tkn)
                         print(f"[WEBHOOK] reply_result={result}", flush=True)
