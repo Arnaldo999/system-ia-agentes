@@ -773,13 +773,14 @@ def _responder_comentario(comentario_id: str, texto: str, cliente: dict, page_id
         respuesta = f"¡Gracias por tu comentario! 💡 La automatización puede transformar tu negocio. Escribinos un DM y te contamos cómo."
 
     try:
-        req.post(
+        like_resp = req.post(
             f"https://graph.facebook.com/v22.0/{comentario_id}/likes",
             params={"access_token": token},
             timeout=10
         )
-    except Exception:
-        pass  # Like opcional, no bloquea la respuesta
+        print(f"[LIKE] status={like_resp.status_code} body={like_resp.text[:200]}", flush=True)
+    except Exception as e:
+        print(f"[LIKE] ERROR: {e}", flush=True)
 
     try:
         reply = req.post(
