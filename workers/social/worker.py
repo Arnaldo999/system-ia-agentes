@@ -539,13 +539,21 @@ def _notificar_whatsapp(mensaje: str) -> dict:
 
 
 def _limpiar_texto_post(texto: str) -> str:
-    """Elimina encabezados numerados y líneas introductorias que Gemini añade."""
+    """Elimina encabezados, markdown y elementos que no se ven bien en redes sociales."""
     # Quitar intro tipo "Aquí tienes los 3 posts..."
     texto = re.sub(r'^.*(Aquí tienes|Here are|posts únicos|separados).*\n+', '', texto, flags=re.IGNORECASE)
     # Quitar separadores markdown ---
     texto = re.sub(r'^-{3,}\s*\n', '', texto, flags=re.MULTILINE)
     # Quitar encabezados tipo "### **1. INSTAGRAM**", "**1. INSTAGRAM**", "1. INSTAGRAM:", etc.
     texto = re.sub(r'^#{0,6}\s*\*{0,2}\s*\d+\.\s*\*{0,2}\s*[A-ZÁÉÍÓÚÑ]+\s*\*{0,2}:?\*{0,2}\s*\n+', '', texto, flags=re.MULTILINE)
+    # Quitar negritas **texto** → texto
+    texto = re.sub(r'\*\*(.+?)\*\*', r'\1', texto, flags=re.DOTALL)
+    # Quitar viñetas markdown (* al inicio de línea)
+    texto = re.sub(r'^\*\s+', '', texto, flags=re.MULTILINE)
+    # Quitar itálicas sueltas *texto* → texto
+    texto = re.sub(r'\*([^\n*]+?)\*', r'\1', texto)
+    # Quitar negritas con guión bajo __texto__ → texto
+    texto = re.sub(r'__(.+?)__', r'\1', texto, flags=re.DOTALL)
     return texto.strip()
 
 
@@ -590,6 +598,10 @@ BRANDBOOK:
 TEMA DEL DÍA: {tema}
 ÁNGULO: {angulo}
 IDEA CENTRAL: {idea_central}
+
+FORMATO (OBLIGATORIO):
+- PROHIBIDO usar markdown: sin **, sin *, sin #, sin __, sin guiones como viñetas. Solo texto plano.
+- Las viñetas o listas se escriben con emojis al inicio de línea, no con asteriscos.
 
 FILOSOFÍA DE CONTENIDO (OBLIGATORIA):
 - SIEMPRE aportar valor real y accionable: el lector debe llevarse algo útil.
