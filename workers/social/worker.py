@@ -304,6 +304,11 @@ def _generar_imagen_interna(prompt: str, max_intentos: int = 4, espera: int = 25
                 json={"contents": [{"parts": [{"text": prompt_completo}]}]},
                 timeout=90
             )
+            if resp.status_code == 429:
+                ultimo_error = f"Intento {intento}: 429 Too Many Requests"
+                if intento < max_intentos:
+                    time.sleep(60)  # Rate limit: esperar 60s antes de reintentar
+                continue
             resp.raise_for_status()
             data = resp.json()
             debug_resp = json.dumps(data)[:500]
@@ -464,8 +469,8 @@ def _limpiar_texto_post(texto: str) -> str:
     texto = re.sub(r'^.*(Aquí tienes|Here are|posts únicos|separados).*\n+', '', texto, flags=re.IGNORECASE)
     # Quitar separadores markdown ---
     texto = re.sub(r'^-{3,}\s*\n', '', texto, flags=re.MULTILINE)
-    # Quitar encabezados tipo "**1. INSTAGRAM**", "1. **INSTAGRAM:**", "**2. LINKEDIN**" etc.
-    texto = re.sub(r'^\*{0,2}\s*\d+\.\s*\*{0,2}\s*[A-ZÁÉÍÓÚÑ]+\s*\*{0,2}:?\*{0,2}\s*\n+', '', texto, flags=re.MULTILINE)
+    # Quitar encabezados tipo "### **1. INSTAGRAM**", "**1. INSTAGRAM**", "1. INSTAGRAM:", etc.
+    texto = re.sub(r'^#{0,6}\s*\*{0,2}\s*\d+\.\s*\*{0,2}\s*[A-ZÁÉÍÓÚÑ]+\s*\*{0,2}:?\*{0,2}\s*\n+', '', texto, flags=re.MULTILINE)
     return texto.strip()
 
 
