@@ -816,6 +816,7 @@ async def meta_webhook_eventos(request: Request):
         for change in entry.get("changes", []):
             field = change.get("field", "")
             value = change.get("value", {})
+            print(f"[WEBHOOK] field={field!r} item={value.get('item')!r} verb={value.get('verb')!r}", flush=True)
 
             # Instagram comment
             if field == "comments":
