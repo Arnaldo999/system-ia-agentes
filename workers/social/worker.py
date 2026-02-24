@@ -392,15 +392,17 @@ def _extraer_colores_marca(colores_str: str):
 
 
 def _crear_slide_carrusel(base64_img: str, titulo: str, subtitulo: str,
-                           color_fondo: str, color_acento: str,
-                           logo_url: str = "") -> str:
+                           color_acento: str,
+                           logo_url: str = "", numero_slide: int = 0) -> str:
     """
-    Diseña slide de carrusel Instagram con estilo de marca:
-    - Fondo con color oscuro de marca
-    - Imagen Gemini en zona superior con padding (crop to fill)
-    - Línea separadora del color acento
-    - Título y subtítulo centrados en zona inferior (sin markdown)
-    - Logo en esquina inferior derecha
+    Diseña slide de carrusel estilo profesional (referencia: david_ai_pro):
+    - Fondo blanco/claro en zona de texto (arriba ~42%)
+    - Barra fina de color acento en el tope
+    - Número de slide en color acento (esquina superior izquierda)
+    - Título grande y bold centrado
+    - Subtítulo más chico en gris
+    - Logo pequeño en zona de texto (esquina superior derecha)
+    - Imagen Gemini abajo (58%, crop to fill, bordes redondeados sutiles)
     """
     try:
         from PIL import ImageDraw
@@ -409,43 +411,52 @@ def _crear_slide_carrusel(base64_img: str, titulo: str, subtitulo: str,
         subtitulo = _limpiar_markdown(subtitulo)
 
         SIZE    = 1080
-        PADDING = 40
+        PADDING = 48
 
         def hex_rgb(h):
             h = h.lstrip('#')
             return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
-        bg_rgb  = hex_rgb(color_fondo)
-        acc_rgb = hex_rgb(color_acento)
+        acc_rgb  = hex_rgb(color_acento)
+        # Zona texto: blanco puro para máximo contraste y legibilidad
+        TEXT_BG  = (255, 255, 255)
+        TITLE_C  = (15, 15, 25)       # casi negro
+        SUB_C    = (90, 90, 110)      # gris medio
+        NUM_C    = acc_rgb            # color acento para el número
 
-        canvas = Image.new("RGB", (SIZE, SIZE), bg_rgb)
+        # ── Canvas blanco ─────────────────────────────────────────────────────
+        canvas = Image.new("RGB", (SIZE, SIZE), TEXT_BG)
         draw   = ImageDraw.Draw(canvas)
 
-        # ── Imagen Gemini — zona superior (crop to fill) ──────────────────────
-        IMG_H = int(SIZE * 0.55)
-        IMG_W = SIZE - PADDING * 2
+        # ── Barra de acento en el tope (8px) ──────────────────────────────────
+        draw.rectangle([(0, 0), (SIZE, 8)], fill=acc_rgb)
 
-        gemini = Image.open(BytesIO(base64.b64decode(base64_img))).convert("RGB")
-        scale  = max(IMG_W / gemini.width, IMG_H / gemini.height)
-        nw     = int(gemini.width * scale)
-        nh     = int(gemini.height * scale)
-        gemini = gemini.resize((nw, nh), Image.LANCZOS)
-        left   = (nw - IMG_W) // 2
-        top    = (nh - IMG_H) // 2
-        gemini = gemini.crop((left, top, left + IMG_W, top + IMG_H))
-        canvas.paste(gemini, (PADDING, PADDING))
+        # ── Número de slide (esquina sup. izquierda) ──────────────────────────
+        font_num = _get_font(52)
+        if numero_slide > 0:
+            num_txt = f"{numero_slide}."
+            draw.text((PADDING, 24), num_txt, font=font_num, fill=NUM_C)
 
-        # ── Línea separadora de color acento ─────────────────────────────────
-        sep_y = PADDING + IMG_H + 16
-        draw.rectangle([(PADDING, sep_y), (SIZE - PADDING, sep_y + 5)], fill=acc_rgb)
+        # ── Logo pequeño (esquina sup. derecha) ───────────────────────────────
+        logo_cargado = None
+        if logo_url:
+            try:
+                logo_resp = req.get(logo_url, timeout=15)
+                logo_resp.raise_for_status()
+                logo_cargado = Image.open(BytesIO(logo_resp.content)).convert("RGBA")
+                logo_cargado.thumbnail((80, 80), Image.LANCZOS)
+                lx = SIZE - logo_cargado.width - PADDING
+                ly = 20
+                canvas.paste(logo_cargado, (lx, ly), logo_cargado)
+            except Exception:
+                pass
 
-        # ── Texto centrado ────────────────────────────────────────────────────
-        font_tit = _get_font(58)
-        font_sub = _get_font(32)
-        TEXT_MAX = SIZE - PADDING * 4
-        text_y   = sep_y + 22
+        # ── Texto: título y subtítulo ─────────────────────────────────────────
+        TEXT_MAX  = SIZE - PADDING * 2
+        font_tit  = _get_font(80)
+        font_sub  = _get_font(44)
 
-        def draw_wrapped(text, font, color, y, max_lines=2):
+        def draw_wrapped(text, font, color, y, max_lines=3, align="center"):
             words = text.split()
             lines, cur = [], ""
             for w in words:
@@ -461,27 +472,37 @@ def _crear_slide_carrusel(base64_img: str, titulo: str, subtitulo: str,
                 lines.append(cur)
             for line in lines[:max_lines]:
                 bx = draw.textbbox((0, 0), line, font=font)
-                x = (SIZE - (bx[2] - bx[0])) // 2
+                lw = bx[2] - bx[0]
+                x  = (SIZE - lw) // 2 if align == "center" else PADDING
                 draw.text((x, y), line, font=font, fill=color)
-                y += bx[3] - bx[1] + 10
+                y += bx[3] - bx[1] + 12
             return y
 
-        text_y = draw_wrapped(titulo[:80], font_tit, (255, 255, 255), text_y, max_lines=2)
-        if subtitulo:
-            draw_wrapped(subtitulo[:100], font_sub, (200, 200, 220), text_y + 8, max_lines=2)
+        # Centrar verticalmente el bloque de texto en el 42% superior
+        TEXT_ZONE_H = int(SIZE * 0.42)
+        text_y = 100  # debajo del número/logo
 
-        # ── Logo en esquina inferior derecha ──────────────────────────────────
-        if logo_url:
-            try:
-                logo_resp = req.get(logo_url, timeout=15)
-                logo_resp.raise_for_status()
-                logo = Image.open(BytesIO(logo_resp.content)).convert("RGBA")
-                logo.thumbnail((90, 90), Image.LANCZOS)
-                lx = SIZE - logo.width - PADDING
-                ly = SIZE - logo.height - PADDING
-                canvas.paste(logo, (lx, ly), logo)
-            except Exception:
-                pass
+        text_y = draw_wrapped(titulo[:80], font_tit, TITLE_C, text_y, max_lines=3)
+        if subtitulo:
+            draw_wrapped(subtitulo[:120], font_sub, SUB_C, text_y + 14, max_lines=2)
+
+        # ── Imagen Gemini — zona inferior (58%, crop to fill) ─────────────────
+        IMG_Y = TEXT_ZONE_H
+        IMG_H = SIZE - IMG_Y
+        IMG_W = SIZE
+
+        gemini = Image.open(BytesIO(base64.b64decode(base64_img))).convert("RGB")
+        scale  = max(IMG_W / gemini.width, IMG_H / gemini.height)
+        nw     = int(gemini.width * scale)
+        nh     = int(gemini.height * scale)
+        gemini = gemini.resize((nw, nh), Image.LANCZOS)
+        left   = (nw - IMG_W) // 2
+        top    = (nh - IMG_H) // 2
+        gemini = gemini.crop((left, top, left + IMG_W, top + IMG_H))
+        canvas.paste(gemini, (0, IMG_Y))
+
+        # ── Línea divisoria sutil entre texto e imagen ────────────────────────
+        draw.rectangle([(0, IMG_Y - 3), (SIZE, IMG_Y)], fill=acc_rgb)
 
         out = BytesIO()
         canvas.save(out, format="PNG")
@@ -991,14 +1012,14 @@ Responde SOLO con este JSON sin explicaciones adicionales:
         prompt_img = slide.get("prompt_imagen", f"{estilo}, professional, no text in image")
         try:
             b64, mime = _generar_imagen_interna(prompt_img, max_intentos=3, espera=20)
-            # Diseño completo: fondo de marca + imagen + texto limpio + logo
+            # Diseño completo: fondo blanco + texto grande + imagen abajo + logo
             b64 = _crear_slide_carrusel(
                 b64,
                 slide.get("titulo", ""),
                 slide.get("subtitulo", ""),
-                color_fondo,
                 color_acento,
-                logo_url
+                logo_url,
+                numero_slide=slide.get("numero", 0)
             )
             imagenes_urls.append(_subir_cloudinary(b64, "image/png"))
         except Exception as e:
