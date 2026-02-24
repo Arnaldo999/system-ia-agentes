@@ -727,6 +727,19 @@ def _build_page_token_map() -> dict:
     return mapa
 
 
+def _get_page_token(page_id: str, user_token: str) -> str:
+    """Intercambia user token por page access token de Facebook."""
+    try:
+        resp = req.get(
+            f"https://graph.facebook.com/v22.0/{page_id}",
+            params={"fields": "access_token", "access_token": user_token},
+            timeout=10
+        )
+        return resp.json().get("access_token", user_token)
+    except Exception:
+        return user_token
+
+
 def _get_cliente_por_page_id(page_id: str) -> dict:
     """Busca el cliente en Airtable por IG Business Account ID o Facebook Page ID."""
     try:
@@ -742,14 +755,14 @@ def _get_cliente_por_page_id(page_id: str) -> dict:
         return {}
 
 
-def _responder_comentario(comentario_id: str, texto: str, cliente: dict, page_id: str = "") -> dict:
+def _responder_comentario(comentario_id: str, texto: str, cliente: dict, page_id: str = "", token: str = "") -> dict:
     """Genera respuesta con Gemini y la publica como reply al comentario."""
     nombre   = cliente.get("Nombre Comercial", "la agencia")
     tono     = cliente.get("Tono de Voz", "cercano y profesional")
     servicio = cliente.get("Servicio Principal", "automatización con IA")
-    # Token desde env vars (por page_id), no desde Airtable
-    token_map = _build_page_token_map()
-    token = token_map.get(page_id, META_ACCESS_TOKEN)
+    if not token:
+        token_map = _build_page_token_map()
+        token = token_map.get(page_id, META_ACCESS_TOKEN)
 
     prompt = (
         f"Sos el community manager de {nombre}. "
@@ -832,14 +845,16 @@ async def meta_webhook_eventos(request: Request):
                 if value.get("item") == "comment" and value.get("verb") == "add":
                     comentario_id = value.get("comment_id", "")
                     texto = value.get("message", "")
+                    # Obtener page token (user token no tiene permisos para leer/responder)
+                    token_map = _build_page_token_map()
+                    user_tkn = token_map.get(page_id, META_ACCESS_TOKEN)
+                    page_tkn = _get_page_token(page_id, user_tkn)
                     # Facebook no envía el texto en el webhook — hay que buscarlo via API
                     if not texto and comentario_id:
                         try:
-                            token_map = _build_page_token_map()
-                            tkn = token_map.get(page_id, META_ACCESS_TOKEN)
                             r = req.get(
                                 f"https://graph.facebook.com/v22.0/{comentario_id}",
-                                params={"fields": "message", "access_token": tkn},
+                                params={"fields": "message", "access_token": page_tkn},
                                 timeout=10
                             )
                             rj = r.json()
@@ -849,7 +864,7 @@ async def meta_webhook_eventos(request: Request):
                             print(f"[WEBHOOK] FB fetch error: {fe}", flush=True)
                     print(f"[WEBHOOK] FB comment id={comentario_id!r} texto={texto[:40]!r} ok={bool(texto and len(texto)>=3 and comentario_id and cliente)}", flush=True)
                     if texto and len(texto) >= 3 and comentario_id and cliente:
-                        result = _responder_comentario(comentario_id, texto, cliente, page_id)
+                        result = _responder_comentario(comentario_id, texto, cliente, page_id, token=page_tkn)
                         print(f"[WEBHOOK] reply_result={result}", flush=True)
 
     except Exception as e:
