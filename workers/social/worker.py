@@ -786,11 +786,14 @@ def _responder_comentario(comentario_id: str, texto: str, cliente: dict, page_id
         respuesta = f"¡Gracias por tu comentario! 💡 La automatización puede transformar tu negocio. Escribinos un DM y te contamos cómo."
 
     try:
+        # Facebook usa /{comment_id}/comments, Instagram usa /{comment_id}/replies
+        endpoint = "comments" if "_" in comentario_id else "replies"
         reply = req.post(
-            f"https://graph.facebook.com/v22.0/{comentario_id}/replies",
+            f"https://graph.facebook.com/v22.0/{comentario_id}/{endpoint}",
             params={"message": respuesta, "access_token": token},
             timeout=15
         )
+        print(f"[REPLY] endpoint={endpoint} status={reply.status_code} body={reply.text[:200]}", flush=True)
         return {"success": reply.ok, "respuesta": respuesta}
     except Exception as e:
         return {"success": False, "error": str(e)}
