@@ -361,47 +361,134 @@ def _get_font(size: int):
     return ImageFont.load_default()
 
 
-def _overlay_texto_slide(base64_img: str, titulo: str, subtitulo: str = "") -> str:
+def _limpiar_markdown(texto: str) -> str:
+    """Elimina asteriscos, numerales y otros símbolos markdown del texto."""
+    texto = re.sub(r'\*+', '', texto)
+    texto = re.sub(r'#+\s*', '', texto)
+    texto = re.sub(r'_+', '', texto)
+    texto = re.sub(r'`+', '', texto)
+    return texto.strip()
+
+
+def _extraer_colores_marca(colores_str: str):
     """
-    Superpone titulo y subtitulo en la zona inferior de la imagen.
-    Fondo semitransparente negro para garantizar legibilidad.
+    Extrae colores hex del string de marca.
+    Retorna (color_fondo, color_acento): el más oscuro como fondo,
+    el más claro/vibrante como acento.
+    """
+    hexes = re.findall(r'#[0-9A-Fa-f]{6}', colores_str or "")
+
+    def lum(h):
+        h = h.lstrip('#')
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        return 0.299 * r + 0.587 * g + 0.114 * b
+
+    if not hexes:
+        return "#0A0E1A", "#0099FF"
+    ordered = sorted(hexes, key=lum)
+    fondo  = ordered[0]
+    acento = ordered[-1] if len(ordered) > 1 else "#FFFFFF"
+    return fondo, acento
+
+
+def _crear_slide_carrusel(base64_img: str, titulo: str, subtitulo: str,
+                           color_fondo: str, color_acento: str,
+                           logo_url: str = "") -> str:
+    """
+    Diseña slide de carrusel Instagram con estilo de marca:
+    - Fondo con color oscuro de marca
+    - Imagen Gemini en zona superior con padding (crop to fill)
+    - Línea separadora del color acento
+    - Título y subtítulo centrados en zona inferior (sin markdown)
+    - Logo en esquina inferior derecha
     """
     try:
-        from PIL import ImageDraw, ImageFont
-        img = Image.open(BytesIO(base64.b64decode(base64_img))).convert("RGBA")
-        w, h = img.size
+        from PIL import ImageDraw
 
-        overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-        draw = ImageDraw.Draw(overlay)
+        titulo    = _limpiar_markdown(titulo)
+        subtitulo = _limpiar_markdown(subtitulo)
 
-        # Zona de texto: 30% inferior
-        zona_h = int(h * 0.32)
-        draw.rectangle([(0, h - zona_h), (w, h)], fill=(0, 0, 0, 165))
+        SIZE    = 1080
+        PADDING = 40
 
-        font_titulo = _get_font(max(36, w // 18))
-        font_sub    = _get_font(max(24, w // 28))
+        def hex_rgb(h):
+            h = h.lstrip('#')
+            return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
-        # Titulo centrado
-        titulo_corto = titulo[:60]
-        bbox = draw.textbbox((0, 0), titulo_corto, font=font_titulo)
-        txt_w = bbox[2] - bbox[0]
-        y_titulo = h - zona_h + int(zona_h * 0.18)
-        draw.text(((w - txt_w) // 2, y_titulo), titulo_corto, font=font_titulo, fill=(255, 255, 255, 255))
+        bg_rgb  = hex_rgb(color_fondo)
+        acc_rgb = hex_rgb(color_acento)
 
-        # Subtitulo centrado (si existe)
+        canvas = Image.new("RGB", (SIZE, SIZE), bg_rgb)
+        draw   = ImageDraw.Draw(canvas)
+
+        # ── Imagen Gemini — zona superior (crop to fill) ──────────────────────
+        IMG_H = int(SIZE * 0.55)
+        IMG_W = SIZE - PADDING * 2
+
+        gemini = Image.open(BytesIO(base64.b64decode(base64_img))).convert("RGB")
+        scale  = max(IMG_W / gemini.width, IMG_H / gemini.height)
+        nw     = int(gemini.width * scale)
+        nh     = int(gemini.height * scale)
+        gemini = gemini.resize((nw, nh), Image.LANCZOS)
+        left   = (nw - IMG_W) // 2
+        top    = (nh - IMG_H) // 2
+        gemini = gemini.crop((left, top, left + IMG_W, top + IMG_H))
+        canvas.paste(gemini, (PADDING, PADDING))
+
+        # ── Línea separadora de color acento ─────────────────────────────────
+        sep_y = PADDING + IMG_H + 16
+        draw.rectangle([(PADDING, sep_y), (SIZE - PADDING, sep_y + 5)], fill=acc_rgb)
+
+        # ── Texto centrado ────────────────────────────────────────────────────
+        font_tit = _get_font(58)
+        font_sub = _get_font(32)
+        TEXT_MAX = SIZE - PADDING * 4
+        text_y   = sep_y + 22
+
+        def draw_wrapped(text, font, color, y, max_lines=2):
+            words = text.split()
+            lines, cur = [], ""
+            for w in words:
+                test = f"{cur} {w}".strip()
+                bx = draw.textbbox((0, 0), test, font=font)
+                if bx[2] - bx[0] <= TEXT_MAX:
+                    cur = test
+                else:
+                    if cur:
+                        lines.append(cur)
+                    cur = w
+            if cur:
+                lines.append(cur)
+            for line in lines[:max_lines]:
+                bx = draw.textbbox((0, 0), line, font=font)
+                x = (SIZE - (bx[2] - bx[0])) // 2
+                draw.text((x, y), line, font=font, fill=color)
+                y += bx[3] - bx[1] + 10
+            return y
+
+        text_y = draw_wrapped(titulo[:80], font_tit, (255, 255, 255), text_y, max_lines=2)
         if subtitulo:
-            sub_corto = subtitulo[:80]
-            bbox2 = draw.textbbox((0, 0), sub_corto, font=font_sub)
-            txt_w2 = bbox2[2] - bbox2[0]
-            y_sub = y_titulo + (bbox[3] - bbox[1]) + 10
-            draw.text(((w - txt_w2) // 2, y_sub), sub_corto, font=font_sub, fill=(220, 220, 220, 220))
+            draw_wrapped(subtitulo[:100], font_sub, (200, 200, 220), text_y + 8, max_lines=2)
 
-        img = Image.alpha_composite(img, overlay)
-        output = BytesIO()
-        img.convert("RGB").save(output, format="PNG")
-        return base64.b64encode(output.getvalue()).decode()
+        # ── Logo en esquina inferior derecha ──────────────────────────────────
+        if logo_url:
+            try:
+                logo_resp = req.get(logo_url, timeout=15)
+                logo_resp.raise_for_status()
+                logo = Image.open(BytesIO(logo_resp.content)).convert("RGBA")
+                logo.thumbnail((90, 90), Image.LANCZOS)
+                lx = SIZE - logo.width - PADDING
+                ly = SIZE - logo.height - PADDING
+                canvas.paste(logo, (lx, ly), logo)
+            except Exception:
+                pass
+
+        out = BytesIO()
+        canvas.save(out, format="PNG")
+        return base64.b64encode(out.getvalue()).decode()
+
     except Exception:
-        return base64_img  # fallback: imagen sin texto si algo falla
+        return base64_img  # fallback sin diseño
 
 
 def _overlay_logo(base64_img: str, logo_url: str) -> str:
@@ -892,9 +979,10 @@ Responde SOLO con este JSON sin explicaciones adicionales:
     except Exception as e:
         return {"status": "error", "paso": "generar_slides", "mensaje": str(e)}
 
-    # ── 2. Generar imagen por slide → overlay logo → Cloudinary ──────────────
+    # ── 2. Generar imagen por slide → diseño de marca → Cloudinary ──────────
     logo_field = marca.get("Logo", [])
     logo_url = logo_field[0].get("url", "") if isinstance(logo_field, list) and logo_field else ""
+    color_fondo, color_acento = _extraer_colores_marca(colores)
 
     imagenes_urls = []
     errores_img = []
@@ -903,10 +991,15 @@ Responde SOLO con este JSON sin explicaciones adicionales:
         prompt_img = slide.get("prompt_imagen", f"{estilo}, professional, no text in image")
         try:
             b64, mime = _generar_imagen_interna(prompt_img, max_intentos=3, espera=20)
-            # Overlay texto del slide (titulo + subtitulo)
-            b64 = _overlay_texto_slide(b64, slide.get("titulo", ""), slide.get("subtitulo", ""))
-            if logo_url:
-                b64 = _overlay_logo(b64, logo_url)
+            # Diseño completo: fondo de marca + imagen + texto limpio + logo
+            b64 = _crear_slide_carrusel(
+                b64,
+                slide.get("titulo", ""),
+                slide.get("subtitulo", ""),
+                color_fondo,
+                color_acento,
+                logo_url
+            )
             imagenes_urls.append(_subir_cloudinary(b64, "image/png"))
         except Exception as e:
             errores_img.append(f"Slide {slide.get('numero', '?')}: {str(e)}")
