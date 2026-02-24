@@ -7,7 +7,8 @@ import requests as req
 from io import BytesIO
 from datetime import datetime
 from PIL import Image
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from typing import Optional, List
 
@@ -693,3 +694,108 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         "notificacion_wa": notif,
         "errores": errores
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# META WEBHOOK — Verificación + Respuesta a comentarios
+# ─────────────────────────────────────────────────────────────────────────────
+
+META_WEBHOOK_VERIFY_TOKEN = os.environ.get("META_WEBHOOK_VERIFY_TOKEN", "SystemIA2026")
+AIRTABLE_BASE_ID  = os.environ.get("AIRTABLE_BASE_ID", "appejn9ep8JMLJmPG")
+AIRTABLE_TABLE_ID = os.environ.get("AIRTABLE_TABLE_ID", "tblgFvYebZcJaYM07")
+AIRTABLE_TOKEN    = os.environ.get("AIRTABLE_TOKEN", "")
+
+
+def _get_cliente_por_page_id(page_id: str) -> dict:
+    """Busca el cliente en Airtable por IG Business Account ID o Facebook Page ID."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ID}"
+        formula = f"OR({{IG Business Account ID}}='{page_id}',{{Facebook Page ID}}='{page_id}')"
+        resp = req.get(url, headers={"Authorization": f"Bearer {AIRTABLE_TOKEN}"},
+                       params={"filterByFormula": formula}, timeout=10)
+        records = resp.json().get("records", [])
+        return records[0].get("fields", {}) if records else {}
+    except Exception:
+        return {}
+
+
+def _responder_comentario(comentario_id: str, texto: str, cliente: dict) -> dict:
+    """Genera respuesta con Gemini y la publica como reply al comentario."""
+    nombre  = cliente.get("Nombre Comercial", "la agencia")
+    tono    = cliente.get("Tono de Voz", "cercano y profesional")
+    servicio = cliente.get("Servicio Principal", "automatización con IA")
+    token   = cliente.get("Meta Access Token", META_ACCESS_TOKEN)
+
+    prompt = (
+        f"Sos el community manager de {nombre}. "
+        f"Alguien comentó en tu post: \"{texto}\"\n\n"
+        f"Escribí UNA respuesta (máximo 3 líneas) en tono {tono} que:\n"
+        f"1. Agradezca brevemente\n"
+        f"2. Dé UN tip accionable relacionado al negocio ({servicio})\n"
+        f"3. Invite a escribir un DM para más info\n\n"
+        f"USA emojis naturales. NO uses asteriscos ni markdown. Solo texto plano."
+    )
+
+    try:
+        gemini_resp = req.post(
+            GEMINI_TEXT_URL,
+            params={"key": GEMINI_API_KEY},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=30
+        )
+        respuesta = gemini_resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except Exception:
+        respuesta = f"¡Gracias por tu comentario! 💡 La automatización puede transformar tu negocio. Escribinos un DM y te contamos cómo."
+
+    try:
+        reply = req.post(
+            f"https://graph.facebook.com/v22.0/{comentario_id}/replies",
+            params={"message": respuesta, "access_token": token},
+            timeout=15
+        )
+        return {"success": reply.ok, "respuesta": respuesta}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/meta-webhook")
+async def meta_webhook_verificar(request: Request):
+    """Verificación del webhook de Meta."""
+    params = dict(request.query_params)
+    if params.get("hub.verify_token") == META_WEBHOOK_VERIFY_TOKEN:
+        return PlainTextResponse(params.get("hub.challenge", ""))
+    return PlainTextResponse("Token inválido", status_code=403)
+
+
+@router.post("/meta-webhook")
+async def meta_webhook_eventos(request: Request):
+    """Recibe eventos de comentarios de Instagram y Facebook."""
+    try:
+        body = await request.json()
+        entry = (body.get("entry") or [{}])[0]
+        page_id = entry.get("id", "")
+        cliente = _get_cliente_por_page_id(page_id) if page_id else {}
+
+        for change in entry.get("changes", []):
+            field = change.get("field", "")
+            value = change.get("value", {})
+
+            # Instagram comment
+            if field == "comments":
+                texto = value.get("text", "")
+                comentario_id = value.get("id", "")
+                if texto and len(texto) >= 3 and comentario_id and cliente:
+                    _responder_comentario(comentario_id, texto, cliente)
+
+            # Facebook page comment
+            elif field == "feed":
+                if value.get("item") == "comment" and value.get("verb") == "add":
+                    texto = value.get("message", "")
+                    comentario_id = value.get("comment_id", "")
+                    if texto and len(texto) >= 3 and comentario_id and cliente:
+                        _responder_comentario(comentario_id, texto, cliente)
+
+    except Exception:
+        pass  # Meta exige siempre respuesta 200
+
+    return PlainTextResponse("EVENT_RECEIVED", status_code=200)
