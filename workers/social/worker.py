@@ -2,7 +2,9 @@ import os
 import re
 import json
 import time
+import base64
 import requests as req
+from io import BytesIO
 from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -325,17 +327,17 @@ def _generar_imagen_interna(prompt: str, max_intentos: int = 4, espera: int = 25
 
 
 def _subir_cloudinary(base64_img: str, mime_type: str) -> str:
-    """Sube imagen base64 a Cloudinary y retorna secure_url."""
+    """Sube imagen a Cloudinary via multipart y retorna secure_url."""
+    img_bytes = base64.b64decode(base64_img)
+    ext = mime_type.split("/")[-1]
     resp = req.post(
         f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
-        data={
-            "file": f"data:{mime_type};base64,{base64_img}",
-            "upload_preset": CLOUDINARY_UPLOAD_PRESET,
-            "folder": "system-ia-posts"
-        },
+        data={"upload_preset": CLOUDINARY_UPLOAD_PRESET},
+        files={"file": (f"post.{ext}", BytesIO(img_bytes), mime_type)},
         timeout=60
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise Exception(f"Cloudinary {resp.status_code}: {resp.text[:300]}")
     return resp.json()["secure_url"]
 
 
