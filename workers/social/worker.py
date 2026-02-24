@@ -829,10 +829,23 @@ async def meta_webhook_eventos(request: Request):
 
             # Facebook page comment
             elif field == "feed":
-                print(f"[WEBHOOK] FB value keys={list(value.keys())}", flush=True)
                 if value.get("item") == "comment" and value.get("verb") == "add":
-                    texto = value.get("message", "") or value.get("body", "") or value.get("text", "")
                     comentario_id = value.get("comment_id", "")
+                    texto = value.get("message", "")
+                    # Facebook no envía el texto en el webhook — hay que buscarlo via API
+                    if not texto and comentario_id:
+                        try:
+                            token_map = _build_page_token_map()
+                            tkn = token_map.get(page_id, META_ACCESS_TOKEN)
+                            r = req.get(
+                                f"https://graph.facebook.com/v22.0/{comentario_id}",
+                                params={"fields": "message", "access_token": tkn},
+                                timeout=10
+                            )
+                            texto = r.json().get("message", "")
+                            print(f"[WEBHOOK] FB fetched texto={texto[:40]!r}", flush=True)
+                        except Exception as fe:
+                            print(f"[WEBHOOK] FB fetch error: {fe}", flush=True)
                     print(f"[WEBHOOK] FB comment id={comentario_id!r} texto={texto[:40]!r} ok={bool(texto and len(texto)>=3 and comentario_id and cliente)}", flush=True)
                     if texto and len(texto) >= 3 and comentario_id and cliente:
                         result = _responder_comentario(comentario_id, texto, cliente, page_id)
