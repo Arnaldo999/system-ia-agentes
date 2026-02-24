@@ -697,6 +697,195 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# POST /social/publicar-carrusel — 5 slides IG (Lunes a Sábado)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_PILARES_CARRUSEL = {
+    0: {"pilar": "Consejos prácticos",      "instruccion": "Comparte 4 consejos prácticos y accionables. Slide 1: título impactante del tema. Slides 2-4: un consejo específico por slide. Slide 5: CTA."},
+    1: {"pilar": "Casos de éxito",          "instruccion": "Cuenta una historia de transformación (sin nombres reales). Slide 1: el problema inicial. Slide 2: la solución aplicada. Slide 3: los resultados obtenidos. Slide 4: la lección clave. Slide 5: CTA."},
+    2: {"pilar": "Tendencias del sector",   "instruccion": "Comparte 4 tendencias actuales relevantes. Slide 1: título con la tendencia principal. Slides 2-4: una tendencia por slide con su impacto. Slide 5: CTA."},
+    3: {"pilar": "Motivación / mentalidad", "instruccion": "Inspira al emprendedor. Slide 1: frase o pregunta impactante. Slides 2-4: reflexiones que profundizan el tema. Slide 5: CTA."},
+    4: {"pilar": "Servicios (sutil)",       "instruccion": "Muestra el valor sin vender directamente. Slide 1: el problema común que sufre el público. Slides 2-4: cómo se resuelve y qué cambia (sin precios ni llamados a comprar). Slide 5: CTA sutil."},
+    5: {"pilar": "Pregunta a la comunidad", "instruccion": "Genera conversación. Slide 1: pregunta que invite a reflexionar. Slides 2-4: perspectivas o datos relacionados. Slide 5: invita a comentar."},
+}
+
+
+def _get_pilar_del_dia() -> dict:
+    """Retorna el pilar del carrusel según día de la semana (0=Lunes)."""
+    return _PILARES_CARRUSEL.get(datetime.now().weekday(), _PILARES_CARRUSEL[0])
+
+
+def _publicar_carrusel_instagram(imagenes_urls: list, caption: str, ig_id: str, token: str) -> dict:
+    """
+    Publica carrusel en Instagram.
+    Paso 1: container por cada imagen (is_carousel_item=True)
+    Paso 2: container CAROUSEL con los IDs
+    Paso 3: media_publish
+    """
+    try:
+        media_ids = []
+        for url in imagenes_urls:
+            r = req.post(
+                f"https://graph.facebook.com/v22.0/{ig_id}/media",
+                params={"access_token": token},
+                json={"image_url": url, "is_carousel_item": True},
+                timeout=30
+            )
+            r.raise_for_status()
+            media_ids.append(r.json()["id"])
+            time.sleep(2)
+
+        r2 = req.post(
+            f"https://graph.facebook.com/v22.0/{ig_id}/media",
+            params={"access_token": token},
+            json={"media_type": "CAROUSEL", "children": media_ids, "caption": caption},
+            timeout=30
+        )
+        r2.raise_for_status()
+        carousel_id = r2.json()["id"]
+
+        time.sleep(8)
+
+        r3 = req.post(
+            f"https://graph.facebook.com/v22.0/{ig_id}/media_publish",
+            params={"access_token": token},
+            json={"creation_id": carousel_id},
+            timeout=30
+        )
+        r3.raise_for_status()
+        return {"success": True, "post_id": r3.json().get("id", "")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class DatosPublicarCarrusel(BaseModel):
+    datos_marca: dict  # JSON plano del registro de Airtable
+
+
+@router.post("/publicar-carrusel")
+async def publicar_carrusel(entrada: DatosPublicarCarrusel):
+    """
+    Genera y publica carrusel de 5 slides en Instagram.
+    Pilares rotan Lunes-Sábado automáticamente por día de semana.
+    Cada slide: imagen Gemini + logo overlay + texto corto.
+    """
+    if not GEMINI_API_KEY:
+        return {"status": "error", "paso": "init", "mensaje": "Falta GEMINI_API_KEY"}
+
+    marca = entrada.datos_marca
+    pilar_info = _get_pilar_del_dia()
+    pilar = pilar_info["pilar"]
+    instruccion = pilar_info["instruccion"]
+
+    nombre   = marca.get("Nombre Comercial", "la marca")
+    industria = marca.get("Industria", "negocios")
+    publico  = marca.get("Público Objetivo", "emprendedores")
+    tono     = marca.get("Tono de Voz", "cercano y profesional")
+    reglas   = marca.get("Reglas Estrictas", "")
+    estilo   = marca.get("Estilo Visual (Prompt DALL-E/Gemini)", "modern flat design colorful professional")
+    colores  = marca.get("Colores de Marca", "")
+    cta      = marca.get("CTA", "Seguinos para más contenido como este")
+    ig_id    = marca.get("IG Business Account ID", "")
+    token    = _build_page_token_map().get(ig_id, META_ACCESS_TOKEN)
+
+    # ── 1. Generar estructura de 5 slides + captions ─────────────────────────
+    try:
+        prompt_slides = f"""Eres el Estratega de Contenidos de {nombre}.
+
+BRANDBOOK:
+- Industria: {industria}
+- Público objetivo: {publico}
+- Tono de voz: {tono}
+- RESTRICCIONES ABSOLUTAS: {reglas}
+- Colores de marca: {colores}
+
+PILAR DEL DÍA: {pilar}
+INSTRUCCIÓN: {instruccion}
+
+El texto de cada slide es MUY CORTO (máximo 12 palabras) porque la imagen lleva el peso visual.
+El slide 5 es siempre el CTA: "{cta}"
+
+Responde SOLO con este JSON sin explicaciones adicionales:
+{{
+  "titulo_carrusel": "Título general del carrusel",
+  "slides": [
+    {{"numero": 1, "titulo": "Texto corto impactante (máx 8 palabras)", "subtitulo": "Frase de apoyo (máx 10 palabras)", "prompt_imagen": "Descripción visual detallada para generar imagen con IA. Estilo: {estilo}. SIN texto en la imagen."}},
+    {{"numero": 2, "titulo": "...", "subtitulo": "...", "prompt_imagen": "..."}},
+    {{"numero": 3, "titulo": "...", "subtitulo": "...", "prompt_imagen": "..."}},
+    {{"numero": 4, "titulo": "...", "subtitulo": "...", "prompt_imagen": "..."}},
+    {{"numero": 5, "titulo": "{cta}", "subtitulo": "Seguinos para más", "prompt_imagen": "Motivational CTA visual, colors {colores}, clean modern design, no text in image"}}
+  ],
+  "caption_instagram": "Caption IG: hook en línea 1, resumen del carrusel, invitación a guardar/seguir, 6-8 hashtags al final. 150-200 palabras.",
+  "caption_linkedin": "Caption LinkedIn: reflexión profesional, 200-300 palabras, 3-4 hashtags."
+}}"""
+
+        raw = _call_gemini_text(prompt_slides, timeout=60)
+        match = re.search(r'\{[\s\S]*\}', raw)
+        if not match:
+            return {"status": "error", "paso": "generar_slides", "mensaje": "Gemini no devolvió JSON válido"}
+        slides_data = json.loads(match.group(0))
+    except Exception as e:
+        return {"status": "error", "paso": "generar_slides", "mensaje": str(e)}
+
+    # ── 2. Generar imagen por slide → overlay logo → Cloudinary ──────────────
+    logo_field = marca.get("Logo", [])
+    logo_url = logo_field[0].get("url", "") if isinstance(logo_field, list) and logo_field else ""
+
+    imagenes_urls = []
+    errores_img = []
+
+    for slide in slides_data.get("slides", []):
+        prompt_img = slide.get("prompt_imagen", f"{estilo}, professional, no text in image")
+        try:
+            b64, mime = _generar_imagen_interna(prompt_img, max_intentos=3, espera=20)
+            if logo_url:
+                b64 = _overlay_logo(b64, logo_url)
+            imagenes_urls.append(_subir_cloudinary(b64, "image/png"))
+        except Exception as e:
+            errores_img.append(f"Slide {slide.get('numero', '?')}: {str(e)}")
+            imagenes_urls.append(None)
+
+    imagenes_validas = [u for u in imagenes_urls if u]
+
+    if len(imagenes_validas) < 2:
+        return {
+            "status": "error",
+            "paso": "generar_imagenes",
+            "mensaje": f"Solo {len(imagenes_validas)} imágenes generadas. Mínimo 2 para carrusel.",
+            "errores": errores_img
+        }
+
+    # ── 3. Publicar carrusel en Instagram ─────────────────────────────────────
+    caption_ig = slides_data.get("caption_instagram", "")
+    res_ig = {"success": False, "error": "ig_id no configurado"}
+    if ig_id and token:
+        res_ig = _publicar_carrusel_instagram(imagenes_validas, caption_ig, ig_id, token)
+
+    # ── 4. Notificar WhatsApp ─────────────────────────────────────────────────
+    _notificar_whatsapp(
+        f"{'✅' if res_ig.get('success') else '⚠️'} *Carrusel publicado*\n\n"
+        f"📌 *Pilar:* {pilar}\n"
+        f"🖼️ *Slides:* {len(imagenes_validas)}/5\n"
+        f"📸 Instagram: {'✅' if res_ig.get('success') else '❌ ' + res_ig.get('error', '')[:60]}\n\n"
+        f"📝 {slides_data.get('titulo_carrusel', '')}"
+    )
+
+    return {
+        "status": "success" if res_ig.get("success") else "partial",
+        "pilar_del_dia": pilar,
+        "titulo_carrusel": slides_data.get("titulo_carrusel", ""),
+        "slides_generados": len(imagenes_validas),
+        "imagenes_urls": imagenes_urls,
+        "publicaciones": {"instagram": res_ig},
+        "captions": {
+            "instagram": caption_ig[:200],
+            "linkedin":  slides_data.get("caption_linkedin", "")[:200]
+        },
+        "errores_imagen": errores_img
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # META WEBHOOK — Verificación + Respuesta a comentarios
 # ─────────────────────────────────────────────────────────────────────────────
 
