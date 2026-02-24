@@ -706,6 +706,27 @@ AIRTABLE_TABLE_ID = os.environ.get("AIRTABLE_TABLE_ID", "tblgFvYebZcJaYM07")
 AIRTABLE_TOKEN    = os.environ.get("AIRTABLE_TOKEN", "")
 
 
+def _build_page_token_map() -> dict:
+    """Construye mapa {page_id: token} desde env vars. Cliente principal + CLIENT_N_*"""
+    mapa = {}
+    # Cliente principal (env vars base)
+    for pid in [os.environ.get("FACEBOOK_PAGE_ID", ""), os.environ.get("IG_BUSINESS_ACCOUNT_ID", "")]:
+        if pid:
+            mapa[pid] = os.environ.get("META_ACCESS_TOKEN", "")
+    # Clientes adicionales: CLIENT_2_PAGE_ID, CLIENT_2_IG_ID, CLIENT_2_META_TOKEN, etc.
+    for i in range(2, 50):
+        page_id = os.environ.get(f"CLIENT_{i}_PAGE_ID", "")
+        ig_id   = os.environ.get(f"CLIENT_{i}_IG_ID", "")
+        token   = os.environ.get(f"CLIENT_{i}_META_TOKEN", "")
+        if not page_id and not ig_id:
+            break
+        if page_id:
+            mapa[page_id] = token
+        if ig_id:
+            mapa[ig_id] = token
+    return mapa
+
+
 def _get_cliente_por_page_id(page_id: str) -> dict:
     """Busca el cliente en Airtable por IG Business Account ID o Facebook Page ID."""
     try:
@@ -719,12 +740,14 @@ def _get_cliente_por_page_id(page_id: str) -> dict:
         return {}
 
 
-def _responder_comentario(comentario_id: str, texto: str, cliente: dict) -> dict:
+def _responder_comentario(comentario_id: str, texto: str, cliente: dict, page_id: str = "") -> dict:
     """Genera respuesta con Gemini y la publica como reply al comentario."""
-    nombre  = cliente.get("Nombre Comercial", "la agencia")
-    tono    = cliente.get("Tono de Voz", "cercano y profesional")
+    nombre   = cliente.get("Nombre Comercial", "la agencia")
+    tono     = cliente.get("Tono de Voz", "cercano y profesional")
     servicio = cliente.get("Servicio Principal", "automatización con IA")
-    token   = cliente.get("Meta Access Token", META_ACCESS_TOKEN)
+    # Token desde env vars (por page_id), no desde Airtable
+    token_map = _build_page_token_map()
+    token = token_map.get(page_id, META_ACCESS_TOKEN)
 
     prompt = (
         f"Sos el community manager de {nombre}. "
@@ -785,7 +808,7 @@ async def meta_webhook_eventos(request: Request):
                 texto = value.get("text", "")
                 comentario_id = value.get("id", "")
                 if texto and len(texto) >= 3 and comentario_id and cliente:
-                    _responder_comentario(comentario_id, texto, cliente)
+                    _responder_comentario(comentario_id, texto, cliente, page_id)
 
             # Facebook page comment
             elif field == "feed":
@@ -793,7 +816,7 @@ async def meta_webhook_eventos(request: Request):
                     texto = value.get("message", "")
                     comentario_id = value.get("comment_id", "")
                     if texto and len(texto) >= 3 and comentario_id and cliente:
-                        _responder_comentario(comentario_id, texto, cliente)
+                        _responder_comentario(comentario_id, texto, cliente, page_id)
 
     except Exception:
         pass  # Meta exige siempre respuesta 200
