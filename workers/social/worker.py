@@ -829,8 +829,9 @@ async def meta_webhook_eventos(request: Request):
 
             # Facebook page comment
             elif field == "feed":
+                print(f"[WEBHOOK] FB value keys={list(value.keys())}", flush=True)
                 if value.get("item") == "comment" and value.get("verb") == "add":
-                    texto = value.get("message", "")
+                    texto = value.get("message", "") or value.get("body", "") or value.get("text", "")
                     comentario_id = value.get("comment_id", "")
                     print(f"[WEBHOOK] FB comment id={comentario_id!r} texto={texto[:40]!r} ok={bool(texto and len(texto)>=3 and comentario_id and cliente)}", flush=True)
                     if texto and len(texto) >= 3 and comentario_id and cliente:
