@@ -97,15 +97,19 @@ class DatosSeleccionarTema(BaseModel):
     objetivo_mes: Optional[str] = None
 
 
-def _call_gemini_text(prompt: str, timeout: int = 60) -> str:
+def _call_gemini_text(prompt: str, timeout: int = 60, json_mode: bool = False) -> str:
     """Llamada centralizada a Gemini para texto. Lanza excepción si falla."""
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    if json_mode:
+        payload["generationConfig"] = {"responseMimeType": "application/json"}
+        
     resp = req.post(
         GEMINI_TEXT_URL,
         headers={
             "x-goog-api-key": GEMINI_API_KEY,
             "Content-Type": "application/json"
         },
-        json={"contents": [{"parts": [{"text": prompt}]}]},
+        json=payload,
         timeout=timeout
     )
     resp.raise_for_status()
@@ -277,7 +281,7 @@ Responde SOLO con este JSON, sin explicaciones previas:
 }}"""
 
     try:
-        texto = _call_gemini_text(prompt, timeout=30)
+        texto = _call_gemini_text(prompt, timeout=30, json_mode=True)
         match = re.search(r'\{[\s\S]*\}', texto)
         if not match:
             return {"status": "error", "mensaje": "Gemini no devolvió JSON válido."}
@@ -1039,7 +1043,7 @@ Responde SOLO con este JSON sin explicaciones adicionales:
   "caption_linkedin": "Caption LinkedIn: reflexión profesional, 200-300 palabras, 3-4 hashtags."
 }}"""
 
-        raw = _call_gemini_text(prompt_slides, timeout=60)
+        raw = _call_gemini_text(prompt_slides, timeout=60, json_mode=True)
         raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', raw)
         match = re.search(r'\{[\s\S]*\}', raw)
         if not match:
@@ -1055,59 +1059,34 @@ Responde SOLO con este JSON sin explicaciones adicionales:
     imagenes_urls = []
     errores_img = []
 
+    _, acento_hex = _extraer_colores_marca(colores)
+
     for slide in slides_data.get("slides", []):
         titulo_slide = slide.get("titulo", "")
         subtitulo_slide = slide.get("subtitulo", "")
         num = slide.get("numero", 1)
 
-        # Prompt para que Gemini genere el SLIDE DISEÑADO COMPLETO
-        slide_prompt = f"""Generate a premium Instagram carousel slide image (square 1080x1080 pixels).
-
-DESIGN LAYOUT (follow this EXACTLY):
-- TOP HALF (white/light background, clean and spacious):
-  • Top-left corner: the number "{num}." in VERY LARGE bold font, color {colores or 'bright blue'}
-  • Center of top half: the title "{titulo_slide}" in EXTREMELY LARGE, BOLD, BLACK text (this must be the dominant element, huge lettering that fills the width)
-  • Below the title: "{subtitulo_slide}" in medium gray text, smaller than the title but still clearly readable
-  • A thin horizontal accent line in {colores or 'blue'} separating the text area from the image area
-
-- BOTTOM HALF (photo/illustration):
-  • A warm, realistic photograph or clean illustration related to: {industria}, {pilar}
-  • Style: realistic photography with natural lighting, warm tones, professional business environment
-  • Show real people working, a cozy office, hands typing on a laptop, or a friendly business meeting
-  • NOT futuristic, NOT sci-fi, NOT neon, NOT cyberpunk — keep it warm, human, and relatable
-  • The image should feel approachable and professional, like a real business photo
-
-CRITICAL RULES:
-- TEXT SPELLING: Copy the title and subtitle EXACTLY character by character. The text is in SPANISH — write it correctly: "{titulo_slide}" and "{subtitulo_slide}"
-- The title text MUST be ENORMOUS — bold black letters that dominate the upper half
-- The number "{num}." must be clearly visible in {colores or 'brand color'}
-- The design must look like a professional Instagram carousel slide
-- Clean, modern, minimalist top half with huge typography
-- Warm, realistic image in the bottom half (NO futuristic/sci-fi imagery)
-- DO NOT add any extra text, watermarks, or UI elements beyond what is specified"""
+        # Gemini solo genera una imagen limpia (sin texto)
+        slide_prompt = f"""Generate a high-quality, professional image representing: {titulo_slide} for {industria} ({pilar}).
+Style: {estilo}.
+Warm, realistic photography or clean illustration. Professional business environment.
+Show real people working, a cozy office, hands typing on a laptop, or a friendly business meeting.
+CRITICAL: NO text, NO numbers, NO letters, NO words, NO spelling of any kind anywhere in the image. Just the visual scene."""
 
         try:
-            b64, mime = _generar_imagen_interna(slide_prompt, max_intentos=3, espera=20, raw_prompt=True)
-            # Asegurar que sea exactamente 1080x1080
-            img = Image.open(BytesIO(base64.b64decode(b64))).convert("RGB")
-            if img.size != (1080, 1080):
-                img = img.resize((1080, 1080), Image.LANCZOS)
-            # Overlay logo en esquina superior derecha si hay
-            if logo_url:
-                try:
-                    logo_resp = req.get(logo_url, timeout=15)
-                    logo_resp.raise_for_status()
-                    logo_img = Image.open(BytesIO(logo_resp.content)).convert("RGBA")
-                    logo_img.thumbnail((120, 120), Image.LANCZOS)
-                    lx = 1080 - logo_img.width - 40
-                    img_rgba = img.convert("RGBA")
-                    img_rgba.paste(logo_img, (lx, 30), logo_img)
-                    img = img_rgba.convert("RGB")
-                except Exception:
-                    pass
-            out = BytesIO()
-            img.save(out, format="PNG", quality=95)
-            b64_final = base64.b64encode(out.getvalue()).decode()
+            # raw_prompt=False para que agregue la instrucción anti-texto estándar
+            b64, mime = _generar_imagen_interna(slide_prompt, max_intentos=3, espera=20, raw_prompt=False)
+            
+            # Usamos el dibujado en Python (Pillow) para tener texto 100% perfecto, sin faltas ortográficas
+            b64_final = _crear_slide_carrusel(
+                base64_img=b64, 
+                titulo=titulo_slide, 
+                subtitulo=subtitulo_slide, 
+                color_acento=acento_hex, 
+                logo_url=logo_url, 
+                numero_slide=num
+            )
+            
             imagenes_urls.append(_subir_cloudinary(b64_final, "image/png"))
         except Exception as e:
             errores_img.append(f"Slide {num}: {str(e)}")
@@ -1177,7 +1156,7 @@ def _build_page_token_map() -> dict:
         ig_id   = os.environ.get(f"CLIENT_{i}_IG_ID", "")
         token   = os.environ.get(f"CLIENT_{i}_META_TOKEN", "")
         if not page_id and not ig_id:
-            break
+            continue
         if page_id:
             mapa[page_id] = token
         if ig_id:
