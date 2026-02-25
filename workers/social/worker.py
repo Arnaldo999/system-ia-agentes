@@ -491,12 +491,12 @@ def _crear_slide_carrusel(base64_img: str, titulo: str, subtitulo: str,
             except Exception:
                 pass
 
-        # ── TÍTULO GIGANTE (130px Bold, alineado izquierda) ───────────────────
+        # ── TÍTULO (95px Bold, alineado izquierda) ─────────────────────────────
         TEXT_MAX = SIZE - PAD * 2
-        font_tit = _get_font(130)
-        font_sub = _get_font_regular(58)
+        font_tit = _get_font(95)
+        font_sub = _get_font_regular(45)
 
-        def draw_wrapped(text, font, color, y, max_lines=3, line_spacing=8, align="left"):
+        def draw_wrapped(text, font, color, y, max_lines=4, line_spacing=8, align="left"):
             """Word-wrap con alineación configurable. Retorna Y final."""
             words = text.split()
             lines, cur = [], ""
@@ -523,15 +523,15 @@ def _crear_slide_carrusel(base64_img: str, titulo: str, subtitulo: str,
                 y += lh + line_spacing
             return y
 
-        # Título empieza bien abajo del número/logo
-        text_y = 140
-        text_y = draw_wrapped(titulo[:50], font_tit, TITLE_C, text_y,
-                              max_lines=2, line_spacing=6, align="left")
+        # Título empieza un poco más arriba y permitimos 3 líneas
+        text_y = 120
+        text_y = draw_wrapped(titulo[:70], font_tit, TITLE_C, text_y,
+                              max_lines=3, line_spacing=6, align="left")
 
-        # Subtítulo
+        # Subtítulo (hasta 3 líneas)
         if subtitulo:
-            text_y = draw_wrapped(subtitulo[:80], font_sub, SUB_C, text_y + 8,
-                                  max_lines=2, line_spacing=6, align="left")
+            text_y = draw_wrapped(subtitulo[:120], font_sub, SUB_C, text_y + 12,
+                                  max_lines=3, line_spacing=6, align="left")
 
         # ── Línea separadora acento (6px, gruesa) ─────────────────────────────
         sep_y = TEXT_ZONE_H - 8
