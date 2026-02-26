@@ -19,12 +19,19 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_TEXT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 GEMINI_IMG_URL  = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
 
-# ── Publicación en redes ──────────────────────────────────────────────────────
+# ── Publicación en redes (Fallbacks de seguridad) ─────────────────────────────
 META_ACCESS_TOKEN      = os.environ.get("META_ACCESS_TOKEN", "")
 IG_BUSINESS_ACCOUNT_ID = os.environ.get("IG_BUSINESS_ACCOUNT_ID", "")
 FACEBOOK_PAGE_ID       = os.environ.get("FACEBOOK_PAGE_ID", "")
 LINKEDIN_ACCESS_TOKEN  = os.environ.get("LINKEDIN_ACCESS_TOKEN", "")
 LINKEDIN_PERSON_ID     = os.environ.get("LINKEDIN_PERSON_ID", "")
+
+# ── Credenciales Centrales para Arquitectura Multi-Tenant ──
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+AIRTABLE_TOKEN = os.environ.get("AIRTABLE_TOKEN", "")
+
+# ── Otras integraciones ───────────────────────────────────────────────────────
 CLOUDINARY_CLOUD_NAME  = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
 CLOUDINARY_UPLOAD_PRESET = os.environ.get("CLOUDINARY_UPLOAD_PRESET", "")
 EVOLUTION_URL          = os.environ.get("EVOLUTION_API_URL", "")
@@ -761,13 +768,20 @@ def _publicar_facebook_texto(texto: str, page_id: str, token: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def _notificar_whatsapp(mensaje: str, numero: str = None) -> dict:
-    """Envía notificación vía Evolution API. Si no se pasa numero, usa WHATSAPP_NOTIFY_NUMBER."""
+def _notificar_whatsapp(mensaje: str, numero: str = None, evo_url: str = None, evo_instance: str = None, evo_token: str = None) -> dict:
+    """Envía notificación vía Evolution API, usando credenciales por cliente si existen o fallbacks."""
     try:
+        u = evo_url or EVOLUTION_URL
+        i = evo_instance or EVOLUTION_INSTANCE
+        t = evo_token or EVOLUTION_API_KEY
         n = numero or WHATSAPP_NOTIFY_NUMBER
+        
+        if not u or not i or not t or not n:
+            return {"success": False, "error": "Faltan credenciales de Evolution o número destino."}
+            
         resp = req.post(
-            f"{EVOLUTION_URL}/message/sendText/{EVOLUTION_INSTANCE}",
-            headers={"apikey": EVOLUTION_API_KEY},
+            f"{u.rstrip('/')}/message/sendText/{i}",
+            headers={"apikey": t},
             json={"number": n, "text": mensaje},
             timeout=15
         )
@@ -799,8 +813,21 @@ def _limpiar_texto_post(texto: str) -> str:
 # POST /social/publicar-completo  — endpoint agéntico maestro
 # ─────────────────────────────────────────────────────────────────────────────
 
+class CredencialesCliente(BaseModel):
+    meta_access_token: str = ""
+    fb_page_id: str = ""
+    ig_account_id: str = ""
+    linkedin_access_token: str = ""
+    linkedin_person_id: str = ""
+    whatsapp_numero_notificacion: str = ""
+    evolution_api_url: str = ""
+    evolution_instance_name: str = ""
+    evolution_instance_token: str = ""
+
 class DatosPublicarCompleto(BaseModel):
+    cliente_id: str = ""
     datos_marca: dict  # JSON plano del registro de Airtable
+    credenciales: CredencialesCliente = None
 
 
 @router.post("/publicar-completo")
@@ -882,9 +909,16 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         imagen_error = str(e)
         imagen_url = None
 
-    ig_id    = marca.get("IG Business Account ID", "")
-    page_id  = marca.get("Facebook Page ID", "")
-    token    = _build_page_token_map().get(page_id) or _build_page_token_map().get(ig_id) or META_ACCESS_TOKEN
+    # ── 3. Preparar credenciales dinámicas (evita cruce de clientes) ──────────
+    if entrada.credenciales and entrada.credenciales.meta_access_token:
+        ig_id   = entrada.credenciales.ig_account_id
+        page_id = entrada.credenciales.fb_page_id
+        token   = entrada.credenciales.meta_access_token
+    else:
+        # Fallback de seguridad al global (borrar en prod)
+        ig_id   = marca.get("IG Business Account ID", IG_BUSINESS_ACCOUNT_ID)
+        page_id = marca.get("Facebook Page ID", FACEBOOK_PAGE_ID)
+        token   = _build_page_token_map().get(page_id) or META_ACCESS_TOKEN
 
     # ── 4. Publicar en las 3 redes ───────────────────────────────────────────
     if imagen_url:
@@ -916,7 +950,13 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
     if redes_fail:
         msg_wa += f"\n\n⚠️ Fallaron: {', '.join(redes_fail)}"
 
-    notif = _notificar_whatsapp(msg_wa)
+    notif = _notificar_whatsapp(
+        mensaje=msg_wa,
+        numero=entrada.credenciales.whatsapp_numero_notificacion if entrada.credenciales else None,
+        evo_url=entrada.credenciales.evolution_api_url if entrada.credenciales else None,
+        evo_instance=entrada.credenciales.evolution_instance_name if entrada.credenciales else None,
+        evo_token=entrada.credenciales.evolution_instance_token if entrada.credenciales else None
+    )
 
     return {
         "status": "success" if not errores else "partial",
@@ -1000,7 +1040,9 @@ def _publicar_carrusel_instagram(imagenes_urls: list, caption: str, ig_id: str, 
 
 
 class DatosPublicarCarrusel(BaseModel):
+    cliente_id: str = ""
     datos_marca: dict  # JSON plano del registro de Airtable
+    credenciales: CredencialesCliente = None
 
 
 @router.post("/publicar-carrusel")
@@ -1028,7 +1070,12 @@ async def publicar_carrusel(entrada: DatosPublicarCarrusel):
     cta      = marca.get("CTA", "Seguinos para más contenido como este")
     ig_id    = marca.get("IG Business Account ID", "")
     numero_wa = marca.get("WhatsApp Notificación", WHATSAPP_NOTIFY_NUMBER)
-    token    = _build_page_token_map().get(ig_id, META_ACCESS_TOKEN)
+    
+    if entrada.credenciales and entrada.credenciales.meta_access_token:
+        ig_id = entrada.credenciales.ig_account_id
+        token = entrada.credenciales.meta_access_token
+    else:
+        token = _build_page_token_map().get(ig_id, META_ACCESS_TOKEN)
 
     # ── 1. Generar estructura de 5 slides + captions ─────────────────────────
     try:
@@ -1196,19 +1243,37 @@ def _get_page_token(page_id: str, user_token: str) -> str:
         return user_token
 
 
-def _get_cliente_por_page_id(page_id: str) -> dict:
-    """Busca el cliente en Airtable por IG Business Account ID o Facebook Page ID."""
+# ── Consultas a Supabase y Airtable en directo ──
+
+def _get_supa_credenciales_by_page(page_id: str) -> dict:
+    """Busca dinámicamente el cliente en Supabase por su FB Page ID o IG ID"""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return {}
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/clientes"
+    params = {"select": "*", "or": f"(fb_page_id.eq.{page_id},ig_account_id.eq.{page_id})"}
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
     try:
-        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ID}"
+        resp = req.get(url, params=params, headers=headers, timeout=5)
+        return resp.json()[0] if resp.json() else {}
+    except:
+        return {}
+
+
+def _get_cliente_por_page_id(page_id: str, airtable_base_id: str = "") -> dict:
+    """Busca el cliente en su propia base de Airtable."""
+    base = airtable_base_id or AIRTABLE_BASE_ID
+    if not base or not AIRTABLE_TOKEN: return {}
+    try:
+        url = f"https://api.airtable.com/v0/{base}/{AIRTABLE_TABLE_ID}"
         formula = f"OR({{IG Business Account ID}}='{page_id}',{{Facebook Page ID}}='{page_id}')"
         resp = req.get(url, headers={"Authorization": f"Bearer {AIRTABLE_TOKEN}"},
                        params={"filterByFormula": formula}, timeout=10)
         records = resp.json().get("records", [])
-        print(f"[AIRTABLE] page_id={page_id!r} status={resp.status_code} records={len(records)}", flush=True)
         return records[0].get("fields", {}) if records else {}
     except Exception as e:
         print(f"[AIRTABLE] ERROR: {e}", flush=True)
         return {}
+
 
 
 def _responder_comentario(comentario_id: str, texto: str, cliente: dict, page_id: str = "", token: str = "") -> dict:
@@ -1271,16 +1336,23 @@ async def meta_webhook_eventos(request: Request):
         body = await request.json()
         entry = (body.get("entry") or [{}])[0]
         page_id = entry.get("id", "")
-        cliente = _get_cliente_por_page_id(page_id) if page_id else {}
+        
+        # ── 1. Cargar credenciales desde Supabase ──
+        supa_creds = _get_supa_credenciales_by_page(page_id)
+        token_cliente = supa_creds.get("meta_access_token", "")
+        base_airtable = supa_creds.get("airtable_base_id", "")
+        
+        # ── 2. Cargar Brandbook desde su Airtable aislado ──
+        cliente = _get_cliente_por_page_id(page_id, base_airtable) if page_id else {}
 
         # IDs propios para evitar responder a nuestros propios comentarios (anti-loop)
         own_ids = set()
         token_map = _build_page_token_map()
-        own_ids.update(token_map.keys())  # todos los page_id e ig_id conocidos
+        own_ids.update(token_map.keys())  # todos los fallback ids
         if page_id:
             own_ids.add(page_id)
 
-        print(f"[WEBHOOK] page_id={page_id!r} cliente_found={bool(cliente)} own_ids_count={len(own_ids)}", flush=True)
+        print(f"[WEBHOOK] page_id={page_id!r} en_supabase={bool(supa_creds)} cliente_found={bool(cliente)}", flush=True)
 
         for change in entry.get("changes", []):
             field = change.get("field", "")
@@ -1320,7 +1392,7 @@ async def meta_webhook_eventos(request: Request):
                         print(f"[WEBHOOK] FB SKIP created_by=page", flush=True)
                         continue
 
-                    user_tkn = token_map.get(page_id, META_ACCESS_TOKEN)
+                    user_tkn = token_cliente or token_map.get(page_id, META_ACCESS_TOKEN)
                     page_tkn = _get_page_token(page_id, user_tkn)
                     # Facebook no envía el texto en el webhook — hay que buscarlo via API
                     if not texto and comentario_id:
