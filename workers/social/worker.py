@@ -622,15 +622,19 @@ def _publicar_instagram(imagen_url: str, caption: str, ig_id: str, token: str) -
         return {"success": False, "error": str(e)}
 
 
-def _publicar_linkedin_imagen(texto: str, imagen_url: str) -> dict:
+def _publicar_linkedin_imagen(texto: str, imagen_url: str, li_token: str = None, li_person: str = None) -> dict:
     """Publica post en LinkedIn con imagen. Flujo: register → upload → post."""
     try:
+        t = li_token or LINKEDIN_ACCESS_TOKEN
+        p = li_person or LINKEDIN_PERSON_ID
+        if not t or not p:
+            return {"success": False, "error": "Faltan credenciales de LinkedIn"}
         headers = {
-            "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
+            "Authorization": f"Bearer {t}",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
-        person_urn = f"urn:li:person:{LINKEDIN_PERSON_ID}"
+        person_urn = f"urn:li:person:{p}"
         # Paso 1: Registrar upload
         r1 = req.post(
             "https://api.linkedin.com/v2/assets?action=registerUpload",
@@ -648,7 +652,7 @@ def _publicar_linkedin_imagen(texto: str, imagen_url: str) -> dict:
         asset_urn = r1.json()["value"]["asset"]
         # Paso 2: Subir imagen binaria
         img_bytes = req.get(imagen_url, timeout=30).content
-        req.put(upload_url, headers={"Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}"}, data=img_bytes, timeout=60)
+        req.put(upload_url, headers={"Authorization": f"Bearer {t}"}, data=img_bytes, timeout=60)
         # Paso 3: Crear post con imagen
         r3 = req.post(
             "https://api.linkedin.com/v2/ugcPosts",
@@ -672,11 +676,11 @@ def _publicar_linkedin_imagen(texto: str, imagen_url: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
+def _publicar_linkedin(texto: str, imagen_url: str, li_token: str = None, li_person: str = None) -> dict:
     """Publica en LinkedIn con imagen si está disponible, si no texto solo."""
-    if imagen_url and LINKEDIN_ACCESS_TOKEN and LINKEDIN_PERSON_ID:
-        return _publicar_linkedin_imagen(texto, imagen_url)
-    return _publicar_linkedin_texto(texto)
+    if imagen_url and (li_token or LINKEDIN_ACCESS_TOKEN) and (li_person or LINKEDIN_PERSON_ID):
+        return _publicar_linkedin_imagen(texto, imagen_url, li_token, li_person)
+    return _publicar_linkedin_texto(texto, li_token, li_person)
 
 
 def _get_facebook_page_token(page_id: str, token: str) -> str:
@@ -716,11 +720,15 @@ def _publicar_facebook(texto: str, imagen_url: str, page_id: str, token: str) ->
         return {"success": False, "error": str(e)}
 
 
-def _publicar_linkedin_texto(texto: str) -> dict:
+def _publicar_linkedin_texto(texto: str, li_token: str = None, li_person: str = None) -> dict:
     """Publica post en LinkedIn via UGC API (v2, sin version header)."""
     try:
+        t = li_token or LINKEDIN_ACCESS_TOKEN
+        p = li_person or LINKEDIN_PERSON_ID
+        if not t or not p:
+            return {"success": False, "error": "Faltan credenciales de LinkedIn"}
         headers = {
-            "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
+            "Authorization": f"Bearer {t}",
             "X-Restli-Protocol-Version": "2.0.0",
             "Content-Type": "application/json"
         }
@@ -728,7 +736,7 @@ def _publicar_linkedin_texto(texto: str) -> dict:
             "https://api.linkedin.com/v2/ugcPosts",
             headers=headers,
             json={
-                "author": f"urn:li:person:{LINKEDIN_PERSON_ID}",
+                "author": f"urn:li:person:{p}",
                 "lifecycleState": "PUBLISHED",
                 "specificContent": {
                     "com.linkedin.ugc.ShareContent": {
@@ -914,21 +922,25 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         ig_id   = entrada.credenciales.ig_account_id
         page_id = entrada.credenciales.fb_page_id
         token   = entrada.credenciales.meta_access_token
+        token_li = entrada.credenciales.linkedin_access_token
+        person_li = entrada.credenciales.linkedin_person_id
     else:
         # Fallback de seguridad al global (borrar en prod)
         ig_id   = marca.get("IG Business Account ID", IG_BUSINESS_ACCOUNT_ID)
         page_id = marca.get("Facebook Page ID", FACEBOOK_PAGE_ID)
         token   = _build_page_token_map().get(page_id) or META_ACCESS_TOKEN
+        token_li = None
+        person_li = None
 
     # ── 4. Publicar en las 3 redes ───────────────────────────────────────────
     if imagen_url:
         res_ig = _publicar_instagram(imagen_url, texto_ig, ig_id, token)
-        res_li = _publicar_linkedin(texto_li, imagen_url)
+        res_li = _publicar_linkedin(texto_li, imagen_url, token_li, person_li)
         res_fb = _publicar_facebook(texto_fb, imagen_url, page_id, token)
     else:
         # Sin imagen: omitir Instagram, publicar texto en LI y FB
         res_ig = {"success": False, "error": f"Sin imagen: {imagen_error}"}
-        res_li = _publicar_linkedin_texto(texto_li)
+        res_li = _publicar_linkedin_texto(texto_li, token_li, person_li)
         res_fb = _publicar_facebook_texto(texto_fb, page_id, token)
 
     for red, res in [("Instagram", res_ig), ("LinkedIn", res_li), ("Facebook", res_fb)]:
