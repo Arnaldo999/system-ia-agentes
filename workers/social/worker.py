@@ -584,25 +584,32 @@ def _overlay_logo(base64_img: str, logo_url: str) -> str:
         return base64_img
 
 
-def _publicar_instagram(imagen_url: str, caption: str) -> dict:
+def _publicar_instagram(imagen_url: str, caption: str, ig_id: str, token: str) -> dict:
     """Crea container + publica en Instagram Business."""
+    if not ig_id or not token:
+        return {"success": False, "error": "Falta ig_id o token_de_acceso"}
     try:
         r1 = req.post(
-            f"https://graph.facebook.com/v22.0/{IG_BUSINESS_ACCOUNT_ID}/media",
-            params={"access_token": META_ACCESS_TOKEN},
+            f"https://graph.facebook.com/v22.0/{ig_id}/media",
+            params={"access_token": token},
             json={"image_url": imagen_url, "caption": caption},
             timeout=30
         )
-        r1.raise_for_status()
+        if not r1.ok:
+            return {"success": False, "error": f"{r1.status_code}: {r1.text[:500]}"}
+        
         container_id = r1.json()["id"]
         time.sleep(8)
+        
         r2 = req.post(
-            f"https://graph.facebook.com/v22.0/{IG_BUSINESS_ACCOUNT_ID}/media_publish",
-            params={"access_token": META_ACCESS_TOKEN},
+            f"https://graph.facebook.com/v22.0/{ig_id}/media_publish",
+            params={"access_token": token},
             json={"creation_id": container_id},
             timeout=30
         )
-        r2.raise_for_status()
+        if not r2.ok:
+            return {"success": False, "error": f"{r2.status_code}: {r2.text[:500]}"}
+            
         return {"success": True, "post_id": r2.json().get("id", "")}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -665,31 +672,37 @@ def _publicar_linkedin(texto: str, imagen_url: str) -> dict:
     return _publicar_linkedin_texto(texto)
 
 
-def _get_facebook_page_token() -> str:
+def _get_facebook_page_token(page_id: str, token: str) -> str:
     """Obtiene el Page Access Token desde el User/System User Token."""
+    if not page_id or not token:
+        return token
     try:
         r = req.get(
-            f"https://graph.facebook.com/v22.0/{FACEBOOK_PAGE_ID}",
-            params={"fields": "access_token", "access_token": META_ACCESS_TOKEN},
+            f"https://graph.facebook.com/v22.0/{page_id}",
+            params={"fields": "access_token", "access_token": token},
             timeout=15
         )
-        r.raise_for_status()
-        return r.json().get("access_token", META_ACCESS_TOKEN)
+        if not r.ok:
+            return token
+        return r.json().get("access_token", token)
     except Exception:
-        return META_ACCESS_TOKEN
+        return token
 
 
-def _publicar_facebook(texto: str, imagen_url: str) -> dict:
+def _publicar_facebook(texto: str, imagen_url: str, page_id: str, token: str) -> dict:
     """Publica foto con caption en Facebook Page."""
+    if not page_id or not token:
+        return {"success": False, "error": "Falta page_id o token_de_acceso"}
     try:
-        page_token = _get_facebook_page_token()
+        page_token = _get_facebook_page_token(page_id, token)
         resp = req.post(
-            f"https://graph.facebook.com/v22.0/{FACEBOOK_PAGE_ID}/photos",
+            f"https://graph.facebook.com/v22.0/{page_id}/photos",
             params={"access_token": page_token},
             json={"url": imagen_url, "message": texto},
             timeout=30
         )
-        resp.raise_for_status()
+        if not resp.ok:
+            return {"success": False, "error": f"{resp.status_code}: {resp.text[:500]}"}
         data = resp.json()
         return {"success": True, "post_id": data.get("post_id") or data.get("id", "")}
     except Exception as e:
@@ -729,18 +742,20 @@ def _publicar_linkedin_texto(texto: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def _publicar_facebook_texto(texto: str) -> dict:
+def _publicar_facebook_texto(texto: str, page_id: str, token: str) -> dict:
     """Publica post de solo texto en Facebook Page."""
+    if not page_id or not token:
+        return {"success": False, "error": "Falta page_id o token_de_acceso"}
     try:
-        page_token = _get_facebook_page_token()
+        page_token = _get_facebook_page_token(page_id, token)
         resp = req.post(
-            f"https://graph.facebook.com/v22.0/{FACEBOOK_PAGE_ID}/feed",
+            f"https://graph.facebook.com/v22.0/{page_id}/feed",
             params={"access_token": page_token},
             json={"message": texto},
             timeout=30
         )
         if not resp.ok:
-            return {"success": False, "error": f"{resp.status_code}: {resp.text[:300]}"}
+            return {"success": False, "error": f"{resp.status_code}: {resp.text[:500]}"}
         return {"success": True, "post_id": resp.json().get("id", "")}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -867,16 +882,20 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         imagen_error = str(e)
         imagen_url = None
 
+    ig_id    = marca.get("IG Business Account ID", "")
+    page_id  = marca.get("Facebook Page ID", "")
+    token    = _build_page_token_map().get(page_id) or _build_page_token_map().get(ig_id) or META_ACCESS_TOKEN
+
     # ── 4. Publicar en las 3 redes ───────────────────────────────────────────
     if imagen_url:
-        res_ig = _publicar_instagram(imagen_url, texto_ig)
+        res_ig = _publicar_instagram(imagen_url, texto_ig, ig_id, token)
         res_li = _publicar_linkedin(texto_li, imagen_url)
-        res_fb = _publicar_facebook(texto_fb, imagen_url)
+        res_fb = _publicar_facebook(texto_fb, imagen_url, page_id, token)
     else:
         # Sin imagen: omitir Instagram, publicar texto en LI y FB
         res_ig = {"success": False, "error": f"Sin imagen: {imagen_error}"}
         res_li = _publicar_linkedin_texto(texto_li)
-        res_fb = _publicar_facebook_texto(texto_fb)
+        res_fb = _publicar_facebook_texto(texto_fb, page_id, token)
 
     for red, res in [("Instagram", res_ig), ("LinkedIn", res_li), ("Facebook", res_fb)]:
         if not res.get("success"):
