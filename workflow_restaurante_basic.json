@@ -1,0 +1,314 @@
+{
+    "name": "🍽️ Restaurante BASIC — Bot Conversacional",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "restaurante-basic",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-entrada",
+            "name": "📥 Webhook Evolution API",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                0,
+                300
+            ],
+            "webhookId": "restaurante-basic"
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "OK",
+                "options": {}
+            },
+            "id": "responder-webhook",
+            "name": "↩️ ACK al Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                200,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// ─────────────────────────────────────────────\n// Normalizar el payload de Evolution API\n// ─────────────────────────────────────────────\nconst body = $input.first().json.body;\n\n// Extraer teléfono (quitar @s.whatsapp.net)\nconst remoteJid = body?.data?.key?.remoteJid || '';\nconst telefono = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');\n\n// Extraer texto del mensaje\nconst msgData = body?.data?.message || {};\nconst mensaje = \n  msgData?.conversation ||\n  msgData?.extendedTextMessage?.text ||\n  msgData?.imageMessage?.caption ||\n  '';\n\n// Detectar si tiene imagen\nconst messageType = body?.data?.messageType || '';\nconst tiene_imagen = ['imageMessage', 'documentMessage'].includes(messageType);\n\n// Detectar si es el dueño\nconst NUMERO_DUENO = $env.NUMERO_DUENO || '';\nconst es_admin = telefono === NUMERO_DUENO.replace('+', '').replace(/\\s/g, '');\n\n// Ignorar mensajes propios o de grupos\nconst from_me = body?.data?.key?.fromMe || false;\nif (from_me || remoteJid.includes('@g.us')) {\n  return [{ json: { ignorar: true } }];\n}\n\nreturn [{\n  json: {\n    telefono,\n    mensaje: mensaje.trim(),\n    tiene_imagen,\n    es_admin,\n    ignorar: false\n  }\n}];"
+            },
+            "id": "normalizar-payload",
+            "name": "🔧 Normalizar Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "check-ignorar",
+                            "leftValue": "={{ $json.ignorar }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "notTrue"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "if-ignorar",
+            "name": "🚦 ¿Procesar?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                620,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.FASTAPI_URL }}/gastronomico/basico/mensaje",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "telefono",
+                            "value": "={{ $json.telefono }}"
+                        },
+                        {
+                            "name": "mensaje",
+                            "value": "={{ $json.mensaje }}"
+                        },
+                        {
+                            "name": "tiene_imagen",
+                            "value": "={{ $json.tiene_imagen }}"
+                        },
+                        {
+                            "name": "es_admin",
+                            "value": "={{ $json.es_admin }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "id": "llamar-fastapi",
+            "name": "🧠 FastAPI — Cerebro IA",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                840,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false
+                    },
+                    "conditions": [
+                        {
+                            "id": "check-notificar",
+                            "leftValue": "={{ $json.notificar_dueno }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "if-notificar-dueno",
+            "name": "🔔 ¿Notificar Dueño?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                1060,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.EVOLUTION_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"number\": \"{{ $env.NUMERO_DUENO }}\",\n  \"text\": \"{{ $('🧠 FastAPI — Cerebro IA').item.json.mensaje_para_dueno }}\"\n}",
+                "options": {}
+            },
+            "id": "notificar-dueno",
+            "name": "📲 WhatsApp → Dueño",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1280,
+                160
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.EVOLUTION_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"number\": \"{{ $('🔧 Normalizar Payload').item.json.telefono }}\",\n  \"text\": \"{{ $('🧠 FastAPI — Cerebro IA').item.json.respuesta }}\"\n}",
+                "options": {}
+            },
+            "id": "responder-cliente",
+            "name": "💬 WhatsApp → Cliente",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1280,
+                440
+            ]
+        }
+    ],
+    "connections": {
+        "📥 Webhook Evolution API": {
+            "main": [
+                [
+                    {
+                        "node": "↩️ ACK al Webhook",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "🔧 Normalizar Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "🔧 Normalizar Payload": {
+            "main": [
+                [
+                    {
+                        "node": "🚦 ¿Procesar?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "🚦 ¿Procesar?": {
+            "main": [
+                [
+                    {
+                        "node": "🧠 FastAPI — Cerebro IA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "🧠 FastAPI — Cerebro IA": {
+            "main": [
+                [
+                    {
+                        "node": "🔔 ¿Notificar Dueño?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "🔔 ¿Notificar Dueño?": {
+            "main": [
+                [
+                    {
+                        "node": "📲 WhatsApp → Dueño",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "💬 WhatsApp → Cliente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "💬 WhatsApp → Cliente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "gastronomico"
+        },
+        {
+            "name": "basic"
+        },
+        {
+            "name": "produccion"
+        }
+    ],
+    "meta": {
+        "templateId": "restaurante-basic-v1"
+    }
+}
