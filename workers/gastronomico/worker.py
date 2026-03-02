@@ -30,7 +30,7 @@ router = APIRouter(prefix="/gastronomico", tags=["SaaS Gastronómico"])
 # ─────────────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY", "")
 AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY", "")
-AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appdA5rJOmtVpDrx")
+AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appdA5rJOmtVvpDrx")
 NUMERO_DUENO     = os.environ.get("NUMERO_DUENO", "")
 
 genai.configure(api_key=GEMINI_API_KEY)
