@@ -95,6 +95,111 @@ RESTAURANTE_DEMO = {
     "numero_dueno":    NUMERO_DUENO,
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# MENÚ DEMO — Categorías con 3 ítems cada una
+# ─────────────────────────────────────────────────────────────────────────────
+MENU_DEMO = {
+    "principales": {
+        "emoji": "🥩",
+        "nombre": "Platos Principales",
+        "descripcion": "Carnes y platos fuertes",
+        "items": [
+            {"nombre": "Asado de Tira (400gr) con papas fritas", "precio": 6800},
+            {"nombre": "Bife de Chorizo (300gr) con ensalada mixta", "precio": 7500},
+            {"nombre": "Bondiola Braseada con puré de calabaza", "precio": 5900},
+        ]
+    },
+    "entradas": {
+        "emoji": "🥗",
+        "nombre": "Entradas",
+        "descripcion": "Picadas y starters",
+        "items": [
+            {"nombre": "Provoleta Fundida con orégano", "precio": 2500},
+            {"nombre": "Empanadas Tucumanas (3 un.)", "precio": 2700},
+            {"nombre": "Tabla de Fiambres para compartir", "precio": 4500},
+        ]
+    },
+    "postres": {
+        "emoji": "🍰",
+        "nombre": "Postres",
+        "descripcion": "Dulces caseros",
+        "items": [
+            {"nombre": "Flan Casero con dulce de leche", "precio": 1500},
+            {"nombre": "Mousse de Chocolate", "precio": 1600},
+            {"nombre": "Panqueques con dulce de leche", "precio": 1800},
+        ]
+    },
+    "cafeteria": {
+        "emoji": "☕",
+        "nombre": "Cafetería",
+        "descripcion": "Cafés e infusiones",
+        "items": [
+            {"nombre": "Café Espresso", "precio": 800},
+            {"nombre": "Cortado con medialunas (2)", "precio": 1200},
+            {"nombre": "Submarino", "precio": 1100},
+        ]
+    },
+    "bebidas": {
+        "emoji": "🍷",
+        "nombre": "Bebidas",
+        "descripcion": "Vinos, cervezas y más",
+        "items": [
+            {"nombre": "Vino Malbec (copa)", "precio": 2200},
+            {"nombre": "Cerveza Artesanal (pint)", "precio": 1800},
+            {"nombre": "Limonada con menta", "precio": 1200},
+        ]
+    },
+}
+
+
+def _respuesta_lista_categorias():
+    """Genera la respuesta interactiva con la lista de categorías del menú."""
+    return {
+        "title": "📋 Menú del Día",
+        "description": f"Elegí la categoría que quieras ver 👇",
+        "buttonText": "Ver Categorías",
+        "footerText": RESTAURANTE_DEMO["nombre"],
+        "sections": [{
+            "title": "Categorías",
+            "rows": [
+                {"title": f"{cat['emoji']} {cat['nombre']}", "description": cat["descripcion"], "rowId": key}
+                for key, cat in MENU_DEMO.items()
+            ]
+        }]
+    }
+
+
+def _respuesta_lista_items(categoria_key: str):
+    """Genera la respuesta interactiva con los ítems de una categoría."""
+    cat = MENU_DEMO[categoria_key]
+    return {
+        "title": f"{cat['emoji']} {cat['nombre']}",
+        "description": f"Elegí lo que más te guste 😋",
+        "buttonText": "Ver Opciones",
+        "footerText": RESTAURANTE_DEMO["nombre"],
+        "sections": [{
+            "title": cat["nombre"],
+            "rows": [
+                {"title": item["nombre"], "description": f"${item['precio']:,} ARS".replace(',','.'), "rowId": f"{categoria_key}_{i}"}
+                for i, item in enumerate(cat["items"])
+            ]
+        }]
+    }
+
+
+def _respuesta_botones_accion(item_nombre: str, item_precio: int):
+    """Genera botones de acción después de elegir un ítem."""
+    return {
+        "title": "¿Qué querés hacer?",
+        "description": f"Elegiste: *{item_nombre}* — ${item_precio:,} ARS\n\n¿Cómo seguimos?".replace(',','.'),
+        "footerText": RESTAURANTE_DEMO["nombre"],
+        "buttons": [
+            {"buttonId": "reservar", "buttonText": {"displayText": "📅 Reservar mesa"}},
+            {"buttonId": "delivery", "buttonText": {"displayText": "🛵 Pedir Delivery"}},
+            {"buttonId": "volver", "buttonText": {"displayText": "↩️ Volver al menú"}},
+        ]
+    }
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS DE AIRTABLE
@@ -270,18 +375,18 @@ Horario de atención: {res['horario']}.
 
 Respondé con una BIENVENIDA CÁLIDA y corta, luego mostrá estas opciones numeradas:
 1️⃣ Ver el Menú del día
-2️⃣ Reservar / Modificar / Cancelar una reserva
+2️⃣ Reservar mesa
 3️⃣ Reservar con seña (asegurá tu lugar)
-4️⃣ Pedir para llevar (Delivery)
+4️⃣ Pedir Delivery 🛵
 
-Tono: amigable, español neutro, máximo 8 líneas. SOLO el texto del mensaje.
+Tono: amigable, español neutro, máximo 6 líneas. SOLO el texto del mensaje.
 """)
         if conv:
             at_actualizar_conversacion(record_id, "esperando_opcion", {})
         else:
             at_crear_conversacion(tel, "esperando_opcion")
 
-        return {"respuesta": bienvenida, "estado_nuevo": "esperando_opcion"}
+        return {"respuesta": bienvenida, "estado_nuevo": "esperando_opcion", "tipo_mensaje": "texto"}
 
     # ────────────────────────────────────────────────────────────────────────
     # ESTADO: esperando_opcion → Detectar opción elegida
@@ -297,39 +402,163 @@ Si no es claro, respondé 0.
 """).strip()
 
         if "1" in intencion:
-            menu_txt = gemini(f"""
-Sos el asistente de '{res['nombre']}'. 
-Generá un menú del día ficticio y apetitoso para un restaurante de parrilla argentina.
-Incluí sección de entradas, platos principales y postres con precios en ARS.
-Formato WhatsApp con emojis, máximo 12 líneas. SOLO el texto del mensaje.
-Terminá ofreciendo: "¿Querés hacer un pedido o reservar? 🙌"
-""")
-            at_actualizar_conversacion(record_id, "esperando_opcion", datos)
-            return {"respuesta": menu_txt, "estado_nuevo": "esperando_opcion"}
+            # Mostrar categorías del menú como lista interactiva
+            at_actualizar_conversacion(record_id, "menu_categorias", {})
+            return {
+                "respuesta": "📋 ¡Acá tenés nuestro menú! Elegí una categoría:",
+                "estado_nuevo": "menu_categorias",
+                "tipo_mensaje": "lista",
+                "lista": _respuesta_lista_categorias()
+            }
 
         elif "2" in intencion:
             resp = f"¡Perfecto! 📅 Para reservar tu mesa en *{res['nombre']}* necesito algunos datos:\n\n¿A nombre de quién va la reserva?"
             at_actualizar_conversacion(record_id, "datos_reserva", {"paso": "nombre", "tipo": "reserva_simple"})
-            return {"respuesta": resp, "estado_nuevo": "datos_reserva"}
+            return {"respuesta": resp, "estado_nuevo": "datos_reserva", "tipo_mensaje": "texto"}
 
         elif "3" in intencion:
             resp = f"¡Genial! 🎯 Para asegurarte el lugar con seña en *{res['nombre']}*:\n\n¿A nombre de quién va la reserva?"
             at_actualizar_conversacion(record_id, "datos_reserva", {"paso": "nombre", "tipo": "reserva_con_seña"})
-            return {"respuesta": resp, "estado_nuevo": "datos_reserva"}
+            return {"respuesta": resp, "estado_nuevo": "datos_reserva", "tipo_mensaje": "texto"}
 
         elif "4" in intencion:
-            menu_delivery = gemini(f"""
-Sos el asistente de '{res['nombre']}' para pedidos delivery.
-Generá un menú del día ficticio para parrilla argentina con precios en ARS.
-Formato WhatsApp con emojis. Máximo 10 líneas.
-Terminá con: "¿Qué te gustaría pedir? 🛵"
-SOLO el texto del mensaje.
-""")
-            at_actualizar_conversacion(record_id, "datos_delivery", {"tipo": "delivery"})
-            return {"respuesta": menu_delivery, "estado_nuevo": "datos_delivery"}
+            # Mostrar menú para delivery como lista interactiva
+            at_actualizar_conversacion(record_id, "menu_categorias", {"tipo": "delivery"})
+            return {
+                "respuesta": "🛵 ¡Genial! ¿Qué querés pedir? Elegí la categoría:",
+                "estado_nuevo": "menu_categorias",
+                "tipo_mensaje": "lista",
+                "lista": _respuesta_lista_categorias()
+            }
 
         else:
-            return {"respuesta": "¡Disculpá! No entendí tu respuesta. Por favor respondé con el número de opción: 1, 2, 3 o 4 👆", "estado_nuevo": "esperando_opcion"}
+            return {"respuesta": "¡Disculpá! No entendí tu respuesta. Por favor respondé con el número de opción: 1, 2, 3 o 4 👆", "estado_nuevo": "esperando_opcion", "tipo_mensaje": "texto"}
+
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: menu_categorias → El cliente elige una categoría del menú
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "menu_categorias":
+        # Detectar categoría (por rowId de lista interactiva o texto libre)
+        msg_lower = msg.lower().strip()
+        categoria_key = None
+        for key in MENU_DEMO:
+            if key in msg_lower or MENU_DEMO[key]["nombre"].lower() in msg_lower:
+                categoria_key = key
+                break
+        # También permitir selección por número
+        categorias_ordenadas = list(MENU_DEMO.keys())
+        if not categoria_key and msg_lower in ["1", "2", "3", "4", "5"]:
+            idx = int(msg_lower) - 1
+            if 0 <= idx < len(categorias_ordenadas):
+                categoria_key = categorias_ordenadas[idx]
+
+        if categoria_key:
+            datos["categoria_actual"] = categoria_key
+            at_actualizar_conversacion(record_id, "menu_items", datos)
+            return {
+                "respuesta": f"{MENU_DEMO[categoria_key]['emoji']} *{MENU_DEMO[categoria_key]['nombre']}* — elegí tu plato:",
+                "estado_nuevo": "menu_items",
+                "tipo_mensaje": "lista",
+                "lista": _respuesta_lista_items(categoria_key)
+            }
+        else:
+            return {
+                "respuesta": "No encontré esa categoría 🤔 Elegí una de la lista:",
+                "estado_nuevo": "menu_categorias",
+                "tipo_mensaje": "lista",
+                "lista": _respuesta_lista_categorias()
+            }
+
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: menu_items → El cliente elige un ítem del menú
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "menu_items":
+        cat_key = datos.get("categoria_actual", "principales")
+        cat = MENU_DEMO.get(cat_key, MENU_DEMO["principales"])
+        msg_lower = msg.lower().strip()
+
+        # Detectar ítem elegido por rowId, número o texto
+        item_elegido = None
+        item_idx = None
+        # Por rowId (ej: "principales_0")
+        if "_" in msg_lower:
+            parts = msg_lower.split("_")
+            if len(parts) == 2 and parts[1].isdigit():
+                idx = int(parts[1])
+                if 0 <= idx < len(cat["items"]):
+                    item_elegido = cat["items"][idx]
+                    item_idx = idx
+        # Por número (1, 2, 3)
+        if not item_elegido and msg_lower in ["1", "2", "3"]:
+            idx = int(msg_lower) - 1
+            if 0 <= idx < len(cat["items"]):
+                item_elegido = cat["items"][idx]
+                item_idx = idx
+        # Por texto parcial
+        if not item_elegido:
+            for i, item in enumerate(cat["items"]):
+                if msg_lower in item["nombre"].lower():
+                    item_elegido = item
+                    item_idx = i
+                    break
+
+        if item_elegido:
+            datos["item_elegido"] = item_elegido["nombre"]
+            datos["item_precio"] = item_elegido["precio"]
+            at_actualizar_conversacion(record_id, "menu_elegido", datos)
+
+            # Texto fallback + botones interactivos
+            txt = f"Elegiste: *{item_elegido['nombre']}* — ${item_elegido['precio']:,} ARS\n\n¿Qué querés hacer?\n\n1️⃣ 📅 Reservar mesa\n2️⃣ 🛵 Pedir Delivery\n3️⃣ ↩️ Volver al menú".replace(',','.')
+            return {
+                "respuesta": txt,
+                "estado_nuevo": "menu_elegido",
+                "tipo_mensaje": "botones",
+                "botones": _respuesta_botones_accion(item_elegido["nombre"], item_elegido["precio"])
+            }
+        else:
+            return {
+                "respuesta": f"No encontré ese plato 🤔 Elegí uno de la lista:",
+                "estado_nuevo": "menu_items",
+                "tipo_mensaje": "lista",
+                "lista": _respuesta_lista_items(cat_key)
+            }
+
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: menu_elegido → Reservar / Delivery / Volver
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "menu_elegido":
+        msg_lower = msg.lower().strip()
+        if msg_lower in ["1", "reservar", "reservar mesa", "📅"]:
+            resp = f"¡Perfecto! 📅 Para reservar tu mesa en *{res['nombre']}* necesito algunos datos:\n\n¿A nombre de quién va la reserva?"
+            datos["tipo"] = "reserva_simple"
+            datos["paso"] = "nombre"
+            at_actualizar_conversacion(record_id, "datos_reserva", datos)
+            return {"respuesta": resp, "estado_nuevo": "datos_reserva", "tipo_mensaje": "texto"}
+
+        elif msg_lower in ["2", "delivery", "pedir delivery", "🛵"]:
+            datos["tipo"] = "delivery"
+            at_actualizar_conversacion(record_id, "datos_delivery", datos)
+            return {
+                "respuesta": f"🛵 ¡Genial! Ya elegiste *{datos.get('item_elegido','')}*.\n\n¿Querés agregar algo más o confirmamos el pedido?\n\nDecime qué más querés o escribí *confirmar* para finalizar.",
+                "estado_nuevo": "datos_delivery",
+                "tipo_mensaje": "texto"
+            }
+
+        elif msg_lower in ["3", "volver", "volver al menú", "menu", "↩️", "volver al menu"]:
+            at_actualizar_conversacion(record_id, "menu_categorias", {})
+            return {
+                "respuesta": "📋 ¡Acá tenés nuestro menú! Elegí una categoría:",
+                "estado_nuevo": "menu_categorias",
+                "tipo_mensaje": "lista",
+                "lista": _respuesta_lista_categorias()
+            }
+
+        else:
+            return {
+                "respuesta": "No entendí 🤔 Respondé:\n1️⃣ Reservar mesa\n2️⃣ Pedir Delivery\n3️⃣ Volver al menú",
+                "estado_nuevo": "menu_elegido",
+                "tipo_mensaje": "texto"
+            }
 
     # ────────────────────────────────────────────────────────────────────────
     # ESTADO: datos_reserva → Captura paso a paso de los datos
