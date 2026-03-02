@@ -63,34 +63,50 @@ def at_buscar_conversacion(telefono: str) -> Optional[dict]:
     return records[0] if records else None
 
 def at_crear_conversacion(telefono: str, estado: str, datos: dict = {}) -> str:
-    """Crea un nuevo registro de conversación. Devuelve el record ID."""
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas"
-    payload = {"records": [{"fields": {
-        "telefono":            telefono,
-        "estado_actual":       estado,
-        "plan_activo":         "basic",
-        "datos_pedido":        json.dumps(datos, ensure_ascii=False),
-    }}]}
-    r = requests.post(url, headers=AT_HEADERS(), json=payload)
-    return r.json()["records"][0]["id"]
+    """Crea un nuevo registro de conversación. Devuelve el record ID o '' si falla."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas"
+        payload = {"records": [{"fields": {
+            "telefono":            telefono,
+            "estado_actual":       estado,
+            "plan_activo":         "basic",
+            "datos_pedido":        json.dumps(datos, ensure_ascii=False),
+        }}]}
+        r = requests.post(url, headers=AT_HEADERS(), json=payload)
+        data = r.json()
+        return data["records"][0]["id"]
+    except Exception as e:
+        print(f"[Airtable] Error al crear conversación: {e}")
+        return ""
 
 def at_actualizar_conversacion(record_id: str, estado: str, datos: dict = {}):
     """Actualiza el estado y datos de una conversación existente."""
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas/{record_id}"
-    requests.patch(url, headers=AT_HEADERS(), json={"fields": {
-        "estado_actual": estado,
-        "datos_pedido":  json.dumps(datos, ensure_ascii=False),
-    }})
+    if not record_id:
+        return
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas/{record_id}"
+        requests.patch(url, headers=AT_HEADERS(), json={"fields": {
+            "estado_actual": estado,
+            "datos_pedido":  json.dumps(datos, ensure_ascii=False),
+        }})
+    except Exception as e:
+        print(f"[Airtable] Error al actualizar conversación: {e}")
 
 def at_crear_reserva(datos: dict):
     """Guarda la reserva en la tabla Reservas."""
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
-    requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
+        requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
+    except Exception as e:
+        print(f"[Airtable] Error al crear reserva: {e}")
 
 def at_crear_pedido(datos: dict):
     """Guarda el pedido en la tabla pedidos."""
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
-    requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
+        requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
+    except Exception as e:
+        print(f"[Airtable] Error al crear pedido: {e}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -125,6 +141,15 @@ async def manejar_mensaje(entrada: MensajeEntrante):
     Lee el estado actual de Airtable, procesa el mensaje con Gemini, y devuelve la respuesta.
     n8n se encarga SOLO de enviar esa respuesta por WhatsApp (Evolution API).
     """
+    try:
+        return await _procesar_mensaje(entrada)
+    except Exception as e:
+        import traceback
+        print(f"[FATAL] Error en manejar_mensaje: {traceback.format_exc()}")
+        return {"respuesta": "Disculpá, tuve un problema técnico. Intentá de nuevo en un momento 🙏", "estado_nuevo": "nuevo", "_error": str(e)}
+
+
+async def _procesar_mensaje(entrada: MensajeEntrante):
     tel = entrada.telefono.strip()
     msg = entrada.mensaje.strip()
     res = RESTAURANTE_DEMO
