@@ -1,351 +1,386 @@
 """
-Worker Gastronómico — SaaS para Restaurantes, Bares y Cafés
-============================================================
-Endpoints:
-  POST /gastronomico/basic/reserva      → Plan BASIC (sin pasarela de pago)
-  POST /gastronomico/pro/reserva        → Plan PROFESIONAL (con seña MercadoPago/Stripe)
-  POST /gastronomico/premium/fidelizar  → Plan PREMIUM (cumpleaños + eventos)
+Worker Gastronómico BASIC — Opción C: Gemini Directo + Airtable como Estado
+=============================================================================
+Single endpoint que maneja toda la conversación con máquina de estados.
+Sin CrewAI → usa google-generativeai directamente → ~80MB RAM en Render.
 
-Integración: n8n Webhook → HTTP POST aquí → CrewAI → JSON Response → n8n envía WhatsApp
+Flujo n8n:
+  Webhook (Evolution API) → POST /gastronomico/basico/mensaje → Evolution API (respuesta)
+
+Variables de entorno requeridas en Render/Easypanel:
+  GEMINI_API_KEY       → Google AI Studio
+  AIRTABLE_API_KEY     → Token de Airtable
+  AIRTABLE_BASE_ID     → appdA5rJOmtVpDrx (base Automatizacion-Restaurantes)
+  NUMERO_DUENO         → +54911XXXXXXXX (para filtrar comandos admin)
 """
 
 import os
 import uuid
+import json
+import requests
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
-from crewai import Agent, Task, Crew
+from typing import Optional
+import google.generativeai as genai
 
 router = APIRouter(prefix="/gastronomico", tags=["SaaS Gastronómico"])
 
-MODELO = os.environ.get("CREWAI_MODEL", "gemini/gemini-2.5-flash")
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIGURACIÓN
+# ─────────────────────────────────────────────────────────────────────────────
+GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY", "")
+AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY", "")
+AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appdA5rJOmtVpDrx")
+NUMERO_DUENO     = os.environ.get("NUMERO_DUENO", "")
+
+genai.configure(api_key=GEMINI_API_KEY)
+modelo = genai.GenerativeModel("gemini-2.0-flash")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DATOS DEL RESTAURANTE DEMO (en producción vendrían de Airtable o Supabase)
+# ─────────────────────────────────────────────────────────────────────────────
+RESTAURANTE_DEMO = {
+    "nombre":          "La Parrilla de Don Alberto",
+    "cvu_alias":       "donalberto.parrilla",
+    "horario":         "Martes a Domingo, 12hs a 00hs",
+    "numero_dueno":    NUMERO_DUENO,
+}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MODELOS DE DATOS (Pydantic) — Lo que n8n envía en el body del POST
+# HELPERS DE AIRTABLE
 # ─────────────────────────────────────────────────────────────────────────────
+AT_HEADERS = lambda: {
+    "Authorization": f"Bearer {AIRTABLE_API_KEY}",
+    "Content-Type":  "application/json"
+}
 
-class DatosRestauranteBasic(BaseModel):
-    nombre_local: str
-    cvu_alias: str
-    horario_atencion: str
-    menu_del_dia: Optional[str] = ""
+def at_buscar_conversacion(telefono: str) -> Optional[dict]:
+    """Busca la conversación activa de un teléfono. Devuelve el record o None."""
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas"
+    r = requests.get(url, headers=AT_HEADERS(), params={"filterByFormula": f"{{telefono}}='{telefono}'"})
+    records = r.json().get("records", [])
+    return records[0] if records else None
 
+def at_crear_conversacion(telefono: str, estado: str, datos: dict = {}) -> str:
+    """Crea un nuevo registro de conversación. Devuelve el record ID."""
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas"
+    payload = {"records": [{"fields": {
+        "telefono":            telefono,
+        "estado_actual":       estado,
+        "plan_activo":         "basic",
+        "datos_pedido":        json.dumps(datos, ensure_ascii=False),
+    }}]}
+    r = requests.post(url, headers=AT_HEADERS(), json=payload)
+    return r.json()["records"][0]["id"]
 
-class PayloadBasic(BaseModel):
-    mensaje_cliente: str
-    restaurante: DatosRestauranteBasic
+def at_actualizar_conversacion(record_id: str, estado: str, datos: dict = {}):
+    """Actualiza el estado y datos de una conversación existente."""
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas/{record_id}"
+    requests.patch(url, headers=AT_HEADERS(), json={"fields": {
+        "estado_actual": estado,
+        "datos_pedido":  json.dumps(datos, ensure_ascii=False),
+    }})
 
+def at_crear_reserva(datos: dict):
+    """Guarda la reserva en la tabla Reservas."""
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
+    requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
 
-class DatosRestaurantePro(BaseModel):
-    nombre_local: str
-    alias_pago: str
-    pasarela: str = "MercadoPago"
-    monto_sena_porcentaje: int = 30
-    precio_promedio_cubierto: float
-    horario_atencion: str
-    mesas_disponibles: List[str] = []
-
-
-class PayloadPro(BaseModel):
-    nombre_cliente: str
-    telefono: str
-    mensaje_cliente: str
-    restaurante: DatosRestaurantePro
-
-
-class PerfilCliente(BaseModel):
-    nombre: str
-    fecha_cumpleanios: str
-    visitas_totales: int = 0
-    ultima_visita: Optional[str] = ""
-    plato_favorito: Optional[str] = ""
-    dias_para_cumpleanios: int = 0
-    tiene_reserva_activa: bool = False
-    canal_preferido: str = "WhatsApp"
-
-
-class EventoProximo(BaseModel):
-    nombre: str
-    fecha: str
-    descripcion: str
-
-
-class DatosRestaurantePremium(BaseModel):
-    nombre_local: str
-    tipo_cocina: str
-    obsequio_cumpleanios: str
-    descuento_especial: str
-    link_reserva: str
-    evento_proximo: Optional[EventoProximo] = None
-
-
-class PayloadPremium(BaseModel):
-    perfil_cliente: PerfilCliente
-    restaurante: DatosRestaurantePremium
+def at_crear_pedido(datos: dict):
+    """Guarda el pedido en la tabla pedidos."""
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
+    requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ENDPOINT 1: PLAN BASIC — Toma de Reservas y Confirmación de CVU
+# HELPERS DE GEMINI
 # ─────────────────────────────────────────────────────────────────────────────
+def gemini(prompt: str) -> str:
+    """Llama a Gemini y devuelve el texto de respuesta."""
+    try:
+        r = modelo.generate_content(prompt)
+        return r.text.strip()
+    except Exception as e:
+        return f"Lo siento, tuve un problema técnico. Por favor intentá de nuevo. ({str(e)[:50]})"
 
-@router.post("/basic/reserva", summary="Plan BASIC: Tomar reserva y confirmar CVU")
-async def reserva_basic(payload: PayloadBasic):
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MODELO DE DATOS
+# ─────────────────────────────────────────────────────────────────────────────
+class MensajeEntrante(BaseModel):
+    telefono:       str
+    mensaje:        str
+    tiene_imagen:   bool = False
+    es_admin:       bool = False   # n8n lo detecta comparando con NUMERO_DUENO
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENDPOINT PRINCIPAL — MÁQUINA DE ESTADOS
+# ─────────────────────────────────────────────────────────────────────────────
+@router.post("/basico/mensaje", summary="Plan BASIC: Maneja toda la conversación con máquina de estados")
+async def manejar_mensaje(entrada: MensajeEntrante):
     """
-    Recibe el mensaje de un cliente por WhatsApp y extrae los datos de reserva.
-    Devuelve el mensaje de confirmación listo para enviar por WhatsApp via n8n.
-
-    Flujo n8n: Webhook → POST /gastronomico/basic/reserva → WhatsApp (Evolution API)
+    Recibe cada mensaje de WhatsApp desde n8n.
+    Lee el estado actual de Airtable, procesa el mensaje con Gemini, y devuelve la respuesta.
+    n8n se encarga SOLO de enviar esa respuesta por WhatsApp (Evolution API).
     """
-    r = payload.restaurante
+    tel = entrada.telefono.strip()
+    msg = entrada.mensaje.strip()
+    res = RESTAURANTE_DEMO
 
-    recepcionista = Agent(
-        role="Recepcionista Virtual del Restaurante",
-        goal=(
-            "Extraer de forma precisa todos los datos de reserva de un cliente "
-            "(nombre, cantidad de personas, fecha y horario) desde un mensaje de WhatsApp. "
-            "Si falta algún dato, identificar cuál es y preparar la pregunta para solicitarlo cortésmente."
-        ),
-        backstory=(
-            f"Eres el asistente digital del restaurante '{r.nombre_local}'. "
-            f"Horario de atención: {r.horario_atencion}. "
-            "Hablas en español con tono amigable y profesional."
-        ),
-        llm=MODELO,
-        verbose=False
-    )
-
-    confirmador = Agent(
-        role="Confirmador de Reservas y Asistente de Delivery",
-        goal=(
-            "Redactar el mensaje final de confirmación de reserva con todos los datos del cliente, "
-            "incluyendo el CVU/Alias del local para confirmar pagos de delivery si aplica."
-        ),
-        backstory=(
-            f"Eres el sistema de backend del restaurante '{r.nombre_local}'. "
-            f"CVU/Alias del local para transferencias: {r.cvu_alias}. "
-            f"Menú del día disponible: {r.menu_del_dia or 'consultar en el local'}. "
-            "Redactas mensajes de WhatsApp breves (máximo 5 líneas) y claros."
-        ),
-        llm=MODELO,
-        verbose=False
-    )
-
-    tarea_extraccion = Task(
-        description=(
-            f"El cliente envió: '{payload.mensaje_cliente}'. "
-            "Extrae: nombre, personas, fecha, horario. "
-            "Indica si todos los datos están presentes o cuál falta."
-        ),
-        expected_output="Diccionario con: nombre, personas, fecha, horario, estado (completo/incompleto), dato_faltante si aplica.",
-        agent=recepcionista
-    )
-
-    tarea_confirmacion = Task(
-        description=(
-            "Con los datos extraídos, redacta el mensaje de confirmación de WhatsApp. "
-            f"Restaurante: {r.nombre_local}. "
-            "Si el cliente mencionó delivery, incluye el alias de pago. Máximo 5 líneas."
-        ),
-        expected_output="Texto exacto del mensaje de WhatsApp listo para enviar.",
-        agent=confirmador,
-        context=[tarea_extraccion]
-    )
+    # ── Leer estado actual desde Airtable ───────────────────────────────────
+    conv = at_buscar_conversacion(tel)
+    estado    = conv["fields"].get("estado_actual", "nuevo") if conv else "nuevo"
+    datos_raw = conv["fields"].get("datos_pedido", "{}") if conv else "{}"
+    record_id = conv["id"] if conv else None
 
     try:
-        crew = Crew(agents=[recepcionista, confirmador], tasks=[tarea_extraccion, tarea_confirmacion], verbose=False)
-        resultado = crew.kickoff()
+        datos = json.loads(datos_raw)
+    except Exception:
+        datos = {}
+
+    # ────────────────────────────────────────────────────────────────────────
+    # RUTA ADMIN: El dueño confirma el pago
+    # ────────────────────────────────────────────────────────────────────────
+    if entrada.es_admin and "pago confirmado" in msg.lower():
+        # Buscar conversación con estado verificando_pago
+        # (en producción se podría incluir el teléfono del cliente en el mensaje del dueño)
+        nro = datos.get("nro_pedido", "N/A")
+        tipo = datos.get("tipo", "pedido")
+
+        if tipo == "delivery":
+            ticket = gemini(f"""
+Generá un ticket de entrega de delivery para WhatsApp del restaurante '{res['nombre']}'.
+Datos del pedido:
+- N° Pedido: {nro}
+- Items: {datos.get('detalle', 'ver pedido')}
+- Total: ${datos.get('total', 0)} ARS
+- Estado: PAGADO Y CONFIRMADO ✅
+
+El ticket debe tener emojis, ser claro y breve (máximo 8 líneas).
+Incluí un mensaje de agradecimiento y el tiempo estimado de entrega (30-45 min).
+Respondé SOLO el texto del mensaje de WhatsApp.
+""")
+        else:
+            ticket = gemini(f"""
+Generá un ticket de confirmación de RESERVA para WhatsApp del restaurante '{res['nombre']}'.
+Datos:
+- N° Reserva: {nro}
+- Nombre: {datos.get('nombre_cliente', 'Cliente')}
+- Personas: {datos.get('personas', '?')}
+- Fecha: {datos.get('fecha', '?')}
+- Hora: {datos.get('hora', '?')}
+- Seña: CONFIRMADA ✅
+
+Formato de ticket con emojis, breve y profesional (máximo 8 líneas).
+Respondé SOLO el texto del mensaje de WhatsApp.
+""")
+
+        at_actualizar_conversacion(record_id, "completado", {})
         return {
-            "plan": "BASIC",
-            "restaurante": r.nombre_local,
-            "mensaje_cliente_original": payload.mensaje_cliente,
-            "respuesta_bot_whatsapp": str(resultado),
-            "estado": "reserva_procesada"
+            "respuesta": ticket,
+            "estado_nuevo": "completado",
+            "accion_extra": "notificar_cliente",
+            "telefono_cliente": datos.get("telefono_cliente", tel)
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en CrewAI Basic: {str(e)}")
 
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: nuevo o desconocido → Bienvenida + menú de opciones
+    # ────────────────────────────────────────────────────────────────────────
+    if estado in ["nuevo", "completado", "cancelado"] or not conv:
+        bienvenida = gemini(f"""
+Sos el asistente virtual del restaurante '{res['nombre']}'.
+Un cliente escribió: "{msg}"
+Horario de atención: {res['horario']}.
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ENDPOINT 2: PLAN PROFESIONAL — Reserva con Seña + Pasarela de Pago
-# ─────────────────────────────────────────────────────────────────────────────
+Respondé con una BIENVENIDA CÁLIDA y corta, luego mostrá estas opciones numeradas:
+1️⃣ Ver el Menú del día
+2️⃣ Reservar / Modificar / Cancelar una reserva
+3️⃣ Reservar con seña (asegurá tu lugar)
+4️⃣ Pedir para llevar (Delivery)
 
-@router.post("/pro/reserva", summary="Plan PROFESIONAL: Reserva con seña automática vía MercadoPago/Stripe")
-async def reserva_pro(payload: PayloadPro):
-    """
-    Confirma reserva, calcula la seña, genera N° de reserva y link de pago.
-    La mesa se asigna automáticamente desde la lista de disponibles.
+Tono: amigable, español neutro, máximo 8 líneas. SOLO el texto del mensaje.
+""")
+        if conv:
+            at_actualizar_conversacion(record_id, "esperando_opcion", {})
+        else:
+            at_crear_conversacion(tel, "esperando_opcion")
 
-    Flujo n8n: Webhook → POST /gastronomico/pro/reserva → WhatsApp Cloud API (Meta)
-    """
-    r = payload.restaurante
+        return {"respuesta": bienvenida, "estado_nuevo": "esperando_opcion"}
 
-    # Calcular seña antes de pasar al Crew
-    total_estimado = r.precio_promedio_cubierto * 6  # Estimado base; en prod vendría del msg
-    monto_sena = int(total_estimado * r.monto_sena_porcentaje / 100)
-    nro_reserva = f"RSV-{str(uuid.uuid4())[:6].upper()}"
-    mesa_asignada = r.mesas_disponibles[0] if r.mesas_disponibles else "Mesa por asignar"
-    link_pago = f"https://mp.com/checkout/v1/redirect?pref_id={nro_reserva}"
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: esperando_opcion → Detectar opción elegida
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "esperando_opcion":
+        intencion = gemini(f"""
+El cliente respondió: "{msg}"
+Las opciones disponibles eran:
+1 = Ver menú, 2 = Reservar, 3 = Seña para reserva, 4 = Delivery
 
-    recepcionista_pro = Agent(
-        role="Recepcionista Digital Premium",
-        goal="Verificar los datos de reserva y confirmar disponibilidad de mesa.",
-        backstory=(
-            f"Asistente del restaurante '{r.nombre_local}'. "
-            f"Horario: {r.horario_atencion}. "
-            f"Mesas disponibles: {', '.join(r.mesas_disponibles)}. "
-            "Hablas en español, tono sofisticado y breve."
-        ),
-        llm=MODELO,
-        verbose=False
-    )
+Respondé SOLO con el número de opción: 1, 2, 3 o 4.
+Si no es claro, respondé 0.
+""").strip()
 
-    notificador_pro = Agent(
-        role="Redactor de Confirmaciones Premium con Instrucción de Pago",
-        goal=(
-            "Redactar el mensaje de WhatsApp de confirmación con N° de reserva, "
-            "mesa, monto de seña, link de pago y alias. Máximo 8 líneas."
-        ),
-        backstory=(
-            f"Sistema de backend de pagos de '{r.nombre_local}'. "
-            f"Pasarela: {r.pasarela}. Alias: {r.alias_pago}. "
-            f"Seña calculada: ${monto_sena} ARS. N° reserva: {nro_reserva}. Mesa: {mesa_asignada}."
-        ),
-        llm=MODELO,
-        verbose=False
-    )
+        if "1" in intencion:
+            menu_txt = gemini(f"""
+Sos el asistente de '{res['nombre']}'. 
+Generá un menú del día ficticio y apetitoso para un restaurante de parrilla argentina.
+Incluí sección de entradas, platos principales y postres con precios en ARS.
+Formato WhatsApp con emojis, máximo 12 líneas. SOLO el texto del mensaje.
+Terminá ofreciendo: "¿Querés hacer un pedido o reservar? 🙌"
+""")
+            at_actualizar_conversacion(record_id, "esperando_opcion", datos)
+            return {"respuesta": menu_txt, "estado_nuevo": "esperando_opcion"}
 
-    tarea_verificacion = Task(
-        description=(
-            f"El cliente {payload.nombre_cliente} envió: '{payload.mensaje_cliente}'. "
-            "Verifica que tenga nombre, personas, fecha y horario completos. "
-            f"Confirma si el horario está dentro del horario del local: {r.horario_atencion}."
-        ),
-        expected_output="Resumen: datos de reserva confirmados, horario válido o no, mesa sugerida.",
-        agent=recepcionista_pro
-    )
+        elif "2" in intencion:
+            resp = f"¡Perfecto! 📅 Para reservar tu mesa en *{res['nombre']}* necesito algunos datos:\n\n¿A nombre de quién va la reserva?"
+            at_actualizar_conversacion(record_id, "datos_reserva", {"paso": "nombre", "tipo": "reserva_simple"})
+            return {"respuesta": resp, "estado_nuevo": "datos_reserva"}
 
-    tarea_mensaje_pago = Task(
-        description=(
-            f"Con los datos verificados, redacta el mensaje de confirmación para {payload.nombre_cliente}. "
-            f"Incluir: fecha/hora/personas, N° reserva ({nro_reserva}), mesa ({mesa_asignada}), "
-            f"seña (${monto_sena} ARS), link de pago ({link_pago}), alias ({r.alias_pago})."
-        ),
-        expected_output="Texto exacto del mensaje de WhatsApp de confirmación con todos los datos de pago.",
-        agent=notificador_pro,
-        context=[tarea_verificacion]
-    )
+        elif "3" in intencion:
+            resp = f"¡Genial! 🎯 Para asegurarte el lugar con seña en *{res['nombre']}*:\n\n¿A nombre de quién va la reserva?"
+            at_actualizar_conversacion(record_id, "datos_reserva", {"paso": "nombre", "tipo": "reserva_con_seña"})
+            return {"respuesta": resp, "estado_nuevo": "datos_reserva"}
 
-    try:
-        crew = Crew(agents=[recepcionista_pro, notificador_pro], tasks=[tarea_verificacion, tarea_mensaje_pago], verbose=False)
-        resultado = crew.kickoff()
-        return {
-            "plan": "PROFESIONAL",
-            "restaurante": r.nombre_local,
-            "cliente": payload.nombre_cliente,
-            "telefono": payload.telefono,
-            "nro_reserva": nro_reserva,
-            "mesa_asignada": mesa_asignada,
-            "monto_sena_ars": monto_sena,
-            "link_pago_generado": link_pago,
-            "respuesta_bot_whatsapp": str(resultado),
-            "estado": "sena_pendiente_de_pago"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en CrewAI Pro: {str(e)}")
+        elif "4" in intencion:
+            menu_delivery = gemini(f"""
+Sos el asistente de '{res['nombre']}' para pedidos delivery.
+Generá un menú del día ficticio para parrilla argentina con precios en ARS.
+Formato WhatsApp con emojis. Máximo 10 líneas.
+Terminá con: "¿Qué te gustaría pedir? 🛵"
+SOLO el texto del mensaje.
+""")
+            at_actualizar_conversacion(record_id, "datos_delivery", {"tipo": "delivery"})
+            return {"respuesta": menu_delivery, "estado_nuevo": "datos_delivery"}
 
+        else:
+            return {"respuesta": "¡Disculpá! No entendí tu respuesta. Por favor respondé con el número de opción: 1, 2, 3 o 4 👆", "estado_nuevo": "esperando_opcion"}
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ENDPOINT 3: PLAN PREMIUM — Motor de Fidelización (Cumpleaños + Eventos)
-# ─────────────────────────────────────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: datos_reserva → Captura paso a paso de los datos
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "datos_reserva":
+        paso = datos.get("paso", "nombre")
 
-@router.post("/premium/fidelizar", summary="Plan PREMIUM: Generador de mensajes de cumpleaños y eventos")
-async def fidelizar_premium(payload: PayloadPremium):
-    """
-    Trigger: CRON Job diario en n8n detecta clientes con cumpleaños hoy.
-    Genera el mensaje de felicitación personalizado con obsequio, descuento y evento del local.
+        if paso == "nombre":
+            datos["nombre_cliente"] = msg
+            datos["paso"] = "personas"
+            at_actualizar_conversacion(record_id, "datos_reserva", datos)
+            return {"respuesta": f"Perfecto *{msg}* 😊 ¿Para cuántas personas es la reserva?", "estado_nuevo": "datos_reserva"}
 
-    Flujo n8n: Schedule Trigger → Airtable CRM → POST /gastronomico/premium/fidelizar → WhatsApp
-    """
-    c = payload.perfil_cliente
-    r = payload.restaurante
+        elif paso == "personas":
+            datos["personas"] = msg
+            datos["paso"] = "fecha"
+            at_actualizar_conversacion(record_id, "datos_reserva", datos)
+            return {"respuesta": "¿Para qué fecha? 📅 (ej: sábado 8 de marzo)", "estado_nuevo": "datos_reserva"}
 
-    analista = Agent(
-        role="Analista de Perfil de Fidelización",
-        goal="Determinar el nivel del cliente (VIP/Regular) y la estrategia de comunicación ideal.",
-        backstory=(
-            f"Sistema CRM de '{r.nombre_local}'. "
-            f"El cliente {c.nombre} tiene {c.visitas_totales} visitas. "
-            "Más de 5 visitas = cliente VIP con trato diferencial."
-        ),
-        llm=MODELO,
-        verbose=False
-    )
+        elif paso == "fecha":
+            datos["fecha"] = msg
+            datos["paso"] = "hora"
+            at_actualizar_conversacion(record_id, "datos_reserva", datos)
+            return {"respuesta": "¿A qué horario? ⏰ (ej: 21hs)", "estado_nuevo": "datos_reserva"}
 
-    copywriter = Agent(
-        role="Copywriter de Felicitaciones de Cumpleaños",
-        goal=(
-            "Redactar un mensaje de felicitación de cumpleaños personalizado para WhatsApp. "
-            "Máximo 7 líneas. Emojis con moderación. Tono cálido y elegante."
-        ),
-        backstory=(
-            f"Escritor creativo de '{r.nombre_local}' ({r.tipo_cocina}). "
-            f"Obsequio de la casa: {r.obsequio_cumpleanios}. "
-            f"Descuento especial: {r.descuento_especial}. "
-            f"Link de reserva: {r.link_reserva}. "
-            f"Plato favorito del cliente: {c.plato_favorito or 'no registrado'}."
-        ),
-        llm=MODELO,
-        verbose=False
-    )
+        elif paso == "hora":
+            datos["hora"] = msg
+            datos["paso"] = "completo"
+            nro = f"RSV-{str(uuid.uuid4())[:5].upper()}"
+            datos["nro_pedido"] = nro
+            datos["telefono_cliente"] = tel
 
-    tarea_analisis = Task(
-        description=(
-            f"Analiza el perfil: {c.visitas_totales} visitas totales, última visita {c.ultima_visita}. "
-            f"¿Es hoy su cumpleaños? ('dias_para_cumpleanios' = {c.dias_para_cumpleanios}). "
-            f"¿Tiene reserva activa? {c.tiene_reserva_activa}. "
-            "Define: nivel del cliente, tono del mensaje, si incluir link de reserva."
-        ),
-        expected_output="Resumen estratégico: nivel, tono recomendado, incluir reserva true/false.",
-        agent=analista
-    )
+            # Guardar reserva en Airtable
+            campos_reserva = {
+                "Nombre":      datos["nombre_cliente"],
+                "Fecha":       datos["fecha"],
+                "Hora":        datos["hora"],
+                "Personas":    int(datos.get("personas", 1)),
+                "Estado":      "pendiente",
+                "Nro_Reserva": nro,
+                "Telefono":    tel,
+                "Tipo":        datos.get("tipo", "reserva_simple"),
+            }
+            at_crear_reserva(campos_reserva)
 
-    descripcion_evento = ""
-    if r.evento_proximo:
-        descripcion_evento = (
-            f"Si el cliente es VIP y no tiene reserva activa, añade al final una invitación al evento: "
-            f"'{r.evento_proximo.nombre}' el {r.evento_proximo.fecha}. "
-            f"({r.evento_proximo.descripcion}). Máximo 2 líneas extra."
-        )
+            if datos.get("tipo") == "reserva_con_seña":
+                msg_pago = gemini(f"""
+El cliente {datos['nombre_cliente']} reservó una mesa para {datos['personas']} personas
+el {datos['fecha']} a las {datos['hora']} en '{res['nombre']}'.
+N° de Reserva: {nro}
 
-    tarea_mensaje = Task(
-        description=(
-            f"Redacta el mensaje de cumpleaños para {c.nombre}. "
-            f"Restaurante: {r.nombre_local}. "
-            f"Plato favorito: {c.plato_favorito}. "
-            f"Obsequio: {r.obsequio_cumpleanios}. Descuento: {r.descuento_especial}. "
-            f"Link reserva: {r.link_reserva}. "
-            f"{descripcion_evento}"
-        ),
-        expected_output="Texto final del mensaje de WhatsApp listo para enviar.",
-        agent=copywriter,
-        context=[tarea_analisis]
-    )
+Generá un mensaje de WhatsApp pidiendo la seña para confirmar el lugar.
+La seña es del 30% del consumo estimado (aprox $3000 ARS por persona para {datos['personas']} personas).
+Calculalo y pedí la transferencia al alias: {res['cvu_alias']}
+Pedí que manden la captura del pago para confirmar.
+Español amigable, máximo 8 líneas, con emojis. SOLO el texto.
+""")
+                at_actualizar_conversacion(record_id, "esperando_pago", datos)
+                return {"respuesta": msg_pago, "estado_nuevo": "esperando_pago"}
+            else:
+                confirmacion = f"✅ *Reserva Confirmada* en {res['nombre']}!\n\n📋 N° *{nro}*\n👤 {datos['nombre_cliente']}\n👥 {datos['personas']} personas\n📅 {datos['fecha']} a las {datos['hora']}\n\n¡Te esperamos! Si necesitás modificarla, escribinos 😊"
+                at_actualizar_conversacion(record_id, "completado", {})
+                return {"respuesta": confirmacion, "estado_nuevo": "completado"}
 
-    try:
-        crew = Crew(agents=[analista, copywriter], tasks=[tarea_analisis, tarea_mensaje], verbose=False)
-        resultado = crew.kickoff()
-        return {
-            "plan": "PREMIUM",
-            "tipo_disparo": "cumpleanios",
-            "restaurante": r.nombre_local,
-            "cliente": c.nombre,
-            "canal": c.canal_preferido,
-            "mensaje_generado": str(resultado),
-            "obsequio_incluido": r.obsequio_cumpleanios,
-            "descuento_incluido": r.descuento_especial,
-            "evento_promovido": r.evento_proximo.nombre if r.evento_proximo else None,
-            "estado": "listo_para_envio"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en CrewAI Premium: {str(e)}")
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: datos_delivery → El cliente dice qué quiere pedir
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "datos_delivery":
+        nro = f"PED-{str(uuid.uuid4())[:5].upper()}"
+        total_estimado = gemini(f"""
+El cliente pidió: "{msg}" para delivery de una parrilla argentina.
+Calculá el total estimado basado en precios promedio argentinos (2025).
+Respondé SOLO con el número del total en ARS, sin texto adicional. Solo el número.
+""").strip().replace("$", "").replace(".", "").replace(",", "").split()[0]
+
+        try:
+            total = int(total_estimado)
+        except Exception:
+            total = 3500
+
+        datos.update({"detalle": msg, "total": total, "nro_pedido": nro, "telefono_cliente": tel})
+
+        # Guardar pedido en Airtable
+        at_crear_pedido({
+            "nro_pedido":      nro,
+            "telefono_cliente": tel,
+            "tipo":            "delivery",
+            "detalle":         msg,
+            "total_ars":       total,
+            "estado_pago":     "pendiente",
+        })
+
+        msg_pago = gemini(f"""
+El cliente pidió: "{msg}" para delivery.
+Total estimado: ${total} ARS.
+N° de pedido: {nro}
+
+Generá el resumen del pedido y pedí la transferencia al alias: {res['cvu_alias']}
+Aclará que deben mandar la captura del pago para que arranquemos a preparar.
+Español amigable, máximo 8 líneas, emojis. SOLO el texto del mensaje de WhatsApp.
+""")
+        at_actualizar_conversacion(record_id, "esperando_pago", datos)
+        return {"respuesta": msg_pago, "estado_nuevo": "esperando_pago"}
+
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: esperando_pago → Cliente envía imagen o sigue con texto
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "esperando_pago":
+        if entrada.tiene_imagen:
+            datos["tiene_comprobante"] = True
+            at_actualizar_conversacion(record_id, "verificando_pago", datos)
+            return {
+                "respuesta":           "¡Recibimos tu comprobante! ⏳ El equipo lo está verificando. En breve te confirmamos.",
+                "estado_nuevo":        "verificando_pago",
+                "notificar_dueno":     True,
+                "mensaje_para_dueno":  f"🔔 *Nuevo pago pendiente*\n• N°: {datos.get('nro_pedido','?')}\n• Pedido: {datos.get('detalle', datos.get('tipo','?'))}\n• Total: ${datos.get('total','?')} ARS\n• Cliente: {tel}\n\nVerificá la transferencia y respondé: *PAGO CONFIRMADO*",
+            }
+        else:
+            return {"respuesta": f"Cuando hagas la transferencia al alias *{res['cvu_alias']}*, mandame la captura 📸 y confirmamos tu pedido!", "estado_nuevo": "esperando_pago"}
+
+    # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: verificando_pago → Solo el dueño puede avanzar
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "verificando_pago":
+        return {"respuesta": "Tu pago está siendo verificado ⏳. En breve te confirmamos. ¡Gracias por tu paciencia!", "estado_nuevo": "verificando_pago"}
+
+    # Fallback
+    return {"respuesta": "¡Hola! ¿En qué te puedo ayudar hoy? 😊", "estado_nuevo": "nuevo"}
