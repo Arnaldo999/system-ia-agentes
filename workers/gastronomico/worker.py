@@ -36,6 +36,23 @@ NUMERO_DUENO     = os.environ.get("NUMERO_DUENO", "")
 genai.configure(api_key=GEMINI_API_KEY)
 modelo = genai.GenerativeModel("gemini-2.5-flash-lite")
 
+
+@router.get("/debug/airtable", summary="Debug: Verifica conexión con Airtable")
+def debug_airtable():
+    """Prueba la conexión con Airtable y devuelve el resultado."""
+    resultado = {
+        "AIRTABLE_API_KEY": f"✅ ({len(AIRTABLE_API_KEY)} chars)" if AIRTABLE_API_KEY else "❌ vacía",
+        "AIRTABLE_BASE_ID": AIRTABLE_BASE_ID,
+    }
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas?maxRecords=1"
+        r = requests.get(url, headers=AT_HEADERS())
+        resultado["status_code"] = r.status_code
+        resultado["respuesta_airtable"] = r.json()
+    except Exception as e:
+        resultado["error"] = str(e)
+    return resultado
+
 # ─────────────────────────────────────────────────────────────────────────────
 # DATOS DEL RESTAURANTE DEMO (en producción vendrían de Airtable o Supabase)
 # ─────────────────────────────────────────────────────────────────────────────
