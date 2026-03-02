@@ -201,6 +201,25 @@ def _respuesta_botones_accion(item_nombre: str, item_precio: int):
     }
 
 
+def _texto_categorias():
+    """Texto fallback con las categorías numeradas."""
+    lineas = ["📋 *Menú del Día* — Elegí una categoría:\n"]
+    for i, (key, cat) in enumerate(MENU_DEMO.items(), 1):
+        lineas.append(f"{i}️⃣ {cat['emoji']} *{cat['nombre']}* — {cat['descripcion']}")
+    lineas.append("\nRespondé con el *número* de la categoría 👆")
+    return "\n".join(lineas)
+
+
+def _texto_items(categoria_key: str):
+    """Texto fallback con los ítems de una categoría numerados."""
+    cat = MENU_DEMO[categoria_key]
+    lineas = [f"{cat['emoji']} *{cat['nombre']}*\n"]
+    for i, item in enumerate(cat["items"], 1):
+        lineas.append(f"{i}️⃣ {item['nombre']} — *${item['precio']:,} ARS*".replace(',','.'))
+    lineas.append("\nRespondé con el *número* del plato 😋")
+    return "\n".join(lineas)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS DE AIRTABLE
 # ─────────────────────────────────────────────────────────────────────────────
@@ -405,7 +424,7 @@ Si no es claro, respondé 0.
             # Mostrar categorías del menú como lista interactiva
             at_actualizar_conversacion(record_id, "menu_categorias", {})
             return {
-                "respuesta": "📋 ¡Acá tenés nuestro menú! Elegí una categoría:",
+                "respuesta": _texto_categorias(),
                 "estado_nuevo": "menu_categorias",
                 "tipo_mensaje": "lista",
                 "lista": _respuesta_lista_categorias()
@@ -425,7 +444,7 @@ Si no es claro, respondé 0.
             # Mostrar menú para delivery como lista interactiva
             at_actualizar_conversacion(record_id, "menu_categorias", {"tipo": "delivery"})
             return {
-                "respuesta": "🛵 ¡Genial! ¿Qué querés pedir? Elegí la categoría:",
+                "respuesta": "🛵 ¡Genial! ¿Qué querés pedir?\n\n" + _texto_categorias(),
                 "estado_nuevo": "menu_categorias",
                 "tipo_mensaje": "lista",
                 "lista": _respuesta_lista_categorias()
@@ -456,14 +475,14 @@ Si no es claro, respondé 0.
             datos["categoria_actual"] = categoria_key
             at_actualizar_conversacion(record_id, "menu_items", datos)
             return {
-                "respuesta": f"{MENU_DEMO[categoria_key]['emoji']} *{MENU_DEMO[categoria_key]['nombre']}* — elegí tu plato:",
+                "respuesta": _texto_items(categoria_key),
                 "estado_nuevo": "menu_items",
                 "tipo_mensaje": "lista",
                 "lista": _respuesta_lista_items(categoria_key)
             }
         else:
             return {
-                "respuesta": "No encontré esa categoría 🤔 Elegí una de la lista:",
+                "respuesta": "No encontré esa categoría 🤔\n\n" + _texto_categorias(),
                 "estado_nuevo": "menu_categorias",
                 "tipo_mensaje": "lista",
                 "lista": _respuesta_lista_categorias()
@@ -517,7 +536,7 @@ Si no es claro, respondé 0.
             }
         else:
             return {
-                "respuesta": f"No encontré ese plato 🤔 Elegí uno de la lista:",
+                "respuesta": "No encontré ese plato 🤔\n\n" + _texto_items(cat_key),
                 "estado_nuevo": "menu_items",
                 "tipo_mensaje": "lista",
                 "lista": _respuesta_lista_items(cat_key)
@@ -547,7 +566,7 @@ Si no es claro, respondé 0.
         elif msg_lower in ["3", "volver", "volver al menú", "menu", "↩️", "volver al menu"]:
             at_actualizar_conversacion(record_id, "menu_categorias", {})
             return {
-                "respuesta": "📋 ¡Acá tenés nuestro menú! Elegí una categoría:",
+                "respuesta": _texto_categorias(),
                 "estado_nuevo": "menu_categorias",
                 "tipo_mensaje": "lista",
                 "lista": _respuesta_lista_categorias()
