@@ -34,7 +34,7 @@ AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appdA5rJOmtVpDrx")
 NUMERO_DUENO     = os.environ.get("NUMERO_DUENO", "")
 
 genai.configure(api_key=GEMINI_API_KEY)
-modelo = genai.GenerativeModel("gemini-2.0-flash")
+modelo = genai.GenerativeModel("gemini-2.5-flash-lite")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DATOS DEL RESTAURANTE DEMO (en producción vendrían de Airtable o Supabase)
