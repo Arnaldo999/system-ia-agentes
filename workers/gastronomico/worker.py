@@ -42,15 +42,28 @@ def debug_airtable():
     """Prueba la conexión con Airtable y devuelve el resultado."""
     resultado = {
         "AIRTABLE_API_KEY": f"✅ ({len(AIRTABLE_API_KEY)} chars)" if AIRTABLE_API_KEY else "❌ vacía",
+        "AIRTABLE_API_KEY_inicio": AIRTABLE_API_KEY[:10] + "..." if AIRTABLE_API_KEY else "N/A",
         "AIRTABLE_BASE_ID": AIRTABLE_BASE_ID,
     }
+    # Test 1: Listar bases disponibles con este token
+    try:
+        r1 = requests.get("https://api.airtable.com/v0/meta/bases", headers=AT_HEADERS())
+        resultado["bases_status"] = r1.status_code
+        if r1.status_code == 200:
+            bases = r1.json().get("bases", [])
+            resultado["bases_disponibles"] = [{"id": b["id"], "name": b["name"]} for b in bases]
+        else:
+            resultado["bases_error"] = r1.json()
+    except Exception as e:
+        resultado["bases_error"] = str(e)
+    # Test 2: Acceder a la tabla
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas?maxRecords=1"
-        r = requests.get(url, headers=AT_HEADERS())
-        resultado["status_code"] = r.status_code
-        resultado["respuesta_airtable"] = r.json()
+        r2 = requests.get(url, headers=AT_HEADERS())
+        resultado["tabla_status"] = r2.status_code
+        resultado["tabla_respuesta"] = r2.json()
     except Exception as e:
-        resultado["error"] = str(e)
+        resultado["tabla_error"] = str(e)
     return resultado
 
 # ─────────────────────────────────────────────────────────────────────────────
