@@ -6,3 +6,5 @@ python-multipart==0.0.9
 google-generativeai==0.8.3
 openai==1.59.3
 Pillow==10.4.0
+crewai>=0.108.0
+langchain-google-genai>=2.0.0
