@@ -5,6 +5,7 @@ from workers.whatsapp.worker import router as whatsapp_router
 from workers.crm.worker import router as crm_router
 from workers.agenda.worker import router as agenda_router
 from workers.comercio.worker import router as comercio_router
+from workers.gastronomico.worker import router as gastronomico_router
 
 app = FastAPI(
     title="System IA — Cerebro Central",
@@ -15,12 +16,13 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# ── Routers de los 5 Workers ─────────────────────────────────────────────────
+# ── Routers de los 6 Workers ─────────────────────────────────────────────────
 app.include_router(social_router)
 app.include_router(whatsapp_router)
 app.include_router(crm_router)
 app.include_router(agenda_router)
 app.include_router(comercio_router)
+app.include_router(gastronomico_router)
 
 
 # ── Rutas de sistema ─────────────────────────────────────────────────────────
@@ -54,6 +56,11 @@ def root():
             ],
             "comercio": [
                 "POST /comercio/procesar-whatsapp"
+            ],
+            "gastronomico": [
+                "POST /gastronomico/basic/reserva",
+                "POST /gastronomico/pro/reserva",
+                "POST /gastronomico/premium/fidelizar"
             ]
         }
     }
@@ -66,7 +73,7 @@ def health_check():
     return {
         "status": "healthy",
         "gemini_api": "configured" if gemini_ok else "ERROR — falta GEMINI_API_KEY",
-        "workers_activos": 4
+        "workers_activos": 6
     }
 
 
