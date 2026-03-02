@@ -56,14 +56,33 @@ def debug_airtable():
             resultado["bases_error"] = r1.json()
     except Exception as e:
         resultado["bases_error"] = str(e)
-    # Test 2: Acceder a la tabla
+    # Test 2: Ver campos reales de la tabla
     try:
-        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas?maxRecords=1"
-        r2 = requests.get(url, headers=AT_HEADERS())
-        resultado["tabla_status"] = r2.status_code
-        resultado["tabla_respuesta"] = r2.json()
+        schema_url = f"https://api.airtable.com/v0/meta/bases/{AIRTABLE_BASE_ID}/tables"
+        r_schema = requests.get(schema_url, headers=AT_HEADERS())
+        if r_schema.status_code == 200:
+            for t in r_schema.json().get("tables", []):
+                if t["name"] == "conversaciones_activas":
+                    resultado["campos_reales"] = [f["name"] for f in t.get("fields", [])]
+                    break
+        else:
+            resultado["schema_error"] = r_schema.json()
     except Exception as e:
-        resultado["tabla_error"] = str(e)
+        resultado["schema_error"] = str(e)
+    # Test 3: Intentar escribir un registro de prueba
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas"
+        test_payload = {"records": [{"fields": {
+            "telefono": "TEST_DEBUG",
+            "estado_actual": "test",
+            "plan_activo": "basic",
+            "datos_pedido": "{}"
+        }}]}
+        r_write = requests.post(url, headers=AT_HEADERS(), json=test_payload)
+        resultado["test_escritura_status"] = r_write.status_code
+        resultado["test_escritura_resp"] = r_write.json()
+    except Exception as e:
+        resultado["test_escritura_error"] = str(e)
     return resultado
 
 # ─────────────────────────────────────────────────────────────────────────────
