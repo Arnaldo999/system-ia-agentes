@@ -356,12 +356,10 @@ def at_crear_pedido(datos: dict) -> dict:
     """Guarda el pedido en la tabla pedidos."""
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
-        nombre = datos.get("nombre", "")
-        detalle_base = datos.get("detalle", "")
-        detalle_completo = f"{nombre} — {detalle_base}" if nombre else detalle_base
         campos = {
+            "nombre_cliente":   datos.get("nombre", ""),
             "telefono_cliente": datos.get("telefono", ""),
-            "detalle":          detalle_completo,
+            "detalle":          datos.get("detalle", ""),
             "total_ars":        float(datos.get("total", 0)),
             "nro_pedido":       datos.get("nro_pedido", ""),
             "estado_pago":      "pendiente",
