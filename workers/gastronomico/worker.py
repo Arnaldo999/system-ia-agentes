@@ -706,10 +706,11 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 # WHISPER — TRANSCRIPCIÓN DE AUDIO
 # ─────────────────────────────────────────────────────────────────────────────
-def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
+def transcribir_audio(audio_url: str = "", audio_base64: str = "", audio_msg_raw: str = "{}") -> str:
     """
-    Intenta obtener el audio por 3 métodos en cascada:
-      1. Base64 embebido (Evolution API getBase64FromMediaMessage)
+    Intenta obtener el audio por 4 métodos en cascada:
+      0. Evolution API getBase64FromMediaMessage (audio_msg_raw con key+message)
+      1. Base64 embebido directamente
       2. URL descargable directamente
       3. URL con header apikey (Evolution API autenticado)
     Luego transcribe con Whisper y devuelve el texto.
@@ -742,6 +743,39 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
             if url.lower().endswith(ext):
                 return ext
         return ".ogg"   # WhatsApp PTT siempre es OGG/Opus
+
+    # ── Método 0: Evolution API getBase64FromMediaMessage ─────────────────
+    if audio_msg_raw and audio_msg_raw not in ("{}", "") and not audio_bytes:
+        evo_url      = os.environ.get("EVOLUTION_API_URL", "")
+        evo_instance = os.environ.get("EVOLUTION_INSTANCE", "")
+        evo_key      = os.environ.get("EVOLUTION_API_KEY", "")
+        try:
+            msg_data = json.loads(audio_msg_raw)
+            resp = requests.post(
+                f"{evo_url}/chat/getBase64FromMediaMessage/{evo_instance}",
+                json={"message": msg_data, "convertToMp4": False},
+                headers={"apikey": evo_key, "Content-Type": "application/json"},
+                timeout=30,
+            )
+            if resp.status_code == 200:
+                result    = resp.json()
+                b64_data  = result.get("base64", "")
+                if b64_data:
+                    audio_bytes  = b64.b64decode(b64_data)
+                    # Obtener mimetype desde el audioMessage
+                    audio_msg_obj = msg_data.get("message", {})
+                    audio_info    = audio_msg_obj.get("audioMessage", audio_msg_obj.get("pttMessage", {}))
+                    content_type  = audio_info.get("mimetype", "audio/ogg")
+                    # audio_url para detectar extensión si es necesario
+                    audio_url = audio_url or audio_info.get("url", "")
+                    metodo_usado  = "evolution_getBase64"
+                    print(f"[Whisper] Método 0 (Evolution getBase64) OK — {len(audio_bytes)} bytes — CT: {content_type}")
+                else:
+                    print(f"[Whisper] Método 0 (Evolution getBase64) respuesta sin base64")
+            else:
+                print(f"[Whisper] Método 0 (Evolution getBase64) status={resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            print(f"[Whisper] Método 0 (Evolution getBase64) FALLÓ: {e}")
 
     # ── Método 1: base64 embebido ──────────────────────────────────────────
     if audio_base64 and not audio_bytes:
@@ -814,12 +848,13 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
 # SCHEMA DE ENTRADA
 # ─────────────────────────────────────────────────────────────────────────────
 class MensajeEntrante(BaseModel):
-    telefono:     str
-    mensaje:      str = ""
-    tiene_imagen: bool = False
-    es_admin:     bool = False
-    audio_url:    str = ""    # URL del audio (WhatsApp CDN o Evolution API)
-    audio_base64: str = ""    # Base64 del audio (de getBase64FromMediaMessage)
+    telefono:      str
+    mensaje:       str = ""
+    tiene_imagen:  bool = False
+    es_admin:      bool = False
+    audio_url:     str = ""    # URL del audio (WhatsApp CDN)
+    audio_base64:  str = ""    # Base64 embebido (si Evolution lo envía)
+    audio_msg_raw: str = "{}"  # JSON con {key, message} para getBase64FromMediaMessage
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ENDPOINT PRINCIPAL
@@ -831,8 +866,12 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         msg = entrada.mensaje.strip()
 
         # ── Transcripción de audio (Whisper) ──────────────────────────────
-        if entrada.audio_url or entrada.audio_base64:
-            transcripcion = transcribir_audio(entrada.audio_url, entrada.audio_base64)
+        tiene_audio = (entrada.audio_url or entrada.audio_base64
+                       or entrada.audio_msg_raw not in ("{}", ""))
+        if tiene_audio:
+            transcripcion = transcribir_audio(
+                entrada.audio_url, entrada.audio_base64, entrada.audio_msg_raw
+            )
             if transcripcion:
                 msg = transcripcion   # Reemplazar mensaje con el texto transcripto
             else:
