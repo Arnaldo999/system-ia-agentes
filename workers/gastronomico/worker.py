@@ -362,7 +362,7 @@ def debug_test_reserva():
     })
     return resultado
 
-@router.delete("/debug/reset/{telefono}", summary="Debug: Borrar conversación")
+@router.get("/debug/reset/{telefono}", summary="Debug: Borrar conversación")
 def debug_reset(telefono: str):
     conv = at_get_conversacion(telefono)
     if not conv:
