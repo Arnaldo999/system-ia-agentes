@@ -341,6 +341,35 @@ def at_crear_pedido(datos: dict) -> dict:
         print(f"[AT] Error crear_pedido: {e}")
         return {"ok": False, "error": str(e)}
 
+def at_buscar_reserva(nombre: str, telefono: str) -> dict | None:
+    """Busca la reserva más reciente por nombre y teléfono."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
+        formula = f"AND({{Nombre}}='{nombre}', {{telefono}}='{telefono}')"
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "filterByFormula": formula,
+            "sort[0][field]": "Fecha",
+            "sort[0][direction]": "desc",
+            "maxRecords": 1,
+        })
+        records = r.json().get("records", [])
+        return records[0] if records else None
+    except Exception as e:
+        print(f"[AT] Error buscar_reserva: {e}")
+        return None
+
+def at_actualizar_reserva(record_id: str, campos: dict) -> dict:
+    """Actualiza (PATCH) una reserva existente en Airtable."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas/{record_id}"
+        r = requests.patch(url, headers=AT_HEADERS(), json={"fields": campos})
+        resp = r.json()
+        print(f"[AT] Actualizar reserva {record_id} → status={r.status_code} resp={resp}")
+        return {"ok": r.status_code == 200, "resp": resp}
+    except Exception as e:
+        print(f"[AT] Error actualizar_reserva: {e}")
+        return {"ok": False, "error": str(e)}
+
 def notificar_dueno(mensaje: str):
     """Envía notificación al dueño por Evolution API."""
     evo_url = os.environ.get("EVOLUTION_API_URL", "")
@@ -464,38 +493,52 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
         }
 
     elif tipo == "modificar_reserva":
-        # La modificación es una nueva reserva con nota de cambio
-        nro = f"RSV-{str(uuid.uuid4())[:5].upper()}"
-        resultado = at_crear_reserva({
-            **accion,
-            "telefono": tel,
-            "nro_reserva": nro,
-            "especificaciones": accion.get("nota", "Modificación de reserva anterior"),
-        })
-        print(f"[Acción] Modificar reserva → {resultado}")
+        # Buscar la reserva existente por nombre + teléfono
+        reserva_existente = at_buscar_reserva(accion.get("nombre", ""), tel)
+        if not reserva_existente:
+            return {
+                "ok": False,
+                "mensaje_error": (
+                    f"⚠️ No encontré una reserva a nombre de *{accion.get('nombre')}* en nuestro sistema.\n\n"
+                    f"Si desea hacer una nueva reserva, elija la opción 2 del menú."
+                )
+            }
+        record_id = reserva_existente["id"]
+        try:
+            personas_num = int(str(accion.get("personas", reserva_existente["fields"].get("Personas", 1))).strip().strip('"'))
+        except Exception:
+            personas_num = reserva_existente["fields"].get("Personas", 1)
+
+        campos_nuevos = {
+            "Fecha":  str(accion.get("fecha_iso", "")).strip()[:10],
+            "Hora":   str(accion.get("hora", "")).strip(),
+            "Personas": personas_num,
+            "Especificaciones": accion.get("nota", "Reserva modificada por el cliente"),
+        }
+        resultado = at_actualizar_reserva(record_id, campos_nuevos)
+        print(f"[Acción] Modificar reserva PATCH → {resultado}")
         if resultado.get("ok"):
             notificar_dueno(
-                f"✏️ *Modificación de Reserva* #{nro}\n"
+                f"✏️ *Reserva MODIFICADA*\n"
                 f"👤 {accion.get('nombre')}\n"
-                f"👥 {accion.get('personas')} personas\n"
+                f"👥 {personas_num} personas\n"
                 f"📅 {accion.get('fecha_legible', accion.get('fecha_iso'))} a las {accion.get('hora')}\n"
                 f"📞 {tel}"
             )
             return {
                 "ok": True,
                 "mensaje_confirmacion": (
-                    f"✅ *Reserva modificada y registrada*\n\n"
-                    f"📋 N° *{nro}*\n"
+                    f"✅ *Reserva actualizada correctamente*\n\n"
                     f"👤 {accion.get('nombre')}\n"
-                    f"👥 {accion.get('personas')} personas\n"
+                    f"👥 {personas_num} personas\n"
                     f"📅 {accion.get('fecha_legible', accion.get('fecha_iso'))} a las {accion.get('hora')} hs\n\n"
-                    f"¡Lo esperamos! 🍖"
+                    f"¡Lo esperamos en La Parrilla de Don Alberto! 🍖"
                 )
             }
         else:
             return {
                 "ok": False,
-                "mensaje_error": "⚠️ No se pudo registrar la modificación. Comuníquese directamente con el restaurante."
+                "mensaje_error": "⚠️ No se pudo actualizar la reserva. Comuníquese directamente con el restaurante."
             }
 
     elif tipo == "notificar_dueno":
