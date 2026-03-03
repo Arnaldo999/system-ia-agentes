@@ -454,6 +454,42 @@ def at_get_reservas_futuras() -> str:
         return "(no disponible)"
 
 
+def at_buscar_pendiente_confirmacion() -> list:
+    """Busca conversaciones en estado esperando_confirmacion (pago pendiente de aprobar)."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas"
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "filterByFormula": "SEARCH('esperando_confirmacion', {estado_actual})",
+            "sort[0][field]": "telefono",
+            "maxRecords": 10,
+        })
+        return r.json().get("records", [])
+    except Exception as e:
+        print(f"[AT] Error buscar_pendiente_confirmacion: {e}")
+        return []
+
+
+def at_confirmar_pago_pedido(nro_pedido: str):
+    """Actualiza estado_pago del pedido a 'confirmado' en la tabla pedidos."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "filterByFormula": f"{{nro_pedido}}='{nro_pedido}'",
+            "maxRecords": 1,
+        })
+        records = r.json().get("records", [])
+        if records:
+            rec_id = records[0]["id"]
+            requests.patch(
+                f"{url}/{rec_id}",
+                headers=AT_HEADERS(),
+                json={"fields": {"estado_pago": "confirmado"}},
+            )
+            print(f"[AT] Pedido {nro_pedido} → estado_pago=confirmado")
+    except Exception as e:
+        print(f"[AT] Error confirmar_pago_pedido: {e}")
+
+
 def at_buscar_reserva(nombre: str, telefono: str) -> dict | None:
     """Busca la reserva más reciente por nombre y teléfono."""
     try:
@@ -949,6 +985,56 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         except Exception:
             historial = []
 
+        # ── CONFIRMACIÓN DE PAGO POR WHATSAPP (solo el dueño) ─────────────────
+        dueno_tel = NUMERO_DUENO.lstrip("+").replace(" ", "")
+        es_dueno  = tel == dueno_tel or tel.endswith(dueno_tel[-9:])
+        if es_dueno and "pago confirmado" in msg.lower():
+            pendientes = at_buscar_pendiente_confirmacion()
+            if not pendientes:
+                return {
+                    "respuesta": "No hay pagos pendientes de confirmación en este momento.",
+                    "tipo_mensaje": "texto",
+                    "accion_ejecutada": None,
+                }
+            # Tomar el más reciente
+            conv_cliente  = pendientes[0]
+            tel_cliente   = conv_cliente["fields"].get("telefono", "")
+            estado_data_c = json.loads(conv_cliente["fields"].get("estado_actual", "{}"))
+            pedido_c      = estado_data_c.get("pedido", {})
+            nombre_c      = pedido_c.get("nombre", tel_cliente)
+
+            # 1. Actualizar estado del cliente → esperando_direccion
+            nuevo_estado_c = json.dumps({"estado": "esperando_direccion", "pedido": pedido_c})
+            at_actualizar_estado(conv_cliente["id"], nuevo_estado_c)
+
+            # 2. Actualizar pedido en Airtable → estado_pago = confirmado
+            if pedido_c.get("nro_pedido"):
+                at_confirmar_pago_pedido(pedido_c["nro_pedido"])
+
+            # 3. Notificar al cliente
+            msg_cliente = (
+                f"✅ *¡Pago verificado, {nombre_c}!*\n\n"
+                f"Su seña fue confirmada exitosamente. 🎉\n\n"
+                f"Por favor, indíquenos su *dirección de entrega completa* para procesar su pedido. 🏠"
+            )
+            enviar_cliente(tel_cliente, msg_cliente)
+
+            # 4. Ticket resumen para el dueño
+            sena = pedido_c.get("total", 0) * 0.10
+            return {
+                "respuesta": (
+                    f"✅ *Pago confirmado*\n\n"
+                    f"👤 {nombre_c} ({tel_cliente})\n"
+                    f"📋 {pedido_c.get('detalle', '')}\n"
+                    f"💰 Total: ${pedido_c.get('total', 0):,.0f} ARS\n"
+                    f"💳 Seña cobrada: ${sena:,.0f} ARS\n\n"
+                    f"Se le solicitó la dirección al cliente. 🛵"
+                ),
+                "tipo_mensaje": "texto",
+                "accion_ejecutada": "pago_confirmado_dueno",
+            }
+        # ── FIN CONFIRMACIÓN ──────────────────────────────────────────────────
+
         # ── MÁQUINA DE ESTADOS ────────────────────────────────────────────────
         # Interceptar mensajes cuando hay un pago pendiente en proceso
 
@@ -960,18 +1046,16 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             historial.append({"role": "model", "content": respuesta})
             at_guardar_conversacion(tel, historial, record_id, estado=nuevo_estado)
 
-            # Notificar al dueño con link de confirmación
-            base_url = os.environ.get("BASE_URL", "https://system-ia-agentes.onrender.com")
-            link = f"{base_url}/gastronomico/confirmar-pago/{tel}"
+            # Notificar al dueño para que confirme por WhatsApp
             nombre_cliente = pedido_pendiente.get("nombre", tel)
+            sena_monto = pedido_pendiente.get('total', 0) * 0.1
             notificar_dueno(
                 f"🧾 *Comprobante recibido*\n"
-                f"👤 Cliente: {nombre_cliente}\n"
-                f"📋 Pedido: {pedido_pendiente.get('detalle', '')}\n"
+                f"👤 {nombre_cliente} ({tel})\n"
+                f"📋 {pedido_pendiente.get('detalle', '')}\n"
                 f"💰 Total: ${pedido_pendiente.get('total', 0):,.0f} ARS\n"
-                f"💳 Seña: ${pedido_pendiente.get('total', 0) * 0.1:,.0f} ARS\n"
-                f"📞 Tel: {tel}\n\n"
-                f"✅ Para confirmar el pago:\n{link}"
+                f"💳 Seña: ${sena_monto:,.0f} ARS\n\n"
+                f"✅ Respondé *pago confirmado* para aprobar y notificar al cliente."
             )
             return {"respuesta": respuesta, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_recibido"}
 
