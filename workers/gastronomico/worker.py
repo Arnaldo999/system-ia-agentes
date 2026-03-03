@@ -631,7 +631,10 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
         if reserva_existente:
             record_id = reserva_existente["id"]
             nota_cancel = f"CANCELADA el {date.today().strftime('%d/%m/%Y')} — {fecha} {hora}"
-            resultado_cancel = at_actualizar_reserva(record_id, {"Especificaciones": nota_cancel})
+            resultado_cancel = at_actualizar_reserva(record_id, {
+                "Estado": "cancelada",
+                "Especificaciones": nota_cancel,
+            })
             print(f"[Acción] Cancelar reserva PATCH → {resultado_cancel}")
         else:
             print(f"[Acción] cancelar_reserva: no se encontró fila para '{nombre}' / {tel}")
@@ -672,6 +675,7 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
             "Fecha":  str(accion.get("fecha_iso", "")).strip()[:10],
             "Hora":   str(accion.get("hora", "")).strip(),
             "Personas": personas_num,
+            "Estado": "confirmada",
             "Especificaciones": accion.get("nota", "Reserva modificada por el cliente"),
         }
         resultado = at_actualizar_reserva(record_id, campos_nuevos)
