@@ -1233,6 +1233,43 @@ def debug_estado(telefono: str):
     except Exception:
         return {"estado": estado_raw}
 
+@router.post("/debug/test-evo-getbase64", summary="Debug: Probar Evolution API getBase64FromMediaMessage")
+def debug_evo_getbase64(payload: dict):
+    """Manda audio_msg_raw directo a Evolution API y devuelve respuesta cruda."""
+    evo_url      = os.environ.get("EVOLUTION_API_URL", "")
+    evo_instance = os.environ.get("EVOLUTION_INSTANCE", "")
+    evo_key      = os.environ.get("EVOLUTION_API_KEY", "")
+
+    if not all([evo_url, evo_instance, evo_key]):
+        return {"ok": False, "error": "Faltan EVOLUTION_* vars", "evo_url": evo_url, "evo_instance": evo_instance}
+
+    audio_msg_raw = payload.get("audio_msg_raw", "")
+    try:
+        msg_data = json.loads(audio_msg_raw)
+    except Exception as e:
+        return {"ok": False, "error": f"JSON inválido: {e}"}
+
+    instance_encoded = quote(evo_instance)
+    url = f"{evo_url}/chat/getBase64FromMediaMessage/{instance_encoded}"
+    body = {"message": msg_data, "convertToMp4": False}
+
+    try:
+        resp = requests.post(url, json=body, headers={"apikey": evo_key, "Content-Type": "application/json"}, timeout=30)
+        try:
+            resp_json = resp.json()
+        except Exception:
+            resp_json = resp.text[:500]
+        return {
+            "ok": resp.status_code == 200,
+            "status": resp.status_code,
+            "url_llamado": url,
+            "respuesta": resp_json,
+            "tiene_base64": isinstance(resp_json, dict) and bool(resp_json.get("base64")),
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e), "url_llamado": url}
+
+
 @router.get("/debug/reset/{telefono}", summary="Debug: Borrar conversación")
 def debug_reset(telefono: str):
     conv = at_get_conversacion(telefono)
