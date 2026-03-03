@@ -381,15 +381,8 @@ def at_crear_reserva(datos: dict) -> dict:
         except Exception:
             personas_num = 1
 
-        # Mapear tipo_reserva del prompt al valor del Single Select de Airtable
-        tipo_raw = str(datos.get("tipo_reserva", "simple")).strip().lower()
-        tipo_map = {
-            "simple":           "reserva_simple",
-            "reserva_simple":   "reserva_simple",
-            "con_seña":         "reserva_con_seña",
-            "reserva_con_seña": "reserva_con_seña",
-        }
-        tipo_at = tipo_map.get(tipo_raw, "reserva_simple")
+        # Demo: solo existe reserva_simple (delivery con seña → tabla pedidos)
+        tipo_at = "reserva_simple"
 
         campos = {
             "Nombre":      str(datos.get("nombre", "")).strip(),
