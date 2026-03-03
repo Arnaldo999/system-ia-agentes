@@ -1031,20 +1031,74 @@ async def confirmar_pago(telefono: str):
 @router.post("/debug/test-whisper", summary="Debug: Probar transcripción de audio")
 async def debug_test_whisper(payload: dict):
     """
-    Probá la transcripción mandando:
-      {"audio_url": "https://..."}          ← método 2 o 3
-      {"audio_base64": "data:audio/..."}    ← método 1
+    Diagnóstico paso a paso de la transcripción.
+    Mandá: {"audio_url": "https://..."} o {"audio_base64": "data:audio/..."}
     """
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
     audio_url    = payload.get("audio_url", "")
     audio_base64 = payload.get("audio_base64", "")
-    if not audio_url and not audio_base64:
-        return {"ok": False, "error": "Mandá audio_url o audio_base64"}
+    pasos = {}
 
-    texto = transcribir_audio(audio_url, audio_base64)
-    if texto:
-        return {"ok": True, "transcripcion": texto}
-    else:
-        return {"ok": False, "transcripcion": "", "error": "No se pudo transcribir — ver logs de Render"}
+    # Paso 0: verificar API key
+    pasos["openai_api_key"] = f"✅ ({len(OPENAI_API_KEY)} chars)" if OPENAI_API_KEY else "❌ NO configurada en Render"
+    if not OPENAI_API_KEY:
+        return {"ok": False, "pasos": pasos, "error": "Falta OPENAI_API_KEY en las variables de entorno de Render"}
+
+    audio_bytes = None
+
+    # Paso 1: base64
+    if audio_base64:
+        try:
+            data = audio_base64.split(",")[-1]
+            audio_bytes = b64.b64decode(data)
+            pasos["metodo_1_base64"] = f"✅ {len(audio_bytes)} bytes"
+        except Exception as e:
+            pasos["metodo_1_base64"] = f"❌ {e}"
+
+    # Paso 2: URL directa
+    if audio_url and not audio_bytes:
+        try:
+            r = requests.get(audio_url, timeout=15)
+            pasos["metodo_2_url_directa"] = f"HTTP {r.status_code} — {len(r.content)} bytes"
+            if r.status_code == 200 and len(r.content) > 100:
+                audio_bytes = r.content
+                pasos["metodo_2_url_directa"] += " ✅"
+            else:
+                pasos["metodo_2_url_directa"] += " ❌"
+        except Exception as e:
+            pasos["metodo_2_url_directa"] = f"❌ {e}"
+
+    # Paso 3: URL con auth
+    if audio_url and not audio_bytes:
+        evo_key = os.environ.get("EVOLUTION_API_KEY", "")
+        try:
+            r = requests.get(audio_url, headers={"apikey": evo_key}, timeout=15)
+            pasos["metodo_3_url_auth"] = f"HTTP {r.status_code} — {len(r.content)} bytes"
+            if r.status_code == 200 and len(r.content) > 100:
+                audio_bytes = r.content
+                pasos["metodo_3_url_auth"] += " ✅"
+            else:
+                pasos["metodo_3_url_auth"] += " ❌"
+        except Exception as e:
+            pasos["metodo_3_url_auth"] = f"❌ {e}"
+
+    if not audio_bytes:
+        return {"ok": False, "pasos": pasos, "error": "Ningún método obtuvo el audio"}
+
+    # Paso 4: Whisper
+    try:
+        cliente_openai = openai.OpenAI(api_key=OPENAI_API_KEY)
+        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
+            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+        with open(tmp_path, "rb") as f:
+            result = cliente_openai.audio.transcriptions.create(model="whisper-1", file=f, language="es")
+        os.unlink(tmp_path)
+        pasos["whisper"] = "✅ OK"
+        return {"ok": True, "transcripcion": result.text.strip(), "pasos": pasos}
+    except Exception as e:
+        pasos["whisper"] = f"❌ {e}"
+        return {"ok": False, "pasos": pasos, "error": str(e)}
 
 @router.get("/debug/airtable", summary="Debug: Estado de Airtable")
 def debug_airtable():
