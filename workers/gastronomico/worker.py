@@ -190,22 +190,25 @@ Recopilá en orden:
    4️⃣ Cafetería ☕
    5️⃣ Bebidas 🍷"
 3. Tomá su pedido (platos + cantidades). Cada vez que agregue un ítem confirmalo y preguntá "¿Desea agregar algo más?". NUNCA calculés el total hasta que el cliente diga explícitamente que terminó.
-4. Cuando el cliente diga que terminó ("listo", "con eso", "nada más", "estamos", etc.), en ese MISMO mensaje mostrá el desglose, el total, la seña y pedí el comprobante. Luego ejecutá ACCION:
-   Ejemplo de mensaje:
-   "📦 *Su pedido:*
-   • Bife de Chorizo (300gr) con ensalada mixta — $7.500
-   • Vino Malbec (copa) — $2.200
-   *Total: $9.700 ARS*
-   💳 Seña requerida (10%): *$970 ARS* al alias *donalberto.parrilla*
+4. Cuando el cliente diga que terminó ("listo", "con eso", "nada más", "estamos", etc.), en ese MISMO mensaje usá EXACTAMENTE esta estructura (sin omitir ninguna línea):
 
-   Por favor, realice la transferencia y envíenos la captura del comprobante para confirmar su pedido."
+   📦 *Su pedido:*
+   • [ítem 1] — $[precio]
+   • [ítem 2] — $[precio]
+   *Total: $[TOTAL] ARS*
+   💳 *Seña requerida (10%): $[SEÑA] ARS*
 
-   En ese MISMO mensaje, al final:
+   Puede abonar la seña por transferencia o MercadoPago al alias: *{RESTAURANTE['alias_pago']}*
+
+   📸 *Una vez realizada la transferencia, envíenos la captura del comprobante para confirmar su pedido.*
+
+   (inmediatamente después de ese bloque, en el mismo mensaje:)
 ACCION: {{"tipo": "solicitar_comprobante", "nombre": "[nombre del cliente]", "detalle": "[platos y cantidades]", "total": N}}
 
+⚠️ OBLIGATORIO: el mensaje SIEMPRE debe terminar con "envíenos la captura del comprobante" — NUNCA omitir esa línea.
 ⚠️ En Opción 5, usa SIEMPRE ACCION solicitar_comprobante — NUNCA crear_pedido.
 ⚠️ NO preguntes la dirección en este paso — el sistema la solicita automáticamente DESPUÉS de verificar el pago.
-⚠️ Después de incluir el ACCION solicitar_comprobante, NO agregues más preguntas ni instrucciones.
+⚠️ Después del ACCION solicitar_comprobante, NO agregues más preguntas ni instrucciones.
 
 ---
 
@@ -942,6 +945,18 @@ def debug_test_reserva():
         "nro_reserva": "RSV-TEST",
     })
     return resultado
+
+@router.get("/debug/estado/{telefono}", summary="Debug: Ver estado de pago pendiente")
+def debug_estado(telefono: str):
+    conv = at_get_conversacion(telefono)
+    if not conv:
+        return {"estado": "sin_conversacion"}
+    estado_raw = conv["fields"].get("estado_actual", "activo")
+    try:
+        estado_data = json.loads(estado_raw)
+        return {"estado": estado_data.get("estado"), "pedido": estado_data.get("pedido")}
+    except Exception:
+        return {"estado": estado_raw}
 
 @router.get("/debug/reset/{telefono}", summary="Debug: Borrar conversación")
 def debug_reset(telefono: str):
