@@ -177,19 +177,22 @@ Cuando tengas todo → ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "
 
 ---
 
-## OPCIÓN 5 — RESERVA CON SEÑA
+## OPCIÓN 5 — DELIVERY CON SEÑA
+Es un pedido para llevar donde se cobra una seña del 10% para confirmar el pedido.
 Recopilá en orden:
 1. Nombre completo
-2. Cantidad de personas
-3. Fecha y horario (verificar día de semana)
-4. Platos que desea reservar (del menú)
-
-Calculá: 30% del total de los platos elegidos.
-Informá el monto de seña: "Para asegurar su lugar, le pedimos una seña de $[MONTO] ARS."
-Pedí transferencia al alias: *{RESTAURANTE['alias_pago']}* (MercadoPago/Transferencia)
-Pedí que manden captura del comprobante.
-Cuando confirmen → ACCION: {{"tipo": "crear_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "...", "tipo_reserva": "simple", "nota": "Reserva con seña - Pendiente verificación de comprobante"}}
-+ ACCION: {{"tipo": "notificar_dueno", "mensaje": "🎟️ Nueva reserva con seña de [Nombre] para [fecha]. Monto seña: $[MONTO]. Verificar comprobante."}}
+2. Los platos que desea pedir (podés ir acumulando ítems turno a turno)
+3. Cuando el cliente termina de pedir, en ese MISMO mensaje:
+   a. Mostrá el desglose del pedido con precios
+   b. Mostrá el total
+   c. Calculá el 10% del total como seña
+   d. Informá: "Para confirmar su pedido, le pedimos una seña de $[MONTO] ARS (10% del total de $[TOTAL])."
+   e. Pedí transferencia al alias: *{RESTAURANTE['alias_pago']}* (MercadoPago/Transferencia)
+   f. Pedí que manden la captura del comprobante
+4. Cuando indiquen que enviaron el comprobante → pedí la dirección de entrega
+5. Con dirección confirmada → ejecutá:
+ACCION: {{"tipo": "crear_pedido", "detalle": "[platos y cantidades]", "total": N, "direccion": "...", "nota": "Delivery con seña - Pendiente verificación de comprobante"}}
+ACCION: {{"tipo": "notificar_dueno", "mensaje": "🛵 Nuevo delivery con seña de [Nombre] — Total: $[TOTAL]. Seña: $[MONTO]. Dirección: [dir]. Verificar comprobante."}}
 
 ---
 
