@@ -693,8 +693,10 @@ Respondé SOLO el horario en formato HH:MM (ej: 21:00). Nada más.
                 "Fecha":        datos.get("fecha", ""),
                 "Hora":         datos["hora"],
                 "Personas":     personas_num,
+                "Estado":       "pendiente",
                 "nro_reserva":  nro,
-                "Especificaciones": f"Tipo: {datos.get('tipo', 'reserva_simple')}",
+                "tipo":         datos.get("tipo", "reserva_simple"),
+                "Especificaciones": f"Item: {datos.get('item_elegido', 'N/A')}",
             }
             resultado_at = at_crear_reserva(campos_reserva)
             if not resultado_at.get("ok"):
