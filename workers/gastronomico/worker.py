@@ -612,14 +612,14 @@ Si no es claro, respondé 0.
 
             # Guardar reserva en Airtable
             campos_reserva = {
-                "Nombre":      datos["nombre_cliente"],
-                "Fecha":       datos["fecha"],
-                "Hora":        datos["hora"],
-                "Personas":    int(datos.get("personas", 1)),
-                "Estado":      "pendiente",
-                "Nro_Reserva": nro,
-                "Telefono":    tel,
-                "Tipo":        datos.get("tipo", "reserva_simple"),
+                "Nombre":       datos["nombre_cliente"],
+                "telefono":     tel,
+                "Fecha":        datos["fecha"],
+                "Hora":         datos["hora"],
+                "Personas":     int(datos.get("personas", 1)),
+                "Estado":       "pendiente",
+                "nro_reserva":  nro,
+                "tipo":         datos.get("tipo", "reserva_simple"),
             }
             at_crear_reserva(campos_reserva)
 
