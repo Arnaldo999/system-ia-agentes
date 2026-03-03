@@ -412,9 +412,9 @@ def at_crear_pedido(datos: dict) -> dict:
             "nombre_cliente":   datos.get("nombre", ""),
             "telefono_cliente": datos.get("telefono", ""),
             "detalle":          datos.get("detalle", ""),
-            "total_ars":        float(datos.get("total", 0)),
+            "total":            float(datos.get("total", 0)),
             "nro_pedido":       datos.get("nro_pedido", ""),
-            "estado_pago":      "pendiente",
+            "estado_pago":      datos.get("estado_pago", "pendiente"),
         }
         print(f"[AT] Enviando pedido: {campos}")
         r = requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": campos}]})
@@ -1074,12 +1074,14 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             nro = pedido.get("nro_pedido", f"PED-{str(uuid.uuid4())[:5].upper()}")
             sena = pedido.get("total", 0) * 0.10
 
+            detalle_con_dir = pedido.get("detalle", "") + f"\n🏠 Dirección: {direccion}"
             resultado = at_crear_pedido({
-                "nombre":    pedido.get("nombre", ""),
-                "telefono":  tel,
-                "detalle":   pedido.get("detalle", ""),
-                "total":     pedido.get("total", 0),
-                "nro_pedido": nro,
+                "nombre":      pedido.get("nombre", ""),
+                "telefono":    tel,
+                "detalle":     detalle_con_dir,
+                "total":       pedido.get("total", 0),
+                "nro_pedido":  nro,
+                "estado_pago": "confirmado",  # pago ya fue aprobado por el dueño
             })
 
             if resultado.get("ok"):
