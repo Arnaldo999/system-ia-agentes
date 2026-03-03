@@ -407,6 +407,20 @@ Respondé SOLO el texto del mensaje de WhatsApp.
         }
 
     # ────────────────────────────────────────────────────────────────────────
+    # ESTADO: completado → Si quiere modificar/cancelar, ir directo
+    # ────────────────────────────────────────────────────────────────────────
+    if estado == "completado" and conv:
+        msg_lower = msg.lower().strip()
+        palabras_modificar = ["modificar", "cambiar", "cancelar", "anular", "mover", "cambio"]
+        if any(p in msg_lower for p in palabras_modificar):
+            at_actualizar_conversacion(record_id, "datos_reserva", {"paso": "nombre", "tipo": "reserva_simple"})
+            return {
+                "respuesta": f"¡Claro! 📝 Para modificar tu reserva en *{res['nombre']}*, hagamos una nueva.\n\n¿A nombre de quién va la reserva?",
+                "estado_nuevo": "datos_reserva",
+                "tipo_mensaje": "texto"
+            }
+
+    # ────────────────────────────────────────────────────────────────────────
     # ESTADO: nuevo o desconocido → Bienvenida + menú de opciones
     # ────────────────────────────────────────────────────────────────────────
     if estado in ["nuevo", "completado", "cancelado"] or not conv:
