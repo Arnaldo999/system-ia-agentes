@@ -181,8 +181,16 @@ Cuando tengas todo → ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "
 Es un pedido para llevar donde se cobra una seña del 10% para confirmar el pedido.
 Recopilá en orden:
 1. Nombre completo
-2. Los platos que desea pedir (podés ir acumulando ítems turno a turno)
-3. Cuando el cliente termina de pedir, en ese MISMO mensaje:
+2. Inmediatamente después de recibir el nombre, mostrá las categorías del menú Y aclará el 10% de seña en el MISMO mensaje. Ejemplo:
+   "Perfecto, [Nombre]. Nuestro pedido con seña requiere un adelanto del *10% del total* para confirmar. 🛵
+   ¿Qué le gustaría pedir? Nuestras categorías:
+   1️⃣ Platos Principales 🥩
+   2️⃣ Entradas 🥗
+   3️⃣ Postres 🍰
+   4️⃣ Cafetería ☕
+   5️⃣ Bebidas 🍷"
+3. Tomá su pedido (platos + cantidades). Podés ir acumulando ítems turno a turno. Si pide una categoría, mostrá los ítems con precios.
+4. Cuando el cliente termina de pedir, en ese MISMO mensaje:
    a. Mostrá el desglose del pedido con precios
    b. Mostrá el total
    c. Calculá el 10% del total como seña
