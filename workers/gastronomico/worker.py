@@ -232,7 +232,13 @@ ACCION: {{"tipo": "crear_pedido", "detalle": "...", "total": N}}
 Para **notificar al dueño** (grupos grandes, cancelaciones, situaciones especiales):
 ACCION: {{"tipo": "notificar_dueno", "mensaje": "..."}}
 
-**IMPORTANTE:** La línea ACCION va siempre al FINAL, después de tu mensaje al cliente. Nunca en el medio. Si no necesitás acción, no la incluyas."""
+**CRÍTICO — CONFIRMACIONES:**
+- Cuando uses ACCION crear_reserva o crear_pedido, tu mensaje de texto debe decir SOLO: "Procesando su reserva..."
+- El sistema verificará el guardado y enviará la confirmación real al cliente
+- JAMÁS escribas "su reserva fue registrada", "reserva confirmada" o similares — solo el sistema puede confirmar eso
+- Si algo falla, el sistema enviará el error, no tú
+
+**IMPORTANTE:** La línea ACCION va siempre al FINAL, después de tu mensaje. Nunca en el medio. Si no necesitás acción, no la incluyas."""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MODELO GEMINI
@@ -341,8 +347,13 @@ def notificar_dueno(mensaje: str):
 # ─────────────────────────────────────────────────────────────────────────────
 # EJECUTAR ACCIONES DEL AGENTE
 # ─────────────────────────────────────────────────────────────────────────────
-def ejecutar_accion(accion: dict, tel: str) -> str | None:
-    """Ejecuta la acción indicada por el agente y devuelve confirmación opcional."""
+def ejecutar_accion(accion: dict, tel: str) -> dict:
+    """
+    Ejecuta la acción y devuelve:
+    - ok: bool (si se guardó realmente en Airtable)
+    - mensaje_confirmacion: texto real a enviar al cliente
+    - mensaje_error: texto de error a enviar si falló
+    """
     tipo = accion.get("tipo")
 
     if tipo == "crear_reserva":
@@ -353,16 +364,39 @@ def ejecutar_accion(accion: dict, tel: str) -> str | None:
             "nro_reserva": nro,
             "especificaciones": accion.get("nota", ""),
         })
-        print(f"[Acción] Reserva creada: {resultado}")
-        # Notificar al dueño
-        notificar_dueno(
-            f"🆕 *Nueva Reserva* #{nro}\n"
-            f"👤 {accion.get('nombre')}\n"
-            f"👥 {accion.get('personas')} personas\n"
-            f"📅 {accion.get('fecha_legible')} a las {accion.get('hora')}\n"
-            f"📞 {tel}"
-        )
-        return None  # El agente ya generó el mensaje de confirmación
+        print(f"[Acción] Crear reserva → {resultado}")
+
+        if resultado.get("ok"):
+            # Notificar al dueño solo si se guardó correctamente
+            notificar_dueno(
+                f"🆕 *Nueva Reserva* #{nro}\n"
+                f"👤 {accion.get('nombre')}\n"
+                f"👥 {accion.get('personas')} personas\n"
+                f"📅 {accion.get('fecha_legible', accion.get('fecha_iso'))} a las {accion.get('hora')}\n"
+                f"📞 {tel}"
+            )
+            return {
+                "ok": True,
+                "mensaje_confirmacion": (
+                    f"✅ *Reserva confirmada y registrada*\n\n"
+                    f"📋 N° *{nro}*\n"
+                    f"👤 {accion.get('nombre')}\n"
+                    f"👥 {accion.get('personas')} personas\n"
+                    f"📅 {accion.get('fecha_legible', accion.get('fecha_iso'))} a las {accion.get('hora')} hs\n\n"
+                    f"¡Lo esperamos en La Parrilla de Don Alberto! 🍖"
+                )
+            }
+        else:
+            error_detalle = resultado.get("resp", {}).get("error", {}).get("message", str(resultado))
+            print(f"[Acción] FALLO al guardar reserva: {error_detalle}")
+            return {
+                "ok": False,
+                "mensaje_error": (
+                    f"⚠️ Ocurrió un problema al registrar su reserva en nuestro sistema.\n\n"
+                    f"Por favor, comuníquese directamente con el restaurante para confirmar su lugar.\n"
+                    f"Disculpe los inconvenientes."
+                )
+            }
 
     elif tipo == "crear_pedido":
         nro = f"PED-{str(uuid.uuid4())[:5].upper()}"
@@ -371,20 +405,35 @@ def ejecutar_accion(accion: dict, tel: str) -> str | None:
             "telefono": tel,
             "nro_pedido": nro,
         })
-        print(f"[Acción] Pedido creado: {resultado}")
-        notificar_dueno(
-            f"🛵 *Nuevo Pedido Delivery* #{nro}\n"
-            f"📦 {accion.get('detalle')}\n"
-            f"💰 ${accion.get('total')} ARS\n"
-            f"📞 {tel}"
-        )
-        return None
+        print(f"[Acción] Crear pedido → {resultado}")
+
+        if resultado.get("ok"):
+            notificar_dueno(
+                f"🛵 *Nuevo Pedido Delivery* #{nro}\n"
+                f"📦 {accion.get('detalle')}\n"
+                f"💰 ${accion.get('total')} ARS\n"
+                f"📞 {tel}"
+            )
+            return {
+                "ok": True,
+                "mensaje_confirmacion": (
+                    f"✅ *Pedido registrado*\n\n"
+                    f"📦 N° *{nro}*\n"
+                    f"🛵 Tiempo estimado: 45-60 minutos\n\n"
+                    f"El equipo confirm​ará su pedido en breve. ¡Gracias!"
+                )
+            }
+        else:
+            return {
+                "ok": False,
+                "mensaje_error": "⚠️ No se pudo registrar el pedido. Por favor comuníquese directamente con el restaurante."
+            }
 
     elif tipo == "notificar_dueno":
         notificar_dueno(accion.get("mensaje", ""))
-        return None
+        return {"ok": True, "mensaje_confirmacion": None}
 
-    return None
+    return {"ok": True, "mensaje_confirmacion": None}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SCHEMA DE ENTRADA
@@ -448,17 +497,24 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             except Exception as e:
                 print(f"[Acción] Error parseando: {e}, raw={partes[1][:100]}")
 
-        # Ejecutar acción si existe
+        # Ejecutar acción si existe y usar su resultado real
+        texto_final = texto_respuesta
         if accion:
-            ejecutar_accion(accion, tel)
+            resultado_accion = ejecutar_accion(accion, tel)
+            if resultado_accion.get("mensaje_confirmacion"):
+                # Reemplazar el mensaje del agente con la confirmación real de Airtable
+                texto_final = resultado_accion["mensaje_confirmacion"]
+            elif not resultado_accion.get("ok"):
+                # Si falló, reemplazar con mensaje de error honesto
+                texto_final = resultado_accion.get("mensaje_error", "⚠️ Ocurrió un error al procesar su solicitud.")
 
         # Actualizar historial
         historial.append({"role": "user", "content": msg})
-        historial.append({"role": "model", "content": texto_respuesta})
+        historial.append({"role": "model", "content": texto_final})
         at_guardar_conversacion(tel, historial, record_id)
 
         return {
-            "respuesta": texto_respuesta,
+            "respuesta": texto_final,
             "tipo_mensaje": "texto",
             "accion_ejecutada": accion.get("tipo") if accion else None,
         }
