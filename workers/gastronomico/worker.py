@@ -199,7 +199,7 @@ Recopilá en orden:
    f. Pedí que manden la captura del comprobante
 4. Cuando indiquen que enviaron el comprobante → pedí la dirección de entrega
 5. Con dirección confirmada → ejecutá:
-ACCION: {{"tipo": "crear_pedido", "detalle": "[platos y cantidades]", "total": N, "direccion": "...", "nota": "Delivery con seña - Pendiente verificación de comprobante"}}
+ACCION: {{"tipo": "crear_pedido", "nombre": "[nombre del cliente]", "detalle": "[platos y cantidades]", "total": N, "direccion": "...", "nota": "Delivery con seña - Pendiente verificación de comprobante"}}
 ACCION: {{"tipo": "notificar_dueno", "mensaje": "🛵 Nuevo delivery con seña de [Nombre] — Total: $[TOTAL]. Seña: $[MONTO]. Dirección: [dir]. Verificar comprobante."}}
 
 ---
@@ -225,7 +225,7 @@ Este flujo aplica cuando el cliente menciona "delivery" espontáneamente o al ve
 
    ¿Cuál es su dirección de entrega?"
 4. Cuando el cliente dé la dirección → en ese MISMO mensaje ejecutá ACCION SIN pedir confirmación adicional:
-ACCION: {{"tipo": "crear_pedido", "detalle": "[platos y cantidades]", "total": N, "direccion": "...", "nota": "Delivery"}}
+ACCION: {{"tipo": "crear_pedido", "nombre": "[nombre del cliente]", "detalle": "[platos y cantidades]", "total": N, "direccion": "...", "nota": "Delivery"}}
 
 ⚠️ NUNCA digas "procederé a calcular" ni "tu pedido está siendo procesado" sin incluir el ACCION en el mismo mensaje.
 ⚠️ El ACCION debe ir en el MISMO mensaje en que recibís la dirección — nunca en un turno posterior.
@@ -356,15 +356,21 @@ def at_crear_pedido(datos: dict) -> dict:
     """Guarda el pedido en la tabla pedidos."""
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
+        nombre = datos.get("nombre", "")
+        detalle_base = datos.get("detalle", "")
+        detalle_completo = f"{nombre} — {detalle_base}" if nombre else detalle_base
         campos = {
-            "telefono":   datos.get("telefono", ""),
-            "detalle":    datos.get("detalle", ""),
-            "total":      float(datos.get("total", 0)),
-            "nro_pedido": datos.get("nro_pedido", ""),
-            "estado":     "pendiente",
+            "telefono_cliente": datos.get("telefono", ""),
+            "detalle":          detalle_completo,
+            "total_ars":        float(datos.get("total", 0)),
+            "nro_pedido":       datos.get("nro_pedido", ""),
+            "estado_pago":      "pendiente",
         }
+        print(f"[AT] Enviando pedido: {campos}")
         r = requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": campos}]})
-        return {"ok": r.status_code == 200, "resp": r.json()}
+        resp = r.json()
+        print(f"[AT] Pedido status={r.status_code} resp={resp}")
+        return {"ok": r.status_code == 200, "resp": resp}
     except Exception as e:
         print(f"[AT] Error crear_pedido: {e}")
         return {"ok": False, "error": str(e)}
