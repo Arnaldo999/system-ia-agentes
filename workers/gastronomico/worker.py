@@ -478,8 +478,22 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
         fecha  = accion.get("fecha_legible", accion.get("fecha_iso", ""))
         hora   = accion.get("hora", "")
 
-        # Buscar la reserva existente y marcarla como cancelada en la misma fila
-        reserva_existente = at_buscar_reserva(nombre, tel)
+        # Buscar la reserva existente solo por teléfono (evita problemas de case-sensitivity en nombre)
+        try:
+            url_buscar = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
+            r_buscar = requests.get(url_buscar, headers=AT_HEADERS(), params={
+                "filterByFormula": f"{{telefono}}='{tel}'",
+                "sort[0][field]": "Fecha",
+                "sort[0][direction]": "desc",
+                "maxRecords": 1,
+            })
+            registros = r_buscar.json().get("records", [])
+            reserva_existente = registros[0] if registros else None
+            print(f"[Acción] cancelar_reserva: búsqueda por tel={tel} → {len(registros)} registro(s)")
+        except Exception as e:
+            print(f"[Acción] cancelar_reserva: error en búsqueda → {e}")
+            reserva_existente = None
+
         if reserva_existente:
             record_id = reserva_existente["id"]
             nota_cancel = f"CANCELADA el {date.today().strftime('%d/%m/%Y')} — {fecha} {hora}"
