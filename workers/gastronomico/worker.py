@@ -2,7 +2,7 @@ import os
 import json
 import uuid
 import requests
-from datetime import date, datetime
+from datetime import date
 from fastapi import APIRouter
 from pydantic import BaseModel
 import google.generativeai as genai
@@ -477,6 +477,17 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
         nombre = accion.get("nombre", "")
         fecha  = accion.get("fecha_legible", accion.get("fecha_iso", ""))
         hora   = accion.get("hora", "")
+
+        # Buscar la reserva existente y marcarla como cancelada en la misma fila
+        reserva_existente = at_buscar_reserva(nombre, tel)
+        if reserva_existente:
+            record_id = reserva_existente["id"]
+            nota_cancel = f"CANCELADA el {date.today().strftime('%d/%m/%Y')} — {fecha} {hora}"
+            resultado_cancel = at_actualizar_reserva(record_id, {"Especificaciones": nota_cancel})
+            print(f"[Acción] Cancelar reserva PATCH → {resultado_cancel}")
+        else:
+            print(f"[Acción] cancelar_reserva: no se encontró fila para '{nombre}' / {tel}")
+
         notificar_dueno(
             f"❌ *Cancelación de Reserva*\n"
             f"👤 {nombre}\n"
