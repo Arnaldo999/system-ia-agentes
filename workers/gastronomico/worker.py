@@ -1069,13 +1069,31 @@ async def debug_test_whisper(payload: dict):
     if not OPENAI_API_KEY:
         return {"ok": False, "pasos": pasos, "error": "Falta OPENAI_API_KEY en las variables de entorno de Render"}
 
-    audio_bytes = None
+    MIME_EXT = {
+        "audio/mpeg": ".mp3", "audio/mp3": ".mp3", "audio/mpga": ".mp3",
+        "audio/ogg": ".ogg",  "audio/opus": ".ogg",
+        "audio/wav": ".wav",  "audio/x-wav": ".wav",
+        "audio/mp4": ".m4a",  "audio/m4a": ".m4a",
+        "audio/webm": ".webm", "audio/flac": ".flac",
+    }
+    def _ext(ct: str, url: str) -> str:
+        for mime, ext in MIME_EXT.items():
+            if mime in ct.lower():
+                return ext
+        for ext in [".mp3", ".ogg", ".wav", ".m4a", ".webm", ".flac"]:
+            if url.lower().endswith(ext):
+                return ext
+        return ".ogg"
+
+    audio_bytes  = None
+    content_type = ""
 
     # Paso 1: base64
     if audio_base64:
         try:
-            data = audio_base64.split(",")[-1]
-            audio_bytes = b64.b64decode(data)
+            header, data = (audio_base64.split(",", 1) if "," in audio_base64 else ("", audio_base64))
+            content_type = header
+            audio_bytes  = b64.b64decode(data)
             pasos["metodo_1_base64"] = f"✅ {len(audio_bytes)} bytes"
         except Exception as e:
             pasos["metodo_1_base64"] = f"❌ {e}"
@@ -1084,9 +1102,11 @@ async def debug_test_whisper(payload: dict):
     if audio_url and not audio_bytes:
         try:
             r = requests.get(audio_url, timeout=15)
-            pasos["metodo_2_url_directa"] = f"HTTP {r.status_code} — {len(r.content)} bytes"
+            ct = r.headers.get("Content-Type", "")
+            pasos["metodo_2_url_directa"] = f"HTTP {r.status_code} — {len(r.content)} bytes — CT: {ct}"
             if r.status_code == 200 and len(r.content) > 100:
-                audio_bytes = r.content
+                audio_bytes  = r.content
+                content_type = ct
                 pasos["metodo_2_url_directa"] += " ✅"
             else:
                 pasos["metodo_2_url_directa"] += " ❌"
@@ -1098,9 +1118,11 @@ async def debug_test_whisper(payload: dict):
         evo_key = os.environ.get("EVOLUTION_API_KEY", "")
         try:
             r = requests.get(audio_url, headers={"apikey": evo_key}, timeout=15)
-            pasos["metodo_3_url_auth"] = f"HTTP {r.status_code} — {len(r.content)} bytes"
+            ct = r.headers.get("Content-Type", "")
+            pasos["metodo_3_url_auth"] = f"HTTP {r.status_code} — {len(r.content)} bytes — CT: {ct}"
             if r.status_code == 200 and len(r.content) > 100:
-                audio_bytes = r.content
+                audio_bytes  = r.content
+                content_type = ct
                 pasos["metodo_3_url_auth"] += " ✅"
             else:
                 pasos["metodo_3_url_auth"] += " ❌"
@@ -1110,10 +1132,12 @@ async def debug_test_whisper(payload: dict):
     if not audio_bytes:
         return {"ok": False, "pasos": pasos, "error": "Ningún método obtuvo el audio"}
 
-    # Paso 4: Whisper
+    # Paso 4: Whisper (con extensión correcta)
+    ext = _ext(content_type, audio_url)
+    pasos["extension_detectada"] = ext
     try:
         cliente_openai = openai.OpenAI(api_key=OPENAI_API_KEY)
-        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
             tmp.write(audio_bytes)
             tmp_path = tmp.name
         with open(tmp_path, "rb") as f:
