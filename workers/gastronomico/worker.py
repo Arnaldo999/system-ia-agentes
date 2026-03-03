@@ -420,6 +420,35 @@ def at_crear_pedido(datos: dict) -> dict:
         print(f"[AT] Error crear_pedido: {e}")
         return {"ok": False, "error": str(e)}
 
+def at_get_reservas_futuras() -> str:
+    """
+    Devuelve un resumen de las reservas activas (no canceladas) desde hoy.
+    Se inyecta en el system prompt para que Gemini conozca la disponibilidad real.
+    """
+    try:
+        hoy = date.today().isoformat()
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "filterByFormula": f"AND({{Fecha}}>='{hoy}', {{Estado}}!='cancelada')",
+            "sort[0][field]": "Fecha",
+            "sort[0][direction]": "asc",
+            "maxRecords": 50,
+        })
+        records = r.json().get("records", [])
+        if not records:
+            return "No hay reservas activas próximas."
+        lineas = []
+        for rec in records:
+            f = rec["fields"]
+            lineas.append(
+                f"- {f.get('Fecha','')} {f.get('Hora','')} | {f.get('Nombre','')} | {f.get('Personas','')} pax | Estado: {f.get('Estado','')}"
+            )
+        return "\n".join(lineas)
+    except Exception as e:
+        print(f"[AT] Error get_reservas_futuras: {e}")
+        return "(no disponible)"
+
+
 def at_buscar_reserva(nombre: str, telefono: str) -> dict | None:
     """Busca la reserva más reciente por nombre y teléfono."""
     try:
@@ -1000,8 +1029,20 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                     "parts": [{"text": turno["content"]}],
                 })
 
+        # Inyectar reservas actuales en el system prompt (contexto real de disponibilidad)
+        reservas_ctx = at_get_reservas_futuras()
+        modelo_con_ctx = genai.GenerativeModel(
+            model_name="gemini-2.5-flash-lite",
+            system_instruction=(
+                SYSTEM_PROMPT
+                + f"\n\n---\n## RESERVAS ACTUALES EN EL SISTEMA (datos reales de Airtable)\n"
+                + reservas_ctx
+                + "\n\nUsá estos datos para responder sobre disponibilidad. Si un horario no aparece aquí, está libre."
+            ),
+        )
+
         # Crear chat con historial
-        chat = modelo.start_chat(history=history_gemini)
+        chat = modelo_con_ctx.start_chat(history=history_gemini)
 
         # Enviar mensaje del usuario
         prefix = "[ADMIN] " if entrada.es_admin else ""
