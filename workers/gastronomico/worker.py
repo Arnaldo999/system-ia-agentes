@@ -95,9 +95,7 @@ def debug_test_reserva():
         "Fecha": "2026-03-08",
         "Hora": "21:00",
         "Personas": 3,
-        "Estado": "pendiente",
         "nro_reserva": "RSV-TEST1",
-        "tipo": "reserva_simple",
     }
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
@@ -695,9 +693,8 @@ Respondé SOLO el horario en formato HH:MM (ej: 21:00). Nada más.
                 "Fecha":        datos.get("fecha", ""),
                 "Hora":         datos["hora"],
                 "Personas":     personas_num,
-                "Estado":       "pendiente",
                 "nro_reserva":  nro,
-                "tipo":         datos.get("tipo", "reserva_simple"),
+                "Especificaciones": f"Tipo: {datos.get('tipo', 'reserva_simple')}",
             }
             resultado_at = at_crear_reserva(campos_reserva)
             if not resultado_at.get("ok"):
