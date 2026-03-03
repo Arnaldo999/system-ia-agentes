@@ -719,15 +719,37 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
         print("[Whisper] Sin OPENAI_API_KEY — omitiendo transcripción")
         return ""
 
-    audio_bytes = None
+    audio_bytes  = None
     metodo_usado = ""
+    content_type = ""
+
+    # Mapa Content-Type → extensión (Whisper detecta el formato por extensión)
+    MIME_EXT = {
+        "audio/mpeg": ".mp3", "audio/mp3": ".mp3", "audio/mpga": ".mp3",
+        "audio/ogg":  ".ogg", "audio/opus": ".ogg",
+        "audio/wav":  ".wav", "audio/x-wav": ".wav",
+        "audio/mp4":  ".m4a", "audio/m4a": ".m4a",
+        "audio/webm": ".webm",
+        "audio/flac": ".flac",
+    }
+
+    def _ext_from(ct: str, url: str) -> str:
+        """Detecta extensión desde Content-Type o URL."""
+        for mime, ext in MIME_EXT.items():
+            if mime in ct.lower():
+                return ext
+        for ext in [".mp3", ".ogg", ".wav", ".m4a", ".webm", ".flac", ".oga", ".mpga"]:
+            if url.lower().endswith(ext):
+                return ext
+        return ".ogg"   # WhatsApp PTT siempre es OGG/Opus
 
     # ── Método 1: base64 embebido ──────────────────────────────────────────
     if audio_base64 and not audio_bytes:
         try:
-            # Limpiar prefijo "data:audio/ogg;base64," si viene con él
-            data = audio_base64.split(",")[-1]
-            audio_bytes = b64.b64decode(data)
+            header, data = (audio_base64.split(",", 1) if "," in audio_base64
+                            else ("", audio_base64))
+            content_type = header   # p.ej. "data:audio/ogg;base64"
+            audio_bytes  = b64.b64decode(data)
             metodo_usado = "base64"
             print(f"[Whisper] Método 1 (base64) OK — {len(audio_bytes)} bytes")
         except Exception as e:
@@ -738,9 +760,10 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
         try:
             r = requests.get(audio_url, timeout=15)
             if r.status_code == 200 and len(r.content) > 100:
-                audio_bytes = r.content
+                audio_bytes  = r.content
+                content_type = r.headers.get("Content-Type", "")
                 metodo_usado = "url_directa"
-                print(f"[Whisper] Método 2 (URL directa) OK — {len(audio_bytes)} bytes")
+                print(f"[Whisper] Método 2 (URL directa) OK — {len(audio_bytes)} bytes — CT: {content_type}")
             else:
                 print(f"[Whisper] Método 2 (URL directa) status={r.status_code}")
         except Exception as e:
@@ -752,9 +775,10 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
         try:
             r = requests.get(audio_url, headers={"apikey": evo_key}, timeout=15)
             if r.status_code == 200 and len(r.content) > 100:
-                audio_bytes = r.content
+                audio_bytes  = r.content
+                content_type = r.headers.get("Content-Type", "")
                 metodo_usado = "url_con_auth"
-                print(f"[Whisper] Método 3 (URL+auth) OK — {len(audio_bytes)} bytes")
+                print(f"[Whisper] Método 3 (URL+auth) OK — {len(audio_bytes)} bytes — CT: {content_type}")
             else:
                 print(f"[Whisper] Método 3 (URL+auth) status={r.status_code}")
         except Exception as e:
@@ -765,9 +789,10 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
         return ""
 
     # ── Transcribir con Whisper ───────────────────────────────────────────
+    ext = _ext_from(content_type, audio_url)
     try:
         cliente_openai = openai.OpenAI(api_key=OPENAI_API_KEY)
-        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
             tmp.write(audio_bytes)
             tmp_path = tmp.name
 
@@ -779,7 +804,7 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
             )
         os.unlink(tmp_path)
         texto = transcripcion.text.strip()
-        print(f"[Whisper] Transcripción ({metodo_usado}): '{texto}'")
+        print(f"[Whisper] Transcripción ({metodo_usado}, {ext}): '{texto}'")
         return texto
     except Exception as e:
         print(f"[Whisper] Error al transcribir: {e}")
