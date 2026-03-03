@@ -598,25 +598,68 @@ Si no es claro, respondé 0.
             return {"respuesta": "¿Para qué fecha? 📅 (ej: sábado 8 de marzo)", "estado_nuevo": "datos_reserva"}
 
         elif paso == "fecha":
-            datos["fecha"] = msg
-            datos["paso"] = "hora"
-            at_actualizar_conversacion(record_id, "datos_reserva", datos)
-            return {"respuesta": "¿A qué horario? ⏰ (ej: 21hs)", "estado_nuevo": "datos_reserva"}
+            # Usar Gemini para parsear y VALIDAR la fecha
+            from datetime import date
+            hoy = date.today().isoformat()
+            fecha_parsed = gemini(f"""
+Hoy es {hoy}. El cliente dijo: "{msg}" como fecha para una reserva.
+
+TAREAS:
+1. Identificá la fecha que quiso decir el cliente.
+2. Si el día de la semana no coincide con la fecha real (ej: dice "domingo 8 de marzo" pero el 8 es sábado), CORREGÍ el día.
+3. Respondé en formato JSON EXACTO (sin backticks, sin explicación):
+{{"fecha_iso": "YYYY-MM-DD", "fecha_legible": "sábado 8 de marzo", "correccion": "El 8 de marzo es sábado, no domingo" o null si no hubo error}}
+SOLO el JSON, nada más.
+""").strip()
+            try:
+                # Limpiar posibles backticks de Gemini
+                fecha_parsed = fecha_parsed.replace("```json", "").replace("```", "").strip()
+                fecha_data = json.loads(fecha_parsed)
+                datos["fecha"] = fecha_data["fecha_iso"]
+                datos["fecha_legible"] = fecha_data["fecha_legible"]
+                
+                # Si hubo corrección, avisar al cliente
+                correccion = fecha_data.get("correccion")
+                if correccion and correccion != "null":
+                    msg_correccion = f"⚠️ *Corrección:* {correccion}\n\n"
+                else:
+                    msg_correccion = ""
+                    
+                datos["paso"] = "hora"
+                at_actualizar_conversacion(record_id, "datos_reserva", datos)
+                return {"respuesta": f"{msg_correccion}📅 Perfecto, reserva para el *{datos['fecha_legible']}*.\n\n¿A qué horario? ⏰ (ej: 21hs)", "estado_nuevo": "datos_reserva", "tipo_mensaje": "texto"}
+            except:
+                datos["fecha"] = msg
+                datos["fecha_legible"] = msg
+                datos["paso"] = "hora"
+                at_actualizar_conversacion(record_id, "datos_reserva", datos)
+                return {"respuesta": "¿A qué horario? ⏰ (ej: 21hs)", "estado_nuevo": "datos_reserva", "tipo_mensaje": "texto"}
 
         elif paso == "hora":
-            datos["hora"] = msg
+            # Parsear hora a formato legible
+            hora_parsed = gemini(f"""
+El cliente dijo: "{msg}" como horario. Convertí a formato "HH:MM". 
+Respondé SOLO el horario en formato HH:MM (ej: 21:00). Nada más.
+""").strip()
+            datos["hora"] = hora_parsed if ":" in hora_parsed else msg
             datos["paso"] = "completo"
             nro = f"RSV-{str(uuid.uuid4())[:5].upper()}"
             datos["nro_pedido"] = nro
             datos["telefono_cliente"] = tel
 
+            # Parsear personas a número
+            try:
+                personas_num = int(''.join(c for c in str(datos.get("personas", "1")) if c.isdigit()) or "1")
+            except:
+                personas_num = 1
+
             # Guardar reserva en Airtable
             campos_reserva = {
                 "Nombre":       datos["nombre_cliente"],
                 "telefono":     tel,
-                "Fecha":        datos["fecha"],
+                "Fecha":        datos.get("fecha", ""),
                 "Hora":         datos["hora"],
-                "Personas":     int(datos.get("personas", 1)),
+                "Personas":     personas_num,
                 "Estado":       "pendiente",
                 "nro_reserva":  nro,
                 "tipo":         datos.get("tipo", "reserva_simple"),
@@ -638,7 +681,8 @@ Español amigable, máximo 8 líneas, con emojis. SOLO el texto.
                 at_actualizar_conversacion(record_id, "esperando_pago", datos)
                 return {"respuesta": msg_pago, "estado_nuevo": "esperando_pago"}
             else:
-                confirmacion = f"✅ *Reserva Confirmada* en {res['nombre']}!\n\n📋 N° *{nro}*\n👤 {datos['nombre_cliente']}\n👥 {datos['personas']} personas\n📅 {datos['fecha']} a las {datos['hora']}\n\n¡Te esperamos! Si necesitás modificarla, escribinos 😊"
+                fecha_display = datos.get("fecha_legible", datos.get("fecha", ""))
+                confirmacion = f"✅ *Reserva Confirmada* en {res['nombre']}!\n\n📋 N° *{nro}*\n👤 {datos['nombre_cliente']}\n👥 {datos['personas']} personas\n📅 {fecha_display} a las {datos['hora']}\n\n¡Te esperamos! Si necesitás modificarla, escribinos 😊"
                 at_actualizar_conversacion(record_id, "completado", {})
                 return {"respuesta": confirmacion, "estado_nuevo": "completado"}
 
