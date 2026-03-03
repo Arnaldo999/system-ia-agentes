@@ -362,6 +362,24 @@ async def _procesar_mensaje(entrada: MensajeEntrante):
         datos = {}
 
     # ────────────────────────────────────────────────────────────────────────
+    # INTERCEPTOR GLOBAL: Detectar intenciones clave en cualquier estado
+    # ────────────────────────────────────────────────────────────────────────
+    if conv and estado not in ["nuevo"]:
+        msg_lower = msg.lower().strip()
+        # Modificar / Cancelar reserva
+        if any(p in msg_lower for p in ["modificar", "cambiar", "cancelar", "anular", "mover"]):
+            at_actualizar_conversacion(record_id, "datos_reserva", {"paso": "nombre", "tipo": "reserva_simple"})
+            return {
+                "respuesta": f"📝 ¡Claro! Para modificar tu reserva en *{res['nombre']}*, armemos una nueva.\n\n¿A nombre de quién va la reserva?",
+                "estado_nuevo": "datos_reserva",
+                "tipo_mensaje": "texto"
+            }
+        # Volver al inicio
+        if any(p in msg_lower for p in ["volver al inicio", "empezar de nuevo", "reiniciar"]):
+            at_actualizar_conversacion(record_id, "nuevo", {})
+            # Continúa al flujo normal de bienvenida
+
+    # ────────────────────────────────────────────────────────────────────────
     # RUTA ADMIN: El dueño confirma el pago
     # ────────────────────────────────────────────────────────────────────────
     if entrada.es_admin and "pago confirmado" in msg.lower():
@@ -406,19 +424,7 @@ Respondé SOLO el texto del mensaje de WhatsApp.
             "telefono_cliente": datos.get("telefono_cliente", tel)
         }
 
-    # ────────────────────────────────────────────────────────────────────────
-    # ESTADO: completado → Si quiere modificar/cancelar, ir directo
-    # ────────────────────────────────────────────────────────────────────────
-    if estado == "completado" and conv:
-        msg_lower = msg.lower().strip()
-        palabras_modificar = ["modificar", "cambiar", "cancelar", "anular", "mover", "cambio"]
-        if any(p in msg_lower for p in palabras_modificar):
-            at_actualizar_conversacion(record_id, "datos_reserva", {"paso": "nombre", "tipo": "reserva_simple"})
-            return {
-                "respuesta": f"¡Claro! 📝 Para modificar tu reserva en *{res['nombre']}*, hagamos una nueva.\n\n¿A nombre de quién va la reserva?",
-                "estado_nuevo": "datos_reserva",
-                "tipo_mensaje": "texto"
-            }
+
 
     # ────────────────────────────────────────────────────────────────────────
     # ESTADO: nuevo o desconocido → Bienvenida + menú de opciones
