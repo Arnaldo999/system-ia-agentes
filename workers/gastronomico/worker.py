@@ -1369,6 +1369,19 @@ def debug_test_reserva():
     })
     return resultado
 
+@router.get("/debug/test-pedido", summary="Debug: Crear pedido de prueba en Airtable")
+def debug_test_pedido():
+    """Intenta crear un pedido de prueba para verificar los campos de Airtable."""
+    resultado = at_crear_pedido({
+        "nombre":      "TEST_DEBUG",
+        "telefono":    "000000",
+        "detalle":     "Prueba de pedido — Asado de Tira: 1\n🏠 Dirección: Calle Test 123",
+        "total":       6800,
+        "nro_pedido":  "PED-TEST1",
+        "estado_pago": "pendiente",
+    })
+    return resultado
+
 @router.get("/debug/estado/{telefono}", summary="Debug: Ver estado de pago pendiente")
 def debug_estado(telefono: str):
     conv = at_get_conversacion(telefono)
