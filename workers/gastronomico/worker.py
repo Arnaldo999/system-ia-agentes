@@ -85,6 +85,27 @@ def debug_airtable():
         resultado["test_escritura_error"] = str(e)
     return resultado
 
+
+@router.get("/debug/test-reserva", summary="Debug: Crea una reserva de prueba")
+def debug_test_reserva():
+    """Intenta crear una reserva de prueba para ver errores de Airtable."""
+    campos = {
+        "Nombre": "TEST_DEBUG",
+        "telefono": "000000",
+        "Fecha": "2026-03-08",
+        "Hora": "21:00",
+        "Personas": 3,
+        "Estado": "pendiente",
+        "nro_reserva": "RSV-TEST1",
+        "tipo": "reserva_simple",
+    }
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
+        r = requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": campos}]})
+        return {"status": r.status_code, "respuesta": r.json(), "campos_enviados": campos}
+    except Exception as e:
+        return {"error": str(e)}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # DATOS DEL RESTAURANTE DEMO (en producción vendrían de Airtable o Supabase)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -265,13 +286,17 @@ def at_actualizar_conversacion(record_id: str, estado: str, datos: dict = {}):
     except Exception as e:
         print(f"[Airtable] Error al actualizar conversación: {e}")
 
-def at_crear_reserva(datos: dict):
-    """Guarda la reserva en la tabla Reservas."""
+def at_crear_reserva(datos: dict) -> dict:
+    """Guarda la reserva en la tabla Reservas. Devuelve la respuesta de Airtable."""
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
-        requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
+        r = requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
+        resp = r.json()
+        print(f"[Airtable] Crear reserva status={r.status_code} resp={resp}")
+        return {"ok": r.status_code == 200, "status": r.status_code, "respuesta": resp}
     except Exception as e:
         print(f"[Airtable] Error al crear reserva: {e}")
+        return {"ok": False, "error": str(e)}
 
 def at_crear_pedido(datos: dict):
     """Guarda el pedido en la tabla pedidos."""
@@ -598,37 +623,47 @@ Si no es claro, respondé 0.
             return {"respuesta": "¿Para qué fecha? 📅 (ej: sábado 8 de marzo)", "estado_nuevo": "datos_reserva"}
 
         elif paso == "fecha":
-            # Usar Gemini para parsear y VALIDAR la fecha
-            from datetime import date
+            # Usar Gemini para parsear la fecha + Python para VALIDAR el día
+            from datetime import date, datetime
             hoy = date.today().isoformat()
+            DIAS_ES = {0: "lunes", 1: "martes", 2: "miércoles", 3: "jueves", 4: "viernes", 5: "sábado", 6: "domingo"}
+            MESES_ES = {1: "enero", 2: "febrero", 3: "marzo", 4: "abril", 5: "mayo", 6: "junio", 7: "julio", 8: "agosto", 9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"}
+
             fecha_parsed = gemini(f"""
 Hoy es {hoy}. El cliente dijo: "{msg}" como fecha para una reserva.
-
-TAREAS:
-1. Identificá la fecha que quiso decir el cliente.
-2. Si el día de la semana no coincide con la fecha real (ej: dice "domingo 8 de marzo" pero el 8 es sábado), CORREGÍ el día.
-3. Respondé en formato JSON EXACTO (sin backticks, sin explicación):
-{{"fecha_iso": "YYYY-MM-DD", "fecha_legible": "sábado 8 de marzo", "correccion": "El 8 de marzo es sábado, no domingo" o null si no hubo error}}
-SOLO el JSON, nada más.
+Extraé la fecha y respondé SOLO en formato YYYY-MM-DD. Nada más.
+Si dice un día relativo ("mañana", "el viernes"), calculá la fecha real.
+SOLO la fecha en formato YYYY-MM-DD.
 """).strip()
+            
             try:
-                # Limpiar posibles backticks de Gemini
-                fecha_parsed = fecha_parsed.replace("```json", "").replace("```", "").strip()
-                fecha_data = json.loads(fecha_parsed)
-                datos["fecha"] = fecha_data["fecha_iso"]
-                datos["fecha_legible"] = fecha_data["fecha_legible"]
+                # Limpiar y parsear
+                fecha_iso = fecha_parsed.replace('"','').replace("'","").strip()[:10]
+                dt = datetime.strptime(fecha_iso, "%Y-%m-%d")
+                dia_real = DIAS_ES[dt.weekday()]
+                mes_nombre = MESES_ES[dt.month]
+                fecha_legible = f"{dia_real} {dt.day} de {mes_nombre}"
                 
-                # Si hubo corrección, avisar al cliente
-                correccion = fecha_data.get("correccion")
-                if correccion and correccion != "null":
-                    msg_correccion = f"⚠️ *Corrección:* {correccion}\n\n"
+                # Verificar si el usuario dijo un día incorrecto
+                msg_lower = msg.lower()
+                dia_cliente = None
+                for dia in DIAS_ES.values():
+                    if dia in msg_lower:
+                        dia_cliente = dia
+                        break
+                
+                if dia_cliente and dia_cliente != dia_real:
+                    msg_correccion = f"⚠️ *Ojo:* el {dt.day} de {mes_nombre} es *{dia_real}*, no {dia_cliente}\n\n"
                 else:
                     msg_correccion = ""
-                    
+                
+                datos["fecha"] = fecha_iso
+                datos["fecha_legible"] = fecha_legible
                 datos["paso"] = "hora"
                 at_actualizar_conversacion(record_id, "datos_reserva", datos)
-                return {"respuesta": f"{msg_correccion}📅 Perfecto, reserva para el *{datos['fecha_legible']}*.\n\n¿A qué horario? ⏰ (ej: 21hs)", "estado_nuevo": "datos_reserva", "tipo_mensaje": "texto"}
-            except:
+                return {"respuesta": f"{msg_correccion}📅 Perfecto, reserva para el *{fecha_legible}*.\n\n¿A qué horario? ⏰ (ej: 21hs)", "estado_nuevo": "datos_reserva", "tipo_mensaje": "texto"}
+            except Exception as e:
+                print(f"[Fecha] Error parseando: {e}, raw={fecha_parsed}")
                 datos["fecha"] = msg
                 datos["fecha_legible"] = msg
                 datos["paso"] = "hora"
@@ -664,7 +699,9 @@ Respondé SOLO el horario en formato HH:MM (ej: 21:00). Nada más.
                 "nro_reserva":  nro,
                 "tipo":         datos.get("tipo", "reserva_simple"),
             }
-            at_crear_reserva(campos_reserva)
+            resultado_at = at_crear_reserva(campos_reserva)
+            if not resultado_at.get("ok"):
+                print(f"[RESERVA] Fallo al guardar: {resultado_at}")
 
             if datos.get("tipo") == "reserva_con_seña":
                 msg_pago = gemini(f"""
