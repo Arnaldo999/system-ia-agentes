@@ -1,11 +1,14 @@
 import os
 import json
 import uuid
+import tempfile
+import base64 as b64
 import requests
 from datetime import date
 from fastapi import APIRouter
 from pydantic import BaseModel
 import google.generativeai as genai
+import openai
 
 router = APIRouter(prefix="/gastronomico", tags=["SaaS Gastronómico"])
 
@@ -701,13 +704,97 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
     return {"ok": True, "mensaje_confirmacion": None}
 
 # ─────────────────────────────────────────────────────────────────────────────
+# WHISPER — TRANSCRIPCIÓN DE AUDIO
+# ─────────────────────────────────────────────────────────────────────────────
+def transcribir_audio(audio_url: str = "", audio_base64: str = "") -> str:
+    """
+    Intenta obtener el audio por 3 métodos en cascada:
+      1. Base64 embebido (Evolution API getBase64FromMediaMessage)
+      2. URL descargable directamente
+      3. URL con header apikey (Evolution API autenticado)
+    Luego transcribe con Whisper y devuelve el texto.
+    """
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+    if not OPENAI_API_KEY:
+        print("[Whisper] Sin OPENAI_API_KEY — omitiendo transcripción")
+        return ""
+
+    audio_bytes = None
+    metodo_usado = ""
+
+    # ── Método 1: base64 embebido ──────────────────────────────────────────
+    if audio_base64 and not audio_bytes:
+        try:
+            # Limpiar prefijo "data:audio/ogg;base64," si viene con él
+            data = audio_base64.split(",")[-1]
+            audio_bytes = b64.b64decode(data)
+            metodo_usado = "base64"
+            print(f"[Whisper] Método 1 (base64) OK — {len(audio_bytes)} bytes")
+        except Exception as e:
+            print(f"[Whisper] Método 1 (base64) FALLÓ: {e}")
+
+    # ── Método 2: URL directa sin auth ────────────────────────────────────
+    if audio_url and not audio_bytes:
+        try:
+            r = requests.get(audio_url, timeout=15)
+            if r.status_code == 200 and len(r.content) > 100:
+                audio_bytes = r.content
+                metodo_usado = "url_directa"
+                print(f"[Whisper] Método 2 (URL directa) OK — {len(audio_bytes)} bytes")
+            else:
+                print(f"[Whisper] Método 2 (URL directa) status={r.status_code}")
+        except Exception as e:
+            print(f"[Whisper] Método 2 (URL directa) FALLÓ: {e}")
+
+    # ── Método 3: URL con apikey de Evolution API ─────────────────────────
+    if audio_url and not audio_bytes:
+        evo_key = os.environ.get("EVOLUTION_API_KEY", "")
+        try:
+            r = requests.get(audio_url, headers={"apikey": evo_key}, timeout=15)
+            if r.status_code == 200 and len(r.content) > 100:
+                audio_bytes = r.content
+                metodo_usado = "url_con_auth"
+                print(f"[Whisper] Método 3 (URL+auth) OK — {len(audio_bytes)} bytes")
+            else:
+                print(f"[Whisper] Método 3 (URL+auth) status={r.status_code}")
+        except Exception as e:
+            print(f"[Whisper] Método 3 (URL+auth) FALLÓ: {e}")
+
+    if not audio_bytes:
+        print("[Whisper] Ningún método logró obtener el audio")
+        return ""
+
+    # ── Transcribir con Whisper ───────────────────────────────────────────
+    try:
+        cliente_openai = openai.OpenAI(api_key=OPENAI_API_KEY)
+        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
+            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+
+        with open(tmp_path, "rb") as f:
+            transcripcion = cliente_openai.audio.transcriptions.create(
+                model="whisper-1",
+                file=f,
+                language="es",
+            )
+        os.unlink(tmp_path)
+        texto = transcripcion.text.strip()
+        print(f"[Whisper] Transcripción ({metodo_usado}): '{texto}'")
+        return texto
+    except Exception as e:
+        print(f"[Whisper] Error al transcribir: {e}")
+        return ""
+
+# ─────────────────────────────────────────────────────────────────────────────
 # SCHEMA DE ENTRADA
 # ─────────────────────────────────────────────────────────────────────────────
 class MensajeEntrante(BaseModel):
-    telefono:    str
-    mensaje:     str
+    telefono:     str
+    mensaje:      str = ""
     tiene_imagen: bool = False
-    es_admin:    bool = False
+    es_admin:     bool = False
+    audio_url:    str = ""    # URL del audio (WhatsApp CDN o Evolution API)
+    audio_base64: str = ""    # Base64 del audio (de getBase64FromMediaMessage)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ENDPOINT PRINCIPAL
@@ -717,6 +804,20 @@ async def manejar_mensaje(entrada: MensajeEntrante):
     try:
         tel = entrada.telefono.strip()
         msg = entrada.mensaje.strip()
+
+        # ── Transcripción de audio (Whisper) ──────────────────────────────
+        if entrada.audio_url or entrada.audio_base64:
+            transcripcion = transcribir_audio(entrada.audio_url, entrada.audio_base64)
+            if transcripcion:
+                msg = transcripcion   # Reemplazar mensaje con el texto transcripto
+            else:
+                # Audio recibido pero no se pudo transcribir — ignorar silenciosamente
+                return {
+                    "respuesta": "",
+                    "tipo_mensaje": "audio_no_procesado",
+                    "accion_ejecutada": None,
+                }
+        # ─────────────────────────────────────────────────────────────────
 
         # Cargar conversación desde Airtable
         conv = at_get_conversacion(tel)
@@ -927,6 +1028,24 @@ async def confirmar_pago(telefono: str):
 # ─────────────────────────────────────────────────────────────────────────────
 # ENDPOINTS DE DEBUG (quitar en producción)
 # ─────────────────────────────────────────────────────────────────────────────
+@router.post("/debug/test-whisper", summary="Debug: Probar transcripción de audio")
+async def debug_test_whisper(payload: dict):
+    """
+    Probá la transcripción mandando:
+      {"audio_url": "https://..."}          ← método 2 o 3
+      {"audio_base64": "data:audio/..."}    ← método 1
+    """
+    audio_url    = payload.get("audio_url", "")
+    audio_base64 = payload.get("audio_base64", "")
+    if not audio_url and not audio_base64:
+        return {"ok": False, "error": "Mandá audio_url o audio_base64"}
+
+    texto = transcribir_audio(audio_url, audio_base64)
+    if texto:
+        return {"ok": True, "transcripcion": texto}
+    else:
+        return {"ok": False, "transcripcion": "", "error": "No se pudo transcribir — ver logs de Render"}
+
 @router.get("/debug/airtable", summary="Debug: Estado de Airtable")
 def debug_airtable():
     resultado = {
