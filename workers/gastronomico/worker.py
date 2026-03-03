@@ -292,19 +292,32 @@ def at_crear_reserva(datos: dict) -> dict:
     """Guarda la reserva en la tabla Reservas."""
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
+        # Sanitizar tipo_reserva — limpiar comillas extra que el agente puede agregar
+        tipo_raw = str(datos.get("tipo_reserva", "simple")).strip().strip('"').strip("'")
+        tipo_valido = tipo_raw if tipo_raw in ["simple", "con_seña"] else "simple"
+
+        # Sanitizar personas — asegurar que sea int
+        try:
+            personas_num = int(str(datos.get("personas", 1)).strip().strip('"'))
+        except Exception:
+            personas_num = 1
+
         campos = {
-            "Nombre":      datos.get("nombre", ""),
-            "telefono":    datos.get("telefono", ""),
-            "Fecha":       datos.get("fecha_iso", ""),
-            "Hora":        datos.get("hora", ""),
-            "Personas":    int(datos.get("personas", 1)),
+            "Nombre":      str(datos.get("nombre", "")).strip(),
+            "telefono":    str(datos.get("telefono", "")).strip(),
+            "Fecha":       str(datos.get("fecha_iso", "")).strip()[:10],
+            "Hora":        str(datos.get("hora", "")).strip(),
+            "Personas":    personas_num,
             "Estado":      "pendiente",
-            "nro_reserva": datos.get("nro_reserva", ""),
-            "tipo":        datos.get("tipo_reserva", "simple"),
-            "Especificaciones": datos.get("especificaciones", ""),
+            "nro_reserva": str(datos.get("nro_reserva", "")).strip(),
+            "tipo":        tipo_valido,
+            "Especificaciones": str(datos.get("especificaciones", "")).strip(),
         }
+        print(f"[AT] Enviando reserva: {campos}")
         r = requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": campos}]})
-        return {"ok": r.status_code == 200, "resp": r.json()}
+        resp = r.json()
+        print(f"[AT] Reserva status={r.status_code} resp={resp}")
+        return {"ok": r.status_code == 200, "resp": resp}
     except Exception as e:
         print(f"[AT] Error crear_reserva: {e}")
         return {"ok": False, "error": str(e)}
