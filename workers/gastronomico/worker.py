@@ -1190,10 +1190,18 @@ async def debug_test_whisper(payload: dict):
 
 @router.get("/debug/airtable", summary="Debug: Estado de Airtable")
 def debug_airtable():
+    evo_url      = os.environ.get("EVOLUTION_API_URL", "")
+    evo_instance = os.environ.get("EVOLUTION_INSTANCE", "")
+    evo_key      = os.environ.get("EVOLUTION_API_KEY", "")
+    openai_key   = os.environ.get("OPENAI_API_KEY", "")
     resultado = {
-        "AIRTABLE_API_KEY": f"✅ ({len(AIRTABLE_API_KEY)} chars)" if AIRTABLE_API_KEY else "❌ vacía",
-        "AIRTABLE_BASE_ID": AIRTABLE_BASE_ID,
-        "GEMINI_API_KEY":   f"✅ ({len(GEMINI_API_KEY)} chars)" if GEMINI_API_KEY else "❌ vacía",
+        "AIRTABLE_API_KEY":  f"✅ ({len(AIRTABLE_API_KEY)} chars)" if AIRTABLE_API_KEY else "❌ vacía",
+        "AIRTABLE_BASE_ID":  AIRTABLE_BASE_ID,
+        "GEMINI_API_KEY":    f"✅ ({len(GEMINI_API_KEY)} chars)" if GEMINI_API_KEY else "❌ vacía",
+        "OPENAI_API_KEY":    f"✅ ({len(openai_key)} chars)" if openai_key else "❌ NO configurada",
+        "EVOLUTION_API_URL": evo_url if evo_url else "❌ NO configurada",
+        "EVOLUTION_INSTANCE": evo_instance if evo_instance else "❌ NO configurada",
+        "EVOLUTION_API_KEY": f"✅ ({len(evo_key)} chars)" if evo_key else "❌ NO configurada",
     }
     try:
         r = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas?maxRecords=1", headers=AT_HEADERS())
