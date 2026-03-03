@@ -190,17 +190,22 @@ Recopilá en orden:
    4️⃣ Cafetería ☕
    5️⃣ Bebidas 🍷"
 3. Tomá su pedido (platos + cantidades). Cada vez que agregue un ítem confirmalo y preguntá "¿Desea agregar algo más?". NUNCA calculés el total hasta que el cliente diga explícitamente que terminó.
-4. Cuando el cliente diga que terminó ("listo", "con eso", "nada más", "estamos", etc.), en ese MISMO mensaje:
-   a. Mostrá el desglose del pedido con precios
-   b. Mostrá el total
-   c. Calculá el 10% del total como seña
-   d. Informá: "Para confirmar su pedido, le pedimos una seña de $[MONTO] ARS (10% del total de $[TOTAL])."
-   e. Pedí transferencia al alias: *{RESTAURANTE['alias_pago']}* (MercadoPago/Transferencia)
-   f. Pedí que manden la captura del comprobante
-4. Cuando indiquen que enviaron el comprobante → pedí la dirección de entrega
-5. Con dirección confirmada → ejecutá:
-ACCION: {{"tipo": "crear_pedido", "nombre": "[nombre del cliente]", "detalle": "[platos y cantidades]", "total": N, "direccion": "...", "nota": "Delivery con seña - Pendiente verificación de comprobante"}}
-ACCION: {{"tipo": "notificar_dueno", "mensaje": "🛵 Nuevo delivery con seña de [Nombre] — Total: $[TOTAL]. Seña: $[MONTO]. Dirección: [dir]. Verificar comprobante."}}
+4. Cuando el cliente diga que terminó ("listo", "con eso", "nada más", "estamos", etc.), en ese MISMO mensaje mostrá el desglose, el total, la seña y pedí el comprobante. Luego ejecutá ACCION:
+   Ejemplo de mensaje:
+   "📦 *Su pedido:*
+   • Bife de Chorizo (300gr) con ensalada mixta — $7.500
+   • Vino Malbec (copa) — $2.200
+   *Total: $9.700 ARS*
+   💳 Seña requerida (10%): *$970 ARS* al alias *donalberto.parrilla*
+
+   Por favor, realice la transferencia y envíenos la captura del comprobante para confirmar su pedido."
+
+   En ese MISMO mensaje, al final:
+ACCION: {{"tipo": "solicitar_comprobante", "nombre": "[nombre del cliente]", "detalle": "[platos y cantidades]", "total": N}}
+
+⚠️ En Opción 5, usa SIEMPRE ACCION solicitar_comprobante — NUNCA crear_pedido.
+⚠️ NO preguntes la dirección en este paso — el sistema la solicita automáticamente DESPUÉS de verificar el pago.
+⚠️ Después de incluir el ACCION solicitar_comprobante, NO agregues más preguntas ni instrucciones.
 
 ---
 
@@ -330,14 +335,14 @@ def at_get_conversacion(telefono: str) -> dict | None:
         print(f"[AT] Error get_conversacion: {e}")
         return None
 
-def at_guardar_conversacion(telefono: str, historial: list, record_id: str = None):
+def at_guardar_conversacion(telefono: str, historial: list, record_id: str = None, estado: str = "activo"):
     """Guarda/actualiza el historial de conversación."""
     try:
         # Limitar a últimos 20 turnos para no superar el límite de campo
         historial_recortado = historial[-20:]
         payload = {"fields": {
             "telefono": telefono,
-            "estado_actual": "activo",
+            "estado_actual": estado,
             "plan_activo": "basic",
             "datos_pedido": json.dumps(historial_recortado, ensure_ascii=False),
         }}
@@ -428,6 +433,14 @@ def at_actualizar_reserva(record_id: str, campos: dict) -> dict:
         print(f"[AT] Error actualizar_reserva: {e}")
         return {"ok": False, "error": str(e)}
 
+def at_actualizar_estado(record_id: str, estado: str):
+    """Actualiza solo el campo estado_actual de una conversación."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas/{record_id}"
+        requests.patch(url, headers=AT_HEADERS(), json={"fields": {"estado_actual": estado}})
+    except Exception as e:
+        print(f"[AT] Error actualizar_estado: {e}")
+
 def notificar_dueno(mensaje: str):
     """Envía notificación al dueño por Evolution API."""
     evo_url = os.environ.get("EVOLUTION_API_URL", "")
@@ -445,6 +458,24 @@ def notificar_dueno(mensaje: str):
         )
     except Exception as e:
         print(f"[Dueño] Error notificar: {e}")
+
+def enviar_cliente(telefono: str, mensaje: str):
+    """Envía mensaje proactivo al cliente via Evolution API."""
+    evo_url = os.environ.get("EVOLUTION_API_URL", "")
+    evo_instance = os.environ.get("EVOLUTION_INSTANCE", "")
+    evo_key = os.environ.get("EVOLUTION_API_KEY", "")
+    if not all([evo_url, evo_instance, evo_key]):
+        print(f"[Cliente] Evolution no configurado. Msg: {mensaje}")
+        return
+    try:
+        requests.post(
+            f"{evo_url}/message/sendText/{evo_instance}",
+            headers={"apikey": evo_key, "Content-Type": "application/json"},
+            json={"number": telefono, "text": mensaje},
+            timeout=10,
+        )
+    except Exception as e:
+        print(f"[Cliente] Error enviar: {e}")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # EJECUTAR ACCIONES DEL AGENTE
@@ -624,6 +655,37 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
                 "mensaje_error": "⚠️ No se pudo actualizar la reserva. Comuníquese directamente con el restaurante."
             }
 
+    elif tipo == "solicitar_comprobante":
+        nombre = accion.get("nombre", "")
+        detalle = accion.get("detalle", "")
+        total   = float(accion.get("total", 0))
+        sena    = total * 0.10
+        nro     = f"PED-{str(uuid.uuid4())[:5].upper()}"
+
+        pedido_data = {
+            "nombre":    nombre,
+            "telefono":  tel,
+            "detalle":   detalle,
+            "total":     total,
+            "nro_pedido": nro,
+        }
+        nuevo_estado = json.dumps({"estado": "esperando_comprobante", "pedido": pedido_data})
+
+        notificar_dueno(
+            f"🛒 *Nuevo pedido pendiente de pago*\n"
+            f"👤 {nombre or tel}\n"
+            f"📋 {detalle}\n"
+            f"💰 Total: ${total:,.0f} ARS\n"
+            f"💳 Seña: ${sena:,.0f} ARS\n"
+            f"📞 {tel}\n\n"
+            f"⏳ Esperando comprobante del cliente..."
+        )
+        return {
+            "ok": True,
+            "mensaje_confirmacion": None,   # Usar el texto que generó Gemini
+            "nuevo_estado": nuevo_estado,
+        }
+
     elif tipo == "notificar_dueno":
         notificar_dueno(accion.get("mensaje", ""))
         return {"ok": True, "mensaje_confirmacion": None}
@@ -648,17 +710,108 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         tel = entrada.telefono.strip()
         msg = entrada.mensaje.strip()
 
-        # Cargar historial desde Airtable
+        # Cargar conversación desde Airtable
         conv = at_get_conversacion(tel)
         record_id = conv["id"] if conv else None
+
+        # Leer estado actual (puede ser JSON de estado de espera o simple "activo")
+        estado_raw = conv["fields"].get("estado_actual", "activo") if conv else "activo"
+        try:
+            estado_data = json.loads(estado_raw)
+            estado_actual = estado_data.get("estado", "activo")
+            pedido_pendiente = estado_data.get("pedido", {})
+        except Exception:
+            estado_actual = estado_raw  # "activo" simple
+            pedido_pendiente = {}
+
+        # Cargar historial
         historial_raw = conv["fields"].get("datos_pedido", "[]") if conv else "[]"
         try:
             historial = json.loads(historial_raw)
-            # Si quedó historial viejo del formato anterior (dict o no lista), reiniciar
             if not isinstance(historial, list):
                 historial = []
         except Exception:
             historial = []
+
+        # ── MÁQUINA DE ESTADOS ────────────────────────────────────────────────
+        # Interceptar mensajes cuando hay un pago pendiente en proceso
+
+        if estado_actual == "esperando_comprobante":
+            # El cliente acaba de enviar su comprobante (imagen o texto)
+            nuevo_estado = json.dumps({"estado": "esperando_confirmacion", "pedido": pedido_pendiente})
+            respuesta = "✅ *Comprobante recibido.* Estamos verificando el pago y le confirmaremos en breve. 🙏"
+            historial.append({"role": "user",  "content": msg})
+            historial.append({"role": "model", "content": respuesta})
+            at_guardar_conversacion(tel, historial, record_id, estado=nuevo_estado)
+
+            # Notificar al dueño con link de confirmación
+            base_url = os.environ.get("BASE_URL", "https://system-ia-agentes.onrender.com")
+            link = f"{base_url}/gastronomico/confirmar-pago/{tel}"
+            nombre_cliente = pedido_pendiente.get("nombre", tel)
+            notificar_dueno(
+                f"🧾 *Comprobante recibido*\n"
+                f"👤 Cliente: {nombre_cliente}\n"
+                f"📋 Pedido: {pedido_pendiente.get('detalle', '')}\n"
+                f"💰 Total: ${pedido_pendiente.get('total', 0):,.0f} ARS\n"
+                f"💳 Seña: ${pedido_pendiente.get('total', 0) * 0.1:,.0f} ARS\n"
+                f"📞 Tel: {tel}\n\n"
+                f"✅ Para confirmar el pago:\n{link}"
+            )
+            return {"respuesta": respuesta, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_recibido"}
+
+        elif estado_actual == "esperando_confirmacion":
+            # El dueño aún no confirmó, el cliente manda otro mensaje
+            return {
+                "respuesta": "⏳ Su comprobante está siendo verificado. En breve le confirmamos y procesamos su pedido.",
+                "tipo_mensaje": "texto",
+                "accion_ejecutada": None,
+            }
+
+        elif estado_actual == "esperando_direccion":
+            # El dueño confirmó el pago — el cliente acaba de mandar su dirección
+            direccion = msg
+            pedido = pedido_pendiente
+            nro = pedido.get("nro_pedido", f"PED-{str(uuid.uuid4())[:5].upper()}")
+            sena = pedido.get("total", 0) * 0.10
+
+            resultado = at_crear_pedido({
+                "nombre":    pedido.get("nombre", ""),
+                "telefono":  tel,
+                "detalle":   pedido.get("detalle", ""),
+                "total":     pedido.get("total", 0),
+                "nro_pedido": nro,
+            })
+
+            if resultado.get("ok"):
+                notificar_dueno(
+                    f"🛵 *Pedido listo para preparar* #{nro}\n"
+                    f"👤 {pedido.get('nombre', tel)}\n"
+                    f"📋 {pedido.get('detalle', '')}\n"
+                    f"💰 Total: ${pedido.get('total', 0):,.0f} ARS (seña cobrada: ${sena:,.0f})\n"
+                    f"🏠 Dirección: {direccion}\n"
+                    f"📞 {tel}"
+                )
+                ticket = (
+                    f"✅ *¡Pedido confirmado y registrado!*\n\n"
+                    f"🧾 N° *{nro}*\n"
+                    f"📦 {pedido.get('detalle', '')}\n"
+                    f"💰 Total: ${pedido.get('total', 0):,.0f} ARS\n"
+                    f"💳 Seña abonada: ${sena:,.0f} ARS\n"
+                    f"🏠 Entrega en: {direccion}\n"
+                    f"⏰ Tiempo estimado: 45-60 minutos\n\n"
+                    f"¡Muchas gracias por su pedido! Le avisamos cuando esté en camino. 🛵"
+                )
+                historial.append({"role": "user",  "content": msg})
+                historial.append({"role": "model", "content": ticket})
+                at_guardar_conversacion(tel, historial, record_id, estado="activo")
+                return {"respuesta": ticket, "tipo_mensaje": "texto", "accion_ejecutada": "crear_pedido"}
+            else:
+                return {
+                    "respuesta": "⚠️ No se pudo registrar su pedido. Por favor, contáctenos directamente.",
+                    "tipo_mensaje": "texto",
+                    "accion_ejecutada": None,
+                }
+        # ── FIN MÁQUINA DE ESTADOS ────────────────────────────────────────────
 
         # Convertir historial al formato que espera Gemini
         history_gemini = []
@@ -686,7 +839,6 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             texto_respuesta = partes[0].strip()
             try:
                 accion_raw = partes[1].strip()
-                # Limpiar posibles backticks
                 accion_raw = accion_raw.replace("```json", "").replace("```", "").strip()
                 accion = json.loads(accion_raw)
             except Exception as e:
@@ -694,19 +846,19 @@ async def manejar_mensaje(entrada: MensajeEntrante):
 
         # Ejecutar acción si existe y usar su resultado real
         texto_final = texto_respuesta
+        nuevo_estado_accion = "activo"
         if accion:
             resultado_accion = ejecutar_accion(accion, tel)
+            nuevo_estado_accion = resultado_accion.get("nuevo_estado", "activo")
             if resultado_accion.get("mensaje_confirmacion"):
-                # Reemplazar el mensaje del agente con la confirmación real de Airtable
                 texto_final = resultado_accion["mensaje_confirmacion"]
             elif not resultado_accion.get("ok"):
-                # Si falló, reemplazar con mensaje de error honesto
                 texto_final = resultado_accion.get("mensaje_error", "⚠️ Ocurrió un error al procesar su solicitud.")
 
-        # Actualizar historial
-        historial.append({"role": "user", "content": msg})
+        # Actualizar historial conservando el estado correcto
+        historial.append({"role": "user",  "content": msg})
         historial.append({"role": "model", "content": texto_final})
-        at_guardar_conversacion(tel, historial, record_id)
+        at_guardar_conversacion(tel, historial, record_id, estado=nuevo_estado_accion)
 
         return {
             "respuesta": texto_final,
@@ -723,6 +875,46 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             "_error": str(e),
         }
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENDPOINT DE CONFIRMACIÓN DE PAGO (dueño)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/confirmar-pago/{telefono}", summary="Dueño: Confirmar pago del cliente y solicitar dirección")
+async def confirmar_pago(telefono: str):
+    conv = at_get_conversacion(telefono)
+    if not conv:
+        return {"ok": False, "error": f"No se encontró conversación para {telefono}"}
+
+    estado_raw = conv["fields"].get("estado_actual", "activo")
+    try:
+        estado_data = json.loads(estado_raw)
+    except Exception:
+        return {"ok": False, "error": f"Estado actual: '{estado_raw}' — no hay comprobante pendiente"}
+
+    if estado_data.get("estado") != "esperando_confirmacion":
+        return {"ok": False, "error": f"Estado actual: '{estado_data.get('estado')}' — no hay comprobante esperando confirmación"}
+
+    pedido_pendiente = estado_data.get("pedido", {})
+    nombre = pedido_pendiente.get("nombre", "")
+
+    # Actualizar estado a esperando_direccion
+    nuevo_estado = json.dumps({"estado": "esperando_direccion", "pedido": pedido_pendiente})
+    at_actualizar_estado(conv["id"], nuevo_estado)
+
+    # Enviar mensaje al cliente solicitando la dirección
+    saludo = f"¡Hola, {nombre}! " if nombre else ""
+    msg_cliente = (
+        f"✅ *¡Pago verificado!* {saludo}\n\n"
+        f"Su seña fue confirmada exitosamente. 🎉\n\n"
+        f"Por favor, indíquenos su *dirección de entrega completa* para procesar su pedido. 🏠"
+    )
+    enviar_cliente(telefono, msg_cliente)
+
+    return {
+        "ok": True,
+        "mensaje": f"✅ Pago confirmado para {telefono}. Mensaje enviado al cliente solicitando dirección.",
+        "pedido": pedido_pendiente,
+    }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ENDPOINTS DE DEBUG (quitar en producción)
