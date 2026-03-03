@@ -1035,9 +1035,17 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             model_name="gemini-2.5-flash-lite",
             system_instruction=(
                 SYSTEM_PROMPT
-                + f"\n\n---\n## RESERVAS ACTUALES EN EL SISTEMA (datos reales de Airtable)\n"
+                + "\n\n---\n## RESERVAS ACTUALES EN EL SISTEMA (datos reales de Airtable)\n"
                 + reservas_ctx
-                + "\n\nUsá estos datos para responder sobre disponibilidad. Si un horario no aparece aquí, está libre."
+                + """
+
+⚠️ REGLAS CRÍTICAS PARA INTERPRETAR ESTAS RESERVAS:
+1. Cada línea es una franja horaria OCUPADA. Todas las demás franjas dentro del horario de atención están LIBRES.
+2. El restaurante acepta reservas de almuerzo (12:00 a 16:00) y cena (20:00 a 23:00). Si un horario no aparece en la lista, está disponible.
+3. Ver "21:00 ocupado" NO significa que 22:00 o 23:00 estén ocupados — son franjas independientes.
+4. NUNCA inventes que un horario está completo si no aparece en esta lista.
+5. Si la lista dice "No hay reservas activas próximas", entonces TODOS los horarios están disponibles.
+"""
             ),
         )
 
