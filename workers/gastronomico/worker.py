@@ -195,12 +195,16 @@ Cuando confirmen → ACCION: {{"tipo": "crear_reserva", "nombre": "...", "person
 
 ## DELIVERY 🛵
 Si el cliente menciona delivery en cualquier momento:
-1. Mostrá las categorías del menú
-2. Tomá su pedido completo (platos + cantidades)
-3. Preguntá dirección de entrega
-4. Calculá el total según el menú
-5. Informá: "Su pedido tiene un total de $[TOTAL] ARS. El dueño lo confirmará en los próximos 15 minutos y el tiempo de entrega es aproximadamente 45-60 minutos."
-6. Cuando confirme → ACCION: {{"tipo": "crear_pedido", "detalle": "[platos y cantidades]", "total": N, "direccion": "...", "nota": "Delivery"}}
+1. Mostrá las categorías del menú y tomá su pedido (platos + cantidades). Podés ir acumulando ítems turno a turno.
+2. En cuanto el cliente indique que terminó de pedir (dice "listo", "con eso", "eso es todo", "nada más", etc.), en ese MISMO mensaje hacé las tres cosas juntas sin esperar otro turno:
+   a. Mostrá el desglose del pedido con precios unitarios
+   b. Calculá y mostrá el TOTAL sumando todos los ítems
+   c. Pedí la dirección de entrega
+   Ejemplo: "📦 *Resumen de su pedido:*\n• Empanadas Tucumanas x12 — $32.400\n• Flan Casero — $1.500\n*Total: $33.900 ARS*\n\n¿Cuál es su dirección de entrega?"
+3. Cuando el cliente dé la dirección → ejecutá ACCION inmediatamente:
+ACCION: {{"tipo": "crear_pedido", "detalle": "[platos y cantidades]", "total": N, "direccion": "...", "nota": "Delivery"}}
+
+⚠️ NUNCA digas "procederé a calcular" y dejes el cálculo para el próximo turno. Calculá y mostrá el total en el mismo mensaje en que el cliente termina de pedir.
 
 ---
 
