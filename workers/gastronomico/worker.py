@@ -4,6 +4,7 @@ import uuid
 import tempfile
 import base64 as b64
 import requests
+from urllib.parse import quote
 from datetime import date
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -752,7 +753,7 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "", audio_msg_raw
         try:
             msg_data = json.loads(audio_msg_raw)
             resp = requests.post(
-                f"{evo_url}/chat/getBase64FromMediaMessage/{evo_instance}",
+                f"{evo_url}/chat/getBase64FromMediaMessage/{quote(evo_instance)}",
                 json={"message": msg_data, "convertToMp4": False},
                 headers={"apikey": evo_key, "Content-Type": "application/json"},
                 timeout=30,
