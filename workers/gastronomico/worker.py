@@ -292,10 +292,6 @@ def at_crear_reserva(datos: dict) -> dict:
     """Guarda la reserva en la tabla Reservas."""
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
-        # Sanitizar tipo_reserva — limpiar comillas extra que el agente puede agregar
-        tipo_raw = str(datos.get("tipo_reserva", "simple")).strip().strip('"').strip("'")
-        tipo_valido = tipo_raw if tipo_raw in ["simple", "con_seña"] else "simple"
-
         # Sanitizar personas — asegurar que sea int
         try:
             personas_num = int(str(datos.get("personas", 1)).strip().strip('"'))
@@ -308,10 +304,8 @@ def at_crear_reserva(datos: dict) -> dict:
             "Fecha":       str(datos.get("fecha_iso", "")).strip()[:10],
             "Hora":        str(datos.get("hora", "")).strip(),
             "Personas":    personas_num,
-            "Estado":      "pendiente",
             "nro_reserva": str(datos.get("nro_reserva", "")).strip(),
-            "tipo":        tipo_valido,
-            "Especificaciones": str(datos.get("especificaciones", "")).strip(),
+            "Especificaciones": str(datos.get("especificaciones", datos.get("nota", ""))).strip(),
         }
         print(f"[AT] Enviando reserva: {campos}")
         r = requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": campos}]})
