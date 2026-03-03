@@ -100,7 +100,7 @@ IMPORTANTE: La línea ACCION va SIEMPRE al final del mensaje, nunca en el medio.
 # MODELO GEMINI
 # ─────────────────────────────────────────────────────────────────────────────
 modelo = genai.GenerativeModel(
-    model_name="gemini-2.5-flash-lite-preview-06-17",
+    model_name="gemini-1.5-flash",
     system_instruction=SYSTEM_PROMPT,
 )
 
@@ -272,6 +272,7 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         historial_raw = conv["fields"].get("datos_pedido", "[]") if conv else "[]"
         try:
             historial = json.loads(historial_raw)
+            # Si quedó historial viejo del formato anterior (dict o no lista), reiniciar
             if not isinstance(historial, list):
                 historial = []
         except Exception:
