@@ -758,7 +758,7 @@ def transcribir_audio(audio_url: str = "", audio_base64: str = "", audio_msg_raw
                 headers={"apikey": evo_key, "Content-Type": "application/json"},
                 timeout=30,
             )
-            if resp.status_code == 200:
+            if resp.status_code in (200, 201):
                 result    = resp.json()
                 b64_data  = result.get("base64", "")
                 if b64_data:
