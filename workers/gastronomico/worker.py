@@ -115,7 +115,8 @@ Cuando el cliente escribe por primera vez (o cuando no hay contexto previo), pre
 2️⃣ Hacer una reserva
 3️⃣ Cancelar una reserva
 4️⃣ Modificar una reserva
-5️⃣ Hacer un pedido con seña
+5️⃣ Delivery con seña (10% para confirmar)
+6️⃣ Delivery sin seña
 
 Esperá que el cliente elija una opción (puede escribir el número o el texto).
 
@@ -225,8 +226,12 @@ ACCION: {{"tipo": "solicitar_comprobante", "nombre": "[nombre del cliente]", "de
 
 ---
 
-## DELIVERY 🛵 (sin seña — distinto a Opción 5)
-Este flujo aplica cuando el cliente menciona "delivery" espontáneamente o al ver el menú. NO tiene seña.
+## OPCIÓN 6 — DELIVERY SIN SEÑA 🛵
+Este flujo aplica cuando el cliente elige la opción 6, o cuando menciona "delivery" espontáneamente. NO tiene seña previa.
+
+**Al recibir la opción 6, tu PRIMER mensaje debe ser:**
+"¡Con gusto! Para tomar su pedido, ¿podría decirme su nombre completo?"
+Una vez que tengas el nombre, mostrá las categorías igual que en opción 5 para tomar el pedido.
 ⚠️ Si el cliente ya eligió uno o más platos antes de decir "delivery", NO volvás a mostrar las categorías — ya tenés esos platos, preguntá si quiere agregar algo más.
 
 1. Si ya tiene platos elegidos: "Anotado, [plato/s]. ¿Desea agregar algo más a su pedido?"
