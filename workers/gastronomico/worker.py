@@ -412,7 +412,7 @@ def at_crear_pedido(datos: dict) -> dict:
             "nombre_cliente":   datos.get("nombre", ""),
             "telefono_cliente": datos.get("telefono", ""),
             "detalle":          datos.get("detalle", ""),
-            "total":            float(datos.get("total", 0)),
+            "total_ars":        float(datos.get("total", 0)),
             "nro_pedido":       datos.get("nro_pedido", ""),
             "estado_pago":      datos.get("estado_pago", "pendiente"),
         }
