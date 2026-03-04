@@ -398,6 +398,23 @@ def at_crear_pedido(datos: dict) -> dict:
         print(f"[AT] Error crear_pedido: {e}")
         return {"ok": False, "error": str(e)}
 
+def at_actualizar_pedido(record_id: str, datos: dict) -> dict:
+    """Actualiza campos de un pedido existente en Airtable (PATCH)."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos/{record_id}"
+        campos = {}
+        if "detalle" in datos:
+            campos["detalle"] = datos["detalle"]
+        if "estado_pago" in datos:
+            campos["estado_pago"] = datos["estado_pago"]
+        r = requests.patch(url, headers=AT_HEADERS(), json={"fields": campos})
+        resp = r.json()
+        print(f"[AT] Actualizar pedido {record_id} status={r.status_code} resp={resp}")
+        return {"ok": r.status_code == 200, "resp": resp}
+    except Exception as e:
+        print(f"[AT] Error actualizar_pedido: {e}")
+        return {"ok": False, "error": str(e)}
+
 def at_get_reservas_futuras() -> str:
     """
     Devuelve un resumen de las reservas activas (no canceladas) desde hoy.
@@ -725,12 +742,28 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
         sena    = total * 0.10
         nro     = f"PED-{str(uuid.uuid4())[:5].upper()}"
 
+        # Crear el registro en Airtable inmediatamente con estado_pago = "pendiente"
+        resultado_at = at_crear_pedido({
+            "nombre":      nombre,
+            "telefono":    tel,
+            "detalle":     detalle,
+            "total":       total,
+            "nro_pedido":  nro,
+            "estado_pago": "pendiente",
+        })
+        record_id = None
+        if resultado_at.get("ok"):
+            records = resultado_at.get("resp", {}).get("records", [])
+            if records:
+                record_id = records[0].get("id")
+
         pedido_data = {
-            "nombre":    nombre,
-            "telefono":  tel,
-            "detalle":   detalle,
-            "total":     total,
+            "nombre":     nombre,
+            "telefono":   tel,
+            "detalle":    detalle,
+            "total":      total,
             "nro_pedido": nro,
+            "record_id":  record_id,  # para PATCH posterior
         }
         nuevo_estado = json.dumps({"estado": "esperando_comprobante", "pedido": pedido_data})
 
@@ -1048,14 +1081,24 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             sena = pedido.get("total", 0) * 0.10
 
             detalle_con_dir = pedido.get("detalle", "") + f"\n🏠 Dirección: {direccion}"
-            resultado = at_crear_pedido({
-                "nombre":      pedido.get("nombre", ""),
-                "telefono":    tel,
-                "detalle":     detalle_con_dir,
-                "total":       pedido.get("total", 0),
-                "nro_pedido":  nro,
-                "estado_pago": "confirmado",  # pago ya fue aprobado por el dueño
-            })
+            record_id = pedido.get("record_id")
+
+            # Si tenemos el record_id, actualizar el registro existente (PATCH)
+            # Si no (pedido creado antes de este fix), crear uno nuevo como fallback
+            if record_id:
+                resultado = at_actualizar_pedido(record_id, {
+                    "detalle":     detalle_con_dir,
+                    "estado_pago": "confirmado",
+                })
+            else:
+                resultado = at_crear_pedido({
+                    "nombre":      pedido.get("nombre", ""),
+                    "telefono":    tel,
+                    "detalle":     detalle_con_dir,
+                    "total":       pedido.get("total", 0),
+                    "nro_pedido":  nro,
+                    "estado_pago": "confirmado",
+                })
 
             if resultado.get("ok"):
                 notificar_dueno(
