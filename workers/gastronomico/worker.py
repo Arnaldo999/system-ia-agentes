@@ -1122,33 +1122,49 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         # Interceptar mensajes cuando hay un pago pendiente en proceso
 
         if estado_actual == "esperando_comprobante":
-            # El cliente acaba de enviar su comprobante (imagen o texto)
-            nuevo_estado = json.dumps({"estado": "esperando_confirmacion", "pedido": pedido_pendiente})
-            respuesta = "✅ *Comprobante recibido.* Estamos verificando el pago y le confirmaremos en breve. 🙏"
+            # El cliente acaba de enviar su comprobante — confirmar automáticamente
+            pedido = pedido_pendiente
+            nombre_cliente = pedido.get("nombre", tel)
+            total_pedido   = pedido.get("total", 0)
+            sena_monto     = total_pedido * 0.1
+            detalle_pedido = pedido.get("detalle", "")
+            nro            = pedido.get("nro_pedido", "")
+
+            # Mensaje 1: acuse de recibo (respuesta inmediata al cliente)
+            msg1 = "🧾 Hemos recibido su comprobante, espere un momento mientras confirmamos el pago..."
+            enviar_cliente(tel, msg1)
+
+            # Actualizar estado_pago en Airtable → confirmado
+            if pedido.get("record_id"):
+                at_actualizar_pedido(pedido["record_id"], {"estado_pago": "confirmado"})
+            elif nro:
+                at_confirmar_pago_pedido(nro)
+
+            # Mensaje 2: pago confirmado + resumen + pedir dirección
+            msg2 = (
+                f"✅ *¡Pago confirmado, {nombre_cliente}!*\n\n"
+                f"📦 *Resumen de su pedido #{nro}:*\n"
+                f"{detalle_pedido}\n\n"
+                f"💰 Total: ${total_pedido:,.0f} ARS\n"
+                f"💳 Seña abonada: ${sena_monto:,.0f} ARS\n\n"
+                f"🏠 Por favor, indíquenos su *dirección de entrega completa* para procesar su pedido."
+            )
+
+            # Guardar estado esperando_direccion
+            nuevo_estado = json.dumps({"estado": "esperando_direccion", "pedido": pedido})
             historial.append({"role": "user",  "content": msg})
-            historial.append({"role": "model", "content": respuesta})
+            historial.append({"role": "model", "content": msg2})
             at_guardar_conversacion(tel, historial, record_id, estado=nuevo_estado)
 
-            # Notificar al dueño para que confirme por WhatsApp
-            nombre_cliente = pedido_pendiente.get("nombre", tel)
-            sena_monto = pedido_pendiente.get('total', 0) * 0.1
+            # Notificar al dueño
             notificar_dueno(
-                f"🧾 *Comprobante recibido*\n"
+                f"🧾 *Comprobante recibido y pago confirmado automáticamente*\n"
                 f"👤 {nombre_cliente} ({tel})\n"
-                f"📋 {pedido_pendiente.get('detalle', '')}\n"
-                f"💰 Total: ${pedido_pendiente.get('total', 0):,.0f} ARS\n"
-                f"💳 Seña: ${sena_monto:,.0f} ARS\n\n"
-                f"✅ Respondé *pago confirmado* para aprobar y notificar al cliente."
+                f"📋 {detalle_pedido}\n"
+                f"💰 Total: ${total_pedido:,.0f} ARS | Seña: ${sena_monto:,.0f} ARS\n"
+                f"⏳ Esperando dirección del cliente..."
             )
-            return {"respuesta": respuesta, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_recibido"}
-
-        elif estado_actual == "esperando_confirmacion":
-            # El dueño aún no confirmó, el cliente manda otro mensaje
-            return {
-                "respuesta": "⏳ Su comprobante está siendo verificado. En breve le confirmamos y procesamos su pedido.",
-                "tipo_mensaje": "texto",
-                "accion_ejecutada": None,
-            }
+            return {"respuesta": msg2, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_confirmado_auto"}
 
         elif estado_actual == "esperando_direccion":
             # El dueño confirmó el pago — el cliente acaba de mandar su dirección
@@ -1218,31 +1234,48 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         if estado_actual == "activo" and estado_pedia_comprobante:
             pedido_fallback = at_buscar_pedido_pendiente_tel(tel)
             if pedido_fallback:
-                fields = pedido_fallback.get("fields", {})
+                fields   = pedido_fallback.get("fields", {})
                 nombre_fb = fields.get("nombre_cliente", tel)
+                total_fb  = fields.get("total_ars", 0)
                 sena_fb   = fields.get("sena_ars", 0)
-                respuesta_fb = "✅ *Comprobante recibido.* Estamos verificando el pago y le confirmaremos en breve. 🙏"
+                detalle_fb = fields.get("detalle", "")
+                nro_fb    = fields.get("nro_pedido", "")
+
+                # Mensaje 1: acuse de recibo
+                enviar_cliente(tel, "🧾 Hemos recibido su comprobante, espere un momento mientras confirmamos el pago...")
+
+                # Confirmar pago en Airtable
+                at_actualizar_pedido(pedido_fallback["id"], {"estado_pago": "confirmado"})
+
+                # Mensaje 2: confirmado + resumen + pedir dirección
+                msg2_fb = (
+                    f"✅ *¡Pago confirmado, {nombre_fb}!*\n\n"
+                    f"📦 *Resumen de su pedido #{nro_fb}:*\n"
+                    f"{detalle_fb}\n\n"
+                    f"💰 Total: ${total_fb:,.0f} ARS\n"
+                    f"💳 Seña abonada: ${sena_fb:,.0f} ARS\n\n"
+                    f"🏠 Por favor, indíquenos su *dirección de entrega completa* para procesar su pedido."
+                )
                 pedido_data_fb = {
                     "nombre":     nombre_fb,
                     "telefono":   tel,
-                    "detalle":    fields.get("detalle", ""),
-                    "total":      fields.get("total_ars", 0),
-                    "nro_pedido": fields.get("nro_pedido", ""),
-                    "record_id":  pedido_fallback.get("id"),
+                    "detalle":    detalle_fb,
+                    "total":      total_fb,
+                    "nro_pedido": nro_fb,
+                    "record_id":  pedido_fallback["id"],
                 }
-                nuevo_estado_fb = json.dumps({"estado": "esperando_confirmacion", "pedido": pedido_data_fb})
+                nuevo_estado_fb = json.dumps({"estado": "esperando_direccion", "pedido": pedido_data_fb})
                 historial.append({"role": "user",  "content": msg})
-                historial.append({"role": "model", "content": respuesta_fb})
+                historial.append({"role": "model", "content": msg2_fb})
                 at_guardar_conversacion(tel, historial, record_id, estado=nuevo_estado_fb)
                 notificar_dueno(
-                    f"🧾 *Comprobante recibido*\n"
+                    f"🧾 *Comprobante recibido — pago confirmado automáticamente*\n"
                     f"👤 {nombre_fb} ({tel})\n"
-                    f"📋 {fields.get('detalle', '')}\n"
-                    f"💰 Total: ${fields.get('total_ars', 0):,.0f} ARS\n"
-                    f"💳 Seña: ${sena_fb:,.0f} ARS\n\n"
-                    f"✅ Respondé *pago confirmado* para aprobar."
+                    f"📋 {detalle_fb}\n"
+                    f"💰 Total: ${total_fb:,.0f} ARS | Seña: ${sena_fb:,.0f} ARS\n"
+                    f"⏳ Esperando dirección del cliente..."
                 )
-                return {"respuesta": respuesta_fb, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_recibido_fallback"}
+                return {"respuesta": msg2_fb, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_confirmado_auto_fallback"}
         # ─────────────────────────────────────────────────────────────────────
 
         # ── BIENVENIDA HARDCODEADA (primer mensaje o historial vacío) ─────────
