@@ -1025,12 +1025,31 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         imagen_url = None
 
     # ── 3. Preparar credenciales dinámicas (evita cruce de clientes) ──────────
+    cliente_id = entrada.cliente_id or marca.get("ID Cliente", "")
+    supa_creds = _get_supa_credenciales_by_cliente_id(cliente_id)
+
     if entrada.credenciales and entrada.credenciales.meta_access_token:
         ig_id = entrada.credenciales.ig_account_id
         page_id = entrada.credenciales.fb_page_id
         token = entrada.credenciales.meta_access_token
         token_li = entrada.credenciales.linkedin_access_token
         person_li = entrada.credenciales.linkedin_person_id
+        wa_num = entrada.credenciales.whatsapp_numero_notificacion
+        evo_url = entrada.credenciales.evolution_api_url
+        evo_instance = entrada.credenciales.evolution_instance_name
+        evo_token = entrada.credenciales.evolution_instance_token
+    elif supa_creds:
+        ig_id = supa_creds.get("ig_account_id", "")
+        page_id = supa_creds.get("fb_page_id", "")
+        token = supa_creds.get("meta_access_token", "")
+        token_li = supa_creds.get("linkedin_access_token", "")
+        person_li = supa_creds.get("linkedin_person_id", "")
+        wa_num = supa_creds.get("whatsapp_numero_notificacion", "") or supa_creds.get(
+            "whatsapp_numero", ""
+        )
+        evo_url = supa_creds.get("evolution_api_url", "")
+        evo_instance = supa_creds.get("evolution_instance_name", "")
+        evo_token = supa_creds.get("evolution_instance_token", "")
     else:
         # Fallback de seguridad al global (borrar en prod)
         ig_id = marca.get("IG Business Account ID", IG_BUSINESS_ACCOUNT_ID)
@@ -1038,6 +1057,10 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         token = _build_page_token_map().get(page_id) or META_ACCESS_TOKEN
         token_li = None
         person_li = None
+        wa_num = None
+        evo_url = None
+        evo_instance = None
+        evo_token = None
 
     # ── 4. Publicar en las 3 redes ───────────────────────────────────────────
     if imagen_url:
@@ -1083,18 +1106,10 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
 
     notif = _notificar_whatsapp(
         mensaje=msg_wa,
-        numero=entrada.credenciales.whatsapp_numero_notificacion
-        if entrada.credenciales
-        else None,
-        evo_url=entrada.credenciales.evolution_api_url
-        if entrada.credenciales
-        else None,
-        evo_instance=entrada.credenciales.evolution_instance_name
-        if entrada.credenciales
-        else None,
-        evo_token=entrada.credenciales.evolution_instance_token
-        if entrada.credenciales
-        else None,
+        numero=wa_num,
+        evo_url=evo_url,
+        evo_instance=evo_instance,
+        evo_token=evo_token,
     )
 
     return {
@@ -1428,6 +1443,20 @@ def _get_supa_credenciales_by_page(page_id: str) -> dict:
         "select": "*",
         "or": f"(fb_page_id.eq.{page_id},ig_account_id.eq.{page_id})",
     }
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+    try:
+        resp = req.get(url, params=params, headers=headers, timeout=5)
+        return resp.json()[0] if resp.json() else {}
+    except:
+        return {}
+
+
+def _get_supa_credenciales_by_cliente_id(cliente_id: str) -> dict:
+    """Busca dinámicamente el cliente en Supabase por cliente_id."""
+    if not SUPABASE_URL or not SUPABASE_KEY or not cliente_id:
+        return {}
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/clientes"
+    params = {"select": "*", "cliente_id": f"eq.{cliente_id}"}
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
     try:
         resp = req.get(url, params=params, headers=headers, timeout=5)
