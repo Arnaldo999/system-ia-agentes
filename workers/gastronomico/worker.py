@@ -991,8 +991,12 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         print(f"[DEBUG] tel={tel} | mensaje={repr(msg)} | tiene_imagen={entrada.tiene_imagen} | audio_url={bool(entrada.audio_url)}")
 
         # ── Transcripción de audio (Whisper) — PRIMERO que todo ───────────
-        tiene_audio = (entrada.audio_url or entrada.audio_base64
-                       or entrada.audio_msg_raw not in ("{}", ""))
+        # Si tiene_imagen=True, NO intentar transcribir: audio_msg_raw puede
+        # traer el JSON de la imagen de Evolution y Whisper rechazaría el PNG.
+        tiene_audio = (not entrada.tiene_imagen) and (
+            entrada.audio_url or entrada.audio_base64
+            or entrada.audio_msg_raw not in ("{}", "")
+        )
         if tiene_audio:
             transcripcion = transcribir_audio(
                 entrada.audio_url, entrada.audio_base64, entrada.audio_msg_raw
