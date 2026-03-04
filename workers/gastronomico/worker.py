@@ -1004,14 +1004,12 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                     "accion_ejecutada": None,
                 }
 
-        # ── Normalizar mensaje de imagen (después del audio) ──────────────
+        # ── Normalizar mensaje de imagen ──────────────────────────────────
         if not msg and entrada.tiene_imagen:
             msg = "[imagen enviada]"
-        elif not msg:
-            return {"respuesta": "", "tipo_mensaje": "ignorado", "accion_ejecutada": None}
         # ─────────────────────────────────────────────────────────────────
 
-        # Cargar conversación desde Airtable
+        # Cargar conversación desde Airtable (ANTES del early return para imagen)
         conv = at_get_conversacion(tel)
         record_id = conv["id"] if conv else None
 
@@ -1033,6 +1031,14 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                 historial = []
         except Exception:
             historial = []
+
+        # Si mensaje vacío: solo ignorar si NO estamos esperando un comprobante
+        # (n8n envía tiene_imagen=False para imágenes, este es el fix principal)
+        if not msg:
+            if estado_actual == "esperando_comprobante":
+                msg = "[imagen enviada]"  # Tratar como comprobante
+            else:
+                return {"respuesta": "", "tipo_mensaje": "ignorado", "accion_ejecutada": None}
 
         # ── CONFIRMACIÓN DE PAGO POR WHATSAPP (solo el dueño) ─────────────────
         dueno_tel = NUMERO_DUENO.lstrip("+").replace(" ", "")
