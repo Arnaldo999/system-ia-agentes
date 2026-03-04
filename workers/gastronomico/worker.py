@@ -987,6 +987,8 @@ async def manejar_mensaje(entrada: MensajeEntrante):
     try:
         tel = entrada.telefono.strip()
         msg = entrada.mensaje.strip()
+        # DEBUG — ver exactamente qué manda n8n (borrar después de confirmar)
+        print(f"[DEBUG] tel={tel} | mensaje={repr(msg)} | tiene_imagen={entrada.tiene_imagen} | audio_url={bool(entrada.audio_url)}")
 
         # ── Transcripción de audio (Whisper) — PRIMERO que todo ───────────
         tiene_audio = (entrada.audio_url or entrada.audio_base64
@@ -1005,7 +1007,8 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                 }
 
         # ── Normalizar mensaje de imagen ──────────────────────────────────
-        if not msg and entrada.tiene_imagen:
+        # Si tiene_imagen=True, SIEMPRE marcar como imagen (override cualquier texto)
+        if entrada.tiene_imagen:
             msg = "[imagen enviada]"
         # ─────────────────────────────────────────────────────────────────
 
@@ -1217,13 +1220,14 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         # ── FIN MÁQUINA DE ESTADOS ────────────────────────────────────────────
 
         # ── FALLBACK: comprobante recibido pero estado no sincronizado ────────
-        # n8n no envía tiene_imagen=True confiablemente.
-        # Solo activar si el último mensaje del bot pedía el comprobante.
+        # Activar si: (1) llegó una imagen, O (2) el último mensaje del bot pedía
+        # el comprobante. Cubre desincronización de estado en Airtable.
         ultimo_bot_msg = next(
             (t["content"] for t in reversed(historial) if t.get("role") == "model"), ""
         )
         estado_pedia_comprobante = "comprobante" in ultimo_bot_msg.lower()
-        if estado_actual == "activo" and estado_pedia_comprobante:
+        es_imagen = msg == "[imagen enviada]"
+        if (es_imagen or estado_pedia_comprobante) and estado_actual not in ("esperando_confirmacion", "esperando_direccion"):
             pedido_fallback = at_buscar_pedido_pendiente_tel(tel)
             if pedido_fallback:
                 fields     = pedido_fallback.get("fields", {})
