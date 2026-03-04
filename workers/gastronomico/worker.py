@@ -511,6 +511,23 @@ def at_marcar_entregado(nro_pedido: str) -> dict:
         return {"ok": False, "error": str(e)}
 
 
+def at_buscar_pedido_pendiente_tel(telefono: str) -> dict | None:
+    """Busca el pedido más reciente en estado 'pendiente' para un teléfono dado."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "filterByFormula": f"AND({{telefono_cliente}}='{telefono}', {{estado_pago}}='pendiente')",
+            "sort[0][field]": "nro_pedido",
+            "sort[0][direction]": "desc",
+            "maxRecords": 1,
+        })
+        records = r.json().get("records", [])
+        return records[0] if records else None
+    except Exception as e:
+        print(f"[AT] Error buscar_pedido_pendiente_tel: {e}")
+        return None
+
+
 def at_buscar_reserva(nombre: str, telefono: str) -> dict | None:
     """Busca la reserva más reciente por nombre y teléfono."""
     try:
@@ -1190,6 +1207,39 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                     "accion_ejecutada": None,
                 }
         # ── FIN MÁQUINA DE ESTADOS ────────────────────────────────────────────
+
+        # ── FALLBACK: imagen llegó pero el estado no era esperando_comprobante ─
+        # Puede pasar por race condition o si el estado no se guardó correctamente.
+        # Si hay imagen y existe un pedido "pendiente" para este teléfono, tratarlo como comprobante.
+        if entrada.tiene_imagen and estado_actual == "activo":
+            pedido_fallback = at_buscar_pedido_pendiente_tel(tel)
+            if pedido_fallback:
+                fields = pedido_fallback.get("fields", {})
+                nombre_fb = fields.get("nombre_cliente", tel)
+                sena_fb   = fields.get("sena_ars", 0)
+                respuesta_fb = "✅ *Comprobante recibido.* Estamos verificando el pago y le confirmaremos en breve. 🙏"
+                pedido_data_fb = {
+                    "nombre":     nombre_fb,
+                    "telefono":   tel,
+                    "detalle":    fields.get("detalle", ""),
+                    "total":      fields.get("total_ars", 0),
+                    "nro_pedido": fields.get("nro_pedido", ""),
+                    "record_id":  pedido_fallback.get("id"),
+                }
+                nuevo_estado_fb = json.dumps({"estado": "esperando_confirmacion", "pedido": pedido_data_fb})
+                historial.append({"role": "user",  "content": msg})
+                historial.append({"role": "model", "content": respuesta_fb})
+                at_guardar_conversacion(tel, historial, record_id, estado=nuevo_estado_fb)
+                notificar_dueno(
+                    f"🧾 *Comprobante recibido*\n"
+                    f"👤 {nombre_fb} ({tel})\n"
+                    f"📋 {fields.get('detalle', '')}\n"
+                    f"💰 Total: ${fields.get('total_ars', 0):,.0f} ARS\n"
+                    f"💳 Seña: ${sena_fb:,.0f} ARS\n\n"
+                    f"✅ Respondé *pago confirmado* para aprobar."
+                )
+                return {"respuesta": respuesta_fb, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_recibido_fallback"}
+        # ─────────────────────────────────────────────────────────────────────
 
         # ── BIENVENIDA HARDCODEADA (primer mensaje o historial vacío) ─────────
         SALUDOS = {"hola", "buenas", "buen día", "buenos días", "buenas tardes",
