@@ -1192,6 +1192,26 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                 }
         # ── FIN MÁQUINA DE ESTADOS ────────────────────────────────────────────
 
+        # ── BIENVENIDA HARDCODEADA (primer mensaje o historial vacío) ─────────
+        SALUDOS = {"hola", "buenas", "buen día", "buenos días", "buenas tardes",
+                   "buenas noches", "hey", "hi", "holis", "buenas!", "hola!", "ola"}
+        msg_lower = msg.lower().strip().rstrip(".,!?")
+        if not historial or msg_lower in SALUDOS:
+            bienvenida = (
+                f"*¡Bienvenido a {RESTAURANTE['nombre']}!* 🍖\n"
+                f"¿En qué podemos ayudarte hoy?\n\n"
+                f"1️⃣ Ver el Menú del día\n"
+                f"2️⃣ Hacer una reserva\n"
+                f"3️⃣ Cancelar una reserva\n"
+                f"4️⃣ Modificar una reserva\n"
+                f"5️⃣ Delivery (hacer pedido)"
+            )
+            historial.append({"role": "user",  "content": msg})
+            historial.append({"role": "model", "content": bienvenida})
+            at_guardar_conversacion(tel, historial, record_id)
+            return {"respuesta": bienvenida, "tipo_mensaje": "texto", "accion_ejecutada": None}
+        # ─────────────────────────────────────────────────────────────────────
+
         # Convertir historial al formato que espera Gemini
         history_gemini = []
         for turno in historial:
