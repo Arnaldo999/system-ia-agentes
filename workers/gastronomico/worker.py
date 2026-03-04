@@ -981,13 +981,7 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         tel = entrada.telefono.strip()
         msg = entrada.mensaje.strip()
 
-        # ── Normalizar mensaje de imagen ──────────────────────────────────
-        if not msg and entrada.tiene_imagen:
-            msg = "[imagen enviada]"   # el cliente envió solo una imagen (comprobante)
-        elif not msg and not entrada.tiene_imagen:
-            return {"respuesta": "", "tipo_mensaje": "ignorado", "accion_ejecutada": None}
-
-        # ── Transcripción de audio (Whisper) ──────────────────────────────
+        # ── Transcripción de audio (Whisper) — PRIMERO que todo ───────────
         tiene_audio = (entrada.audio_url or entrada.audio_base64
                        or entrada.audio_msg_raw not in ("{}", ""))
         if tiene_audio:
@@ -997,12 +991,17 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             if transcripcion:
                 msg = transcripcion   # Reemplazar mensaje con el texto transcripto
             else:
-                # Audio recibido pero no se pudo transcribir — ignorar silenciosamente
                 return {
                     "respuesta": "",
                     "tipo_mensaje": "audio_no_procesado",
                     "accion_ejecutada": None,
                 }
+
+        # ── Normalizar mensaje de imagen (después del audio) ──────────────
+        if not msg and entrada.tiene_imagen:
+            msg = "[imagen enviada]"
+        elif not msg:
+            return {"respuesta": "", "tipo_mensaje": "ignorado", "accion_ejecutada": None}
         # ─────────────────────────────────────────────────────────────────
 
         # Cargar conversación desde Airtable
