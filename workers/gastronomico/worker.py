@@ -1071,10 +1071,19 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                 at_confirmar_pago_pedido(pedido_c["nro_pedido"])
 
             # 3. Notificar al cliente
+            total_c     = pedido_c.get("total", 0)
+            sena_c      = pedido_c.get("sena_ars", round(total_c * 0.10, 2))
+            saldo_c     = pedido_c.get("saldo_a_cobrar", round(total_c * 0.90, 2))
+            detalle_c   = pedido_c.get("detalle", "")
+            nro_c       = pedido_c.get("nro_pedido", "")
             msg_cliente = (
-                f"✅ *¡Pago verificado, {nombre_c}!*\n\n"
-                f"Su seña fue confirmada exitosamente. 🎉\n\n"
-                f"Por favor, indíquenos su *dirección de entrega completa* para procesar su pedido. 🏠"
+                f"✅ *¡Pago confirmado, {nombre_c}!*\n\n"
+                f"📦 *Resumen de su pedido {nro_c}:*\n"
+                f"{detalle_c}\n\n"
+                f"💰 Total: ${total_c:,.0f} ARS\n"
+                f"💳 Seña abonada: ${sena_c:,.0f} ARS\n"
+                f"🏷️ Saldo a pagar en la entrega: ${saldo_c:,.0f} ARS\n\n"
+                f"🏠 Por favor, indíquenos su *dirección de entrega completa* para coordinar el envío."
             )
             enviar_cliente(tel_cliente, msg_cliente)
 
@@ -1122,7 +1131,7 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         # Interceptar mensajes cuando hay un pago pendiente en proceso
 
         if estado_actual == "esperando_comprobante":
-            # El cliente acaba de enviar su comprobante — confirmar automáticamente
+            # El cliente envió el comprobante — acusar recibo y esperar que el dueño confirme
             pedido = pedido_pendiente
             nombre_cliente = pedido.get("nombre", tel)
             total_pedido   = pedido.get("total", 0)
@@ -1130,41 +1139,28 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             detalle_pedido = pedido.get("detalle", "")
             nro            = pedido.get("nro_pedido", "")
 
-            # Mensaje 1: acuse de recibo (respuesta inmediata al cliente)
-            msg1 = "🧾 Hemos recibido su comprobante, espere un momento mientras confirmamos el pago..."
-            enviar_cliente(tel, msg1)
-
-            # Actualizar estado_pago en Airtable → confirmado
-            if pedido.get("record_id"):
-                at_actualizar_pedido(pedido["record_id"], {"estado_pago": "confirmado"})
-            elif nro:
-                at_confirmar_pago_pedido(nro)
-
-            # Mensaje 2: pago confirmado + resumen + pedir dirección
-            msg2 = (
-                f"✅ *¡Pago confirmado, {nombre_cliente}!*\n\n"
-                f"📦 *Resumen de su pedido #{nro}:*\n"
-                f"{detalle_pedido}\n\n"
-                f"💰 Total: ${total_pedido:,.0f} ARS\n"
-                f"💳 Seña abonada: ${sena_monto:,.0f} ARS\n\n"
-                f"🏠 Por favor, indíquenos su *dirección de entrega completa* para procesar su pedido."
-            )
-
-            # Guardar estado esperando_direccion
-            nuevo_estado = json.dumps({"estado": "esperando_direccion", "pedido": pedido})
+            respuesta = "🧾 Hemos recibido su comprobante, espere un momento mientras confirmamos el pago..."
+            nuevo_estado = json.dumps({"estado": "esperando_confirmacion", "pedido": pedido})
             historial.append({"role": "user",  "content": msg})
-            historial.append({"role": "model", "content": msg2})
+            historial.append({"role": "model", "content": respuesta})
             at_guardar_conversacion(tel, historial, record_id, estado=nuevo_estado)
 
-            # Notificar al dueño
             notificar_dueno(
-                f"🧾 *Comprobante recibido y pago confirmado automáticamente*\n"
+                f"🧾 *Comprobante recibido*\n"
                 f"👤 {nombre_cliente} ({tel})\n"
                 f"📋 {detalle_pedido}\n"
-                f"💰 Total: ${total_pedido:,.0f} ARS | Seña: ${sena_monto:,.0f} ARS\n"
-                f"⏳ Esperando dirección del cliente..."
+                f"💰 Total: ${total_pedido:,.0f} ARS | Seña: ${sena_monto:,.0f} ARS\n\n"
+                f"✅ Respondé *pago confirmado* para aprobar."
             )
-            return {"respuesta": msg2, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_confirmado_auto"}
+            return {"respuesta": respuesta, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_recibido"}
+
+        elif estado_actual == "esperando_confirmacion":
+            # El dueño aún no confirmó, el cliente manda otro mensaje
+            return {
+                "respuesta": "⏳ Su comprobante está siendo verificado. En breve le confirmamos.",
+                "tipo_mensaje": "texto",
+                "accion_ejecutada": None,
+            }
 
         elif estado_actual == "esperando_direccion":
             # El dueño confirmó el pago — el cliente acaba de mandar su dirección
