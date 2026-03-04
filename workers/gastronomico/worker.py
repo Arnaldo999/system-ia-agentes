@@ -381,13 +381,19 @@ def at_crear_pedido(datos: dict) -> dict:
     """Guarda el pedido en la tabla pedidos."""
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
+        total = float(datos.get("total", 0))
+        sena  = round(total * 0.10, 2)
+        saldo = round(total * 0.90, 2)
         campos = {
             "nombre_cliente":   datos.get("nombre", ""),
             "telefono_cliente": datos.get("telefono", ""),
             "detalle":          datos.get("detalle", ""),
-            "total_ars":        float(datos.get("total", 0)),
+            "total_ars":        total,
+            "sena_ars":         sena,
+            "saldo_a_cobrar":   saldo,
             "nro_pedido":       datos.get("nro_pedido", ""),
             "estado_pago":      datos.get("estado_pago", "pendiente"),
+            "estado_entrega":   "pendiente",
         }
         print(f"[AT] Enviando pedido: {campos}")
         r = requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": campos}]})
@@ -478,6 +484,30 @@ def at_confirmar_pago_pedido(nro_pedido: str):
             print(f"[AT] Pedido {nro_pedido} → estado_pago=confirmado")
     except Exception as e:
         print(f"[AT] Error confirmar_pago_pedido: {e}")
+
+
+def at_marcar_entregado(nro_pedido: str) -> dict:
+    """Marca el pedido como entregado y el saldo cobrado."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "filterByFormula": f"{{nro_pedido}}='{nro_pedido}'",
+            "maxRecords": 1,
+        })
+        records = r.json().get("records", [])
+        if not records:
+            return {"ok": False, "error": f"No se encontró el pedido {nro_pedido}"}
+        rec_id = records[0]["id"]
+        requests.patch(
+            f"{url}/{rec_id}",
+            headers=AT_HEADERS(),
+            json={"fields": {"estado_entrega": "entregado"}},
+        )
+        print(f"[AT] Pedido {nro_pedido} → estado_entrega=entregado")
+        return {"ok": True, "nro_pedido": nro_pedido}
+    except Exception as e:
+        print(f"[AT] Error marcar_entregado: {e}")
+        return {"ok": False, "error": str(e)}
 
 
 def at_buscar_reserva(nombre: str, telefono: str) -> dict | None:
@@ -950,6 +980,12 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         tel = entrada.telefono.strip()
         msg = entrada.mensaje.strip()
 
+        # ── Normalizar mensaje de imagen ──────────────────────────────────
+        if not msg and entrada.tiene_imagen:
+            msg = "[imagen enviada]"   # el cliente envió solo una imagen (comprobante)
+        elif not msg and not entrada.tiene_imagen:
+            return {"respuesta": "", "tipo_mensaje": "ignorado", "accion_ejecutada": None}
+
         # ── Transcripción de audio (Whisper) ──────────────────────────────
         tiene_audio = (entrada.audio_url or entrada.audio_base64
                        or entrada.audio_msg_raw not in ("{}", ""))
@@ -1039,6 +1075,30 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                 "tipo_mensaje": "texto",
                 "accion_ejecutada": "pago_confirmado_dueno",
             }
+        # ── CONFIRMACIÓN DE ENTREGA POR WHATSAPP (solo el dueño) ──────────────
+        if es_dueno and "entrega confirmada" in msg.lower():
+            # Extraer número de pedido del mensaje: "entrega confirmada PED-XXXXX"
+            partes = msg.upper().split()
+            nro_pedido_entrega = next((p for p in partes if p.startswith("PED-")), None)
+            if not nro_pedido_entrega:
+                return {
+                    "respuesta": "Indicá el número de pedido. Ej: *entrega confirmada PED-XXXXX*",
+                    "tipo_mensaje": "texto",
+                    "accion_ejecutada": None,
+                }
+            resultado_e = at_marcar_entregado(nro_pedido_entrega)
+            if resultado_e.get("ok"):
+                return {
+                    "respuesta": f"✅ Pedido *{nro_pedido_entrega}* marcado como entregado. Saldo cobrado. 🛵",
+                    "tipo_mensaje": "texto",
+                    "accion_ejecutada": "entrega_confirmada",
+                }
+            else:
+                return {
+                    "respuesta": f"⚠️ No encontré el pedido {nro_pedido_entrega}. Verificá el número.",
+                    "tipo_mensaje": "texto",
+                    "accion_ejecutada": None,
+                }
         # ── FIN CONFIRMACIÓN ──────────────────────────────────────────────────
 
         # ── MÁQUINA DE ESTADOS ────────────────────────────────────────────────
