@@ -1208,10 +1208,14 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                 }
         # ── FIN MÁQUINA DE ESTADOS ────────────────────────────────────────────
 
-        # ── FALLBACK: imagen llegó pero el estado no era esperando_comprobante ─
-        # Puede pasar por race condition o si el estado no se guardó correctamente.
-        # Si hay imagen y existe un pedido "pendiente" para este teléfono, tratarlo como comprobante.
-        if entrada.tiene_imagen and estado_actual == "activo":
+        # ── FALLBACK: comprobante recibido pero estado no sincronizado ────────
+        # n8n no envía tiene_imagen=True confiablemente.
+        # Solo activar si el último mensaje del bot pedía el comprobante.
+        ultimo_bot_msg = next(
+            (t["content"] for t in reversed(historial) if t.get("role") == "model"), ""
+        )
+        estado_pedia_comprobante = "comprobante" in ultimo_bot_msg.lower()
+        if estado_actual == "activo" and estado_pedia_comprobante:
             pedido_fallback = at_buscar_pedido_pendiente_tel(tel)
             if pedido_fallback:
                 fields = pedido_fallback.get("fields", {})
