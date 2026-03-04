@@ -1257,6 +1257,19 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                 return {"respuesta": respuesta_fb, "tipo_mensaje": "texto", "accion_ejecutada": "comprobante_recibido"}
         # ─────────────────────────────────────────────────────────────────────
 
+        # ── IMAGEN SIN ESTADO RESUELTO ────────────────────────────────────────
+        # Si llegamos aquí con una imagen (msg == "[imagen enviada]") es porque:
+        # - Estado no era esperando_comprobante
+        # - Fallback tampoco encontró pedido pendiente
+        # Respuesta genérica para no dejar al cliente sin respuesta.
+        if msg == "[imagen enviada]":
+            return {
+                "respuesta": "🧾 Recibimos tu imagen, pero no encontramos un pedido pendiente asociado a tu número. ¿Podés contarnos qué querés hacer?",
+                "tipo_mensaje": "texto",
+                "accion_ejecutada": None,
+            }
+        # ─────────────────────────────────────────────────────────────────────
+
         # ── BIENVENIDA HARDCODEADA (primer mensaje o historial vacío) ─────────
         SALUDOS = {"hola", "buenas", "buen día", "buenos días", "buenas tardes",
                    "buenas noches", "hey", "hi", "holis", "buenas!", "hola!", "ola"}
