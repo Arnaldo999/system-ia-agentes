@@ -1599,7 +1599,7 @@ async def meta_webhook_eventos(request: Request):
                 )
                 if texto and len(texto) >= 3 and comentario_id:
                     result = _responder_comentario(
-                        comentario_id, texto, cliente or {}, page_id
+                        comentario_id, texto, cliente or {}, page_id, token=token_cliente
                     )
                     print(f"[WEBHOOK] reply_result={result}", flush=True)
 
