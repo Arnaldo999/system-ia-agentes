@@ -385,7 +385,7 @@ def at_crear_reserva(datos: dict) -> dict:
         campos = {
             "Clientes":    [cliente_id] if cliente_id else [],
             "Cantidad de Personas": personas_num,
-            "Estado":      "pendiente",
+            "Estado":      "confirmada",
             "Especificaciones": str(datos.get("especificaciones", datos.get("nota", ""))).strip(),
         }
         if fecha_y_hora:
