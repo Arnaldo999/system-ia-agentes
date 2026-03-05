@@ -376,15 +376,22 @@ def at_crear_reserva(datos: dict) -> dict:
         tipo_at = "reserva_simple"
 
         cliente_id = at_get_or_create_cliente(str(datos.get("telefono", "")).strip(), str(datos.get("nombre", "")).strip())
+        
+        # Combinar en ISO para campo Date con time
+        fecha_str = str(datos.get("fecha_iso", "")).strip()[:10]
+        hora_str = str(datos.get("hora", "")).strip()
+        fecha_y_hora = f"{fecha_str}T{hora_str}:00.000Z" if fecha_str and hora_str else None
+
         campos = {
             "Clientes":    [cliente_id] if cliente_id else [],
-            "Fecha":       str(datos.get("fecha_iso", "")).strip()[:10],
-            "Hora":        str(datos.get("hora", "")).strip(),
-            "Personas":    personas_num,
+            "Cantidad de Personas": personas_num,
             "Estado":      "pendiente",
-            "nro_reserva": str(datos.get("nro_reserva", "")).strip(),
             "Especificaciones": str(datos.get("especificaciones", datos.get("nota", ""))).strip(),
         }
+        if fecha_y_hora:
+            campos["Fecha y Hora"] = fecha_y_hora
+
+
         print(f"[AT] Enviando reserva: {campos}")
         r = requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": campos}]})
         resp = r.json()
@@ -408,7 +415,6 @@ def at_crear_pedido(datos: dict) -> dict:
             "total_ars":        total,
             "sena_ars":         sena,
             "saldo_a_cobrar":   saldo,
-            "nro_pedido":       datos.get("nro_pedido", ""),
             "estado_pago":      datos.get("estado_pago", "pendiente"),
             "estado_entrega":   "pendiente",
         }
@@ -447,8 +453,8 @@ def at_get_reservas_futuras() -> str:
         hoy = date.today().isoformat()
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
         r = requests.get(url, headers=AT_HEADERS(), params={
-            "filterByFormula": f"AND({{Fecha}}>='{hoy}', {{Estado}}!='cancelada')",
-            "sort[0][field]": "Fecha",
+            "filterByFormula": f"AND({{Fecha y Hora}}>='{hoy}', {{Estado}}!='cancelada')",
+            "sort[0][field]": "Fecha y Hora",
             "sort[0][direction]": "asc",
             "maxRecords": 50,
         })
@@ -459,7 +465,7 @@ def at_get_reservas_futuras() -> str:
         for rec in records:
             f = rec["fields"]
             lineas.append(
-                f"- {f.get('Fecha','')} {f.get('Hora','')} | {f.get('Nombre','')} | {f.get('Personas','')} pax | Estado: {f.get('Estado','')}"
+                f"- {f.get('Fecha y Hora','')} | {f.get('Nombre del Cliente',[''])[0] if type(f.get('Nombre del Cliente'))==list else f.get('Nombre del Cliente','')} | {f.get('Cantidad de Personas','')} pax | Estado: {f.get('Estado','')}"
             )
         return "\n".join(lineas)
     except Exception as e:
@@ -533,7 +539,7 @@ def at_buscar_pedido_pendiente_tel(telefono: str) -> dict | None:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
         r = requests.get(url, headers=AT_HEADERS(), params={
             "filterByFormula": f"AND(FIND('{telefono}', {{Clientes}}&'')>0, {{estado_pago}}='pendiente')",
-            "sort[0][field]": "nro_pedido",
+            "sort[0][field]": "ID Pedido",
             "sort[0][direction]": "desc",
             "maxRecords": 1,
         })
@@ -551,7 +557,7 @@ def at_buscar_reserva(nombre: str, telefono: str) -> dict | None:
         formula = f"FIND('{telefono}', {{Clientes}}&'')>0"
         r = requests.get(url, headers=AT_HEADERS(), params={
             "filterByFormula": formula,
-            "sort[0][field]": "Fecha",
+            "sort[0][field]": "Fecha y Hora",
             "sort[0][direction]": "desc",
             "maxRecords": 1,
         })
@@ -630,14 +636,21 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
     tipo = accion.get("tipo")
 
     if tipo == "crear_reserva":
-        nro = f"RSV-{str(uuid.uuid4())[:5].upper()}"
         resultado = at_crear_reserva({
             **accion,
             "telefono": tel,
-            "nro_reserva": nro,
             "especificaciones": accion.get("nota", ""),
         })
         print(f"[Acción] Crear reserva → {resultado}")
+        
+        # Obtenemos id real si es posible
+        nro = ""
+        try:
+            if resultado.get("ok"):
+                nro = str(resultado["resp"]["records"][0]["fields"].get("ID Reserva", "N/A"))
+        except:
+            nro = "N/A"
+
 
         if resultado.get("ok"):
             # Notificar al dueño solo si se guardó correctamente
@@ -672,13 +685,17 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
             }
 
     elif tipo == "crear_pedido":
-        nro = f"PED-{str(uuid.uuid4())[:5].upper()}"
         resultado = at_crear_pedido({
             **accion,
             "telefono": tel,
-            "nro_pedido": nro,
         })
         print(f"[Acción] Crear pedido → {resultado}")
+        nro = ""
+        try:
+            if resultado.get("ok"):
+                nro = str(resultado["resp"]["records"][0]["fields"].get("ID Pedido", "N/A"))
+        except:
+            nro = "N/A"
 
         if resultado.get("ok"):
             notificar_dueno(
@@ -712,7 +729,7 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
             url_buscar = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
             r_buscar = requests.get(url_buscar, headers=AT_HEADERS(), params={
                 "filterByFormula": f"FIND('{tel}', {{Clientes}}&'')>0",
-                "sort[0][field]": "Fecha",
+                "sort[0][field]": "Fecha y Hora",
                 "sort[0][direction]": "desc",
                 "maxRecords": 1,
             })
@@ -767,12 +784,16 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
             personas_num = reserva_existente["fields"].get("Personas", 1)
 
         campos_nuevos = {
-            "Fecha":  str(accion.get("fecha_iso", "")).strip()[:10],
-            "Hora":   str(accion.get("hora", "")).strip(),
-            "Personas": personas_num,
+            "Cantidad de Personas": personas_num,
             "Estado": "confirmada",
             "Especificaciones": accion.get("nota", "Reserva modificada por el cliente"),
         }
+        
+        fecha_str = str(accion.get("fecha_iso", "")).strip()[:10]
+        hora_str = str(accion.get("hora", "")).strip()
+        if fecha_str and hora_str:
+            campos_nuevos["Fecha y Hora"] = f"{fecha_str}T{hora_str}:00.000Z"
+
         resultado = at_actualizar_reserva(record_id, campos_nuevos)
         print(f"[Acción] Modificar reserva PATCH → {resultado}")
         if resultado.get("ok"):
@@ -812,14 +833,15 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
             "telefono":    tel,
             "detalle":     detalle,
             "total":       total,
-            "nro_pedido":  nro,
             "estado_pago": "pendiente",
         })
         record_id = None
+        nro = "N/A"
         if resultado_at.get("ok"):
             records = resultado_at.get("resp", {}).get("records", [])
             if records:
                 record_id = records[0].get("id")
+                nro = str(records[0]["fields"].get("ID Pedido", "N/A"))
 
         pedido_data = {
             "nombre":     nombre,
@@ -1202,7 +1224,6 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             record_id = pedido.get("record_id")
 
             # Si tenemos el record_id, actualizar el registro existente (PATCH)
-            # Si no (pedido creado antes de este fix), crear uno nuevo como fallback
             if record_id:
                 resultado = at_actualizar_pedido(record_id, {
                     "detalle":     detalle_con_dir,
@@ -1214,9 +1235,16 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                     "telefono":    tel,
                     "detalle":     detalle_con_dir,
                     "total":       pedido.get("total", 0),
-                    "nro_pedido":  nro,
                     "estado_pago": "confirmado",
                 })
+            
+            try:
+                if not record_id and resultado.get("ok"):
+                    nro_nuevo = str(resultado["resp"]["records"][0]["fields"].get("ID Pedido", "N/A"))
+                    nro = nro_nuevo
+            except:
+                pass
+
 
             if resultado.get("ok"):
                 notificar_dueno(
@@ -1274,7 +1302,7 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                     "detalle":    detalle_fb,
                     "total":      total_fb,
                     "sena_ars":   sena_fb,
-                    "nro_pedido": nro_fb,
+                    "nro_pedido": pedido_fallback["id"], # usar Record ID de AT
                     "record_id":  pedido_fallback["id"],
                 }
                 nuevo_estado_fb = json.dumps({"estado": "esperando_confirmacion", "pedido": pedido_data_fb})
@@ -1568,13 +1596,26 @@ def debug_airtable():
         resultado["error"] = str(e)
     return resultado
 
+@router.get("/debug/schema", summary="Debug: Ver esquema real de AT Airtable")
+def debug_schema():
+    try:
+        r1 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas?maxRecords=1", headers=AT_HEADERS())
+        r2 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos?maxRecords=1", headers=AT_HEADERS())
+        r3 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Clientes?maxRecords=1", headers=AT_HEADERS())
+        return {
+            "Reservas": r1.json(),
+            "Pedidos": r2.json(),
+            "Clientes": r3.json()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 @router.get("/debug/test-reserva", summary="Debug: Crear reserva de prueba")
 def debug_test_reserva():
     resultado = at_crear_reserva({
-        "nombre": "TEST_DEBUG", "telefono": "000000",
+        "nombre": "TEST_DEBUG", "telefono": "+5491100000000",
         "fecha_iso": "2026-03-08", "hora": "21:00",
         "personas": 2, "tipo_reserva": "simple",
-        "nro_reserva": "RSV-TEST",
     })
     return resultado
 
@@ -1583,10 +1624,9 @@ def debug_test_pedido():
     """Intenta crear un pedido de prueba para verificar los campos de Airtable."""
     resultado = at_crear_pedido({
         "nombre":      "TEST_DEBUG",
-        "telefono":    "000000",
+        "telefono":    "+5491100000000",
         "detalle":     "Prueba de pedido — Asado de Tira: 1\n🏠 Dirección: Calle Test 123",
         "total":       6800,
-        "nro_pedido":  "PED-TEST1",
         "estado_pago": "pendiente",
     })
     return resultado
