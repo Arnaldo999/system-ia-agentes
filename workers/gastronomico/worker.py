@@ -385,7 +385,7 @@ def at_crear_reserva(datos: dict) -> dict:
         campos = {
             "Clientes":    [cliente_id] if cliente_id else [],
             "Cantidad de Personas": personas_num,
-            "Estado":      "confirmada",
+            "Estado":      "pendiente",
             "Especificaciones": str(datos.get("especificaciones", datos.get("nota", ""))).strip(),
         }
         if fecha_y_hora:
@@ -785,7 +785,7 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
 
         campos_nuevos = {
             "Cantidad de Personas": personas_num,
-            "Estado": "confirmada",
+            "Estado": "pendiente",
             "Especificaciones": accion.get("nota", "Reserva modificada por el cliente"),
         }
         
