@@ -335,6 +335,33 @@ def at_guardar_conversacion(telefono: str, historial: list, record_id: str = Non
     except Exception as e:
         print(f"[AT] Error guardar_conversacion: {e}")
 
+def at_get_or_create_cliente(telefono: str, nombre: str = "") -> str:
+    """Busca al cliente por teléfono o lo crea en la tabla Clientes."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Clientes"
+        # 1. Buscar
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "filterByFormula": f"{{Teléfono}}='{telefono}'",
+            "maxRecords": 1,
+        })
+        records = r.json().get("records", [])
+        if records:
+            return records[0]["id"]
+        
+        # 2. Si no existe, crearlo
+        payload = {"records": [{"fields": {
+            "Teléfono": telefono,
+            "Nombre": nombre
+        }}]}
+        r_post = requests.post(url, headers=AT_HEADERS(), json=payload)
+        resp_post = r_post.json()
+        if "records" in resp_post and resp_post["records"]:
+            return resp_post["records"][0]["id"]
+            
+    except Exception as e:
+        print(f"[AT] Error get_or_create_cliente: {e}")
+    return ""
+
 def at_crear_reserva(datos: dict) -> dict:
     """Guarda la reserva en la tabla Reservas."""
     try:
@@ -348,14 +375,13 @@ def at_crear_reserva(datos: dict) -> dict:
         # Demo: solo existe reserva_simple (delivery con seña → tabla pedidos)
         tipo_at = "reserva_simple"
 
+        cliente_id = at_get_or_create_cliente(str(datos.get("telefono", "")).strip(), str(datos.get("nombre", "")).strip())
         campos = {
-            "Nombre":      str(datos.get("nombre", "")).strip(),
-            "telefono":    str(datos.get("telefono", "")).strip(),
+            "Clientes":    [cliente_id] if cliente_id else [],
             "Fecha":       str(datos.get("fecha_iso", "")).strip()[:10],
             "Hora":        str(datos.get("hora", "")).strip(),
             "Personas":    personas_num,
             "Estado":      "pendiente",
-            "tipo":        tipo_at,
             "nro_reserva": str(datos.get("nro_reserva", "")).strip(),
             "Especificaciones": str(datos.get("especificaciones", datos.get("nota", ""))).strip(),
         }
@@ -375,9 +401,9 @@ def at_crear_pedido(datos: dict) -> dict:
         total = float(datos.get("total", 0))
         sena  = round(total * 0.10, 2)
         saldo = round(total * 0.90, 2)
+        cliente_id = at_get_or_create_cliente(str(datos.get("telefono", "")).strip(), str(datos.get("nombre", "")).strip())
         campos = {
-            "nombre_cliente":   datos.get("nombre", ""),
-            "telefono_cliente": datos.get("telefono", ""),
+            "Clientes":         [cliente_id] if cliente_id else [],
             "detalle":          datos.get("detalle", ""),
             "total_ars":        total,
             "sena_ars":         sena,
@@ -506,7 +532,7 @@ def at_buscar_pedido_pendiente_tel(telefono: str) -> dict | None:
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos"
         r = requests.get(url, headers=AT_HEADERS(), params={
-            "filterByFormula": f"AND({{telefono_cliente}}='{telefono}', {{estado_pago}}='pendiente')",
+            "filterByFormula": f"AND(FIND('{telefono}', {{Clientes}}&'')>0, {{estado_pago}}='pendiente')",
             "sort[0][field]": "nro_pedido",
             "sort[0][direction]": "desc",
             "maxRecords": 1,
@@ -522,7 +548,7 @@ def at_buscar_reserva(nombre: str, telefono: str) -> dict | None:
     """Busca la reserva más reciente por nombre y teléfono."""
     try:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
-        formula = f"AND({{Nombre}}='{nombre}', {{telefono}}='{telefono}')"
+        formula = f"FIND('{telefono}', {{Clientes}}&'')>0"
         r = requests.get(url, headers=AT_HEADERS(), params={
             "filterByFormula": formula,
             "sort[0][field]": "Fecha",
@@ -685,7 +711,7 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
         try:
             url_buscar = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
             r_buscar = requests.get(url_buscar, headers=AT_HEADERS(), params={
-                "filterByFormula": f"{{telefono}}='{tel}'",
+                "filterByFormula": f"FIND('{tel}', {{Clientes}}&'')>0",
                 "sort[0][field]": "Fecha",
                 "sort[0][direction]": "desc",
                 "maxRecords": 1,
