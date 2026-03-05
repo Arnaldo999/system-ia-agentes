@@ -1599,13 +1599,15 @@ def debug_airtable():
 @router.get("/debug/schema", summary="Debug: Ver esquema real de AT Airtable")
 def debug_schema():
     try:
-        r1 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas?maxRecords=1", headers=AT_HEADERS())
-        r2 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos?maxRecords=1", headers=AT_HEADERS())
-        r3 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Clientes?maxRecords=1", headers=AT_HEADERS())
+        r1 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas?maxRecords=10", headers=AT_HEADERS())
+        r2 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/pedidos?maxRecords=10", headers=AT_HEADERS())
+        r3 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Clientes?maxRecords=10", headers=AT_HEADERS())
+        r4 = requests.get(f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas?maxRecords=10", headers=AT_HEADERS())
         return {
             "Reservas": r1.json(),
             "Pedidos": r2.json(),
-            "Clientes": r3.json()
+            "Clientes": r3.json(),
+            "Conversaciones": r4.json()
         }
     except Exception as e:
         return {"error": str(e)}
