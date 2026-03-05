@@ -222,7 +222,7 @@ Puede abonar por transferencia o MercadoPago al alias: *{RESTAURANTE['alias_pago
 📸 *Una vez realizada la transferencia, envíenos la captura del comprobante para confirmar su pedido.*"
 
 Luego, EN EL MISMO MENSAJE, agregá la acción:
-ACCION: {{"tipo": "solicitar_comprobante", "nombre": "[nombre del cliente]", "detalle": "[lista detallada de ítems]", "total": [número sin formato]}}
+ACCION: {{"tipo": "solicitar_comprobante", "nombre": "[nombre del cliente]", "detalle": "[resumen en una sola línea, sin saltos de línea]", "total": [número sin formato]}}
 
 ⛔ PROHIBIDO: No uses ACCION crear_pedido en este paso — SIEMPRE solicitar_comprobante
 ⛔ PROHIBIDO: No preguntes la dirección — el sistema la pide automáticamente después del pago
@@ -279,13 +279,13 @@ Modificar reserva:
 ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "...", "personas": N, "nota": "..."}}
 
 Solicitar comprobante de seña (delivery):
-ACCION: {{"tipo": "solicitar_comprobante", "nombre": "...", "detalle": "...", "total": N}}
+ACCION: {{"tipo": "solicitar_comprobante", "nombre": "...", "detalle": "[una sola linea sin saltos]", "total": N}}
 
 Notificar al dueño:
 ACCION: {{"tipo": "notificar_dueno", "mensaje": "..."}}
 
-⛔ CRÍTICO: Cuando uses ACCION crear_reserva o crear_pedido, tu mensaje visible debe decir SOLO "Procesando...".
-El sistema envía la confirmación real al cliente. JAMÁS escribas "reserva confirmada" o "pedido registrado" vos mismo."""
+⛔ CRÍTICO: Cuando uses ACCION crear_reserva, tu mensaje visible debe decir SOLO "Procesando...".
+El sistema envía la confirmación real al cliente. JAMÁS escribas "reserva confirmada" vos mismo."""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MODELO GEMINI
@@ -1399,9 +1399,12 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             try:
                 accion_raw = partes[1].strip()
                 accion_raw = accion_raw.replace("```json", "").replace("```", "").strip()
+                # Reparar posibles saltos de línea literales dentro de strings JSON (Gemini a veces los pone)
+                import re
+                accion_raw = re.sub(r'(?<=: ")((?:[^"\\]|\\.)*)(?=")', lambda m: m.group(1).replace('\n', '\\n'), accion_raw)
                 accion = json.loads(accion_raw)
             except Exception as e:
-                print(f"[Acción] Error parseando: {e}, raw={partes[1][:100]}")
+                print(f"[Acción] Error parseando JSON: {e}, raw={partes[1][:100]}")
 
         # Ejecutar acción si existe y usar su resultado real
         texto_final = texto_respuesta
