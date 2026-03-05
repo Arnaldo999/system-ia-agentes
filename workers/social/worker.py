@@ -1597,9 +1597,9 @@ async def meta_webhook_eventos(request: Request):
                     f"[WEBHOOK] IG comment id={comentario_id!r} from={from_id!r} texto={texto[:40]!r}",
                     flush=True,
                 )
-                if texto and len(texto) >= 3 and comentario_id and cliente:
+                if texto and len(texto) >= 3 and comentario_id:
                     result = _responder_comentario(
-                        comentario_id, texto, cliente, page_id
+                        comentario_id, texto, cliente or {}, page_id
                     )
                     print(f"[WEBHOOK] reply_result={result}", flush=True)
 
@@ -1655,9 +1655,9 @@ async def meta_webhook_eventos(request: Request):
                         f"[WEBHOOK] FB comment id={comentario_id!r} from={from_id!r} texto={texto[:40]!r}",
                         flush=True,
                     )
-                    if texto and len(texto) >= 3 and comentario_id and cliente:
+                    if texto and len(texto) >= 3 and comentario_id:
                         result = _responder_comentario(
-                            comentario_id, texto, cliente, page_id, token=page_tkn
+                            comentario_id, texto, cliente or {}, page_id, token=page_tkn
                         )
                         print(f"[WEBHOOK] reply_result={result}", flush=True)
 
