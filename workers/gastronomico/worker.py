@@ -341,7 +341,7 @@ def at_get_or_create_cliente(telefono: str, nombre: str = "") -> str:
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Clientes"
         # 1. Buscar
         r = requests.get(url, headers=AT_HEADERS(), params={
-            "filterByFormula": f"{{Teléfono}}='{telefono}'",
+            "filterByFormula": f"{{Telefono}}='{telefono}'",
             "maxRecords": 1,
         })
         records = r.json().get("records", [])
@@ -350,7 +350,7 @@ def at_get_or_create_cliente(telefono: str, nombre: str = "") -> str:
         
         # 2. Si no existe, crearlo
         payload = {"records": [{"fields": {
-            "Teléfono": telefono,
+            "Telefono": telefono,
             "Nombre": nombre
         }}]}
         r_post = requests.post(url, headers=AT_HEADERS(), json=payload)
