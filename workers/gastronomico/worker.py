@@ -251,12 +251,13 @@ SIEMPRE analizá el historial para saber en qué flujo estás:
 ÚNICA forma de salir de un flujo: cliente escribe "0" (menú principal) o "00" (reiniciar).
 
 ════════════════════════════════════════════════════════
-CASOS ESPECIALES
+CASOS ESPECIALES Y RECOLECCIÓN DE DATOS (CRM)
 ════════════════════════════════════════════════════════
 - Grupos 10+ personas: "Para grupos grandes coordinamos el salón privado, lo gestiono con el equipo." → ACCION notificar_dueno
 - Alergias: anotarlas en la nota de la reserva
 - Lunes: "Los lunes permanecemos cerrados. Atendemos de martes a domingo desde las 12 hs."
 - Facturas: "Las facturas se emiten en el local al momento del pago."
+- Cumpleaños: Si el cliente acaba de terminar exitosamente un pedido o reserva, puedes agregar sutilmente al final: "Por cierto, nos encanta consentir a nuestros clientes. ¿Qué día y mes es su cumpleaños para enviarle un regalo ese día? 🎁"
 - Preguntas fuera del contexto del restaurante: respondé amablemente que solo podés ayudar con temas del restaurante
 
 ════════════════════════════════════════════════════════
@@ -283,6 +284,9 @@ ACCION: {{"tipo": "solicitar_comprobante", "nombre": "...", "detalle": "[una sol
 
 Notificar al dueño:
 ACCION: {{"tipo": "notificar_dueno", "mensaje": "..."}}
+
+Registrar cumpleaños:
+ACCION: {{"tipo": "registrar_cumpleanos", "fecha": "DD/MM"}}
 
 ⛔ CRÍTICO: Cuando uses ACCION crear_reserva, tu mensaje visible debe decir SOLO "Procesando...".
 El sistema envía la confirmación real al cliente. JAMÁS escribas "reserva confirmada" vos mismo."""
@@ -871,6 +875,25 @@ def ejecutar_accion(accion: dict, tel: str) -> dict:
     elif tipo == "notificar_dueno":
         notificar_dueno(accion.get("mensaje", ""))
         return {"ok": True, "mensaje_confirmacion": None}
+
+    elif tipo == "registrar_cumpleanos":
+        fecha_cumple = accion.get("fecha", "")
+        # Obtener o crear el cliente
+        record_id_cliente = at_get_or_create_cliente(tel)
+        if record_id_cliente and fecha_cumple:
+            url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Clientes/{record_id_cliente}"
+            payload = {"fields": {"Fecha de Cumpleaños": fecha_cumple}}
+            try:
+                r = requests.patch(url, headers=AT_HEADERS(), json=payload)
+                if r.status_code == 200:
+                    print(f"[CRM] Cumpleaños guardado: {fecha_cumple} para {tel}")
+            except Exception as e:
+                print(f"[CRM] Error guardando cumpleaños: {e}")
+                
+        return {
+            "ok": True, 
+            "mensaje_confirmacion": f"¡Agendado! El {fecha_cumple} te escribiremos para festejarlo en La Parrilla de Don Alberto. 🎂"
+        }
 
     return {"ok": True, "mensaje_confirmacion": None}
 
