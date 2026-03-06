@@ -41,41 +41,47 @@ WHATSAPP_NOTIFY_NUMBER = os.environ.get("WHATSAPP_APPROVAL_NUMBER", "")
 
 # ── Rotación de temas (4 rubros × 6 días lunes-sábado) ───────────────────────
 _ROTACION_TEMAS = {
-    0: {  # Lunes
-        "tema": "Automatización de WhatsApp",
-        "angulo": "Cómo atender más clientes sin contratar más personal",
-        "idea_central": "Un bot de WhatsApp bien configurado puede multiplicar tu capacidad de atención ×10 sin sumar costos fijos.",
+    0: {  # Lunes - GASTRONOMÍA (WhatsApp)
+        "tema": "Autocontrol y Pedidos Gastronómicos Automatizados",
+        "angulo": "Cómo atender más pedidos sin colapsar la cocina ni el WhatsApp del restaurante",
+        "idea_central": "Un bot de WhatsApp para tu local atiende 100 pedidos en segundos y sin errores humanos, dejando que tu personal se enfoque solo en cocinar y atender en el salón.",
+        "prompt_imagen": "busy restaurant kitchen with smart displays, AI taking automated orders on smartphone, efficient modern workflow gastronomy concept, flat design colorful, no text in image",
+    },
+    1: {  # Martes - GENÉRICO (WhatsApp PyMEs)
+        "tema": "Automatización de Ventas por WhatsApp",
+        "angulo": "Atender clientes 24 horas al día sin contratar más personal",
+        "idea_central": "Convertir horas de chat manual en un embudo de ventas automático vía WhatsApp permite que el dueño de negocio suelte el celular y escale su atención.",
         "prompt_imagen": "smartphone showing WhatsApp chat with automated AI responses, business automation concept, modern flat design colorful background, no text in image",
     },
-    1: {  # Martes
-        "tema": "Automatización de CRM",
-        "angulo": "Nunca más perder un lead por falta de seguimiento",
-        "idea_central": "Un CRM automatizado hace el seguimiento perfecto aunque no estés disponible — cada lead recibe atención en el momento exacto.",
+    2: {  # Miércoles - GASTRONOMÍA (CRM / Retención)
+        "tema": "Cómo rescatar ganancias de apps de delivery",
+        "angulo": "Las apps de delivery se quedan con tu cliente y el 30% de tu dinero",
+        "idea_central": "Implementar un bot propio rescata ese 30% de comisión y captura la base de datos de los clientes. El restaurante pasa del anonimato a fidelizar directamente usando su CRM.",
+        "prompt_imagen": "restaurant owner looking at modern tablet showing automated orders and customer data, no delivery apps, smart kitchen system, colorful flat design illustration, no text in image",
+    },
+    3: {  # Jueves - GENÉRICO (CRM PyMEs)
+        "tema": "Seguimiento Infalible con CRM en Automático",
+        "angulo": "Nunca más perder una cotización o lead por falta de seguimiento",
+        "idea_central": "Un CRM conectado con IA hace el seguimiento de cada cliente en el momento exacto, recordando fechas sin depender de la memoria de los vendedores.",
         "prompt_imagen": "CRM pipeline dashboard with automated lead cards flowing through stages, colorful funnel, modern business software, flat design, no text in image",
     },
-    2: {  # Miércoles
-        "tema": "Automatización de agendamiento de citas",
-        "angulo": "Eliminar el ida y vuelta de mensajes para coordinar una reunión",
-        "idea_central": "Tus clientes pueden reservar su cita sin que intervengas — 24/7, sin errores, sin olvidos.",
+    4: {  # Viernes - GASTRONOMÍA (Reservas y Menú)
+        "tema": "IA tomando Reservas en tu Restaurante",
+        "angulo": "Perder reservas o sufrir demoras por atender mal de noche",
+        "idea_central": "Tu local de comida puede tomar reservas 24/7 y agendarlas automáticamente con un asistente inteligente, evitando cancelaciones sorpresa o dobles reservas de papel.",
+        "prompt_imagen": "digital restaurant reservation system on smartphone, AI chatbot confirming table booking, flat design colorful modern UI, no text in image",
+    },
+    5: {  # Sábado - GENÉRICO (Agendamiento de Citas)
+        "tema": "Calendario Automático Inteligente",
+        "angulo": "Eliminar el molesto ida y vuelta manual para coordinar una simple reunión",
+        "idea_central": "Tus clientes y proveedores pueden agendar una cita o reunión sin que el dueño intervenga en absoluto, conectando automáticamente el calendario de Google.",
         "prompt_imagen": "digital calendar with automated appointment booking flow, AI scheduling assistant icon, clean modern interface, flat design colorful, no text in image",
     },
-    3: {  # Jueves
-        "tema": "Automatización de redes sociales",
-        "angulo": "Publicar contenido de valor todos los días sin dedicarle horas",
-        "idea_central": "La IA crea, programa y publica tu contenido mientras vos trabajás en lo que realmente importa.",
+    6: {  # Domingo - GENÉRICO (Redes Sociales AI)
+        "tema": "La IA gestionando las redes de tu PyME",
+        "angulo": "Publicar contenido de valor todos los días sin pasar horas editando",
+        "idea_central": "Sistemas de IA hoy pueden pensar, diseñar y publicar estratégicamente tu contenido para que el dueño se enfoque en cerrar los negocios físicos.",
         "prompt_imagen": "social media management dashboard with automated posts on Instagram LinkedIn Facebook, content calendar with AI robot, flat design colorful, no text in image",
-    },
-    4: {  # Viernes
-        "tema": "Automatización de WhatsApp",
-        "angulo": "Respuestas automáticas que suenan humanas y convierten clientes",
-        "idea_central": "El secreto no es el bot — es cómo está configurado: flujos inteligentes que guían al cliente hasta la venta.",
-        "prompt_imagen": "WhatsApp conversation flow diagram with AI brain icon, messaging automation arrows, professional colorful business illustration, flat design, no text in image",
-    },
-    5: {  # Sábado
-        "tema": "Automatización de CRM",
-        "angulo": "Datos que no mienten: cómo saber en qué leads enfocarte hoy",
-        "idea_central": "Un CRM automatizado califica y prioriza tus leads solo — vos solo hablás con los que realmente van a comprar.",
-        "prompt_imagen": "data analytics dashboard with lead scoring charts, automated CRM insights, business intelligence graphs, flat design colorful, no text in image",
     },
 }
 
@@ -151,7 +157,7 @@ async def crear_post(entrada: DatosCrearPost):
 
     industria = cliente_data.get("Industria", "General")
     servicio = cliente_data.get("Servicio Principal", "Automatizaciones IA")
-    publico = cliente_data.get("Público Objetivo", "Emprendedores y pymes LATAM")
+    publico = cliente_data.get("Público Objetivo", "Dueños de restaurantes, bares y PyMEs que quieren modernizar sus operaciones con IA — WhatsApp, CRM, agendamiento, redes sociales")
     tono = cliente_data.get("Tono de Voz", "Humano, cercano, experto")
     reglas = cliente_data.get("Reglas Estrictas", "No prometer resultados garantizados")
     tema = cliente_data.get("Tema del Día", "Automatización con IA")
@@ -964,7 +970,7 @@ async def publicar_completo(entrada: DatosPublicarCompleto):
 BRANDBOOK:
 - Industria: {marca.get("Industria", "Automatización IA")}
 - Servicio: {marca.get("Servicio Principal", "Automatizaciones con IA para negocios")}
-- Público: {marca.get("Público Objetivo", "Emprendedores y pymes de LATAM")}
+- Público: {marca.get("Público Objetivo", "Dueños de restaurantes, bares y PyMEs que quieren modernizar sus operaciones con IA — WhatsApp, CRM, agendamiento, redes sociales")}
 - Tono de voz: {marca.get("Tono de Voz", "Humano, cercano, directo y experto")}
 - RESTRICCIONES: {marca.get("Reglas Estrictas") or marca.get("Reglas Estrictas (Lo que NO debe hacer)") or "Nunca prometer resultados garantizados. Nada de spam."}
 
