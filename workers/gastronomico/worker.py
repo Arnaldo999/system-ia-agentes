@@ -10,6 +10,12 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 import google.generativeai as genai
 import openai
+from workers.shared.guardrails import (
+    detect_injection,
+    sanitize_for_llm,
+    validate_output,
+    FALLBACK_GASTRO,
+)
 
 router = APIRouter(prefix="/gastronomico", tags=["SaaS Gastronómico"])
 
@@ -18,7 +24,7 @@ router = APIRouter(prefix="/gastronomico", tags=["SaaS Gastronómico"])
 # ─────────────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY", "")
 AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY", "")
-AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appdA5rJOmtVvpDrx")
+AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "")
 NUMERO_DUENO     = os.environ.get("NUMERO_DUENO", "")
 
 genai.configure(api_key=GEMINI_API_KEY)
@@ -1407,10 +1413,24 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         # Crear chat con historial
         chat = modelo_con_ctx.start_chat(history=history_gemini)
 
-        # Enviar mensaje del usuario
+        # ── Guardrail 1: detección de prompt injection ────────────────────────
+        # Los admins internos están exentos del check (usan prefijo [ADMIN]).
+        if not entrada.es_admin and detect_injection(msg):
+            return {
+                "respuesta": FALLBACK_GASTRO,
+                "tipo_mensaje": "texto",
+                "accion_ejecutada": None,
+            }
+
+        # ── Guardrail 2: sanitización del input antes del LLM ─────────────────
         prefix = "[ADMIN] " if entrada.es_admin else ""
-        response = chat.send_message(f"{prefix}{msg}")
+        msg_safe = sanitize_for_llm(msg, context="mensaje_cliente")
+        response = chat.send_message(f"{prefix}{msg_safe}")
         respuesta_completa = response.text.strip()
+
+        # ── Guardrail 3: validación del output antes de enviarlo ──────────────
+        if not validate_output(respuesta_completa):
+            respuesta_completa = FALLBACK_GASTRO
 
         # Separar acción del texto de respuesta
         texto_respuesta = respuesta_completa

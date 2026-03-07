@@ -11,6 +11,12 @@ from fastapi import APIRouter, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from typing import Optional, List
+from workers.shared.guardrails import (
+    detect_injection,
+    sanitize_for_llm,
+    validate_output,
+    FALLBACK_SOCIAL,
+)
 
 router = APIRouter(prefix="/social", tags=["Social Media"])
 
@@ -1394,9 +1400,9 @@ CRITICAL: NO text, NO numbers, NO letters, NO words, NO spelling of any kind any
 # META WEBHOOK — Verificación + Respuesta a comentarios
 # ─────────────────────────────────────────────────────────────────────────────
 
-META_WEBHOOK_VERIFY_TOKEN = os.environ.get("META_WEBHOOK_VERIFY_TOKEN", "SystemIA2026")
-AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appejn9ep8JMLJmPG")
-AIRTABLE_TABLE_ID = os.environ.get("AIRTABLE_TABLE_ID", "tblgFvYebZcJaYM07")
+META_WEBHOOK_VERIFY_TOKEN = os.environ.get("META_WEBHOOK_VERIFY_TOKEN", "")
+AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "")
+AIRTABLE_TABLE_ID = os.environ.get("AIRTABLE_TABLE_ID", "")
 AIRTABLE_TOKEN = os.environ.get("AIRTABLE_TOKEN", "")
 
 
@@ -1503,9 +1509,17 @@ def _responder_comentario(
         token_map = _build_page_token_map()
         token = token_map.get(page_id, META_ACCESS_TOKEN)
 
+    # ── Guardrail 1: detección de prompt injection en el comentario ──────────
+    if detect_injection(texto):
+        return {"success": True, "respuesta": FALLBACK_SOCIAL, "_guardrail": "injection_detected"}
+
+    # ── Guardrail 2: sanitizar el comentario antes de insertarlo en el prompt ─
+    texto_safe = sanitize_for_llm(texto, context="comentario_usuario")
+
     prompt = (
         f"Sos el community manager de {nombre}. "
-        f'Alguien comentó en tu post: "{texto}"\n\n'
+        f"Alguien dejó el siguiente comentario en tu post:\n\n"
+        f"{texto_safe}\n\n"
         f"Escribí UNA respuesta (máximo 3 líneas) en tono {tono} que:\n"
         f"1. Agradezca brevemente\n"
         f"2. Dé UN tip accionable relacionado al negocio ({servicio})\n"
@@ -1524,7 +1538,11 @@ def _responder_comentario(
             "text"
         ].strip()
     except Exception:
-        respuesta = f"¡Gracias por tu comentario! 💡 La automatización puede transformar tu negocio. Escribinos un DM y te contamos cómo."
+        respuesta = FALLBACK_SOCIAL
+
+    # ── Guardrail 3: validar output antes de publicar ─────────────────────────
+    if not validate_output(respuesta):
+        respuesta = FALLBACK_SOCIAL
 
     try:
         # Facebook usa /{comment_id}/comments, Instagram usa /{comment_id}/replies
