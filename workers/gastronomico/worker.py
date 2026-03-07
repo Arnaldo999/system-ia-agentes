@@ -1415,7 +1415,7 @@ async def manejar_mensaje(entrada: MensajeEntrante):
 
         # ── Guardrail 1: detección de prompt injection ────────────────────────
         # Los admins internos están exentos del check (usan prefijo [ADMIN]).
-        if not entrada.es_admin and detect_injection(msg):
+        if not entrada.es_admin and detect_injection(msg, worker="gastro"):
             return {
                 "respuesta": FALLBACK_GASTRO,
                 "tipo_mensaje": "texto",
@@ -1429,7 +1429,7 @@ async def manejar_mensaje(entrada: MensajeEntrante):
         respuesta_completa = response.text.strip()
 
         # ── Guardrail 3: validación del output antes de enviarlo ──────────────
-        if not validate_output(respuesta_completa):
+        if not validate_output(respuesta_completa, worker="gastro"):
             respuesta_completa = FALLBACK_GASTRO
 
         # Separar acción del texto de respuesta

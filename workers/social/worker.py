@@ -1510,7 +1510,7 @@ def _responder_comentario(
         token = token_map.get(page_id, META_ACCESS_TOKEN)
 
     # ── Guardrail 1: detección de prompt injection en el comentario ──────────
-    if detect_injection(texto):
+    if detect_injection(texto, worker="social"):
         return {"success": True, "respuesta": FALLBACK_SOCIAL, "_guardrail": "injection_detected"}
 
     # ── Guardrail 2: sanitizar el comentario antes de insertarlo en el prompt ─
@@ -1541,7 +1541,7 @@ def _responder_comentario(
         respuesta = FALLBACK_SOCIAL
 
     # ── Guardrail 3: validar output antes de publicar ─────────────────────────
-    if not validate_output(respuesta):
+    if not validate_output(respuesta, worker="social"):
         respuesta = FALLBACK_SOCIAL
 
     try:
