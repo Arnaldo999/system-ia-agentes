@@ -5,10 +5,14 @@ scripts/manual_tests/test_gastro_env.py
 Verifica que el entorno esté correctamente configurado para el worker
 gastronomico SIN hacer llamadas reales a APIs ni consumir créditos.
 
+Estrategia de carga (en orden de prioridad):
+  1. Variables ya exportadas en el sistema (Easypanel, CI, shell)
+  2. Archivo .env en la raíz del repo (desarrollo local)
+
 Uso:
     python scripts/manual_tests/test_gastro_env.py
 
-Requiere (en .env o exportadas en el sistema):
+Variables requeridas:
     GEMINI_API_KEY
     AIRTABLE_API_KEY
     AIRTABLE_BASE_ID
@@ -17,20 +21,42 @@ Requiere (en .env o exportadas en el sistema):
     EVOLUTION_INSTANCE
     EVOLUTION_API_KEY
 
+Variables opcionales:
+    OPENAI_API_KEY   — solo para transcripción de audio (Whisper)
+
 Salida:
-    EXIT 0 → entorno OK
-    EXIT 1 → una o más variables faltan o están vacías
+    EXIT 0 → entorno OK (todas las vars presentes y sin valores placeholder)
+    EXIT 1 → una o más variables faltan o tienen valores de ejemplo sin reemplazar
 """
 
 import os
 import sys
 from pathlib import Path
 
+# Patrones que indican que la variable NO fue completada con un valor real.
+# Si el valor contiene alguno de estos strings (case-insensitive), se trata
+# como placeholder y se reporta como variable faltante.
+PLACEHOLDER_MARKERS = [
+    "REEMPLAZAR",
+    "COMPLETAR",
+    "YOUR_",
+    "TU_",
+    "TU-",
+    "<",
+    "TEST_VALUE",
+    "PLACEHOLDER",
+    "EXAMPLE",
+    "CHANGE_ME",
+]
+
 
 def load_dotenv_safe() -> None:
     """
     Carga .env desde la raíz del repo SOLO si las vars no están ya en el sistema.
     No falla si no existe .env (puede correr en Easypanel/CI directamente).
+
+    La raíz del repo se resuelve como dos niveles arriba de este archivo:
+        scripts/manual_tests/test_gastro_env.py  →  parents[2] = repo root
     """
     repo_root = Path(__file__).resolve().parents[2]
     env_file = repo_root / ".env"
@@ -45,11 +71,17 @@ def load_dotenv_safe() -> None:
                 key, _, value = line.partition("=")
                 key = key.strip()
                 value = value.strip().strip("\"'")
-                # Solo setear si NO está ya en el entorno (sistema tiene prioridad)
+                # Sistema tiene prioridad: no sobreescribir vars ya exportadas.
                 if key not in os.environ:
                     os.environ[key] = value
     else:
         print("[env] No se encontró .env — usando variables del sistema.")
+
+
+def is_placeholder(value: str) -> bool:
+    """Devuelve True si el valor parece un placeholder sin reemplazar."""
+    v = value.upper()
+    return any(marker.upper() in v for marker in PLACEHOLDER_MARKERS)
 
 
 REQUIRED_VARS = [
@@ -69,16 +101,20 @@ OPTIONAL_VARS = [
 
 def check_env() -> bool:
     ok = True
-    missing = []
-    present = []
+    missing: list[str] = []
+    placeholder: list[str] = []
+    present: list[tuple[str, str]] = []
 
     for var in REQUIRED_VARS:
         val = os.environ.get(var, "")
         if not val:
             missing.append(var)
             ok = False
+        elif is_placeholder(val):
+            placeholder.append(var)
+            ok = False
         else:
-            # Mostrar solo primeros 6 chars para no loguear el secreto completo
+            # Solo primeros 6 chars para no loguear el secreto completo
             safe = val[:6] + "..." if len(val) > 6 else "****"
             present.append((var, safe))
 
@@ -94,7 +130,7 @@ def check_env() -> bool:
 
     for var in OPTIONAL_VARS:
         val = os.environ.get(var, "")
-        if val:
+        if val and not is_placeholder(val):
             safe = val[:6] + "..."
             print(f"    ○ {var:<35} = {safe}  (opcional, presente)")
         else:
@@ -104,8 +140,16 @@ def check_env() -> bool:
         print("\n  Variables FALTANTES (requeridas):")
         for var in missing:
             print(f"    ✗ {var}")
+
+    if placeholder:
+        print("\n  Variables con VALOR PLACEHOLDER (completá con valor real):")
+        for var in placeholder:
+            print(f"    ⚠ {var}")
+
+    if not ok:
         print()
-        print("  ❌ Entorno incompleto. Copiá .env.example → .env y completá.")
+        print("  ❌ Entorno incompleto.")
+        print("     Copiá .env.example → .env, completá los valores reales.")
         print("     Ver docs/testing-policy.md para instrucciones detalladas.")
     else:
         print()
