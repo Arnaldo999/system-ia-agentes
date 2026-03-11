@@ -83,21 +83,25 @@ CONVERSACIONES = ConversacionesRAM()
 
 # ── Anti-duplicados (Evolution API manda 2 webhooks por mensaje) ──
 import time as _time
-_MENSAJES_RECIENTES = {}  # {"tel:msg": timestamp}
-_DEDUP_TTL = 10  # segundos
+_MENSAJES_RECIENTES = set()  # set de messageIds procesados
+_DEDUP_TIMESTAMPS = {}  # {messageId: timestamp}
+_DEDUP_TTL = 30  # segundos
 
-def _es_duplicado(tel: str, msg: str) -> bool:
-    """Retorna True si este tel+msg ya se procesó en los últimos 10s."""
-    key = f"{tel}:{msg}"
+def _es_duplicado(message_id: str) -> bool:
+    """Retorna True si este messageId ya se procesó recientemente."""
+    if not message_id:
+        return False  # sin ID, dejar pasar
     ahora = _time.time()
     # Limpiar entradas viejas
-    viejas = [k for k, t in _MENSAJES_RECIENTES.items() if ahora - t > _DEDUP_TTL]
+    viejas = [k for k, t in _DEDUP_TIMESTAMPS.items() if ahora - t > _DEDUP_TTL]
     for k in viejas:
-        del _MENSAJES_RECIENTES[k]
+        _MENSAJES_RECIENTES.discard(k)
+        del _DEDUP_TIMESTAMPS[k]
     # Verificar
-    if key in _MENSAJES_RECIENTES:
+    if message_id in _MENSAJES_RECIENTES:
         return True
-    _MENSAJES_RECIENTES[key] = ahora
+    _MENSAJES_RECIENTES.add(message_id)
+    _DEDUP_TIMESTAMPS[message_id] = ahora
     return False
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -343,6 +347,7 @@ class MensajeComercio(BaseModel):
     telefono: str
     nombre_contacto: Optional[str] = ""
     es_admin: Optional[bool] = False
+    message_id: Optional[str] = ""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -364,8 +369,8 @@ async def manejar_mensaje(entrada: MensajeComercio):
     if not msg:
         return {"respuesta": "No recibí ningún mensaje.", "status": "error"}
 
-    # ── Anti-duplicados ───────────────────────────────────────────────────
-    if _es_duplicado(tel, msg):
+    # ── Anti-duplicados (por messageId único de Evolution API) ──────────
+    if _es_duplicado(entrada.message_id):
         return {"respuesta": "_dup_", "tipo_mensaje": "ignorar", "accion_ejecutada": None, "notificar_dueno": False}
 
     # ── Guardrails ────────────────────────────────────────────────────────
