@@ -1022,7 +1022,7 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
                 "professional automation business flat design colorful no text",
             ),
         )
-        b64, mime = _generar_imagen_interna(prompt_img, max_intentos=3, espera=20)
+        b64, mime = _generar_imagen_interna(prompt_img, max_intentos=5, espera=20)
         logo_field = marca.get("Logo", [])
         logo_url = (
             logo_field[0].get("url", "")
@@ -1335,7 +1335,7 @@ CRITICAL: NO text, NO numbers, NO letters, NO words, NO spelling of any kind any
         try:
             # raw_prompt=False para que agregue la instrucción anti-texto estándar
             b64, mime = _generar_imagen_interna(
-                slide_prompt, max_intentos=3, espera=20, raw_prompt=False
+                slide_prompt, max_intentos=5, espera=20, raw_prompt=False
             )
 
             # Usamos el dibujado en Python (Pillow) para tener texto 100% perfecto, sin faltas ortográficas

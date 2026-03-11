@@ -213,6 +213,10 @@ REGLAS CRÍTICAS
 3. Cuando el JSON de ACCION sea necesario, poné SOLO el JSON en una línea separada.
 4. SIEMPRE usá números con emojis (1️⃣, 2️⃣, etc.) en las listas para que el cliente pueda elegir fácilmente.
 5. Respuestas cortas — máximo 8 líneas por mensaje.
+6. IMÁGENES: Cada producto en el catálogo tiene una URL de imagen marcada como [IMG:url]. Cuando muestres UN producto específico (no la lista completa), incluí la URL en una línea separada con el formato: IMAGEN: url
+   Ejemplo: Si el producto tiene [IMG:https://ejemplo.com/foto.jpg], agregá:
+   IMAGEN: https://ejemplo.com/foto.jpg
+   IMPORTANTE: Solo incluí IMAGEN cuando muestres detalles de 1 o 2 productos, NO cuando listes las categorías.
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -259,11 +263,19 @@ def at_get_catalogo_texto(solo_disponibles: bool = True) -> str:
             cat = cat[0] if cat else "Otros"
         if cat not in por_categoria:
             por_categoria[cat] = []
+        # Extraer imagen (puede ser attachment de Airtable o URL directa)
+        imagen_raw = f.get("Imagen", f.get("imagen", ""))
+        imagen_url = ""
+        if isinstance(imagen_raw, list) and imagen_raw:
+            imagen_url = imagen_raw[0].get("url", "")
+        elif isinstance(imagen_raw, str):
+            imagen_url = imagen_raw
         por_categoria[cat].append({
             "nombre": f.get("Nombre", ""),
             "precio": f.get("Precio", 0),
             "descripcion": f.get("Descripcion", f.get("Descripción Técnica", "")),
             "disponible": disponible,
+            "imagen_url": imagen_url,
         })
 
     lineas = []
@@ -273,7 +285,8 @@ def at_get_catalogo_texto(solo_disponibles: bool = True) -> str:
             precio = f"${p['precio']:,.0f}".replace(",", ".") if p['precio'] else "Consultar"
             desc = f" — {p['descripcion'][:80]}" if p['descripcion'] else ""
             estado = "✅" if p['disponible'] else "❌"
-            lineas.append(f"  {estado} {p['nombre']} — {precio} ARS{desc}")
+            img = f" [IMG:{p['imagen_url']}]" if p['imagen_url'] else ""
+            lineas.append(f"  {estado} {p['nombre']} — {precio} ARS{desc}{img}")
     return "\n".join(lineas) if lineas else "(Sin productos cargados)"
 
 
@@ -497,6 +510,15 @@ async def manejar_mensaje(entrada: MensajeComercio):
             if not respuesta:
                 respuesta = "¡Perfecto! Ya le avisé a un vendedor. Te va a contactar en breve. 📞"
 
+    # ── Extraer imagen URL de la respuesta ────────────────────────────
+    imagen_url = None
+    imagen_match = re.search(r'IMAGEN:\s*(https?://\S+)', respuesta)
+    if imagen_match:
+        imagen_url = imagen_match.group(1).rstrip('.,)"')
+        respuesta = respuesta[:imagen_match.start()].strip()
+        if not respuesta:
+            respuesta = "📸"  # emoji foto si solo quedó la imagen
+
     # ── Guardar historial ─────────────────────────────────────────────────
     historial.append({"role": "user",  "content": msg})
     historial.append({"role": "model", "content": respuesta})
@@ -504,7 +526,8 @@ async def manejar_mensaje(entrada: MensajeComercio):
 
     return {
         "respuesta": respuesta,
-        "tipo_mensaje": "texto",
+        "tipo_mensaje": "imagen" if imagen_url else "texto",
+        "imagen_url": imagen_url,
         "accion_ejecutada": accion_ejecutada,
         "notificar_dueno": accion_ejecutada in ["lead_notificado", "vendedor_notificado"],
     }
