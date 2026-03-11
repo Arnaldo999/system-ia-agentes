@@ -39,40 +39,48 @@ RESTAURANTE = {
     "numero_dueno": NUMERO_DUENO,
 }
 
-MENU = {
-    "Platos Principales 🥩": [
-        ("Asado de Tira (400gr) con papas fritas", 6800),
-        ("Bife de Chorizo (300gr) con ensalada mixta", 7500),
-        ("Bondiola Braseada con puré de calabaza", 5900),
-    ],
-    "Entradas 🥗": [
-        ("Provoleta Fundida con orégano", 2500),
-        ("Empanadas Tucumanas (3 un.)", 2700),
-        ("Tabla de Fiambres para compartir", 4500),
-    ],
-    "Postres 🍰": [
-        ("Flan Casero con dulce de leche", 1500),
-        ("Mousse de Chocolate", 1600),
-        ("Panqueques con dulce de leche", 1800),
-    ],
-    "Cafetería ☕": [
-        ("Café Espresso", 800),
-        ("Cortado con medialunas (2)", 1200),
-        ("Submarino", 1100),
-    ],
-    "Bebidas 🍷": [
-        ("Vino Malbec (copa)", 2200),
-        ("Cerveza Artesanal (pint)", 1800),
-        ("Limonada con menta", 1200),
-    ],
-}
+# ─────────────────────────────────────────────────────────────────────────────
+# MENÚ DINÁMICO DESDE AIRTABLE
+# ─────────────────────────────────────────────────────────────────────────────
+def at_get_platos(solo_menu_del_dia: bool = False) -> dict:
+    """Lee platos desde la tabla Platos de Airtable, agrupados por categoría."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Platos"
+        params = {
+            "sort[0][field]": "Nombre",
+            "sort[0][direction]": "asc",
+        }
+        if solo_menu_del_dia:
+            params["filterByFormula"] = "{Menú del Dia}=TRUE()"
+        r = requests.get(url, headers=AT_HEADERS(), params=params)
+        records = r.json().get("records", [])
+        menu = {}
+        for rec in records:
+            f = rec["fields"]
+            # La categoría viene del lookup "Menús (from Categoría)"
+            cat_raw = f.get("Menús (from Categoría)", f.get("Categoría", ["Otros"]))
+            cat_nombre = cat_raw[0] if isinstance(cat_raw, list) and cat_raw else str(cat_raw)
+            nombre = f.get("Nombre", "")
+            precio = f.get("Precio", 0)
+            if cat_nombre not in menu:
+                menu[cat_nombre] = []
+            menu[cat_nombre].append((nombre, precio))
+        return menu
+    except Exception as e:
+        print(f"[AT] Error get_platos: {e}")
+        return {}
 
-def _menu_texto():
+
+def _menu_texto(menu: dict = None) -> str:
+    """Formatea un dict de menú como texto para WhatsApp."""
+    if not menu:
+        return "(Menú no disponible en este momento)"
     lineas = []
-    for categoria, items in MENU.items():
+    for categoria, items in menu.items():
         lineas.append(f"\n*{categoria}*")
         for nombre, precio in items:
-            lineas.append(f"  • {nombre} — ${precio:,} ARS".replace(",", "."))
+            precio_fmt = f"${precio:,.0f}".replace(",", ".") if isinstance(precio, (int, float)) else f"${precio}"
+            lineas.append(f"  • {nombre} — {precio_fmt} ARS")
     return "\n".join(lineas)
 
 HOY = date.today().strftime("%A %d de %B de %Y")
@@ -101,9 +109,7 @@ DATOS DEL RESTAURANTE
 - Alias de pago (seña): *{RESTAURANTE['alias_pago']}*
 - Fecha de hoy: {HOY}
 
-MENÚ COMPLETO:
-{_menu_texto()}
-Bebidas sin alcohol (agua, gaseosas, jugos): $800-1.200 ARS
+[El menú se carga dinámicamente desde Airtable — ver secciones MENÚ DEL DÍA y CARTA COMPLETA al final de este prompt]
 Todos los precios incluyen IVA.
 
 ════════════════════════════════════════════════════════
@@ -115,39 +121,43 @@ TEXTO EXACTO a mostrar:
 *¡Bienvenido a La Parrilla de Don Alberto!* 🍖
 ¿En qué podemos ayudarte hoy?
 
-1️⃣ Ver el Menú del día
-2️⃣ Hacer una reserva
-3️⃣ Cancelar una reserva
-4️⃣ Modificar una reserva
+1️⃣ Menú del Día 🍽️
+2️⃣ Carta completa 📋
+3️⃣ Hacer una reserva
+4️⃣ Cancelar o modificar una reserva
 5️⃣ Delivery (hacer pedido)
 
 REGLA: Esperá que el cliente elija. No agregues texto extra.
 
 ════════════════════════════════════════════════════════
-TAREA 1 — VER MENÚ DEL DÍA (opción 1)
+TAREA 1A — MENÚ DEL DÍA (opción 1)
 ════════════════════════════════════════════════════════
-PASO 1: El cliente elige "1" o "ver menú" → mostrá SOLO las categorías:
+Cuando el cliente elige "1" o "menú del día" → mostrá DIRECTAMENTE los platos marcados como menú del día, agrupados por categoría.
+Usá SOLO los datos de la sección "## MENÚ DEL DÍA" que aparece al final de este prompt.
 
-📋 *Menú del Día*
-1️⃣ Platos Principales 🥩
-2️⃣ Entradas 🥗
-3️⃣ Postres 🍰
-4️⃣ Cafetería ☕
-5️⃣ Bebidas 🍷
+Formato:
+🍽️ *Menú del Día — {HOY}*
+[categorías y platos del menú del día]
+
 0️⃣ Volver al menú principal
 
-PASO 2: El cliente elige una categoría (número 1-5) → mostrá los ítems con precio.
-Ejemplo para "1" (Platos Principales):
-🥩 *Platos Principales*
-1. Asado de Tira (400gr) con papas fritas — $6.800
-2. Bife de Chorizo (300gr) con ensalada mixta — $7.500
-3. Bondiola Braseada con puré de calabaza — $5.900
-0️⃣ Volver a categorías | escribí *00* para el menú principal
-
-PASO 3: Si el cliente elige un plato → preguntá: "¿Desea hacer una reserva para venir al restaurante o prefiere pedido delivery?"
+Si el menú del día está vacío o dice "no disponible", respondé:
+"Hoy aún no se cargó el menú del día. ¿Querés ver nuestra carta completa?"
 
 ════════════════════════════════════════════════════════
-TAREA 2 — HACER RESERVA (opción 2)
+TAREA 1B — CARTA COMPLETA (opción 2)
+════════════════════════════════════════════════════════
+Cuando el cliente elige "2" o "carta" → mostrá TODAS las categorías disponibles:
+
+📋 *Carta Completa*
+[Listá las categorías numeradas que aparezcan en la sección "## CARTA COMPLETA" al final de este prompt]
+0️⃣ Volver al menú principal
+
+Cuando elija una categoría → mostrá los ítems con precio de esa categoría.
+Si elige un plato → preguntá: "¿Desea hacer una reserva para venir al restaurante o prefiere pedido delivery?"
+
+════════════════════════════════════════════════════════
+TAREA 2 — HACER RESERVA (opción 3)
 ════════════════════════════════════════════════════════
 DATOS a recopilar en orden (uno por vez):
 1. Nombre completo
@@ -163,7 +173,7 @@ ACCION: {{"tipo": "crear_reserva", "nombre": "...", "personas": N, "fecha_iso": 
 ⚠️ NUNCA escribas "reserva confirmada" vos mismo — el sistema lo confirma automáticamente.
 
 ════════════════════════════════════════════════════════
-TAREA 3 — CANCELAR RESERVA (opción 3)
+TAREA 3 — CANCELAR RESERVA (opción 4)
 ════════════════════════════════════════════════════════
 DATOS a recopilar:
 1. Nombre de la reserva
@@ -1369,10 +1379,10 @@ async def manejar_mensaje(entrada: MensajeEntrante):
             bienvenida = (
                 f"*¡Bienvenido a {RESTAURANTE['nombre']}!* 🍖\n"
                 f"¿En qué podemos ayudarte hoy?\n\n"
-                f"1️⃣ Ver el Menú del día\n"
-                f"2️⃣ Hacer una reserva\n"
-                f"3️⃣ Cancelar una reserva\n"
-                f"4️⃣ Modificar una reserva\n"
+                f"1️⃣ Menú del Día 🍽️\n"
+                f"2️⃣ Carta completa 📋\n"
+                f"3️⃣ Hacer una reserva\n"
+                f"4️⃣ Cancelar o modificar una reserva\n"
                 f"5️⃣ Delivery (hacer pedido)"
             )
             historial.append({"role": "user",  "content": msg})
@@ -1390,12 +1400,22 @@ async def manejar_mensaje(entrada: MensajeEntrante):
                     "parts": [{"text": turno["content"]}],
                 })
 
-        # Inyectar reservas actuales en el system prompt (contexto real de disponibilidad)
+        # Inyectar menú dinámico + reservas actuales en el system prompt
+        menu_del_dia = at_get_platos(solo_menu_del_dia=True)
+        carta_completa = at_get_platos(solo_menu_del_dia=False)
         reservas_ctx = at_get_reservas_futuras()
+
+        menu_dia_texto = _menu_texto(menu_del_dia) if menu_del_dia else "(No hay platos marcados como menú del día)"
+        carta_texto = _menu_texto(carta_completa) if carta_completa else "(Carta no disponible)"
+
         modelo_con_ctx = genai.GenerativeModel(
             model_name="gemini-2.5-flash-lite",
             system_instruction=(
                 SYSTEM_PROMPT
+                + "\n\n---\n## MENÚ DEL DÍA (platos marcados hoy por el restaurante)\n"
+                + menu_dia_texto
+                + "\n\n## CARTA COMPLETA (todos los platos disponibles)\n"
+                + carta_texto
                 + "\n\n---\n## RESERVAS ACTUALES EN EL SISTEMA (datos reales de Airtable)\n"
                 + reservas_ctx
                 + """
