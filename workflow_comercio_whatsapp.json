@@ -4,7 +4,7 @@
         {
             "parameters": {
                 "httpMethod": "POST",
-                "path": "restaurante-basic",
+                "path": "comercio-whatsapp-in",
                 "responseMode": "responseNode",
                 "options": {}
             },
@@ -16,7 +16,7 @@
                 0,
                 300
             ],
-            "webhookId": "restaurante-basic"
+            "webhookId": "comercio-whatsapp-in"
         },
         {
             "parameters": {
@@ -35,7 +35,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// ─────────────────────────────────────────────\n// Normalizar el payload de Evolution API\n// ─────────────────────────────────────────────\nconst body = $input.first().json.body;\n\n// Extraer teléfono (quitar @s.whatsapp.net)\nconst remoteJid = body?.data?.key?.remoteJid || '';\nconst telefono = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');\n\n// Extraer texto del mensaje\nconst msgData = body?.data?.message || {};\nconst mensaje = \n  msgData?.conversation ||\n  msgData?.extendedTextMessage?.text ||\n  msgData?.imageMessage?.caption ||\n  '';\n\n// Detectar si tiene imagen\nconst messageType = body?.data?.messageType || '';\nconst tiene_imagen = ['imageMessage', 'documentMessage'].includes(messageType);\n\n// Detectar si es el dueño\nconst NUMERO_DUENO = $env.NUMERO_DUENO || '';\nconst es_admin = telefono === NUMERO_DUENO.replace('+', '').replace(/\\s/g, '');\n\n// Ignorar mensajes propios o de grupos\nconst from_me = body?.data?.key?.fromMe || false;\nif (from_me || remoteJid.includes('@g.us')) {\n  return [{ json: { ignorar: true } }];\n}\n\nreturn [{\n  json: {\n    telefono,\n    mensaje: mensaje.trim(),\n    tiene_imagen,\n    es_admin,\n    ignorar: false\n  }\n}];"
+                "jsCode": "// ─────────────────────────────────────────────\n// Normalizar el payload de Evolution API\n// ─────────────────────────────────────────────\nconst body = $input.first().json.body;\n\n// Extraer teléfono (quitar @s.whatsapp.net)\nconst remoteJid = body?.data?.key?.remoteJid || '';\nconst telefono = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');\n\n// Extraer texto del mensaje\nconst msgData = body?.data?.message || {};\nconst mensaje = \n  msgData?.conversation ||\n  msgData?.extendedTextMessage?.text ||\n  msgData?.imageMessage?.caption ||\n  '';\n\n// Detectar si tiene imagen\nconst messageType = body?.data?.messageType || '';\nconst tiene_imagen = ['imageMessage', 'documentMessage'].includes(messageType);\n\n// El check de administrador se hace directamente en FastAPI por seguridad\nconst es_admin = false;\n\n// Ignorar mensajes propios o de grupos\nconst from_me = body?.data?.key?.fromMe || false;\nif (from_me || remoteJid.includes('@g.us')) {\n  return [{ json: { ignorar: true } }];\n}\n\nreturn [{\n  json: {\n    telefono,\n    mensaje: mensaje.trim(),\n    tiene_imagen,\n    es_admin,\n    ignorar: false\n  }\n}];"
             },
             "id": "normalizar-payload",
             "name": "🔧 Normalizar Payload",
@@ -81,7 +81,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "={{ $env.FASTAPI_URL }}/comercio/mensaje",
+                "url": "https://system-ia-agentes.onrender.com/comercio/mensaje",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
