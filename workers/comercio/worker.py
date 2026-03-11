@@ -395,20 +395,31 @@ async def manejar_mensaje(entrada: MensajeComercio):
 
     # ── Detectar y ejecutar acciones ──────────────────────────────────────
     accion_ejecutada = None
+    # Buscar formato ACCION: {...} o JSON suelto con "tipo"
     accion_match = re.search(r'ACCION:\s*(\{[^}]+\})', respuesta)
+    if not accion_match:
+        # Buscar JSON suelto que contenga "tipo" (acción sin prefijo ACCION:)
+        accion_match = re.search(r'(\{"tipo":\s*"[^"]+?"[^}]*\})', respuesta)
     if accion_match:
         try:
             accion_data = json.loads(accion_match.group(1))
             accion_ejecutada = ejecutar_accion(accion_data, tel, nombre)
             # Limpiar el JSON de la respuesta al cliente
             respuesta = respuesta[:accion_match.start()].strip()
+            # También limpiar cualquier residuo después del JSON
+            resto = respuesta.replace(accion_match.group(0), "").strip()
+            if resto:
+                respuesta = resto
             if not respuesta:
                 if accion_data.get("tipo") == "lead_calificado":
                     respuesta = "¡Excelente elección! Ya le avisé a nuestro equipo. Te van a contactar a la brevedad. 🙌"
                 else:
                     respuesta = "¡Perfecto! Ya le avisé a un vendedor. Te va a contactar en breve. 📞"
         except json.JSONDecodeError:
-            pass
+            # Si falla el parseo, al menos limpiar el JSON visible
+            respuesta = re.sub(r'\{[^}]*"tipo"[^}]*\}', '', respuesta).strip()
+            if not respuesta:
+                respuesta = "¡Perfecto! Ya le avisé a un vendedor. Te va a contactar en breve. 📞"
 
     # ── Guardar historial ─────────────────────────────────────────────────
     historial.append({"role": "user",  "content": msg})
