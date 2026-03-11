@@ -193,9 +193,12 @@ def at_get_catalogo_texto(solo_disponibles: bool = True) -> str:
     por_categoria = {}
     for rec in records:
         f = rec["fields"]
-        if solo_disponibles and not f.get("Disponible", False):
+        disponible = f.get("Disponible", f.get("Disponibilidad", False))
+        if disponible == 1 or str(disponible).lower() == "true":
+            disponible = True
+        if solo_disponibles and not disponible:
             continue
-        cat = f.get("Categoria", "Otros")
+        cat = f.get("Categoria", f.get("Categoría", "Otros"))
         if isinstance(cat, list):
             cat = cat[0] if cat else "Otros"
         if cat not in por_categoria:
@@ -203,8 +206,8 @@ def at_get_catalogo_texto(solo_disponibles: bool = True) -> str:
         por_categoria[cat].append({
             "nombre": f.get("Nombre", ""),
             "precio": f.get("Precio", 0),
-            "descripcion": f.get("Descripcion", ""),
-            "disponible": f.get("Disponible", False),
+            "descripcion": f.get("Descripcion", f.get("Descripción Técnica", "")),
+            "disponible": disponible,
         })
 
     lineas = []
@@ -523,15 +526,23 @@ def get_catalogo_web():
     productos = []
     for rec in records:
         f = rec["fields"]
-        if not f.get("Disponible", False):
+        disponible = f.get("Disponible", f.get("Disponibilidad", False))
+        if disponible == 1 or str(disponible).lower() == "true":
+            disponible = True
+        if not disponible:
             continue
         imgs = f.get("Imagen", [])
+        
+        # Soportar múltiples nombres de campo
+        cat = f.get("Categoria", f.get("Categoría", ""))
+        desc = f.get("Descripcion", f.get("Descripción Técnica", ""))
+        
         productos.append({
             "id": f.get("ID_Producto", rec["id"]),
             "nombre": f.get("Nombre", ""),
             "precio": f.get("Precio", 0),
-            "descripcion": f.get("Descripcion", ""),
-            "categoria": f.get("Categoria", ""),
+            "descripcion": desc,
+            "categoria": cat,
             "imagen": imgs[0].get("url", "") if imgs else "",
             "imagen_thumb": imgs[0].get("thumbnails", {}).get("large", {}).get("url", "") if imgs else "",
         })
