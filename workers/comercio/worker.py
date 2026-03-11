@@ -344,10 +344,8 @@ async def manejar_mensaje(entrada: MensajeComercio):
         bienvenida = (
             f"*¡Bienvenido a {TIENDA['nombre']}!* 🏪\n"
             f"¿En qué podemos ayudarte?\n\n"
-            f"1️⃣ Ver productos disponibles\n"
-            f"2️⃣ Buscar un producto específico\n"
-            f"3️⃣ Comparar productos\n"
-            f"4️⃣ Hablar con un vendedor"
+            f"1️⃣ Ver categorías de productos\n"
+            f"2️⃣ Hablar con un asesor para comprar"
         )
         historial.append({"role": "user",  "content": msg})
         historial.append({"role": "model", "content": bienvenida})
