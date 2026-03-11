@@ -81,6 +81,25 @@ class ConversacionesRAM:
 
 CONVERSACIONES = ConversacionesRAM()
 
+# ── Anti-duplicados (Evolution API manda 2 webhooks por mensaje) ──
+import time as _time
+_MENSAJES_RECIENTES = {}  # {"tel:msg": timestamp}
+_DEDUP_TTL = 10  # segundos
+
+def _es_duplicado(tel: str, msg: str) -> bool:
+    """Retorna True si este tel+msg ya se procesó en los últimos 10s."""
+    key = f"{tel}:{msg}"
+    ahora = _time.time()
+    # Limpiar entradas viejas
+    viejas = [k for k, t in _MENSAJES_RECIENTES.items() if ahora - t > _DEDUP_TTL]
+    for k in viejas:
+        del _MENSAJES_RECIENTES[k]
+    # Verificar
+    if key in _MENSAJES_RECIENTES:
+        return True
+    _MENSAJES_RECIENTES[key] = ahora
+    return False
+
 # ─────────────────────────────────────────────────────────────────────────────
 # GUARDRAILS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -344,6 +363,10 @@ async def manejar_mensaje(entrada: MensajeComercio):
 
     if not msg:
         return {"respuesta": "No recibí ningún mensaje.", "status": "error"}
+
+    # ── Anti-duplicados ───────────────────────────────────────────────────
+    if _es_duplicado(tel, msg):
+        return {"respuesta": "_dup_", "tipo_mensaje": "ignorar", "accion_ejecutada": None, "notificar_dueno": False}
 
     # ── Guardrails ────────────────────────────────────────────────────────
     if detect_injection(msg, worker="comercio"):
