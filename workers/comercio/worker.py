@@ -338,9 +338,10 @@ async def manejar_mensaje(entrada: MensajeComercio):
 
     # ── Bienvenida ────────────────────────────────────────────────────────
     SALUDOS = {"hola", "buenas", "buen día", "buenos días", "buenas tardes",
-               "buenas noches", "hey", "hi", "holis", "buenas!", "hola!", "ola"}
+               "buenas noches", "hey", "hi", "holis", "buenas!", "hola!", "ola",
+               "menu", "menú", "0", "inicio"}
     msg_lower = msg.lower().strip().rstrip(".,!?")
-    if not historial or msg_lower in SALUDOS:
+    if msg_lower in SALUDOS:
         bienvenida = (
             f"*¡Bienvenido a {TIENDA['nombre']}!* 🏪\n"
             f"¿En qué podemos ayudarte?\n\n"
