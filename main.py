@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from workers.social.worker import router as social_router
 from workers.whatsapp.worker import router as whatsapp_router
 from workers.crm.worker import router as crm_router
@@ -14,6 +15,15 @@ app = FastAPI(
         "Servicios: WhatsApp · Redes Sociales · CRM · Agendamiento de Citas"
     ),
     version="2.0.0"
+)
+
+# ── CORS para permitir frontend web ───────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # PermiteNetlify y local
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ── Routers de los 6 Workers ─────────────────────────────────────────────────
