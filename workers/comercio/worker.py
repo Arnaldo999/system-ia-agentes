@@ -56,6 +56,31 @@ TIENDA = {
 
 HOY = date.today().strftime("%A %d de %B de %Y")
 
+# ── Memoria de conversaciones en RAM (sin depender de Airtable) ──
+# Almacena últimas 200 conversaciones activas, cada una con máx 30 turnos
+from collections import OrderedDict
+
+class ConversacionesRAM:
+    def __init__(self, max_size=200):
+        self._store = OrderedDict()
+        self._max = max_size
+
+    def get(self, tel: str) -> list:
+        tel = tel.replace("@s.whatsapp.net", "").replace("+", "")
+        if tel in self._store:
+            self._store.move_to_end(tel)
+            return self._store[tel]
+        return []
+
+    def save(self, tel: str, historial: list):
+        tel = tel.replace("@s.whatsapp.net", "").replace("+", "")
+        self._store[tel] = historial[-30:]  # máx 30 turnos
+        self._store.move_to_end(tel)
+        if len(self._store) > self._max:
+            self._store.popitem(last=False)  # elimina más vieja
+
+CONVERSACIONES = ConversacionesRAM()
+
 # ─────────────────────────────────────────────────────────────────────────────
 # GUARDRAILS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -326,15 +351,8 @@ async def manejar_mensaje(entrada: MensajeComercio):
 
     msg_sanitizado = sanitize_for_llm(msg, context="consulta_cliente")
 
-    # ── Historial ─────────────────────────────────────────────────────────
-    conv = at_get_conversacion(tel)
-    record_id = conv["id"] if conv else None
-    historial = []
-    if conv:
-        try:
-            historial = json.loads(conv["fields"].get("historial", "[]"))
-        except:
-            historial = []
+    # ── Historial (memoria RAM — instantáneo) ───────────────────────────
+    historial = CONVERSACIONES.get(tel)
 
     # ── Bienvenida ────────────────────────────────────────────────────────
     SALUDOS = {"hola", "buenas", "buen día", "buenos días", "buenas tardes",
@@ -350,7 +368,7 @@ async def manejar_mensaje(entrada: MensajeComercio):
         )
         historial.append({"role": "user",  "content": msg})
         historial.append({"role": "model", "content": bienvenida})
-        at_guardar_conversacion(tel, historial, record_id)
+        CONVERSACIONES.save(tel, historial)
         return {"respuesta": bienvenida, "tipo_mensaje": "texto", "accion_ejecutada": None}
 
     # ── Catálogo dinámico ─────────────────────────────────────────────────
@@ -424,7 +442,7 @@ async def manejar_mensaje(entrada: MensajeComercio):
     # ── Guardar historial ─────────────────────────────────────────────────
     historial.append({"role": "user",  "content": msg})
     historial.append({"role": "model", "content": respuesta})
-    at_guardar_conversacion(tel, historial, record_id)
+    CONVERSACIONES.save(tel, historial)
 
     return {
         "respuesta": respuesta,
