@@ -447,8 +447,9 @@ def _formato_categorias(categorias: list[str]) -> str:
     return "\n".join(lineas)
 
 
-def _formato_productos(categoria: str, productos: list[dict]) -> str:
-    """Formatea los productos de una categoría."""
+def _formato_productos(categoria: str, productos: list[dict]) -> tuple[str, str | None]:
+    """Formatea los productos de una categoría.
+    Retorna (texto, imagen_url). imagen_url solo si hay 1 producto."""
     lineas = [f"*Productos en {categoria}:*\n"]
     for p in productos:
         precio = f"${p['precio']:,.0f}".replace(",", ".") if p['precio'] else "Consultar"
@@ -456,7 +457,14 @@ def _formato_productos(categoria: str, productos: list[dict]) -> str:
         lineas.append(f"• *{p['nombre']}* — {precio} ARS{desc}\n")
     lineas.append("Si te interesa alguno, decime y te derivo con nuestro encargado para la compra. 🛒")
     lineas.append("\n_Escribí *0* para volver al menú principal._")
-    return "\n".join(lineas)
+    # Enviar imagen si hay pocos productos (1-2)
+    imagen_url = None
+    if len(productos) <= 2:
+        for p in productos:
+            if p.get("imagen_url"):
+                imagen_url = p["imagen_url"]
+                break
+    return "\n".join(lineas), imagen_url
 
 
 def _detectar_contexto(historial: list) -> str:
@@ -516,13 +524,16 @@ def _resolver_navegacion(msg: str, historial: list, tel: str) -> dict | None:
             productos = _get_productos_categoria(cat)
             if not productos:
                 respuesta = f"No hay productos disponibles en *{cat}* en este momento."
+                imagen_url = None
             else:
-                respuesta = _formato_productos(cat, productos)
+                respuesta, imagen_url = _formato_productos(cat, productos)
             historial.append({"role": "user", "content": msg})
             historial.append({"role": "model", "content": respuesta})
             CONVERSACIONES.save(tel, historial)
-            return {"respuesta": respuesta, "tipo_mensaje": "texto",
-                    "imagen_url": None, "accion_ejecutada": None, "notificar_dueno": False}
+            return {"respuesta": respuesta,
+                    "tipo_mensaje": "imagen" if imagen_url else "texto",
+                    "imagen_url": imagen_url,
+                    "accion_ejecutada": None, "notificar_dueno": False}
         # Número fuera de rango — pasar a Gemini
         return None
 
