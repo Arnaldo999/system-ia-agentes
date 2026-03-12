@@ -108,12 +108,12 @@ def _es_duplicado(message_id: str) -> bool:
 # GUARDRAILS
 # ─────────────────────────────────────────────────────────────────────────────
 try:
-    from workers.shared.guardrails import detect_injection, sanitize_for_llm, validate_output, FALLBACK_SOCIAL as FALLBACK
+    from workers.shared.guardrails import detect_injection, sanitize_for_llm, validate_output, FALLBACK_COMERCIO as FALLBACK
 except ImportError:
     def detect_injection(t, w="comercio"): return False
     def sanitize_for_llm(t, c="mensaje"): return t
     def validate_output(t, w="comercio"): return True
-    FALLBACK = "¡Gracias por tu consulta! ¿En qué te puedo ayudar? 😊"
+    FALLBACK = "¡Gracias por tu consulta! 😊 ¿En qué te puedo ayudar?\n\n1️⃣ Ver categorías de productos\n2️⃣ Hablar con un asesor para comprar"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SYSTEM PROMPT

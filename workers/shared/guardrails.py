@@ -393,3 +393,10 @@ FALLBACK_SOCIAL = (
     "¡Gracias por tu comentario! 😊 "
     "Si querés más información, escribinos un mensaje directo."
 )
+
+FALLBACK_COMERCIO = (
+    "¡Gracias por tu consulta! 😊 "
+    "¿En qué te puedo ayudar?\n\n"
+    "1️⃣ Ver categorías de productos\n"
+    "2️⃣ Hablar con un asesor para comprar"
+)
