@@ -1,314 +1,152 @@
 {
-    "name": "🍽️ Comercio Electrónica — Bot Conversacional",
-    "nodes": [
-        {
-            "parameters": {
-                "httpMethod": "POST",
-                "path": "comercio-whatsapp-in",
-                "responseMode": "responseNode",
-                "options": {}
-            },
-            "id": "webhook-entrada",
-            "name": "📥 Webhook Evolution API",
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2,
-            "position": [
-                0,
-                300
-            ],
-            "webhookId": "comercio-whatsapp-in"
-        },
-        {
-            "parameters": {
-                "respondWith": "text",
-                "responseBody": "OK",
-                "options": {}
-            },
-            "id": "responder-webhook",
-            "name": "↩️ ACK al Webhook",
-            "type": "n8n-nodes-base.respondToWebhook",
-            "typeVersion": 1,
-            "position": [
-                200,
-                100
-            ]
-        },
-        {
-            "parameters": {
-                "jsCode": "// ─────────────────────────────────────────────\n// Normalizar el payload de Evolution API\n// ─────────────────────────────────────────────\nconst body = $input.first().json.body;\n\n// Extraer teléfono (quitar @s.whatsapp.net)\nconst remoteJid = body?.data?.key?.remoteJid || '';\nconst telefono = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');\n\n// Extraer texto del mensaje\nconst msgData = body?.data?.message || {};\nconst mensaje = \n  msgData?.conversation ||\n  msgData?.extendedTextMessage?.text ||\n  msgData?.imageMessage?.caption ||\n  '';\n\n// Detectar si tiene imagen\nconst messageType = body?.data?.messageType || '';\nconst tiene_imagen = ['imageMessage', 'documentMessage'].includes(messageType);\n\n// El check de administrador se hace directamente en FastAPI por seguridad\nconst es_admin = false;\n\n// Ignorar mensajes propios o de grupos\nconst from_me = body?.data?.key?.fromMe || false;\nif (from_me || remoteJid.includes('@g.us')) {\n  return [{ json: { ignorar: true } }];\n}\n\nreturn [{\n  json: {\n    telefono,\n    mensaje: mensaje.trim(),\n    tiene_imagen,\n    es_admin,\n    ignorar: false\n  }\n}];"
-            },
-            "id": "normalizar-payload",
-            "name": "🔧 Normalizar Payload",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                400,
-                300
-            ]
-        },
-        {
-            "parameters": {
-                "conditions": {
-                    "options": {
-                        "caseSensitive": false,
-                        "leftValue": "",
-                        "typeValidation": "strict"
-                    },
-                    "conditions": [
-                        {
-                            "id": "check-ignorar",
-                            "leftValue": "={{ $json.ignorar }}",
-                            "rightValue": true,
-                            "operator": {
-                                "type": "boolean",
-                                "operation": "notTrue"
-                            }
-                        }
-                    ],
-                    "combinator": "and"
-                },
-                "options": {}
-            },
-            "id": "if-ignorar",
-            "name": "🚦 ¿Procesar?",
-            "type": "n8n-nodes-base.if",
-            "typeVersion": 2,
-            "position": [
-                620,
-                300
-            ]
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "https://system-ia-agentes.onrender.com/comercio/mensaje",
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "Content-Type",
-                            "value": "application/json"
-                        }
-                    ]
-                },
-                "sendBody": true,
-                "bodyParameters": {
-                    "parameters": [
-                        {
-                            "name": "telefono",
-                            "value": "={{ $json.telefono }}"
-                        },
-                        {
-                            "name": "mensaje",
-                            "value": "={{ $json.mensaje }}"
-                        },
-                        {
-                            "name": "tiene_imagen",
-                            "value": "={{ $json.tiene_imagen }}"
-                        },
-                        {
-                            "name": "es_admin",
-                            "value": "={{ $json.es_admin }}"
-                        }
-                    ]
-                },
-                "options": {
-                    "timeout": 30000
-                }
-            },
-            "id": "llamar-fastapi",
-            "name": "🧠 FastAPI — Cerebro IA",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.2,
-            "position": [
-                840,
-                300
-            ]
-        },
-        {
-            "parameters": {
-                "conditions": {
-                    "options": {
-                        "caseSensitive": false
-                    },
-                    "conditions": [
-                        {
-                            "id": "check-notificar",
-                            "leftValue": "={{ $json.notificar_dueno }}",
-                            "rightValue": true,
-                            "operator": {
-                                "type": "boolean",
-                                "operation": "true"
-                            }
-                        }
-                    ],
-                    "combinator": "and"
-                },
-                "options": {}
-            },
-            "id": "if-notificar-dueno",
-            "name": "🔔 ¿Notificar Dueño?",
-            "type": "n8n-nodes-base.if",
-            "typeVersion": 2,
-            "position": [
-                1060,
-                300
-            ]
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "apikey",
-                            "value": "={{ $env.EVOLUTION_API_KEY }}"
-                        },
-                        {
-                            "name": "Content-Type",
-                            "value": "application/json"
-                        }
-                    ]
-                },
-                "sendBody": true,
-                "specifyBody": "json",
-                "jsonBody": "={\n  \"number\": \"{{ $env.NUMERO_DUENO }}\",\n  \"text\": \"{{ $('🧠 FastAPI — Cerebro IA').item.json.mensaje_para_dueno }}\"\n}",
-                "options": {}
-            },
-            "id": "notificar-dueno",
-            "name": "📲 WhatsApp → Dueño",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.2,
-            "position": [
-                1280,
-                160
-            ]
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "apikey",
-                            "value": "={{ $env.EVOLUTION_API_KEY }}"
-                        },
-                        {
-                            "name": "Content-Type",
-                            "value": "application/json"
-                        }
-                    ]
-                },
-                "sendBody": true,
-                "specifyBody": "json",
-                "jsonBody": "={\n  \"number\": \"{{ $('🔧 Normalizar Payload').item.json.telefono }}\",\n  \"text\": \"{{ $('🧠 FastAPI — Cerebro IA').item.json.respuesta }}\"\n}",
-                "options": {}
-            },
-            "id": "responder-cliente",
-            "name": "💬 WhatsApp → Cliente",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.2,
-            "position": [
-                1280,
-                440
-            ]
-        }
-    ],
-    "connections": {
-        "📥 Webhook Evolution API": {
-            "main": [
-                [
-                    {
-                        "node": "↩️ ACK al Webhook",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "🔧 Normalizar Payload",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "🔧 Normalizar Payload": {
-            "main": [
-                [
-                    {
-                        "node": "🚦 ¿Procesar?",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "🚦 ¿Procesar?": {
-            "main": [
-                [
-                    {
-                        "node": "🧠 FastAPI — Cerebro IA",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                []
-            ]
-        },
-        "🧠 FastAPI — Cerebro IA": {
-            "main": [
-                [
-                    {
-                        "node": "🔔 ¿Notificar Dueño?",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "🔔 ¿Notificar Dueño?": {
-            "main": [
-                [
-                    {
-                        "node": "📲 WhatsApp → Dueño",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "💬 WhatsApp → Cliente",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "💬 WhatsApp → Cliente",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
+  "name": "🍽️ Comercio Electrónica — Bot Conversacional",
+  "nodes": [
+    {
+      "parameters": {"httpMethod": "POST", "path": "comercio-whatsapp-in", "responseMode": "responseNode", "options": {}},
+      "id": "webhook-entrada",
+      "name": "📥 Webhook Evolution API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 304],
+      "webhookId": "comercio-whatsapp-in"
     },
-    "settings": {
-        "executionOrder": "v1"
+    {
+      "parameters": {"respondWith": "text", "responseBody": "OK", "options": {}},
+      "id": "responder-webhook",
+      "name": "↩️ ACK al Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [208, 112]
     },
-    "staticData": null,
-    "tags": [
-        {
-            "name": "gastronomico"
-        },
-        {
-            "name": "basic"
-        },
-        {
-            "name": "produccion"
-        }
-    ],
-    "meta": {
-        "templateId": "restaurante-basic-v1"
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst event = body?.event || '';\nif (event !== 'messages.upsert') { return [{ json: { ignorar: true } }]; }\nconst messageId = body?.data?.key?.id || '';\nconst remoteJid = body?.data?.key?.remoteJid || '';\nconst telefono = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');\nconst msgData = body?.data?.message || {};\nconst mensaje = msgData?.conversation || msgData?.extendedTextMessage?.text || msgData?.imageMessage?.caption || '';\nconst messageType = body?.data?.messageType || '';\nconst tiene_imagen = ['imageMessage', 'documentMessage'].includes(messageType);\nconst es_admin = false;\nconst from_me = body?.data?.key?.fromMe || false;\nif (from_me || remoteJid.includes('@g.us')) { return [{ json: { ignorar: true } }]; }\nif (!remoteJid.endsWith('@s.whatsapp.net')) { return [{ json: { ignorar: true } }]; }\nif (!mensaje.trim()) { return [{ json: { ignorar: true } }]; }\nreturn [{ json: { telefono, mensaje: mensaje.trim(), tiene_imagen, es_admin, ignorar: false, messageId } }];"
+      },
+      "id": "normalizar-payload",
+      "name": "🔧 Normalizar Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 304]
+    },
+    {
+      "parameters": {
+        "conditions": {"combinator": "and", "conditions": [{"id": "check-ignorar", "leftValue": "={{ $json.ignorar }}", "operator": {"operation": "false", "type": "boolean"}, "rightValue": false}], "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"}},
+        "options": {}
+      },
+      "id": "if-ignorar",
+      "name": "🚦 ¿Procesar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [624, 304]
+    },
+    {
+      "parameters": {
+        "bodyParameters": {"parameters": [{"name": "telefono", "value": "={{ $json.telefono }}"}, {"name": "mensaje", "value": "={{ $json.mensaje }}"}, {"name": "tiene_imagen", "value": "={{ $json.tiene_imagen }}"}, {"name": "es_admin", "value": "={{ $json.es_admin }}"}, {"name": "message_id", "value": "={{ $json.messageId }}"}]},
+        "headerParameters": {"parameters": [{"name": "Content-Type", "value": "application/json"}]},
+        "method": "POST",
+        "options": {"timeout": 30000},
+        "sendBody": true,
+        "sendHeaders": true,
+        "url": "https://system-ia-agentes.onrender.com/comercio/mensaje"
+      },
+      "id": "llamar-fastapi",
+      "name": "🧠 FastAPI — Cerebro IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [832, 288]
+    },
+    {
+      "parameters": {
+        "conditions": {"combinator": "and", "conditions": [{"id": "check-dup", "leftValue": "={{ $json.tipo_mensaje }}", "operator": {"operation": "notEquals", "type": "string"}, "rightValue": "ignorar"}], "options": {"caseSensitive": false}},
+        "options": {}
+      },
+      "id": "if-no-dup",
+      "name": "🚫 ¿Duplicado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [992, 288]
+    },
+    {
+      "parameters": {
+        "conditions": {"combinator": "and", "conditions": [{"id": "check-notificar", "leftValue": "={{ $json.notificar_dueno }}", "operator": {"operation": "true", "type": "boolean"}, "rightValue": true}], "options": {"caseSensitive": false}},
+        "options": {}
+      },
+      "id": "if-notificar-dueno",
+      "name": "🔔 ¿Notificar Dueño?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1200, 272]
+    },
+    {
+      "id": "preparar-envio",
+      "name": "Preparar Envio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 440],
+      "parameters": {
+        "jsCode": "const fastapi = $('🧠 FastAPI — Cerebro IA').first().json;\nconst telefono = $('🔧 Normalizar Payload').first().json.telefono || '';\nconst respuesta = fastapi.respuesta || '';\nconst tipoMsg = String(fastapi.tipo_mensaje || 'texto');\nconst imagenUrl = String(fastapi.imagen_url || '');\nconst esImagen = (tipoMsg === 'imagen' && imagenUrl.length > 10) ? true : false;\nreturn [{ json: { telefono, respuesta, tipo_mensaje: tipoMsg, imagen_url: imagenUrl, es_imagen: esImagen } }];"
+      }
+    },
+    {
+      "id": "if-es-imagen",
+      "name": "Es Imagen",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1700, 440],
+      "parameters": {
+        "conditions": {"options": {}, "combinator": "and", "conditions": [{"id": "check-bool", "leftValue": "={{ $json.es_imagen }}", "rightValue": true, "operator": {"type": "boolean", "operation": "true"}}]},
+        "options": {}
+      }
+    },
+    {
+      "id": "enviar-img",
+      "name": "WA Imagen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1920, 340],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "url": "http://sytem_ia_pruebas_evolution-api:8080/message/sendMedia/System%20IA%20Demo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefono, mediatype: 'image', media: $json.imagen_url, caption: $json.respuesta }) }}",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Content-Type", "value": "application/json"}]},
+        "options": {}
+      },
+      "credentials": {"httpHeaderAuth": {"id": "ZL2CdsQqaFeTMR2w", "name": "Header Auth Evolution api"}}
+    },
+    {
+      "id": "enviar-txt",
+      "name": "WA Texto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1920, 540],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "url": "http://sytem_ia_pruebas_evolution-api:8080/message/sendText/System%20IA%20Demo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefono, text: $json.respuesta }) }}",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Content-Type", "value": "application/json"}]},
+        "options": {}
+      },
+      "credentials": {"httpHeaderAuth": {"id": "ZL2CdsQqaFeTMR2w", "name": "Header Auth Evolution api"}}
     }
+  ],
+  "connections": {
+    "📥 Webhook Evolution API": {"main": [[{"node": "↩️ ACK al Webhook", "type": "main", "index": 0}, {"node": "🔧 Normalizar Payload", "type": "main", "index": 0}]]},
+    "🔧 Normalizar Payload": {"main": [[{"node": "🚦 ¿Procesar?", "type": "main", "index": 0}]]},
+    "🚦 ¿Procesar?": {"main": [[{"node": "🧠 FastAPI — Cerebro IA", "type": "main", "index": 0}]]},
+    "🧠 FastAPI — Cerebro IA": {"main": [[{"node": "🚫 ¿Duplicado?", "type": "main", "index": 0}]]},
+    "🚫 ¿Duplicado?": {"main": [[{"node": "🔔 ¿Notificar Dueño?", "type": "main", "index": 0}]]},
+    "🔔 ¿Notificar Dueño?": {"main": [[{"node": "Preparar Envio", "type": "main", "index": 0}], [{"node": "Preparar Envio", "type": "main", "index": 0}]]},
+    "Preparar Envio": {"main": [[{"node": "Es Imagen", "type": "main", "index": 0}]]},
+    "Es Imagen": {"main": [[{"node": "WA Imagen", "type": "main", "index": 0}], [{"node": "WA Texto", "type": "main", "index": 0}]]}
+  }
 }
