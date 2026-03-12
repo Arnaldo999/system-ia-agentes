@@ -137,6 +137,36 @@
         "options": {}
       },
       "credentials": {"httpHeaderAuth": {"id": "ZL2CdsQqaFeTMR2w", "name": "Header Auth Evolution api"}}
+    },
+    {
+      "id": "notif-dueno-code",
+      "name": "Formato Alerta Dueno",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, 80],
+      "parameters": {
+        "jsCode": "const fastapi = $('🧠 FastAPI — Cerebro IA').first().json;\nconst telefono_cliente = $('🔧 Normalizar Payload').first().json.telefono || 'desconocido';\nconst accion = fastapi.accion_ejecutada || 'lead';\nconst respuesta_bot = fastapi.respuesta || '';\nconst ahora = new Date().toLocaleString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'});\nlet texto;\nif (accion === 'lead_notificado') {\n  texto = `🔥 *LEAD CALIFICADO — Casa Electrónica*\\n\\n📱 Cliente: ${telefono_cliente}\\n💬 Bot respondió: ${respuesta_bot.substring(0, 100)}...\\n⏰ ${ahora}`;\n} else {\n  texto = `📞 *CLIENTE PIDE VENDEDOR — Casa Electrónica*\\n\\n📱 Cliente: ${telefono_cliente}\\n💬 Bot respondió: ${respuesta_bot.substring(0, 100)}...\\n⏰ ${ahora}`;\n}\nreturn [{ json: { texto_alerta: texto, telefono_dueno: '' } }];"
+      }
+    },
+    {
+      "id": "notif-dueno-wa",
+      "name": "WA Notif Dueno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1620, 80],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "url": "http://sytem_ia_pruebas_evolution-api:8080/message/sendText/System%20IA%20Demo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefono_dueno, text: $json.texto_alerta }) }}",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Content-Type", "value": "application/json"}]},
+        "options": {}
+      },
+      "credentials": {"httpHeaderAuth": {"id": "ZL2CdsQqaFeTMR2w", "name": "Header Auth Evolution api"}}
     }
   ],
   "connections": {
@@ -145,8 +175,9 @@
     "🚦 ¿Procesar?": {"main": [[{"node": "🧠 FastAPI — Cerebro IA", "type": "main", "index": 0}]]},
     "🧠 FastAPI — Cerebro IA": {"main": [[{"node": "🚫 ¿Duplicado?", "type": "main", "index": 0}]]},
     "🚫 ¿Duplicado?": {"main": [[{"node": "🔔 ¿Notificar Dueño?", "type": "main", "index": 0}]]},
-    "🔔 ¿Notificar Dueño?": {"main": [[{"node": "Preparar Envio", "type": "main", "index": 0}], [{"node": "Preparar Envio", "type": "main", "index": 0}]]},
+    "🔔 ¿Notificar Dueño?": {"main": [[{"node": "Preparar Envio", "type": "main", "index": 0}, {"node": "Formato Alerta Dueno", "type": "main", "index": 0}], [{"node": "Preparar Envio", "type": "main", "index": 0}]]},
     "Preparar Envio": {"main": [[{"node": "Es Imagen", "type": "main", "index": 0}]]},
-    "Es Imagen": {"main": [[{"node": "WA Imagen", "type": "main", "index": 0}], [{"node": "WA Texto", "type": "main", "index": 0}]]}
+    "Es Imagen": {"main": [[{"node": "WA Imagen", "type": "main", "index": 0}], [{"node": "WA Texto", "type": "main", "index": 0}]]},
+    "Formato Alerta Dueno": {"main": [[{"node": "WA Notif Dueno", "type": "main", "index": 0}]]}
   }
 }
