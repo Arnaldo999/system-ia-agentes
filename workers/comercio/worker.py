@@ -383,6 +383,154 @@ def ejecutar_accion(accion_data: dict, telefono: str, nombre_contacto: str = "")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# NAVEGACIÓN POR NÚMEROS (determinística — no depende de Gemini)
+# ─────────────────────────────────────────────────────────────────────────────
+def _get_categorias_catalogo() -> list[str]:
+    """Devuelve lista ordenada de categorías únicas del catálogo Airtable."""
+    records = at_get_catalogo()
+    categorias = []
+    seen = set()
+    for rec in records:
+        f = rec["fields"]
+        disponible = f.get("Disponible", f.get("Disponibilidad", False))
+        if disponible == 1 or str(disponible).lower() == "true":
+            disponible = True
+        if not disponible:
+            continue
+        cat = f.get("Categoria", f.get("Categoría", "Otros"))
+        if isinstance(cat, list):
+            cat = cat[0] if cat else "Otros"
+        if cat not in seen:
+            seen.add(cat)
+            categorias.append(cat)
+    return categorias
+
+
+def _get_productos_categoria(categoria: str) -> list[dict]:
+    """Devuelve productos de una categoría específica."""
+    records = at_get_catalogo()
+    productos = []
+    for rec in records:
+        f = rec["fields"]
+        disponible = f.get("Disponible", f.get("Disponibilidad", False))
+        if disponible == 1 or str(disponible).lower() == "true":
+            disponible = True
+        if not disponible:
+            continue
+        cat = f.get("Categoria", f.get("Categoría", "Otros"))
+        if isinstance(cat, list):
+            cat = cat[0] if cat else "Otros"
+        if cat.lower() == categoria.lower():
+            imagen_raw = f.get("Imagen", f.get("imagen", ""))
+            imagen_url = ""
+            if isinstance(imagen_raw, list) and imagen_raw:
+                imagen_url = imagen_raw[0].get("url", "")
+            elif isinstance(imagen_raw, str):
+                imagen_url = imagen_raw
+            productos.append({
+                "nombre": f.get("Nombre", ""),
+                "precio": f.get("Precio", 0),
+                "descripcion": f.get("Descripcion", f.get("Descripción Técnica", "")),
+                "imagen_url": imagen_url,
+            })
+    return productos
+
+
+def _formato_categorias(categorias: list[str]) -> str:
+    """Formatea la lista de categorías con emojis numéricos."""
+    nums = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+    lineas = ["*Categorías disponibles:*"]
+    for i, cat in enumerate(categorias):
+        emoji = nums[i] if i < len(nums) else f"{i+1}."
+        lineas.append(f"{emoji} {cat}")
+    lineas.append("\n¿Qué categoría te interesa?")
+    return "\n".join(lineas)
+
+
+def _formato_productos(categoria: str, productos: list[dict]) -> str:
+    """Formatea los productos de una categoría."""
+    lineas = [f"*Productos en {categoria}:*\n"]
+    for p in productos:
+        precio = f"${p['precio']:,.0f}".replace(",", ".") if p['precio'] else "Consultar"
+        desc = f"\n  _{p['descripcion'][:80]}_" if p['descripcion'] else ""
+        lineas.append(f"• *{p['nombre']}* — {precio} ARS{desc}\n")
+    lineas.append("Si te interesa alguno, decime y te derivo con nuestro encargado para la compra. 🛒")
+    lineas.append("\n_Escribí *0* para volver al menú principal._")
+    return "\n".join(lineas)
+
+
+def _detectar_contexto(historial: list) -> str:
+    """Detecta en qué punto del flujo está la conversación.
+    Retorna: 'menu_principal', 'lista_categorias', 'productos', 'otro'
+    """
+    if not historial:
+        return "menu_principal"
+    # Buscar último mensaje del bot
+    for turno in reversed(historial):
+        if turno.get("role") == "model":
+            texto = turno["content"].lower()
+            if "categorías disponibles" in texto or "qué categoría te interesa" in texto:
+                return "lista_categorias"
+            if "ver categorías de productos" in texto and "hablar con un asesor" in texto:
+                return "menu_principal"
+            if "productos en" in texto or "te derivo con nuestro encargado" in texto:
+                return "productos"
+            return "otro"
+    return "menu_principal"
+
+
+def _resolver_navegacion(msg: str, historial: list, tel: str) -> dict | None:
+    """
+    Resuelve navegación por números de forma determinística.
+    Retorna dict de respuesta si se resolvió, None si debe pasar a Gemini.
+    """
+    # Solo interceptar si el mensaje es un número puro
+    if not msg.strip().isdigit():
+        return None
+
+    num = int(msg.strip())
+    contexto = _detectar_contexto(historial)
+
+    if contexto == "menu_principal":
+        if num == 1:
+            # Mostrar categorías
+            categorias = _get_categorias_catalogo()
+            if not categorias:
+                respuesta = "No hay productos disponibles en este momento. Intentá más tarde."
+            else:
+                respuesta = _formato_categorias(categorias)
+            historial.append({"role": "user", "content": msg})
+            historial.append({"role": "model", "content": respuesta})
+            CONVERSACIONES.save(tel, historial)
+            return {"respuesta": respuesta, "tipo_mensaje": "texto",
+                    "imagen_url": None, "accion_ejecutada": None, "notificar_dueno": False}
+        elif num == 2:
+            # Hablar con asesor — dejar que Gemini maneje la derivación
+            return None
+
+    elif contexto == "lista_categorias":
+        categorias = _get_categorias_catalogo()
+        idx = num - 1
+        if 0 <= idx < len(categorias):
+            cat = categorias[idx]
+            productos = _get_productos_categoria(cat)
+            if not productos:
+                respuesta = f"No hay productos disponibles en *{cat}* en este momento."
+            else:
+                respuesta = _formato_productos(cat, productos)
+            historial.append({"role": "user", "content": msg})
+            historial.append({"role": "model", "content": respuesta})
+            CONVERSACIONES.save(tel, historial)
+            return {"respuesta": respuesta, "tipo_mensaje": "texto",
+                    "imagen_url": None, "accion_ejecutada": None, "notificar_dueno": False}
+        # Número fuera de rango — pasar a Gemini
+        return None
+
+    # Cualquier otro contexto con número — dejar a Gemini
+    return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MODELOS PYDANTIC
 # ─────────────────────────────────────────────────────────────────────────────
 class MensajeComercio(BaseModel):
@@ -444,6 +592,12 @@ async def manejar_mensaje(entrada: MensajeComercio):
 
     # ── Catálogo dinámico ─────────────────────────────────────────────────
     catalogo_texto = at_get_catalogo_texto(solo_disponibles=False)
+
+    # ── Navegación por números (determinística, sin depender de Gemini) ──
+    # Detecta el contexto del último mensaje del bot para resolver números
+    nav_respuesta = _resolver_navegacion(msg_lower, historial, tel)
+    if nav_respuesta:
+        return nav_respuesta
 
     # ── Modelo con contexto ──────────────────────────────────────────────
     modelo_con_ctx = genai.GenerativeModel(
