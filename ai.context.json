@@ -1,0 +1,41 @@
+{
+  "agencia": "System IA",
+  "fundadores": [
+    "Arnaldo Ayala",
+    "Micaela Colmenares"
+  ],
+  "timestamp_ultima_actualizacion": "2026-03-13T17:45:00",
+  "agente_activo": "orquestador",
+  "ultimo_modelo": "antigravity",
+  "proyecto_actual_system_ia": {
+    "cliente": "Agencia Automotriz VIP",
+    "tipo_automatizacion": "n8n",
+    "fase": "ventas",
+    "estado": "brief-incompleto"
+  },
+  "subagentes": {
+    "orquestador": {
+      "status": "activo",
+      "path": ".agents/01-orquestador/AGENT.md"
+    },
+    "ventas": {
+      "status": "espera",
+      "path": "01_VENTAS_CONSULTIVO/AGENT.md"
+    },
+    "dev": {
+      "status": "espera",
+      "path": "02_DEV_N8N_ARCHITECT/AGENT.md"
+    },
+    "crm": {
+      "status": "espera",
+      "path": "03_CRM_ANALYST/AGENT.md"
+    }
+  },
+  "alertas_urgentes": [
+    "Brief de 'Agencia Automotriz VIP' requiere atención. Micaela debe completar los campos marcados con []."
+  ],
+  "creditos_agotados": {
+    "claude": false,
+    "gemini": false
+  }
+}

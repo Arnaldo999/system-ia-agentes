@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx n8n-mcp:*)",
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "mcp__n8n__n8n_update_partial_workflow",
+      "mcp__n8n__n8n_validate_workflow",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:ai.google.dev)",
+      "mcp__n8n__n8n_executions",
+      "Bash(python3:*)",
+      "mcp__n8n__n8n_list_workflows",
+      "mcp__n8n__n8n_create_workflow",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -H \"X-N8N-API-KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZDAzODMwMC1mNDJmLTQ3NzQtODhhOC00YmFkZjI0NTk1N2IiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiODhjMjM4MDQtMzE1My00ZTRhLWIyZDAtMTkwMmI1YzhmMWQyIiwiaWF0IjoxNzcyMTQ4MDMzfQ.EOmMTQqZtbppYtVztUzWgfafM_mS9JE4s1OJcGD-JTg\" \"https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host/api/v1/workflows?limit=5\")",
+      "Bash(curl -s -H \"X-N8N-API-KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZDAzODMwMC1mNDJmLTQ3NzQtODhhOC00YmFkZjI0NTk1N2IiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiODhjMjM4MDQtMzE1My00ZTRhLWIyZDAtMTkwMmI1YzhmMWQyIiwiaWF0IjoxNzcyMTQ4MDMzfQ.EOmMTQqZtbppYtVztUzWgfafM_mS9JE4s1OJcGD-JTg\" \"https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host/api/v1/workflows?limit=50\" )",
+      "Bash(sort -k6 -r)",
+      "Bash(curl -s -H \"X-N8N-API-KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZDAzODMwMC1mNDJmLTQ3NzQtODhhOC00YmFkZjI0NTk1N2IiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiODhjMjM4MDQtMzE1My00ZTRhLWIyZDAtMTkwMmI1YzhmMWQyIiwiaWF0IjoxNzcyMTQ4MDMzfQ.EOmMTQqZtbppYtVztUzWgfafM_mS9JE4s1OJcGD-JTg\" \"https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host/api/v1/workflows/9oQ2AOQEk3gys1DJ\" )",
+      "Bash(curl -s -H \"X-N8N-API-KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZDAzODMwMC1mNDJmLTQ3NzQtODhhOC00YmFkZjI0NTk1N2IiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiODhjMjM4MDQtMzE1My00ZTRhLWIyZDAtMTkwMmI1YzhmMWQyIiwiaWF0IjoxNzcyMTQ4MDMzfQ.EOmMTQqZtbppYtVztUzWgfafM_mS9JE4s1OJcGD-JTg\" \"https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host/api/v1/credentials\" )",
+      "Bash(1 head -5 /tmp/workflow_updated.json)",
+      "Bash(curl -s -H \"X-N8N-API-KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmI5ZDg4Ny0zMTgzLTQ2YjEtOWRiNC1jMzhiNTRlZjJjYjYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiODExYzlhMTYtNWJiOS00MGNjLTgwYzktNmE3ZTc3OGIxYjNjIiwiaWF0IjoxNzcyNDQ4MDIzfQ.jHNTu63Iyg7R-oH-IG6Q5Pl1SPFNpEXt9_iEPJ6_l10\" \"https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host/api/v1/workflows?limit=50\")"
+    ]
+  }
+}

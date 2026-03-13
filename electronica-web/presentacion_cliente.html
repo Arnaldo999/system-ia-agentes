@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Propuesta System IA — Electrónica & Hogar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #050505;
+      --cyan: #00f2fe;
+      --blue: #4facfe;
+      --green: #25D366;
+      --yellow: #FFE600;
+      --orange: #FFA500;
+      --fb-blue: #1877F2;
+      --ml-yellow: #FFE600;
+      --text: #fcfcfc;
+      --muted: #8a8a9a;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.1);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; }
+
+    /* ─── SLIDE ENGINE ─── */
+    .deck { width:100%; height:100vh; position:relative; }
+    .slide {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:2rem 3rem;
+      opacity:0; pointer-events:none;
+      transition: opacity .5s ease, transform .5s ease;
+      transform: translateX(60px);
+      overflow:hidden;
+    }
+    .slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+    .slide.exit   { opacity:0; transform:translateX(-60px); }
+    .slide::before {
+      content:''; position:absolute; inset:0; z-index:-1;
+      background: radial-gradient(ellipse at 50% 50%, rgba(79,172,254,.07) 0%, transparent 70%);
+    }
+
+    /* ─── NAV ─── */
+    .nav-bar {
+      position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
+      display:flex; align-items:center; gap:1.2rem; z-index:100;
+      background:rgba(10,10,10,.8); border:1px solid var(--border);
+      padding:.6rem 1.2rem; border-radius:50px;
+      backdrop-filter:blur(12px);
+    }
+    .nav-btn {
+      background:none; border:none; color:var(--muted); cursor:pointer;
+      font-size:1.1rem; padding:.3rem .6rem; border-radius:8px;
+      transition:.2s;
+    }
+    .nav-btn:hover { color:var(--cyan); background:rgba(0,242,254,.1); }
+    .dots { display:flex; gap:.5rem; }
+    .dot {
+      width:8px; height:8px; border-radius:50%;
+      background:var(--border); cursor:pointer; transition:.3s;
+    }
+    .dot.on { background:var(--cyan); width:22px; border-radius:4px; }
+    .slide-count { font-size:.75rem; color:var(--muted); min-width:40px; text-align:center; }
+
+    /* ─── BADGE ─── */
+    .sia-badge {
+      position:fixed; top:1.5rem; left:2rem; z-index:100;
+      font-family:'Outfit',sans-serif; font-weight:800; font-size:1rem;
+      background:linear-gradient(90deg,var(--cyan),var(--blue));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+
+    /* ─── TYPOGRAPHY ─── */
+    .slide-label { font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--cyan); margin-bottom:.6rem; }
+    h1.big { font-family:'Outfit',sans-serif; font-size:clamp(2rem,4.5vw,4rem); font-weight:900; line-height:1.1; text-align:center; }
+    h2.title { font-family:'Outfit',sans-serif; font-size:clamp(1.5rem,3vw,2.6rem); font-weight:800; line-height:1.2; text-align:center; }
+    .grad { background:linear-gradient(90deg,var(--cyan),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .grad-y { background:linear-gradient(90deg,var(--yellow),var(--orange)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .lead { font-size:1.05rem; color:var(--muted); line-height:1.7; text-align:center; max-width:650px; }
+
+    /* ─── CARDS & COMPONENTS ─── */
+    .glass { background:var(--card); border:1px solid var(--border); border-radius:16px; backdrop-filter:blur(8px); }
+
+    /* FB CARD */
+    .fb-card {
+      background:#fff; border-radius:12px; width:340px; overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,.5); color:#1c1e21;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      flex-shrink:0; margin: 0 auto;
+    }
+    .fb-header { display:flex; align-items:center; gap:10px; padding:12px 16px; }
+    .fb-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#1877F2,#42b72a); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:.85rem; }
+    .fb-page-info { flex:1; }
+    .fb-page-name { font-weight:700; font-size:.9rem; color:#050505; }
+    .fb-sponsored { font-size:.75rem; color:#65676B; }
+    .fb-more { color:#65676B; font-size:1.2rem; cursor:pointer; }
+    .fb-copy { padding:0 16px 12px; font-size:.88rem; line-height:1.5; color:#050505; }
+    .fb-image { width:100%; height:200px; background:linear-gradient(135deg,#d4a96a 0%,#b8855a 30%,#8B6914 60%,#c49a3c 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .fb-image-label { text-align:center; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+    .fb-image-label .emoji { font-size:2.5rem; display:block; }
+    .fb-image-label .name { font-size:.9rem; font-weight:700; margin-top:.3rem; }
+    .fb-cta-bar { display:flex; justify-content:space-between; align-items:center; padding:8px 16px; border-top:1px solid #e4e6eb; }
+    .fb-cta-btn { background:var(--fb-blue); color:#fff; border:none; border-radius:6px; padding:8px 16px; font-weight:700; font-size:.85rem; cursor:pointer; }
+    
+    /* WA MOCKUP */
+    .wp-phone { width:300px; background:#111; border-radius:36px; padding:12px; box-shadow:0 30px 80px rgba(0,0,0,.6); border:2px solid #222; flex-shrink:0; }
+    .wp-screen { background:#0b1014; border-radius:28px; overflow:hidden; }
+    .wp-bar { background:#1f2c34; padding:10px 14px; display:flex; align-items:center; gap:10px; }
+    .wp-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--cyan),var(--blue)); display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+    .wp-info { display: flex; flex-direction: column; }
+    .wp-info strong { font-size:.82rem; color:#e9edef; }
+    .wp-info span { font-size:.72rem; color:var(--green); }
+    .wp-msgs { padding:10px 12px; display:flex; flex-direction:column; gap:8px; min-height:200px; }
+    .wp-msg { max-width:85%; border-radius:10px; padding:8px 12px; font-size:.78rem; line-height:1.45; }
+    .wp-msg.r { background:#1f2c34; color:#e9edef; align-self:flex-start; border-bottom-left-radius:2px; }
+    .wp-msg.s { background:#005c4b; color:#e9edef; align-self:flex-end; border-bottom-right-radius:2px; text-align:right; }
+    .wp-msg.s .tick { color:var(--cyan); font-size:.65rem; }
+
+    /* JOURNEY & FLOWS */
+    .journey { display:flex; gap:2rem; align-items:center; justify-content:center; width:100%; max-width:1100px; }
+    .journey-flow { flex:1; display:flex; flex-direction:column; gap:1.2rem; }
+    .jstep { display:flex; align-items:center; gap:1rem; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1rem 1.2rem; }
+    .jstep-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+    .jstep-text strong { display:block; font-size:.88rem; margin-bottom:.1rem; }
+    .jstep-text span { font-size:.75rem; color:var(--muted); }
+    .jstep.active-step { border-color:rgba(0,242,254,.4); background:rgba(0,242,254,.04); }
+    .jstep.active-step .jstep-icon { background:rgba(0,242,254,.15); }
+
+    /* PATH CARDS */
+    .path-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.2rem; width:100%; max-width:1000px; }
+    .path-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:1.5rem; cursor:pointer; transition:.3s; position:relative; overflow:hidden; }
+    .path-card:hover { border-color:var(--cyan); transform:translateY(-4px); }
+    .path-card.hot { border-color:rgba(0,242,254,.5); }
+    .path-num { font-family:'Outfit',sans-serif; font-size:2.5rem; font-weight:900; opacity:.15; line-height:1; margin-bottom:.5rem; }
+    .path-title { font-family:'Outfit',sans-serif; font-size:1rem; font-weight:700; margin-bottom:.5rem; }
+    .path-desc { font-size:.78rem; color:var(--muted); line-height:1.5; margin-bottom:1rem; }
+    .path-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.7rem; padding:.25rem .6rem; border-radius:20px; margin-bottom:.8rem; }
+    .path-badge.fb-col { background:rgba(24,119,242,.15); color:#4facfe; }
+    .path-badge.ml-col { background:rgba(255,230,0,.12); color:var(--yellow); }
+    .path-badge.web-col{ background:rgba(0,242,254,.1); color:var(--cyan); }
+
+    /* FLOW ICONS */
+    .flow { display:flex; align-items:center; gap:.5rem; justify-content:flex-start; margin-bottom:1rem; }
+    .flow-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.9rem; border:1px solid var(--border); }
+    .flow-icon.fb { background:rgba(24,119,242,.15); border-color:rgba(24,119,242,.4); }
+    .flow-icon.wa { background:rgba(37,211,102,.12); border-color:rgba(37,211,102,.4); }
+    .flow-icon.ml { background:rgba(255,230,0,.1);  border-color:rgba(255,230,0,.4); }
+    .flow-icon.web{ background:rgba(0,242,254,.1);  border-color:rgba(0,242,254,.4); }
+    .flow-icon.vos{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.25); }
+
+    /* COVER */
+    .cover-sub { font-size:1rem; color:var(--muted); margin-top:1rem; max-width:500px; text-align:center; }
+    .cover-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    .start-btn { margin-top:2.5rem; background:linear-gradient(90deg,var(--cyan),var(--blue)); color:#050505; border:none; padding:.9rem 2.5rem; border-radius:50px; font-weight:800; font-size:1rem; cursor:pointer; font-family:'Outfit',sans-serif; transition:.2s; }
+    .start-btn:hover { transform:scale(1.05); box-shadow:0 0 30px rgba(0,242,254,.3); }
+
+    /* CTA BOX (NO PRICING) */
+    .cta-box { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:2.5rem 3rem; text-align:center; max-width:600px; margin-top:1rem; }
+    .cta-box h2 { font-family:'Outfit',sans-serif; font-size:1.8rem; font-weight:800; margin-bottom:1rem; line-height:1.3; }
+    .cta-box p { font-size:.95rem; color:var(--muted); margin-bottom:1.5rem; line-height:1.7; }
+
+    /* ANIMACIONES */
+    @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    .slide.active > * { animation: fadeInUp .5s ease forwards; }
+    .slide.active > *:nth-child(2) { animation-delay:.1s; }
+    .slide.active > *:nth-child(3) { animation-delay:.18s; }
+    .slide.active > *:nth-child(4) { animation-delay:.26s; }
+    .slide.active > *:nth-child(5) { animation-delay:.34s; }
+    .pulse { position:absolute; inset:-4px; border-radius:18px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,242,254,.4)} 50%{box-shadow:0 0 0 8px rgba(0,242,254,0)} }
+
+  </style>
+</head>
+<body>
+
+<div class="sia-badge">⚡ System IA</div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: PORTADA -->
+  <div class="slide active" id="s0">
+    <div class="cover-icon">🚀</div>
+    <h1 class="big">De un click en un anuncio<br><span class="grad">a un cliente que te paga</span></h1>
+    <p class="cover-sub">Así es exactamente cómo trabaja nuestro ecosistema para generar ventas en tu rubro 100% en automático.</p>
+    <button class="start-btn" onclick="next()">Ver el proceso completo <i class="fa-solid fa-arrow-right"></i></button>
+  </div>
+
+  <!-- SLIDE 2: EL PROBLEMA -->
+  <div class="slide" id="s1">
+    <div class="slide-label">El desafío de hoy</div>
+    <h2 class="title" style="margin-bottom:.5rem;">Lo que vive tu negocio <span style="color:#e63946;">hoy</span></h2>
+    <p class="lead" style="margin-bottom:2rem; font-size:.9rem;">Vender electrónica y artículos de hogar requiere responder rápido, pero sucede esto:</p>
+    
+    <div style="display:flex; flex-direction:column; gap:1.2rem; max-width: 600px;">
+        <div class="glass" style="display:flex; align-items:center; gap: 1rem; padding: 1.2rem; border-color: rgba(230,57,70,.3); background: rgba(230,57,70,.05);">
+            <div style="font-size:2rem;">📱</div>
+            <div>
+                <strong style="display:block; font-size:1.1rem; margin-bottom:.3rem;">Desborde en horarios pico</strong>
+                <span style="color:var(--muted); font-size:.85rem;">Fines de semana o noches llegan consultas y no hay nadie disponible para responder rápido.</span>
+            </div>
+        </div>
+        <div class="glass" style="display:flex; align-items:center; gap: 1rem; padding: 1.2rem; border-color: rgba(230,57,70,.3); background: rgba(230,57,70,.05);">
+            <div style="font-size:2rem;">💸</div>
+            <div>
+                <strong style="display:block; font-size:1.1rem; margin-bottom:.3rem;">Ventas que se enfrían</strong>
+                <span style="color:var(--muted); font-size:.85rem;">Si no respondes en menos de 5 minutos, ese cliente se va a Mercado Libre o a la competencia.</span>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: LA SOLUCION -->
+  <div class="slide" id="s2">
+    <div class="slide-label">La Solución System IA</div>
+    <h2 class="title" style="margin-bottom:1.5rem;">Tu Vendedor 24/7 <span class="grad">con IA</span></h2>
+    <p class="lead" style="margin-bottom:2rem;">Captamos la atención, la IA calienta al cliente y vos solo te encargas del cobro.</p>
+    
+    <div style="display:flex; align-items:center; gap: 1rem;">
+        <div style="text-align:center;">
+            <div style="width:70px;height:70px;background:rgba(24,119,242,.15);font-size:2rem;display:flex;align-items:center;justify-content:center;border-radius:16px;border:1px solid rgba(24,119,242,.4);margin:0 auto .5rem;">📱</div>
+            <strong style="font-size:.9rem;">Ads o ML</strong>
+        </div>
+        <div style="font-size:1.5rem; color:var(--muted); margin:0 1rem;">➔</div>
+        <div style="text-align:center; position:relative;">
+            <div style="width:70px;height:70px;background:rgba(0,242,254,.15);font-size:2rem;display:flex;align-items:center;justify-content:center;border-radius:16px;border:1px solid rgba(0,242,254,.4);margin:0 auto .5rem;box-shadow:0 0 20px rgba(0,242,254,.3);">🤖</div>
+            <strong style="font-size:.9rem;" class="grad">Inteligencia Artificial</strong>
+        </div>
+        <div style="font-size:1.5rem; color:var(--muted); margin:0 1rem;">➔</div>
+        <div style="text-align:center;">
+            <div style="width:70px;height:70px;background:rgba(37,211,102,.15);font-size:2rem;display:flex;align-items:center;justify-content:center;border-radius:16px;border:1px solid rgba(37,211,102,.4);margin:0 auto .5rem;">💬</div>
+            <strong style="font-size:.9rem;">WhatsApp Caliente</strong>
+        </div>
+        <div style="font-size:1.5rem; color:var(--muted); margin:0 1rem;">➔</div>
+        <div style="text-align:center;">
+            <div style="width:70px;height:70px;background:rgba(255,255,255,.05);font-size:2rem;display:flex;align-items:center;justify-content:center;border-radius:16px;border:1px solid rgba(255,255,255,.2);margin:0 auto .5rem;">🤝</div>
+            <strong style="font-size:.9rem;">Vos Cobrás</strong>
+        </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: LOS 3 CAMINOS -->
+  <div class="slide" id="s3">
+    <div class="slide-label">Nuestros 3 Ecosistemas</div>
+    <h2 class="title" style="margin-bottom:.4rem;">¿Por dónde llegan tus <span class="grad">clientes</span>?</h2>
+    <p class="lead" style="margin-bottom:1.5rem; font-size:.85rem;">Todos los caminos terminan igual: la venta cerrada. Cambia el canal de entrada.</p>
+    <div class="path-grid">
+      <!-- Camino 1 -->
+      <div class="path-card" onclick="goTo(4)">
+        <div class="path-badge fb-col"><i class="fa-brands fa-facebook"></i> Meta Ads</div>
+        <div class="path-num">01</div>
+        <div class="path-title">Ads → WhatsApp</div>
+        <div class="path-desc">Un anuncio en Instagram/Facebook lleva al cliente directo a la IA en WhatsApp. Sencillo y altísima conversión.</div>
+        <div class="flow">
+          <div class="flow-icon fb">📱</div> <span style="color:var(--muted);">→</span>
+          <div class="flow-icon wa">💬</div> <span style="color:var(--muted);">→</span>
+          <div class="flow-icon vos">🤝</div>
+        </div>
+      </div>
+      <!-- Camino 2 -->
+      <div class="path-card hot" onclick="goTo(5)" style="border-color:rgba(0,242,254,.5); box-shadow:0 0 20px rgba(0,242,254,.1);">
+        <div class="path-badge ml-col"><i class="fa-solid fa-shop"></i> Mercado Libre</div>
+        <div class="path-num">02</div>
+        <div class="path-title">ML → Ads → WhatsApp</div>
+        <div class="path-desc">Potenciamos tus ventas en ML, pero derivamos a los clientes a WA para que cobres por fuera y evites las comisiones abultadas.</div>
+        <div class="flow">
+          <div class="flow-icon ml">🛒</div> <span style="color:var(--muted);">→</span>
+          <div class="flow-icon wa">💬</div> <span style="color:var(--muted);">→</span>
+          <div class="flow-icon vos">🤝</div>
+        </div>
+      </div>
+      <!-- Camino 3 -->
+      <div class="path-card" onclick="goTo(6)">
+        <div class="path-badge web-col"><i class="fa-solid fa-globe"></i> E-commerce</div>
+        <div class="path-num">03</div>
+        <div class="path-title">Ads → Web → WhatsApp</div>
+        <div class="path-desc">Tu tienda online completa. El cliente elige productos y la IA recupera los carritos abandonados directamente en WhatsApp.</div>
+        <div class="flow">
+          <div class="flow-icon fb">📱</div> <span style="color:var(--muted);">→</span>
+          <div class="flow-icon web">🌐</div> <span style="color:var(--muted);">→</span>
+          <div class="flow-icon wa">💬</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: CAMINO 1 — ADS > WHATSAPP -->
+  <div class="slide" id="s4">
+    <div class="slide-label">Camino 1 · Ads → WhatsApp</div>
+    <h2 class="title" style="margin-bottom:1.2rem;">El anuncio lleva directo a <span class="grad">tu WhatsApp</span></h2>
+    <div class="journey" style="gap:4rem;">
+      <!-- Facebook Mockup -->
+      <div class="fb-card">
+        <div class="fb-header">
+          <div class="fb-avatar">TH</div>
+          <div class="fb-page-info">
+            <div class="fb-page-name">Tu Hogar Electrónica</div>
+            <div class="fb-sponsored">Patrocinado</div>
+          </div>
+        </div>
+        <div class="fb-copy">📺 <strong>Renová tu living con el Smart TV 55"</strong><br>Resolución 4K Ultra HD. ¡Quedan últimas unidades! Hacé clic abajo y lo reservás.</div>
+        <div class="fb-image">
+          <div class="fb-image-label">
+            <span class="emoji">📺</span>
+            <div class="name">Smart TV 55"</div>
+          </div>
+        </div>
+        <div class="fb-cta-bar">
+          <div style="font-size:.8rem;color:#65676B;">WhatsApp</div>
+          <button class="fb-cta-btn"><i class="fa-brands fa-whatsapp"></i> Chat IA</button>
+        </div>
+      </div>
+      <!-- IA Workflow Text -->
+      <div class="journey-flow">
+        <div class="jstep active-step">
+          <div class="jstep-icon" style="background:rgba(37,211,102,.12);">🤖</div>
+          <div class="jstep-text">
+            <strong>1. IA responde a todos en segundos</strong>
+            <span>La persona hace click y la IA ya le dio el precio y especificaciones. A cualquier hora.</span>
+          </div>
+        </div>
+        <div class="jstep active-step">
+          <div class="jstep-icon" style="background:rgba(0,242,254,.1);">🎯</div>
+          <div class="jstep-text">
+            <strong>2. Filtramos la curiosidad</strong>
+            <span>La IA determina quién está preguntando por aburrimiento y quién tiene billetera en mano.</span>
+          </div>
+        </div>
+        <div class="jstep active-step" style="border-color:rgba(37,211,102,.4); background:rgba(37,211,102,.05);">
+          <div class="jstep-icon" style="background:rgba(37,211,102,.15);">🤝</div>
+          <div class="jstep-text">
+            <strong>3. ¡Listo para cerrar!</strong>
+            <span>Cuando el cliente dice "Me interesa, ¿dónde transfiero?", te pasamos la conversación a vos.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: CAMINO 2 — ML > WA -->
+  <div class="slide" id="s5">
+    <div class="slide-label">Camino 2 · Mercado Libre → WhatsApp</div>
+    <h2 class="title" style="margin-bottom:1.2rem;"><span class="grad-y">Mercado Libre</span> vende, vos <span class="grad">fidelizás sin comisión</span></h2>
+    <div class="journey" style="gap:4rem;">
+      <div class="journey-flow">
+        <div class="jstep active-step">
+          <div class="jstep-icon" style="background:rgba(255,230,0,.15); color:var(--yellow);">🛒</div>
+          <div class="jstep-text">
+            <strong>1. Visibilidad Orgánica</strong>
+            <span>Ads atrae gente hacia tus publicaciones de Mercado Libre.</span>
+          </div>
+        </div>
+        <div class="jstep active-step">
+          <div class="jstep-icon" style="background:rgba(0,242,254,.1);">🤖</div>
+          <div class="jstep-text">
+            <strong>2. IA responde en ML (15 seg)</strong>
+            <span>Responder al instante aumenta el posicionamiento de tus productos en el algoritmo.</span>
+          </div>
+        </div>
+        <div class="jstep active-step" style="border-color:rgba(37,211,102,.4); background:rgba(37,211,102,.05);">
+          <div class="jstep-icon" style="background:rgba(37,211,102,.15);">💬</div>
+          <div class="jstep-text">
+            <strong>3. Fuga hacia WhatsApp</strong>
+            <span>La IA deriva a los clientes a comunicarse a tu WhatsApp para un "descuento" o "envío rápido", sacando ventas de ML.</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ML Mockup Visual -->
+      <div style="background:#fff;border-radius:12px;overflow:hidden;width:290px;box-shadow:0 10px 40px rgba(0,0,0,.4);font-family:Arial,sans-serif;color:#333;flex-shrink:0;">
+        <!-- ML Header -->
+        <div style="background:#FFE600;padding:.8rem;display:flex;align-items:center;gap:.6rem;border-bottom:1px solid rgba(0,0,0,.08);flex-wrap:wrap;">
+          <div style="font-weight:900;font-size:1.1rem;color:#2d3277;letter-spacing:-1px;line-height:1;">mercado<br>libre</div>
+          <div style="background:#fff;border-radius:20px;padding:.3rem .6rem;flex:1;color:#bbb;font-size:.75rem;display:flex;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,.1);"><i class="fa-solid fa-magnifying-glass" style="margin-right:.4rem;"></i> Buscar...</div>
+        </div>
+        <!-- ML Body -->
+        <div style="padding:1rem;">
+          <div style="font-size:.65rem;color:#666;margin-bottom:.4rem;">Nuevo  |  1584 vendidos</div>
+          <h3 style="font-weight:400;font-size:1rem;margin-bottom:.5rem;color:#333;line-height:1.2;">Smart TV 55" 4K UHD Ultra Fino</h3>
+          <div style="display:flex;align-items:center;gap:.2rem;margin-bottom:.8rem;color:#3483FA;font-size:.7rem;">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span> <span style="color:#999;font-size:.65rem;margin-left:.2rem;">(428)</span>
+          </div>
+          <div style="width:100%;height:160px;background:#f5f5f5;border-radius:8px;margin-bottom:.8rem;display:flex;align-items:center;justify-content:center;font-size:4rem;">📺</div>
+          <div style="font-size:1.8rem;font-weight:300;color:#333;margin-bottom:.2rem;">$ 450.000</div>
+          <div style="color:#00a650;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:.4rem;margin-bottom:1rem;"><i class="fa-solid fa-truck-fast"></i> Llega gratis mañana</div>
+          
+          <button style="width:100%;padding:.8rem;background:#3483FA;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:.9rem;margin-bottom:.6rem;cursor:pointer;">Comprar ahora</button>
+          <button style="width:100%;padding:.8rem;background:rgba(52,131,250,.1);color:#3483FA;border:none;border-radius:6px;font-weight:600;font-size:.9rem;margin-bottom:1.2rem;cursor:pointer;">Agregar al carrito</button>
+          
+          <div style="border-top:1px solid #eee;padding-top:1rem;">
+            <div style="font-weight:600;font-size:.9rem;margin-bottom:.6rem;">Preguntas y respuestas</div>
+            <div style="font-size:.8rem;margin-bottom:.4rem;color:#333;"><strong>Q:</strong> ¿Tienen stock para envío al interior?</div>
+            <div style="font-size:.75rem;color:#666;border-left:2px solid #ddd;padding-left:.6rem;margin-left:.2rem;margin-bottom:.5rem;">
+              <span style="color:#333;">A:</span> ¡Hola! Sí, hay stock. Para envíos ultra-rápidos y descuentos por pago en efectivo, <strong>escribinos a nuestro WhatsApp <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> 11-45XX-XXXX</strong>. ¡Te esperamos! <br><span style="color:#bfbfbf;font-size:.65rem;">Respondió hace 15 segundos</span>
+            </div>
+            <div style="font-size:.8rem;margin-bottom:.4rem;color:#333;"><strong>Q:</strong> ¿Hacen factura A?</div>
+            <div style="font-size:.75rem;color:#666;border-left:2px solid #ddd;padding-left:.6rem;margin-left:.2rem;">
+              <span style="color:#333;">A:</span> ¡Hola! Sí, hacemos factura A y B. Coordinalo directo a nuestro WA. <br><span style="color:#bfbfbf;font-size:.65rem;">Respondió hace 2 minutos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: CAMINO 3 — WEB > WA -->
+  <div class="slide" id="s6">
+    <div class="slide-label">Camino 3 · Sitio Web → WhatsApp</div>
+    <h2 class="title" style="margin-bottom:1.2rem;">E-Commerce Completo <span class="grad">Recupera Carritos</span></h2>
+    <div class="journey" style="gap:4rem;">
+      <!-- WEB Mockup Visual -->
+      <div style="background:#fff;border-radius:12px;overflow:hidden;width:290px;box-shadow:0 10px 40px rgba(0,0,0,.4);position:relative;font-family:'Inter',sans-serif;flex-shrink:0;">
+        <!-- Header Nav -->
+        <div style="background:#111;padding:.8rem 1.2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #222;">
+          <div style="font-weight:900;font-size:1.2rem;color:#fff;letter-spacing:-1px;">TuHogar.</div>
+          <div style="display:flex;gap:1rem;color:#fff;font-size:1rem;position:relative;">
+            <i class="fa-solid fa-bars"></i>
+            <i class="fa-solid fa-cart-shopping"></i>
+            <div style="background:#e63946;color:#fff;font-size:.55rem;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;position:absolute;top:-6px;right:-8px;font-weight:bold;">1</div>
+          </div>
+        </div>
+        <!-- Product Body -->
+        <div style="padding:1.2rem;color:#333;text-align:left;position:relative;padding-bottom:1rem;">
+          <div style="width:100%;height:160px;background:#f8f9fa;border-radius:10px;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;font-size:4rem;border:1px solid #eee;">❄️</div>
+          <div style="font-size:.7rem;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:.3rem;font-weight:600;">Climatización Premium</div>
+          <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:.4rem;line-height:1.2;color:#111;">Aire Acondicionado Inverter 3200W F/C</h3>
+          <div style="display:flex;align-items:center;gap:.2rem;margin-bottom:.8rem;color:#f5a623;font-size:.7rem;">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span> <span style="color:#999;font-size:.65rem;margin-left:.2rem;">(12)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem;">
+            <strong style="color:#111;font-size:1.6rem;font-weight:900;">$ 650.000</strong>
+            <span style="font-size:.75rem;color:#00a650;font-weight:600;background:rgba(0,166,80,.1);padding:.2rem .5rem;border-radius:4px;">15% OFF</span>
+          </div>
+          
+          <div style="display:flex;gap:.5rem;margin-bottom:1rem;">
+            <select style="padding:.6rem;border-radius:6px;border:1px solid #ddd;color:#333;font-size:.8rem;outline:none;background:#fff;">
+              <option>1</option><option>2</option>
+            </select>
+            <button style="flex:1;padding:.7rem;background:#111;color:#fff;border:none;border-radius:6px;font-weight:700;font-size:.9rem;cursor:pointer;">Añadir al carrito</button>
+          </div>
+          
+          <!-- Floating WA Button -->
+          <div style="position:absolute;bottom:25px;right:20px;width:44px;height:44px;background:#25d366;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5rem;box-shadow:0 6px 16px rgba(37,211,102,.4);cursor:pointer;animation:pulse-wa 2s infinite;">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+        </div>
+        <!-- Alert bar -->
+        <div style="background:#fff4e5;padding:.8rem;color:#d97706;font-size:.75rem;text-align:center;border-top:1px solid #ffedd5;font-weight:600;display:flex;align-items:center;justify-content:center;gap:.5rem;">
+          <i class="fa-solid fa-hourglass-half"></i> Cliente abandona sin pagar...
+        </div>
+      </div>
+
+      <div class="journey-flow">
+        <div class="jstep active-step">
+          <div class="jstep-icon" style="background:rgba(0,242,254,.1);">🌐</div>
+          <div class="jstep-text">
+            <strong>1. El cliente entra a tu tienda</strong>
+            <span>Agrega artículos y se interesa, pero de repente se va y deja el carrito abandonado (Pasa el 70% de las veces).</span>
+          </div>
+        </div>
+        <div class="jstep active-step" style="border-color:rgba(37,211,102,.4); background:rgba(37,211,102,.05);">
+          <div class="jstep-icon" style="background:rgba(37,211,102,.15);">💬</div>
+          <div class="jstep-text">
+            <strong>2. Recupero Inteligente</strong>
+            <span>Al 100% automático, la IA le manda un WhatsApp: "¡Hey! Te dejaste el Aire Acondicionado acá. ¿Te pasó algo? Tengo un código de descuento".</span>
+          </div>
+        </div>
+        <div class="jstep active-step">
+          <div class="jstep-icon" style="background:rgba(255,255,255,.05);">🤝</div>
+          <div class="jstep-text">
+            <strong>3. Salvaste la venta</strong>
+            <span>Lo que era un cliente perdido, la IA te lo recupera charlándole por WhatsApp y te lo entrega firme.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: CIERRE Y CTA (NO PRICING) -->
+  <div class="slide" id="s7">
+    <div class="slide-label">Siguientes Pasos</div>
+    <div class="cta-box">
+      <h2>Transformá la forma <br><span class="grad">en la que operás</span></h2>
+      <p>Nosotros montamos toda la infraestructura, la investigamos y la lanzamos con los anuncios creativos. Tu único trabajo será hacer lo que mejor hacés: <strong>Vender.</strong></p>
+      
+      <div style="margin:2rem 0; background:rgba(0,242,254,.08); border:1px solid rgba(0,242,254,.3); padding:1rem; border-radius:12px; text-align:left;">
+        <p style="font-size:.9rem; line-height:1.5;"><strong>En el PDF que te adjuntamos debajo:</strong></p>
+        <ul style="color:var(--muted); font-size:.85rem; margin-top:.5rem; padding-left:1.5rem; line-height:1.6;">
+            <li>Vas a ver el detalle técnico del lanzamiento en 4 etapas.</li>
+            <li>Vas a encontrar las 3 configuraciones de planes de inversión que vimos acá.</li>
+        </ul>
+      </div>
+
+      <p style="font-size:.85rem; color:var(--muted); margin-bottom:1.5rem;">Mirá el PDF, analizá con cuál camino querés empezar esta semana, y respondeme el WhatsApp para que agendemos la <strong>Kickoff Call.</strong></p>
+      <button class="start-btn" style="margin-top:0;">Revisá el PDF y hablamos 🚀</button>
+    </div>
+  </div>
+
+</div><!-- end deck -->
+
+<!-- NAV BAR -->
+<div class="nav-bar">
+  <button class="nav-btn" onclick="prev()"><i class="fa-solid fa-chevron-left"></i></button>
+  <div class="dots" id="dots"></div>
+  <button class="nav-btn" onclick="next()"><i class="fa-solid fa-chevron-right"></i></button>
+  <div class="slide-count" id="count">1 / 8</div>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const countEl = document.getElementById('count');
+  let cur = 0;
+  const total = slides.length;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  });
+
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('exit');
+    setTimeout(() => slides[cur].classList.remove('exit'), 500);
+
+    cur = Math.max(0, Math.min(total - 1, n));
+    slides[cur].classList.add('active');
+    
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('on', i === cur);
+    });
+    countEl.textContent = `${cur + 1} / ${total}`;
+  }
+
+  function next() { goTo(cur + 1); }
+  function prev() { goTo(cur - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'ArrowRight' || e.key === ' ') next();
+    if(e.key === 'ArrowLeft') prev();
+  });
+</script>
+</body>
+</html>

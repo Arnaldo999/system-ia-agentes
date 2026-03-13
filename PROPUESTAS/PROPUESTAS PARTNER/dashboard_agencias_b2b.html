@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS para Agencias B2B - Arquitectura Técnica de Integración</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --accent: #10b981;
+            --warning: #f59e0b;
+            --border: #334155;
+            --hubspot: #ff7a59;
+            --meta: #0668E1;
+            --powerbi: #F2C811;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-left: 4px solid var(--primary);
+            padding-left: 1rem;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 0 8px 8px 0;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        /* Flujo de Datos Arquitectura */
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #171e2e;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px dashed var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .flow-node {
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+
+        .flow-node.agency {
+            border-top: 4px solid var(--meta);
+        }
+
+        .flow-node.systemia {
+            border-top: 4px solid var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 8px;
+            padding: 1rem 0;
+        }
+
+        .flow-node.client {
+            border-top: 4px solid var(--accent);
+        }
+
+        .flow-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .flow-title {
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 0 1rem;
+        }
+
+        .flow-arrow {
+            color: var(--primary);
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        /* Lista de Tareas */
+        .task-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .task-list li {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            margin-bottom: 1rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .task-list li h4 {
+            margin: 0 0 0.5rem 0;
+            color: #e2e8f0;
+            font-size: 1.1rem;
+        }
+
+        .tech-tags {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .tag-meta {
+            background: rgba(6, 104, 225, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(6, 104, 225, 0.3);
+        }
+
+        .tag-n8n {
+            background: rgba(234, 88, 12, 0.2);
+            color: #fb923c;
+            border: 1px solid rgba(234, 88, 12, 0.3);
+        }
+
+        .tag-hubspot {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .tag-powerbi {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Problem vs Solution */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .comp-side {
+            padding: 2rem;
+        }
+
+        .comp-problem {
+            background: rgba(239, 68, 68, 0.05);
+            border-right: 1px solid var(--border);
+        }
+
+        .comp-solution {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .comp-side h3 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comp-problem h3 {
+            color: #f87171;
+        }
+
+        .comp-solution h3 {
+            color: #34d399;
+        }
+
+        .comp-side ul {
+            padding-left: 1.5rem;
+            color: #cbd5e1;
+        }
+
+        .comp-side li {
+            margin-bottom: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+            <h1>Agencias B2B: Rol como Partner Tecnológico (IA)</h1>
+            <div class="subtitle">Cómo System IA se integra como el "Cerebro Operativo" detrás de las campañas de
+                marketing de su Agencia Socios.</div>
+        </header>
+
+        <!-- El Problema Frecuente -->
+        <div class="comparison">
+            <div class="comp-side comp-problem">
+                <h3>❌ El Problema de la Agencia de Marketing Hoy</h3>
+                <ul>
+                    <li>Las campañas de publicidad (Ads) generan <i>leads</i> (clientes potenciales), pero <b>estos se
+                            enfrían</b> porque el equipo de ventas del cliente final tarda en contactarlos.</li>
+                    <li>La carga de datos hacia los sistemas del cliente (CRMs propios, Bases de Datos) suele ser manual
+                        o depender de integraciones frágiles que se rompen con frecuencia.</li>
+                    <li>La agencia cumple con entregar el "Lead" bruto, pero el cliente final percibe un bajo retorno de
+                        inversión (ROI) debido a su propia falta de seguimiento rápido.</li>
+                </ul>
+            </div>
+            <div class="comp-side comp-solution">
+                <h3>✅ Nuestra Labor como su Partner de IA (System IA)</h3>
+                <ul>
+                    <li>Nosotros desarrollamos el <b>Motor de Automatización (Middleware)</b> que intercepta ese Lead de
+                        la campaña en tiempo real y lo atiende con Inteligencia Artificial conversacional en segundos.
+                    </li>
+                    <li>Extraemos los datos clave de esa conversación (intentos de compra, presupuesto, ubicación) y los
+                        inyectamos de forma segura y estructurada en el software que ya utilice su cliente final, sin
+                        importar cuál sea.</li>
+                    <li>Su agencia ahora no solo entrega un "Lead", sino un <b>"Lead Pre-Calificado y Atendido"</b>,
+                        aumentando el valor percibido de sus campañas de marketing sin sumar una sola hora de trabajo
+                        manual.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 class="section-title">🔄 Arquitectura de Datos (Nuestra Labor de Interconexión)</h2>
+        <p style="margin-bottom: 2rem; color: #94a3b8;">Así es como conectamos la pauta publicitaria de su agencia con
+            los sistemas organizacionales de sus cuentas corporativas, actuando como el "Puente Inteligente".</p>
+
+        <div class="flow-diagram">
+            <div class="flow-node agency">
+                <div class="flow-icon">📢</div>
+                <div class="flow-title">1. Agencia de Marketing</div>
+                <div class="flow-desc">Corre y optimiza la campaña en Plataformas de Ads (Formularios de Lead o Tráfico
+                    conversacional).</div>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="flow-node systemia">
+                <div class="flow-icon">🧠</div>
+                <div class="flow-title">2. System IA (Engine)</div>
+                <div class="flow-desc">Atrapa, atiende y califica al prospecto en milisegundos mediante Agentes de IA
+                    conversacionales (Ej: Bots de WhatsApp o Web).</div>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="flow-node client">
+                <div class="flow-icon">📊</div>
+                <div class="flow-title">3. Sistemas del Cliente</div>
+                <div class="flow-desc">El Lead ya calificado, junto con el resumen de la charla, se inyecta en el CRM
+                    corporativo o Dashboard analítico preferido por su cliente.</div>
+            </div>
+        </div>
+
+        <h2 class="section-title">🛠️ Plan Técnico: Cuál es nuestro trabajo exacto</h2>
+
+        <ul class="task-list">
+
+            <li>
+                <h4>Labor 1: Intercepción Suprema de Canales de Captura</h4>
+                <p>La agencia socia nos proporciona las fuentes de los anuncios (Formularios de Meta, Google, Páginas
+                    Web). Nuestra labor es construir los <b>Webhooks y receptores en la nube</b> (en nuestros servidores
+                    orquestadores n8n) para capturar esa información en el instante en que el usuario hace clic en
+                    "Enviar información".</p>
+                <div class="tech-tags">
+                    <span class="tag tag-meta">Webhooks Multi-canal (APIs)</span>
+                    <span class="tag tag-n8n">Orquestador de Eventos (n8n Cloud)</span>
+                </div>
+            </li>
+
+            <li>
+                <h4>Labor 2: Calificación y Conversación con IA Inmediata</h4>
+                <p>Diseñamos los <i>Prompts</i> (instrucciones maestras) y la personalidad del Agente de Inteligencia
+                    Artificial que será el vendedor de su cliente. Lo conectamos a canales de mensajería (Como la API de
+                    WhatsApp). Cuando el anuncio genera el lead, <b>NUESTRA IA inicia la charla automáticamente</b>,
+                    responde dudas técnicas y extrae los requisitos (presupuesto, ubicación, urgencia) sin intervención
+                    humana de su agencia ni del cliente.</p>
+                <div class="tech-tags">
+                    <span class="tag tag-n8n">APIs Oficiales de Mensajería</span>
+                    <span class="tag tag-n8n">Agentes Lógicos y LLMs (OpenAI/Gemini/CrewAI)</span>
+                </div>
+            </li>
+
+            <li>
+                <h4>Labor 3: Sincronización Bidireccional de CRMs (Cualquier Plataforma)</h4>
+                <p>No importa qué CRM, Excel o sistema administrativo utilice el cliente final. Nuestra labor de
+                    ingeniería es conectarnos a las APIs de esos software de terceros para <b>crear la ficha del
+                        contacto, actualizar el estado de venta y adjuntar el resumen de la atención de la IA</b>
+                    directamente en la bandeja de entrada del vendedor humano que debe cerrar el trato.</p>
+                <div class="tech-tags">
+                    <span class="tag tag-hubspot">Integración vía API REST / GraphQL / SOAP</span>
+                    <span class="tag tag-n8n">Nodos de Mapeo y Formateo JSON de Datos</span>
+                </div>
+            </li>
+
+            <li>
+                <h4>Labor 4: Exportación de Datos Estructurados para Analítica</h4>
+                <p>Su agencia necesita demostrar Resultados (ROI). Nosotros nos encargamos de empujar y limpiar cada
+                    métrica generada por nuestro sistema (Porcentaje de respuesta, Calidad de los leads, Intereses)
+                    hacia Bases de Datos seguras. De esta forma, <b>cualquier plataforma de Business Intelligence que
+                        ustedes o su cliente usen puede leerlas en tiempo real</b> para armar sus gráficas.</p>
+                <div class="tech-tags">
+                    <span class="tag tag-powerbi">Bases de Datos Relacionales (SQL/Postgres)</span>
+                    <span class="tag tag-n8n">Data Streaming & Automatización Analítica</span>
+                </div>
+            </li>
+
+        </ul>
+
+        <div
+            style="margin-top: 3rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-left: 4px solid var(--accent); padding: 1.5rem; border-radius: 8px;">
+            <h3 style="margin-top: 0; color: #34d399;">🔑 El Argumento de Valor (Business Pitch)</h3>
+            <p style="margin-bottom: 0;"><i>"Su agencia se enfoca puramente en lo que saben hacer mejor: Captar volumen
+                    de tráfico (Ads y Creativos) barato y de gran alcance. Nosotros en System IA nos encargamos 100% de
+                    la fontanería tecnológica: Atrapar esos leads, pasarlos por un colador de Inteligencia Artificial, y
+                    entregarlos en bandeja de plata al sistema de su cliente. Ambos cobramos por nuestra especialidad y
+                    su cliente recibe un servicio integral sin fricciones."</i></p>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

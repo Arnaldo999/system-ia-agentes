@@ -1,0 +1,243 @@
+{
+  "updatedAt": "2026-03-02T21:26:21.027Z",
+  "createdAt": "2026-03-02T15:19:51.138Z",
+  "id": "lYJsJL8TdSehyZVt",
+  "name": "Sub: Router - Enviar Mensaje",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "wt-enviar-01",
+      "name": "Recibir Solicitud",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "hr-enviar-01",
+      "name": "Enviar por Evolution API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sytem-ia-pruebas-evolution-api.6g0gdj.easypanel.host/message/sendText/System%20IA%20Demo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({number: $json.numero, text: $json.texto}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZL2CdsQqaFeTMR2w",
+          "name": "Header Auth Evolution api"
+        }
+      }
+    },
+    {
+      "id": "pa-01",
+      "name": "Parsear Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nlet numero, texto;\n\n// Case 1: fields came as separate named params\nif (data.numero !== undefined && data.texto !== undefined) {\n  numero = String(data.numero).trim();\n  texto = String(data.texto).trim();\n}\n// Case 2: data came as a single query string\nelse if (data.query !== undefined) {\n  const q = String(data.query).replace(/\"/g, '').trim();\n  // Phone is first sequence of digits, text is the rest\n  const m = q.match(/^(\\d+)[\\s,]+(.+)$/s);\n  if (m) {\n    numero = m[1].trim();\n    texto = m[2].trim();\n  } else {\n    throw new Error('No se pudo parsear query: ' + q);\n  }\n}\nelse {\n  throw new Error('Formato de datos desconocido: ' + JSON.stringify(data));\n}\n\nreturn [{ json: { numero, texto } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Recibir Solicitud": {
+      "main": [
+        [
+          {
+            "node": "Parsear Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Datos": {
+      "main": [
+        [
+          {
+            "node": "Enviar por Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "0265a2cc-76aa-428c-9de6-d87d959567f4",
+  "activeVersionId": "0265a2cc-76aa-428c-9de6-d87d959567f4",
+  "versionCounter": 8,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-02T15:19:51.140Z",
+      "createdAt": "2026-03-02T15:19:51.140Z",
+      "role": "workflow:owner",
+      "workflowId": "lYJsJL8TdSehyZVt",
+      "projectId": "YfmAb61LMhjH6jFL",
+      "project": {
+        "updatedAt": "2026-03-02T10:33:35.043Z",
+        "createdAt": "2026-03-02T10:28:45.056Z",
+        "id": "YfmAb61LMhjH6jFL",
+        "name": "Micaela Colmenares <micaelacolmenares208@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-02T21:26:21.027Z",
+    "createdAt": "2026-03-02T21:26:21.027Z",
+    "versionId": "0265a2cc-76aa-428c-9de6-d87d959567f4",
+    "workflowId": "lYJsJL8TdSehyZVt",
+    "nodes": [
+      {
+        "id": "wt-enviar-01",
+        "name": "Recibir Solicitud",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1,
+        "position": [
+          240,
+          300
+        ],
+        "parameters": {
+          "inputSource": "passthrough"
+        }
+      },
+      {
+        "id": "hr-enviar-01",
+        "name": "Enviar por Evolution API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          680,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://sytem-ia-pruebas-evolution-api.6g0gdj.easypanel.host/message/sendText/System%20IA%20Demo",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({number: $json.numero, text: $json.texto}) }}",
+          "options": {}
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "ZL2CdsQqaFeTMR2w",
+            "name": "Header Auth Evolution api"
+          }
+        }
+      },
+      {
+        "id": "pa-01",
+        "name": "Parsear Datos",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          460,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const data = $input.first().json;\nlet numero, texto;\n\n// Case 1: fields came as separate named params\nif (data.numero !== undefined && data.texto !== undefined) {\n  numero = String(data.numero).trim();\n  texto = String(data.texto).trim();\n}\n// Case 2: data came as a single query string\nelse if (data.query !== undefined) {\n  const q = String(data.query).replace(/\"/g, '').trim();\n  // Phone is first sequence of digits, text is the rest\n  const m = q.match(/^(\\d+)[\\s,]+(.+)$/s);\n  if (m) {\n    numero = m[1].trim();\n    texto = m[2].trim();\n  } else {\n    throw new Error('No se pudo parsear query: ' + q);\n  }\n}\nelse {\n  throw new Error('Formato de datos desconocido: ' + JSON.stringify(data));\n}\n\nreturn [{ json: { numero, texto } }];"
+        }
+      }
+    ],
+    "connections": {
+      "Recibir Solicitud": {
+        "main": [
+          [
+            {
+              "node": "Parsear Datos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parsear Datos": {
+        "main": [
+          [
+            {
+              "node": "Enviar por Evolution API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Micaela Colmenares",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-02T21:26:21.064Z",
+        "id": 85,
+        "workflowId": "lYJsJL8TdSehyZVt",
+        "versionId": "0265a2cc-76aa-428c-9de6-d87d959567f4",
+        "event": "activated",
+        "userId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      },
+      {
+        "createdAt": "2026-03-02T21:26:21.245Z",
+        "id": 87,
+        "workflowId": "lYJsJL8TdSehyZVt",
+        "versionId": "0265a2cc-76aa-428c-9de6-d87d959567f4",
+        "event": "activated",
+        "userId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      },
+      {
+        "createdAt": "2026-03-02T21:26:21.052Z",
+        "id": 84,
+        "workflowId": "lYJsJL8TdSehyZVt",
+        "versionId": "0265a2cc-76aa-428c-9de6-d87d959567f4",
+        "event": "deactivated",
+        "userId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      },
+      {
+        "createdAt": "2026-03-02T21:26:21.236Z",
+        "id": 86,
+        "workflowId": "lYJsJL8TdSehyZVt",
+        "versionId": "0265a2cc-76aa-428c-9de6-d87d959567f4",
+        "event": "deactivated",
+        "userId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      }
+    ]
+  }
+}

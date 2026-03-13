@@ -1,0 +1,2235 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System IA – Solución Gastronómica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0B0E14;
+            --bg2: #131823;
+            --bg3: #1a2235;
+            --main: #F8FAFC;
+            --muted: #94A3B8;
+            --border: rgba(255, 255, 255, 0.08);
+            --cyan: #00E1FF;
+            --blue: #3B82F6;
+            --green: #10B981;
+            --purple: #8B5CF6;
+            --red: #EF4444;
+            --amber: #F59E0B;
+            --glow: rgba(0, 225, 255, 0.18);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--main);
+            height: 100vh;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            scroll-snap-type: y mandatory;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* ── SLIDES ──────────────────────────────────────────────── */
+        .slide {
+            min-height: 100vh;
+            width: 100%;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-inner {
+            max-width: 1100px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Fondo radial glow decorativo */
+        .slide::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 0%, var(--glow) 0%, transparent 65%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .slide.glow-bottom::before {
+            background: radial-gradient(ellipse at 50% 100%, var(--glow) 0%, transparent 65%);
+        }
+
+        .slide.glow-red::before {
+            background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.12) 0%, transparent 65%);
+        }
+
+        .slide.glow-green::before {
+            background: radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.1) 0%, transparent 65%);
+        }
+
+        .slide.glow-purple::before {
+            background: radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.12) 0%, transparent 65%);
+        }
+
+        /* ── DOT NAV ─────────────────────────────────────────────── */
+        .dot-nav {
+            position: fixed;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .dot-nav a {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+            display: block;
+        }
+
+        .dot-nav a:hover,
+        .dot-nav a.active {
+            background: var(--cyan);
+            border-color: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
+        }
+
+        /* ── LOGO WATERMARK ──────────────────────────────────────── */
+        .logo-mark {
+            position: fixed;
+            top: 1.2rem;
+            left: 1.5rem;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            opacity: 0.85;
+        }
+
+        .logo-mark img {
+            height: 32px;
+            width: auto;
+        }
+
+        .logo-mark span {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1rem;
+            background: linear-gradient(to right, var(--cyan), #0080FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── SLIDE NUMBER ────────────────────────────────────────── */
+        .slide-num {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 3rem;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.15);
+            font-family: monospace;
+            z-index: 2;
+        }
+
+        /* ── UTILIDADES ──────────────────────────────────────────── */
+        .label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .text-grad {
+            background: linear-gradient(to right, var(--cyan), #0080FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-grad-red {
+            background: linear-gradient(to right, #ef4444, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-grad-green {
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-grad-purple {
+            background: linear-gradient(to right, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass {
+            background: rgba(19, 24, 35, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .badge-green {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+
+        .badge-yellow {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+        }
+
+        .badge-blue {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .badge-red {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        .badge-purple {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #a78bfa;
+        }
+
+        .badge-gray {
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
+
+        /* ── SLIDE 1 — PORTADA ────────────────────────────────────── */
+        #s1 {
+            text-align: center;
+            background: var(--bg);
+        }
+
+        #s1 .big-logo {
+            height: 72px;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 0 20px rgba(0, 225, 255, 0.4));
+        }
+
+        #s1 h1 {
+            font-size: clamp(2.2rem, 5.5vw, 4rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.25rem;
+        }
+
+        #s1 .sub {
+            color: var(--muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .hero-tags {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-tag {
+            border: 1px solid var(--border);
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.72rem;
+            animation: fadeUpDown 2s infinite;
+            z-index: 2;
+        }
+
+        @keyframes fadeUpDown {
+
+            0%,
+            100% {
+                opacity: .2;
+                transform: translateX(-50%) translateY(0)
+            }
+
+            50% {
+                opacity: .6;
+                transform: translateX(-50%) translateY(6px)
+            }
+        }
+
+        /* ── SLIDE 2 — EL DOLOR ───────────────────────────────────── */
+        .dolor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.25rem;
+            margin-top: 2.5rem;
+        }
+
+        @media(max-width:700px) {
+            .dolor-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .dolor-card {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.18);
+            border-radius: 14px;
+            padding: 1.5rem;
+        }
+
+        .dolor-card .ico {
+            font-size: 1.8rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .dolor-card h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fca5a5;
+            margin-bottom: 0.4rem;
+        }
+
+        .dolor-card p {
+            font-size: 0.85rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* ── SLIDE 3 — ESTADÍSTICAS ───────────────────────────────── */
+        .stat-trio {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        @media(max-width:700px) {
+            .stat-trio {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 2.5rem 1.5rem;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: var(--bg2);
+        }
+
+        .stat-box .num {
+            font-family: 'Outfit', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .stat-box .desc {
+            font-size: 0.88rem;
+            color: var(--muted);
+            margin-top: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .vs-banner {
+            margin-top: 3rem;
+            background: rgba(239, 68, 68, 0.07);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 14px;
+            padding: 1.5rem 2rem;
+            text-align: center;
+            font-size: 1.05rem;
+            color: var(--muted);
+        }
+
+        .vs-banner strong {
+            color: #fca5a5;
+        }
+
+        /* ── SLIDE 4 — LA SOLUCIÓN / CHAT ─────────────────────────── */
+        .sol-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        @media(max-width:800px) {
+            .sol-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* WhatsApp phone */
+        .wpp-phone {
+            background: #111b21;
+            border-radius: 28px;
+            padding: 1.4rem 1rem;
+            width: 100%;
+            max-width: 310px;
+            margin: 0 auto;
+            border: 3px solid #2a373f;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7);
+        }
+
+        .wpp-topbar {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0 0.4rem 0.9rem;
+            border-bottom: 1px solid #2a373f;
+            margin-bottom: 0.9rem;
+        }
+
+        .wpp-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--green), #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .wpp-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #e9edef;
+        }
+
+        .wpp-online {
+            font-size: 0.7rem;
+            color: #10b981;
+        }
+
+        .wpp-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            min-height: 320px;
+        }
+
+        .wpp-bubble {
+            padding: 0.5rem 0.85rem;
+            border-radius: 10px;
+            max-width: 88%;
+            font-size: 0.78rem;
+            line-height: 1.45;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.35s, transform 0.35s;
+        }
+
+        .wpp-bubble.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .wpp-bubble.user {
+            background: #005c4b;
+            color: #e9edef;
+            align-self: flex-end;
+            border-bottom-right-radius: 3px;
+        }
+
+        .wpp-bubble.bot {
+            background: #202c33;
+            color: #e9edef;
+            align-self: flex-start;
+            border-bottom-left-radius: 3px;
+        }
+
+        .wpp-time {
+            font-size: 0.65rem;
+            color: #8696a0;
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        .wpp-typing {
+            background: #202c33;
+            padding: 0.55rem 0.9rem;
+            border-radius: 10px;
+            align-self: flex-start;
+            display: none;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .wpp-typing.vis {
+            display: flex;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: #8696a0;
+            border-radius: 50%;
+            animation: bounce 1.2s infinite;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: .2s
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: .4s
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: translateY(0)
+            }
+
+            40% {
+                transform: translateY(-5px)
+            }
+        }
+
+        .sol-points {}
+
+        .sol-points h2 {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+        }
+
+        .punto {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+            align-items: flex-start;
+        }
+
+        .punto-ico {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .punto h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.15rem;
+        }
+
+        .punto p {
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        /* ── SLIDE 5 — AIRTABLE PANEL ─────────────────────────────── */
+        .at-window {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .at-titlebar {
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.6rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .at-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+
+        .at-tab {
+            margin-left: 0.75rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #111;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-bottom: none;
+            padding: 3px 12px;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .at-tab-i {
+            font-size: 0.72rem;
+            color: #6b7280;
+            padding: 3px 12px;
+        }
+
+        .at-toolbar {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.4rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.7rem;
+            color: #6b7280;
+        }
+
+        .at-btn {
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            background: white;
+            color: #374151;
+        }
+
+        table.at {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.73rem;
+            color: #111;
+        }
+
+        .at thead th {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 5px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.67rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .at tbody tr {
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .at tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .at tbody td {
+            border: 1px solid #e5e7eb;
+            padding: 6px 10px;
+            white-space: nowrap;
+            color: #1f2937;
+        }
+
+        .at-rn {
+            width: 28px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.65rem;
+        }
+
+        .at-add {
+            border: 1px solid #e5e7eb;
+            padding: 6px 10px;
+            color: #9ca3af;
+            font-size: 0.7rem;
+            background: white;
+        }
+
+        .b {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.67rem;
+            font-weight: 600;
+        }
+
+        .bg {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .by {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .bb {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .br {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .bp {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .bk {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .panel-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .panel-tab {
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: transparent;
+            transition: all 0.2s;
+        }
+
+        .panel-tab.active {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.4);
+            color: #60a5fa;
+        }
+
+        .panel-view {
+            display: none;
+        }
+
+        .panel-view.active {
+            display: block;
+        }
+
+        /* ── SLIDE 6 — VOZ IA ─────────────────────────────────────── */
+        .voice-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+
+        @media(max-width:700px) {
+            .voice-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .voice-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voice-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .voice-card.twilio::before {
+            background: var(--red);
+        }
+
+        .voice-card.eleven::before {
+            background: var(--amber);
+        }
+
+        .voice-card.vapi::before {
+            background: var(--purple);
+        }
+
+        .voice-logo {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .voice-card h3 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .voice-card p {
+            font-size: 0.83rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .voice-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .voice-tag {
+            font-size: 0.68rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--muted);
+        }
+
+        .voice-flow {
+            margin-top: 2.5rem;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            flex-wrap: wrap;
+        }
+
+        .vf-step {
+            text-align: center;
+            padding: 0.75rem 1rem;
+            font-size: 0.82rem;
+        }
+
+        .vf-step .icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .vf-step .lbl {
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+
+        .vf-arrow {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.2);
+            padding: 0 0.5rem;
+        }
+
+        /* ── SLIDE 7 — ROI CALC ───────────────────────────────────── */
+        .roi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        @media(max-width:800px) {
+            .roi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .roi-inputs label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 0.35rem;
+            margin-top: 1.1rem;
+        }
+
+        .roi-inputs label:first-child {
+            margin-top: 0;
+        }
+
+        .roi-inputs input[type=range] {
+            width: 100%;
+            accent-color: var(--blue);
+            cursor: pointer;
+        }
+
+        .rv {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 1px 9px;
+            border-radius: 5px;
+            margin-left: 0.4rem;
+        }
+
+        .roi-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+        }
+
+        .roi-card h3 {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .roi-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 0.65rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .roi-row:last-of-type {
+            border: none;
+        }
+
+        .roi-lbl {
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .roi-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--green);
+        }
+
+        .roi-val.red {
+            color: var(--red);
+        }
+
+        .roi-cta {
+            margin-top: 1.25rem;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12));
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+        }
+
+        .roi-cta .big {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--green);
+        }
+
+        .roi-cta .sub {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 0.3rem;
+        }
+
+        /* ── SLIDE 8 — PLANES ─────────────────────────────────────── */
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+
+        @media(max-width:850px) {
+            .plans-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .plan {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .plan.basic {
+            border-top: 4px solid var(--green);
+        }
+
+        .plan.pro {
+            border: 2px solid var(--blue);
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.06) 0%, var(--bg2) 100%);
+            transform: scale(1.02);
+        }
+
+        .plan.premium {
+            border-top: 4px solid var(--purple);
+        }
+
+        .plan-badge {
+            position: absolute;
+            top: -1px;
+            right: 1.2rem;
+            background: var(--blue);
+            color: white;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .plan-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-setup {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .plan-price {
+            font-size: 3rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-price small {
+            font-size: 0.9rem;
+            color: var(--muted);
+            font-weight: 400;
+        }
+
+        .plan-desc {
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .plan-features {
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .plan-features li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.83rem;
+            color: #cbd5e1;
+        }
+
+        .plan-features li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            font-weight: 700;
+        }
+
+        .basic .plan-features li::before {
+            color: var(--green);
+        }
+
+        .pro .plan-features li::before {
+            color: var(--blue);
+        }
+
+        .premium .plan-features li::before {
+            color: var(--purple);
+        }
+
+        .ft {
+            display: inline-block;
+            font-size: 0.68rem;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1px 5px;
+            border-radius: 3px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .plan-btn {
+            margin-top: 1.5rem;
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+
+        .basic .plan-btn {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #34d399;
+        }
+
+        .pro .plan-btn {
+            background: var(--blue);
+            color: white;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .premium .plan-btn {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            color: #a78bfa;
+        }
+
+        /* ── SLIDE 9 — STACK ──────────────────────────────────────── */
+        .stack-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 2.5rem;
+        }
+
+        @media(max-width:750px) {
+            .stack-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stack-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .stack-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 225, 255, 0.3);
+        }
+
+        .stack-card .ico {
+            font-size: 1.8rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .stack-card h4 {
+            font-size: 0.88rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        .stack-card p {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        /* ── SLIDE 10 — CTA ───────────────────────────────────────── */
+        #s10 {
+            text-align: center;
+        }
+
+        #s10 h2 {
+            font-size: clamp(2rem, 4.5vw, 3.2rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+        }
+
+        #s10 p {
+            color: var(--muted);
+            font-size: 1.05rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .cta-btns {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--blue));
+            color: #0B0E14;
+            font-weight: 800;
+            font-size: 0.95rem;
+            padding: 0.9rem 2.2rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 10px 30px rgba(0, 225, 255, 0.25);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--main);
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.9rem 2.2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .logos-row {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            align-items: center;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .logos-row span {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.2);
+            font-family: monospace;
+        }
+
+        /* ── MODO PRESENTADOR ─────────────────────────────────────── */
+        .presenter-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 9999;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .presenter-btn:hover {
+            background: rgba(0, 225, 255, 0.2);
+            color: #00E1FF;
+            border-color: #00E1FF;
+        }
+
+        .presenter-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 35vh;
+            background: rgba(11, 14, 20, 0.95);
+            border-top: 2px solid var(--cyan);
+            z-index: 10000;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .presenter-panel.open {
+            transform: translateY(0);
+        }
+
+        .presenter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .p-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            background: var(--cyan);
+            color: #000;
+            padding: 3px 10px;
+            border-radius: 4px;
+            letter-spacing: 1px;
+        }
+
+        .p-slide-num {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-family: monospace;
+        }
+
+        .p-close {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .p-close:hover {
+            color: #fff;
+        }
+
+        .presenter-script {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #E2E8F0;
+        }
+
+        .presenter-script .highlight {
+            color: var(--cyan);
+            font-weight: 700;
+        }
+
+        .presenter-script .action {
+            color: var(--amber);
+            font-style: italic;
+            font-size: 1.1rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGO FIJO -->
+    <div class="logo-mark">
+        <img src="../LOGO/LOGOTRANSPARENTE.png" alt="System IA">
+        <span>System IA</span>
+    </div>
+
+    <!-- DOT NAV -->
+    <nav class="dot-nav">
+        <a href="#s1" class="dot active" title="Portada"></a>
+        <a href="#s2" class="dot" title="El Problema"></a>
+        <a href="#s3" class="dot" title="El Costo Real"></a>
+        <a href="#s4" class="dot" title="La Solución"></a>
+        <a href="#s5" class="dot" title="Panel en Vivo"></a>
+        <a href="#s6" class="dot" title="Voz IA"></a>
+        <a href="#s7" class="dot" title="Calculadora ROI"></a>
+        <a href="#s8" class="dot" title="Planes"></a>
+        <a href="#s9" class="dot" title="Stack"></a>
+        <a href="#s10" class="dot" title="Empezar"></a>
+    </nav>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 1 — PORTADA
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide" id="s1">
+        <div class="slide-inner" style="text-align:center;">
+            <img src="../LOGO/LOGOTRANSPARENTE.png" alt="System IA" class="big-logo">
+            <h1>Micros, Turistas y Delivery.<br><span class="text-grad-red">¿Tu WhatsApp da abasto?</span></h1>
+            <p class="sub">Automatizamos atención en varios idiomas, captura de reservas y tu delivery propio con IA —
+                para que vos te enfoques en brindar la mejor experiencia en San Ignacio.</p>
+            <div class="hero-tags">
+                <div class="hero-tag">🤖 Agente IA 24/7</div>
+                <div class="hero-tag">📦 Delivery automático</div>
+                <div class="hero-tag">📅 Reservas sin errores</div>
+                <div class="hero-tag">📊 Panel en tiempo real</div>
+                <div class="hero-tag">🎙️ Voz IA (Premium)</div>
+            </div>
+        </div>
+        <div class="scroll-hint">
+            <span>↓ scroll</span>
+        </div>
+        <div class="slide-num">01 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 2 — EL PROBLEMA
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide glow-red" id="s2">
+        <div class="slide-inner">
+            <div class="label">🔴 El problema</div>
+            <h2 style="font-size:clamp(1.8rem,4vw,2.8rem); font-weight:900; line-height:1.2;">¿Te suena
+                familiar<br>alguna de estas situaciones?</h2>
+            <div class="dolor-grid">
+                <div class="dolor-card">
+                    <div class="ico">🌙</div>
+                    <h3>Mensajes a las 2am sin respuesta</h3>
+                    <p>El cliente quería reservar para mañana. No respondiste. Llamó al local de enfrente y reservó ahí.
+                    </p>
+                </div>
+                <div class="dolor-card">
+                    <div class="ico">📋</div>
+                    <h3>Reservas en papel y confusión</h3>
+                    <p>Doble reserva para la misma mesa. La familia llega y no hay lugar. La situación incómoda que
+                        todos quieren evitar.</p>
+                </div>
+                <div class="dolor-card">
+                    <div class="ico">📱</div>
+                    <h3>El WhatsApp colapsado en hora pico</h3>
+                    <p>Manejan su propio delivery y mesa chica. El teléfono explota: "¿Están abiertos?", "pasame el
+                        menú", "te paso el CBU"... y el personal pierde horas clave.</p>
+                </div>
+                <div class="dolor-card">
+                    <div class="ico">🌍</div>
+                    <h3>Turistas perdidos e idiomas</h3>
+                    <p>El turista quiere comer rápido. Si no le pasás el menú interactivo enseguida (a veces en otro
+                        idioma), camina media cuadra y entra al local de la competencia.</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-num">02 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 3 — EL COSTO REAL
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide glow-red" id="s3">
+        <div class="slide-inner">
+            <div class="label">💀 El costo real de no automatizar</div>
+            <h2 style="font-size:clamp(1.8rem,4vw,2.6rem); font-weight:900;">Números que duelen.</h2>
+            <div class="stat-trio">
+                <div class="stat-box">
+                    <div class="num text-grad-red">40%</div>
+                    <div class="desc">del tiempo de tu personal se pierde en <strong>atender mensajes
+                            rutinarios</strong> (pasar menú, precios, horarios) en vez de atender al turista en el
+                        salón.</div>
+                </div>
+                <div class="stat-box">
+                    <div class="num text-grad-red">85%</div>
+                    <div class="desc">de los turistas son de compra <strong>impulsiva</strong>. Si le das el menú
+                        digital enseguida comen ahí. Si demorás, siguen a las Ruinas.</div>
+                </div>
+                <div class="stat-box">
+                    <div class="num text-grad-red">5⭐</div>
+                    <div class="desc">Las reseñas <strong>TripAdvisor/Google</strong> son el filtro principal del
+                        turista de afuera. Dependes de que se acuerden de dejar una, en lugar de pedírselas en
+                        automático.</div>
+                </div>
+            </div>
+            <div class="vs-banner">
+                Mientras vos respondés mensajes a mano, tu competencia ya tiene un bot que lo hace en <strong>8
+                    segundos</strong>, los 365 días del año.
+            </div>
+        </div>
+        <div class="slide-num">03 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 4 — LA SOLUCIÓN
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide glow-green" id="s4">
+        <div class="slide-inner">
+            <div class="sol-grid">
+                <div>
+                    <div class="wpp-phone">
+                        <div class="wpp-topbar">
+                            <div class="wpp-avatar">🍖</div>
+                            <div>
+                                <div class="wpp-name">La Parrilla de Don Alberto</div>
+                                <div class="wpp-online">● en línea</div>
+                            </div>
+                        </div>
+                        <div class="wpp-messages" id="chatMsg">
+                            <div class="wpp-typing" id="typing">
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-top:0.6rem;">↑ Así lo ve el
+                        cliente — automático, 24/7</p>
+                </div>
+                <div class="sol-points">
+                    <div class="label">✅ La solución</div>
+                    <h2>Un asistente que trabaja<br><span class="text-grad-green">mientras vos descansás</span></h2>
+                    <div class="punto">
+                        <div class="punto-ico">🤖</div>
+                        <div>
+                            <h4>Respuesta instantánea 24/7</h4>
+                            <p>Responde en segundos, a cualquier hora, sin que vos estés presente.</p>
+                        </div>
+                    </div>
+                    <div class="punto">
+                        <div class="punto-ico">📦</div>
+                        <div>
+                            <h4>Pedidos de delivery completos</h4>
+                            <p>Toma el pedido, envía el CVU, recibe el comprobante y te avisa para confirmar.</p>
+                        </div>
+                    </div>
+                    <div class="punto">
+                        <div class="punto-ico">📅</div>
+                        <div>
+                            <h4>Reservas sin doble turno</h4>
+                            <p>Fecha, hora y personas. Queda registrado en el panel automáticamente.</p>
+                        </div>
+                    </div>
+                    <div class="punto">
+                        <div class="punto-ico">🎁</div>
+                        <div>
+                            <h4>CRM y Fidelización Automática</h4>
+                            <p>Registra cumpleaños, últimas visitas y te arma la base de datos de clientes gratis y en
+                                piloto automático.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-num">04 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 5 — PANEL EN VIVO (AIRTABLE)
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide" id="s5">
+        <div class="slide-inner">
+            <div class="label">📊 Visibilidad total</div>
+            <h2 style="font-size:clamp(1.6rem,3.5vw,2.4rem); font-weight:900; margin-bottom:0.5rem;">Todo ordenado en tu
+                panel,<br><span class="text-grad">en tiempo real</span></h2>
+            <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;">Cada pedido y reserva que llegó por
+                WhatsApp, registrado automáticamente.</p>
+
+            <div class="panel-tabs">
+                <button class="panel-tab active" onclick="switchTab('pedidos',this)">📦 Pedidos de Delivery</button>
+                <button class="panel-tab" onclick="switchTab('reservas',this)">📅 Reservas de Mesas</button>
+            </div>
+
+            <!-- PEDIDOS -->
+            <div class="panel-view active" id="tab-pedidos">
+                <div class="at-window">
+                    <div class="at-titlebar">
+                        <div class="at-dot" style="background:#ff5f56"></div>
+                        <div class="at-dot" style="background:#ffbd2e"></div>
+                        <div class="at-dot" style="background:#27c93f"></div>
+                        <span class="at-tab">📦 Pedidos</span>
+                        <span class="at-tab-i">📅 Reservas</span>
+                        <span class="at-tab-i">💬 Conversaciones</span>
+                    </div>
+                    <div class="at-toolbar">
+                        <div class="at-btn">🔍 Buscar</div>
+                        <div class="at-btn">⇅ Ordenar</div>
+                        <div class="at-btn">🔽 Filtrar</div>
+                        <div style="margin-left:auto;font-size:0.68rem;color:#9ca3af;">19 registros</div>
+                    </div>
+                    <div style="overflow-x:auto">
+                        <table class="at">
+                            <thead>
+                                <tr>
+                                    <th class="at-rn"></th>
+                                    <th>Nro Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Teléfono</th>
+                                    <th>Detalle</th>
+                                    <th>Total</th>
+                                    <th>Seña</th>
+                                    <th>Saldo</th>
+                                    <th>Estado Pago</th>
+                                    <th>Estado Entrega</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="at-rn">1</td>
+                                    <td><strong>PED-A3B56</strong></td>
+                                    <td>Arnaldo Ayala</td>
+                                    <td>+54 9 376…</td>
+                                    <td>Asado de Tira 400gr + Ensalada Mixta</td>
+                                    <td><strong>$20.200</strong></td>
+                                    <td>$2.020</td>
+                                    <td>$18.180</td>
+                                    <td><span class="b bg">✓ confirmado</span></td>
+                                    <td><span class="b bb">📦 en camino</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="at-rn">2</td>
+                                    <td><strong>PED-C7F12</strong></td>
+                                    <td>Laura Méndez</td>
+                                    <td>+54 9 341…</td>
+                                    <td>Bondiola c/ puré de calabaza × 2</td>
+                                    <td><strong>$17.500</strong></td>
+                                    <td>$1.750</td>
+                                    <td>$15.750</td>
+                                    <td><span class="b by">⏳ esperando</span></td>
+                                    <td><span class="b bk">— pendiente</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="at-rn">3</td>
+                                    <td><strong>PED-D9A04</strong></td>
+                                    <td>Marcos Ruiz</td>
+                                    <td>+54 9 299…</td>
+                                    <td>Bife de Chorizo 300gr + Papas fritas</td>
+                                    <td><strong>$14.800</strong></td>
+                                    <td>$1.480</td>
+                                    <td>$13.320</td>
+                                    <td><span class="b bg">✓ confirmado</span></td>
+                                    <td><span class="b bg">✓ entregado</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="at-rn">4</td>
+                                    <td><strong>PED-E2K88</strong></td>
+                                    <td>Sofía Peralta</td>
+                                    <td>+54 9 381…</td>
+                                    <td>Vacío a la parrilla + Chimichurri</td>
+                                    <td><strong>$22.500</strong></td>
+                                    <td>$2.250</td>
+                                    <td>$20.250</td>
+                                    <td><span class="b by">⏳ esperando</span></td>
+                                    <td><span class="b bk">— pendiente</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="at-rn">5</td>
+                                    <td><strong>PED-F5N31</strong></td>
+                                    <td>Diego Torres</td>
+                                    <td>+54 9 261…</td>
+                                    <td>Pollo entero al horno + Ensalada césar</td>
+                                    <td><strong>$18.900</strong></td>
+                                    <td>$1.890</td>
+                                    <td>$17.010</td>
+                                    <td><span class="b bg">✓ confirmado</span></td>
+                                    <td><span class="b bb">📦 en camino</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="at-add">+ Agregar registro</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESERVAS -->
+            <div class="panel-view" id="tab-reservas">
+                <div class="at-window">
+                    <div class="at-titlebar">
+                        <div class="at-dot" style="background:#ff5f56"></div>
+                        <div class="at-dot" style="background:#ffbd2e"></div>
+                        <div class="at-dot" style="background:#27c93f"></div>
+                        <span class="at-tab-i">📦 Pedidos</span>
+                        <span class="at-tab">📅 Reservas</span>
+                        <span class="at-tab-i">💬 Conversaciones</span>
+                    </div>
+                    <div class="at-toolbar">
+                        <div class="at-btn">🔍 Buscar</div>
+                        <div class="at-btn">⇅ Ordenar</div>
+                        <div class="at-btn">📅 Esta semana</div>
+                        <div style="margin-left:auto;font-size:0.68rem;color:#9ca3af;">12 registros</div>
+                    </div>
+                    <div style="overflow-x:auto">
+                        <table class="at">
+                            <thead>
+                                <tr>
+                                    <th class="at-rn"></th>
+                                    <th>Cliente</th>
+                                    <th>Teléfono</th>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Personas</th>
+                                    <th>Servicio</th>
+                                    <th>Pedido especial</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="at-rn">1</td>
+                                    <td><strong>Familia González</strong></td>
+                                    <td>+54 9 351…</td>
+                                    <td>Sáb 08 mar</td>
+                                    <td>21:00 hs</td>
+                                    <td>6 personas</td>
+                                    <td><span class="b bp">🌙 cena</span></td>
+                                    <td>Cumpleaños, torta sorpresa</td>
+                                    <td><span class="b bg">✓ confirmada</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="at-rn">2</td>
+                                    <td><strong>Carlos Ibáñez</strong></td>
+                                    <td>+54 9 387…</td>
+                                    <td>Dom 09 mar</td>
+                                    <td>13:00 hs</td>
+                                    <td>2 personas</td>
+                                    <td><span class="b by">☀️ almuerzo</span></td>
+                                    <td>—</td>
+                                    <td><span class="b bg">✓ confirmada</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="at-rn">3</td>
+                                    <td><strong>Ana Lucía Vega</strong></td>
+                                    <td>+54 9 362…</td>
+                                    <td>Lun 10 mar</td>
+                                    <td>20:30 hs</td>
+                                    <td>4 personas</td>
+                                    <td><span class="b bp">🌙 cena</span></td>
+                                    <td>Sin gluten para 1 comensal</td>
+                                    <td><span class="b bb">⏳ pendiente</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="at-rn">4</td>
+                                    <td><strong>Pablo Herrera</strong></td>
+                                    <td>+54 9 343…</td>
+                                    <td>Mar 11 mar</td>
+                                    <td>21:30 hs</td>
+                                    <td>8 personas</td>
+                                    <td><span class="b bp">🌙 cena</span></td>
+                                    <td>Reunión empresa, menú ejecutivo</td>
+                                    <td><span class="b bg">✓ confirmada</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="at-rn">5</td>
+                                    <td><strong>Valentina Cruz</strong></td>
+                                    <td>+54 9 376…</td>
+                                    <td>Mié 12 mar</td>
+                                    <td>13:30 hs</td>
+                                    <td>3 personas</td>
+                                    <td><span class="b by">☀️ almuerzo</span></td>
+                                    <td>—</td>
+                                    <td><span class="b br">✗ cancelada</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="at-add">+ Agregar registro</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-num">05 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 6 — VOZ IA (PREMIUM)
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide glow-purple" id="s6">
+        <div class="slide-inner">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;">
+                <div class="label" style="margin:0;">🎙️ Exclusivo Plan Premium</div>
+                <span class="badge badge-purple">NUEVO</span>
+            </div>
+            <h2 style="font-size:clamp(1.8rem,4vw,2.6rem); font-weight:900; margin-bottom:0.5rem;">
+                Tu restaurante también<br><span class="text-grad-purple">habla por teléfono, solo.</span>
+            </h2>
+            <p style="color:var(--muted);font-size:0.92rem;margin-bottom:0.25rem;">Integración de voz IA para atender
+                llamadas telefónicas automáticamente — reservas, consultas y delivery por voz.</p>
+
+            <div class="voice-grid">
+                <div class="voice-card twilio">
+                    <div class="voice-logo">📞</div>
+                    <h3 style="color:#f87171;">Twilio</h3>
+                    <p>Recibe y realiza llamadas telefónicas reales desde un número local. La infraestructura de voz más
+                        confiable del mundo.</p>
+                    <div class="voice-tags">
+                        <span class="voice-tag">Número local</span>
+                        <span class="voice-tag">Llamadas entrantes</span>
+                        <span class="voice-tag">SMS</span>
+                        <span class="voice-tag">IVR inteligente</span>
+                    </div>
+                </div>
+                <div class="voice-card eleven">
+                    <div class="voice-logo">🗣️</div>
+                    <h3 style="color:#fbbf24;">ElevenLabs</h3>
+                    <p>Voz sintética hiperrealista en español. El cliente escucha una voz natural y cálida, no un robot.
+                        Personalizable con el estilo del local.</p>
+                    <div class="voice-tags">
+                        <span class="voice-tag">Voz en español</span>
+                        <span class="voice-tag">Tono personalizable</span>
+                        <span class="voice-tag">Latencia baja</span>
+                        <span class="voice-tag">Expresiva</span>
+                    </div>
+                </div>
+                <div class="voice-card vapi">
+                    <div class="voice-logo">🤖</div>
+                    <h3 style="color:#a78bfa;">Vapi</h3>
+                    <p>El cerebro de la llamada. Entiende lo que dice el cliente, procesa la reserva o pedido y responde
+                        en tiempo real con inteligencia artificial.</p>
+                    <div class="voice-tags">
+                        <span class="voice-tag">Comprensión natural</span>
+                        <span class="voice-tag">Tiempo real</span>
+                        <span class="voice-tag">Integra con n8n</span>
+                        <span class="voice-tag">Multi-turno</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="voice-flow">
+                <div class="vf-step">
+                    <div class="icon">📱</div><strong>Cliente llama</strong>
+                    <div class="lbl">al número del local</div>
+                </div>
+                <div class="vf-arrow">→</div>
+                <div class="vf-step">
+                    <div class="icon">📞</div><strong>Twilio</strong>
+                    <div class="lbl">recibe la llamada</div>
+                </div>
+                <div class="vf-arrow">→</div>
+                <div class="vf-step">
+                    <div class="icon">🤖</div><strong>Vapi + IA</strong>
+                    <div class="lbl">entiende y procesa</div>
+                </div>
+                <div class="vf-arrow">→</div>
+                <div class="vf-step">
+                    <div class="icon">🗣️</div><strong>ElevenLabs</strong>
+                    <div class="lbl">responde con voz real</div>
+                </div>
+                <div class="vf-arrow">→</div>
+                <div class="vf-step">
+                    <div class="icon">🗄️</div><strong>Airtable</strong>
+                    <div class="lbl">registra la reserva</div>
+                </div>
+                <div class="vf-arrow">→</div>
+                <div class="vf-step">
+                    <div class="icon">🔔</div><strong>Dueño</strong>
+                    <div class="lbl">recibe notificación</div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-num">06 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 7 — CALCULADORA ROI
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide" id="s7">
+        <div class="slide-inner">
+            <div class="label">💰 Calculadora de pérdidas</div>
+            <h2 style="font-size:clamp(1.6rem,3.5vw,2.3rem); font-weight:900; margin-bottom:0.4rem;">¿Cuánto te cuesta
+                <em>no</em> tenerlo?
+            </h2>
+            <p style="color:var(--muted);font-size:0.88rem;margin-bottom:2rem;">Mové los controles y mirá en tiempo real
+                cuánto dinero se va cada mes.</p>
+
+            <div class="roi-grid">
+                <div class="roi-inputs">
+                    <label>Mesas perdidas por demorar (mes) <span class="rv" id="v1">15</span></label>
+                    <input type="range" min="5" max="100" value="15" id="r1" oninput="roi()">
+
+                    <label>Horas extras perdiendo tiempo en chat (día) <span class="rv" id="v2">3</span></label>
+                    <input type="range" min="1" max="12" value="3" id="r2" oninput="roi()">
+
+                    <label>Ticket promedio por mesa <span class="rv" id="v3">$25.000</span></label>
+                    <input type="range" min="5000" max="100000" step="1000" value="25000" id="r3" oninput="roi()">
+
+                    <label>Valor de hora del empleado (aprox) <span class="rv" id="v4">$3.000</span></label>
+                    <input type="range" min="1000" max="10000" step="500" value="3000" id="r4" oninput="roi()">
+                </div>
+                <div class="roi-card">
+                    <h3>📊 Tu dinero escurrido mensual</h3>
+                    <div class="roi-row">
+                        <span class="roi-lbl">Por mesas caídas (turistas ansiosos)</span>
+                        <span class="roi-val red" id="o1">—</span>
+                    </div>
+                    <div class="roi-row">
+                        <span class="roi-lbl">Costo horas operativas chateando</span>
+                        <span class="roi-val red" id="o2">—</span>
+                    </div>
+                    <div class="roi-row"
+                        style="border-top: 2px solid rgba(255,255,255,0.1); margin-top: 10px; padding-top: 10px;">
+                        <span class="roi-lbl">Pérdida Total Mensual</span>
+                        <span class="roi-val" id="o4">—</span>
+                    </div>
+                    <div class="roi-cta">
+                        <div class="big" id="o5">—</div>
+                        <div class="sub">El sistema se paga salvando solo <strong id="o6">X mesas</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slide-num">07 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 8 — PLANES
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide" id="s8">
+        <div class="slide-inner">
+            <div class="label">💸 Planes</div>
+            <h2 style="font-size:clamp(1.6rem,3.5vw,2.3rem); font-weight:900; text-align:center;">Tres niveles. Un
+                objetivo: que tu local<br><span class="text-grad">nunca pierda un cliente.</span></h2>
+
+            <div class="plans-grid">
+
+                <!-- BASIC -->
+                <div class="plan basic">
+                    <div class="plan-name" style="color:var(--green)">Sistema BASIC</div>
+                    <div class="plan-setup">Setup único: $149 USD</div>
+                    <div class="plan-price">$57<small>/mes USD</small></div>
+                    <p class="plan-desc">El primer paso. Ideal para locales que hoy gestionan todo de forma manual.</p>
+                    <ul class="plan-features">
+                        <li>Agente IA 24/7 en WhatsApp (Gemini)<br><span class="ft">n8n + Evolution API</span></li>
+                        <li>Reservas automáticas con registro en Airtable<br><span class="ft">Airtable Grid View</span>
+                        </li>
+                        <li>Menú digital interactivo por chat</li>
+                        <li>Delivery asistido: toma el pedido y envía CVU/Alias<br><span class="ft">n8n Webhook</span>
+                        </li>
+                        <li>Confirmación por comando "pago confirmado"</li>
+                        <li>Panel básico Airtable (pedidos + reservas)</li>
+                    </ul>
+                    <button class="plan-btn">Elegir Basic</button>
+                </div>
+
+                <!-- PROFESIONAL -->
+                <div class="plan pro">
+                    <div class="plan-badge">★ Más Elegido</div>
+                    <div class="plan-name" style="color:var(--blue)">Sistema PROFESIONAL</div>
+                    <div class="plan-setup">Setup único: $399 USD</div>
+                    <div class="plan-price">$147<small>/mes USD</small></div>
+                    <p class="plan-desc">El verdadero SaaS. Automatización financiera y presencia digital completa.</p>
+                    <ul class="plan-features">
+                        <li><strong>Todo lo del Plan Basic</strong></li>
+                        <li>Pasarela de cobros — señas automáticas<br><span class="ft">MercadoPago / Stripe + n8n</span>
+                        </li>
+                        <li>WhatsApp API Oficial Meta — sin riesgo de bloqueo<br><span class="ft">WhatsApp Cloud
+                                API</span></li>
+                        <li>Landing page del local (si no tienen web)<br><span class="ft">Carrd / WordPress</span></li>
+                        <li>Difusión de novedades y promociones push<br><span class="ft">WhatsApp Cloud API +
+                                Brevo</span></li>
+                        <li>Panel operativo con filtros en Airtable Interfaces</li>
+                    </ul>
+                    <button class="plan-btn">Comenzar Implementación</button>
+                </div>
+
+                <!-- PREMIUM -->
+                <div class="plan premium">
+                    <div class="plan-name" style="color:var(--purple)">Sistema PREMIUM</div>
+                    <div class="plan-setup">Setup único: $699 USD</div>
+                    <div class="plan-price">$297<small>/mes USD</small></div>
+                    <p class="plan-desc">El sistema definitivo. Fidelización, analítica avanzada y atención por voz.</p>
+                    <ul class="plan-features">
+                        <li><strong>Todo lo del Plan Profesional</strong></li>
+                        <li>🎙️ <strong>Atención por voz IA</strong> — reservas por llamada telefónica<br><span
+                                class="ft">Twilio + ElevenLabs + Vapi</span></li>
+                        <li>Motor de Cumpleaños — promo automática al cliente<br><span class="ft">Airtable Date + n8n +
+                                WhatsApp</span></li>
+                        <li>Gestión de Eventos y catas especiales<br><span class="ft">Airtable Events + n8n Cron</span>
+                        </li>
+                        <li>Dashboard gerencial en tiempo real<br><span class="ft">Google Looker Studio →
+                                Airtable</span></li>
+                        <li>Respuestas auto en Instagram y Facebook<br><span class="ft">Meta API + FastAPI</span></li>
+                    </ul>
+                    <button class="plan-btn">Elegir Premium</button>
+                </div>
+
+            </div>
+        </div>
+        <div class="slide-num">08 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 9 — STACK TECNOLÓGICO
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide" id="s9">
+        <div class="slide-inner">
+            <div class="label">⚙️ Infraestructura</div>
+            <h2 style="font-size:clamp(1.6rem,3.5vw,2.3rem); font-weight:900;">Tecnología de agencia,<br><span
+                    class="text-grad">al alcance de cualquier local</span></h2>
+            <div class="stack-grid">
+                <div class="stack-card">
+                    <div class="ico">🧠</div>
+                    <h4>n8n + Easypanel</h4>
+                    <p>Motor de automatización en nube propia. Sin límites de ejecuciones.</p>
+                </div>
+                <div class="stack-card">
+                    <div class="ico">💬</div>
+                    <h4>Evolution API</h4>
+                    <p>Integración WhatsApp. Mensajes, audio, imágenes y notificaciones.</p>
+                </div>
+                <div class="stack-card">
+                    <div class="ico">🤖</div>
+                    <h4>Gemini / GPT-4o</h4>
+                    <p>IA que entiende lenguaje natural y responde como una persona real.</p>
+                </div>
+                <div class="stack-card">
+                    <div class="ico">🗄️</div>
+                    <h4>Airtable</h4>
+                    <p>Base de datos y panel visual. Sin necesidad de saber de tecnología.</p>
+                </div>
+                <div class="stack-card">
+                    <div class="ico">📊</div>
+                    <h4>Looker Studio</h4>
+                    <p>Dashboards con gráficos en tiempo real. Solo plan Premium.</p>
+                </div>
+                <div class="stack-card">
+                    <div class="ico">💳</div>
+                    <h4>MercadoPago</h4>
+                    <p>Cobro automático de señas y pedidos sin intermediarios.</p>
+                </div>
+                <div class="stack-card">
+                    <div class="ico">📞</div>
+                    <h4>Twilio</h4>
+                    <p>Llamadas telefónicas reales al número del local. Plan Premium.</p>
+                </div>
+                <div class="stack-card">
+                    <div class="ico">🗣️</div>
+                    <h4>ElevenLabs + Vapi</h4>
+                    <p>Voz IA hiperrealista en español para atención telefónica automática.</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-num">09 / 10</div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+     SLIDE 10 — CTA FINAL
+════════════════════════════════════════════════════════════════ -->
+    <section class="slide glow-bottom" id="s10">
+        <div class="slide-inner" style="text-align:center;">
+            <img src="../LOGO/LOGOTRANSPARENTE.png" alt="System IA"
+                style="height:52px;margin-bottom:1.5rem;filter:drop-shadow(0 0 16px rgba(0,225,255,0.35))">
+            <div class="label">Próximo paso</div>
+            <h2>¿Listo para que tu local<br><span class="text-grad">trabaje las 24 horas?</span></h2>
+            <p>Agendá una demo en vivo. En 15 minutos ves el sistema funcionando con datos reales de tu local.</p>
+            <div class="cta-btns">
+                <a href="https://wa.me/5493853003153" class="btn-primary">💬 Hablar por WhatsApp</a>
+                <a href="#s7" class="btn-outline">📊 Ver calculadora ROI</a>
+            </div>
+            <div class="logos-row">
+                <span>n8n</span><span>·</span>
+                <span>Airtable</span><span>·</span>
+                <span>Evolution API</span><span>·</span>
+                <span>Gemini</span><span>·</span>
+                <span>MercadoPago</span><span>·</span>
+                <span>Twilio</span><span>·</span>
+                <span>ElevenLabs</span><span>·</span>
+                <span>Vapi</span>
+            </div>
+        </div>
+        <div class="slide-num">10 / 10</div>
+    </section>
+
+    <!-- ── MODO PRESENTADOR (TELEPROMPTER) ─────────────────────── -->
+    <button id="togglePresenter" class="presenter-btn" title="Activar Guión">👁️</button>
+    <div id="presenterPanel" class="presenter-panel">
+        <div class="presenter-header">
+            <span class="p-badge">GUIÓN DE VENTAS (MODO INCOGNITO)</span>
+            <span class="p-slide-num">Cargando...</span>
+            <button id="closePresenter" class="p-close">×</button>
+        </div>
+        <div id="presenterScript" class="presenter-script">
+            <!-- El script se inyecta por JS -->
+        </div>
+    </div>
+
+    <script>
+        // ── DOT NAV ACTIVO ───────────────────────────────────────────────
+        const slides = document.querySelectorAll('.slide');
+        const dots = document.querySelectorAll('.dot-nav a');
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    const id = e.target.id;
+                    dots.forEach(d => d.classList.remove('active'));
+                    const active = document.querySelector(`.dot-nav a[href="#${id}"]`);
+                    if (active) active.classList.add('active');
+                }
+            });
+        }, { threshold: 0.5 });
+        slides.forEach(s => io.observe(s));
+
+        // ── PANEL TABS ───────────────────────────────────────────────────
+        function switchTab(name, btn) {
+            document.querySelectorAll('.panel-view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // ── CHAT SIMULATOR ───────────────────────────────────────────────
+        const msgs = [
+            { r: 'user', t: 'Hola buenas noches 👋' },
+            { r: 'bot', t: '¡Bienvenido a *La Parrilla de Don Alberto*! 🍖\n¿En qué te puedo ayudar?\n\n1️⃣ Ver Menú\n2️⃣ Reservar mesa\n3️⃣ Delivery' },
+            { r: 'user', t: '3 - quiero pedir delivery' },
+            { r: 'bot', t: 'Perfecto 🛵 Te mando el menú:\n\n🥩 Asado de Tira 400gr — $8.500\n🥩 Bife de Chorizo — $7.500\n🍗 Pollo al horno — $6.800\n\n¿Qué querés pedir?' },
+            { r: 'user', t: 'Asado de Tira + papas fritas' },
+            { r: 'bot', t: '✅ *Pedido PED-A3B56*\n🥩 Asado 400gr — $8.500\n🍟 Papas fritas — $2.200\n💰 Total: $10.700\n\nSeña 10%: *$1.070*\nAlias: *LAPARRILLA.WPP*\n\nMandame el comprobante 📸' },
+            { r: 'user', t: '[📸 imagen enviada]' },
+            { r: 'bot', t: '🧾 Comprobante recibido, verificando... ⏳' },
+            { r: 'bot', t: '✅ *¡Pago confirmado!*\n\n¿Cuál es tu dirección de entrega?' },
+            { r: 'user', t: 'San Martín 450, 3er piso' },
+            { r: 'bot', t: '📦 ¡Pedido en camino!\nTiempo estimado: 45-60 min\n\n¡Gracias por elegirnos! 🙌' },
+        ];
+        let idx = 0;
+        const ctr = document.getElementById('chatMsg');
+        const typ = document.getElementById('typing');
+        ctr.insertBefore(typ, ctr.firstChild);
+        const now = () => { const d = new Date(); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
+        function addMsg(m) {
+            const d = document.createElement('div');
+            d.className = `wpp-bubble ${m.r}`;
+            d.innerHTML = m.t.replace(/\*(.*?)\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            const t = document.createElement('div');
+            t.className = 'wpp-time'; t.textContent = now();
+            d.appendChild(t);
+            ctr.appendChild(d);
+            setTimeout(() => d.classList.add('show'), 50);
+            ctr.scrollTop = ctr.scrollHeight;
+        }
+        function nextMsg() {
+            if (idx >= msgs.length) return;
+            const m = msgs[idx++];
+            if (m.r === 'bot') {
+                typ.classList.add('vis');
+                setTimeout(() => { typ.classList.remove('vis'); addMsg(m); setTimeout(nextMsg, m.t.length < 80 ? 1100 : 1800); }, 1000);
+            } else {
+                addMsg(m);
+                setTimeout(nextMsg, 700);
+            }
+        }
+        const chatIO = new IntersectionObserver(e => { if (e[0].isIntersecting) { chatIO.disconnect(); setTimeout(nextMsg, 800); } }, { threshold: 0.4 });
+        chatIO.observe(document.querySelector('.wpp-phone'));
+
+        // ── ROI CALCULATOR ───────────────────────────────────────────────
+        function fmt(n) { return '$' + Math.round(n).toLocaleString('es-AR'); }
+
+        function roi() {
+            const mesas = +document.getElementById('r1').value;
+            const horasDia = +document.getElementById('r2').value;
+            const ticket = +document.getElementById('r3').value;
+            const valHora = +document.getElementById('r4').value;
+
+            document.getElementById('v1').textContent = mesas;
+            document.getElementById('v2').textContent = horasDia;
+            document.getElementById('v3').textContent = fmt(ticket);
+            document.getElementById('v4').textContent = fmt(valHora);
+
+            // Cálculos
+            const costoMesas = mesas * ticket;
+            const costoHoras = horasDia * valHora * 30; // horas perdidas al mes
+
+            const perdidaTotal = costoMesas + costoHoras;
+
+            const costo_sistema_ars = 147 * 1200; // Plan pro $147 USD a ARS 1200 aprox
+            const rescate = ticket > 0 ? Math.ceil(costo_sistema_ars / ticket) : 0;
+
+            document.getElementById('o1').textContent = fmt(costoMesas);
+            if (document.getElementById('o2')) document.getElementById('o2').textContent = fmt(costoHoras);
+            document.getElementById('o4').textContent = fmt(perdidaTotal) + ' ARS';
+            document.getElementById('o5').textContent = fmt(perdidaTotal) + ' / mes';
+            document.getElementById('o6').textContent = rescate + ' mesas';
+        }
+
+        roi();
+
+        // ── SCRIPTS MODO PRESENTADOR ─────────────────────────────────────
+        const scripts = {
+            s1: "<span class='action'>(Sonreír, mirar a los ojos)</span> Hola [Nombre del dueño]. Gracias por el tiempo. En San Ignacio, con el volumen de turismo de las Ruinas, sé que el WhatsApp de ustedes a veces no da abasto. Hoy les vengo a mostrar cómo atender a todos al instante, en su propio idioma, sin que ustedes ni los mozos toquen el celular.",
+            s2: "<span class='action'>(Tono más serio, empatizando)</span> ¿Les pasa esto? Un contingente escribe pidiendo menú cuando están en pleno despacho. O les escriben de Brasil a las 2 AM. Si no respondés rápido, o tardan en traducir, ese turista camina media cuadra y entra al local de al lado. Esa es venta perdida.",
+            s3: "Sacamos números reales. Casi el 40% del tiempo operativo del mozo se va en pasar el menú o responder precios. El turista hoy es ansioso. Además, al turista extranjero hay que facilitarle el trabajo de dejar una <span class='highlight'>reseña 5 estrellas</span> en TripAdvisor o Google, que es vital acá. Todo eso lo automatizamos.",
+            s4: "<span class='action'>(Señalar el celular en la pantalla)</span> La solución es un Agente de Inteligencia Artificial. Un cliente manda un mensaje, y en menos de 8 segundos el Agente le pasa el menú, responde dudas, toma el pedido y si es necesario le pasa el link de pago/alias. Responde 24/7. Habla inglés, portugués, francés al instante.",
+            s5: "<span class='action'>(Mostrar seguridad y simpleza)</span> ¿Y ustedes cómo lo operan? Facilísimo. Todo cae en un panel visual, como este que les muestro. Nada de hojitas perdidas. Las reservas entran ordenadas. Los pedidos ya caen con el comprobante de pago validado. Esto ingresa derecho a cocina.",
+            s6: "<span class='action'>(Como algo exclusivo y VIP)</span> Y para dar un salto tecnológico gigante frente a los demás restaurantes de la zona: a este mismo sistema le podemos poner una <span class='highlight'>Voz Humana Inteligente</span> que atienda el teléfono de línea como si fuera una recepcionista real.",
+            s7: "<span class='action'>(Jugar con los sliders junto con el dueño)</span> Analicemos sus números. ¿Cuántas mesas por mes creen que pierden por demoras en contestar? Digamos unas pocas. Fíjense como el sistema literalmente <span class='highlight'>se paga a sí mismo rescatando apenas un par de ventas</span> que hoy se les están yendo a la competencia.",
+            s8: "<span class='action'>(Tono resolutivo y consultivo)</span> El plan que más elige el rubro gastronómico es el <span class='highlight'>Profesional</span>, porque evita baneos usando la conexión de WhatsApp Oficial (como las aerolíneas), automatiza pagos y les arma una base de clientes para mandar promos cuando viene un fin de semana largo.",
+            s9: "<span class='action'>(Generar altísima confianza técnica)</span> Atrás de esto no hay un \"programita\" barato. Usamos IA de Google, servidores internacionales y WhatsApp Meta Oficial. Es la misma tecnología que usan las grandes marcas en Buenos Aires, procesada por nuestra Agencia e instalada directo en San Ignacio.",
+            s10: "<span class='action'>(Cierre con riesgo cero para el cliente)</span> El paso para arrancar no tiene fricción. Me pasan su carta en PDF hoy. En menos de 3 días les armo un agente de prueba para [Nombre del Restaurante]. Yo se los mando, ustedes le hablan como si fueran un turista quisquilloso y lo intentan 'romper'. ¿Se animan a hacer la prueba?"
+        };
+
+        const btnToggle = document.getElementById('togglePresenter');
+        const btnClose = document.getElementById('closePresenter');
+        const pPanel = document.getElementById('presenterPanel');
+        const pScript = document.getElementById('presenterScript');
+        const pSlideNum = document.querySelector('.p-slide-num');
+
+        function updatePresenterScript(id) {
+            if (!scripts[id]) return;
+            pScript.innerHTML = scripts[id];
+            const slideIndex = id.replace('s', '');
+            pSlideNum.textContent = `SLIDE ${slideIndex} / 10`;
+            pScript.scrollTop = 0;
+        }
+
+        btnToggle.addEventListener('click', () => {
+            pPanel.classList.toggle('open');
+            const activeDot = document.querySelector('.dot-nav a.active');
+            if (activeDot) {
+                updatePresenterScript(activeDot.getAttribute('href').substring(1));
+            }
+        });
+
+        btnClose.addEventListener('click', () => {
+            pPanel.classList.remove('open');
+        });
+
+        const syncIO = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) updatePresenterScript(e.target.id);
+            });
+        }, { threshold: 0.5 });
+        document.querySelectorAll('.slide').forEach(s => syncIO.observe(s));
+    </script>
+</body>
+
+</html>
+```

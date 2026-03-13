@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Propuesta para Agencias - System IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #0f172a;
+            --accent: #f59e0b;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --radius-lg: 12px;
+            --radius-md: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            /* Colores de planes para Agencia */
+            --basic: #10b981;
+            /* Partnership */
+            --pro: #3b82f6;
+            /* Marca Blanca */
+            --premium: #0f172a;
+            /* Infraestructura */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            line-height: 1.6;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .document-wrapper {
+            background-color: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 50px 60px;
+            margin-bottom: 40px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .logo {
+            max-height: 80px;
+            object-fit: contain;
+        }
+
+        .header-text {
+            text-align: right;
+        }
+
+        .header-title {
+            font-size: 24px;
+            color: var(--secondary);
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .intro {
+            font-size: 16px;
+            color: var(--text-main);
+            margin-bottom: 35px;
+            line-height: 1.8;
+        }
+
+        .intro strong {
+            color: var(--secondary);
+        }
+
+        .service-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 25px 30px;
+            margin-bottom: 25px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card.card-basic {
+            border-left: 5px solid var(--basic);
+        }
+
+        .service-card.card-pro {
+            border-left: 5px solid var(--pro);
+        }
+
+        .service-card.card-premium {
+            border-left: 5px solid var(--premium);
+            background: linear-gradient(to right, #ffffff, #f8fafc);
+        }
+
+        .service-card.featured {
+            border: 2px solid #3b82f6;
+            /* Usar borde azul completo para la versión destacada */
+            border-left: 6px solid #3b82f6;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+        }
+
+        .badge-featured {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-bottom-left-radius: var(--radius-md);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .service-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .service-title-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .service-icon {
+            font-size: 24px;
+            background: var(--background);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .service-title {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--secondary);
+        }
+
+        .card-basic .service-title {
+            color: var(--basic);
+        }
+
+        .card-pro .service-title {
+            color: var(--pro);
+        }
+
+        .card-premium .service-title {
+            color: var(--premium);
+        }
+
+        .price-badge {
+            text-align: right;
+            background: #f1f5f9;
+            padding: 8px 15px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        .featured .price-badge {
+            background: white;
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .price-badge strong {
+            display: block;
+            color: var(--secondary);
+            font-size: 16px;
+            line-height: 1.2;
+        }
+
+        .price-badge span {
+            font-size: 11px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .service-desc {
+            font-size: 14.5px;
+            margin-bottom: 15px;
+            color: var(--text-main);
+        }
+
+        .service-benefit {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+            padding: 10px 15px;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            font-size: 13.5px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .card-basic .service-benefit {
+            border-left-color: var(--basic);
+        }
+
+        .card-pro .service-benefit {
+            border-left-color: var(--pro);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .card-premium .service-benefit {
+            border-left-color: var(--premium);
+        }
+
+        .service-reqs {
+            margin-bottom: 15px;
+            border-radius: var(--radius-md);
+            border: 1px solid #cbd5e1;
+            padding: 12px 18px;
+            background-color: #f1f5f9;
+        }
+
+        .featured .service-reqs {
+            background-color: white;
+        }
+
+        .service-reqs h4 {
+            color: var(--secondary);
+            font-size: 12.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .service-reqs ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px 15px;
+            font-size: 13.5px;
+        }
+
+        .service-reqs ul li {
+            position: relative;
+            padding-left: 20px;
+            color: var(--text-main);
+        }
+
+        .service-reqs ul li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .card-basic .service-reqs ul li::before {
+            color: var(--basic);
+        }
+
+        .card-pro .service-reqs ul li::before {
+            color: var(--pro);
+        }
+
+        .card-premium .service-reqs ul li::before {
+            color: var(--premium);
+        }
+
+        .next-steps {
+            background: linear-gradient(135deg, var(--secondary) 0%, #1e293b 100%);
+            color: white;
+            padding: 30px 40px;
+            border-radius: var(--radius-lg);
+            margin-top: 40px;
+        }
+
+        .next-steps h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .next-steps p {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 15px;
+        }
+
+        .next-steps ol {
+            padding-left: 20px;
+        }
+
+        .next-steps li {
+            margin-bottom: 10px;
+            font-size: 14.5px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .next-steps li strong {
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: var(--text-light);
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+        }
+
+        /* Utilidades para impresión */
+        @media print {
+            body {
+                background-color: white;
+            }
+
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .document-wrapper {
+                box-shadow: none;
+                padding: 0;
+                border: none;
+            }
+
+            .service-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .service-reqs {
+                background-color: #f8fafc !important;
+                border: 1px solid #cbd5e1 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .next-steps {
+                break-inside: avoid;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .footer {
+                display: none;
+            }
+
+            @page {
+                margin: 0.5cm;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="document-wrapper">
+
+            <!-- Encabezado con Logo -->
+            <div class="header">
+                <img src="../LOGO/LOGOTRANSPARENTE.png" alt="System IA Logo" class="logo">
+                <div class="header-text">
+                    <h1 class="header-title">Programa de Partners (B2B)</h1>
+                    <div class="header-subtitle">Alianza Tecnológica para Agencias de Marketing</div>
+                </div>
+            </div>
+
+            <!-- Introducción -->
+            <div class="intro">
+                Su agencia domina la generación de <em>leads</em> y la estrategia de contenido. Nosotros dominamos la
+                <strong>Arquitectura de Sistemas, Inteligencia Artificial y Bots de Conversión</strong>.<br><br>
+                Esta propuesta detalla cómo podemos integrar nuestro "Software como Servicio" (SaaS) directamente en las
+                campañas de sus clientes, multiplicando la retención, justificando un aumento de su <em>fee</em> mensual
+                y entregando reportes de ventas en piloto automático, sin que ustedes escriban una sola línea de código.
+            </div>
+
+            <!-- 1. Plan CO-BRANDING -->
+            <div class="service-card card-basic">
+                <div class="service-header">
+                    <div class="service-title-group">
+                        <div class="service-icon">🤝</div>
+                        <h2 class="service-title">1. Partner Estratégico (Co-Branding)</h2>
+                    </div>
+                    <div class="price-badge">
+                        <span>Setup Único x Cliente: $147 USD</span>
+                        <strong>$67 USD/mes</strong>
+                    </div>
+                </div>
+                <p class="service-desc">
+                    Trabajamos como agencias hermanas. Su agencia corre la pauta publicitaria (Ads/Contenido) y nosotros
+                    conectamos directamente esos anuncios a un Bot de WhatsApp o un CRM automatizado. El cliente sabe
+                    que hay dos agencias expertas trabajando para él.
+                </p>
+                <div class="service-benefit">
+                    <strong>Beneficio Comercial:</strong> Aumenta la conversión del lead al instante. Nosotros asumimos
+                    el soporte técnico del Bot directamente con el cliente para que su agencia no pierda tiempo.
+                </div>
+
+                <div class="service-reqs">
+                    <h4>📋 Requisitos del Acuerdo</h4>
+                    <ul>
+                        <li>Reuniones conjuntas (Onboarding tripartito: Su Agencia + System IA + Cliente Final).</li>
+                        <li>Sincronización de campañas de Ads con nuestros <em>Webhooks</em>.</li>
+                        <li>El cliente final nos transfiere el pago tecnológico directamente a nosotros.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 2. Plan MARCA BLANCA (Destacado) -->
+            <div class="service-card card-pro featured">
+                <div class="badge-featured">⭐ PREFERIDO POR AGENCIAS</div>
+                <div class="service-header">
+                    <div class="service-title-group">
+                        <div class="service-icon" style="color:white">👻</div>
+                        <h2 class="service-title">2. Integración Marca Blanca (White-Label)</h2>
+                    </div>
+                    <div class="price-badge">
+                        <span>Setup Único x Cliente: $197 USD</span>
+                        <strong>$97 USD/mes</strong>
+                    </div>
+                </div>
+                <p class="service-desc">
+                    Nos convertimos en <strong>su propio Departamento de Tecnología interno</strong>. Entregamos toda
+                    nuestra ingeniería (Chatbots, Automatizaciones y Airtable CRMs) sin logos ni menciones de "System
+                    IA". Ustedes revenden el servicio al cliente final al precio hiper-rentable que decidan.
+                </p>
+                <div class="service-benefit">
+                    <strong>Beneficio Comercial:</strong> Incrementa brutalmente el valor percibido de SU agencia. Su
+                    marca se posiciona como dueña de un "Software Exclusivo", cobrando Fees integrales (Ej: $500 USD Ads
+                    + $200 USD Software = $700 USD/mes).
+                </div>
+
+                <div class="service-reqs">
+                    <h4>📋 Requisitos del Acuerdo</h4>
+                    <ul>
+                        <li>Subdominio apuntado a nuestros servidores (Ej: <em>crm.suagencia.com</em>).</li>
+                        <li>Toda comunicación y soporte técnico se triangula EXCLUSIVAMENTE a través de ustedes
+                            (Nosotros no hablamos con el cliente final).</li>
+                        <li>Su agencia es responsable de abonar nuestras facturas operativas.</li>
+                    </ul>
+                </div>
+
+                <div class="service-reqs">
+                    <h4>✅ Soporte Incluido</h4>
+                    <ul>
+                        <li>Conexión de API Oficial de Meta (WhatsApp) operada en silencio.</li>
+                        <li>Mantenimiento 24/7 de los flujos de n8n para que las campañas nunca se detengan.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 3. Plan INFRAESTRUCTURA MÚLTIPLE -->
+            <div class="service-card card-premium">
+                <div class="service-header">
+                    <div class="service-title-group">
+                        <div class="service-icon">☁️</div>
+                        <h2 class="service-title">3. Infraestructura Dedicada (Mayorista)</h2>
+                    </div>
+                    <div class="price-badge">
+                        <span>Deploy Servidor Dedicado: $500 USD</span>
+                        <strong>Desde $350 USD/mes</strong>
+                    </div>
+                </div>
+                <p class="service-desc">
+                    Diseñado para agencias con más de 10 clientes recurrentes que buscan escalar rápido. Desplegamos un
+                    servidor privado (VPS via Coolify) con un "Orquestador Maestro" dedicado exclusivamente para alojar
+                    las automatizaciones de TODA su cartera de clientes.
+                </p>
+                <div class="service-benefit">
+                    <strong>Beneficio Comercial:</strong> Costos fijos sin importar cuántos mensajes envíen sus
+                    clientes. Tienen control total operativo bajo su propio paraguas de Nube. El costo por cliente
+                    individual se diluye al mínimo.
+                </div>
+
+                <div class="service-reqs">
+                    <h4>📋 Requisitos del Acuerdo</h4>
+                    <ul>
+                        <li>Cartera activa demostrable (+10 clientes usando chatbots o CRMs).</li>
+                        <li>Reuniones mensuales de revisión de arquitectura y capacidad de servidor.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Próximos Pasos -->
+            <div class="next-steps">
+                <h3>🚀 ¿Listos para potenciar su cartera de clientes?</h3>
+                <p>Nuestra capacidad de absorber agencias marca blanca es limitada para garantizar la escalabilidad de
+                    los servidores.</p>
+                <ol>
+                    <li><strong>Selección de Modelo:</strong> Definan si prefieren que seamos sus aliados visibles
+                        (Partners) o su área oculta de ingeniería (Marca Blanca).</li>
+                    <li><strong>Prueba Piloto:</strong> Implementemos el sistema en un (1) solo cliente suyo actual (o
+                        en sus propias ventas internas) a modo de demostración.</li>
+                    <li><strong>Estandarización:</strong> Si funciona, unimos las APIs de Lead Generation (FB Ads) con
+                        nuestros servidores y lo convertimos en un producto en paquete para todos sus clientes futuros.
+                    </li>
+                </ol>
+            </div>
+
+            <div class="footer">
+                Documento Comercial de Alianzas B2B gestionado por <strong>System IA Agency</strong>.<br>
+                <em>Tecnologías implementadas de Backend: Airtable CRM, n8n Automation, Evolution / Cloud API Meta,
+                    OpenAI/Gemini Cortex.</em>
+            </div>
+
+        </div>
+    </div>
+</body>
+
+</html>

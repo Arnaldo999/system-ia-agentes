@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech – System IA | Guión de Presentación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --bg2: #1e293b;
+            --main: #f8fafc;
+            --muted: #94a3b8;
+            --border: #334155;
+            --green: #10b981;
+            --blue: #3b82f6;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --purple: #8b5cf6;
+            --cyan: #00e1ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--main);
+            line-height: 1.7;
+            padding: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* HEADER */
+        .header {
+            text-align: center;
+            padding: 2rem 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.3rem;
+        }
+
+        .header p {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .tip-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            font-size: 0.82rem;
+            color: #93c5fd;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .tip-box strong {
+            color: #60a5fa;
+        }
+
+        /* SLIDE BLOCK */
+        .slide-block {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 1.75rem;
+            overflow: hidden;
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.9rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .slide-num-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .slide-header h2 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            flex-grow: 1;
+        }
+
+        .slide-header .toggle {
+            color: var(--muted);
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+
+        .slide-header.open .toggle {
+            transform: rotate(180deg);
+        }
+
+        .slide-body {
+            padding: 1.25rem;
+            display: none;
+        }
+
+        .slide-body.open {
+            display: block;
+        }
+
+        /* SECCIONES DENTRO DEL SPEECH */
+        .section {
+            margin-bottom: 1.25rem;
+        }
+
+        .section-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .lbl-speech {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .lbl-tip {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+
+        .lbl-hook {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        .lbl-close {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+        }
+
+        .lbl-obj {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        /* TEXTO HABLADO */
+        .speech-text {
+            background: rgba(16, 185, 129, 0.05);
+            border-left: 3px solid var(--green);
+            border-radius: 0 8px 8px 0;
+            padding: 0.85rem 1rem;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            line-height: 1.75;
+        }
+
+        .speech-text em {
+            color: #fbbf24;
+            font-style: normal;
+            font-weight: 600;
+        }
+
+        .speech-text strong {
+            color: #34d399;
+        }
+
+        /* TIPS */
+        .tip {
+            background: rgba(245, 158, 11, 0.07);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.82rem;
+            color: #fde68a;
+            line-height: 1.6;
+        }
+
+        .tip::before {
+            content: "💡 ";
+        }
+
+        /* OBJECIÓN */
+        .objection {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .objection .q {
+            color: #fca5a5;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .objection .a {
+            color: #e2e8f0;
+        }
+
+        .objection .a::before {
+            content: "→ ";
+            color: #34d399;
+            font-weight: 700;
+        }
+
+        /* PAUSA */
+        .pausa {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--muted);
+            padding: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        .pausa::before {
+            content: "⏸ PAUSA — ";
+        }
+
+        /* COLORES POR SLIDE */
+        .s1 .slide-num-badge {
+            background: rgba(0, 225, 255, 0.15);
+            color: var(--cyan);
+        }
+
+        .s2 .slide-num-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        .s3 .slide-num-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        .s4 .slide-num-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .s5 .slide-num-badge {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        .s6 .slide-num-badge {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+        }
+
+        .s7 .slide-num-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+
+        .s8 .slide-num-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .s9 .slide-num-badge {
+            background: rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+        }
+
+        .s10 .slide-num-badge {
+            background: rgba(0, 225, 255, 0.15);
+            color: var(--cyan);
+        }
+
+        /* CERRAR TODO / ABRIR TODO */
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .ctrl-btn {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.78rem;
+            padding: 5px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .ctrl-btn:hover {
+            border-color: var(--blue);
+            color: #60a5fa;
+        }
+
+        /* PROGRESS */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, var(--cyan), var(--blue));
+            z-index: 100;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="progress-bar" id="progress"></div>
+
+    <div class="header">
+        <h1>🎤 Guión de Presentación</h1>
+        <p>System IA · Solución para Restaurantes, Bares y Cafés<br>
+            <span style="color:var(--amber)">Formato: videollamada Meet / Zoom · Usá esto en otra pantalla o
+                teléfono</span>
+        </p>
+    </div>
+
+    <div class="tip-box">
+        <strong>Setup antes de la llamada (5 minutos antes):</strong><br><br>
+        ✅ Abrí <code>dashboard_presentacion.html</code> en el navegador — lo vas a compartir pantalla<br>
+        ✅ Abrí este guión en el teléfono o en otra ventana<br>
+        ✅ Activá "No molestar" en el celular — ninguna notificación durante la reunión<br>
+        ✅ Cámara encendida, fondo prolijo o blur<br>
+        ✅ Antes de entrar, mandále un mensaje al lead: <em>"En 5 minutos empezamos, ¿tenés pantalla disponible para ver
+            unos slides?"</em><br><br>
+        <strong>Regla de oro en virtual:</strong> La persona que más habla pierde. En videollamada la atención dura 7
+        minutos antes de que la mente se disperse — hacé preguntas seguido, que él hable, vos guiás.
+    </div>
+
+    <div class="controls">
+        <button class="ctrl-btn" onclick="toggleAll(true)">▼ Abrir todo</button>
+        <button class="ctrl-btn" onclick="toggleAll(false)">▲ Cerrar todo</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 1 — PORTADA
+══════════════════════════════════════════ -->
+    <div class="slide-block s1">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">01</div>
+            <h2>Portada — La pregunta que abre todo</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís — ANTES de compartir pantalla</div>
+                <div class="speech-text">
+                    "Hola [nombre], antes de mostrarte nada quiero hacerte una sola pregunta.<br><br>
+                    <em>¿A qué hora cerró tu WhatsApp anoche?</em><br><br>
+                    Tu local cerró a las 23hs. Pero los mensajes siguieron llegando. ¿Quién los respondió?"
+                </div>
+            </div>
+            <div class="pausa">esperá la respuesta — en virtual el silencio incomoda más, pero no lo rompas vos</div>
+            <div class="section">
+                <div class="tip">
+                    Hacé esta pregunta ANTES de compartir pantalla. Así te mira a vos, no a los slides. Si responde
+                    "nadie" o "yo a la mañana siguiente" — ya abriste el dolor. Recién ahí decís: "Perfecto, entonces lo
+                    que te voy a mostrar te va a interesar. Compartí pantalla un segundo."
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 2 — EL DOLOR
+══════════════════════════════════════════ -->
+    <div class="slide-block s2">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">02</div>
+            <h2>El Problema — Hacerlo sentir reconocido</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís</div>
+                <div class="speech-text">
+                    "Mirá estas cuatro situaciones. Te voy a pedir que me digas cuántas te pasaron el último
+                    mes."<br><br>
+                    <em>[señalás cada tarjeta en la pantalla]</em><br><br>
+                    "Los mensajes de noche sin responder... ¿te pasó?<br>
+                    Las reservas en papel con errores... ¿alguna vez tuviste doble reserva?<br>
+                    Las apps de delivery quedándose con el 30% de tu plata... y encima no te dan los datos de TU
+                    cliente... ¿los ves que vuelven solos o siempre pasan por la app?<br>
+                    Tus mejores clientes en el anonimato... ¿te pasó de no saber ni el nombre de los que te compran
+                    todas las semanas o no mandarles un regalo el día de su cumpleaños?"<br><br>
+                    <em>[pausa]</em><br><br>
+                    "No sos el único. El 80% de los locales con los que hablamos tienen exactamente estos mismos
+                    problemas. No es falta de ganas — es que nunca tuvieron una herramienta para solucionarlo."
+                </div>
+            </div>
+            <div class="section">
+                <div class="tip">
+                    En virtual no ves si asiente — entonces preguntá en voz alta después de cada tarjeta: "¿Este te
+                    pasa?" Una sola palabra de respuesta ("sí", "siempre") vale más que un asentimiento. Mirá la cámara,
+                    no el cursor. Y pausá 2 segundos entre tarjeta y tarjeta — en Zoom el audio tiene delay y si hablás
+                    seguido se pisan.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 3 — ESTADÍSTICAS
+══════════════════════════════════════════ -->
+    <div class="slide-block s3">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">03</div>
+            <h2>El Costo Real — El número que duele</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís</div>
+                <div class="speech-text">
+                    "Ahora te cuento el número que más impacta a los dueños de local cuando lo ven por primera
+                    vez.<br><br>
+                    El <strong>30% de todo lo que facturás en PedidosYa o UberEats</strong> se queda ahí como comisión.
+                    Estás trabajando para ellos. Y encima, ellos se quedan con la información de tu cliente. Vos no
+                    sabés quién te compró.<br><br>
+                    Por ende, el <strong>80% de tus clientes recurrentes están en el anonimato</strong>. Tienen una
+                    buena experiencia hoy, y si mañana no se acuerdan, van a otro lado. No sabés cuándo cumplen años
+                    para mandarles un regalito gratis impulsando una cena de 4 personas.<br><br>
+                    Y por último, el <strong>67% de la gente no vuelve a intentar comprarte por WhatsApp</strong> si les
+                    tardás en responder.
+                    Esos no son clientes que se perdieron por mala comida. Se perdieron por falta de un sistema de
+                    atención y retención automático."
+                </div>
+            </div>
+            <div class="pausa">dejá que procese el número — no avances enseguida</div>
+            <div class="section">
+                <div class="section-label lbl-hook">La pregunta gancho</div>
+                <div class="speech-text">
+                    "Te hago una pregunta directa: si supieras que estás perdiendo entre 10 y 20 pedidos por mes porque
+                    nadie los responde a tiempo, <em>¿qué harías?</em>"
+                </div>
+            </div>
+            <div class="section">
+                <div class="tip">
+                    En virtual, después de mostrar los números, hacé la pregunta y luego silenciá tu micrófono un
+                    segundo — eso fuerza que él hable. Si no responde en 5 segundos, repetí la pregunta más simple:
+                    "¿Tiene sentido lo que ves ahí?" Cualquier respuesta positiva es una apertura.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 4 — LA SOLUCIÓN
+══════════════════════════════════════════ -->
+    <div class="slide-block s4">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">04</div>
+            <h2>La Solución — El momento WOW del chat</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís</div>
+                <div class="speech-text">
+                    "Te voy a mostrar exactamente cómo lo ve el cliente de tu local. Mirá la pantalla."<br><br>
+                    <em>[esperás que el chat empiece a animarse solo]</em><br><br>
+                    "El cliente manda un mensaje a las 11 de la noche. No hay nadie atendiendo. Pero el sistema responde
+                    en menos de 8 segundos. Le muestra el menú, toma el pedido, le envía el CBU o alias para la seña,
+                    recibe el comprobante y <strong>te manda una notificación a vos</strong> para que confirmes. Vos
+                    confirmás con un mensaje y el sistema le avisa al cliente automáticamente.<br><br>
+                    Esto no es un chatbot de esos que te da opciones estúpidas. Esto entiende lo que el cliente escribe,
+                    como si fuera una persona real. Y funciona las 24 horas, los 365 días del año, sin que vos estés
+                    presente."
+                </div>
+            </div>
+            <div class="section">
+                <div class="tip">
+                    <strong>El momento WOW en virtual:</strong> Mientras el chat se anima en pantalla, decile: "Mientras
+                    mirás eso, abrí tu WhatsApp y mandá un mensaje al número que te voy a pasar ahora." Compartís el
+                    número de la demo en el chat de Meet/Zoom. Él lo escribe desde su propio teléfono y en 8 segundos ve
+                    la respuesta llegar. Cuando dice "¡llegó!" — ahí está el cierre de esta sección. Eso no lo olvidá
+                    más.
+                </div>
+            </div>
+            <div class="pausa">no avances hasta que él confirme que recibió la respuesta en su teléfono</div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 5 — PANEL AIRTABLE
+══════════════════════════════════════════ -->
+    <div class="slide-block s5">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">05</div>
+            <h2>Panel en Vivo — "Todo ordenado para vos"</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís</div>
+                <div class="speech-text">
+                    "Ahora te muestro lo que ves vos, el dueño, desde tu celular o computadora.<br><br>
+                    Cada pedido que llegó por WhatsApp aparece acá automáticamente. El nombre del cliente, el teléfono,
+                    qué pidió, cuánto es el total, si ya pagó la seña, si está en camino o entregado. Todo en una tabla
+                    limpia, sin papeles, sin libretas.<br><br>
+                    Y en la otra pestaña, todas las reservas de mesas. Con la fecha, el horario, cuántas personas, si
+                    hay algún pedido especial — como ese cliente que necesita menú sin gluten o que viene a festejar un
+                    cumpleaños."<br><br>
+                    <em>[cambiás a la tab de Reservas]</em><br><br>
+                    "Ya no hay doble reserva posible. El sistema sabe qué turnos están ocupados y no deja reservar lo
+                    que ya está tomado. Vos solo mirás y preparás todo con anticipación."
+                </div>
+            </div>
+            <div class="section">
+                <div class="tip">
+                    En virtual la tabla se ve perfecta en pantalla compartida — usá el zoom del navegador si ven mal los
+                    números (Ctrl + para agrandar). Personalizá en voz alta: "Imaginate que este 'Arnaldo Ayala' sos vos
+                    — el pedido llegó a las 23hs, el bot lo tomó, te notificó, y a la mañana vos ves todo confirmado."
+                    Que se proyecten en los datos.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 6 — VOZ IA
+══════════════════════════════════════════ -->
+    <div class="slide-block s6">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">06</div>
+            <h2>Voz IA — "El que llama por teléfono también queda atendido"</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís</div>
+                <div class="speech-text">
+                    "Todo lo que te mostré hasta ahora es por WhatsApp. Pero tenemos algo más para los clientes que
+                    quieren llamar por teléfono.<br><br>
+                    Esto es solo para el plan más completo, el Premium, porque requiere tres tecnologías distintas que
+                    tienen su propio costo.<br><br>
+                    Cuando alguien llama al número de tu local, en vez de escuchar que el teléfono suena y suena sin que
+                    nadie atienda, <strong>escucha una voz humana real</strong> — no un robot de los de antes — que le
+                    dice 'Bienvenido al restaurante, ¿qué necesitás?'. El cliente habla normal, dice 'quiero reservar
+                    una mesa para el sábado', y la voz entiende, pregunta cuántas personas, a qué hora, y registra todo
+                    automáticamente.<br><br>
+                    El cliente nunca sabe que habló con una inteligencia artificial. Solo sabe que lo atendieron bien."
+                </div>
+            </div>
+            <div class="section">
+                <div class="tip">
+                    En virtual este slide funciona bien porque podés mostrar el diagrama de flujo y explicarlo con el
+                    cursor. Señalá cada paso mientras hablás. Si tienen interés real en el Premium, ofrecé una segunda
+                    llamada específica de demo de voz: "Si esto te interesa, en otra reunión de 15 minutos te muestro la
+                    llamada funcionando en vivo." No intentes demostrarlo en esta misma sesión — es mucho para una sola
+                    reunión.
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-label lbl-obj">Si pregunta el costo extra</div>
+                <div class="objection">
+                    <div class="q">"¿Por qué este plan es más caro?"</div>
+                    <div class="a">"Porque estas tres tecnologías tienen su propio costo mensual por uso, además del
+                        trabajo de integrarlas. Pero si tu local recibe llamadas perdidas todos los días, esto se paga
+                        solo en la primera semana."</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 7 — ROI CALCULATOR
+══════════════════════════════════════════ -->
+    <div class="slide-block s7">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">07</div>
+            <h2>Calculadora ROI — El número que cierra la decisión</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís</div>
+                <div class="speech-text">
+                    "Ahora hagamos un cálculo juntos con los números de tu propio local. Yo no te voy a poner números
+                    inventados — vos me decís y yo muevo los controles.<br><br>
+                    <em>[le preguntás]</em> ¿Aproximadamente cuántos pedidos por mes sentís que perdés por WhatsApp al
+                    no llegar a responder bien? ¿Cuántos pedidos mensuales hacés por PedidosYa o UberEats (donde les
+                    dejas el 30%)? ¿Tenés idea de cuántos clientes recurrentes dejaste de fidelizar porque se fueron a
+                    otro lado al no tener contacto directo? Y, por último, ¿de cuánto es un pedido o una reserva hoy en
+                    promedio en tu local?<br><br>
+                    <em>[cargás los datos que te dice y le mostrás el resultado]</em><br><br>
+                    Mirá. Según tus propios números, estás regalando literalmente <em>[número]</em> pesos por mes en
+                    tres agujeros negros: pedidos no contestados, la comisión a las apps y los clientes recurrentes que
+                    perdiste en el anonimato. Y el sistema más básico que tenemos cuesta X dólares por mes, el
+                    Profesional Y dólares.<br><br>
+                    El sistema se paga solo logrando rescatar apenas <strong>[X ventas/reservas]</strong> al mes. El
+                    resto del rescate es ganancia pura."
+                </div>
+            </div>
+            <div class="pausa">dejá el resultado en pantalla, callate y esperá — en virtual el silencio dura 3 segundos
+                y ya incomoda, pero aguantá</div>
+            <div class="section">
+                <div class="tip">
+                    <strong>Truco virtual:</strong> Antes de la llamada, preguntale por WhatsApp "¿Me podés decir
+                    aproximadamente cuántos mensajes de WhatsApp recibe tu local por día?" Así llegás a la reunión con
+                    SUS números cargados en la calculadora. El impacto es el doble porque ya está personalizado antes de
+                    que vea la pantalla.
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-label lbl-obj">Si minimiza los números</div>
+                <div class="objection">
+                    <div class="q">"Capaz yo no pierdo tanto..."</div>
+                    <div class="a">"Puede ser. Pero aunque sea la mitad de lo que calculamos, seguís recuperando la
+                        inversión en el primer mes. Y te quedás con el sistema funcionando para siempre."</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 8 — PLANES
+══════════════════════════════════════════ -->
+    <div class="slide-block s8">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">08</div>
+            <h2>Los Planes — Sin confundirlo, guiarlo al medio</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís</div>
+                <div class="speech-text">
+                    "Tenemos tres niveles, y te los explico en 30 segundos.<br><br>
+                    El <strong>Basic</strong> es el punto de entrada. Bot de WhatsApp, reservas, delivery, panel en
+                    Airtable. Setup de $149 dólares una sola vez, y $57 por mes. Para locales que hoy hacen todo a mano
+                    — esto ya cambia todo.<br><br>
+                    El <strong>Profesional</strong> agrega el cobro automático de señas por MercadoPago — sin que nadie
+                    tenga que mirar si llegó el depósito — más WhatsApp oficial de Meta para que tu número nunca sea
+                    bloqueado. $399 de setup y $147 por mes. Este es el que más contratan.<br><br>
+                    El <strong>Premium</strong> tiene todo lo anterior más la voz IA que te mostré, los cumpleaños
+                    automáticos, eventos especiales y un dashboard con gráficos tipo gerencial en tiempo real. $699 de
+                    setup y $297 por mes.<br><br>
+                    <em>[pausa]</em><br><br>
+                    La mayoría de los locales arranca con el Profesional porque ya tiene el cobro automático, que solos
+                    se lo recuperan en la primera reserva con seña."
+                </div>
+            </div>
+            <div class="section">
+                <div class="tip">
+                    En virtual, después de mostrar los planes, dejá de compartir pantalla por un momento y hablale
+                    directo a cámara: "¿Cuál de estos tres te suena más a lo que necesitás ahora mismo?" Ver tu cara —
+                    no los slides — en ese momento genera más confianza. Si titubea por el precio, anclá en el ROI:
+                    "¿Cuánto te sale una seña típica? Con una sola reserva confirmada ya cubriste el mes."
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-label lbl-obj">Objeciones frecuentes</div>
+                <div class="objection">
+                    <div class="q">"El precio está alto para mí..."</div>
+                    <div class="a">"Entiendo. Por eso arrancamos con el Basic — $57 por mes es menos que lo que gastás
+                        en servilletas en una semana. Y ya con eso recuperás pedidos que hoy se te van."</div>
+                </div>
+                <br>
+                <div class="objection">
+                    <div class="q">"¿Y si no funciona para mi local?"</div>
+                    <div class="a">"Cada implementación la adaptamos a tu menú, tus horarios y cómo trabajás vos. No es
+                        una plantilla genérica — la configuramos para tu local específicamente."</div>
+                </div>
+                <br>
+                <div class="objection">
+                    <div class="q">"¿Y si mis clientes prefieren hablar con una persona?"</div>
+                    <div class="a">"El bot maneja los pedidos y reservas de rutina — que son el 90% de los mensajes. Vos
+                        seguís disponible para lo que realmente lo necesita. De hecho, vas a tener más tiempo para
+                        atender bien a los que están en el local."</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 9 — STACK
+══════════════════════════════════════════ -->
+    <div class="slide-block s9">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">09</div>
+            <h2>Stack Tecnológico — Pasalo rápido, no te enredés</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-speech">Lo que decís</div>
+                <div class="speech-text">
+                    "Esto es la tecnología que usamos por detrás. Te lo muestro no para que lo entiendas técnicamente,
+                    sino para que sepas que no es algo armado casero — es infraestructura profesional, la misma que usan
+                    empresas grandes.<br><br>
+                    Lo que importa para vos es esto: <strong>tu local no depende de nosotros para funcionar.</strong> El
+                    sistema corre en servidores propios nuestros, no en una computadora en mi casa. Si mañana me fui de
+                    vacaciones, el bot de tu local sigue funcionando igual."
+                </div>
+            </div>
+            <div class="section">
+                <div class="tip">
+                    Pasalo en 20 segundos. En virtual la gente se distrae leyendo los logos — no les des tiempo. Decís
+                    la frase, scrolleás rápido y seguís. Si preguntan "¿qué es n8n?" respondés: "Es el motor que conecta
+                    todo, como los cimientos de una casa — vos no los ves pero son lo que hace que todo funcione." Y
+                    seguís.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     SLIDE 10 — CTA FINAL
+══════════════════════════════════════════ -->
+    <div class="slide-block s10">
+        <div class="slide-header" onclick="toggle(this)">
+            <div class="slide-num-badge">10</div>
+            <h2>El Cierre — La pregunta que no tiene respuesta neutral</h2>
+            <span class="toggle">▼</span>
+        </div>
+        <div class="slide-body">
+            <div class="section">
+                <div class="section-label lbl-close">El cierre — dejá de compartir pantalla, hablale directo a cámara
+                </div>
+                <div class="speech-text">
+                    "Antes de cerrar la llamada, te hago la misma pregunta que te hice al principio, pero
+                    diferente.<br><br>
+                    Mañana a la mañana abrís el WhatsApp del local y ves mensajes de la noche anterior sin responder.
+                    <em>¿Cómo te vas a sentir sabiendo que hoy podría no pasar más?</em><br><br>
+                    <em>[pausa — mirá la cámara, no la pantalla]</em><br><br>
+                    No te pido que decidas ahora mismo. Solo te pregunto: ¿tiene sentido para tu negocio no perder esos
+                    pedidos? Si la respuesta es sí, arrancamos la semana que viene y en 7 días tu WhatsApp ya está
+                    respondiendo solo."
+                </div>
+            </div>
+            <div class="pausa">en virtual si no hay respuesta en 4 segundos, preguntá: "¿qué pensás?" — no dejes el
+                silencio más de eso</div>
+            <div class="section">
+                <div class="section-label lbl-obj">Si dice "lo tengo que pensar"</div>
+                <div class="objection">
+                    <div class="q">"Lo tengo que pensar / consultar con mi socio/a..."</div>
+                    <div class="a">"Entiendo. ¿Qué información te faltaría para decidir? A veces cuando alguien dice que
+                        lo piensa hay algo que no quedó claro — ¿hay algo que te generó duda?" — Luego: "¿Te parece si
+                        el jueves te mando un resumen por WhatsApp y agendamos 10 minutos para resolver esa duda?"</div>
+                </div>
+                <br>
+                <div class="objection">
+                    <div class="q">"Ahora no es el momento, el local está complicado..."</div>
+                    <div class="a">"Justamente cuando el local está complicado es cuando más necesitás que el sistema
+                        trabaje por vos. ¿Qué tendría que pasar para que sea el momento?"</div>
+                </div>
+                <br>
+                <div class="objection">
+                    <div class="q">"¿No puedo verlo funcionando antes de pagar?"</div>
+                    <div class="a">"Sí, de hecho ya lo viste — le mandaste un mensaje al número demo y respondió en
+                        segundos. Eso ES el sistema. Lo que hacemos es configurarlo con tu menú, tus horarios y el
+                        nombre de tu local."</div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-label lbl-tip">Si dice que SÍ — cerrá en caliente antes de colgar</div>
+                <div class="tip">
+                    No festejes. Decí tranquilo: "Perfecto. Antes de colgar necesito tres cosas tuyas: el número de
+                    WhatsApp del local, el menú (puede ser foto o PDF) y a qué nombre querés que responda el bot." Pedí
+                    eso AHORA, mientras están en la llamada. Si lo dejás para después, el entusiasmo se enfría. Con esos
+                    tres datos podés arrancar.
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-label lbl-obj">Post-llamada — mensaje dentro de los 15 minutos</div>
+                <div class="objection">
+                    <div class="q">Qué mandar por WhatsApp justo después de colgar</div>
+                    <div class="a">"Hola [nombre], fue un gusto charlar. Te mando el resumen de lo que vimos: [plan
+                        elegido] — Setup $XXX USD + $XX/mes. Para arrancar necesito: número de WhatsApp del local, menú
+                        y nombre del bot. Con eso en 7 días está funcionando. ¿Arrancamos?" — Corto, concreto, con
+                        pregunta de cierre al final.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div
+        style="text-align:center;padding:3rem 1rem 2rem;color:var(--muted);font-size:0.78rem;border-top:1px solid var(--border);margin-top:2rem;">
+        System IA · Guión confidencial · No compartir con el cliente
+    </div>
+
+    <script>
+        function toggle(header) {
+            header.classList.toggle('open');
+            const body = header.nextElementSibling;
+            body.classList.toggle('open');
+            updateProgress();
+        }
+
+        function toggleAll(open) {
+            document.querySelectorAll('.slide-header').forEach(h => {
+                const body = h.nextElementSibling;
+                if (open) { h.classList.add('open'); body.classList.add('open'); }
+                else { h.classList.remove('open'); body.classList.remove('open'); }
+            });
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const total = document.querySelectorAll('.slide-block').length;
+            const open = document.querySelectorAll('.slide-header.open').length;
+            document.getElementById('progress').style.width = (open / total * 100) + '%';
+        }
+
+        // Abrir el primero por defecto
+        document.querySelector('.slide-header').click();
+    </script>
+
+</body>
+
+</html>

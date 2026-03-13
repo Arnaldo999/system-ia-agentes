@@ -1,0 +1,827 @@
+"""
+workers/comercio/worker.py
+──────────────────────────
+Bot conversacional para comercios (electrónica, ropa, ferretería, etc.)
+Usa Gemini 2.5 Flash Lite + Airtable + historial de conversación.
+
+Endpoint: POST /comercio/mensaje
+Workflow n8n: webhook → FastAPI → WhatsApp
+
+Funcionalidades:
+- Catálogo dinámico desde Airtable (productos con imagen, precio, descripción)
+- Historial de conversación multi-turno
+- Ruta admin (dueño gestiona catálogo por WhatsApp)
+- Calificación de leads + notificación al dueño
+- Guardrails anti prompt-injection
+- Endpoint GET /comercio/catalogo para sitio web
+"""
+
+import os
+import json
+import re
+import requests
+import traceback
+from datetime import date, datetime
+from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import Optional
+
+import google.generativeai as genai
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIGURACIÓN
+# ─────────────────────────────────────────────────────────────────────────────
+router = APIRouter(prefix="/comercio", tags=["Comercio WhatsApp"])
+
+GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
+AIRTABLE_API_KEY  = os.environ.get("AIRTABLE_API_KEY", "")
+AIRTABLE_BASE_ID  = os.environ.get("AIRTABLE_BASE_COMERCIO",
+                    os.environ.get("AIRTABLE_BASE_ID", ""))
+NUMERO_DUENO      = os.environ.get("NUMERO_DUENO_COMERCIO",
+                    os.environ.get("NUMERO_DUENO", ""))
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
+def AT_HEADERS():
+    return {"Authorization": f"Bearer {AIRTABLE_API_KEY}", "Content-Type": "application/json"}
+
+TIENDA = {
+    "nombre":      "Casa Electrónica",
+    "especialidad": "Electrónica, electrodomésticos y tecnología",
+    "horario":     "Lunes a Sábado, 9:00 a 19:00hs",
+    "alias_pago":  "",
+    "numero_dueno": NUMERO_DUENO,
+}
+
+HOY = date.today().strftime("%A %d de %B de %Y")
+
+# ── Memoria de conversaciones en RAM (sin depender de Airtable) ──
+# Almacena últimas 200 conversaciones activas, cada una con máx 30 turnos
+from collections import OrderedDict
+
+class ConversacionesRAM:
+    def __init__(self, max_size=200):
+        self._store = OrderedDict()
+        self._max = max_size
+
+    def get(self, tel: str) -> list:
+        tel = tel.replace("@s.whatsapp.net", "").replace("+", "")
+        if tel in self._store:
+            self._store.move_to_end(tel)
+            return self._store[tel]
+        return []
+
+    def save(self, tel: str, historial: list):
+        tel = tel.replace("@s.whatsapp.net", "").replace("+", "")
+        self._store[tel] = historial[-30:]  # máx 30 turnos
+        self._store.move_to_end(tel)
+        if len(self._store) > self._max:
+            self._store.popitem(last=False)  # elimina más vieja
+
+CONVERSACIONES = ConversacionesRAM()
+
+# ── Anti-duplicados (Evolution API manda 2 webhooks por mensaje) ──
+import time as _time
+_MENSAJES_RECIENTES = set()  # set de messageIds procesados
+_DEDUP_TIMESTAMPS = {}  # {messageId: timestamp}
+_DEDUP_TTL = 30  # segundos
+
+def _es_duplicado(message_id: str) -> bool:
+    """Retorna True si este messageId ya se procesó recientemente."""
+    if not message_id:
+        return False  # sin ID, dejar pasar
+    ahora = _time.time()
+    # Limpiar entradas viejas
+    viejas = [k for k, t in _DEDUP_TIMESTAMPS.items() if ahora - t > _DEDUP_TTL]
+    for k in viejas:
+        _MENSAJES_RECIENTES.discard(k)
+        del _DEDUP_TIMESTAMPS[k]
+    # Verificar
+    if message_id in _MENSAJES_RECIENTES:
+        return True
+    _MENSAJES_RECIENTES.add(message_id)
+    _DEDUP_TIMESTAMPS[message_id] = ahora
+    return False
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GUARDRAILS
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    from workers.shared.guardrails import detect_injection, sanitize_for_llm, validate_output, FALLBACK_COMERCIO as FALLBACK
+except ImportError:
+    def detect_injection(t, w="comercio"): return False
+    def sanitize_for_llm(t, c="mensaje"): return t
+    def validate_output(t, w="comercio"): return True
+    FALLBACK = "¡Gracias por tu consulta! 😊 ¿En qué te puedo ayudar?\n\n1️⃣ Ver categorías de productos\n2️⃣ Hablar con un asesor para comprar"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SYSTEM PROMPT
+# ─────────────────────────────────────────────────────────────────────────────
+SYSTEM_PROMPT = f"""════════════════════════════════════════════════════════
+ROL
+════════════════════════════════════════════════════════
+Sos el asistente virtual de *{TIENDA['nombre']}*.
+Tu trabajo es atender clientes por WhatsApp: mostrar productos, responder consultas técnicas, comparar opciones y derivar al vendedor humano cuando el cliente está listo para comprar.
+
+PERSONALIDAD:
+- Amable, profesional y conocedor del rubro
+- Respuestas cortas y directas para WhatsApp — máximo 8 líneas
+- Emojis con moderación (máximo 2 por mensaje)
+- Tratá al cliente de "vos" o "usted" según como escriba
+
+════════════════════════════════════════════════════════
+DATOS DE LA TIENDA
+════════════════════════════════════════════════════════
+- Nombre: {TIENDA['nombre']}
+- Especialidad: {TIENDA['especialidad']}
+- Horario: {TIENDA['horario']}
+- Fecha de hoy: {HOY}
+
+[El catálogo se inyecta dinámicamente al final de este prompt con datos reales de Airtable]
+
+════════════════════════════════════════════════════════
+MENÚ PRINCIPAL (punto de entrada)
+════════════════════════════════════════════════════════
+CUÁNDO mostrarlo: ante cualquier primer mensaje, saludo, o cuando escriba "0" o "menu".
+
+TEXTO EXACTO a mostrar:
+*¡Bienvenido a {TIENDA['nombre']}!* 🏪
+¿En qué podemos ayudarte?
+
+1️⃣ Ver categorías de productos
+2️⃣ Hablar con un asesor para comprar
+
+REGLA: Esperá que el cliente elija. No agregues texto extra.
+
+════════════════════════════════════════════════════════
+TAREA 1 — VER CATEGORÍAS (opción 1 del menú principal)
+════════════════════════════════════════════════════════
+Cuando el cliente elija la opción 1 del menú principal:
+
+1. Mostrá las categorías del catálogo con NÚMEROS (usa emojis de números: 1️⃣, 2️⃣, 3️⃣, etc.)
+2. Preguntá: "¿Qué categoría te interesa?"
+
+Ejemplo de formato correcto:
+*Categorías disponibles:*
+1️⃣ Audio
+2️⃣ Oficina
+3️⃣ Telefonía
+
+¿Qué categoría te interesa?
+
+Cuando el cliente responda con un NÚMERO después de ver las categorías, mostrá los productos de ESA categoría.
+⚠️ IMPORTANTE: Si el último mensaje del bot fue la lista de categorías y el cliente envía un número, ese número se refiere a la categoría, NO al menú principal.
+
+Al mostrar productos de una categoría, usá este formato:
+- *Nombre* — $Precio ARS
+  Descripción corta
+
+Al final decile: "Si te interesa alguno, decime y te derivo con nuestro encargado para la compra. 🛒"
+
+════════════════════════════════════════════════════════
+TAREA 2 — HABLAR CON ASESOR / COMPRAR (opción 2 del menú principal)
+════════════════════════════════════════════════════════
+Cuando el cliente quiera comprar un producto (ya sea que venga de la web o lo elija acá), o pida hablar con alguien:
+Respondé EXACTAMENTE: "¡Perfecto! Ya le aviso a nuestro encargado de facturación para que cierre la compra con vos y te pase los datos de pago. Aguardá un momento por favor. 📞"
+Ejecutá SIEMPRE:
+ACCION: {{"tipo": "notificar_vendedor", "producto_interes": "...", "consulta": "Cierre de Venta"}}
+
+════════════════════════════════════════════════════════
+DETECCIÓN DE INTENCIÓN DE COMPRA DESDE LA WEB
+════════════════════════════════════════════════════════
+Si el cliente entra diciendo "Hola, me interesa el producto: [PRODUCTO]...":
+Respondé EXACTAMENTE: "¡Hola! Excelente elección. Ya mismo le aviso a nuestro encargado de facturación para que cierre la compra con vos y coordinen el pago/envío. Aguardá un momento por favor. 📞"
+Ejecutá:
+ACCION: {{"tipo": "lead_calificado", "producto_interes": "...", "señal": "Viene desde la web"}}
+
+════════════════════════════════════════════════════════
+FLUJO DE CONTEXTO — CÓMO INTERPRETAR NÚMEROS
+════════════════════════════════════════════════════════
+El significado de un número depende del CONTEXTO de la conversación:
+- Si el ÚLTIMO mensaje del bot fue el MENÚ PRINCIPAL → "1" = Ver categorías, "2" = Hablar con asesor
+- Si el ÚLTIMO mensaje del bot fue la LISTA DE CATEGORÍAS → el número = seleccionar esa categoría
+- Si el ÚLTIMO mensaje del bot fue los PRODUCTOS de una categoría → el cliente puede pedir info sobre un producto o decir que quiere comprarlo
+
+NUNCA muestres el menú principal de nuevo a menos que el cliente escriba "menu", "0", "inicio" o un saludo.
+
+════════════════════════════════════════════════════════
+REGLAS CRÍTICAS
+════════════════════════════════════════════════════════
+1. NUNCA inventes precios ni intentes cobrar vos mismo. Tu objetivo es derivar al encargado de facturación.
+2. Si no tenés la info → "Voy a consultar con nuestro equipo y te confirmo."
+3. Cuando el JSON de ACCION sea necesario, poné SOLO el JSON en una línea separada.
+4. SIEMPRE usá números con emojis (1️⃣, 2️⃣, etc.) en las listas para que el cliente pueda elegir fácilmente.
+5. Respuestas cortas — máximo 8 líneas por mensaje.
+6. IMÁGENES: Cada producto en el catálogo tiene una URL de imagen marcada como [IMG:url]. Cuando muestres UN producto específico (no la lista completa), incluí la URL en una línea separada con el formato: IMAGEN: url
+   Ejemplo: Si el producto tiene [IMG:https://ejemplo.com/foto.jpg], agregá:
+   IMAGEN: https://ejemplo.com/foto.jpg
+   IMPORTANTE: Solo incluí IMAGEN cuando muestres detalles de 1 o 2 productos, NO cuando listes las categorías.
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MODELO GEMINI
+# ─────────────────────────────────────────────────────────────────────────────
+modelo = genai.GenerativeModel(
+    model_name="gemini-2.5-flash-lite",
+    system_instruction=SYSTEM_PROMPT,
+) if GEMINI_API_KEY else None
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPERS AIRTABLE
+# ─────────────────────────────────────────────────────────────────────────────
+def at_get_catalogo() -> list:
+    """Lee todos los productos desde Airtable."""
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Productos"
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "sort[0][field]": "Nombre",
+            "sort[0][direction]": "asc",
+        })
+        return r.json().get("records", [])
+    except Exception as e:
+        print(f"[AT-COMERCIO] Error get_catalogo: {e}")
+        return []
+
+
+def at_get_catalogo_texto(solo_disponibles: bool = True) -> str:
+    """Devuelve el catálogo formateado como texto para el prompt."""
+    records = at_get_catalogo()
+    if not records:
+        return "(Catálogo no disponible)"
+
+    por_categoria = {}
+    for rec in records:
+        f = rec["fields"]
+        disponible = f.get("Disponible", f.get("Disponibilidad", False))
+        if disponible == 1 or str(disponible).lower() == "true":
+            disponible = True
+        if solo_disponibles and not disponible:
+            continue
+        cat = f.get("Categoria", f.get("Categoría", "Otros"))
+        if isinstance(cat, list):
+            cat = cat[0] if cat else "Otros"
+        if cat not in por_categoria:
+            por_categoria[cat] = []
+        # Extraer imagen (puede ser attachment de Airtable o URL directa)
+        imagen_raw = f.get("Imagen", f.get("imagen", ""))
+        imagen_url = ""
+        if isinstance(imagen_raw, list) and imagen_raw:
+            imagen_url = imagen_raw[0].get("url", "")
+        elif isinstance(imagen_raw, str):
+            imagen_url = imagen_raw
+        por_categoria[cat].append({
+            "nombre": f.get("Nombre", ""),
+            "precio": f.get("Precio", 0),
+            "descripcion": f.get("Descripcion", f.get("Descripción Técnica", "")),
+            "disponible": disponible,
+            "imagen_url": imagen_url,
+        })
+
+    lineas = []
+    for cat, productos in por_categoria.items():
+        lineas.append(f"\n*{cat}*")
+        for p in productos:
+            precio = f"${p['precio']:,.0f}".replace(",", ".") if p['precio'] else "Consultar"
+            desc = f" — {p['descripcion'][:80]}" if p['descripcion'] else ""
+            estado = "✅" if p['disponible'] else "❌"
+            img = f" [IMG:{p['imagen_url']}]" if p['imagen_url'] else ""
+            lineas.append(f"  {estado} {p['nombre']} — {precio} ARS{desc}{img}")
+    return "\n".join(lineas) if lineas else "(Sin productos cargados)"
+
+
+def at_get_conversacion(telefono: str):
+    """Busca conversación activa por teléfono."""
+    try:
+        tel_limpio = telefono.replace("@s.whatsapp.net", "").replace("+", "")
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas"
+        r = requests.get(url, headers=AT_HEADERS(), params={
+            "filterByFormula": f'{{telefono}}="{tel_limpio}"',
+            "maxRecords": 1,
+        })
+        records = r.json().get("records", [])
+        return records[0] if records else None
+    except Exception as e:
+        print(f"[AT-COMERCIO] Error get_conv: {e}")
+        return None
+
+
+def at_guardar_conversacion(telefono: str, historial: list, record_id: str = None):
+    """Guarda o actualiza historial de conversación."""
+    tel_limpio = telefono.replace("@s.whatsapp.net", "").replace("+", "")
+    historial_json = json.dumps(historial[-30:], ensure_ascii=False)
+    fields = {
+        "telefono": tel_limpio,
+        "historial": historial_json,
+        "ultima_interaccion": datetime.now().isoformat(),
+    }
+    try:
+        if record_id:
+            url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas/{record_id}"
+            requests.patch(url, headers=AT_HEADERS(), json={"fields": fields})
+        else:
+            url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/conversaciones_activas"
+            requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": fields}]})
+    except Exception as e:
+        print(f"[AT-COMERCIO] Error guardar_conv: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTIFICACIONES AL DUEÑO
+# ─────────────────────────────────────────────────────────────────────────────
+def notificar_dueno(texto: str):
+    """Envía notificación al dueño vía Evolution API."""
+    evo_url = os.environ.get("EVOLUTION_API_URL", "")
+    evo_instance = os.environ.get("EVOLUTION_INSTANCE", "")
+    evo_key = os.environ.get("EVOLUTION_API_KEY", "")
+    if not all([evo_url, evo_instance, evo_key, NUMERO_DUENO]):
+        print(f"[NOTIF-COMERCIO] Faltan vars. Mensaje: {texto[:100]}")
+        return False
+    try:
+        from urllib.parse import quote
+        url = f"{evo_url}/message/sendText/{quote(evo_instance)}"
+        requests.post(url, json={"number": NUMERO_DUENO, "text": texto},
+                      headers={"apikey": evo_key}, timeout=10)
+        return True
+    except Exception as e:
+        print(f"[NOTIF-COMERCIO] Error: {e}")
+        return False
+
+
+def ejecutar_accion(accion_data: dict, telefono: str, nombre_contacto: str = "") -> str:
+    """Ejecuta acciones detectadas en la respuesta del bot."""
+    tipo = accion_data.get("tipo", "")
+    producto = accion_data.get("producto_interes", "desconocido")
+
+    if tipo == "lead_calificado":
+        señal = accion_data.get("señal", "")
+        msg = (
+            f"🔥 *LEAD CALIFICADO — {TIENDA['nombre']}*\n\n"
+            f"📱 Cliente: {nombre_contacto or telefono}\n"
+            f"📞 Tel: {telefono}\n"
+            f"🛒 Producto de interés: {producto}\n"
+            f"💡 Señal: {señal}\n"
+            f"⏰ {datetime.now().strftime('%d/%m %H:%M')}"
+        )
+        notificar_dueno(msg)
+        return "lead_notificado"
+
+    elif tipo == "notificar_vendedor":
+        consulta = accion_data.get("consulta", "")
+        msg = (
+            f"📞 *CLIENTE PIDE VENDEDOR — {TIENDA['nombre']}*\n\n"
+            f"📱 {nombre_contacto or telefono}\n"
+            f"📞 Tel: {telefono}\n"
+            f"🛒 Interés: {producto}\n"
+            f"💬 Consulta: {consulta}\n"
+            f"⏰ {datetime.now().strftime('%d/%m %H:%M')}"
+        )
+        notificar_dueno(msg)
+        return "vendedor_notificado"
+
+    return "sin_accion"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NAVEGACIÓN POR NÚMEROS (determinística — no depende de Gemini)
+# ─────────────────────────────────────────────────────────────────────────────
+def _get_categorias_catalogo() -> list[str]:
+    """Devuelve lista ordenada de categorías únicas del catálogo Airtable."""
+    records = at_get_catalogo()
+    categorias = []
+    seen = set()
+    for rec in records:
+        f = rec["fields"]
+        disponible = f.get("Disponible", f.get("Disponibilidad", False))
+        if disponible == 1 or str(disponible).lower() == "true":
+            disponible = True
+        if not disponible:
+            continue
+        cat = f.get("Categoria", f.get("Categoría", "Otros"))
+        if isinstance(cat, list):
+            cat = cat[0] if cat else "Otros"
+        if cat not in seen:
+            seen.add(cat)
+            categorias.append(cat)
+    return categorias
+
+
+def _get_productos_categoria(categoria: str) -> list[dict]:
+    """Devuelve productos de una categoría específica."""
+    records = at_get_catalogo()
+    productos = []
+    for rec in records:
+        f = rec["fields"]
+        disponible = f.get("Disponible", f.get("Disponibilidad", False))
+        if disponible == 1 or str(disponible).lower() == "true":
+            disponible = True
+        if not disponible:
+            continue
+        cat = f.get("Categoria", f.get("Categoría", "Otros"))
+        if isinstance(cat, list):
+            cat = cat[0] if cat else "Otros"
+        if cat.lower() == categoria.lower():
+            imagen_raw = f.get("Imagen", f.get("imagen", ""))
+            imagen_url = ""
+            if isinstance(imagen_raw, list) and imagen_raw:
+                imagen_url = imagen_raw[0].get("url", "")
+            elif isinstance(imagen_raw, str):
+                imagen_url = imagen_raw
+            productos.append({
+                "nombre": f.get("Nombre", ""),
+                "precio": f.get("Precio", 0),
+                "descripcion": f.get("Descripcion", f.get("Descripción Técnica", "")),
+                "imagen_url": imagen_url,
+            })
+    return productos
+
+
+def _formato_categorias(categorias: list[str]) -> str:
+    """Formatea la lista de categorías con emojis numéricos."""
+    nums = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+    lineas = ["*Categorías disponibles:*"]
+    for i, cat in enumerate(categorias):
+        emoji = nums[i] if i < len(nums) else f"{i+1}."
+        lineas.append(f"{emoji} {cat}")
+    lineas.append("\n¿Qué categoría te interesa?")
+    return "\n".join(lineas)
+
+
+def _formato_productos(categoria: str, productos: list[dict]) -> tuple[str, str | None]:
+    """Formatea los productos de una categoría.
+    Retorna (texto, imagen_url). imagen_url solo si hay 1 producto."""
+    lineas = [f"*Productos en {categoria}:*\n"]
+    for p in productos:
+        precio = f"${p['precio']:,.0f}".replace(",", ".") if p['precio'] else "Consultar"
+        desc = f"\n  _{p['descripcion'][:80]}_" if p['descripcion'] else ""
+        lineas.append(f"• *{p['nombre']}* — {precio} ARS{desc}\n")
+    lineas.append("Si te interesa alguno, decime y te derivo con nuestro encargado para la compra. 🛒")
+    lineas.append("\n_Escribí *0* para volver al menú principal._")
+    # Enviar imagen si hay pocos productos (1-2)
+    imagen_url = None
+    if len(productos) <= 2:
+        for p in productos:
+            if p.get("imagen_url"):
+                imagen_url = p["imagen_url"]
+                break
+    return "\n".join(lineas), imagen_url
+
+
+def _detectar_contexto(historial: list) -> str:
+    """Detecta en qué punto del flujo está la conversación.
+    Retorna: 'menu_principal', 'lista_categorias', 'productos', 'otro'
+    """
+    if not historial:
+        return "menu_principal"
+    # Buscar último mensaje del bot
+    for turno in reversed(historial):
+        if turno.get("role") == "model":
+            texto = turno["content"].lower()
+            if "categorías disponibles" in texto or "qué categoría te interesa" in texto:
+                return "lista_categorias"
+            if "ver categorías de productos" in texto and "hablar con un asesor" in texto:
+                return "menu_principal"
+            if "productos en" in texto or "te derivo con nuestro encargado" in texto:
+                return "productos"
+            return "otro"
+    return "menu_principal"
+
+
+def _resolver_navegacion(msg: str, historial: list, tel: str) -> dict | None:
+    """
+    Resuelve navegación por números de forma determinística.
+    Retorna dict de respuesta si se resolvió, None si debe pasar a Gemini.
+    """
+    # Solo interceptar si el mensaje es un número puro
+    if not msg.strip().isdigit():
+        return None
+
+    num = int(msg.strip())
+    contexto = _detectar_contexto(historial)
+
+    if contexto == "menu_principal":
+        if num == 1:
+            # Mostrar categorías
+            categorias = _get_categorias_catalogo()
+            if not categorias:
+                respuesta = "No hay productos disponibles en este momento. Intentá más tarde."
+            else:
+                respuesta = _formato_categorias(categorias)
+            historial.append({"role": "user", "content": msg})
+            historial.append({"role": "model", "content": respuesta})
+            CONVERSACIONES.save(tel, historial)
+            return {"respuesta": respuesta, "tipo_mensaje": "texto",
+                    "imagen_url": None, "accion_ejecutada": None, "notificar_dueno": False}
+        elif num == 2:
+            # Hablar con asesor — dejar que Gemini maneje la derivación
+            return None
+
+    elif contexto == "lista_categorias":
+        categorias = _get_categorias_catalogo()
+        idx = num - 1
+        if 0 <= idx < len(categorias):
+            cat = categorias[idx]
+            productos = _get_productos_categoria(cat)
+            if not productos:
+                respuesta = f"No hay productos disponibles en *{cat}* en este momento."
+                imagen_url = None
+            else:
+                respuesta, imagen_url = _formato_productos(cat, productos)
+            historial.append({"role": "user", "content": msg})
+            historial.append({"role": "model", "content": respuesta})
+            CONVERSACIONES.save(tel, historial)
+            return {"respuesta": respuesta,
+                    "tipo_mensaje": "imagen" if imagen_url else "texto",
+                    "imagen_url": imagen_url,
+                    "accion_ejecutada": None, "notificar_dueno": False}
+        # Número fuera de rango — pasar a Gemini
+        return None
+
+    # Cualquier otro contexto con número — dejar a Gemini
+    return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MODELOS PYDANTIC
+# ─────────────────────────────────────────────────────────────────────────────
+class MensajeComercio(BaseModel):
+    mensaje: str
+    telefono: str
+    nombre_contacto: Optional[str] = ""
+    es_admin: Optional[bool] = False
+    message_id: Optional[str] = ""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENDPOINT PRINCIPAL: POST /comercio/mensaje
+# ─────────────────────────────────────────────────────────────────────────────
+@router.post("/mensaje", summary="Procesar mensaje WhatsApp — Comercio")
+async def manejar_mensaje(entrada: MensajeComercio):
+    """
+    Recibe mensaje de n8n, procesa con Gemini + catálogo Airtable,
+    devuelve respuesta para WhatsApp.
+    """
+    if not GEMINI_API_KEY:
+        return {"respuesta": "⚠️ GEMINI_API_KEY no configurada.", "status": "error"}
+
+    tel = entrada.telefono
+    msg = entrada.mensaje.strip()
+    nombre = entrada.nombre_contacto or ""
+
+    if not msg:
+        return {"respuesta": "No recibí ningún mensaje.", "status": "error"}
+
+    # ── Anti-duplicados (por messageId único de Evolution API) ──────────
+    if _es_duplicado(entrada.message_id):
+        return {"respuesta": "_dup_", "tipo_mensaje": "ignorar", "accion_ejecutada": None, "notificar_dueno": False}
+
+    # ── Guardrails ────────────────────────────────────────────────────────
+    if detect_injection(msg, worker="comercio"):
+        return {"respuesta": FALLBACK, "tipo_mensaje": "texto", "accion_ejecutada": None}
+
+    msg_sanitizado = sanitize_for_llm(msg, context="consulta_cliente")
+
+    # ── Historial (memoria RAM — instantáneo) ───────────────────────────
+    historial = CONVERSACIONES.get(tel)
+
+    # ── Bienvenida ────────────────────────────────────────────────────────
+    SALUDOS = {"hola", "buenas", "buen día", "buenos días", "buenas tardes",
+               "buenas noches", "hey", "hi", "holis", "buenas!", "hola!", "ola",
+               "menu", "menú", "0", "inicio"}
+    msg_lower = msg.lower().strip().rstrip(".,!?")
+    if msg_lower in SALUDOS:
+        bienvenida = (
+            f"*¡Bienvenido a {TIENDA['nombre']}!* 🏪\n"
+            f"¿En qué podemos ayudarte?\n\n"
+            f"1️⃣ Ver categorías de productos\n"
+            f"2️⃣ Hablar con un asesor para comprar"
+        )
+        historial.append({"role": "user",  "content": msg})
+        historial.append({"role": "model", "content": bienvenida})
+        CONVERSACIONES.save(tel, historial)
+        return {"respuesta": bienvenida, "tipo_mensaje": "texto", "accion_ejecutada": None}
+
+    # ── Catálogo dinámico ─────────────────────────────────────────────────
+    catalogo_texto = at_get_catalogo_texto(solo_disponibles=False)
+
+    # ── Navegación por números (determinística, sin depender de Gemini) ──
+    # Detecta el contexto del último mensaje del bot para resolver números
+    nav_respuesta = _resolver_navegacion(msg_lower, historial, tel)
+    if nav_respuesta:
+        return nav_respuesta
+
+    # ── Modelo con contexto ──────────────────────────────────────────────
+    modelo_con_ctx = genai.GenerativeModel(
+        model_name="gemini-2.5-flash-lite",
+        system_instruction=(
+            SYSTEM_PROMPT
+            + "\n\n---\n## CATÁLOGO ACTUAL (datos reales de Airtable)\n"
+            + catalogo_texto
+        ),
+    )
+
+    # ── Historial para Gemini ─────────────────────────────────────────────
+    history_gemini = []
+    for turno in historial:
+        if turno.get("role") in ["user", "model"]:
+            history_gemini.append({
+                "role": turno["role"],
+                "parts": [{"text": turno["content"]}],
+            })
+
+    # ── Generar respuesta ────────────────────────────────────────────────
+    try:
+        chat = modelo_con_ctx.start_chat(history=history_gemini)
+        response = chat.send_message(msg_sanitizado)
+        respuesta = response.text.strip()
+    except Exception as e:
+        print(f"[COMERCIO] Error Gemini: {traceback.format_exc()}")
+        return {
+            "respuesta": "Disculpá, tuve un problema técnico. ¿Podés repetir tu consulta?",
+            "tipo_mensaje": "texto",
+            "accion_ejecutada": None,
+            "_error": str(e),
+        }
+
+    # ── Validar output ────────────────────────────────────────────────────
+    if not validate_output(respuesta, worker="comercio"):
+        respuesta = FALLBACK
+
+    # ── Detectar y ejecutar acciones ──────────────────────────────────────
+    accion_ejecutada = None
+    # Buscar formato ACCION: {...} o JSON suelto con "tipo"
+    accion_match = re.search(r'ACCION:\s*(\{[^}]+\})', respuesta)
+    if not accion_match:
+        # Buscar JSON suelto que contenga "tipo" (acción sin prefijo ACCION:)
+        accion_match = re.search(r'(\{"tipo":\s*"[^"]+?"[^}]*\})', respuesta)
+    if accion_match:
+        try:
+            accion_data = json.loads(accion_match.group(1))
+            accion_ejecutada = ejecutar_accion(accion_data, tel, nombre)
+            # Limpiar el JSON de la respuesta al cliente
+            respuesta = respuesta[:accion_match.start()].strip()
+            # También limpiar cualquier residuo después del JSON
+            resto = respuesta.replace(accion_match.group(0), "").strip()
+            if resto:
+                respuesta = resto
+            if not respuesta:
+                if accion_data.get("tipo") == "lead_calificado":
+                    respuesta = "¡Excelente elección! Ya le avisé a nuestro equipo. Te van a contactar a la brevedad. 🙌"
+                else:
+                    respuesta = "¡Perfecto! Ya le avisé a un vendedor. Te va a contactar en breve. 📞"
+        except json.JSONDecodeError:
+            # Si falla el parseo, al menos limpiar el JSON visible
+            respuesta = re.sub(r'\{[^}]*"tipo"[^}]*\}', '', respuesta).strip()
+            if not respuesta:
+                respuesta = "¡Perfecto! Ya le avisé a un vendedor. Te va a contactar en breve. 📞"
+
+    # ── Extraer imagen URL de la respuesta ────────────────────────────
+    imagen_url = None
+    imagen_match = re.search(r'IMAGEN:\s*(https?://\S+)', respuesta)
+    if imagen_match:
+        imagen_url = imagen_match.group(1).rstrip('.,)"')
+        respuesta = respuesta[:imagen_match.start()].strip()
+        if not respuesta:
+            respuesta = "📸"  # emoji foto si solo quedó la imagen
+
+    # ── Guardar historial ─────────────────────────────────────────────────
+    historial.append({"role": "user",  "content": msg})
+    historial.append({"role": "model", "content": respuesta})
+    CONVERSACIONES.save(tel, historial)
+
+    return {
+        "respuesta": respuesta,
+        "tipo_mensaje": "imagen" if imagen_url else "texto",
+        "imagen_url": imagen_url,
+        "accion_ejecutada": accion_ejecutada,
+        "notificar_dueno": accion_ejecutada in ["lead_notificado", "vendedor_notificado"],
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENDPOINT ADMIN: POST /comercio/admin (dueño gestiona catálogo por WhatsApp)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.post("/admin", summary="Gestión de catálogo por WhatsApp (admin)")
+async def admin_catalogo(entrada: MensajeComercio):
+    """El dueño puede agregar/actualizar productos enviando mensajes."""
+    if not GEMINI_API_KEY:
+        return {"respuesta": "⚠️ GEMINI_API_KEY no configurada.", "status": "error"}
+
+    prompt = f"""El dueño de la tienda envía este mensaje para gestionar su catálogo.
+La disponibilidad es un checkbox booleano (true/false).
+
+MENSAJE: "{entrada.mensaje}"
+
+Extrae la información en JSON estricto:
+{{
+  "accion": "crear_producto" | "actualizar_disponibilidad" | "actualizar_precio" | "desconocida",
+  "datos": {{
+    "Nombre": "Nombre del producto",
+    "Categoria": "Categoría",
+    "Precio": 0,
+    "Descripcion": "Descripción breve",
+    "Disponible": true
+  }}
+}}"""
+
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash-lite")
+        resp = model.generate_content(prompt)
+        texto = resp.text.strip()
+
+        match = re.search(r'\{[\s\S]*\}', texto)
+        if not match:
+            return {"respuesta": "🤖 No entendí qué querés hacer con el catálogo."}
+
+        data = json.loads(match.group(0))
+        accion = data.get("accion")
+        datos = data.get("datos", {})
+        nombre_prod = datos.get("Nombre", "").lower()
+
+        if accion == "crear_producto":
+            url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Productos"
+            requests.post(url, headers=AT_HEADERS(), json={"records": [{"fields": datos}]})
+            return {"respuesta": f"✅ Producto '{datos.get('Nombre')}' guardado en el catálogo."}
+
+        elif accion in ("actualizar_disponibilidad", "actualizar_precio"):
+            records = at_get_catalogo()
+            found = None
+            for rec in records:
+                if nombre_prod in rec["fields"].get("Nombre", "").lower():
+                    found = rec["id"]
+                    break
+            if found:
+                update_fields = {}
+                if "Disponible" in datos:
+                    update_fields["Disponible"] = datos["Disponible"]
+                if "Precio" in datos and datos["Precio"]:
+                    update_fields["Precio"] = datos["Precio"]
+                url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Productos/{found}"
+                requests.patch(url, headers=AT_HEADERS(), json={"fields": update_fields})
+                return {"respuesta": f"✅ Producto '{datos.get('Nombre')}' actualizado."}
+            else:
+                return {"respuesta": f"❌ No encontré '{datos.get('Nombre')}' en el catálogo."}
+
+        return {"respuesta": "🤖 No entendí qué querés hacer. Probá: 'Agregar TV Samsung 55 a $450.000'"}
+
+    except Exception as e:
+        return {"respuesta": f"Error interno: {str(e)}"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENDPOINT WEB: GET /comercio/catalogo (para sitio web)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/catalogo", summary="Catálogo JSON para sitio web")
+def get_catalogo_web():
+    """Devuelve el catálogo completo en JSON para consumir desde el sitio web."""
+    records = at_get_catalogo()
+    productos = []
+    for rec in records:
+        f = rec["fields"]
+        disponible = f.get("Disponible", f.get("Disponibilidad", False))
+        if disponible == 1 or str(disponible).lower() == "true":
+            disponible = True
+        if not disponible:
+            continue
+        imgs = f.get("Imagen", [])
+        
+        # Soportar múltiples nombres de campo
+        cat = f.get("Categoria", f.get("Categoría", ""))
+        desc = f.get("Descripcion", f.get("Descripción Técnica", ""))
+        
+        productos.append({
+            "id": f.get("ID_Producto", rec["id"]),
+            "nombre": f.get("Nombre", ""),
+            "precio": f.get("Precio", 0),
+            "descripcion": desc,
+            "categoria": cat,
+            "imagen": imgs[0].get("url", "") if imgs else "",
+            "imagen_thumb": imgs[0].get("thumbnails", {}).get("large", {}).get("url", "") if imgs else "",
+        })
+    return {
+        "tienda": TIENDA["nombre"],
+        "total": len(productos),
+        "productos": productos,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEBUG ENDPOINTS
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/debug/config", summary="Debug: Ver configuración")
+def debug_config():
+    return {
+        "GEMINI_API_KEY": f"✅ ({len(GEMINI_API_KEY)} chars)" if GEMINI_API_KEY else "❌",
+        "AIRTABLE_API_KEY": f"✅ ({len(AIRTABLE_API_KEY)} chars)" if AIRTABLE_API_KEY else "❌",
+        "AIRTABLE_BASE_ID": AIRTABLE_BASE_ID or "❌",
+        "NUMERO_DUENO": NUMERO_DUENO[:6] + "..." if NUMERO_DUENO else "❌",
+        "tienda": TIENDA["nombre"],
+    }
+
+
+@router.get("/debug/test", summary="Debug: Test rápido del catálogo")
+def debug_test():
+    return {
+        "catalogo_texto": at_get_catalogo_texto(),
+        "total_productos": len(at_get_catalogo()),
+    }
