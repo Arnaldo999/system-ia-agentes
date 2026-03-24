@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inmobiliaria Maicol — Encontrá tu propiedad ideal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e40af;
+      --accent: #10b981;
+      --warm: #f59e0b;
+      --dark: #111827;
+      --card: #1f2937;
+      --border: #374151;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --success: #059669;
+      --danger: #dc2626;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1a2744 50%, #0f172a 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 60px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 50px 20px 40px;
+      position: relative;
+    }
+    .hero-logo {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .hero h1 span { color: var(--warm); }
+    .hero p {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 480px;
+      margin: 0 auto 24px;
+    }
+    .trust-badges {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+
+    /* ── STEPPER ── */
+    .stepper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      max-width: 420px;
+      margin: 0 auto 32px;
+      padding: 0 20px;
+    }
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      position: relative;
+    }
+    .step-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background: var(--border);
+      z-index: 0;
+    }
+    .step-item.active:not(:last-child)::after,
+    .step-item.done:not(:last-child)::after {
+      background: var(--primary);
+    }
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--border);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+      transition: all 0.3s;
+    }
+    .step-item.active .step-circle {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 0 0 4px rgba(26,86,219,0.25);
+    }
+    .step-item.done .step-circle {
+      background: var(--accent);
+      color: white;
+    }
+    .step-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 5px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .step-item.active .step-label { color: var(--text); }
+
+    /* ── CARD ── */
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 32px 28px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+    }
+
+    /* ── STEPS ── */
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+
+    .step-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .step-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    /* ── OPTION GRID ── */
+    .option-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .option-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+    .option-grid.wide { grid-template-columns: 1fr; }
+
+    .opt-btn {
+      border: 2px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      border-radius: 14px;
+      padding: 18px 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      color: var(--text);
+      position: relative;
+      overflow: hidden;
+    }
+    .opt-btn:hover {
+      border-color: var(--primary);
+      background: rgba(26,86,219,0.08);
+      transform: translateY(-2px);
+    }
+    .opt-btn.selected {
+      border-color: var(--primary);
+      background: rgba(26,86,219,0.15);
+      box-shadow: 0 0 0 3px rgba(26,86,219,0.2);
+    }
+    .opt-btn .opt-icon { font-size: 1.8rem; margin-bottom: 6px; }
+    .opt-btn .opt-label { font-size: 0.85rem; font-weight: 600; }
+    .opt-btn .opt-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .opt-btn .check {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 0.65rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .opt-btn.selected .check { display: flex; }
+
+    /* ── RANGE SLIDER ── */
+    .range-group { margin-bottom: 24px; }
+    .range-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      color: var(--muted);
+    }
+    .range-label strong { color: var(--warm); font-size: 1rem; }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      height: 6px;
+      cursor: pointer;
+    }
+    .range-hints {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── FORM FIELDS ── */
+    .field-group { margin-bottom: 18px; }
+    .field-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .field-group input,
+    .field-group select,
+    .field-group textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      color: var(--text);
+      font-size: 0.92rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .field-group input:focus,
+    .field-group select:focus,
+    .field-group textarea:focus {
+      border-color: var(--primary);
+      background: rgba(26,86,219,0.06);
+    }
+    .field-group input.error { border-color: var(--danger); }
+    .field-group select option { background: #1f2937; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── BOTONES ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .btn-back {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 10px;
+      padding: 13px 20px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .btn-back:hover { border-color: var(--text); color: var(--text); }
+    .btn-next {
+      flex: 1;
+      background: var(--primary);
+      border: none;
+      color: white;
+      border-radius: 10px;
+      padding: 13px 20px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-next:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .btn-next:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── RESULTADO ── */
+    .result-screen { text-align: center; padding: 20px 0; }
+    .result-icon {
+      font-size: 3.5rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .result-screen h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .result-screen p { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; line-height: 1.6; }
+
+    .cta-wa {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #25d366;
+      color: white;
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      margin-bottom: 14px;
+      transition: all 0.2s;
+    }
+    .cta-wa:hover { background: #1ebe5d; transform: translateY(-2px); }
+    .cta-ig {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+      color: white;
+      border-radius: 14px;
+      padding: 14px 24px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 14px;
+      transition: all 0.2s;
+    }
+    .cta-ig:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    .result-note {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 10px;
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 10px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── CHIPS ── */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .chip {
+      border: 1.5px solid var(--border);
+      background: transparent;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .chip:hover { border-color: var(--primary); color: var(--text); }
+    .chip.selected {
+      border-color: var(--primary);
+      background: rgba(26,86,219,0.15);
+      color: var(--text);
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 480px) {
+      .form-card { padding: 24px 18px; border-radius: 16px; margin: 0 12px; }
+      .option-grid { grid-template-columns: 1fr 1fr; }
+      .option-grid.three { grid-template-columns: 1fr 1fr; }
+      .field-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-logo">🏠</div>
+  <h1>Encontrá tu propiedad <span>ideal</span></h1>
+  <p>Respondé 4 preguntas rápidas y te mostramos las mejores opciones disponibles en San Ignacio, Misiones.</p>
+  <div class="trust-badges">
+    <span class="badge"><span class="dot"></span> Respuesta inmediata</span>
+    <span class="badge"><span class="dot"></span> Sin compromiso</span>
+    <span class="badge"><span class="dot"></span> 100% gratis</span>
+  </div>
+</div>
+
+<!-- STEPPER -->
+<div class="stepper" id="stepper">
+  <div class="step-item active" id="si-1">
+    <div class="step-circle">1</div>
+    <div class="step-label">Operación</div>
+  </div>
+  <div class="step-item" id="si-2">
+    <div class="step-circle">2</div>
+    <div class="step-label">Propiedad</div>
+  </div>
+  <div class="step-item" id="si-3">
+    <div class="step-circle">3</div>
+    <div class="step-label">Presupuesto</div>
+  </div>
+  <div class="step-item" id="si-4">
+    <div class="step-circle">4</div>
+    <div class="step-label">Tus datos</div>
+  </div>
+</div>
+
+<!-- FORM CARD -->
+<div class="form-card">
+
+  <!-- PROGRESS -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress" style="width:25%"></div>
+  </div>
+
+  <!-- STEP 1: Operación -->
+  <div class="form-step active" id="step-1">
+    <div class="step-title">¿Qué querés hacer?</div>
+    <div class="step-subtitle">Elegí la operación que más te interesa.</div>
+    <div class="option-grid">
+      <button class="opt-btn" data-field="operacion" data-value="comprar" onclick="selectOption(this)">
+        <div class="check">✓</div>
+        <div class="opt-icon">🏡</div>
+        <div class="opt-label">Comprar</div>
+        <div class="opt-sub">Adquirir propiedad</div>
+      </button>
+      <button class="opt-btn" data-field="operacion" data-value="alquilar" onclick="selectOption(this)">
+        <div class="check">✓</div>
+        <div class="opt-icon">🔑</div>
+        <div class="opt-label">Alquilar</div>
+        <div class="opt-sub">Arrendar propiedad</div>
+      </button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-next" id="next-1" onclick="goStep(2)" disabled>
+        Continuar <span>→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Tipo de propiedad -->
+  <div class="form-step" id="step-2">
+    <div class="step-title">¿Qué tipo de propiedad?</div>
+    <div class="step-subtitle">Podés elegir una o varias opciones.</div>
+    <div class="option-grid three">
+      <button class="opt-btn" data-field="tipo" data-value="Casa" onclick="selectChip(this)">
+        <div class="check">✓</div>
+        <div class="opt-icon">🏠</div>
+        <div class="opt-label">Casa</div>
+      </button>
+      <button class="opt-btn" data-field="tipo" data-value="Departamento" onclick="selectChip(this)">
+        <div class="check">✓</div>
+        <div class="opt-icon">🏢</div>
+        <div class="opt-label">Dpto</div>
+      </button>
+      <button class="opt-btn" data-field="tipo" data-value="Terreno" onclick="selectChip(this)">
+        <div class="check">✓</div>
+        <div class="opt-icon">🌿</div>
+        <div class="opt-label">Terreno</div>
+      </button>
+    </div>
+
+    <div class="step-title" style="font-size:0.95rem; margin-bottom:8px;">¿Cuántos dormitorios necesitás?</div>
+    <div class="chips" id="dorm-chips">
+      <button class="chip" data-field="dormitorios" data-value="1" onclick="selectChipSingle(this, 'dorm-chips')">1 dorm.</button>
+      <button class="chip" data-field="dormitorios" data-value="2" onclick="selectChipSingle(this, 'dorm-chips')">2 dorm.</button>
+      <button class="chip" data-field="dormitorios" data-value="3" onclick="selectChipSingle(this, 'dorm-chips')">3 dorm.</button>
+      <button class="chip" data-field="dormitorios" data-value="4+" onclick="selectChipSingle(this, 'dorm-chips')">4+ dorm.</button>
+      <button class="chip" data-field="dormitorios" data-value="indiferente" onclick="selectChipSingle(this, 'dorm-chips')">Indiferente</button>
+    </div>
+
+    <div class="step-title" style="font-size:0.95rem; margin-bottom:8px;">¿En qué zona estás buscando?</div>
+    <div class="chips" id="zona-chips">
+      <button class="chip" data-field="zona" data-value="San Ignacio" onclick="selectChipSingle(this, 'zona-chips')">San Ignacio</button>
+      <button class="chip" data-field="zona" data-value="Gdor Roca" onclick="selectChipSingle(this, 'zona-chips')">Gdor Roca</button>
+      <button class="chip" data-field="zona" data-value="Apóstoles" onclick="selectChipSingle(this, 'zona-chips')">Apóstoles</button>
+      <button class="chip" data-field="zona" data-value="Otra Zona" onclick="selectChipSingle(this, 'zona-chips')">Otra zona</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(1)">← Volver</button>
+      <button class="btn-next" id="next-2" onclick="goStep(3)" disabled>
+        Continuar <span>→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Presupuesto y urgencia -->
+  <div class="form-step" id="step-3">
+    <div class="step-title">¿Cuál es tu presupuesto?</div>
+    <div class="step-subtitle">Ayuda a filtrar las opciones que mejor se ajustan.</div>
+
+    <!-- Moneda -->
+    <div class="chips" id="moneda-chips" style="margin-bottom:18px;">
+      <button class="chip selected" data-field="moneda" data-value="USD" onclick="selectChipSingle(this, 'moneda-chips'); updateRange()">🇺🇸 USD</button>
+      <button class="chip" data-field="moneda" data-value="ARS" onclick="selectChipSingle(this, 'moneda-chips'); updateRange()">🇦🇷 ARS</button>
+    </div>
+
+    <div class="range-group">
+      <div class="range-label">
+        <span>Hasta</span>
+        <strong id="budget-display">USD 80,000</strong>
+      </div>
+      <input type="range" id="budget-range" min="0" max="100" value="40" oninput="updateBudgetDisplay()" />
+      <div class="range-hints">
+        <span id="hint-min">Sin límite mín.</span>
+        <span id="hint-max">+500k</span>
+      </div>
+    </div>
+
+    <div class="step-title" style="font-size:0.95rem; margin-bottom:8px;">¿Con qué urgencia lo necesitás?</div>
+    <div class="chips" id="urgencia-chips">
+      <button class="chip" data-field="urgencia" data-value="inmediata" onclick="selectChipSingle(this, 'urgencia-chips')">🔥 Inmediata</button>
+      <button class="chip" data-field="urgencia" data-value="1-3 meses" onclick="selectChipSingle(this, 'urgencia-chips')">📅 1-3 meses</button>
+      <button class="chip" data-field="urgencia" data-value="3-6 meses" onclick="selectChipSingle(this, 'urgencia-chips')">🗓 3-6 meses</button>
+      <button class="chip" data-field="urgencia" data-value="solo explorando" onclick="selectChipSingle(this, 'urgencia-chips')">👀 Solo mirando</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(2)">← Volver</button>
+      <button class="btn-next" onclick="goStep(4)">
+        Continuar <span>→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Datos de contacto -->
+  <div class="form-step" id="step-4">
+    <div class="step-title">¡Casi listo! 🎉</div>
+    <div class="step-subtitle">Dejá tus datos para enviarte las propiedades filtradas.</div>
+
+    <div class="field-grid">
+      <div class="field-group">
+        <label>Nombre *</label>
+        <input type="text" id="f-nombre" placeholder="Tu nombre" />
+      </div>
+      <div class="field-group">
+        <label>Apellido</label>
+        <input type="text" id="f-apellido" placeholder="Tu apellido" />
+      </div>
+    </div>
+    <div class="field-group">
+      <label>WhatsApp *</label>
+      <input type="tel" id="f-telefono" placeholder="+54 9 3764 000000" />
+    </div>
+    <div class="field-group">
+      <label>Email <span style="color:var(--muted); font-weight:400;">(opcional)</span></label>
+      <input type="email" id="f-email" placeholder="tu@email.com" />
+    </div>
+    <div class="field-group">
+      <label>¿Algo más que quieras aclarar?</label>
+      <textarea id="f-nota" rows="2" placeholder="Ej: necesito patio, cochera, planta baja..."></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep(3)">← Volver</button>
+      <button class="btn-next" id="btn-submit" onclick="submitForm()">
+        Ver propiedades 🏡
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULT: Calificado → WhatsApp -->
+  <div class="form-step" id="step-result-wa">
+    <div class="result-screen">
+      <span class="result-icon">🎯</span>
+      <h2>¡Tenemos propiedades para vos!</h2>
+      <p>Según tu búsqueda encontramos opciones que se ajustan perfectamente.<br>
+      Un asesor te las envía ahora mismo por WhatsApp con fotos y precios.</p>
+      <a id="link-wa" href="#" class="cta-wa" target="_blank">
+        📲 Recibir propiedades por WhatsApp
+      </a>
+      <p class="result-note">
+        ✅ Respuesta en menos de 5 minutos<br>
+        🔒 Tus datos están seguros, nunca los compartimos
+      </p>
+    </div>
+  </div>
+
+  <!-- RESULT: Potencial → Instagram -->
+  <div class="form-step" id="step-result-ig">
+    <div class="result-screen">
+      <span class="result-icon">👀</span>
+      <h2>¡Gracias por tu interés!</h2>
+      <p>Guardamos tu consulta. Mientras tanto, seguinos en Instagram donde publicamos las novedades, nuevas propiedades y ofertas exclusivas todos los días.</p>
+      <a href="https://instagram.com" class="cta-ig" target="_blank">
+        📸 Seguir en Instagram
+      </a>
+      <a id="link-wa-soft" href="#" class="cta-wa" target="_blank" style="font-size:0.85rem; padding:12px 20px; background:#1a56db;">
+        💬 Hablar con un asesor igual
+      </a>
+      <p class="result-note">
+        📩 También podés escribirnos cuando lo decidas<br>
+        Guardamos tu perfil para cuando estés listo
+      </p>
+    </div>
+  </div>
+
+</div><!-- /form-card -->
+
+<script>
+  // ── ESTADO GLOBAL ──
+  const lead = {
+    operacion: '', tipo: [], dormitorios: '', zona: '',
+    presupuesto: '', moneda: 'USD', urgencia: '',
+    nombre: '', apellido: '', telefono: '', email: '', nota: ''
+  };
+
+  const NUMERO_ASESOR = '3764815689';    // número YCloud — WhatsApp Business del bot
+  const IG_URL = 'https://instagram.com';
+
+  // Rangos de presupuesto según moneda
+  const ranges = {
+    USD: [10000,20000,30000,40000,50000,60000,80000,100000,120000,150000,
+          180000,200000,250000,300000,400000,500000],
+    ARS:  [500000,1000000,2000000,3000000,5000000,8000000,10000000,
+           15000000,20000000,30000000,50000000,80000000,100000000,150000000,200000000,300000000]
+  };
+
+  function fmt(n, moneda) {
+    if (moneda === 'USD') return 'USD ' + n.toLocaleString('es-AR');
+    return 'ARS ' + n.toLocaleString('es-AR');
+  }
+
+  function updateRange() {
+    const moneda = document.querySelector('#moneda-chips .chip.selected')?.dataset.value || 'USD';
+    lead.moneda = moneda;
+    updateBudgetDisplay();
+  }
+
+  function updateBudgetDisplay() {
+    const moneda = lead.moneda || 'USD';
+    const arr = ranges[moneda];
+    const idx = Math.round(document.getElementById('budget-range').value * (arr.length-1) / 100);
+    lead.presupuesto = arr[idx];
+    const isMax = idx === arr.length - 1;
+    document.getElementById('budget-display').textContent = isMax ? `+${fmt(arr[arr.length-1], moneda)}` : fmt(arr[idx], moneda);
+  }
+
+  // ── SELECCIONES ──
+  function selectOption(el) {
+    const field = el.dataset.field;
+    document.querySelectorAll(`.opt-btn[data-field="${field}"]`).forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    lead[field] = el.dataset.value;
+    const nextBtn = document.getElementById('next-1');
+    if (nextBtn) nextBtn.disabled = !lead.operacion;
+  }
+
+  function selectChip(el) {
+    // multi-select para tipo de propiedad
+    el.classList.toggle('selected');
+    const selected = [...document.querySelectorAll('.opt-btn[data-field="tipo"].selected')].map(b => b.dataset.value);
+    lead.tipo = selected;
+    checkStep2();
+  }
+
+  function selectChipSingle(el, groupId) {
+    document.querySelectorAll(`#${groupId} .chip, #${groupId} .opt-btn`).forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    lead[el.dataset.field] = el.dataset.value;
+    checkStep2();
+  }
+
+  function checkStep2() {
+    const ok = lead.tipo.length > 0;
+    const btn = document.getElementById('next-2');
+    if (btn) btn.disabled = !ok;
+  }
+
+  // ── NAVEGACIÓN ──
+  const STEPS = 4;
+  function goStep(n) {
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    document.getElementById(`step-${n}`).classList.add('active');
+
+    // Stepper
+    document.querySelectorAll('.step-item').forEach((si, i) => {
+      si.classList.remove('active', 'done');
+      if (i + 1 < n) si.classList.add('done');
+      if (i + 1 === n) si.classList.add('active');
+    });
+
+    // Progress
+    const pct = Math.min(n * 25, 100);
+    document.getElementById('progress').style.width = pct + '%';
+
+    // Init range on step 3
+    if (n === 3) updateBudgetDisplay();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── SUBMIT ──
+  function submitForm() {
+    lead.nombre   = document.getElementById('f-nombre').value.trim();
+    lead.apellido = document.getElementById('f-apellido').value.trim();
+    lead.telefono = document.getElementById('f-telefono').value.trim();
+    lead.email    = document.getElementById('f-email').value.trim();
+    lead.nota     = document.getElementById('f-nota').value.trim();
+
+    // Validación básica
+    const nameEl  = document.getElementById('f-nombre');
+    const telEl   = document.getElementById('f-telefono');
+    let valid = true;
+    if (!lead.nombre) { nameEl.classList.add('error'); valid = false; } else nameEl.classList.remove('error');
+    if (!lead.telefono) { telEl.classList.add('error'); valid = false; } else telEl.classList.remove('error');
+    if (!valid) return;
+
+    // Enviar datos al Webhook de n8n para mayor seguridad (n8n llama a la FastAPI y a Airtable)
+    enviarWebhookN8n();
+
+    // ── LÓGICA DE CALIFICACIÓN ──
+    // Calificado → urgencia inmediata o 1-3 meses Y tiene tipo seleccionado
+    const calificado = lead.urgencia === 'inmediata' || lead.urgencia === '1-3 meses';
+
+    if (calificado) {
+      mostrarResultadoWA();
+    } else {
+      mostrarResultadoIG();
+    }
+  }
+
+  function mostrarResultadoWA() {
+    const tipoStr = lead.tipo.join(', ') || 'propiedad';
+    const zona    = lead.zona ? `, zona ${lead.zona}` : '';
+    const dorm    = lead.dormitorios && lead.dormitorios !== 'indiferente' ? `, ${lead.dormitorios} dormitorios` : '';
+    const budget  = lead.presupuesto ? `, presupuesto hasta ${fmt(lead.presupuesto, lead.moneda)}` : '';
+    const urgStr  = lead.urgencia ? ` (urgencia: ${lead.urgencia})` : '';
+    const nota    = lead.nota ? `\n📝 Nota: ${lead.nota}` : '';
+
+    const msg = encodeURIComponent(
+      `Hola! 👋 Me registré en el formulario de *Inmobiliaria Maicol*.\n\n` +
+      `📋 *Mi búsqueda:*\n` +
+      `• Operación: ${lead.operacion}\n` +
+      `• Tipo: ${tipoStr}${zona}${dorm}\n` +
+      `• Presupuesto: ${budget ? budget.replace(', presupuesto hasta ', '') : 'A consultar'}\n` +
+      `• Urgencia: ${lead.urgencia || '-'}${nota}\n\n` +
+      `Nombre: ${lead.nombre} ${lead.apellido}`.trim()
+    );
+
+    document.getElementById('link-wa').href = `https://wa.me/${NUMERO_ASESOR}?text=${msg}`;
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step-result-wa').classList.add('active');
+    document.getElementById('progress').style.width = '100%';
+    document.querySelectorAll('.step-item').forEach(si => si.classList.add('done'));
+  }
+
+  function mostrarResultadoIG() {
+    const msg = encodeURIComponent(
+      `Hola! Me registré en el formulario de *Inmobiliaria Maicol*.\n\n` +
+      `Busco ${lead.operacion || 'una propiedad'} en ${lead.zona || 'San Ignacio'}.\n` +
+      `Nombre: ${lead.nombre} ${lead.apellido}`.trim()
+    );
+    document.getElementById('link-wa-soft').href = `https://wa.me/${NUMERO_ASESOR}?text=${msg}`;
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step-result-ig').classList.add('active');
+    document.getElementById('progress').style.width = '100%';
+  }
+
+  // ── WEBHOOK N8N (SEGURO) ──
+  function enviarWebhookN8n() {
+    const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/inmobiliaria';
+    
+    const calificado = lead.urgencia === 'inmediata' || lead.urgencia === '1-3 meses';
+    const tel = lead.telefono.replace(/\D/g,'');
+    const telefono = tel.startsWith('+') ? tel : `+${tel}`;
+
+    // Armamos el Payload que va a recibir N8N
+    const payload = {
+      Nombre:          lead.nombre || '',
+      Apellido:        lead.apellido || '',
+      Telefono:        telefono,
+      Email:           lead.email || '',
+      Estado:          calificado ? 'calificado' : 'potencial',
+      Operacion:       lead.operacion === 'comprar' ? 'venta' : (lead.operacion === 'alquilar' ? 'alquiler' : 'Todo'),
+      Tipo_Propiedad:  lead.tipo.map(t => t.toLowerCase()).join(', '),
+      Emprendimiento:  lead.zona || '', // Aca viaja el loteo elegido para separar flujos lógicos en la FastAPI
+      Presupuesto:     (() => { const p = lead.presupuesto; const m = lead.moneda || 'USD'; if (!p) return 'hata_50k'; const usd = m === 'ARS' ? p / 1000 : p; if (usd < 50000) return 'hata_50k'; if (usd < 100000) return '50k_100k'; if (usd < 200000) return '100k_200k'; return 'mas_200k'; })(),
+      Moneda:          lead.moneda || 'USD',
+      Urgencia:        lead.urgencia || '-',
+      Notas_Cliente:   lead.nota || '',
+      Origen:          'Formulario Inteligente Web'
+    };
+
+    fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }).catch(err => console.error("Error envío Webhook N8N mitigado para UX:", err)); 
+    // Es silencioso para no bloquear al usuario si tarda la red
+  }
+
+  // Init
+  updateBudgetDisplay();
+</script>
+</body>
+</html>

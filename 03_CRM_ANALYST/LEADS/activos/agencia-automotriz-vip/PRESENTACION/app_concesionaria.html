@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoDrive IA - CRM Automotriz Alta Gama</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --brand-red: #e11d48;
+            --brand-dark: #0f172a;
+            --brand-gray: #1e293b;
+        }
+
+        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; color: #334155; overflow-x: hidden; }
+        
+        .sidebar { background: var(--brand-dark); color: white; transition: all 0.3s ease; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #94a3b8; cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { background: var(--brand-gray); color: white; border-left-color: var(--brand-red); }
+        
+        .tab-content { display: none; padding: 24px; animation: fadeIn 0.4s ease-out;}
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Card Styles */
+        .glass-card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+        
+        /* Auto Gallery */
+        .car-card { position: relative; overflow: hidden; border-radius: 12px; background: white; transition: 0.3s; cursor: pointer; border: 1px solid #e2e8f0; }
+        .car-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: #cbd5e1; }
+        .car-img { width: 100%; height: 190px; object-fit: cover; border-bottom: 1px solid #f1f5f9; background: #f1f5f9; }
+        .car-badge { position: absolute; top: 12px; right: 12px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;}
+        .badge-disp { background: #dcfce7; color: #166534; }
+        .badge-resrv { background: #fef08a; color: #854d0e; }
+        .badge-prep { background: #e2e8f0; color: #475569; }
+
+        /* Filter buttons */
+        .btn-filter { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s; border: 1px solid #e2e8f0; background: white; color: #475569;}
+        .btn-filter:hover { background: #f8fafc; }
+        .btn-filter.active-filter { background: var(--brand-dark); color: white; border-color: var(--brand-dark); }
+
+        /* Leads Kanban (Mini) */
+        .k-col { background: #f1f5f9; border-radius: 12px; padding: 16px; min-width: 320px; max-width: 350px;}
+        .k-card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; border-left: 4px solid var(--brand-red); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition:transform 0.2s;}
+        .k-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; bottom: 0; width: 100%; height: 75px; flex-direction: row; z-index: 50; padding: 0; border-top: 1px solid #cbd5e1; background: var(--brand-dark); box-shadow: 0 -4px 6px rgba(0,0,0,0.1); }
+            .nav-item { flex: 1; justify-content: center; flex-direction: column; gap: 4px; padding: 8px 0; border-left: none; border-bottom: 3px solid transparent; font-size: 11px;}
+            .nav-item i { width: 22px; height: 22px; }
+            .nav-item:hover, .nav-item.active { border-left: none; border-bottom-color: var(--brand-red); background: transparent; }
+            .main-content { padding: 16px; padding-bottom: 90px; }
+            .desk-logo { display: none; }
+            
+            /* Responsive specifics */
+            .k-col { min-width: 85vw; }
+            .mobile-filters { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+            .mobile-filters::-webkit-scrollbar { display: none; }
+            .btn-filter { flex: 0 0 auto; font-size: 12px; padding: 6px 12px; }
+            .tab-content { padding: 8px 0 !important; }
+            #page-title { font-size: 1.5rem; line-height: 1.2; }
+        }
+    </style>
+</head>
+<body class="flex h-screen bg-slate-50">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar w-64 flex flex-col pt-6 flex-shrink-0">
+        <div class="desk-logo px-6 mb-8 flex items-center gap-3">
+            <div class="w-10 h-10 bg-rose-600 rounded-lg flex items-center justify-center text-white font-bold text-xl"><i data-lucide="car"></i></div>
+            <div>
+                <h2 class="text-xl font-bold text-white tracking-wide">AutoDrive<span class="text-rose-600">IA</span></h2>
+                <p class="text-xs text-slate-400">System IA</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 flex flex-col md:mt-4">
+            <div class="nav-item active" onclick="switchTab('dashboard')">
+                <i data-lucide="layout-dashboard"></i> <span class="hidden md:inline font-medium">Dashboard</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('gallery')">
+                <i data-lucide="image"></i> <span class="hidden md:inline font-medium">Galería Inventario</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('leads')">
+                <i data-lucide="users"></i> <span class="hidden md:inline font-medium">Leads (Canales)</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('clients')">
+                <i data-lucide="folder-check"></i> <span class="hidden md:inline font-medium">Clientes Activos</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('service')">
+                <i data-lucide="wrench"></i> <span class="hidden md:inline font-medium">Servicio Técnico</span>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-y-auto main-content">
+        
+        <!-- TOP HEADER -->
+        <header class="flex justify-between items-center mb-8 px-4 md:px-8 pt-4 md:pt-8">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800" id="page-title">Dashboard Operativo</h1>
+                <p class="text-slate-500 text-sm mt-1" id="page-sub">Bienvenido, panel de control impulsado por IA.</p>
+            </div>
+            <div class="flex items-center gap-4 hidden md:flex">
+                <div class="text-right">
+                    <p class="text-sm font-bold text-slate-800">Agencia Alta Gama VIP</p>
+                    <p class="text-xs text-emerald-600 font-medium">🟢 Sistema IA Online</p>
+                </div>
+                <div class="h-10 w-10 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-300 cursor-pointer transition"><i data-lucide="bell"></i></div>
+            </div>
+        </header>
+
+        <!-- VIEW: DASHBOARD -->
+        <div id="view-dashboard" class="tab-content active md:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-card p-5 border-l-4 border-rose-500">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Leads del Mes</p>
+                    <h3 class="text-3xl font-extrabold text-slate-800">482</h3>
+                    <p class="text-emerald-500 text-xs mt-2 font-medium flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> +12% Meta Ads</p>
+                </div>
+                <div class="glass-card p-5 border-l-4 border-blue-500">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Test Drives Program.</p>
+                    <h3 class="text-3xl font-extrabold text-slate-800">24</h3>
+                    <p class="text-emerald-500 text-xs mt-2 font-medium flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Agendados por Bot</p>
+                </div>
+                <div class="glass-card p-5 border-l-4 border-emerald-500">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Ventas Cerradas</p>
+                    <h3 class="text-3xl font-extrabold text-slate-800">18</h3>
+                    <p class="text-slate-500 text-xs mt-2 font-medium">En los últimos 30 días</p>
+                </div>
+                <div class="glass-card p-5 border-l-4 border-amber-500">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Citas de Taller</p>
+                    <h3 class="text-3xl font-extrabold text-slate-800">86</h3>
+                    <p class="text-emerald-500 text-xs mt-2 font-medium flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> 40 captadas por IA</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Activity Feed -->
+                <div class="glass-card p-6 md:col-span-2">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-6"><i data-lucide="activity" class="text-rose-600"></i> Actividad Reciente de la IA</h3>
+                    <div class="space-y-4">
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0"><i data-lucide="message-circle" class="w-4 h-4"></i></div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800">Bot WhatsApp agendó un Service (10,000 KM)</p>
+                                <p class="text-xs text-slate-500">Para el cliente Carlos Ruiz - Porsche 911. <span class="text-slate-400">Hace 10 min</span></p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="facebook" class="w-4 h-4"></i></div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800">Nuevo Lead capturado vía Meta Ads</p>
+                                <p class="text-xs text-slate-500">Interesado en Plan de Ahorro BMW X6. <span class="text-slate-400">Hace 45 min</span></p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0"><i data-lucide="mail" class="w-4 h-4"></i></div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800">Campaña "Renová tu Usado" enviada</p>
+                                <p class="text-xs text-slate-500">Enviada a 450 clientes VIP con autos > 2021. <span class="text-slate-400">Hace 2 horas</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mini Stats -->
+                <div class="glass-card p-6 bg-slate-800 text-white">
+                    <h3 class="font-bold text-white mb-6">Orígenes de Leads</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">WhatsApp Bot</span> <span class="font-bold">45%</span></div>
+                            <div class="w-full bg-slate-700 rounded-full h-2"><div class="bg-emerald-400 h-2 rounded-full" style="width: 45%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">Instagram / FB Ads</span> <span class="font-bold">35%</span></div>
+                            <div class="w-full bg-slate-700 rounded-full h-2"><div class="bg-blue-400 h-2 rounded-full" style="width: 35%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">Web Oficial</span> <span class="font-bold">20%</span></div>
+                            <div class="w-full bg-slate-700 rounded-full h-2"><div class="bg-rose-400 h-2 rounded-full" style="width: 20%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: GALERIA INVENTARIO -->
+        <div id="view-gallery" class="tab-content md:px-8">
+            <div class="flex flex-col mb-6 gap-4">
+                <div class="flex gap-2 mobile-filters">
+                    <!-- FILTER BUTTONS -->
+                    <button onclick="filterCars('all', this)" class="btn-filter filter-bt active-filter">Todos</button>
+                    <button onclick="filterCars('0km', this)" class="btn-filter filter-bt">0km Premium</button>
+                    <button onclick="filterCars('usado', this)" class="btn-filter filter-bt">Usados Seleccionados</button>
+                </div>
+                <div class="relative w-full">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                    <input type="text" placeholder="Buscar por modelo o patente..." class="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-full md:max-w-xs focus:outline-none focus:border-rose-500">
+                </div>
+            </div>
+
+            <!-- CARS GRID -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="car-gallery-grid">
+                
+                <!-- Vehicle 1 (0KM) -->
+                <div class="car-card car-item" data-category="0km">
+                    <span class="car-badge badge-disp">Confirmado en Stock</span>
+                    <img src="https://images.unsplash.com/photo-1503376712341-0048236ce8dc?auto=format&fit=crop&q=80&w=400&h=250" alt="Porsche" class="car-img">
+                    <div class="p-4">
+                        <p class="text-xs font-bold text-rose-600 uppercase tracking-widest mb-1">0km - Entrega Inmediata</p>
+                        <h3 class="text-lg font-bold text-slate-800">Porsche 911 Carrera S</h3>
+                        <p class="text-sm text-slate-500 mt-1">PDK Sport Chrono Package</p>
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-100 pt-3">
+                            <span class="font-bold text-slate-800 text-lg">USD 215.000</span>
+                            <button class="text-rose-600 hover:text-rose-700 bg-rose-50 p-2 rounded-full"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle 2 (USADO) -->
+                <div class="car-card car-item" data-category="usado">
+                    <span class="car-badge badge-resrv">Reservado por IA</span>
+                    <img src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=400&h=250" alt="Mercedes" class="car-img">
+                    <div class="p-4">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Usado Seleccionado</p>
+                        <h3 class="text-lg font-bold text-slate-800">Mercedes-Benz GLE 53</h3>
+                        <p class="text-sm text-slate-500 mt-1">AMG 4MATIC+ • 2022 • 14.500 km</p>
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-100 pt-3">
+                            <span class="font-bold text-slate-800 text-lg">USD 145.000</span>
+                            <div class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded font-bold">Seña Procesada</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle 3 (0KM) -->
+                <div class="car-card car-item" data-category="0km">
+                    <span class="car-badge badge-disp">Ingreso Aduana</span>
+                    <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=400&h=250" alt="BMW" class="car-img">
+                    <div class="p-4">
+                        <p class="text-xs font-bold text-rose-600 uppercase tracking-widest mb-1">0km - Próx. Ingreso</p>
+                        <h3 class="text-lg font-bold text-slate-800">BMW M4 Competition</h3>
+                        <p class="text-sm text-slate-500 mt-1">Coupé M xDrive TwinPower Turbo</p>
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-100 pt-3">
+                            <span class="font-bold text-slate-800 text-lg">USD 189.900</span>
+                            <button class="text-rose-600 hover:text-rose-700 bg-rose-50 p-2 rounded-full"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle 4 (USADO) -->
+                <div class="car-card car-item" data-category="usado">
+                    <span class="car-badge badge-prep">Taller Revisión</span>
+                    <img src="https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=400&h=250" alt="Audi" class="car-img">
+                    <div class="p-4">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Usado Certificado</p>
+                        <h3 class="text-lg font-bold text-slate-800">Audi RS Q8</h3>
+                        <p class="text-sm text-slate-500 mt-1">Quattro Tiptronic • 2021 • 32.000 km</p>
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-100 pt-3">
+                            <span class="font-bold text-slate-800 text-lg">USD 162.000</span>
+                            <button class="text-rose-600 hover:text-rose-700 bg-rose-50 p-2 rounded-full"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle 5 (0KM) -->
+                <div class="car-card car-item" data-category="0km">
+                    <span class="car-badge badge-disp">Disponible</span>
+                    <img src="https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=400&h=250" alt="Range Rover" class="car-img" style="object-position: center 70%;">
+                    <div class="p-4">
+                        <p class="text-xs font-bold text-rose-600 uppercase tracking-widest mb-1">0km - Entrega Inmediata</p>
+                        <h3 class="text-lg font-bold text-slate-800">Range Rover Velar</h3>
+                        <p class="text-sm text-slate-500 mt-1">R-Dynamic SE P250</p>
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-100 pt-3">
+                            <span class="font-bold text-slate-800 text-lg">USD 135.000</span>
+                            <button class="text-rose-600 hover:text-rose-700 bg-rose-50 p-2 rounded-full"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- VIEW: LEADS POR CANALES -->
+        <div id="view-leads" class="tab-content md:px-8 h-full">
+            <div class="flex gap-4 overflow-x-auto h-[80vh] pb-8">
+                
+                <!-- Columna 1: META ADS -->
+                <div class="k-col flex flex-col">
+                    <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-700 flex items-center"><i data-lucide="facebook" class="w-5 h-5 text-blue-600 mr-2"></i> Meta Ads (FB/IG)</h4>
+                        <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold">12</span>
+                    </div>
+                    <div class="overflow-y-auto flex-1 pr-1">
+                        <div class="k-card border-blue-500" style="border-left-width: 4px;">
+                            <div class="flex justify-between text-xs mb-2 text-slate-500"><span>Campaña "Alta Gama Usados"</span> <span class="text-blue-600 font-bold">Nuevo</span></div>
+                            <h5 class="font-bold text-slate-800 mb-1">Martín Ledesma</h5>
+                            <p class="text-sm text-slate-600 mb-3">Interés en BMW M4. Aún no responde contacto de bot.</p>
+                            <div class="bg-slate-50 text-xs p-2 rounded text-slate-700 border border-slate-200 border-l-2 border-l-slate-400">
+                                🤖 <strong>IA:</strong> Re-impactando en 30 mins con ficha técnica PDF.
+                            </div>
+                        </div>
+                        <div class="k-card border-blue-500" style="border-left-width: 4px;">
+                            <div class="flex justify-between text-xs mb-2 text-slate-500"><span>Instagram Video "Porsche 911"</span> <span class="text-slate-400">Hace 1h</span></div>
+                            <h5 class="font-bold text-slate-800 mb-1">Julieta Silva</h5>
+                            <p class="text-sm text-slate-600 mb-3">Preguntó si tomamos su Mercedes AMG en parte de pago.</p>
+                            <div class="bg-blue-50 text-xs p-2 rounded text-blue-800 border border-blue-200 border-l-2 border-l-blue-500">
+                                ✅ <strong>Automático:</strong> Derivada al equipo de Tasación VIP.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna 2: WHATSAPP ORGÁNICO -->
+                <div class="k-col flex flex-col">
+                    <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-700 flex items-center"><i data-lucide="message-circle" class="w-5 h-5 text-emerald-500 mr-2"></i> WhatsApp Orgánico</h4>
+                        <span class="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded font-bold">8</span>
+                    </div>
+                    <div class="overflow-y-auto flex-1 pr-1">
+                        <div class="k-card border-emerald-500" style="border-left-width: 4px;">
+                            <div class="flex justify-between text-xs mb-2 text-slate-500"><span>Catálogo WhatsApp</span> <span class="text-emerald-600 font-bold">On-Fire</span></div>
+                            <h5 class="font-bold text-slate-800 mb-1">Guillermo D.</h5>
+                            <p class="text-sm text-slate-600 mb-3">Buscando Range Rover Velar 0km. Pidió Test Drive.</p>
+                            <div class="bg-emerald-50 text-xs p-2 rounded text-emerald-800 border border-emerald-200 border-l-2 border-l-emerald-500">
+                                ⭐ <strong>Vendedor IA:</strong> Calendario enviado. Aguardando confirmación.
+                            </div>
+                        </div>
+                        <div class="k-card border-emerald-500" style="border-left-width: 4px;">
+                            <div class="flex justify-between text-xs mb-2 text-slate-500"><span>Audio de WhatsApp</span> <span class="text-slate-400">Ayer</span></div>
+                            <h5 class="font-bold text-slate-800 mb-1">Roberto Gómez</h5>
+                            <p class="text-sm text-slate-600 mb-3">Envió audio de 2 mins consultando modelos Audi disponibles.</p>
+                            <div class="bg-slate-50 text-xs p-2 rounded text-slate-700 border border-slate-200 border-l-2 border-l-slate-400">
+                                🤖 <strong>IA:</strong> Transcribió audio y envió catálogo de marcas premium filtrado.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna 3: SITIO WEB / FORMULARIOS -->
+                <div class="k-col flex flex-col">
+                    <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-700 flex items-center"><i data-lucide="globe" class="w-5 h-5 text-rose-500 mr-2"></i> Sitio Web Oficial</h4>
+                        <span class="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded font-bold">5</span>
+                    </div>
+                    <div class="overflow-y-auto flex-1 pr-1">
+                        <div class="k-card border-rose-500" style="border-left-width: 4px;">
+                            <div class="flex justify-between text-xs mb-2 text-slate-500"><span>Formulario Leasing</span> <span class="text-slate-400">Hace 3h</span></div>
+                            <h5 class="font-bold text-slate-800 mb-1">Empresa Logistic SA.</h5>
+                            <p class="text-sm text-slate-600 mb-3">Pidiendo presupuesto Leasing x3 Volkswagen Amarok V6.</p>
+                            <div class="bg-amber-50 text-xs p-2 rounded text-amber-800 border border-amber-200 border-l-2 border-l-amber-500">
+                                🔔 <strong>Alerta:</strong> Ticket alto corporativo. Transferido a Gerente.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna 4: DIRECTO / SALÓN -->
+                <div class="k-col flex flex-col">
+                    <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-700 flex items-center"><i data-lucide="store" class="w-5 h-5 text-slate-500 mr-2"></i> Directo (Salón / Llamadas)</h4>
+                        <span class="bg-slate-200 text-slate-600 text-xs px-2 py-1 rounded font-bold">2</span>
+                    </div>
+                    <div class="overflow-y-auto flex-1 pr-1">
+                        <div class="k-card border-slate-400" style="border-left-width: 4px;">
+                            <div class="flex justify-between text-xs mb-2 text-slate-500"><span>Walk-in (Salón VipSur)</span> <span class="text-slate-400">Hoy 10:30am</span></div>
+                            <h5 class="font-bold text-slate-800 mb-1">Dr. Alejandro Pérez</h5>
+                            <p class="text-sm text-slate-600 mb-3">Vino a ver el Porsche 911 en persona. Dejó datos.</p>
+                            <div class="bg-slate-50 text-xs p-2 rounded text-slate-700 border border-slate-200 border-l-2 border-l-slate-400">
+                                📩 <strong>Seguimiento IA:</strong> Email con cotización pre-aprobada programado.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- VIEW: CLIENTES ACTIVOS -->
+        <div id="view-clients" class="tab-content md:px-8">
+            <div class="flex flex-col md:flex-row justify-between mb-4 md:mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Base de Clientes Activos</h2>
+                    <p class="text-sm text-slate-500">Directorio de compradores y usuarios de servicio.</p>
+                </div>
+            </div>
+            <!-- Tabla clientes... -->
+             <div class="bg-white border text-sm border-slate-200 rounded-xl overflow-x-auto shadow-sm">
+                <table class="w-full text-left whitespace-nowrap">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="p-4 font-semibold text-slate-600">Cliente / Datos</th>
+                            <th class="p-4 font-semibold text-slate-600">Vehículo Principal</th>
+                            <th class="p-4 font-semibold text-slate-600">Última Transacción</th>
+                            <th class="p-4 font-semibold text-slate-600">Último Contacto IA</th>
+                            <th class="p-4 font-semibold text-slate-600">Estado Fidelidad</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 pb-20">
+                        <tr class="hover:bg-slate-50 cursor-pointer">
+                            <td class="p-4">
+                                <div class="font-bold text-slate-800">Sonia Rinaldi</div>
+                                <div class="text-xs text-slate-500 mt-1">11 9999-5678 • sona_r@empresa.com</div>
+                            </td>
+                            <td class="p-4">
+                                <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-bold border border-slate-200">Porsche 911 / 2024</span>
+                            </td>
+                            <td class="p-4">
+                                <div class="text-slate-800 text-rose-600 font-bold">Compra de 0KM</div>
+                                <div class="text-xs text-slate-500 mt-1">Hace 1 semana (US$ 215,000)</div>
+                            </td>
+                            <td class="p-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-slate-700">Envió Reseña Google Maps (5★)</span>
+                                </div>
+                                <div class="text-xs text-slate-400 mt-1">Solicitada por Bot Post-Entrega</div>
+                            </td>
+                            <td class="p-4">
+                                <span class="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded">VIP (Nuevo Propietario)</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW: SERVICIO TÉCNICO -->
+        <div id="view-service" class="tab-content md:px-8">
+            <div class="glass-card p-6 border-t-4 border-rose-600 mb-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800">Recuperación de Taller (Post-Venta IA)</h3>
+                        <p class="text-sm text-slate-500 mt-1">El bot lee el kilometraje estimado e invita solo al taller vía WhatsApp.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Tabla Taller ... -->
+        </div>
+
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Title Mapping
+        const titles = {
+            'dashboard': { t: 'Dashboard Operativo', s: 'Métricas generales y control de flujo VIP.' },
+            'gallery': { t: 'Galería Inventario', s: 'Sincronizado con Facebook y Catálogo WhatsApp IA.' },
+            'leads': { t: 'Leads Capturados (Por Canal)', s: 'Clasificación de nuevos prospectos organizados por canal de entrada.' },
+            'clients': { t: 'Base de Clientes Activos', s: 'Historial de compras, servicios de taller y último contacto de la IA.' },
+            'service': { t: 'Post-Venta y Taller', s: 'Automatización de recordatorios de mantenimiento VIP.' }
+        };
+
+        function switchTab(viewId) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+
+            document.getElementById('page-title').innerText = titles[viewId].t;
+            document.getElementById('page-sub').innerText = titles[viewId].s;
+            lucide.createIcons();
+        }
+
+        // JS logic for Filtering Cars
+        function filterCars(category, btnElement) {
+            // Remove active state from all buttons
+            document.querySelectorAll('.filter-bt').forEach(btn => {
+                btn.classList.remove('active-filter');
+                btn.classList.remove('bg-slate-800');
+                btn.classList.remove('text-white');
+                btn.classList.add('bg-white');
+                btn.classList.add('text-slate-600');
+            });
+            
+            // Add active state to clicked button
+            btnElement.classList.add('active-filter');
+            btnElement.classList.add('bg-slate-800');
+            btnElement.classList.add('text-white');
+            btnElement.classList.remove('bg-white');
+            btnElement.classList.remove('text-slate-600');
+
+            // Filter DOM elements
+            const cards = document.querySelectorAll('.car-item');
+            cards.forEach(card => {
+                const cat = card.getAttribute('data-category');
+                if (category === 'all' || category === cat) {
+                    card.style.display = 'block';
+                    // Optional: add a small fade-in animation
+                    card.style.animation = 'none';
+                    card.offsetHeight; // trigger reflow
+                    card.style.animation = 'fadeIn 0.3s ease-out';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
