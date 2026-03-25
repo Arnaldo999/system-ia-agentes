@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bienvenido — Inmobiliaria Maicol</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e40af;
+      --accent: #10b981;
+      --dark: #0f172a;
+      --card: #1e293b;
+      --card2: #263348;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --input-bg: #0f172a;
+      --error: #ef4444;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1a2744 60%, #0f172a 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 48px 24px 40px;
+      background: linear-gradient(180deg, rgba(26,86,219,0.15) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .brand-logo {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      object-fit: contain;
+      background: rgba(26,86,219,0.1);
+      padding: 4px;
+      border: 1px solid rgba(26,86,219,0.3);
+    }
+    .brand-info { text-align: left; }
+    .brand-name {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .brand-role {
+      font-size: 0.75rem;
+      color: #60a5fa;
+      font-weight: 500;
+    }
+    .hero-divider {
+      width: 48px; height: 3px;
+      background: linear-gradient(90deg, var(--primary), #60a5fa);
+      border-radius: 2px;
+      margin: 0 auto 24px;
+    }
+    .hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem) !important;
+      font-weight: 800 !important;
+      line-height: 1.2 !important;
+      margin-bottom: 14px !important;
+      color: #ffffff !important;
+    }
+    .hero h1 span { color: #60a5fa !important; }
+    .hero p {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* PROGRESS */
+    .progress-bar {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 28px 24px 0;
+      flex-wrap: wrap;
+    }
+    .step-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .step-dot .dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700;
+      transition: all 0.3s;
+    }
+    .step-dot.active .dot { background: var(--primary); border-color: var(--primary); color: white; }
+    .step-dot.done .dot { background: var(--accent); border-color: var(--accent); color: white; }
+    .step-dot.active { color: var(--text); }
+    .step-sep { width: 24px; height: 2px; background: var(--border); align-self: center; border-radius: 2px; }
+    .step-sep.done { background: var(--accent); }
+
+    /* FORM CONTAINER */
+    .form-wrap {
+      max-width: 680px;
+      margin: 32px auto 60px;
+      padding: 0 20px;
+    }
+
+    .section-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      display: none;
+    }
+    .section-card.active { display: block; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-icon {
+      width: 46px; height: 46px;
+      background: rgba(26,86,219,0.15);
+      border: 1px solid rgba(26,86,219,0.3);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .section-title { font-size: 1.1rem; font-weight: 700; }
+    .section-sub { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+
+    /* FIELDS */
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .field label .req { color: #f87171; margin-left: 3px; }
+    .field label .hint {
+      font-weight: 400;
+      color: var(--muted);
+      font-size: 0.78rem;
+      display: block;
+      margin-top: 2px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26,86,219,0.15);
+    }
+    .field input.error, .field select.error, .field textarea.error {
+      border-color: var(--error);
+    }
+    .field textarea { resize: vertical; min-height: 90px; }
+    .field select option { background: #1e293b; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 500px) { .field-row { grid-template-columns: 1fr; } }
+
+    /* FILE UPLOAD */
+    .file-upload {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--input-bg);
+      position: relative;
+    }
+    .file-upload:hover, .file-upload.dragover {
+      border-color: var(--primary);
+      background: rgba(26,86,219,0.05);
+    }
+    .file-upload input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+    .file-upload .icon { font-size: 2rem; margin-bottom: 8px; }
+    .file-upload p { font-size: 0.85rem; color: var(--muted); }
+    .file-upload .file-name {
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* COLOR PICKER */
+    .color-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .color-swatch {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch.selected { border-color: white; }
+    .color-input-wrap { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .color-input-wrap input[type="color"] {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      padding: 2px;
+      cursor: pointer;
+      background: var(--input-bg);
+    }
+    .color-input-wrap input[type="text"] {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+    }
+
+    /* RADIO/CHECK */
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 500px) { .options-grid { grid-template-columns: 1fr; } }
+    .option-card {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .option-card:hover { border-color: var(--primary); background: rgba(26,86,219,0.05); }
+    .option-card input { display: none; }
+    .option-card.selected { border-color: var(--primary); background: rgba(26,86,219,0.1); color: #93c5fd; }
+    .option-card .opt-icon { font-size: 1.3rem; }
+
+    /* INFO BOX */
+    .info-box {
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.82rem;
+      color: #6ee7b7;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .info-box.blue {
+      background: rgba(26,86,219,0.08);
+      border-color: rgba(26,86,219,0.25);
+      color: #93c5fd;
+    }
+    .info-box.yellow {
+      background: rgba(245,158,11,0.08);
+      border-color: rgba(245,158,11,0.25);
+      color: #fcd34d;
+    }
+
+    /* NAVIGATION */
+    .nav-btns {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .btn {
+      padding: 13px 28px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--primary); color: white; flex: 1; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+    .btn-success { background: var(--accent); color: white; flex: 1; font-size: 1rem; }
+    .btn-success:hover { background: #059669; }
+
+    /* SUCCESS */
+    .success-screen {
+      text-align: center;
+      padding: 60px 24px;
+      display: none;
+    }
+    .success-screen.show { display: block; }
+    .success-icon { font-size: 4rem; margin-bottom: 20px; }
+    .success-screen h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 12px; }
+    .success-screen p { color: var(--muted); max-width: 460px; margin: 0 auto; line-height: 1.6; }
+    .success-screen .contact-box {
+      margin-top: 32px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: inline-block;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="brand-header">
+    <img src="https://arnaldoayalaestratega.com/wp-content/uploads/2025/10/LOGO-TRANSP-CLARO.png" alt="Arnaldo Ayala" class="brand-logo" />
+    <div class="brand-info">
+      <div class="brand-name">Arnaldo Ayala</div>
+      <div class="brand-role">Estratega en IA y Marketing</div>
+    </div>
+  </div>
+  <div class="hero-divider"></div>
+  <h1>Configuremos tu<br><span>sistema completo</span></h1>
+  <p>Completá este formulario y en menos de 5 minutos tenemos todo lo que necesitamos para construir tu sitio web, bot de WhatsApp y CRM.</p>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar" id="progress-bar">
+  <div class="step-dot active" id="sd-1"><div class="dot">1</div> Marca</div>
+  <div class="step-sep" id="sep-1"></div>
+  <div class="step-dot" id="sd-2"><div class="dot">2</div> Contacto</div>
+  <div class="step-sep" id="sep-2"></div>
+  <div class="step-dot" id="sd-3"><div class="dot">3</div> Propiedades</div>
+  <div class="step-sep" id="sep-3"></div>
+  <div class="step-dot" id="sd-4"><div class="dot">4</div> Redes</div>
+  <div class="step-sep" id="sep-4"></div>
+  <div class="step-dot" id="sd-5"><div class="dot">5</div> Accesos</div>
+</div>
+
+<div class="form-wrap">
+
+  <!-- ═══ PASO 1: MARCA ═══ -->
+  <div class="section-card active" id="step-1">
+    <div class="section-header">
+      <div class="section-icon">🏢</div>
+      <div>
+        <div class="section-title">Identidad de tu inmobiliaria</div>
+        <div class="section-sub">Logo, colores y nombre oficial</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Nombre oficial de la inmobiliaria <span class="req">*</span></label>
+      <input type="text" id="nombre_inmo" placeholder="Ej: Inmobiliaria Maicol" />
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Nombre del asesor principal <span class="req">*</span></label>
+        <input type="text" id="nombre_asesor" placeholder="Ej: Maicol García" />
+      </div>
+      <div class="field">
+        <label>Slogan (opcional)
+          <span class="hint">Una frase corta de tu marca</span>
+        </label>
+        <input type="text" id="slogan" placeholder="Ej: Tu lote, tu futuro" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Logo de la inmobiliaria
+        <span class="hint">PNG o SVG con fondo transparente — si no tenés, lo diseñamos</span>
+      </label>
+      <div class="file-upload" id="logo-drop">
+        <input type="file" id="logo_file" accept=".png,.svg,.jpg,.jpeg" onchange="showFileName('logo_file','logo-name')" />
+        <div class="icon">🖼️</div>
+        <p>Arrastrá tu logo acá o <strong>hacé clic para subir</strong></p>
+        <div class="file-name" id="logo-name"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Colores principales de la marca
+        <span class="hint">Elegí o escribí el código HEX. Si no tenés, elegimos juntos.</span>
+      </label>
+      <div class="color-row">
+        <div class="color-swatch" style="background:#1a56db" onclick="setColor('#1a56db')" title="Azul"></div>
+        <div class="color-swatch" style="background:#0ea5e9" onclick="setColor('#0ea5e9')" title="Celeste"></div>
+        <div class="color-swatch" style="background:#059669" onclick="setColor('#059669')" title="Verde"></div>
+        <div class="color-swatch" style="background:#16a34a" onclick="setColor('#16a34a')" title="Verde oscuro"></div>
+        <div class="color-swatch" style="background:#d97706" onclick="setColor('#d97706')" title="Dorado"></div>
+        <div class="color-swatch" style="background:#f59e0b" onclick="setColor('#f59e0b')" title="Amarillo"></div>
+        <div class="color-swatch" style="background:#ea580c" onclick="setColor('#ea580c')" title="Naranja"></div>
+        <div class="color-swatch" style="background:#dc2626" onclick="setColor('#dc2626')" title="Rojo"></div>
+        <div class="color-swatch" style="background:#7c3aed" onclick="setColor('#7c3aed')" title="Violeta"></div>
+        <div class="color-swatch" style="background:#db2777" onclick="setColor('#db2777')" title="Rosa"></div>
+        <div class="color-swatch" style="background:#0f172a" onclick="setColor('#0f172a')" title="Negro"></div>
+        <div class="color-swatch" style="background:#64748b" onclick="setColor('#64748b')" title="Gris"></div>
+        <div class="color-swatch" style="background:#8B6914" onclick="setColor('#8B6914')" title="Marrón dorado"></div>
+        <div class="color-swatch" style="background:#ffffff;border:2px solid #334155" onclick="setColor('#ffffff')" title="Blanco"></div>
+        <div class="color-input-wrap">
+          <input type="color" id="color_picker" value="#1a56db" oninput="document.getElementById('color_hex').value=this.value" />
+          <input type="text" id="color_hex" placeholder="#1a56db" oninput="document.getElementById('color_picker').value=this.value" />
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>¿Cómo querés que suene tu marca? <span class="req">*</span></label>
+      <div class="options-grid">
+        <div class="option-card">
+          <input type="radio" name="tono" value="cercano" />
+          <span class="opt-icon">😊</span> Cercano y amigable
+        </div>
+        <div class="option-card">
+          <input type="radio" name="tono" value="profesional" />
+          <span class="opt-icon">💼</span> Formal y profesional
+        </div>
+        <div class="option-card">
+          <input type="radio" name="tono" value="mixto" />
+          <span class="opt-icon">⚖️</span> Mixto — cálido y serio
+        </div>
+        <div class="option-card">
+          <input type="radio" name="tono" value="moderno" />
+          <span class="opt-icon">✨</span> Moderno y directo
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <div></div>
+      <button class="btn btn-primary" onclick="nextStep(1)">Siguiente → Contacto</button>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 2: CONTACTO Y DOMINIO ═══ -->
+  <div class="section-card" id="step-2">
+    <div class="section-header">
+      <div class="section-icon">📞</div>
+      <div>
+        <div class="section-title">Contacto y dominio web</div>
+        <div class="section-sub">Datos para configurar tu presencia digital</div>
+      </div>
+    </div>
+
+    <div class="info-box blue">
+      📧 <strong>Importante:</strong> Vamos a usar tu correo para registrar el dominio y configurar el hosting. Asegurate de tener acceso a esa casilla.
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Correo electrónico <span class="req">*</span>
+          <span class="hint">Para dominio, hosting y accesos</span>
+        </label>
+        <input type="email" id="email" placeholder="maicol@gmail.com" />
+      </div>
+      <div class="field">
+        <label>WhatsApp del asesor <span class="req">*</span>
+          <span class="hint">El que recibe los leads calientes</span>
+        </label>
+        <input type="tel" id="whatsapp_asesor" placeholder="+54 376 XXX-XXXX" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Número WhatsApp para el BOT <span class="req">*</span>
+        <span class="hint">⚠️ Debe ser distinto al tuyo personal. Puede ser un número nuevo o un chip dedicado.</span>
+      </label>
+      <input type="tel" id="whatsapp_bot" placeholder="+54 376 XXX-XXXX (número del bot)" />
+    </div>
+
+    <div class="field">
+      <label>Horario de atención humana
+        <span class="hint">El bot avisa cuando el asesor está disponible</span>
+      </label>
+      <input type="text" id="horario" placeholder="Ej: Lunes a viernes 8hs a 18hs" />
+    </div>
+
+    <div class="field">
+      <label>Dominio web que querés <span class="req">*</span>
+        <span class="hint">Si ya tenés uno, escribilo. Si no, sugerí el nombre que te gustaría.</span>
+      </label>
+      <div class="field-row">
+        <input type="text" id="dominio" placeholder="inmobiliariamaicol" />
+        <select id="dominio_ext">
+          <option>.com.ar</option>
+          <option>.com</option>
+          <option>.ar</option>
+          <option>Ya tengo dominio</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>¿Operás en otras ciudades además de San Ignacio?
+        <span class="hint">Marcá si también trabajás en otras zonas</span>
+      </label>
+      <div class="options-grid">
+        <div class="option-card">
+          <input type="checkbox" value="Gdor Roca" />
+          <span class="opt-icon">📍</span> Gdor. Roca
+        </div>
+        <div class="option-card">
+          <input type="checkbox" value="Apóstoles" />
+          <span class="opt-icon">📍</span> Apóstoles
+        </div>
+        <div class="option-card">
+          <input type="checkbox" value="otras" />
+          <span class="opt-icon">📍</span> Otras zonas
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="prevStep(2)">← Atrás</button>
+      <button class="btn btn-primary" onclick="nextStep(2)">Siguiente → Propiedades</button>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 3: PROPIEDADES ═══ -->
+  <div class="section-card" id="step-3">
+    <div class="section-header">
+      <div class="section-icon">🌿</div>
+      <div>
+        <div class="section-title">Tus propiedades</div>
+        <div class="section-sub">Solo necesitamos un par de datos para arrancar</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      🎯 Las propiedades las cargás vos directamente en tu <strong>Dashboard CRM</strong> — con foto, precio y descripción. Te lo configuramos nosotros y queda listo para usar. Acá solo necesitamos saber con qué volumen arrancamos.
+    </div>
+
+    <div class="field">
+      <label>¿Cuántas propiedades/lotes tenés para publicar al inicio? <span class="req">*</span></label>
+      <select id="cant_props">
+        <option value="">Seleccioná...</option>
+        <option>1 a 5</option>
+        <option>6 a 15</option>
+        <option>16 a 30</option>
+        <option>Más de 30</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>¿Qué tipos de propiedades manejás? <span class="req">*</span></label>
+      <div class="options-grid">
+        <div class="option-card">
+          <input type="checkbox" value="lotes" />
+          <span class="opt-icon">📐</span> Lotes / Terrenos
+        </div>
+        <div class="option-card">
+          <input type="checkbox" value="loteos" />
+          <span class="opt-icon">🗺️</span> Loteos (conjunto)
+        </div>
+        <div class="option-card">
+          <input type="checkbox" value="casas" />
+          <span class="opt-icon">🏠</span> Casas / Viviendas
+        </div>
+        <div class="option-card">
+          <input type="checkbox" value="comercial" />
+          <span class="opt-icon">🏢</span> Locales / Comercial
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>¿Algo importante que el sistema deba saber de tus propiedades?
+        <span class="hint">Opcional. Ej: "Todos los lotes tienen escritura lista", "Financiamos hasta 24 cuotas", etc.</span>
+      </label>
+      <textarea id="nota_props" placeholder="Ej: Financiamos en cuotas, todos con escritura lista..."></textarea>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="prevStep(3)">← Atrás</button>
+      <button class="btn btn-primary" onclick="nextStep(3)">Siguiente → Redes sociales</button>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 4: REDES SOCIALES ═══ -->
+  <div class="section-card" id="step-4">
+    <div class="section-header">
+      <div class="section-icon">📱</div>
+      <div>
+        <div class="section-title">Instagram y Facebook</div>
+        <div class="section-sub">Para respuesta automática a comentarios y anuncios</div>
+      </div>
+    </div>
+
+    <div class="info-box yellow">
+      ⚠️ Para automatizar los comentarios de Instagram necesitamos acceso de <strong>Editor</strong> a tu Página de Facebook vinculada. No pedimos tu contraseña — lo hacemos desde Meta Business Suite.
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Usuario de Instagram <span class="req">*</span></label>
+        <input type="text" id="instagram" placeholder="@inmobiliariamaicol" />
+      </div>
+      <div class="field">
+        <label>Nombre de la Página de Facebook</label>
+        <input type="text" id="facebook_page" placeholder="Inmobiliaria Maicol" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>¿Tenés acceso de administrador a tu Página de Facebook? <span class="req">*</span></label>
+      <div class="options-grid">
+        <div class="option-card">
+          <input type="radio" name="fb_admin" value="si" />
+          <span class="opt-icon">✅</span> Sí, tengo acceso
+        </div>
+        <div class="option-card">
+          <input type="radio" name="fb_admin" value="no" />
+          <span class="opt-icon">❌</span> No / No sé
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>¿Ya estás corriendo anuncios en Meta (Instagram/Facebook)? <span class="req">*</span></label>
+      <div class="options-grid">
+        <div class="option-card">
+          <input type="radio" name="ads" value="si" />
+          <span class="opt-icon">📊</span> Sí, tengo anuncios activos
+        </div>
+        <div class="option-card">
+          <input type="radio" name="ads" value="no" />
+          <span class="opt-icon">🆕</span> No, arrancamos desde cero
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Presupuesto mensual para anuncios (aproximado)</label>
+      <select id="presupuesto_ads">
+        <option value="">Seleccioná...</option>
+        <option>Menos de $20.000 ARS</option>
+        <option>$20.000 – $50.000 ARS</option>
+        <option>$50.000 – $100.000 ARS</option>
+        <option>Más de $100.000 ARS</option>
+        <option>Todavía no lo definí</option>
+      </select>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="prevStep(4)">← Atrás</button>
+      <button class="btn btn-primary" onclick="nextStep(4)">Siguiente → Accesos</button>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 5: ACCESOS ═══ -->
+  <div class="section-card" id="step-5">
+    <div class="section-header">
+      <div class="section-icon">🔑</div>
+      <div>
+        <div class="section-title">Accesos y confirmación</div>
+        <div class="section-sub">Último paso — casi listo</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      ✅ <strong>Tu seguridad primero:</strong> Nunca te vamos a pedir contraseñas. Los accesos se gestionan por invitación o roles desde cada plataforma.
+    </div>
+
+    <div class="field">
+      <label>Acceso a Meta Business Manager</label>
+      <div class="info-box" style="margin-top:8px;line-height:1.8">
+        📋 Para conectar tus redes al sistema necesitamos que nos agregues como <strong>Socio</strong> en tu Meta Business Manager. Son 5 minutos:<br><br>
+        <strong>1.</strong> Abrí <a href="https://business.facebook.com" target="_blank" style="color:#60a5fa;font-weight:600">business.facebook.com</a> desde una PC o notebook (desde el celu es más difícil)<br>
+        <strong>2.</strong> En el menú de la izquierda buscá <strong>Configuración</strong> (ícono de engranaje ⚙️)<br>
+        <strong>3.</strong> Dentro de Configuración, hacé clic en <strong>Socios</strong><br>
+        <strong>4.</strong> Hacé clic en el botón azul <strong>"Agregar"</strong> → elegí <strong>"Dar acceso a un socio"</strong><br>
+        <strong>5.</strong> Te va a pedir un ID de Business Manager. Copiá y pegá este número:<br><br>
+        <div style="background:rgba(26,86,219,0.15);border:1px solid rgba(96,165,250,0.4);border-radius:8px;padding:12px 16px;text-align:center;margin:4px 0 8px">
+          <span style="color:#60a5fa;font-size:1.3rem;font-weight:800;letter-spacing:2px">355106379054248</span>
+        </div>
+        <strong>6.</strong> Hacé clic en <strong>"Siguiente"</strong> y confirmá. ¡Listo! Nosotros nos encargamos del resto.
+      </div>
+    </div>
+
+    <div class="field">
+      <label>¿Hay algo más que quieras contarnos o pedir?
+        <span class="hint">Ideas, dudas, cosas que viste en otros sistemas y te gustaron</span>
+      </label>
+      <textarea id="notas_extra" placeholder="Ej: Quiero que el sitio tenga sección de blog, o que el bot pueda agendar visitas..."></textarea>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="prevStep(5)">← Atrás</button>
+      <button class="btn btn-success" onclick="submitForm()">✅ Enviar información</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- SUCCESS -->
+<div class="success-screen" id="success">
+  <div class="success-icon">🎉</div>
+  <h2>¡Perfecto, <span id="success-name"></span>!</h2>
+  <p>Ya tengo todo lo que necesito. <strong>A partir de ahora me encargo yo de todo.</strong> Si necesito algo más, te escribo por WhatsApp.</p>
+</div>
+
+<footer>
+  <strong style="color:var(--text)">Arnaldo Ayala</strong> — Estratega en IA y Marketing · Misiones, Argentina
+</footer>
+
+<script>
+let currentStep = 1;
+const totalSteps = 5;
+
+function updateProgress() {
+  for (let i = 1; i <= totalSteps; i++) {
+    const dot = document.getElementById(`sd-${i}`);
+    const sep = document.getElementById(`sep-${i}`);
+    dot.className = 'step-dot' + (i === currentStep ? ' active' : i < currentStep ? ' done' : '');
+    if (sep) sep.className = 'step-sep' + (i < currentStep ? ' done' : '');
+  }
+}
+
+function nextStep(from) {
+  if (!validateStep(from)) return;
+  document.getElementById(`step-${from}`).classList.remove('active');
+  currentStep = from + 1;
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function prevStep(from) {
+  document.getElementById(`step-${from}`).classList.remove('active');
+  currentStep = from - 1;
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function validateStep(step) {
+  let ok = true;
+  const required = {
+    1: ['nombre_inmo', 'nombre_asesor'],
+    2: ['email', 'whatsapp_asesor', 'whatsapp_bot', 'dominio'],
+    3: ['cant_props'],
+    4: [],
+    5: [],
+  };
+  (required[step] || []).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!el.value.trim()) {
+      el.classList.add('error');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      ok = false;
+    } else {
+      el.classList.remove('error');
+    }
+  });
+  // Validar tono en paso 1
+  if (step === 1 && !document.querySelector('input[name="tono"]:checked')) {
+    alert('Por favor elegí el tono de tu marca.');
+    ok = false;
+  }
+  // Validar al menos un tipo de propiedad en paso 3
+  if (step === 3 && !document.querySelector('#step-3 input[type="checkbox"]:checked')) {
+    alert('Por favor seleccioná al menos un tipo de propiedad.');
+    ok = false;
+  }
+  if (!ok) return false;
+  return true;
+}
+
+
+function setColor(hex) {
+  document.getElementById('color_picker').value = hex;
+  document.getElementById('color_hex').value = hex;
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+function showFileName(inputId, nameId) {
+  const input = document.getElementById(inputId);
+  const el = document.getElementById(nameId);
+  if (!input || !el) return;
+  const files = input.files;
+  if (files.length === 1) {
+    el.textContent = '✅ ' + files[0].name;
+  } else if (files.length > 1) {
+    el.textContent = `✅ ${files.length} archivos seleccionados`;
+  }
+}
+
+function submitForm() {
+  // Recopilar datos
+  const nombre = document.getElementById('nombre_inmo').value;
+  const asesor = document.getElementById('nombre_asesor').value;
+
+  // Enviar a Netlify Forms
+  const formData = new FormData();
+  formData.append('form-name', 'onboarding-maicol');
+  formData.append('nombre_inmo', nombre);
+  formData.append('nombre_asesor', asesor);
+  formData.append('slogan', document.getElementById('slogan').value);
+  formData.append('color', document.getElementById('color_hex').value);
+  formData.append('tono', document.querySelector('input[name="tono"]:checked')?.value || '');
+  formData.append('email', document.getElementById('email').value);
+  formData.append('whatsapp_asesor', document.getElementById('whatsapp_asesor').value);
+  formData.append('whatsapp_bot', document.getElementById('whatsapp_bot').value);
+  formData.append('horario', document.getElementById('horario').value);
+  formData.append('dominio', document.getElementById('dominio').value + document.getElementById('dominio_ext').value);
+  formData.append('instagram', document.getElementById('instagram').value);
+  formData.append('facebook_page', document.getElementById('facebook_page').value);
+  formData.append('fb_admin', document.querySelector('input[name="fb_admin"]:checked')?.value || '');
+  formData.append('ads', document.querySelector('input[name="ads"]:checked')?.value || '');
+  formData.append('presupuesto_ads', document.getElementById('presupuesto_ads').value);
+  formData.append('cant_props', document.getElementById('cant_props').value);
+  const tiposProps = [...document.querySelectorAll('#step-3 input[type="checkbox"]:checked')].map(c => c.value).join(', ');
+  formData.append('tipos_props', tiposProps);
+  formData.append('nota_props', document.getElementById('nota_props').value);
+  formData.append('notas_extra', document.getElementById('notas_extra').value);
+  formData.append('contacto_pref', document.querySelector('input[name="contacto_pref"]:checked')?.value || '');
+
+  // Archivos
+  const logo = document.getElementById('logo_file').files[0];
+  if (logo) formData.append('logo', logo);
+
+  fetch('/', { method: 'POST', body: formData })
+    .then(() => showSuccess(asesor))
+    .catch(() => showSuccess(asesor)); // Mostrar éxito igual (Netlify puede redirectear)
+}
+
+function showSuccess(nombre) {
+  document.querySelector('.form-wrap').style.display = 'none';
+  document.querySelector('.progress-bar').style.display = 'none';
+  document.getElementById('success-name').textContent = nombre || 'Maicol';
+  document.getElementById('success').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Notificar a Arnaldo por WhatsApp
+  const inmo = document.getElementById('nombre_inmo')?.value || '';
+  const asesor = document.getElementById('nombre_asesor')?.value || '';
+  const email = document.getElementById('email')?.value || '';
+  const wsp = document.getElementById('whatsapp_asesor')?.value || '';
+  const msg = encodeURIComponent(
+    `🔔 *Nuevo formulario recibido*\n\n` +
+    `🏢 Inmobiliaria: ${inmo}\n` +
+    `👤 Asesor: ${asesor}\n` +
+    `📧 Email: ${email}\n` +
+    `📱 WhatsApp: ${wsp}`
+  );
+  setTimeout(() => {
+    window.open(`https://wa.link/4t9yb1`, '_blank');
+  }, 1500);
+}
+
+// Netlify Forms — necesita form oculto para detección
+document.addEventListener('DOMContentLoaded', () => {
+  // Tarjetas radio (selección única)
+  document.querySelectorAll('.option-card').forEach(card => {
+    const input = card.querySelector('input');
+    if (!input) return;
+    card.addEventListener('click', e => {
+      e.preventDefault();
+      if (input.type === 'radio') {
+        const name = input.name;
+        document.querySelectorAll(`.option-card input[name="${name}"]`).forEach(r => {
+          r.closest('.option-card').classList.remove('selected');
+        });
+        input.checked = true;
+        card.classList.add('selected');
+      } else if (input.type === 'checkbox') {
+        input.checked = !input.checked;
+        card.classList.toggle('selected', input.checked);
+      }
+    });
+  });
+
+
+  const hiddenForm = document.createElement('form');
+  hiddenForm.setAttribute('name', 'onboarding-maicol');
+  hiddenForm.setAttribute('netlify', '');
+  hiddenForm.setAttribute('netlify-honeypot', 'bot-field');
+  hiddenForm.style.display = 'none';
+  hiddenForm.innerHTML = `
+    <input name="form-name" /><input name="nombre_inmo" /><input name="nombre_asesor" />
+    <input name="slogan" /><input name="color" /><input name="tono" />
+    <input name="email" /><input name="whatsapp_asesor" /><input name="whatsapp_bot" />
+    <input name="horario" /><input name="dominio" /><input name="instagram" />
+    <input name="facebook_page" /><input name="fb_admin" /><input name="ads" />
+    <input name="presupuesto_ads" /><input name="cant_props" />
+    <input name="tipos_props" /><textarea name="nota_props"></textarea>
+    <textarea name="notas_extra"></textarea>
+    <input name="contacto_pref" /><input type="file" name="logo" />
+  `;
+  document.body.appendChild(hiddenForm);
+});
+</script>
+</body>
+</html>
