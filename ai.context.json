@@ -7,23 +7,40 @@
   "timestamp_ultima_actualizacion": "2026-03-25T19:00:00",
   "agente_activo": "dev",
   "ultimo_modelo": "claude-sonnet-4-6",
-  "proyecto_actual": {
-    "nombre": "Inmobiliaria Maicol — Onboarding",
-    "fase": "dev",
-    "estado": "formulario-onboarding-listo",
-    "hitos_completados": [
-      "Bot WhatsApp funcional (FastAPI + Airtable + YCloud)",
-      "Dashboard CRM HTML con proxy FastAPI",
-      "Formulario onboarding-maicol.html publicado en arnaldoayalaestratega.com/formulario-maicol/",
-      "Notificación WhatsApp al enviar formulario (wa.link/4t9yb1)",
-      "Campo Disponible cambiado a selección única en Airtable"
-    ],
-    "archivos_clave": [
-      "03_CRM_ANALYST/LEADS/activos/INMOBILIARIA MAICOL/BOT/bot_whatsapp.py",
-      "03_CRM_ANALYST/LEADS/activos/INMOBILIARIA MAICOL/PRESENTACION/onboarding-maicol.html",
-      "03_CRM_ANALYST/LEADS/activos/INMOBILIARIA MAICOL/PRESENTACION/dashboard-crm.html"
-    ],
-    "proximo_paso": "Construir sitio web con catálogo, bot con número de Maicol, formulario leads filtrado, respuesta automática Instagram"
+  "proyectos": {
+    "maicol": {
+      "nombre": "Inmobiliaria Maicol",
+      "tipo": "proyecto propio Arnaldo — sin Micaela ni Robert",
+      "carpeta": "/home/arna/PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/",
+      "fase": "dev",
+      "estado": "formulario-onboarding-listo",
+      "hitos_completados": [
+        "Bot WhatsApp funcional (FastAPI + Airtable + YCloud)",
+        "Dashboard CRM HTML con proxy FastAPI",
+        "Formulario onboarding publicado en arnaldoayalaestratega.com/formulario-maicol/",
+        "Notificación WhatsApp al enviar (wa.link/4t9yb1)",
+        "Campo Disponible cambiado a selección única en Airtable"
+      ],
+      "archivos_clave": [
+        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/BOT/bot_whatsapp.py",
+        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/onboarding-maicol.html",
+        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/dashboard-crm.html"
+      ],
+      "proximo_paso": "Sitio web catálogo + bot con número propio de Maicol + formulario leads filtrado + respuesta automática Instagram"
+    },
+    "system_ia": {
+      "nombre": "System IA",
+      "tipo": "agencia — Arnaldo + Micaela Colmenares",
+      "carpeta": "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/",
+      "estado": "operativa"
+    },
+    "robert": {
+      "nombre": "Agencia Arnaldo + Robert Bazán",
+      "tipo": "alianza — Arnaldo + Robert (sin Micaela)",
+      "carpeta": "/home/arna/PROYECTO AGENCIA ROBERT-ARNALDO AYALA/",
+      "estado": "en-construccion",
+      "proximo_paso": "Demo funcional inmobiliaria (clonar de Maicol) para presentar a clientes de Robert en México"
+    }
   },
   "alianza_robert_bazan": {
     "estado": "activa",

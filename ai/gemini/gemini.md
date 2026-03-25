@@ -108,15 +108,28 @@ Reglas de convivencia:
 
 ---
 
+## Estructura de proyectos — IMPORTANTE
+
+| Carpeta | Proyecto | Socios |
+|---------|----------|--------|
+| `/home/arna/PROYECTO PROPIO ARNALDO AUTOMATIZACION/` | Proyectos propios de Arnaldo | Solo Arnaldo |
+| `/home/arna/PROYECTO AGENCIA ROBERT-ARNALDO AYALA/` | Agencia México | Arnaldo + Robert Bazán |
+| `/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/` | System IA | Arnaldo + Micaela |
+
+**Regla:** Nunca mezclar archivos entre carpetas de proyectos distintos.
+
+---
+
 ## Estado actual — 25 Marzo 2026
 
-### Cliente activo: Inmobiliaria Maicol (San Ignacio, Misiones)
-- **Bot WhatsApp** funcional con FastAPI + Airtable + YCloud (`bot_whatsapp.py`)
-- **Dashboard CRM** HTML con proxy FastAPI para resolver CORS
+### Proyecto propio Arnaldo: Inmobiliaria Maicol (San Ignacio, Misiones)
+- **Carpeta:** `/home/arna/PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/`
+- **Bot WhatsApp** funcional con FastAPI + Airtable + YCloud
+- **Dashboard CRM** HTML con proxy FastAPI
 - **Formulario onboarding** publicado en `arnaldoayalaestratega.com/formulario-maicol/`
   - 5 pasos: Marca, Contacto, Propiedades, Redes, Accesos
-  - Notificación automática a WhatsApp de Arnaldo al enviar (wa.link/4t9yb1)
-- **Próximo hito:** sitio web catálogo + bot con número propio de Maicol + respuesta automática Instagram
+  - Notificación automática a WhatsApp al enviar (wa.link/4t9yb1)
+- **Próximo hito:** sitio web catálogo + bot número propio Maicol + respuesta automática Instagram
 
 ### Alianza estratégica: Robert Bazán (Lovbot.mx, México)
 - Robert aporta: VPS, n8n, clientes México, APIs de IA (Google/OpenAI/Claude)
