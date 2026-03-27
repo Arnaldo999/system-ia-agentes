@@ -5,28 +5,42 @@
     "Micaela Colmenares"
   ],
   "timestamp_ultima_actualizacion": "2026-03-25T19:00:00",
-  "agente_activo": "dev",
+  "agente_activo": "ventas",
   "ultimo_modelo": "claude-sonnet-4-6",
   "proyectos": {
     "maicol": {
       "nombre": "Inmobiliaria Maicol",
       "tipo": "proyecto propio Arnaldo — sin Micaela ni Robert",
       "carpeta": "/home/arna/PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/",
-      "fase": "dev",
-      "estado": "formulario-onboarding-listo",
+      "fase": "produccion",
+      "estado": "workflow-migrado-a-coolify",
       "hitos_completados": [
         "Bot WhatsApp funcional (FastAPI + Airtable + YCloud)",
         "Dashboard CRM HTML con proxy FastAPI",
         "Formulario onboarding publicado en arnaldoayalaestratega.com/formulario-maicol/",
         "Notificación WhatsApp al enviar (wa.link/4t9yb1)",
-        "Campo Disponible cambiado a selección única en Airtable"
+        "Campo Disponible cambiado a selección única en Airtable",
+        "Workflow 'bot inmobiliaria 2' migrado a n8n Coolify (ID: o4CrjByltFurUWox)",
+        "Formulario leads apuntando a n8n Coolify webhook producción",
+        "Dashboard CRM apuntando a FastAPI Render producción",
+        "Arquitectura multi-tenant definida: cliente_id + wa_provider (ycloud/evolution/meta_direct)",
+        "YCloud slot 2 reservado para número de Maicol"
       ],
       "archivos_clave": [
         "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/BOT/bot_whatsapp.py",
         "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/onboarding-maicol.html",
-        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/dashboard-crm.html"
+        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/dashboard-crm.html",
+        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/formulario-leads.html"
       ],
-      "proximo_paso": "Sitio web catálogo + bot con número propio de Maicol + formulario leads filtrado + respuesta automática Instagram"
+      "n8n_produccion": {
+        "instancia": "https://n8n.arnaldoayalaestratega.cloud",
+        "plataforma": "Coolify — Hostinger VPS",
+        "workflow_maicol_id": "o4CrjByltFurUWox",
+        "webhook_whatsapp": "https://n8n.arnaldoayalaestratega.cloud/webhook/inmobiliaria",
+        "webhook_formulario": "https://n8n.arnaldoayalaestratega.cloud/webhook/inmobiliaria-formulario",
+        "pendiente": ["Conectar credencial Airtable en UI", "Reemplazar NUMERO_MAICOL cuando Maicol confirme su número", "Actualizar webhook YCloud a URL Coolify", "Activar workflow"]
+      },
+      "proximo_paso": "Subir formulario-leads.html y dashboard-crm.html a WordPress (backurbanizaciones.com). Confirmar número WhatsApp de Maicol para YCloud."
     },
     "system_ia": {
       "nombre": "System IA",
@@ -84,7 +98,8 @@
   "alertas_urgentes": [
     "Maicol: entregar formulario onboarding ya publicado",
     "Robert: pedirle los 6 datos de Meta Developers para activar workflows META-DEVELOPERS",
-    "Próximo hito: sitio web catálogo + bot número Maicol"
+    "Próximo hito: sitio web catálogo + bot número Maicol",
+    "Micaela: Revisar analisis_gastronomia.md y armar propuesta/brief de servicios gastronómicos"
   ],
   "creditos_agotados": {
     "claude": false,
