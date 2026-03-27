@@ -7,6 +7,7 @@ from workers.crm.worker import router as crm_router
 from workers.agenda.worker import router as agenda_router
 from workers.comercio.worker import router as comercio_router
 from workers.gastronomico.worker import router as gastronomico_router
+from workers.inmobiliaria.worker import router as inmobiliaria_router
 
 app = FastAPI(
     title="System IA — Cerebro Central",
@@ -33,6 +34,7 @@ app.include_router(crm_router)
 app.include_router(agenda_router)
 app.include_router(comercio_router)
 app.include_router(gastronomico_router)
+app.include_router(inmobiliaria_router)
 
 
 # ── Rutas de sistema ─────────────────────────────────────────────────────────
@@ -71,6 +73,12 @@ def root():
                 "POST /gastronomico/basic/reserva",
                 "POST /gastronomico/pro/reserva",
                 "POST /gastronomico/premium/fidelizar"
+            ],
+            "inmobiliaria": [
+                "POST /inmobiliaria/whatsapp",
+                "GET /inmobiliaria/propiedades",
+                "GET /inmobiliaria/crm/propiedades",
+                "GET /inmobiliaria/crm/clientes"
             ]
         }
     }
