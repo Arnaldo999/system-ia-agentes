@@ -2,13 +2,70 @@ import os
 import re
 import json
 import requests as req
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+# ── Config Airtable por cliente ────────────────────────────────────────────────
+AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY", "")
+AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_API_KEY}"}
+
+# IDs de tablas por cliente (fijos — no cambian entre entornos)
+_CLIENTES_CONFIG = {
+    "maicol": {
+        "base_id":        os.environ.get("AIRTABLE_BASE_ID_MAICOL", "appaDT7uwHnimVZLM"),
+        "table_props":    "tbly67z1oY8EFQoFj",
+        "table_clientes": "tblonoyIMAM5kl2ue",
+    },
+}
+
+def _get_config(cliente_id: str) -> dict:
+    cfg = _CLIENTES_CONFIG.get(cliente_id)
+    if not cfg:
+        raise ValueError(f"cliente_id '{cliente_id}' no encontrado")
+    return cfg
+
+def _at_get_all(base_id: str, table_id: str) -> list:
+    """Trae todos los registros de una tabla Airtable con paginación."""
+    url = f"https://api.airtable.com/v0/{base_id}/{table_id}"
+    records, offset = [], None
+    while True:
+        params = {"pageSize": 100}
+        if offset:
+            params["offset"] = offset
+        r = req.get(url, headers=AT_HEADERS, params=params, timeout=10)
+        data = r.json()
+        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
+        offset = data.get("offset")
+        if not offset:
+            break
+    return records
+
+
+# ── Endpoints Airtable CRM (multi-cliente) ────────────────────────────────────
+
+@router.get("/propiedades")
+def crm_propiedades(cliente_id: str = Query("maicol")):
+    """Propiedades de Airtable para el dashboard CRM."""
+    try:
+        cfg = _get_config(cliente_id)
+        return {"records": _at_get_all(cfg["base_id"], cfg["table_props"])}
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@router.get("/clientes")
+def crm_clientes(cliente_id: str = Query("maicol")):
+    """Leads/clientes de Airtable para el dashboard CRM."""
+    try:
+        cfg = _get_config(cliente_id)
+        return {"records": _at_get_all(cfg["base_id"], cfg["table_clientes"])}
+    except ValueError as e:
+        return {"error": str(e)}
 GEMINI_TEXT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
 ETAPAS_PIPELINE = [
