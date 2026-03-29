@@ -12,11 +12,14 @@
 
 - **URL**: https://system-ia-agentes.onrender.com
 - **Repo**: github.com/Arnaldo999/system-ia-agentes
+- **Service ID**: `srv-d6g8qg5m5p6s73a00llg`
+- **rootDir en Render**: `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes` ← CRÍTICO (monorepo)
+- **Tier**: Free (duerme tras 15min inactivo — keep-alive en n8n lo evita)
 - **Convención workers**:
   - Un worker `_demo` por vertical (punto de partida, nunca se edita)
   - Para nuevo cliente: copiar demo → renombrar → configurar env vars propias
 - **Workers activos**:
-  - `workers/inmobiliaria_maicol/` → `POST /inmobiliaria/whatsapp` (Maicol — producción)
+  - `workers/inmobiliaria/` → `POST /inmobiliaria/whatsapp` (Maicol — producción)
   - `workers/inmobiliaria_demo/` → `POST /inmobiliaria-demo/whatsapp` (EN CONSTRUCCIÓN)
 - **Variables de entorno en Render**:
   - `GEMINI_API_KEY` — general
@@ -24,6 +27,7 @@
   - `YCLOUD_API_KEY_MAICOL` — YCloud de Maicol
   - `AIRTABLE_BASE_ID_MAICOL` — base Airtable de Maicol
   - Identificación por cliente: solo cambia `AIRTABLE_BASE_ID_<CLIENTE>`
+- **Keep-alive**: workflow n8n `kjmQdyTGFzMSfzov` pinga `/health` cada 14min (activo)
 
 ## n8n Producción — Coolify (Hostinger VPS Arnaldo)
 

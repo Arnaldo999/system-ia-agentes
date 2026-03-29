@@ -4,8 +4,8 @@
     "Arnaldo Ayala",
     "Micaela Colmenares"
   ],
-  "timestamp_ultima_actualizacion": "2026-03-27T14:00:00",
-  "agente_activo": "dev",
+  "timestamp_ultima_actualizacion": "2026-03-29T20:17:00",
+  "agente_activo": "crm",
   "ultimo_modelo": "claude-sonnet-4-6",
 
   "infraestructura_por_proyecto": {
@@ -38,8 +38,8 @@
     "convencion": "Un worker demo por vertical. Para nuevo cliente: copiar demo, renombrar, configurar env vars. NUNCA editar la demo.",
     "verticales": {
       "inmobiliaria": {
-        "demo": "workers/inmobiliaria_demo/ → /inmobiliaria-demo/whatsapp",
-        "clientes": ["workers/inmobiliaria_maicol/ → /inmobiliaria/whatsapp"]
+        "demo": "workers/inmobiliaria_demo/ → /inmobiliaria-demo/whatsapp | n8n Coolify: p1PsLuN1UKdfnLhs",
+        "clientes": ["workers/inmobiliaria/ → /inmobiliaria/whatsapp | n8n Coolify: o4CrjByltFurUWox (Maicol)"]
       }
     }
   },
@@ -64,7 +64,13 @@
         "Formulario leads.html publicado en backurbanizaciones.com/formulario-leads",
         "Formulario refocused a Loteos y Terrenos exclusivamente",
         "Credential Airtable conectada en n8n UI",
-        "Formulario → Airtable → WhatsApp al lead: FUNCIONA (probado 27/03/2026)"
+        "Formulario → Airtable → WhatsApp al lead: FUNCIONA (probado 27/03/2026)",
+        "Bot especializado solo en Lotes/Terrenos en venta (removido Alquiler) — 29/03/2026",
+        "Zona Leandro N. Alem agregada (4ta zona) — 29/03/2026",
+        "Typing indicator 'escribiendo...' via YCloud API — 29/03/2026",
+        "Keep-alive workflow n8n (ID: kjmQdyTGFzMSfzov) evita que Render duerma — 29/03/2026",
+        "rootDir Render corregido a subdirectorio correcto del monorepo — 29/03/2026",
+        "Deploy exitoso en Render — status: live — 29/03/2026"
       ],
       "archivos_clave": [
         "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/formulario-leads.html",
@@ -72,11 +78,11 @@
       ],
       "n8n_produccion": {
         "instancia": "https://n8n.arnaldoayalaestratega.cloud",
-        "workflow_id": "IfXs9QRGVBdLUGmV",
+        "workflow_id": "o4CrjByltFurUWox",
         "webhook_whatsapp": "https://n8n.arnaldoayalaestratega.cloud/webhook/inmobiliaria",
         "webhook_formulario": "https://n8n.arnaldoayalaestratega.cloud/webhook/inmobiliaria-formulario"
       },
-      "proximo_paso": "Bot WhatsApp funcionando en producción. Próximo: crear worker inmobiliaria_demo en Render."
+      "proximo_paso": "Bot live en producción. Verificar menú nuevo con Maicol. Próximo: ampliar catálogo Airtable y configurar worker inmobiliaria_demo completo."
     },
 
     "system_ia": {
