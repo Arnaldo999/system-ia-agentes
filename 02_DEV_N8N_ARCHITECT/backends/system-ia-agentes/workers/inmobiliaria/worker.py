@@ -172,7 +172,7 @@ Respondé con el número de tu opción. 😊"""
 MSG_ZONA = """📍 ¿En qué zona estás buscando?
 
 1️⃣ *San Ignacio*
-2️⃣ *Gobernador Roca*
+2️⃣ *Gdor. Roca*
 3️⃣ *Apóstoles*
 4️⃣ *Leandro N. Alem*
 5️⃣ Otra zona / No sé
@@ -354,7 +354,7 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
     # ── PASO: zona ───────────────────────────────────────────────────────────
     ZONAS = {
         "1": "San Ignacio", "san ignacio": "San Ignacio",
-        "2": "Gobernador Roca", "gdor roca": "Gobernador Roca", "gobernador roca": "Gobernador Roca", "roca": "Gobernador Roca",
+        "2": "Gdor Roca", "gdor roca": "Gdor Roca", "gobernador roca": "Gdor Roca", "roca": "Gdor Roca",
         "3": "Apóstoles", "apostoles": "Apóstoles", "apóstoles": "Apóstoles",
         "4": "Leandro N. Alem", "leandro": "Leandro N. Alem", "alem": "Leandro N. Alem", "l.n. alem": "Leandro N. Alem",
         "5": "Otra Zona", "otra": "Otra Zona", "no se": "Otra Zona", "no sé": "Otra Zona",
