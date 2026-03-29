@@ -27,6 +27,7 @@ INMOBILIARIA = {
     "ciudad":   "San Ignacio, Misiones",
     "asesor":   "un asesor",
     "whatsapp": NUMERO_ASESOR if NUMERO_ASESOR.startswith("+") else f"+{NUMERO_ASESOR}",
+    "whatsapp_link": f"https://wa.me/{re.sub(r'[^0-9]', '', NUMERO_ASESOR)}",
 }
 
 if GEMINI_API_KEY:
@@ -148,6 +149,52 @@ def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
         return False
 
 
+def _enviar_cta_asesor(telefono: str) -> bool:
+    """Envía botón CTA interactivo con link directo al WhatsApp del equipo."""
+    if not YCLOUD_API_KEY:
+        return False
+    try:
+        wa_link = (
+            f"{INMOBILIARIA['whatsapp_link']}"
+            f"?text=Hola%2C+me+contacto+desde+el+bot+de+Back+Urbanizaciones+%F0%9F%8F%98%EF%B8%8F"
+        )
+        r = requests.post(
+            "https://api.ycloud.com/v2/whatsapp/messages",
+            headers={"Content-Type": "application/json", "X-API-Key": YCLOUD_API_KEY},
+            json={
+                "from": NUMERO_BOT,
+                "to": telefono,
+                "type": "interactive",
+                "interactive": {
+                    "type": "cta_url",
+                    "body": {
+                        "text": (
+                            "¡Con gusto! 😊 Te ponemos en contacto "
+                            "con nuestro equipo.\n\n"
+                            "Tocá el botón para iniciar una conversación "
+                            "directa 👇"
+                        )
+                    },
+                    "action": {
+                        "name": "cta_url",
+                        "parameters": {
+                            "display_text": "💬 Escribirle al equipo",
+                            "url": wa_link
+                        }
+                    }
+                }
+            },
+            timeout=10,
+        )
+        if r.status_code in (200, 201):
+            return True
+        print(f"[INMO-YCLOUD] CTA status {r.status_code}: {r.text[:200]}")
+        return False
+    except Exception as e:
+        print(f"[INMO-YCLOUD] CTA excepción: {e}")
+        return False
+
+
 # ─── GEMINI ───────────────────────────────────────────────────────────────────
 def _gemini_respuesta(mensaje: str) -> str:
     if not GEMINI_API_KEY:
@@ -174,16 +221,16 @@ Consulta del cliente: {mensaje}"""
 
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
 MSG_BIENVENIDA = """👋 ¡Hola! Bienvenido a *{nombre}* 🏘️
-Somos tu inmobiliaria de confianza en {ciudad}.
+Tu aliado inmobiliario en {ciudad}.
 
-Nos especializamos en *Lotes y Terrenos* en venta en Misiones.
+Te ayudamos a encontrar el *Lote o Terreno* ideal en Misiones.
 
-¿Qué querés hacer?
+¿En qué podemos ayudarte?
 
-1️⃣ Ver *Lotes y Terrenos* disponibles
-2️⃣ Hablar con un asesor
+1️⃣ Explorar *Lotes y Terrenos* disponibles
+2️⃣ Contactar con nuestro equipo
 
-Respondé con el número de tu opción. 😊"""
+Respondé con el número de tu opción 😊"""
 
 MSG_ZONA = """📍 ¿En qué zona estás buscando?
 
@@ -207,9 +254,11 @@ MSG_TIPO = """¿Qué tipo de propiedad te interesa?
 Respondé con el número. 😊"""
 
 MSG_ASESOR = (
-    "¡Perfecto! Te conectamos con nuestro asesor. 👤\n\n"
-    "Podés escribirle directamente al *{whatsapp}* "
-    "o aguardá que te contacte en breve. ¡Gracias por elegirnos! 🏠"
+    "¡Con gusto! 😊 Te ponemos en contacto con nuestro equipo. 👤\n\n"
+    "👇 Tocá el enlace para escribirle directamente:\n"
+    "{whatsapp_link}\n\n"
+    "O aguardá que se comunique con vos en breve.\n\n"
+    "¡Gracias por confiar en *Back Urbanizaciones*! 🏠"
 )
 
 
@@ -292,7 +341,9 @@ def _mostrar_lista(telefono: str, tipo: str, label: str, operacion: str, zona: s
 
 def _ir_asesor(telefono: str) -> None:
     SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": ""}
-    _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
+    # Intenta enviar botón CTA interactivo; si falla, envía texto con link wa.me
+    if not _enviar_cta_asesor(telefono):
+        _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
 
 
 # ─── PROCESADOR PRINCIPAL ──────────────────────────────────────────────────────
