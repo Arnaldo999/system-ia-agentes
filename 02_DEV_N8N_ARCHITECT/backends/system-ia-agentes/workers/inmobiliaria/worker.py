@@ -20,7 +20,7 @@ AIRTABLE_BASE_ID      = os.environ.get("AIRTABLE_BASE_ID_MAICOL", "appaDT7uwHnim
 AIRTABLE_TABLE        = "tbly67z1oY8EFQoFj"
 AIRTABLE_TABLE_CLIENTES = "tblonoyIMAM5kl2ue"
 NUMERO_BOT            = os.environ.get("NUMERO_BOT_MAICOL", "5493764815689")
-NUMERO_ASESOR         = os.environ.get("NUMERO_ASESOR_MAICOL", "+543764384843")
+NUMERO_ASESOR         = os.environ.get("NUMERO_ASESOR_MAICOL", "+5493765384843")
 
 INMOBILIARIA = {
     "nombre":   "Back Urbanizaciones",
@@ -342,6 +342,12 @@ def _mostrar_lista(telefono: str, tipo: str, label: str, operacion: str, zona: s
 def _ir_asesor(telefono: str) -> None:
     SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": ""}
     _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
+    # Notificar al asesor
+    numero_limpio = re.sub(r"[^0-9]", "", NUMERO_ASESOR)
+    _enviar_texto(
+        numero_limpio,
+        f"🔔 *Lead nuevo en Back Urbanizaciones*\n\nUn cliente quiere hablar con vos:\n*Número:* +{telefono}\n\n_Mensaje enviado automáticamente por el bot._",
+    )
 
 
 # ─── PROCESADOR PRINCIPAL ──────────────────────────────────────────────────────
