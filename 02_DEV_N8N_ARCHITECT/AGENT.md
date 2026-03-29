@@ -71,19 +71,17 @@ Cuando el brief mencione "agente IA" o "procesamiento inteligente": 1. n8n recib
 
 **6. FastAPI Integration:** Llamar via HTTP Request node. Headers: Content-Type: application/json, Authorization: Bearer token (desde Supabase, no hardcode). Body: JSON con cliente_id.
 
-**7. Deploy Render — Backend FastAPI:** El backend vive en un repo SEPARADO de este Mission Control.
-
-REPOS:
-- Mission Control (este): `/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/` → push normal a `master`
-- Backend FastAPI: `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/` → tiene su propio remote en GitHub (`github.com/Arnaldo999/system-ia-agentes`)
+**7. Deploy Render — Backend FastAPI:** Todo vive en UN SOLO repo git en `github.com/Arnaldo999/system-ia-agentes`. Mission Control + backend FastAPI son el mismo repo.
 
 FLUJO DEPLOY BACKEND:
 ```bash
-cd "02_DEV_N8N_ARCHITECT/backends/system-ia-agentes"
-git add .
+cd "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL"
+git add 02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/   # solo archivos del backend
 git commit -m "feat: descripcion"
-git push origin master:main   # ← Render escucha `main`, pero trabajamos en `master`
+git push origin master:main   # ← Render escucha `main`, trabajamos en `master`
 ```
+
+Render usa `rootDir=02_DEV_N8N_ARCHITECT/backends/system-ia-agentes` para ignorar el resto del repo y buildear solo el backend.
 
 RENDER rootDir CRÍTICO: El servicio Render (ID: srv-d6g8qg5m5p6s73a00llg) tiene rootDir=`02_DEV_N8N_ARCHITECT/backends/system-ia-agentes`. Si alguna vez falla con "dockerfile not found", verificar con:
 ```bash
