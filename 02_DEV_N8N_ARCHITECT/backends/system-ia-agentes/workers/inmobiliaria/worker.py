@@ -341,8 +341,7 @@ def _mostrar_lista(telefono: str, tipo: str, label: str, operacion: str, zona: s
 
 def _ir_asesor(telefono: str) -> None:
     SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": ""}
-    if not _enviar_cta_asesor(telefono):
-        _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
+    _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
 
 
 # ─── PROCESADOR PRINCIPAL ──────────────────────────────────────────────────────
