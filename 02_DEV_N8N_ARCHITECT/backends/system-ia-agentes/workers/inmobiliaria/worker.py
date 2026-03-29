@@ -93,9 +93,26 @@ def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = 
 
 
 # ─── YCLOUD ───────────────────────────────────────────────────────────────────
+import time
+
 def _normalizar_telefono(tel: str) -> str:
     solo_digitos = re.sub(r'\D', '', tel)
     return f"+{solo_digitos}"
+
+
+def _typing(msg_id: str) -> None:
+    """Muestra 'escribiendo...' en WhatsApp antes de responder."""
+    if not YCLOUD_API_KEY or not msg_id:
+        return
+    try:
+        requests.post(
+            f"https://api.ycloud.com/v2/whatsapp/inboundMessages/{msg_id}/typingIndicator",
+            headers={"Content-Type": "application/json", "X-API-Key": YCLOUD_API_KEY},
+            timeout=5,
+        )
+        time.sleep(1.2)  # pausa breve para que el usuario vea el indicador
+    except Exception:
+        pass
 
 
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
@@ -467,6 +484,10 @@ async def procesar_whatsapp(request: Request):
     if raw_name and not sesion.get("nombre"):
         sesion["nombre"] = raw_name
         SESIONES[telefono] = sesion
+
+    # Mostrar "escribiendo..." antes de procesar
+    msg_id = msg.get("id") or body.get("id") or ""
+    _typing(msg_id)
 
     _procesar_mensaje(telefono, texto)
     return {"status": "ok", "telefono": telefono, "texto": texto}
