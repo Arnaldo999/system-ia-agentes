@@ -1,8 +1,24 @@
 """
-Worker — Bot WhatsApp Inmobiliaria Maicol v4
-=============================================
-Flujo estructurado por pasos + Gemini para texto libre.
-Integrado como router en system-ia-agentes.
+Worker DEMO — Bot WhatsApp Inmobiliaria
+========================================
+Template genérico para cualquier inmobiliaria.
+NUNCA editar este archivo para un cliente real.
+Para nuevo cliente: copiar carpeta, renombrar, configurar env vars propias.
+
+Variables de entorno requeridas (prefijo INMO_DEMO_):
+  INMO_DEMO_NOMBRE          Nombre de la inmobiliaria       (def: "System IA Inmobiliaria Demo")
+  INMO_DEMO_CIUDAD          Ciudad/zona general             (def: "tu ciudad")
+  INMO_DEMO_ASESOR          Nombre del asesor humano        (def: "el asesor")
+  INMO_DEMO_NUMERO_BOT      Número WhatsApp del bot         (def: "")
+  INMO_DEMO_NUMERO_ASESOR   Número WhatsApp del asesor      (def: "")
+  INMO_DEMO_YCLOUD_KEY      API Key YCloud                  (def: YCLOUD_API_KEY general)
+  INMO_DEMO_AIRTABLE_BASE   Base ID Airtable                (def: "")
+  INMO_DEMO_TABLE_PROPS     ID tabla propiedades            (def: "")
+  INMO_DEMO_TABLE_CLIENTES  ID tabla clientes               (def: "")
+  INMO_DEMO_ZONAS           Zonas separadas por coma        (def: "Zona 1,Zona 2,Zona 3")
+
+  GEMINI_API_KEY            API Key Gemini (compartida)
+  AIRTABLE_TOKEN            Token Airtable (compartido)
 """
 
 import os
@@ -11,27 +27,35 @@ import requests
 import google.generativeai as genai
 from fastapi import APIRouter, Request
 
-# ─── CONFIG ───────────────────────────────────────────────────────────────────
-GEMINI_API_KEY        = os.environ.get("GEMINI_API_KEY", "")
-YCLOUD_API_KEY        = os.environ.get("YCLOUD_API_KEY_MAICOL", "") or os.environ.get("YCLOUD_API_KEY", "")
-AIRTABLE_TOKEN        = os.environ.get("AIRTABLE_TOKEN_MAICOL", "") or os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
-AIRTABLE_BASE_ID      = os.environ.get("AIRTABLE_BASE_ID_MAICOL", "appaDT7uwHnimVZLM")
-AIRTABLE_TABLE        = "tbly67z1oY8EFQoFj"
-AIRTABLE_TABLE_CLIENTES = "tblonoyIMAM5kl2ue"
-NUMERO_BOT            = os.environ.get("NUMERO_BOT_MAICOL", "5493764815689")
-NUMERO_ASESOR         = os.environ.get("NUMERO_ASESOR_MAICOL", "+543764384843")
+# ─── CONFIG — todo desde env vars ─────────────────────────────────────────────
+GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY", "")
+AIRTABLE_TOKEN  = os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
+YCLOUD_API_KEY  = os.environ.get("INMO_DEMO_YCLOUD_KEY", "") or os.environ.get("YCLOUD_API_KEY", "")
 
-INMOBILIARIA = {
-    "nombre":   "Back Urbanizaciones",
-    "ciudad":   "San Ignacio, Misiones",
-    "asesor":   "un asesor",
-    "whatsapp": NUMERO_ASESOR if NUMERO_ASESOR.startswith("+") else f"+{NUMERO_ASESOR}",
+NOMBRE_INMO     = os.environ.get("INMO_DEMO_NOMBRE",        "System IA Inmobiliaria Demo")
+CIUDAD          = os.environ.get("INMO_DEMO_CIUDAD",         "tu ciudad")
+NOMBRE_ASESOR   = os.environ.get("INMO_DEMO_ASESOR",         "el asesor")
+NUMERO_BOT      = os.environ.get("INMO_DEMO_NUMERO_BOT",     "")
+NUMERO_ASESOR   = os.environ.get("INMO_DEMO_NUMERO_ASESOR",  "")
+
+AIRTABLE_BASE_ID        = os.environ.get("INMO_DEMO_AIRTABLE_BASE",    "")
+AIRTABLE_TABLE_PROPS    = os.environ.get("INMO_DEMO_TABLE_PROPS",       "")
+AIRTABLE_TABLE_CLIENTES = os.environ.get("INMO_DEMO_TABLE_CLIENTES",    "")
+
+_zonas_raw = os.environ.get("INMO_DEMO_ZONAS", "Zona 1,Zona 2,Zona 3")
+ZONAS_LIST = [z.strip() for z in _zonas_raw.split(",") if z.strip()]
+
+INMO = {
+    "nombre":   NOMBRE_INMO,
+    "ciudad":   CIUDAD,
+    "asesor":   NOMBRE_ASESOR,
+    "whatsapp": NUMERO_ASESOR if NUMERO_ASESOR.startswith("+") else f"+{re.sub(r'D', '', NUMERO_ASESOR)}" if NUMERO_ASESOR else "",
 }
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-router = APIRouter(prefix="/inmobiliaria", tags=["Inmobiliaria Maicol"])
+router = APIRouter(prefix="/inmobiliaria-demo", tags=["Inmobiliaria Demo"])
 
 # ─── SESIONES (in-memory) ─────────────────────────────────────────────────────
 SESIONES: dict[str, dict] = {}
@@ -41,6 +65,8 @@ AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "appl
 
 
 def _at_registrar_cliente(telefono: str, nombre: str, operacion: str = "", tipo: str = "", notas: str = "") -> None:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
+        return
     from datetime import date
     hoy = date.today().isoformat()
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
@@ -73,6 +99,8 @@ def _at_registrar_cliente(telefono: str, nombre: str, operacion: str = "", tipo:
 
 
 def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = None) -> list[dict]:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        return []
     filtros = ["OR({Disponible}='✅ Disponible',{Disponible}='⏳ Reservado')"]
     if tipo:
         filtros.append(f"LOWER({{Tipo}})='{tipo.lower()}'")
@@ -81,14 +109,14 @@ def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = 
     if zona and zona != "Otra Zona":
         filtros.append(f"{{Zona}}='{zona}'")
     formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE}"
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
     params = {"filterByFormula": formula, "maxRecords": 5,
               "sort[0][field]": "Precio", "sort[0][direction]": "asc"}
     try:
         r = requests.get(url, headers=AT_HEADERS, params=params, timeout=8)
         return [rec["fields"] for rec in r.json().get("records", [])]
     except Exception as e:
-        print(f"[INMO-AT] Error: {e}")
+        print(f"[DEMO-AT] Error: {e}")
         return []
 
 
@@ -99,8 +127,8 @@ def _normalizar_telefono(tel: str) -> str:
 
 
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
-    if not YCLOUD_API_KEY:
-        print(f"[INMO-YCLOUD] Sin key:\n{mensaje}")
+    if not YCLOUD_API_KEY or not NUMERO_BOT:
+        print(f"[DEMO-YCLOUD] Sin key/número. Mensaje:\n{mensaje}")
         return False
     try:
         r = requests.post(
@@ -111,12 +139,12 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
         )
         return r.status_code in (200, 201)
     except Exception as e:
-        print(f"[INMO-YCLOUD] Excepción: {e}")
+        print(f"[DEMO-YCLOUD] Excepción: {e}")
         return False
 
 
 def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
-    if not YCLOUD_API_KEY or not url_imagen:
+    if not YCLOUD_API_KEY or not NUMERO_BOT or not url_imagen:
         return False
     try:
         r = requests.post(
@@ -128,7 +156,7 @@ def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
         )
         return r.status_code in (200, 201)
     except Exception as e:
-        print(f"[INMO-YCLOUD] Excepción imagen: {e}")
+        print(f"[DEMO-YCLOUD] Excepción imagen: {e}")
         return False
 
 
@@ -136,65 +164,60 @@ def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
 def _gemini_respuesta(mensaje: str) -> str:
     if not GEMINI_API_KEY:
         return (f"Gracias por tu consulta. Para más información podés hablar con "
-                f"nuestro asesor {INMOBILIARIA['asesor']} al {INMOBILIARIA['whatsapp']}. 🏠")
+                f"nuestro asesor {INMO['asesor']} al {INMO['whatsapp']}. 🏠")
     try:
         model = genai.GenerativeModel("gemini-2.5-flash-lite")
-        prompt = f"""Sos el asistente virtual de {INMOBILIARIA['nombre']}, inmobiliaria en {INMOBILIARIA['ciudad']}, Argentina.
-Tu asesor humano se llama {INMOBILIARIA['asesor']} ({INMOBILIARIA['whatsapp']}).
+        prompt = f"""Sos el asistente virtual de {INMO['nombre']}, inmobiliaria en {INMO['ciudad']}.
+Tu asesor humano se llama {INMO['asesor']} ({INMO['whatsapp']}).
 
 Respondé SOLO consultas sobre propiedades, compra, venta, alquiler o temas inmobiliarios.
 Si la pregunta no es del rubro, decí amablemente que solo podés ayudar con temas inmobiliarios.
-Sé breve, amigable y profesional. Respondé en español argentino.
+Sé breve, amigable y profesional. Respondé en español.
 Al finalizar, recordá al cliente que puede responder con un número para ver opciones o escribir *menú* para volver al inicio.
 
 Consulta del cliente: {mensaje}"""
         resp = model.generate_content(prompt)
         return resp.text.strip()
     except Exception as e:
-        print(f"[INMO-GEMINI] Error: {e}")
+        print(f"[DEMO-GEMINI] Error: {e}")
         return (f"Gracias por tu consulta. Para más info escribile a nuestro asesor "
-                f"{INMOBILIARIA['asesor']} al {INMOBILIARIA['whatsapp']}. 🏠")
+                f"{INMO['asesor']} al {INMO['whatsapp']}. 🏠")
 
 
-# ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
-MSG_BIENVENIDA = """👋 ¡Hola! Bienvenido a *{nombre}* 🏘️
-Somos tu inmobiliaria de confianza en {ciudad}.
+# ─── MENSAJES DINÁMICOS ────────────────────────────────────────────────────────
+def _msg_bienvenida() -> str:
+    return (f"👋 ¡Hola! Bienvenido a *{INMO['nombre']}* 🏘️\n"
+            f"Somos tu inmobiliaria de confianza en {INMO['ciudad']}.\n\n"
+            f"¿Qué estás buscando?\n\n"
+            f"1️⃣ *Comprar* una propiedad\n"
+            f"2️⃣ *Alquilar* una propiedad\n"
+            f"3️⃣ Hablar con un asesor\n\n"
+            f"Respondé con el número de tu opción. 😊")
 
-Nos especializamos en *Lotes y Terrenos* en venta en Misiones.
 
-¿Qué querés hacer?
+def _msg_zona() -> str:
+    lineas = ["📍 ¿En qué zona estás buscando?\n"]
+    for i, zona in enumerate(ZONAS_LIST, 1):
+        lineas.append(f"{i}️⃣ *{zona}*")
+    lineas.append(f"{len(ZONAS_LIST)+1}️⃣ Otra zona / No sé")
+    lineas.append("0️⃣ Volver al inicio\n")
+    lineas.append("Respondé con el número. 😊")
+    return "\n".join(lineas)
 
-1️⃣ Ver *Lotes y Terrenos* disponibles
-2️⃣ Hablar con un asesor
-
-Respondé con el número de tu opción. 😊"""
-
-MSG_ZONA = """📍 ¿En qué zona estás buscando?
-
-1️⃣ *San Ignacio*
-2️⃣ *Gobernador Roca*
-3️⃣ *Apóstoles*
-4️⃣ *Leandro N. Alem*
-5️⃣ Otra zona / No sé
-0️⃣ Volver al inicio
-
-Respondé con el número. 😊"""
 
 MSG_TIPO = """¿Qué tipo de propiedad te interesa?
 
-1️⃣ *Lote*
-2️⃣ *Terreno*
-3️⃣ Ver todos (Lotes y Terrenos)
+1️⃣ *Casa*
+2️⃣ *Departamento*
+3️⃣ *Terreno*
 4️⃣ Hablar con un asesor
 0️⃣ Volver al inicio
 
 Respondé con el número. 😊"""
 
-MSG_ASESOR = (
-    "¡Perfecto! Te conectamos con nuestro asesor. 👤\n\n"
-    "Podés escribirle directamente al *{whatsapp}* "
-    "o aguardá que te contacte en breve. ¡Gracias por elegirnos! 🏠"
-)
+MSG_ASESOR = ("¡Perfecto! Te conectamos con nuestro asesor. 👤\n\n"
+              "Podés escribirle directamente al *{whatsapp}* "
+              "o aguardá que te contacte en breve. ¡Gracias por elegirnos! 🏠")
 
 
 # ─── FORMATEO ─────────────────────────────────────────────────────────────────
@@ -208,7 +231,7 @@ def _lista_titulos(props: list[dict], label: str) -> str:
         tag = " ⏳ _Reservado_" if "Reservado" in str(estado) else ""
         lineas.append(f"*{i}.* {p.get('Titulo', 'Propiedad')} — {precio_str}{tag}")
     lineas.append("\nRespondé con el *número* para ver la ficha completa.")
-    lineas.append("*0* para volver al inicio | *4* para hablar con el asesor")
+    lineas.append("*0* para volver | *4* para hablar con el asesor")
     return "\n".join(lineas)
 
 
@@ -243,7 +266,7 @@ def _ficha_propiedad(p: dict) -> str:
     maps = p.get("Google_Maps_URL", "")
     if maps:
         lineas.append(f"\n🗺 *Ver en Maps:* {maps}")
-    lineas.append(f"\n¿Te interesa?\n*4* para hablar con {INMOBILIARIA['asesor']} | *0* para volver al menú")
+    lineas.append(f"\n¿Te interesa?\n*4* para hablar con {INMO['asesor']} | *0* para volver al menú")
     return "\n".join(lineas)
 
 
@@ -262,21 +285,22 @@ def _enviar_ficha(telefono: str, p: dict) -> None:
 
 def _mostrar_lista(telefono: str, tipo: str, label: str, operacion: str, zona: str = None) -> None:
     props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona)
+    op_label = "en Venta" if operacion == "venta" else "en Alquiler"
     zona_label = f" en {zona}" if zona and zona != "Otra Zona" else ""
     if not props:
-        SESIONES[telefono] = {**SESIONES.get(telefono, {}), "step": "zona",
-                              "operacion": operacion}
+        SESIONES[telefono] = {**SESIONES.get(telefono, {}), "step": "tipo",
+                              "operacion": operacion, "zona": zona}
         _enviar_texto(telefono,
-            f"En este momento no tenemos {label.lower()} disponibles{zona_label}. 😔\n\n"
-            f"¿Querés buscar en otra zona?\n\n{MSG_ZONA}")
+            f"En este momento no tenemos {label.lower()} {op_label.lower()}{zona_label}. 😔\n\n"
+            f"¿Querés buscar otro tipo de propiedad?\n\n{MSG_TIPO}")
         return
     SESIONES[telefono] = {"step": "lista", "props": props, "operacion": operacion, "tipo": tipo, "zona": zona}
-    _enviar_texto(telefono, _lista_titulos(props, f"{label} en Venta{zona_label}"))
+    _enviar_texto(telefono, _lista_titulos(props, f"{label} {op_label}{zona_label}"))
 
 
 def _ir_asesor(telefono: str) -> None:
     SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": ""}
-    _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
+    _enviar_texto(telefono, MSG_ASESOR.format(**INMO))
 
 
 # ─── PROCESADOR PRINCIPAL ──────────────────────────────────────────────────────
@@ -293,35 +317,42 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         nombre_corto = nombre.split()[0] if nombre else ""
         operacion = "venta" if "comprar" in t else ("alquiler" if "alquil" in t else "")
         zona = None
-        for z in ["San Ignacio", "Gdor Roca", "Apóstoles", "Otra Zona"]:
-            if z.lower() in t or z.lower().replace("ó", "o") in t:
+        for z in ZONAS_LIST:
+            if z.lower() in t:
                 zona = z
                 break
         tipo_raw = None
-        if re.search(r"\blote\b", t):
-            tipo_raw = ("Lote", "Lotes")
+        if re.search(r"\bcasa\b", t):
+            tipo_raw = ("Casa", "Casas")
+        elif re.search(r"\bdep(to|artamento)\b", t):
+            tipo_raw = ("Departamento", "Departamentos")
         elif re.search(r"\bterreno\b", t):
             tipo_raw = ("Terreno", "Terrenos")
 
-        SESIONES[telefono] = {"step": "lista", "props": [], "operacion": "venta",
+        SESIONES[telefono] = {"step": "lista", "props": [], "operacion": operacion,
                                "nombre": nombre, "zona": zona}
         saludo = f"¡Hola {nombre_corto}! " if nombre_corto else "¡Hola! "
+        op_str = "comprar" if operacion == "venta" else ("alquilar" if operacion == "alquiler" else "buscar")
 
-        if zona and tipo_raw:
-            intro = (f"{saludo}✅ Recibimos tu consulta de *Back Urbanizaciones*.\n\n"
-                     f"Buscamos {tipo_raw[1].lower()} disponibles en *{zona}*... 🔍")
+        if operacion and zona and tipo_raw:
+            intro = (f"{saludo}✅ Recibimos tu consulta de *{INMO['nombre']}*.\n\n"
+                     f"Buscamos {tipo_raw[1].lower()} para *{op_str}* en *{zona}*... 🔍")
             _enviar_texto(telefono, intro)
-            _mostrar_lista(telefono, tipo_raw[0], tipo_raw[1], "venta", zona)
-        elif zona:
+            _mostrar_lista(telefono, tipo_raw[0], tipo_raw[1], operacion, zona)
+        elif operacion and zona:
             SESIONES[telefono] = {**SESIONES[telefono], "step": "tipo"}
             _enviar_texto(telefono,
-                f"{saludo}✅ Recibimos tu consulta de *Back Urbanizaciones*.\n\n"
-                f"Buscás en *{zona}*. ¿Qué te interesa?\n\n{MSG_TIPO}")
-        else:
+                f"{saludo}✅ Recibimos tu consulta de *{INMO['nombre']}*.\n\n"
+                f"Buscás *{op_str}* en *{zona}*. ¿Qué tipo de propiedad te interesa?\n\n{MSG_TIPO}")
+        elif operacion:
             SESIONES[telefono] = {**SESIONES[telefono], "step": "zona"}
             _enviar_texto(telefono,
-                f"{saludo}✅ Recibimos tu consulta de *Back Urbanizaciones*.\n\n"
-                f"¿En qué zona estás buscando?\n\n{MSG_ZONA}")
+                f"{saludo}✅ Recibimos tu consulta de *{INMO['nombre']}*.\n\n"
+                f"Veo que querés *{op_str}*. ¿En qué zona?\n\n{_msg_zona()}")
+        else:
+            SESIONES[telefono] = {**SESIONES[telefono], "step": "bienvenida"}
+            _enviar_texto(telefono,
+                f"{saludo}✅ Recibimos tu consulta de *{INMO['nombre']}*.\n\n{_msg_bienvenida()}")
         return
 
     # ── 0 o saludo → bienvenida ──────────────────────────────────────────────
@@ -330,75 +361,79 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         nombre = sesion.get("nombre", "")
         SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": "", "nombre": nombre}
         _at_registrar_cliente(telefono, nombre, notas="Primer contacto por WhatsApp")
-        _enviar_texto(telefono, MSG_BIENVENIDA.format(**INMOBILIARIA))
+        _enviar_texto(telefono, _msg_bienvenida())
         return
 
     # ── Palabras de asesor ───────────────────────────────────────────────────
-    if t in ("asesor", "humano", "agente", "vendedor", "maicol", "persona", "quiero hablar"):
+    if t in ("asesor", "humano", "agente", "vendedor", "persona", "quiero hablar"):
         _ir_asesor(telefono)
         return
 
     # ── PASO: bienvenida ─────────────────────────────────────────────────────
     if step == "bienvenida":
         nombre = sesion.get("nombre", "")
-        if t in ("1", "ver", "lotes", "terrenos", "terreno", "lote", "comprar", "venta", "quiero comprar"):
+        if t in ("1", "comprar", "compra", "venta", "quiero comprar"):
             SESIONES[telefono] = {"step": "zona", "props": [], "operacion": "venta", "nombre": nombre}
-            _at_registrar_cliente(telefono, nombre, operacion="Venta", notas="Busca lotes/terrenos")
-            _enviar_texto(telefono, MSG_ZONA)
-        elif t == "2":
+            _at_registrar_cliente(telefono, nombre, operacion="Venta", notas="Busca comprar")
+            _enviar_texto(telefono, _msg_zona())
+        elif t in ("2", "alquilar", "alquiler", "renta", "quiero alquilar"):
+            SESIONES[telefono] = {"step": "zona", "props": [], "operacion": "alquiler", "nombre": nombre}
+            _at_registrar_cliente(telefono, nombre, operacion="Alquiler", notas="Busca alquilar")
+            _enviar_texto(telefono, _msg_zona())
+        elif t == "3":
             _ir_asesor(telefono)
         else:
             _enviar_texto(telefono, _gemini_respuesta(texto))
         return
 
     # ── PASO: zona ───────────────────────────────────────────────────────────
-    ZONAS = {
-        "1": "San Ignacio", "san ignacio": "San Ignacio",
-        "2": "Gobernador Roca", "gdor roca": "Gobernador Roca", "gobernador roca": "Gobernador Roca", "roca": "Gobernador Roca",
-        "3": "Apóstoles", "apostoles": "Apóstoles", "apóstoles": "Apóstoles",
-        "4": "Leandro N. Alem", "leandro": "Leandro N. Alem", "alem": "Leandro N. Alem", "l.n. alem": "Leandro N. Alem",
-        "5": "Otra Zona", "otra": "Otra Zona", "no se": "Otra Zona", "no sé": "Otra Zona",
-    }
     if step == "zona":
         nombre = sesion.get("nombre", "")
-        operacion = sesion.get("operacion", "venta")
-        zona = ZONAS.get(t, "")
-        if zona:
+        # Mapear número a zona
+        zona = None
+        if t.isdigit():
+            idx = int(t) - 1
+            if 0 <= idx < len(ZONAS_LIST):
+                zona = ZONAS_LIST[idx]
+            elif int(t) == len(ZONAS_LIST) + 1:
+                zona = "Otra Zona"
+        else:
+            # Buscar por nombre parcial
+            for z in ZONAS_LIST:
+                if z.lower() in t or t in z.lower():
+                    zona = z
+                    break
+            if not zona and t in ("otra", "no se", "no sé"):
+                zona = "Otra Zona"
+
+        if zona == "Otra Zona":
+            SESIONES[telefono] = {**sesion, "step": "tipo", "zona": "Otra Zona"}
+            _at_registrar_cliente(telefono, nombre, notas="Zona: Otra Zona")
+            _enviar_texto(telefono, MSG_TIPO)
+        elif zona:
             SESIONES[telefono] = {**sesion, "step": "tipo", "zona": zona}
             _at_registrar_cliente(telefono, nombre, notas=f"Zona: {zona}")
             _enviar_texto(telefono, MSG_TIPO)
         else:
-            _enviar_texto(telefono, f"Por favor elegí una opción del 1 al 5.\n\n{MSG_ZONA}")
+            _enviar_texto(telefono, f"Por favor elegí una opción válida.\n\n{_msg_zona()}")
         return
 
-    # ── PASO: tipo (lote / terreno / todos) ──────────────────────────────────
+    # ── PASO: tipo de propiedad ──────────────────────────────────────────────
     if step == "tipo":
         nombre = sesion.get("nombre", "")
         zona = sesion.get("zona", None)
-        operacion = sesion.get("operacion", "venta")
-        if t in ("1", "lote", "lotes"):
-            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="Lote",
-                                  notas=f"Busca lote en {zona or 'zona no especificada'}")
-            _mostrar_lista(telefono, "Lote", "Lotes", operacion, zona)
-        elif t in ("2", "terreno", "terrenos"):
+        if t in ("1", "casa", "casas"):
+            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="Casa",
+                                  notas=f"Busca casa en {operacion}")
+            _mostrar_lista(telefono, "Casa", "Casas", operacion, zona)
+        elif t in ("2", "depto", "deptos", "departamento", "departamentos", "dpto"):
+            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="Departamento",
+                                  notas=f"Busca departamento en {operacion}")
+            _mostrar_lista(telefono, "Departamento", "Departamentos", operacion, zona)
+        elif t in ("3", "terreno", "terrenos", "lote", "lotes"):
             _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="Terreno",
-                                  notas=f"Busca terreno en {zona or 'zona no especificada'}")
+                                  notas=f"Busca terreno en {operacion}")
             _mostrar_lista(telefono, "Terreno", "Terrenos", operacion, zona)
-        elif t in ("3", "todos", "ver todos", "cualquiera"):
-            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="Lote/Terreno",
-                                  notas=f"Busca lotes y terrenos en {zona or 'zona no especificada'}")
-            props_lotes = _at_buscar_propiedades(tipo="Lote", operacion=operacion, zona=zona)
-            props_terrenos = _at_buscar_propiedades(tipo="Terreno", operacion=operacion, zona=zona)
-            props = props_lotes + props_terrenos
-            zona_label = f" en {zona}" if zona and zona != "Otra Zona" else ""
-            if not props:
-                SESIONES[telefono] = {**SESIONES.get(telefono, {}), "step": "zona", "operacion": operacion}
-                _enviar_texto(telefono,
-                    f"En este momento no tenemos lotes ni terrenos en venta{zona_label}. 😔\n\n"
-                    f"¿Querés buscar en otra zona?\n\n{MSG_ZONA}")
-            else:
-                SESIONES[telefono] = {"step": "lista", "props": props, "operacion": operacion, "tipo": "Lote/Terreno", "zona": zona}
-                _enviar_texto(telefono, _lista_titulos(props, f"Lotes y Terrenos en Venta{zona_label}"))
         elif t == "4":
             _ir_asesor(telefono)
         else:
@@ -436,8 +471,7 @@ async def procesar_whatsapp(request: Request):
     msg = body.get("whatsappInboundMessage") or body
     telefono = str(msg.get("from") or body.get("from") or body.get("telefono") or "")
     if telefono:
-        digitos = re.sub(r"\D", "", telefono)
-        telefono = f"+{digitos}"
+        telefono = _normalizar_telefono(telefono)
 
     msg_type = msg.get("type", "text")
     texto = ""
@@ -460,8 +494,8 @@ async def procesar_whatsapp(request: Request):
     if not telefono or not texto:
         return {"status": "ignorado", "razon": "sin telefono o texto"}
 
-    # Capturar nombre del cliente desde YCloud
-    customer_profile = msg.get("customerProfile") or msg.get("whatsappContact") or body.get("customerProfile") or {}
+    customer_profile = (msg.get("customerProfile") or msg.get("whatsappContact")
+                        or body.get("customerProfile") or {})
     raw_name = customer_profile.get("name") or customer_profile.get("displayName") or ""
     sesion = SESIONES.get(telefono, {})
     if raw_name and not sesion.get("nombre"):
@@ -480,7 +514,9 @@ def ver_propiedades(tipo: str = None):
 
 @router.get("/crm/propiedades")
 def crm_propiedades():
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE}"
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        return {"records": [], "error": "INMO_DEMO_AIRTABLE_BASE o INMO_DEMO_TABLE_PROPS no configurados"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
     records, offset = [], None
     while True:
         params = {"pageSize": 100}
@@ -497,6 +533,8 @@ def crm_propiedades():
 
 @router.get("/crm/clientes")
 def crm_clientes():
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
+        return {"records": [], "error": "INMO_DEMO_AIRTABLE_BASE o INMO_DEMO_TABLE_CLIENTES no configurados"}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
     records, offset = [], None
     while True:
@@ -510,3 +548,22 @@ def crm_clientes():
         if not offset:
             break
     return {"records": records}
+
+
+@router.get("/config")
+def ver_config():
+    """Endpoint de diagnóstico — muestra config activa (sin secrets)."""
+    return {
+        "nombre": NOMBRE_INMO,
+        "ciudad": CIUDAD,
+        "asesor": NOMBRE_ASESOR,
+        "numero_bot": NUMERO_BOT[:6] + "..." if NUMERO_BOT else "❌ no configurado",
+        "numero_asesor": NUMERO_ASESOR[:6] + "..." if NUMERO_ASESOR else "❌ no configurado",
+        "ycloud_key": "✅ configurado" if YCLOUD_API_KEY else "❌ no configurado",
+        "airtable_token": "✅ configurado" if AIRTABLE_TOKEN else "❌ no configurado",
+        "airtable_base": AIRTABLE_BASE_ID or "❌ no configurado",
+        "table_props": AIRTABLE_TABLE_PROPS or "❌ no configurado",
+        "table_clientes": AIRTABLE_TABLE_CLIENTES or "❌ no configurado",
+        "zonas": ZONAS_LIST,
+        "gemini": "✅ configurado" if GEMINI_API_KEY else "❌ no configurado",
+    }
