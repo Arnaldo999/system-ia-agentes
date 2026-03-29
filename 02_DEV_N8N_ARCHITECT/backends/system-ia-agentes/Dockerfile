@@ -2,13 +2,7 @@ FROM python:3.11-slim
 
 # Instalar fuentes tipográficas para Pillow (slides de carrusel)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fonts-dejavu-core wget unzip \
-    && mkdir -p /app/fonts \
-    && wget -q -O /tmp/Inter.zip "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip" \
-    && unzip -j /tmp/Inter.zip "Inter-4.1/InterDesktop/Inter-Bold.otf" -d /app/fonts/ 2>/dev/null || true \
-    && unzip -j /tmp/Inter.zip "Inter-4.1/InterDesktop/Inter-Regular.otf" -d /app/fonts/ 2>/dev/null || true \
-    && rm -f /tmp/Inter.zip \
-    && apt-get purge -y wget unzip && apt-get autoremove -y \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Directorio de trabajo en el servidor
