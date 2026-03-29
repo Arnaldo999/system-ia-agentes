@@ -15,7 +15,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Actualiza `ai.context.json` al completar cada hito importante.
 
-**Trigger especial**: Si el pedido menciona `nuevo cliente`, `redes sociales`, `instagram`, `facebook` o `comentarios` → leer `memory/nuevo-cliente-redes-sociales.md` antes de responder.
+**Triggers especiales** — leer el archivo indicado ANTES de responder:
+
+| Si el pedido menciona... | Leer primero |
+|--------------------------|-------------|
+| `nuevo cliente`, `redes sociales`, `instagram`, `facebook`, `comentarios` | `memory/nuevo-cliente-redes-sociales.md` |
+| `deploy`, `render`, `push`, `dockerfile`, `backend`, `fastapi`, `worker` | `memory/infraestructura.md` + `02_DEV_N8N_ARCHITECT/AGENT.md` |
+| `debug`, `error`, `falla`, `falló`, `no funciona` | `memory/debug-log.md` |
+| `n8n`, `workflow`, `flujo` | `memory/infraestructura.md` (sección n8n Producción) |
 
 ---
 
