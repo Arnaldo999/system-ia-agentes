@@ -4,56 +4,95 @@
     "Arnaldo Ayala",
     "Micaela Colmenares"
   ],
-  "timestamp_ultima_actualizacion": "2026-03-25T19:00:00",
-  "agente_activo": "ventas",
+  "timestamp_ultima_actualizacion": "2026-03-27T14:00:00",
+  "agente_activo": "dev",
   "ultimo_modelo": "claude-sonnet-4-6",
+
+  "infraestructura_por_proyecto": {
+    "arnaldo_proyectos_propios": {
+      "n8n_local": "localhost (pruebas — hasta validar funcionamiento)",
+      "n8n_produccion": "https://n8n.arnaldoayalaestratega.cloud (Coolify — Hostinger VPS Arnaldo)",
+      "regla": "Desarrollar y probar en local. Solo subir a produccion cuando el flujo esta 100% validado."
+    },
+    "system_ia_mica": {
+      "n8n_pruebas": "https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host (Easypanel VPS Mica)",
+      "n8n_produccion": "NO DEFINIDO AUN — usando VPS pruebas como staging hasta capitalizar para VPS propio",
+      "regla": "Proyectos System IA (clientes de Mica+Arnaldo) se prueban en VPS Mica. Produccion pendiente."
+    },
+    "robert": {
+      "n8n_pruebas": "NO OTORGADO AUN — Robert no dio acceso",
+      "n8n_produccion": "NO OTORGADO AUN",
+      "regla": "Esperar acceso de Robert. Mientras tanto preparar workflows exportables."
+    }
+  },
+
+  "whatsapp_por_actor": {
+    "arnaldo": "YCloud — cliente de YCloud, no Tech Provider directo",
+    "robert": "Meta directo — ya es Tech Provider, usa WABA propia",
+    "mica": "Evolution API ahora — en camino a Tech Provider Meta propio"
+  },
+
+  "arquitectura_workers": {
+    "repo": "github.com/Arnaldo999/system-ia-agentes",
+    "deploy": "Render (system-ia-agentes.onrender.com)",
+    "convencion": "Un worker demo por vertical. Para nuevo cliente: copiar demo, renombrar, configurar env vars. NUNCA editar la demo.",
+    "verticales": {
+      "inmobiliaria": {
+        "demo": "workers/inmobiliaria_demo/ → /inmobiliaria-demo/whatsapp",
+        "clientes": ["workers/inmobiliaria_maicol/ → /inmobiliaria/whatsapp"]
+      }
+    }
+  },
+
   "proyectos": {
     "maicol": {
-      "nombre": "Inmobiliaria Maicol",
-      "tipo": "proyecto propio Arnaldo — sin Micaela ni Robert",
+      "nombre": "Back Urbanizaciones (Maicol)",
+      "tipo": "proyecto propio Arnaldo — cliente externo",
       "carpeta": "/home/arna/PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/",
       "fase": "produccion",
-      "estado": "workflow-migrado-a-coolify",
+      "estado": "activo",
+      "entorno": "arnaldo_proyectos_propios",
+      "arquitectura_correcta": {
+        "flujo_bot_whatsapp": "YCloud → webhook/inmobiliaria → n8n → https://system-ia-agentes.onrender.com/inmobiliaria/whatsapp → responde vía YCloud",
+        "flujo_formulario": "formulario-leads.html → webhook/inmobiliaria-formulario → n8n → Airtable → YCloud (avisa lead) — FUNCIONA",
+        "fastapi_render": "system-ia-agentes.onrender.com — workers/inmobiliaria/worker.py integrado como router",
+        "bot_whatsapp_py": "LEGACY LOCAL — reemplazado por workers/inmobiliaria/worker.py en el repo central"
+      },
+      "numero_maicol": "5493764815689",
       "hitos_completados": [
-        "Bot WhatsApp funcional (FastAPI + Airtable + YCloud)",
-        "Dashboard CRM HTML con proxy FastAPI",
-        "Formulario onboarding publicado en arnaldoayalaestratega.com/formulario-maicol/",
-        "Notificación WhatsApp al enviar (wa.link/4t9yb1)",
-        "Campo Disponible cambiado a selección única en Airtable",
-        "Workflow 'bot inmobiliaria 2' migrado a n8n Coolify (ID: o4CrjByltFurUWox)",
-        "Formulario leads apuntando a n8n Coolify webhook producción",
-        "Dashboard CRM apuntando a FastAPI Render producción",
-        "Arquitectura multi-tenant definida: cliente_id + wa_provider (ycloud/evolution/meta_direct)",
-        "YCloud slot 2 reservado para número de Maicol"
+        "Workflow n8n en Coolify (ID: IfXs9QRGVBdLUGmV) — activo",
+        "Formulario leads.html publicado en backurbanizaciones.com/formulario-leads",
+        "Formulario refocused a Loteos y Terrenos exclusivamente",
+        "Credential Airtable conectada en n8n UI",
+        "Formulario → Airtable → WhatsApp al lead: FUNCIONA (probado 27/03/2026)"
       ],
       "archivos_clave": [
-        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/BOT/bot_whatsapp.py",
-        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/onboarding-maicol.html",
-        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/dashboard-crm.html",
-        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/formulario-leads.html"
+        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/formulario-leads.html",
+        "PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/PRESENTACION/dashboard-crm.html"
       ],
       "n8n_produccion": {
         "instancia": "https://n8n.arnaldoayalaestratega.cloud",
-        "plataforma": "Coolify — Hostinger VPS",
-        "workflow_maicol_id": "o4CrjByltFurUWox",
+        "workflow_id": "IfXs9QRGVBdLUGmV",
         "webhook_whatsapp": "https://n8n.arnaldoayalaestratega.cloud/webhook/inmobiliaria",
-        "webhook_formulario": "https://n8n.arnaldoayalaestratega.cloud/webhook/inmobiliaria-formulario",
-        "pendiente": ["Conectar credencial Airtable en UI", "Reemplazar NUMERO_MAICOL cuando Maicol confirme su número", "Actualizar webhook YCloud a URL Coolify", "Activar workflow"]
+        "webhook_formulario": "https://n8n.arnaldoayalaestratega.cloud/webhook/inmobiliaria-formulario"
       },
-      "proximo_paso": "Subir formulario-leads.html y dashboard-crm.html a WordPress (backurbanizaciones.com). Confirmar número WhatsApp de Maicol para YCloud."
+      "proximo_paso": "Bot WhatsApp funcionando en producción. Próximo: crear worker inmobiliaria_demo en Render."
     },
+
     "system_ia": {
       "nombre": "System IA",
       "tipo": "agencia — Arnaldo + Micaela Colmenares",
       "carpeta": "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/",
-      "estado": "operativa"
+      "estado": "operativa",
+      "entorno": "system_ia_mica"
     },
     "robert": {
       "nombre": "Agencia Arnaldo + Robert Bazán",
       "tipo": "alianza — Arnaldo + Robert (sin Micaela)",
       "carpeta": "/home/arna/PROYECTO AGENCIA ROBERT-ARNALDO AYALA/",
       "estado": "en-construccion",
-      "proximo_paso": "Demo funcional inmobiliaria (clonar de Maicol) para presentar a clientes de Robert en México"
+      "entorno": "robert",
+      "proximo_paso": "Esperar acceso VPS Robert. Preparar workflows exportables basados en Maicol."
     }
   },
   "alianza_robert_bazan": {
