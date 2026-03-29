@@ -7,6 +7,7 @@ Integrado como router en system-ia-agentes.
 
 import os
 import re
+import time
 import requests
 import google.generativeai as genai
 from fastapi import APIRouter, Request
@@ -93,8 +94,6 @@ def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = 
 
 
 # ─── YCLOUD ───────────────────────────────────────────────────────────────────
-import time
-
 def _normalizar_telefono(tel: str) -> str:
     solo_digitos = re.sub(r'\D', '', tel)
     return f"+{solo_digitos}"
