@@ -221,16 +221,16 @@ Consulta del cliente: {mensaje}"""
 
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
 MSG_BIENVENIDA = """👋 ¡Hola! Bienvenido a *{nombre}* 🏘️
-Tu aliado inmobiliario en {ciudad}.
+Somos tu inmobiliaria de confianza en {ciudad}.
 
-Te ayudamos a encontrar el *Lote o Terreno* ideal en Misiones.
+Nos especializamos en *Lotes y Terrenos* en venta en Misiones.
 
-¿En qué podemos ayudarte?
+¿Qué querés hacer?
 
-1️⃣ Explorar *Lotes y Terrenos* disponibles
-2️⃣ Contactar con nuestro equipo
+1️⃣ Ver *Lotes y Terrenos* disponibles
+2️⃣ Hablar con un asesor
 
-Respondé con el número de tu opción 😊"""
+Respondé con el número de tu opción. 😊"""
 
 MSG_ZONA = """📍 ¿En qué zona estás buscando?
 
@@ -341,7 +341,8 @@ def _mostrar_lista(telefono: str, tipo: str, label: str, operacion: str, zona: s
 
 def _ir_asesor(telefono: str) -> None:
     SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": ""}
-    _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
+    if not _enviar_cta_asesor(telefono):
+        _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
 
 
 # ─── PROCESADOR PRINCIPAL ──────────────────────────────────────────────────────
