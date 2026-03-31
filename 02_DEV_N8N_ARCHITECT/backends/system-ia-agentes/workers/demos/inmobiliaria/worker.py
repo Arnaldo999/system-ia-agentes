@@ -760,7 +760,7 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             if t in ("1", "ver", "proyectos"):
                 _mostrar_propiedades(telefono, {**sesion, "operacion": "venta"})
             elif t in ("2", "asesor"):
-                _ir_asesor(telefono)
+                _iniciar_agendamiento(telefono, sesion)
             else:
                 _enviar_texto(telefono, _gemini_libre(texto, sesion))
         else:
@@ -770,7 +770,7 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             elif t in ("2", "alquilar"):
                 _mostrar_propiedades(telefono, {**sesion, "operacion": "alquiler"})
             elif t in ("3", "asesor"):
-                _ir_asesor(telefono)
+                _iniciar_agendamiento(telefono, sesion)
             else:
                 _enviar_texto(telefono, _gemini_libre(texto, sesion))
         return
