@@ -832,9 +832,9 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
 
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
 def _msg_bienvenida() -> str:
-    return (f"👋 ¡Hola! Soy el asistente IA de *{EMPRESA['nombre']}* 🏘️\n\n"
-            f"Ayudo a empresas y profesionales del sector inmobiliario a *automatizar "
-            f"su atención y agendar más citas* con inteligencia artificial.\n\n"
+    return (f"👋 ¡Hola! Soy un asistente IA especializado en el sector inmobiliario. 🏘️\n\n"
+            f"Ayudo a empresas y profesionales a *automatizar su atención y agendar "
+            f"más citas* con inteligencia artificial.\n\n"
             f"¿Con cuál de estas situaciones te identificás?\n\n"
             f"🏗️ *1.* Tengo un *proyecto / desarrollo* inmobiliario\n"
             f"🏢 *2.* Tengo una *inmobiliaria* con equipo de asesores\n"
