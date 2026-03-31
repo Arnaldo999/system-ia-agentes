@@ -491,7 +491,6 @@ def _ficha_propiedad(p: dict) -> str:
     if p.get("Google_Maps_URL"):
         lineas.append(f"\n🗺 *Ver en Maps:* {p['Google_Maps_URL']}")
     lineas.append(f"\n¿Te interesa?\n*1* Agendar visita | *2* Hablar con {EMPRESA['asesor']} | *0* Volver")
-    lineas.append(f"\n---\n🤖 *¿Querés este bot para tu negocio?*\nEscribí *demo* para saber cómo.")
     return "\n".join(lineas)
 
 
@@ -679,14 +678,6 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         _ir_asesor(telefono)
         return
 
-    if t == "demo":
-        _enviar_texto(telefono,
-            f"🤖 *¿Querés implementar este bot en tu negocio?*\n\n"
-            f"Agendá una llamada de 20 min con nosotros y te mostramos cómo funciona en detalle.\n\n"
-            f"*1* Agendar reunión ahora\n*2* Hablar con un asesor")
-        SESIONES[telefono] = {**sesion, "step": "cta_demo"}
-        return
-
     # ── PASO: agendamiento ───────────────────────────────────────────────────
     if step == "agendamiento":
         if t == "0":
@@ -696,16 +687,6 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             _confirmar_reserva(telefono, sesion, int(t) - 1)
         else:
             _enviar_texto(telefono, "Elegí un número de la lista o *0* para volver.")
-        return
-
-    # ── PASO: cta_demo — interesado en contratar el sistema ──────────────────
-    if step == "cta_demo":
-        if t == "1":
-            _iniciar_agendamiento(telefono, sesion)
-        elif t == "2":
-            _ir_asesor(telefono)
-        else:
-            _enviar_texto(telefono, _gemini_libre(texto, sesion))
         return
 
     # ── PASO: lista de propiedades ───────────────────────────────────────────
