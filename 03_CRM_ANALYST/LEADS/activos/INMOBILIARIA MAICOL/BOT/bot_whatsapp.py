@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY", "")
 YCLOUD_API_KEY   = os.environ.get("YCLOUD_API_KEY", "")
-AIRTABLE_TOKEN   = os.environ.get("AIRTABLE_TOKEN", "patL8VOuEL6GadewF.bac485d7e0da84a96e73ca3a3cdeb58343c863d9fe7416e89824af53f24c3956")
+AIRTABLE_TOKEN   = os.environ.get("AIRTABLE_TOKEN", "")
 AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appaDT7uwHnimVZLM")
 AIRTABLE_TABLE         = "tbly67z1oY8EFQoFj"
 AIRTABLE_TABLE_CLIENTES = "tblonoyIMAM5kl2ue"
