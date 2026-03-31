@@ -670,7 +670,9 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
     SESIONES[telefono]  = sesion
 
     # ── Comandos universales ─────────────────────────────────────────────────
-    if t in ("0", "menu", "menú", "inicio", "volver", "restart"):
+    # "0" solo resetea al menú principal desde bienvenida o palabras clave explícitas.
+    # En cualquier otro paso, "0" es manejado por el handler del paso (volver atrás).
+    if t in ("menu", "menú", "inicio", "restart") or (t == "0" and step == "bienvenida"):
         nombre = sesion.get("nombre", "")
         SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": "",
                                "preguntas_hechas": 0, "respuestas_precal": [],
