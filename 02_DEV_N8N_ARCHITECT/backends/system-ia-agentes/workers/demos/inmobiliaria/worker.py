@@ -69,7 +69,7 @@ EMPRESA = {
     "nombre":   NOMBRE_EMPRESA,
     "ciudad":   CIUDAD,
     "asesor":   NOMBRE_ASESOR,
-    "whatsapp": f"+{re.sub(r'\D', '', NUMERO_ASESOR)}" if NUMERO_ASESOR and not NUMERO_ASESOR.startswith("+") else NUMERO_ASESOR,
+    "whatsapp": ("+" + re.sub(r'\D', '', NUMERO_ASESOR)) if NUMERO_ASESOR and not NUMERO_ASESOR.startswith("+") else NUMERO_ASESOR,
 }
 
 _gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
@@ -276,7 +276,7 @@ def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, n
                 "start": slot_time,
                 "responses": {
                     "name": nombre,
-                    "email": email or f"{re.sub(r'\D', '', telefono)}@demo.com",
+                    "email": email or (re.sub(r'\D', '', telefono) + "@demo.com"),
                     "phone": telefono,
                 },
                 "metadata": {"fuente": "WhatsApp Bot", "notas": notas},
