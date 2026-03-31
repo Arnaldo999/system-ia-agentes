@@ -762,6 +762,15 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         return
 
     # ── PASO: bienvenida / fallback → Gemini decide ───────────────────────────
+    # Shortcut: saludos simples en paso bienvenida siempre muestran el menú
+    _saludos = {"hola", "hi", "hello", "buenas", "buen dia", "buen día", "buenos dias",
+                "buenos días", "buenas tardes", "buenas noches", "ola", "hey", "start"}
+    if step == "bienvenida" and t in _saludos:
+        SESIONES[telefono] = {**sesion, "step": "bienvenida"}
+        _at_registrar_lead(telefono, sesion.get("nombre", ""), notas="Primer contacto WhatsApp")
+        _enviar_texto(telefono, _msg_bienvenida())
+        return
+
     clas = _gemini_clasificar(texto, sesion)
 
     # Actualizar sub-nicho si Gemini detectó uno nuevo
