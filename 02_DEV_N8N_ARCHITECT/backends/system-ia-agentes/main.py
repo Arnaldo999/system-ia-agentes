@@ -1,86 +1,70 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# ── Clientes Arnaldo ──────────────────────────────────────────────────────────
+from workers.clientes.arnaldo.maicol.worker import router as maicol_router
+
+# ── Demos ─────────────────────────────────────────────────────────────────────
+from workers.demos.inmobiliaria.worker import router as demo_inmobiliaria_router
+
+# ── System IA ─────────────────────────────────────────────────────────────────
 from workers.social.worker import router as social_router
-from workers.whatsapp.worker import router as whatsapp_router
-from workers.crm.worker import router as crm_router
-from workers.agenda.worker import router as agenda_router
-from workers.comercio.worker import router as comercio_router
-from workers.gastronomico.worker import router as gastronomico_router
-from workers.inmobiliaria.worker import router as inmobiliaria_router
 
 app = FastAPI(
-    title="System IA — Cerebro Central",
+    title="System IA — Agentes",
     description=(
-        "Orquestador de Workers IA para la agencia de automatizaciones System IA. "
-        "Servicios: WhatsApp · Redes Sociales · CRM · Agendamiento de Citas"
+        "Backend de automatizaciones IA para la agencia System IA. "
+        "Arquitectura: clientes/ (producción) · demos/ (presentaciones) · social/ (System IA)"
     ),
-    version="2.0.0"
+    version="3.0.0"
 )
 
-# ── CORS para permitir frontend web ───────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # PermiteNetlify y local
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ── Routers de los 6 Workers ─────────────────────────────────────────────────
+# ── Registrar routers ─────────────────────────────────────────────────────────
+app.include_router(maicol_router)
+app.include_router(demo_inmobiliaria_router)
 app.include_router(social_router)
-app.include_router(whatsapp_router)
-app.include_router(crm_router)
-app.include_router(agenda_router)
-app.include_router(comercio_router)
-app.include_router(gastronomico_router)
-app.include_router(inmobiliaria_router)
 
 
-# ── Rutas de sistema ─────────────────────────────────────────────────────────
+# ── Rutas de sistema ──────────────────────────────────────────────────────────
 @app.get("/", tags=["Sistema"])
 def root():
-    """Mapa completo de endpoints disponibles."""
+    """Mapa de endpoints activos."""
     return {
         "status": "online",
-        "version": "2.0.0",
+        "version": "3.0.0",
         "agencia": "System IA — Automatizaciones para LATAM",
-        "workers": {
-            "social": [
-                "POST /social/crear-post",
-                "POST /social/generar-imagen",
-                "POST /social/seleccionar-tema"
+        "clientes": {
+            "arnaldo/maicol": [
+                "POST /clientes/arnaldo/maicol/whatsapp",
+                "GET  /clientes/arnaldo/maicol/propiedades",
+                "GET  /clientes/arnaldo/maicol/crm/propiedades",
+                "GET  /clientes/arnaldo/maicol/crm/clientes",
             ],
-            "whatsapp": [
-                "POST /whatsapp/clasificar-mensaje",
-                "POST /whatsapp/generar-respuesta",
-                "POST /whatsapp/transcribir-audio"
-            ],
-            "crm": [
-                "POST /crm/calificar-lead",
-                "POST /crm/enriquecer-lead",
-                "POST /crm/generar-seguimiento"
-            ],
-            "agenda": [
-                "POST /agenda/parsear-fecha",
-                "POST /agenda/verificar-slot",
-                "POST /agenda/generar-recordatorio"
-            ],
-            "comercio": [
-                "POST /comercio/procesar-whatsapp"
-            ],
-            "gastronomico": [
-                "POST /gastronomico/basic/reserva",
-                "POST /gastronomico/pro/reserva",
-                "POST /gastronomico/premium/fidelizar"
-            ],
+        },
+        "demos": {
             "inmobiliaria": [
-                "POST /inmobiliaria/whatsapp",
-                "GET /inmobiliaria/propiedades",
-                "GET /inmobiliaria/crm/propiedades",
-                "GET /inmobiliaria/crm/clientes"
-            ]
-        }
+                "POST /demos/inmobiliaria/whatsapp",
+                "GET  /demos/inmobiliaria/propiedades",
+                "GET  /demos/inmobiliaria/crm/propiedades",
+                "GET  /demos/inmobiliaria/crm/clientes",
+                "GET  /demos/inmobiliaria/config",
+            ],
+        },
+        "system_ia": {
+            "social": [
+                "GET  /social/meta-webhook",
+                "POST /social/meta-webhook",
+            ],
+        },
     }
 
 
