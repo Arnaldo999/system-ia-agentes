@@ -131,7 +131,7 @@ SUBNICHE_BIENVENIDA = {
 AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "application/json"}
 
 
-def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: str = "",
+def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: str = "",  # noqa: ARG001
                        operacion: str = "", tipo: str = "", notas: str = "",
                        email: str = "", ciudad: str = "", fecha_cita: str = "") -> None:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
@@ -153,18 +153,15 @@ def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: st
         campos["Email"] = email
     if ciudad:
         campos["Ciudad"] = ciudad
-    if subniche:
-        campos["Tipo_Cliente"] = SUBNICHE_LABELS.get(subniche, subniche)
     if score:
-        campos["Score_Bot"] = score.upper()
         if score == "caliente":
-            campos["Estado"] = "calificado"
+            campos["Estado"] = "en_negociacion"
         elif score == "tibio":
-            campos["Estado"] = "seguimiento"
+            campos["Estado"] = "contactado"
         else:
-            campos["Estado"] = "frio"
+            campos["Estado"] = "no_contactado"
     if operacion:
-        campos["Operacion"] = operacion.capitalize()
+        campos["Operacion"] = operacion.lower()
     if tipo:
         campos["Tipo_Propiedad"] = tipo
     if fecha_cita:
