@@ -302,6 +302,7 @@ def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, n
         if r.status_code in (200, 201):
             data = r.json()
             return {"ok": True, "uid": data.get("uid", ""), "start": data.get("startTime", slot_time)}
+        print(f"[CAL-ERROR] status={r.status_code} body={r.text[:500]}")
         return {"ok": False, "error": r.text[:200]}
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -617,9 +618,17 @@ def _confirmar_reserva(telefono: str, sesion: dict, slot_idx: int) -> None:
             f"Vas a recibir un recordatorio. Si necesitás cambiarla escribí *asesor*. 🏠")
         SESIONES[telefono] = {**sesion, "step": "bienvenida", "score": "caliente"}
     else:
-        _enviar_texto(telefono,
-            f"Hubo un problema al confirmar la cita. 😔\n"
-            f"Escribile directamente a {EMPRESA['asesor']} al {EMPRESA['whatsapp']}.")
+        err = result.get("error", "")
+        print(f"[CAL-BOOKING-FAIL] tel={telefono} error={err}")
+        # Si el slot ya no está disponible, mostrar nuevos slots
+        if "no longer available" in err.lower() or "slot" in err.lower() or "available" in err.lower():
+            _enviar_texto(telefono,
+                "Ese turno ya no está disponible. 😔 Te muestro los turnos actualizados:")
+            _mostrar_slots(telefono, sesion)
+        else:
+            _enviar_texto(telefono,
+                f"Hubo un problema al confirmar la cita. 😔\n"
+                f"Escribile directamente a {EMPRESA['asesor']} al {EMPRESA['whatsapp']}.")
 
 
 # ─── FLUJO PRECALIFICACIÓN ─────────────────────────────────────────────────────
