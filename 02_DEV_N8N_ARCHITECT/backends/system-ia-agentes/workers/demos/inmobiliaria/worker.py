@@ -735,15 +735,22 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
 
         elif campo == "email":
             sesion["email_lead"] = valor
+            SESIONES[telefono] = {**sesion, "captura_campo": "telefono_lead"}
+            _enviar_texto(telefono, "¿Cuál es tu *número de teléfono* (con código de área)?")
+
+        elif campo == "telefono_lead":
+            sesion["telefono_lead"] = valor
             SESIONES[telefono] = {**sesion, "captura_campo": "ciudad"}
             _enviar_texto(telefono, "¿Desde qué *ciudad o zona* nos escribís?")
 
         elif campo == "ciudad":
             sesion["ciudad_lead"] = valor
-            nombre = sesion.get("nombre", "")
-            email  = sesion.get("email_lead", "")
+            nombre        = sesion.get("nombre", "")
+            email         = sesion.get("email_lead", "")
+            tel_alt       = sesion.get("telefono_lead", "")
+            notas_extra   = f" | Tel alternativo: {tel_alt}" if tel_alt else ""
             _at_registrar_lead(telefono, nombre, email=email, ciudad=valor,
-                               notas="Datos capturados — pendiente agendar cita")
+                               notas="Datos capturados — pendiente agendar cita" + notas_extra)
             SESIONES[telefono] = {**sesion}
             _mostrar_slots(telefono, SESIONES[telefono])
         return
