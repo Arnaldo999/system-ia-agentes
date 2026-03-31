@@ -287,7 +287,7 @@ def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, n
                     "phone": telefono,
                 },
                 "metadata": {"fuente": "WhatsApp Bot", "notas": notas},
-                "timeZone": "America/Mexico_City",
+                "timeZone": "America/Argentina/Buenos_Aires",
                 "language": "es",
             },
             timeout=10,
@@ -543,9 +543,11 @@ def _iniciar_agendamiento(telefono: str, sesion: dict) -> None:
 
     lineas = ["📅 *Turnos disponibles esta semana:*\n"]
     for i, s in enumerate(slots, 1):
-        from datetime import datetime
+        from datetime import datetime, timezone, timedelta
         try:
-            dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
+            dt_utc = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
+            tz_local = timezone(timedelta(hours=int(os.environ.get("INMO_DEMO_UTC_OFFSET", "-3"))))
+            dt = dt_utc.astimezone(tz_local)
             _dias_es = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
             dia_es = _dias_es[dt.weekday()]
             legible = f"{dia_es} {dt.strftime('%d/%m')} — {dt.strftime('%H:%M')} hs"
@@ -570,9 +572,11 @@ def _confirmar_reserva(telefono: str, sesion: dict, slot_idx: int) -> None:
                                  slot_time=slot["time"],
                                  notas=f"Agendado por WhatsApp Bot — {EMPRESA['nombre']}")
     if result.get("ok"):
-        from datetime import datetime
+        from datetime import datetime, timezone, timedelta
         try:
-            dt = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
+            dt_utc = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
+            tz_local = timezone(timedelta(hours=int(os.environ.get("INMO_DEMO_UTC_OFFSET", "-3"))))
+            dt = dt_utc.astimezone(tz_local)
             _dias_es = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
             _meses_es = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
                          "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
