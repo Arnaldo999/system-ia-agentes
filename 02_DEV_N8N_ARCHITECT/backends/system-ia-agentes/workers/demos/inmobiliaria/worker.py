@@ -97,27 +97,34 @@ SUBNICHE_LABELS = {
     "desarrolladora": "Desarrolladora Inmobiliaria",
     "inmobiliaria":   "Inmobiliaria / Agencia",
     "agente":         "Agente Independiente",
-    "comprador":      "Comprador / Inquilino",
 }
 
-# Preguntas de precalificación por sub-nicho
-PREGUNTAS_PRECAL = {
-    "desarrolladora": [
-        "¿Cuántas unidades tiene tu proyecto? (ej: 20 casas, 50 departamentos)",
-        "¿Ya tenés leads interesados o recién vas a lanzar el proyecto?",
-        "¿Cuál es el ticket promedio de tus unidades?",
-    ],
-    "inmobiliaria": [
-        "¿Cuántos asesores tiene tu equipo de ventas?",
-        "¿Cuántos leads o consultas recibís por mes aproximadamente?",
-        "¿Actualmente usás algún CRM o sistema para gestionar tus leads?",
-    ],
-    "agente": [
-        "¿Con qué portales o canales conseguís tus prospectos? (ej: Lamudi, Vivaanuncios, Instagram)",
-        "¿Cuántos prospectos activos estás manejando ahora mismo?",
-        "¿El mayor problema es conseguir prospectos o dar seguimiento a los que ya tenés?",
-    ],
-    "comprador": [],  # No precalifica — va directo a propiedades
+# Contexto de bienvenida por sub-nicho — simula el bot de ESA empresa
+SUBNICHE_BIENVENIDA = {
+    "desarrolladora": (
+        "🏗️ Bienvenido a *{empresa}*.\n\n"
+        "Somos una desarrolladora inmobiliaria en {ciudad}.\n"
+        "Tenemos proyectos de casas y lotes disponibles.\n\n"
+        "¿Qué estás buscando?\n\n"
+        "*1* Ver proyectos disponibles\n"
+        "*2* Hablar con un asesor"
+    ),
+    "inmobiliaria": (
+        "🏢 Hola, bienvenido a *{empresa}*.\n\n"
+        "Somos una inmobiliaria en {ciudad} con propiedades en venta y alquiler.\n\n"
+        "¿Qué estás buscando?\n\n"
+        "*1* Comprar una propiedad\n"
+        "*2* Alquilar una propiedad\n"
+        "*3* Hablar con un asesor"
+    ),
+    "agente": (
+        "🧑‍💼 Hola, soy *{asesor}*, asesor inmobiliario independiente en {ciudad}.\n\n"
+        "Te puedo ayudar a encontrar la propiedad ideal.\n\n"
+        "¿Qué necesitás?\n\n"
+        "*1* Comprar\n"
+        "*2* Alquilar\n"
+        "*3* Hablar conmigo directo"
+    ),
 }
 
 # ─── AIRTABLE ─────────────────────────────────────────────────────────────────
@@ -483,7 +490,8 @@ def _ficha_propiedad(p: dict) -> str:
         lineas.append(f"📍 *Zona:* {p['Zona']}")
     if p.get("Google_Maps_URL"):
         lineas.append(f"\n🗺 *Ver en Maps:* {p['Google_Maps_URL']}")
-    lineas.append(f"\n¿Te interesa?\n*1* agendar visita | *2* hablar con {EMPRESA['asesor']} | *0* volver")
+    lineas.append(f"\n¿Te interesa?\n*1* Agendar visita | *2* Hablar con {EMPRESA['asesor']} | *0* Volver")
+    lineas.append(f"\n---\n🤖 *¿Querés este bot para tu negocio?*\nEscribí *demo* para saber cómo.")
     return "\n".join(lineas)
 
 
@@ -667,8 +675,16 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         _enviar_texto(telefono, _msg_bienvenida())
         return
 
-    if t in ("asesor", "humano", "agente", "vendedor", "persona"):
+    if t in ("asesor", "humano", "vendedor", "persona"):
         _ir_asesor(telefono)
+        return
+
+    if t == "demo":
+        _enviar_texto(telefono,
+            f"🤖 *¿Querés implementar este bot en tu negocio?*\n\n"
+            f"Agendá una llamada de 20 min con nosotros y te mostramos cómo funciona en detalle.\n\n"
+            f"*1* Agendar reunión ahora\n*2* Hablar con un asesor")
+        SESIONES[telefono] = {**sesion, "step": "cta_demo"}
         return
 
     # ── PASO: agendamiento ───────────────────────────────────────────────────
@@ -680,6 +696,16 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             _confirmar_reserva(telefono, sesion, int(t) - 1)
         else:
             _enviar_texto(telefono, "Elegí un número de la lista o *0* para volver.")
+        return
+
+    # ── PASO: cta_demo — interesado en contratar el sistema ──────────────────
+    if step == "cta_demo":
+        if t == "1":
+            _iniciar_agendamiento(telefono, sesion)
+        elif t == "2":
+            _ir_asesor(telefono)
+        else:
+            _enviar_texto(telefono, _gemini_libre(texto, sesion))
         return
 
     # ── PASO: lista de propiedades ───────────────────────────────────────────
@@ -739,39 +765,36 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             _enviar_texto(telefono, _gemini_libre(texto, sesion))
         return
 
-    # ── PASO: precalificación en curso ────────────────────────────────────────
-    if step == "precalificacion":
-        # Guardar respuesta y hacer siguiente pregunta
-        respuestas = sesion.get("respuestas_precal", [])
-        respuestas.append(texto[:300])
-        SESIONES[telefono] = {**sesion, "respuestas_precal": respuestas}
-        _siguiente_pregunta_precal(telefono, SESIONES[telefono])
+    # ── PASO: demo_subniche — el prospecto experimenta el bot como lead ──────
+    if step == "demo_subniche":
+        subniche = sesion.get("subniche", "inmobiliaria")
+        if subniche == "desarrolladora":
+            # Solo venta de proyectos propios
+            if t in ("1", "ver", "proyectos"):
+                _mostrar_propiedades(telefono, {**sesion, "operacion": "venta"})
+            elif t in ("2", "asesor"):
+                _ir_asesor(telefono)
+            else:
+                _enviar_texto(telefono, _gemini_libre(texto, sesion))
+        else:
+            # Inmobiliaria y agente: compra o alquiler
+            if t in ("1", "comprar"):
+                _mostrar_propiedades(telefono, {**sesion, "operacion": "venta"})
+            elif t in ("2", "alquilar"):
+                _mostrar_propiedades(telefono, {**sesion, "operacion": "alquiler"})
+            elif t in ("3", "asesor"):
+                _ir_asesor(telefono)
+            else:
+                _enviar_texto(telefono, _gemini_libre(texto, sesion))
         return
 
     # ── PASO: bienvenida — opción numérica directa ────────────────────────────
-    if step == "bienvenida" and re.fullmatch(r"[1-4]", t):
-        mapa = {"1": "desarrolladora", "2": "inmobiliaria", "3": "agente", "4": "comprador"}
+    if step == "bienvenida" and re.fullmatch(r"[1-3]", t):
+        mapa = {"1": "desarrolladora", "2": "inmobiliaria", "3": "agente"}
         subniche = mapa[t]
-        sesion["subniche"] = subniche
-        SESIONES[telefono] = sesion
+        SESIONES[telefono] = {**sesion, "subniche": subniche, "step": "demo_subniche"}
         _at_registrar_lead(telefono, sesion.get("nombre", ""), subniche=subniche)
-        if subniche == "comprador":
-            _enviar_texto(telefono,
-                f"Perfecto, te ayudo a encontrar tu propiedad ideal. 🏠\n\n"
-                f"¿Qué estás buscando?\n\n"
-                f"*1* Comprar\n*2* Alquilar\n*3* Hablar con {EMPRESA['asesor']}")
-            SESIONES[telefono] = {**sesion, "step": "operacion_comprador", "subniche": "comprador"}
-        else:
-            label = SUBNICHE_LABELS[subniche]
-            _enviar_texto(telefono,
-                f"Excelente, trabajo mucho con *{label}*. 💼\n\n"
-                f"Te hago {len(PREGUNTAS_PRECAL.get(subniche, []))} preguntas rápidas "
-                f"para entender mejor tu situación y mostrarte cómo podemos ayudarte.\n\n"
-                f"¿Arrancamos? 🚀")
-            SESIONES[telefono] = {**sesion, "step": "precalificacion",
-                                   "subniche": subniche, "preguntas_hechas": 0,
-                                   "respuestas_precal": []}
-            _siguiente_pregunta_precal(telefono, SESIONES[telefono])
+        _enviar_texto(telefono, _msg_subniche(subniche))
         return
 
     # ── PASO: operacion comprador ─────────────────────────────────────────────
@@ -870,15 +893,18 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
 
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
 def _msg_bienvenida() -> str:
-    return (f"👋 ¡Hola! Soy un asistente IA especializado en el sector inmobiliario. 🏘️\n\n"
-            f"Ayudo a empresas y profesionales a *automatizar su atención y agendar "
-            f"más citas* con inteligencia artificial.\n\n"
-            f"¿Con cuál de estas situaciones te identificás?\n\n"
-            f"🏗️ *1.* Tengo un *proyecto / desarrollo* inmobiliario\n"
-            f"🏢 *2.* Tengo una *inmobiliaria* con equipo de asesores\n"
-            f"🧑‍💼 *3.* Soy *agente independiente* con mi propia cartera\n"
-            f"🏠 *4.* Busco *comprar o alquilar* una propiedad\n\n"
-            f"Respondé con el número o contame directamente. 😊")
+    return ("👋 ¡Hola! Bienvenido a esta *demo de agente inmobiliario IA*. 🏘️\n\n"
+            "Seleccioná el tipo de negocio que querés ver en acción:\n\n"
+            "🏗️ *1.* Desarrolladora inmobiliaria\n"
+            "🏢 *2.* Inmobiliaria / Agencia\n"
+            "🧑‍💼 *3.* Agente independiente\n\n"
+            "Vas a experimentar exactamente cómo el bot atiende a los leads de cada negocio. 🤖")
+
+
+def _msg_subniche(subniche: str) -> str:
+    """Primer mensaje del bot simulando ser el negocio del sub-nicho."""
+    tpl = SUBNICHE_BIENVENIDA.get(subniche, "")
+    return tpl.format(empresa=EMPRESA["nombre"], ciudad=EMPRESA["ciudad"], asesor=EMPRESA["asesor"])
 
 
 def _ir_asesor(telefono: str) -> None:
