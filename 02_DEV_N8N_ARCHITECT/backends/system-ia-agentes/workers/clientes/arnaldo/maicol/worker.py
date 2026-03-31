@@ -209,7 +209,7 @@ Sé breve, amigable y profesional. Respondé en español argentino.
 Al finalizar, recordá al cliente que puede responder con un número para ver opciones o escribir *menú* para volver al inicio.
 
 Consulta del cliente: {mensaje}"""
-        resp = _gemini_client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        resp = _gemini_client.models.generate_content(model="gemini-2.0-flash-lite", contents=prompt)
         return resp.text.strip()
     except Exception as e:
         print(f"[INMO-GEMINI] Error: {e}")

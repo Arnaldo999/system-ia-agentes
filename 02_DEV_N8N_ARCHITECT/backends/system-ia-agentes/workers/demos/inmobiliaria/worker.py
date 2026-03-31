@@ -368,7 +368,7 @@ Respondé SOLO con JSON válido, sin markdown, sin explicaciones:
 Donde los campos sin valor van como null (no string vacío)."""
 
     try:
-        result = _gemini_client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        result = _gemini_client.models.generate_content(model="gemini-2.0-flash-lite", contents=prompt)
         raw = result.text.strip()
         if raw.startswith("```"):
             raw = re.sub(r"```(?:json)?", "", raw).replace("```", "").strip()
@@ -417,7 +417,7 @@ Criterios:
 Respondé SOLO JSON válido sin markdown."""
 
     try:
-        result = _gemini_client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        result = _gemini_client.models.generate_content(model="gemini-2.0-flash-lite", contents=prompt)
         raw = result.text.strip()
         if raw.startswith("```"):
             raw = re.sub(r"```(?:json)?", "", raw).replace("```", "").strip()
@@ -435,7 +435,7 @@ def _gemini_libre(texto: str, sesion: dict) -> str:
     contexto_subniche = f"El cliente es: {SUBNICHE_LABELS.get(subniche, 'visitante')}." if subniche else ""
     try:
         result = _gemini_client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.0-flash-lite",
             contents=(f"Sos el asistente de {EMPRESA['nombre']} en {EMPRESA['ciudad']}. "
                       f"{contexto_subniche} Respondé en español LATAM, breve y profesional. "
                       f"Solo temas inmobiliarios. Pregunta: {texto}")
