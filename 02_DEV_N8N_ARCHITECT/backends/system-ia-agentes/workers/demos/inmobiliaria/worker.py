@@ -135,6 +135,7 @@ def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: st
                        operacion: str = "", tipo: str = "", notas: str = "",
                        email: str = "", ciudad: str = "", fecha_cita: str = "") -> None:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
+        print(f"[AT-SKIP] base={AIRTABLE_BASE_ID!r} tabla={AIRTABLE_TABLE_CLIENTES!r} — vars no configuradas")
         return
     from datetime import date
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
@@ -173,12 +174,14 @@ def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: st
 
     if records:
         rec_id = records[0]["id"]
-        requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        r = requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        print(f"[AT-PATCH] tel={telefono} status={r.status_code} resp={r.text[:200]}")
     else:
         campos["Fecha_WhatsApp"] = date.today().isoformat()
         if "Estado" not in campos:
             campos["Estado"] = "nuevo"
-        requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        print(f"[AT-POST] tel={telefono} status={r.status_code} resp={r.text[:200]}")
 
 
 def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = None) -> list[dict]:
@@ -1083,8 +1086,10 @@ def ver_config():
         "moneda":        MONEDA,
         "zonas":         ZONAS_LIST,
         "ycloud":        "✅" if YCLOUD_API_KEY else "❌",
-        "airtable":      "✅" if AIRTABLE_TOKEN else "❌",
-        "airtable_base": AIRTABLE_BASE_ID or "❌",
+        "airtable":           "✅" if AIRTABLE_TOKEN else "❌",
+        "airtable_base":      AIRTABLE_BASE_ID or "❌",
+        "airtable_clientes":  AIRTABLE_TABLE_CLIENTES or "❌ INMO_DEMO_TABLE_CLIENTES no seteada",
+        "airtable_props":     AIRTABLE_TABLE_PROPS or "❌ INMO_DEMO_TABLE_PROPS no seteada",
         "gemini":        "✅" if GEMINI_API_KEY else "❌",
         "cal_com":       "✅ activo" if _cal_disponible() else "⚠️ no configurado (derivación a asesor)",
         "subnichos":     list(SUBNICHE_LABELS.keys()),
