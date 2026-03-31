@@ -681,8 +681,8 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
     # ── PASO: agendamiento ───────────────────────────────────────────────────
     if step == "agendamiento":
         if t == "0":
-            SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-            _enviar_texto(telefono, _msg_bienvenida())
+            # Volver a la ficha o lista según contexto
+            _mostrar_propiedades(telefono, sesion)
         elif re.fullmatch(r"\d+", t):
             _confirmar_reserva(telefono, sesion, int(t) - 1)
         else:
@@ -693,8 +693,13 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
     if step == "lista":
         props = sesion.get("props", [])
         if t == "0":
-            SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-            _enviar_texto(telefono, _msg_bienvenida())
+            subniche = sesion.get("subniche")
+            if subniche:
+                SESIONES[telefono] = {**sesion, "step": "demo_subniche"}
+                _enviar_texto(telefono, _msg_subniche(subniche))
+            else:
+                SESIONES[telefono] = {**sesion, "step": "bienvenida"}
+                _enviar_texto(telefono, _msg_bienvenida())
         elif t in ("1", "agendar", "visita"):
             _iniciar_agendamiento(telefono, sesion)
         elif t in ("2", "asesor"):
@@ -718,6 +723,7 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         elif t == "2":
             _ir_asesor(telefono)
         elif t == "0":
+            # Volver a la lista de propiedades (que a su vez permite volver al sub-nicho)
             _mostrar_propiedades(telefono, sesion)
         else:
             _enviar_texto(telefono, _gemini_libre(texto, sesion))
