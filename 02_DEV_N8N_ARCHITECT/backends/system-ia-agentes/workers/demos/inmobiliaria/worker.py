@@ -598,21 +598,43 @@ def _siguiente_pregunta_precal(telefono: str, sesion: dict) -> None:
         _at_registrar_lead(telefono, sesion.get("nombre", ""), subniche=subniche,
                            score=score, notas=f"Score: {score} | {eval_result.get('razon', '')}")
 
+        es_b2b = subniche in ("desarrolladora", "inmobiliaria", "agente")
+
         if respuesta_gemini:
             _enviar_texto(telefono, respuesta_gemini)
 
         if score == "caliente":
-            _enviar_texto(telefono,
-                f"\n¿Querés que agendemos una reunión para contarte más? 📅\n\n"
-                f"*1* Sí, agendar cita\n*2* Prefiero que me llamen\n*3* Ver propiedades primero")
+            if es_b2b:
+                _enviar_texto(telefono,
+                    f"🔥 ¡Perfecto! Esto tiene mucho potencial.\n\n"
+                    f"¿Agendamos una llamada de 20 min para mostrarte exactamente cómo funciona el sistema? 📅\n\n"
+                    f"*1* Sí, agendar reunión ahora\n*2* Prefiero que me contacten")
+            else:
+                _enviar_texto(telefono,
+                    f"¿Querés que agendemos una visita? 📅\n\n"
+                    f"*1* Sí, agendar visita\n*2* Ver propiedades primero\n*3* Hablar con {EMPRESA['asesor']}")
         elif score == "tibio":
-            _enviar_texto(telefono,
-                f"\nTe voy a compartir información de nuestras propiedades.\n"
-                f"*1* Ver propiedades\n*2* Hablar con {EMPRESA['asesor']}")
+            if es_b2b:
+                _enviar_texto(telefono,
+                    f"💡 Entiendo tu situación. Te cuento brevemente cómo podemos ayudarte:\n\n"
+                    f"✅ Bot WhatsApp que responde leads 24/7\n"
+                    f"✅ Precalificación automática — filtra curiosos vs compradores reales\n"
+                    f"✅ Agenda citas sin intervención humana\n"
+                    f"✅ CRM integrado con todo el historial\n\n"
+                    f"*1* Agendar demo de 20 min\n*2* Hablar con {EMPRESA['asesor']}")
+            else:
+                _enviar_texto(telefono,
+                    f"Te muestro lo que tenemos disponible 🏠\n"
+                    f"*1* Ver propiedades\n*2* Hablar con {EMPRESA['asesor']}")
         else:  # frio
-            _enviar_texto(telefono,
-                f"\nCuando estés listo para avanzar, acá estamos. 🏠\n"
-                f"Escribí *hola* para volver al menú o *asesor* para hablar con nosotros.")
+            if es_b2b:
+                _enviar_texto(telefono,
+                    f"Entendido. Cuando el proyecto tome forma, acá estamos. 🤝\n\n"
+                    f"Escribí *hola* cuando quieras retomar o *asesor* para hablar con nosotros.")
+            else:
+                _enviar_texto(telefono,
+                    f"Cuando estés listo para buscar, acá estamos. 🏠\n"
+                    f"Escribí *hola* para volver al menú o *asesor* para hablar con nosotros.")
         return
 
     # Hacer la siguiente pregunta
@@ -696,14 +718,21 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
 
     # ── PASO: post-precalificación ───────────────────────────────────────────
     if step == "post_precal":
-        score = sesion.get("score", "tibio")
+        score    = sesion.get("score", "tibio")
+        es_b2b   = sesion.get("subniche", "") in ("desarrolladora", "inmobiliaria", "agente")
         if t == "1":
-            if score == "caliente":
+            # B2B siempre agenda. B2C caliente agenda, tibio ve propiedades
+            if es_b2b or score == "caliente":
                 _iniciar_agendamiento(telefono, sesion)
             else:
                 _mostrar_propiedades(telefono, sesion)
         elif t == "2":
-            _ir_asesor(telefono)
+            if es_b2b and score == "caliente":
+                _ir_asesor(telefono)
+            elif es_b2b:
+                _ir_asesor(telefono)
+            else:
+                _ir_asesor(telefono)
         elif t == "3":
             _mostrar_propiedades(telefono, sesion)
         else:
