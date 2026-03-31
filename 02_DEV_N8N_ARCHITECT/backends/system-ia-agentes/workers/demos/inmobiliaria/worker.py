@@ -567,15 +567,11 @@ def _iniciar_agendamiento(telefono: str, sesion: dict) -> None:
         SESIONES[telefono] = {**sesion, "step": "bienvenida"}
         return
 
-    # Si no tenemos el nombre, pedirlo antes de mostrar turnos
-    if not sesion.get("nombre"):
-        SESIONES[telefono] = {**sesion, "step": "pedir_nombre"}
-        _enviar_texto(telefono,
-            f"¡Genial! Para coordinar la reunión con {EMPRESA['asesor']}, "
-            f"¿me decís tu nombre? 😊")
-        return
-
-    _mostrar_slots(telefono, sesion)
+    # Iniciar captura de datos del lead antes de mostrar turnos
+    SESIONES[telefono] = {**sesion, "step": "captura_datos", "captura_campo": "nombre"}
+    _enviar_texto(telefono,
+        f"¡Genial! Para coordinar la reunión con {EMPRESA['asesor']}, necesito algunos datos. 📋\n\n"
+        f"¿Cuál es tu *nombre y apellido*?")
 
 
 def _confirmar_reserva(telefono: str, sesion: dict, slot_idx: int) -> None:
@@ -585,7 +581,7 @@ def _confirmar_reserva(telefono: str, sesion: dict, slot_idx: int) -> None:
         _enviar_texto(telefono, f"Elegí un número del 1 al {len(slots)}.")
         return
     slot  = slots[slot_idx]
-    result = _cal_crear_reserva(nombre=nombre, email="", telefono=telefono,
+    result = _cal_crear_reserva(nombre=nombre, email=sesion.get("email_lead", ""), telefono=telefono,
                                  slot_time=slot["time"],
                                  notas=f"Agendado por WhatsApp Bot — {EMPRESA['nombre']}")
     if result.get("ok"):
@@ -706,13 +702,29 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         _ir_asesor(telefono)
         return
 
-    # ── PASO: pedir nombre antes del agendamiento ────────────────────────────
-    if step == "pedir_nombre":
-        nombre = texto.strip()
-        sesion["nombre"] = nombre
-        SESIONES[telefono] = {**sesion, "nombre": nombre}
-        _at_registrar_lead(telefono, nombre, notas="Nombre capturado antes de agendar")
-        _mostrar_slots(telefono, SESIONES[telefono])
+    # ── PASO: captura de datos del lead (nombre, email, ciudad) ─────────────
+    if step == "captura_datos":
+        campo = sesion.get("captura_campo", "nombre")
+        valor = texto.strip()
+
+        if campo == "nombre":
+            sesion["nombre"] = valor
+            SESIONES[telefono] = {**sesion, "captura_campo": "email"}
+            _enviar_texto(telefono, f"Gracias, *{valor.split()[0]}*! 😊\n\n¿Cuál es tu *email*?")
+
+        elif campo == "email":
+            sesion["email_lead"] = valor
+            SESIONES[telefono] = {**sesion, "captura_campo": "ciudad"}
+            _enviar_texto(telefono, "¿Desde qué *ciudad o zona* nos escribís?")
+
+        elif campo == "ciudad":
+            sesion["ciudad_lead"] = valor
+            nombre = sesion.get("nombre", "")
+            email  = sesion.get("email_lead", "")
+            _at_registrar_lead(telefono, nombre,
+                               notas=f"Email: {email} | Ciudad: {valor} | Capturado para agendar")
+            SESIONES[telefono] = {**sesion}
+            _mostrar_slots(telefono, SESIONES[telefono])
         return
 
     # ── PASO: agendamiento ───────────────────────────────────────────────────
