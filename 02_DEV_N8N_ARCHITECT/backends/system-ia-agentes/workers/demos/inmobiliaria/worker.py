@@ -191,7 +191,7 @@ def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = 
 
 # ─── YCLOUD ───────────────────────────────────────────────────────────────────
 def _norm_tel(tel: str) -> str:
-    return f"+{re.sub(r'\D', '', tel)}"
+    return "+" + re.sub(r'\D', '', tel)
 
 
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
