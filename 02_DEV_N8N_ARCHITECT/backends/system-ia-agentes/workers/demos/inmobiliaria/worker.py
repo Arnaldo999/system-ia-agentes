@@ -525,15 +525,8 @@ def _mostrar_propiedades(telefono: str, sesion: dict) -> None:
 
 
 # ─── AGENDAMIENTO CAL.COM ──────────────────────────────────────────────────────
-def _iniciar_agendamiento(telefono: str, sesion: dict) -> None:
-    if not _cal_disponible():
-        # Cal.com no configurado → derivar a asesor
-        _enviar_texto(telefono,
-            f"¡Perfecto! Te conectamos con {EMPRESA['asesor']} para coordinar la visita. 📅\n\n"
-            f"Escribile directamente al {EMPRESA['whatsapp']} o aguardá que te contacte pronto. 🏠")
-        SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-        return
-
+def _mostrar_slots(telefono: str, sesion: dict) -> None:
+    """Obtiene slots de Cal.com y los muestra al usuario."""
     slots = _cal_obtener_slots(dias=7)
     if not slots:
         _enviar_texto(telefono,
@@ -541,7 +534,12 @@ def _iniciar_agendamiento(telefono: str, sesion: dict) -> None:
             f"Escribile a {EMPRESA['asesor']} al {EMPRESA['whatsapp']} para coordinar. 📱")
         return
 
-    lineas = ["📅 *Turnos disponibles esta semana:*\n"]
+    nombre = sesion.get("nombre", "")
+    _enviar_texto(telefono,
+        f"Perfecto{', ' + nombre.split()[0] if nombre else ''}! 😊 "
+        f"Estos son los turnos disponibles esta semana para reunirte con {EMPRESA['asesor']}:")
+
+    lineas = []
     for i, s in enumerate(slots, 1):
         from datetime import datetime, timezone, timedelta
         try:
@@ -559,6 +557,25 @@ def _iniciar_agendamiento(telefono: str, sesion: dict) -> None:
 
     SESIONES[telefono] = {**sesion, "step": "agendamiento", "slots": slots}
     _enviar_texto(telefono, "\n".join(lineas))
+
+
+def _iniciar_agendamiento(telefono: str, sesion: dict) -> None:
+    if not _cal_disponible():
+        _enviar_texto(telefono,
+            f"¡Perfecto! {EMPRESA['asesor']} se va a poner en contacto con vos para coordinar. 📅\n\n"
+            f"También podés escribirle directamente al {EMPRESA['whatsapp']}. 🏠")
+        SESIONES[telefono] = {**sesion, "step": "bienvenida"}
+        return
+
+    # Si no tenemos el nombre, pedirlo antes de mostrar turnos
+    if not sesion.get("nombre"):
+        SESIONES[telefono] = {**sesion, "step": "pedir_nombre"}
+        _enviar_texto(telefono,
+            f"¡Genial! Para coordinar la reunión con {EMPRESA['asesor']}, "
+            f"¿me decís tu nombre? 😊")
+        return
+
+    _mostrar_slots(telefono, sesion)
 
 
 def _confirmar_reserva(telefono: str, sesion: dict, slot_idx: int) -> None:
@@ -687,6 +704,15 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
 
     if t in ("asesor", "humano", "vendedor", "persona"):
         _ir_asesor(telefono)
+        return
+
+    # ── PASO: pedir nombre antes del agendamiento ────────────────────────────
+    if step == "pedir_nombre":
+        nombre = texto.strip()
+        sesion["nombre"] = nombre
+        SESIONES[telefono] = {**sesion, "nombre": nombre}
+        _at_registrar_lead(telefono, nombre, notas="Nombre capturado antes de agendar")
+        _mostrar_slots(telefono, SESIONES[telefono])
         return
 
     # ── PASO: agendamiento ───────────────────────────────────────────────────
