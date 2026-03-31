@@ -132,7 +132,8 @@ AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "appl
 
 
 def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: str = "",
-                       operacion: str = "", tipo: str = "", notas: str = "") -> None:
+                       operacion: str = "", tipo: str = "", notas: str = "",
+                       email: str = "", ciudad: str = "", fecha_cita: str = "") -> None:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
         return
     from datetime import date
@@ -147,6 +148,10 @@ def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: st
         campos["Nombre"] = partes[0]
         if len(partes) > 1:
             campos["Apellido"] = partes[1]
+    if email:
+        campos["Email"] = email
+    if ciudad:
+        campos["Ciudad"] = ciudad
     if subniche:
         campos["Tipo_Cliente"] = SUBNICHE_LABELS.get(subniche, subniche)
     if score:
@@ -161,6 +166,8 @@ def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: st
         campos["Operacion"] = operacion.capitalize()
     if tipo:
         campos["Tipo_Propiedad"] = tipo
+    if fecha_cita:
+        campos["Fecha_Cita"] = fecha_cita
     if notas:
         campos["Notas_Bot"] = notas
 
@@ -596,8 +603,13 @@ def _confirmar_reserva(telefono: str, sesion: dict, slot_idx: int) -> None:
             legible = f"{_dias_es[dt.weekday()]} {dt.day} de {_meses_es[dt.month - 1]} a las {dt.strftime('%H:%M')} hs"
         except Exception:
             legible = slot["time"]
-        _at_registrar_lead(telefono, nombre, subniche=sesion.get("subniche", ""),
-                           score="caliente", notas=f"Cita agendada: {legible}")
+        _at_registrar_lead(telefono, nombre,
+                           subniche=sesion.get("subniche", ""),
+                           email=sesion.get("email_lead", ""),
+                           ciudad=sesion.get("ciudad_lead", ""),
+                           score="caliente",
+                           fecha_cita=slot["time"],
+                           notas=f"Cita agendada: {legible}")
         _enviar_texto(telefono,
             f"✅ *¡Cita confirmada!*\n\n"
             f"📅 {legible}\n"
@@ -721,8 +733,8 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             sesion["ciudad_lead"] = valor
             nombre = sesion.get("nombre", "")
             email  = sesion.get("email_lead", "")
-            _at_registrar_lead(telefono, nombre,
-                               notas=f"Email: {email} | Ciudad: {valor} | Capturado para agendar")
+            _at_registrar_lead(telefono, nombre, email=email, ciudad=valor,
+                               notas="Datos capturados — pendiente agendar cita")
             SESIONES[telefono] = {**sesion}
             _mostrar_slots(telefono, SESIONES[telefono])
         return
