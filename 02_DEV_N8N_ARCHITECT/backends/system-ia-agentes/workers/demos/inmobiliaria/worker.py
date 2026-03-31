@@ -165,7 +165,7 @@ def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: st
     if tipo:
         campos["Tipo_Propiedad"] = tipo
     if fecha_cita:
-        campos["Fecha_Cita"] = fecha_cita
+        campos["Fecha_Cita"] = fecha_cita[:10]  # Airtable date solo acepta YYYY-MM-DD
     if notas:
         campos["Notas_Bot"] = notas
 
