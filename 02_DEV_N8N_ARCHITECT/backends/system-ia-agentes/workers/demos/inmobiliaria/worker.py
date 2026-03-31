@@ -40,7 +40,7 @@ import os
 import re
 import json
 import requests
-import google.generativeai as genai
+from google import genai
 from fastapi import APIRouter, Request
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
@@ -72,8 +72,7 @@ EMPRESA = {
     "whatsapp": f"+{re.sub(r'D', '', NUMERO_ASESOR)}" if NUMERO_ASESOR and not NUMERO_ASESOR.startswith("+") else NUMERO_ASESOR,
 }
 
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+_gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 router = APIRouter(prefix="/demos/inmobiliaria", tags=["Demo — Inmobiliaria"])
 
@@ -306,7 +305,7 @@ def _gemini_clasificar(texto: str, sesion: dict) -> dict:
       zona:      str | None
       respuesta: str (mensaje a enviar al usuario)
     """
-    if not GEMINI_API_KEY:
+    if not _gemini_client:
         return {"intencion": "respuesta_libre", "subniche": None, "operacion": None,
                 "tipo": None, "zona": None, "respuesta": ""}
 
@@ -369,10 +368,8 @@ Respondé SOLO con JSON válido, sin markdown, sin explicaciones:
 Donde los campos sin valor van como null (no string vacío)."""
 
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        result = model.generate_content(prompt)
+        result = _gemini_client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
         raw = result.text.strip()
-        # Limpiar posible markdown
         if raw.startswith("```"):
             raw = re.sub(r"```(?:json)?", "", raw).replace("```", "").strip()
         return json.loads(raw)
@@ -387,7 +384,7 @@ def _gemini_score_precal(subniche: str, respuestas: list[str]) -> dict:
     Evalúa las respuestas de precalificación y devuelve score + razonamiento.
     Retorna: {score: caliente|tibio|frio, razon: str, respuesta: str}
     """
-    if not GEMINI_API_KEY or not respuestas:
+    if not _gemini_client or not respuestas:
         return {"score": "tibio", "razon": "Sin Gemini", "respuesta": ""}
 
     preguntas = PREGUNTAS_PRECAL.get(subniche, [])
@@ -420,8 +417,7 @@ Criterios:
 Respondé SOLO JSON válido sin markdown."""
 
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        result = model.generate_content(prompt)
+        result = _gemini_client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
         raw = result.text.strip()
         if raw.startswith("```"):
             raw = re.sub(r"```(?:json)?", "", raw).replace("```", "").strip()
@@ -433,16 +429,16 @@ Respondé SOLO JSON válido sin markdown."""
 
 def _gemini_libre(texto: str, sesion: dict) -> str:
     """Respuesta libre para preguntas generales."""
-    if not GEMINI_API_KEY:
+    if not _gemini_client:
         return f"Para más información hablá con {EMPRESA['asesor']} al {EMPRESA['whatsapp']} 🏠"
     subniche = sesion.get("subniche", "")
     contexto_subniche = f"El cliente es: {SUBNICHE_LABELS.get(subniche, 'visitante')}." if subniche else ""
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        result = model.generate_content(
-            f"Sos el asistente de {EMPRESA['nombre']} en {EMPRESA['ciudad']}. "
-            f"{contexto_subniche} Respondé en español LATAM, breve y profesional. "
-            f"Solo temas inmobiliarios. Pregunta: {texto}"
+        result = _gemini_client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=(f"Sos el asistente de {EMPRESA['nombre']} en {EMPRESA['ciudad']}. "
+                      f"{contexto_subniche} Respondé en español LATAM, breve y profesional. "
+                      f"Solo temas inmobiliarios. Pregunta: {texto}")
         )
         return result.text.strip()
     except Exception as e:

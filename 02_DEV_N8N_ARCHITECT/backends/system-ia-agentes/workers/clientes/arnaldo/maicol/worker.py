@@ -9,7 +9,7 @@ import os
 import re
 import time
 import requests
-import google.generativeai as genai
+from google import genai
 from fastapi import APIRouter, Request
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
@@ -30,8 +30,7 @@ INMOBILIARIA = {
     "whatsapp_link": f"https://wa.me/{re.sub(r'[^0-9]', '', NUMERO_ASESOR)}",
 }
 
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+_gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 router = APIRouter(prefix="/clientes/arnaldo/maicol", tags=["Maicol — Back Urbanizaciones"])
 
@@ -201,7 +200,6 @@ def _gemini_respuesta(mensaje: str) -> str:
         return (f"Gracias por tu consulta. Para más información podés hablar con "
                 f"nuestro asesor {INMOBILIARIA['asesor']} al {INMOBILIARIA['whatsapp']}. 🏠")
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash-lite")
         prompt = f"""Sos el asistente virtual de {INMOBILIARIA['nombre']}, inmobiliaria en {INMOBILIARIA['ciudad']}, Argentina.
 Tu asesor humano se llama {INMOBILIARIA['asesor']} ({INMOBILIARIA['whatsapp']}).
 
@@ -211,7 +209,7 @@ Sé breve, amigable y profesional. Respondé en español argentino.
 Al finalizar, recordá al cliente que puede responder con un número para ver opciones o escribir *menú* para volver al inicio.
 
 Consulta del cliente: {mensaje}"""
-        resp = model.generate_content(prompt)
+        resp = _gemini_client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
         return resp.text.strip()
     except Exception as e:
         print(f"[INMO-GEMINI] Error: {e}")
