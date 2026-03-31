@@ -719,6 +719,48 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         _siguiente_pregunta_precal(telefono, SESIONES[telefono])
         return
 
+    # ── PASO: bienvenida — opción numérica directa ────────────────────────────
+    if step == "bienvenida" and re.fullmatch(r"[1-4]", t):
+        mapa = {"1": "desarrolladora", "2": "inmobiliaria", "3": "agente", "4": "comprador"}
+        subniche = mapa[t]
+        sesion["subniche"] = subniche
+        SESIONES[telefono] = sesion
+        _at_registrar_lead(telefono, sesion.get("nombre", ""), subniche=subniche)
+        if subniche == "comprador":
+            _enviar_texto(telefono,
+                f"Perfecto, te ayudo a encontrar tu propiedad ideal. 🏠\n\n"
+                f"¿Qué estás buscando?\n\n"
+                f"*1* Comprar\n*2* Alquilar\n*3* Hablar con {EMPRESA['asesor']}")
+            SESIONES[telefono] = {**sesion, "step": "operacion_comprador", "subniche": "comprador"}
+        else:
+            label = SUBNICHE_LABELS[subniche]
+            _enviar_texto(telefono,
+                f"Excelente, trabajo mucho con *{label}*. 💼\n\n"
+                f"Te hago {len(PREGUNTAS_PRECAL.get(subniche, []))} preguntas rápidas "
+                f"para entender mejor tu situación y mostrarte cómo podemos ayudarte.\n\n"
+                f"¿Arrancamos? 🚀")
+            SESIONES[telefono] = {**sesion, "step": "precalificacion",
+                                   "subniche": subniche, "preguntas_hechas": 0,
+                                   "respuestas_precal": []}
+            _siguiente_pregunta_precal(telefono, SESIONES[telefono])
+        return
+
+    # ── PASO: operacion comprador ─────────────────────────────────────────────
+    if step == "operacion_comprador":
+        if t in ("1", "comprar", "compra", "venta"):
+            sesion["operacion"] = "venta"
+            SESIONES[telefono] = {**sesion, "step": "bienvenida"}
+            _mostrar_propiedades(telefono, {**sesion, "operacion": "venta"})
+        elif t in ("2", "alquilar", "alquiler", "renta"):
+            sesion["operacion"] = "alquiler"
+            SESIONES[telefono] = {**sesion, "step": "bienvenida"}
+            _mostrar_propiedades(telefono, {**sesion, "operacion": "alquiler"})
+        elif t == "3":
+            _ir_asesor(telefono)
+        else:
+            _enviar_texto(telefono, _gemini_libre(texto, sesion))
+        return
+
     # ── PASO: bienvenida / fallback → Gemini decide ───────────────────────────
     clas = _gemini_clasificar(texto, sesion)
 
@@ -790,10 +832,15 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
 
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
 def _msg_bienvenida() -> str:
-    zonas_txt = ", ".join(ZONAS_LIST[:3]) if ZONAS_LIST else EMPRESA["ciudad"]
-    return (f"👋 ¡Hola! Soy el asistente de *{EMPRESA['nombre']}* 🏘️\n\n"
-            f"Trabajo con propiedades en {zonas_txt} y zonas aledañas.\n\n"
-            f"Contame, ¿en qué puedo ayudarte? 😊")
+    return (f"👋 ¡Hola! Soy el asistente IA de *{EMPRESA['nombre']}* 🏘️\n\n"
+            f"Ayudo a empresas y profesionales del sector inmobiliario a *automatizar "
+            f"su atención y agendar más citas* con inteligencia artificial.\n\n"
+            f"¿Con cuál de estas situaciones te identificás?\n\n"
+            f"🏗️ *1.* Tengo un *proyecto / desarrollo* inmobiliario\n"
+            f"🏢 *2.* Tengo una *inmobiliaria* con equipo de asesores\n"
+            f"🧑‍💼 *3.* Soy *agente independiente* con mi propia cartera\n"
+            f"🏠 *4.* Busco *comprar o alquilar* una propiedad\n\n"
+            f"Respondé con el número o contame directamente. 😊")
 
 
 def _ir_asesor(telefono: str) -> None:
