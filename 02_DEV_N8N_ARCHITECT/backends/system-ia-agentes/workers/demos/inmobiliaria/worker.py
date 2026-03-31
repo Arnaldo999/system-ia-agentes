@@ -546,7 +546,9 @@ def _iniciar_agendamiento(telefono: str, sesion: dict) -> None:
         from datetime import datetime
         try:
             dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
-            legible = dt.strftime("%a %d/%m — %H:%M hs")
+            _dias_es = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+            dia_es = _dias_es[dt.weekday()]
+            legible = f"{dia_es} {dt.strftime('%d/%m')} — {dt.strftime('%H:%M')} hs"
         except Exception:
             legible = s["time"]
         lineas.append(f"*{i}.* {legible}")
@@ -571,7 +573,10 @@ def _confirmar_reserva(telefono: str, sesion: dict, slot_idx: int) -> None:
         from datetime import datetime
         try:
             dt = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
-            legible = dt.strftime("%A %d de %B a las %H:%M hs")
+            _dias_es = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+            _meses_es = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+                         "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+            legible = f"{_dias_es[dt.weekday()]} {dt.day} de {_meses_es[dt.month - 1]} a las {dt.strftime('%H:%M')} hs"
         except Exception:
             legible = slot["time"]
         _at_registrar_lead(telefono, nombre, subniche=sesion.get("subniche", ""),
