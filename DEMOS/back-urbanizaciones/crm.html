@@ -2002,23 +2002,51 @@ function buscarGlobal(q) {
   const res = document.getElementById('searchResults');
   q = q.trim();
   if (!q) { res.classList.remove('show'); return; }
-  const hits = LEADS.filter(l =>
-    [l.name, l.phone, l.email, l.interes, l.ciudad, l.subnicho, l.notas]
-      .join(' ').toLowerCase().includes(q.toLowerCase())
-  ).slice(0, 6);
-  if (!hits.length) {
+  const ql = q.toLowerCase();
+
+  // Buscar en leads — todos los campos relevantes
+  const leadsHits = LEADS.filter(l =>
+    [l.name, l.phone, l.email, l.interes, l.ciudad, l.subnicho, l.notas, l.presupuesto, l.origen]
+      .join(' ').toLowerCase().includes(ql)
+  ).slice(0, 5);
+
+  // Buscar en propiedades — título, zona, tipo, operación, descripción
+  const propsHits = PROPS_DATA.filter(p =>
+    [p.Titulo||'', p.Zona||'', p.Tipo||'', p.Operacion||'', p.Descripcion||'', String(p.Precio||'')]
+      .join(' ').toLowerCase().includes(ql)
+  ).slice(0, 3);
+
+  if (!leadsHits.length && !propsHits.length) {
     res.innerHTML = `<div class="sr-empty">Sin resultados para "${q}"</div>`;
   } else {
     const ini = n => n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase();
     const scoreEmoji = s => s >= 12 ? '🔥' : s >= 7 ? '🌡️' : '❄️';
-    res.innerHTML = hits.map(l => `
-      <div class="sr-item" onclick="irALead(${l.id})">
-        <div class="sr-av">${ini(l.name)}</div>
-        <div>
-          <div class="sr-name">${l.name} ${l.score ? scoreEmoji(l.score) : ''}</div>
-          <div class="sr-meta">${l.phone} · ${l.interes}</div>
-        </div>
-      </div>`).join('');
+    let html = '';
+    if (leadsHits.length) {
+      html += `<div style="padding:4px 12px;font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Leads</div>`;
+      html += leadsHits.map(l => `
+        <div class="sr-item" onclick="irALead(${l.id})">
+          <div class="sr-av">${ini(l.name)}</div>
+          <div>
+            <div class="sr-name">${l.name} ${l.score ? scoreEmoji(l.score) : ''}</div>
+            <div class="sr-meta">${l.phone}${l.interes ? ' · ' + l.interes : ''}</div>
+          </div>
+        </div>`).join('');
+    }
+    if (propsHits.length) {
+      html += `<div style="padding:4px 12px;font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Propiedades</div>`;
+      html += propsHits.map((p, idx) => {
+        const precio = p.Precio ? `$${Number(p.Precio).toLocaleString('es')} ${p.Moneda||'USD'}` : '';
+        return `<div class="sr-item" onclick="nav('propiedades');cerrarBusqueda()">
+          <div class="sr-av" style="background:var(--accent2);color:#111">🏠</div>
+          <div>
+            <div class="sr-name">${p.Titulo||'Propiedad'}</div>
+            <div class="sr-meta">${[p.Zona, p.Tipo, p.Operacion, precio].filter(Boolean).join(' · ')}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    res.innerHTML = html;
   }
   res.classList.add('show');
 }
