@@ -531,29 +531,29 @@
     <div class="step-title">¿Qué tipo de propiedad buscás?</div>
     <div class="step-subtitle">Seleccioná el que más se ajusta a tu proyecto.</div>
     <div class="option-grid">
-      <button class="opt-btn" data-field="tipo" data-value="terreno" onclick="selectChip(this)">
+      <button class="opt-btn" data-field="tipo" data-value="Lote residencial" onclick="selectChip(this)">
         <div class="check">✓</div>
         <div class="opt-icon">🌿</div>
-        <div class="opt-label">Terreno / Lote</div>
-        <div class="opt-sub">Para construir o invertir</div>
+        <div class="opt-label">Lote residencial</div>
+        <div class="opt-sub">Para construir tu casa</div>
       </button>
-      <button class="opt-btn" data-field="tipo" data-value="casa" onclick="selectChip(this)">
+      <button class="opt-btn" data-field="tipo" data-value="Lote comercial" onclick="selectChip(this)">
         <div class="check">✓</div>
-        <div class="opt-icon">🏡</div>
-        <div class="opt-label">Casa</div>
-        <div class="opt-sub">Vivienda lista para habitar</div>
+        <div class="opt-icon">🏬</div>
+        <div class="opt-label">Lote comercial</div>
+        <div class="opt-sub">Para negocio o emprendimiento</div>
       </button>
-      <button class="opt-btn" data-field="tipo" data-value="casa_terreno" onclick="selectChip(this)">
+      <button class="opt-btn" data-field="tipo" data-value="Lote en esquina" onclick="selectChip(this)">
         <div class="check">✓</div>
-        <div class="opt-icon">🏗️</div>
-        <div class="opt-label">Casa + Terreno</div>
-        <div class="opt-sub">Propiedad con espacio extra</div>
+        <div class="opt-icon">📐</div>
+        <div class="opt-label">Lote en esquina</div>
+        <div class="opt-sub">Mayor valor y visibilidad</div>
       </button>
-      <button class="opt-btn" data-field="tipo" data-value="" onclick="selectChip(this)">
+      <button class="opt-btn" data-field="tipo" data-value="Terreno rural" onclick="selectChip(this)">
         <div class="check">✓</div>
-        <div class="opt-icon">🔍</div>
-        <div class="opt-label">Cualquier tipo</div>
-        <div class="opt-sub">Quiero ver todas las opciones</div>
+        <div class="opt-icon">🌾</div>
+        <div class="opt-label">Terreno rural</div>
+        <div class="opt-sub">Para inversión o campo</div>
       </button>
     </div>
 
@@ -847,7 +847,7 @@
       })();
 
       const objetivoMap = { 'construir-vivienda':'Construir mi casa','inversion':'Inversión','emprendimiento':'Emprendimiento','segunda-residencia':'Segunda residencia' };
-      const tipoLote = lead.tipo.map(t => t.toLowerCase()).join(', ') || 'lote';
+      const tipoLote = (lead.tipo || []).join(', ') || 'Lote residencial';
 
       await fetch('https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol/lead', {
         method: 'POST',
@@ -959,7 +959,7 @@
       Telefono:       telefono,
       Email:          lead.email    || '',
       // Calificación
-      Estado:         calificado ? 'calificado' : 'potencial',
+      Estado:         calificado ? 'en_negociacion' : 'no_contactado',
       // Campos específicos de loteos
       Objetivo:       objetivoLabel,
       Tipo_Lote:      tipoLote,
