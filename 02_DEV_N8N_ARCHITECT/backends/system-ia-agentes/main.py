@@ -44,6 +44,7 @@ def root():
         "agencia": "System IA — Automatizaciones para LATAM",
         "clientes": {
             "arnaldo/maicol": [
+                "POST /clientes/arnaldo/maicol/lead",
                 "POST /clientes/arnaldo/maicol/whatsapp",
                 "GET  /clientes/arnaldo/maicol/propiedades",
                 "GET  /clientes/arnaldo/maicol/crm/propiedades",

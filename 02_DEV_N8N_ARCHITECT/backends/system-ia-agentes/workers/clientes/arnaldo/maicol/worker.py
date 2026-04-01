@@ -583,3 +583,94 @@ def crm_clientes():
         if not offset:
             break
     return {"records": records}
+
+
+@router.post("/lead")
+async def recibir_lead(request: Request):
+    """Recibe lead del formulario web — guarda en Airtable, activa bot y notifica asesor."""
+    from datetime import date
+    data = await request.json()
+
+    nombre    = data.get("nombre", "").strip()
+    apellido  = data.get("apellido", "").strip()
+    telefono  = _normalizar_telefono(data.get("telefono", ""))
+    email     = data.get("email", "")
+    zona      = data.get("zona", "")
+    tipo      = data.get("tipo", "")
+    operacion = data.get("operacion", "")
+    presupuesto = data.get("presupuesto", "")
+    urgencia  = data.get("urgencia", "")
+    nota      = data.get("nota", "")
+
+    nombre_completo = f"{nombre} {apellido}".strip()
+    score = "caliente" if urgencia in ("inmediata", "1-3 meses") else "tibio" if urgencia == "3-6 meses" else "frio"
+
+    # Guardar en Airtable
+    hoy = date.today().isoformat()
+    url_at = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
+    buscar = requests.get(url_at, headers=AT_HEADERS,
+        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+
+    campos = {
+        "Nombre": nombre, "Apellido": apellido, "Telefono": telefono,
+        "Email": email, "Zona": zona, "Tipo_Propiedad": tipo,
+        "Operacion": "Venta", "Presupuesto": presupuesto, "Urgencia": urgencia,
+        "Estado": "calificado" if score == "caliente" else "potencial",
+        "Notas_Bot": f"Score: {score}. Objetivo: {operacion}. {nota}".strip(". "),
+        "Llego_WhatsApp": False, "Origen": data.get("origen", "Formulario Web"),
+    }
+    if records:
+        requests.patch(f"{url_at}/{records[0]['id']}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+    else:
+        campos["Fecha_WhatsApp"] = hoy
+        requests.post(url_at, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+
+    # Pre-cargar sesión para que el bot no repita preguntas
+    SESIONES[telefono] = {
+        "step": "mostrar_props",
+        "nombre": nombre_completo,
+        "operacion": operacion or "Compra",
+        "tipo": tipo,
+        "zona": zona,
+        "presupuesto": presupuesto,
+        "urgencia": urgencia,
+        "score": score,
+        "ts": time.time(),
+    }
+
+    # Mensaje de bienvenida al lead
+    msg_bienvenida = (
+        f"¡Hola {nombre}! 👋 Gracias por completar el formulario de *Back Urbanizaciones*.\n\n"
+        f"Vi que buscás un *{tipo or 'lote'}* en *{zona or 'Misiones'}*"
+        f"{f' — objetivo: {operacion}' if operacion else ''}.\n\n"
+        f"💰 Presupuesto: {presupuesto or 'a consultar'}\n"
+        f"⏱ Plazo: {urgencia or '-'}\n\n"
+        f"Enseguida te muestro las opciones disponibles 🌿"
+    )
+    _enviar_texto(telefono, msg_bienvenida)
+
+    # Mostrar propiedades disponibles
+    props = _at_buscar_propiedades(tipo=tipo, zona=zona)
+    if props:
+        _mostrar_lista(telefono, tipo, "lotes disponibles", "Venta", zona)
+    else:
+        _enviar_texto(telefono, "📋 Estamos actualizando nuestro inventario. Un asesor te contacta en breve con las opciones disponibles.")
+
+    # Notificar al asesor
+    if NUMERO_ASESOR:
+        score_emoji = {"caliente": "🔥", "tibio": "🌡️"}.get(score, "❄️")
+        asesor_tel = re.sub(r'\D', '', NUMERO_ASESOR)
+        _enviar_texto(asesor_tel,
+            f"🏠 *Nuevo lead desde el formulario web*\n\n"
+            f"👤 *Nombre:* {nombre_completo}\n"
+            f"📱 *Teléfono:* {telefono}\n"
+            f"📍 *Zona:* {zona or '-'}\n"
+            f"🏷 *Tipo:* {tipo or '-'} · {operacion or '-'}\n"
+            f"💰 *Presupuesto:* {presupuesto}\n"
+            f"⏱ *Urgencia:* {urgencia or '-'}\n"
+            f"{score_emoji} *Score:* {score}\n\n"
+            f"_El bot ya le escribió y le está mostrando lotes._"
+        )
+
+    return {"status": "ok", "score": score, "telefono": telefono}

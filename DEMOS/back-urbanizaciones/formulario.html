@@ -747,7 +747,7 @@
   }
 
   // ── SUBMIT ──
-  function submitForm() {
+  async function submitForm() {
     lead.nombre   = document.getElementById('f-nombre').value.trim();
     lead.apellido = document.getElementById('f-apellido').value.trim();
     lead.telefono = document.getElementById('f-telefono').value.trim();
@@ -762,13 +762,58 @@
     if (!lead.telefono) { telEl.classList.add('error'); valid = false; } else telEl.classList.remove('error');
     if (!valid) return;
 
-    // Enviar datos al Webhook de n8n para mayor seguridad (n8n llama a la FastAPI y a Airtable)
-    enviarWebhookN8n();
+    // Deshabilitar botón para evitar doble envío
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
 
-    // ── LÓGICA DE CALIFICACIÓN ──
-    // Calificado → urgencia inmediata o 1-3 meses Y tiene tipo seleccionado
+    // Enviar al backend (guarda en Airtable + activa bot WhatsApp + notifica asesor)
+    try {
+      const calificado = lead.urgencia === 'inmediata' || lead.urgencia === '1-3 meses';
+      const tel = lead.telefono.replace(/\D/g,'');
+      const telefono = tel.startsWith('+') ? tel : `+54${tel}`;
+
+      const budgetLabel = (() => {
+        const p = lead.presupuesto; const m = lead.moneda || 'USD';
+        if (!p) return 'A consultar';
+        const usd = m === 'ARS' ? p / 1000 : p;
+        if (usd < 20000)  return 'Hasta USD 20.000';
+        if (usd < 50000)  return 'Hasta USD 50.000';
+        if (usd < 80000)  return 'Hasta USD 80.000';
+        if (usd < 120000) return 'Hasta USD 120.000';
+        if (usd < 200000) return 'Hasta USD 200.000';
+        return 'Más de USD 200.000';
+      })();
+
+      const objetivoMap = { 'construir-vivienda':'Construir mi casa','inversion':'Inversión','emprendimiento':'Emprendimiento','segunda-residencia':'Segunda residencia' };
+      const tipoLote = lead.tipo.map(t => t.toLowerCase()).join(', ') || 'lote';
+
+      await fetch('https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre:    lead.nombre,
+          apellido:  lead.apellido,
+          telefono:  telefono,
+          email:     lead.email    || '',
+          zona:      lead.zona     || 'No especificada',
+          tipo:      tipoLote,
+          operacion: objetivoMap[lead.operacion] || lead.operacion || 'No especificado',
+          presupuesto: budgetLabel,
+          urgencia:  lead.urgencia || '-',
+          nota:      lead.nota     || '',
+          origen:    'Formulario Web — Back Urbanizaciones'
+        })
+      });
+    } catch(e) {
+      // Silencioso — no bloquear UX si hay error de red
+      console.error('Backend error (silenciado):', e);
+      // Fallback: enviar igual al webhook n8n
+      enviarWebhookN8n();
+    }
+
+    // Mostrar resultado según calificación
     const calificado = lead.urgencia === 'inmediata' || lead.urgencia === '1-3 meses';
-
     if (calificado) {
       mostrarResultadoWA();
     } else {
