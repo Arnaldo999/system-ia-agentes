@@ -1,7 +1,7 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "has": [{"type":"host","value":"form.backurbanizaciones.com.ar"}], "destination": "/DEMOS/back-urbanizaciones/formulario.html" },
-    { "source": "/(.*)", "has": [{"type":"host","value":"crm.backurbanizaciones.com.ar"}],  "destination": "/DEMOS/back-urbanizaciones/crm.html" },
+    { "source": "/(.*)", "has": [{"type":"host","value":"form.backurbanizaciones.com"}], "destination": "/DEMOS/back-urbanizaciones/formulario.html" },
+    { "source": "/(.*)", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}],  "destination": "/DEMOS/back-urbanizaciones/crm.html" },
     { "source": "/crm",                       "destination": "/DEMOS/demo-crm-mvp.html" },
     { "source": "/informe",                   "destination": "/DEMOS/informe-mercado-inmobiliario.html" },
     { "source": "/formulario-desarrolladora", "destination": "/DEMOS/formulario-desarrolladora.html" },
