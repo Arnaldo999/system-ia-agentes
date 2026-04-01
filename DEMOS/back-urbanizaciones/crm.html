@@ -397,7 +397,7 @@
     </div>
     <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
     <div class="nav-item" onclick="nav('formularios',this)">
-      <span class="nav-icon">📋</span><span>Formularios</span>
+      <span class="nav-icon">🆘</span><span>Soporte</span>
     </div>
     <div class="sidebar-footer">
       <div class="plan-chip">
@@ -830,121 +830,88 @@
       </div>
     </div>
 
-    <!-- ══════════ FORMULARIOS ══════════ -->
+    <!-- ══════════ SOPORTE ══════════ -->
     <div class="panel" id="panel-formularios">
       <div class="sh">
         <div>
-          <div class="sh-title">Formularios de Captación</div>
-          <div class="sh-sub">Cada formulario está optimizado para tu tipo de negocio y conectado a tu bot</div>
+          <div class="sh-title">Soporte & Ayuda</div>
+          <div class="sh-sub">Todo lo que necesitás saber para usar tu CRM y tu bot de WhatsApp</div>
         </div>
+        <a href="https://wa.me/5493764815689?text=Hola%2C+necesito+soporte+con+mi+CRM" target="_blank" class="btn btn-primary" style="white-space:nowrap">💬 Contactar soporte</a>
       </div>
 
-      <div class="info-banner">
-        <div class="info-banner-icon">💡</div>
-        <div>
-          <strong>¿Para qué sirven estos formularios?</strong>
-          <p>Los publicás en tus ads de Facebook/Instagram o en tu sitio web. Cada lead que complete el form llega directo a tu CRM y el bot lo contacta en menos de 60 segundos — automáticamente.</p>
-        </div>
-      </div>
-
-      <div class="forms-grid">
-        <!-- Desarrolladora -->
-        <div class="form-card">
-          <div class="form-card-head">
-            <div class="form-icon" style="background:#1e3a5f">🏗️</div>
-            <div>
-              <div style="font-weight:700;font-size:14px">Desarrolladora / Fraccionamiento</div>
-              <div style="color:var(--text2);font-size:12px;margin-top:2px">Lotes, casas en preventa, nuevos desarrollos</div>
-            </div>
-          </div>
-          <div class="form-card-body">
-            <div class="form-feature">Captura: nombre, WhatsApp, zona de interés, presupuesto y tipo de lote</div>
-            <div class="form-feature">Pregunta de calificación: ¿es para construir o invertir?</div>
-            <div class="form-feature">Bot pregunta si tiene financiamiento o paga contado</div>
-            <div class="form-feature">Ofrece visita al fraccionamiento directamente</div>
-          </div>
-          <div class="form-card-foot">
-            <button class="btn btn-primary" onclick="previewForm('dev')">👁 Ver formulario</button>
-            <button class="btn">📋 Copiar link</button>
-          </div>
-        </div>
-
-        <!-- Agencia -->
-        <div class="form-card">
-          <div class="form-card-head">
-            <div class="form-icon" style="background:#2d1f5e">🏢</div>
-            <div>
-              <div style="font-weight:700;font-size:14px">Agencia Inmobiliaria</div>
-              <div style="color:var(--text2);font-size:12px;margin-top:2px">Venta y renta de propiedades diversas</div>
-            </div>
-          </div>
-          <div class="form-card-body">
-            <div class="form-feature">Captura: nombre, WhatsApp, operación (compra/renta), zona y presupuesto</div>
-            <div class="form-feature">Filtro: cantidad de recámaras, garage, amenidades deseadas</div>
-            <div class="form-feature">Bot envía catálogo personalizado según criterios</div>
-            <div class="form-feature">Agenda visita con el asesor disponible</div>
-          </div>
-          <div class="form-card-foot">
-            <button class="btn btn-primary" onclick="previewForm('agency')">👁 Ver formulario</button>
-            <button class="btn">📋 Copiar link</button>
-          </div>
-        </div>
-
-        <!-- Agente Individual -->
-        <div class="form-card">
-          <div class="form-card-head">
-            <div class="form-icon" style="background:#064e3b">🤝</div>
-            <div>
-              <div style="font-weight:700;font-size:14px">Agente Individual</div>
-              <div style="color:var(--text2);font-size:12px;margin-top:2px">Captación personal, seguimiento 1 a 1</div>
-            </div>
-          </div>
-          <div class="form-card-body">
-            <div class="form-feature">Captura: nombre, WhatsApp, tipo de propiedad buscada</div>
-            <div class="form-feature">Pregunta cuánto tiempo lleva buscando (urgencia)</div>
-            <div class="form-feature">Bot califica y asigna directamente al agente</div>
-            <div class="form-feature">Seguimiento automático si no responde en 2h</div>
-          </div>
-          <div class="form-card-foot">
-            <button class="btn btn-primary" onclick="previewForm('agent')">👁 Ver formulario</button>
-            <button class="btn">📋 Copiar link</button>
-          </div>
-        </div>
-
-        <!-- Property Manager -->
-        <div class="form-card">
-          <div class="form-card-head">
-            <div class="form-icon" style="background:#451a03">🔑</div>
-            <div>
-              <div style="font-weight:700;font-size:14px">Property Manager</div>
-              <div style="color:var(--text2);font-size:12px;margin-top:2px">Administración de propiedades en renta</div>
-            </div>
-          </div>
-          <div class="form-card-body">
-            <div class="form-feature">Captura: nombre, WhatsApp, tipo de propiedad disponible</div>
-            <div class="form-feature">Pregunta: ¿busca inquilino o quiere administración completa?</div>
-            <div class="form-feature">Bot explica el servicio y solicita datos de la propiedad</div>
-            <div class="form-feature">Genera contrato de administración automáticamente</div>
-          </div>
-          <div class="form-card-foot">
-            <button class="btn btn-primary" onclick="previewForm('pm')">👁 Ver formulario</button>
-            <button class="btn">📋 Copiar link</button>
-          </div>
-        </div>
-      </div>
-
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px">
-        <div style="font-weight:600;font-size:13px;margin-bottom:12px">¿Cómo funciona el flujo completo?</div>
+      <!-- Flujo general -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px">¿Cómo funciona el sistema completo?</div>
         <div style="display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:4px">
-          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📣</div><div style="font-size:12px;font-weight:600">Anuncio en ads</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Facebook / Instagram</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
-          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📋</div><div style="font-size:12px;font-weight:600">Lead completa form</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Datos al instante</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
-          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🔔</div><div style="font-size:12px;font-weight:600">Llega a tu CRM</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Registrado automáticamente</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📣</div><div style="font-size:12px;font-weight:600">Publicás el form</div><div style="color:var(--text2);font-size:11px;margin-top:2px">En ads o en tu sitio web</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📋</div><div style="font-size:12px;font-weight:600">Lead completa form</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Sus datos llegan al instante</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🔔</div><div style="font-size:12px;font-weight:600">Te avisa a vos</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Notificación en tu WhatsApp</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
           <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🤖</div><div style="font-size:12px;font-weight:600">Bot lo contacta</div><div style="color:var(--text2);font-size:11px;margin-top:2px">En menos de 60 seg</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
-          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🎯</div><div style="font-size:12px;font-weight:600">Califica al lead</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Presupuesto, zona, urgencia</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
-          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📅</div><div style="font-size:12px;font-weight:600">Agenda la cita</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Sin que vos intervengas</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
-          <div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🏠</div><div style="font-size:12px;font-weight:600">Vos cerrás la venta</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Solo te presentás</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🎯</div><div style="font-size:12px;font-weight:600">Califica al lead</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Zona, presupuesto, urgencia</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📅</div><div style="font-size:12px;font-weight:600">Agenda la visita</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Sin que vos intervengas</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🌿</div><div style="font-size:12px;font-weight:600">Vos cerrás la venta</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Solo te presentás</div></div>
         </div>
       </div>
+
+      <!-- Guías rápidas -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px">
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+          <div style="font-size:22px;margin-bottom:8px">📋</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">Tu formulario de captación</div>
+          <div style="color:var(--text2);font-size:13px;line-height:1.6;margin-bottom:12px">Compartí el link de tu formulario en tus publicaciones, anuncios o perfil de Instagram. Cada lead que lo complete llega directo al CRM.</div>
+          <a href="https://form.backurbanizaciones.com" target="_blank" class="btn btn-primary" style="font-size:12px">🔗 Abrir formulario</a>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+          <div style="font-size:22px;margin-bottom:8px">🤖</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">¿Cómo funciona el bot?</div>
+          <div style="color:var(--text2);font-size:13px;line-height:1.6">El bot responde automáticamente a los mensajes de WhatsApp. Cuando un lead escribe, el bot lo saluda, pregunta qué busca, le muestra lotes disponibles y te avisa a vos cuando está listo para hablar.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+          <div style="font-size:22px;margin-bottom:8px">📊</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">¿Cómo usar el Pipeline?</div>
+          <div style="color:var(--text2);font-size:13px;line-height:1.6">En la sección <strong>Pipeline</strong> ves todos tus leads organizados por etapa: Nuevo → Contactado → Calificado → Cita → Cerrado. Arrastrá (o hacé click en el lead) para cambiar su estado.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+          <div style="font-size:22px;margin-bottom:8px">🔥</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">¿Qué significa el score?</div>
+          <div style="color:var(--text2);font-size:13px;line-height:1.6">
+            🔥 <strong>Caliente</strong> — quiere comprar ahora o en 1-3 meses. Prioridad máxima.<br>
+            🌡️ <strong>Tibio</strong> — en 3-6 meses. Seguimiento semanal.<br>
+            ❄️ <strong>Frío</strong> — solo explorando. Contacto mensual.
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+          <div style="font-size:22px;margin-bottom:8px">🏠</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">¿Cómo cargo propiedades?</div>
+          <div style="color:var(--text2);font-size:13px;line-height:1.6">Las propiedades se gestionan desde Airtable. Cada lote que agregues con estado <strong>✅ Disponible</strong> aparece automáticamente en el CRM y el bot lo puede mostrar a los leads.</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+          <div style="font-size:22px;margin-bottom:8px">👤</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">Personalizar el CRM</div>
+          <div style="color:var(--text2);font-size:13px;line-height:1.6">Hacé click en tu nombre (arriba a la derecha) para editar el nombre de tu empresa, tu nombre y subir el logo. Se guarda automáticamente en tu navegador.</div>
+        </div>
+
+      </div>
+
+      <!-- Contacto soporte -->
+      <div class="info-banner">
+        <div class="info-banner-icon">💬</div>
+        <div>
+          <strong>¿Necesitás ayuda o algo no funciona?</strong>
+          <p style="margin-top:4px">Escribinos por WhatsApp y te respondemos en menos de 2 horas en horario laboral. También podés pedir una llamada o videollamada para resolver cualquier duda.</p>
+          <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+            <a href="https://wa.me/5493764815689?text=Hola%2C+necesito+soporte+con+mi+CRM+de+Back+Urbanizaciones" target="_blank" class="btn btn-primary" style="font-size:12px">💬 Escribir por WhatsApp</a>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div><!-- /main -->
