@@ -1408,7 +1408,16 @@ function abrirDetalleProp(i) {
   const mapsUrl = p.Google_Maps_URL || p.google_maps_url || '';
   const disponible = p.Disponible || p.disponible || '';
   const notas = p.Notas || p.notas || p.Nota || '';
+  const videoUrl = p.Video_URL || p.video_url || '';
   const precioStr = precio ? `$${Number(precio).toLocaleString('es')} ${moneda}` : 'Consultar';
+
+  // Convertir URL de YouTube a embed
+  function youtubeEmbedUrl(url) {
+    if (!url) return '';
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([A-Za-z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : '';
+  }
+  const embedUrl = youtubeEmbedUrl(videoUrl);
 
   let imgUrl = '';
   const imgField = p.Imagen_URL || p.imagen_url || p.Foto || p.foto || '';
@@ -1418,7 +1427,7 @@ function abrirDetalleProp(i) {
 
   document.getElementById('detalleTitulo').textContent = titulo;
   document.getElementById('detalleBody').innerHTML = `
-    ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:14px" onerror="this.remove()">` : ''}
+    ${embedUrl ? `<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;margin-bottom:14px"><iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy"></iframe></div>` : imgUrl ? `<img src="${imgUrl}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:14px" onerror="this.remove()">` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:14px">
       <div><span style="color:var(--text2)">Precio</span><br><strong style="color:var(--accent2)">${precioStr}</strong></div>
       <div><span style="color:var(--text2)">Estado</span><br><strong>${disponible}</strong></div>
