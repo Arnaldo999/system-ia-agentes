@@ -1209,16 +1209,33 @@ function renderKanbanFromLeads() {
 }
 
 // ── LEAD DETAIL ────────────────────────────────────────────────────────────
+// Mapeo visual status → valor Airtable
+const STATUS_TO_AT = {
+  nuevo:'no_contactado', contactado:'contactado', calificado:'en_negociacion',
+  cita:'en_negociacion', cerrado:'cerrado', perdido:'descartado'
+};
+// Mapeo Airtable → visual (para re-render tras guardar)
+const AT_TO_STATUS = {
+  no_contactado:'nuevo', contactado:'contactado', en_negociacion:'calificado',
+  cerrado:'cerrado', descartado:'perdido'
+};
+
 function openDetalle(id) {
   const l = LEADS[id] || LEADS[0];
   document.getElementById('detalleTitulo').textContent = l.name;
-  const sl = {
-    nuevo:'🔵 Nuevo', contactado:'🟡 Contactado', calificado:'🟣 Calificado',
-    cita:'🟢 Con cita', cerrado:'🏆 Cerrado', perdido:'🔴 Perdido'
-  };
   const og = { wa:'💬 WhatsApp', form:'📋 Formulario', web:'📋 Formulario', ref:'🔥 Referido' };
   const scoreColor = s => s >= 12 ? 'var(--green)' : s >= 7 ? 'var(--yellow)' : 'var(--red)';
   const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
+
+  // Valor actual en Airtable
+  const estadoAt = STATUS_TO_AT[l.status] || 'no_contactado';
+  const estadoOpts = [
+    {v:'no_contactado', label:'🔵 No contactado'},
+    {v:'contactado',    label:'🟡 Contactado'},
+    {v:'en_negociacion',label:'🟣 En negociación'},
+    {v:'cerrado',       label:'🏆 Cerrado'},
+    {v:'descartado',    label:'🔴 Descartado'},
+  ];
 
   document.getElementById('detalleBody').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
@@ -1226,7 +1243,6 @@ function openDetalle(id) {
         ['Teléfono', l.phone || '—', ''],
         ['Presupuesto', l.presupuesto || '—', 'color:var(--accent2)'],
         ['Origen', og[l.origen] || l.origen || '—', ''],
-        ['Estado', sl[l.status] || l.status, ''],
         ['Score', l.score ? `<span style="color:${scoreColor(l.score)};font-weight:700">${l.score} pts — ${scoreLabel(l.score)}</span>` : '—', ''],
         ['Sub-nicho', l.subnicho ? l.subnicho.replace(/_/g,' ') : '—', 'text-transform:capitalize'],
       ].map(([k,v,s]) => `
@@ -1235,6 +1251,20 @@ function openDetalle(id) {
           <div style="font-weight:600;${s}">${v}</div>
         </div>`).join('')}
     </div>
+
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:7px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">✏️ Cambiar estado</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="selectEstado" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:13px;flex:1;min-width:160px;cursor:pointer">
+          ${estadoOpts.map(o => `<option value="${o.v}"${o.v===estadoAt?' selected':''}>${o.label}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="guardarEstado(${id})">
+          Guardar
+        </button>
+        <span id="estadoFeedback" style="font-size:11px;color:var(--text2)"></span>
+      </div>
+    </div>
+
     <div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
       <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Propiedad / Interés</div>
       <div>${l.interes}</div>
@@ -1273,6 +1303,45 @@ function openDetalle(id) {
       <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
     </div>`;
   openModal('modalDetalle');
+}
+
+async function guardarEstado(id) {
+  const l = LEADS[id];
+  if (!l) return;
+  const nuevoAt = document.getElementById('selectEstado').value;
+  const fb = document.getElementById('estadoFeedback');
+  fb.textContent = '⏳ Guardando...';
+  fb.style.color = 'var(--text2)';
+
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Estado: nuevoAt }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'ok') {
+      fb.textContent = '✅ Guardado en Airtable';
+      fb.style.color = 'var(--green)';
+      // Actualizar estado local
+      const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
+      LEADS[id].status = nuevoStatus;
+      renderLeads();
+      renderKanbanFromLeads();
+      addAct(`<strong>${l.name}</strong> — estado actualizado a <em>${nuevoAt.replace('_',' ')}</em>`, 'var(--accent)', 'ahora mismo');
+    } else {
+      throw new Error(data.detalle || 'Error desconocido');
+    }
+  } catch (err) {
+    // Demo: actualizar localmente aunque falle el backend
+    const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
+    LEADS[id].status = nuevoStatus;
+    renderLeads();
+    renderKanbanFromLeads();
+    fb.textContent = '⚠ Actualizado localmente (backend offline)';
+    fb.style.color = 'var(--yellow)';
+  }
 }
 
 // ── PROPS — conectado a Airtable via backend ────────────────────────────────

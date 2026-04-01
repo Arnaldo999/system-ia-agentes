@@ -1217,6 +1217,38 @@ def crm_clientes():
     return {"total": len(records), "records": records}
 
 
+@router.patch("/crm/clientes/{record_id}")
+async def actualizar_estado_cliente(record_id: str, request: Request):
+    """Actualiza el Estado (y opcionalmente Notas_Bot) de un lead en Airtable."""
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
+        return {"status": "error", "detalle": "Airtable no configurado"}
+    try:
+        body = await request.json()
+    except Exception:
+        return {"status": "error", "detalle": "body no es JSON válido"}
+
+    ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
+    nuevo_estado = body.get("Estado", "").strip()
+    if nuevo_estado and nuevo_estado not in ESTADOS_VALIDOS:
+        return {"status": "error", "detalle": f"Estado inválido. Valores: {sorted(ESTADOS_VALIDOS)}"}
+
+    campos: dict = {}
+    if nuevo_estado:
+        campos["Estado"] = nuevo_estado
+    notas = body.get("Notas_Bot", "").strip()
+    if notas:
+        campos["Notas_Bot"] = notas
+
+    if not campos:
+        return {"status": "error", "detalle": "Nada que actualizar"}
+
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+    if r.status_code == 200:
+        return {"status": "ok", "record_id": record_id, "campos": campos}
+    return {"status": "error", "detalle": r.text[:200]}
+
+
 @router.get("/config")
 def ver_config():
     return {
