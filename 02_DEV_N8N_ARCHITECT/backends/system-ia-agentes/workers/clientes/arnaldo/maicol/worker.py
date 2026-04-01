@@ -602,6 +602,24 @@ def crm_clientes():
     return {"records": records}
 
 
+@router.get("/config")
+def ver_config():
+    """Diagnóstico: muestra qué variables de entorno están cargadas (sin exponer valores)."""
+    token_ok = bool(AIRTABLE_TOKEN)
+    token_len = len(AIRTABLE_TOKEN) if AIRTABLE_TOKEN else 0
+    return {
+        "airtable_token_ok": token_ok,
+        "airtable_token_length": token_len,
+        "airtable_token_prefix": AIRTABLE_TOKEN[:8] if token_ok else None,
+        "airtable_base_id": AIRTABLE_BASE_ID,
+        "airtable_table_clientes": AIRTABLE_TABLE_CLIENTES,
+        "ycloud_key_ok": bool(YCLOUD_API_KEY),
+        "numero_bot": NUMERO_BOT,
+        "numero_asesor": NUMERO_ASESOR,
+        "tabla_clientes": AIRTABLE_TABLE_CLIENTES,
+    }
+
+
 @router.post("/lead")
 async def recibir_lead(request: Request):
     """Recibe lead del formulario web — guarda en Airtable, activa bot y notifica asesor."""
