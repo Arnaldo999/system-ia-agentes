@@ -802,6 +802,8 @@
       <div class="mf"><label>Dormitorios</label><input type="number" id="pp-dorms" placeholder="2" min="0"></div>
       <div class="mf"><label>Google Maps URL</label><input type="url" id="pp-maps" placeholder="https://maps.google.com/..."></div>
       <div class="mf" style="grid-column:1/-1"><label>Descripción</label><textarea id="pp-desc" rows="3" placeholder="Descripción detallada de la propiedad..."></textarea></div>
+      <div class="mf" style="grid-column:1/-1"><label>Imagen URL <span style="font-weight:400;color:var(--text2);font-size:11px">— link directo a imagen (jpg, png, etc)</span></label><input type="url" id="pp-imagen" placeholder="https://...imagen.jpg"></div>
+      <div class="mf" style="grid-column:1/-1"><label>Video YouTube URL <span style="font-weight:400;color:var(--text2);font-size:11px">— el bot lo envía automáticamente</span></label><input type="url" id="pp-video" placeholder="https://youtube.com/watch?v=..."></div>
     </div>
     <div id="propFeedback" style="font-size:12px;min-height:18px;margin-bottom:6px"></div>
     <div class="ma">
@@ -1286,6 +1288,8 @@ function abrirModalProp(idx) {
   document.getElementById('pp-dorms').value      = p?.Dormitorios || '';
   document.getElementById('pp-maps').value       = p?.Google_Maps_URL || '';
   document.getElementById('pp-desc').value       = p?.Descripcion || '';
+  document.getElementById('pp-imagen').value     = p?.Imagen_URL || '';
+  document.getElementById('pp-video').value      = p?.Video_URL || '';
   document.getElementById('propFeedback').textContent = '';
   openModal('modalProp');
 }
@@ -1303,6 +1307,8 @@ async function guardarProp() {
     Disponible:       document.getElementById('pp-disponible').value,
     Descripcion:      document.getElementById('pp-desc').value.trim() || undefined,
     Google_Maps_URL:  document.getElementById('pp-maps').value.trim() || undefined,
+    Imagen_URL:       document.getElementById('pp-imagen').value.trim() || undefined,
+    Video_URL:        document.getElementById('pp-video').value.trim() || undefined,
   };
   const precio = parseFloat(document.getElementById('pp-precio').value);
   if(!isNaN(precio) && precio > 0) { fields.Precio = precio; fields.Moneda = document.getElementById('pp-moneda').value; }
