@@ -393,6 +393,25 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
                 f"¿En qué zona estás buscando?\n\n{MSG_ZONA}")
         return
 
+    # ── Lead viene del formulario web — ya tiene datos precargados ──────────
+    if step == "mostrar_props":
+        nombre_corto = sesion.get("nombre", "").split()[0] or "!"
+        zona  = sesion.get("zona", "")
+        tipo  = sesion.get("tipo", "")
+        # Primer mensaje que llega: cualquier texto activa el flujo
+        tipo_busqueda = tipo.split(",")[0].strip() if tipo else None
+        props = _at_buscar_propiedades(tipo=tipo_busqueda, zona=zona if zona != "Otra zona" else None)
+        if not props and tipo_busqueda:
+            props = _at_buscar_propiedades(zona=zona if zona != "Otra zona" else None)
+        SESIONES[telefono] = {**sesion, "step": "lista", "props": props}
+        if props:
+            _mostrar_lista(telefono, tipo_busqueda or "", "propiedades", "venta", zona)
+        else:
+            _enviar_texto(telefono,
+                f"En este momento no tenemos propiedades disponibles con esos criterios. 😔\n\n"
+                f"¿Querés que te avise cuando tengamos? Escribí *asesor* para hablar con {INMOBILIARIA['asesor']}.")
+        return
+
     # ── 0 o saludo → bienvenida ──────────────────────────────────────────────
     if t in ("0", "menu", "menú", "inicio", "volver", "hola", "hi", "hey", "start") or \
        re.search(r"\b(buenos dias|buenas tardes|buenas noches|buen dia)\b", t):
@@ -445,29 +464,27 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         nombre = sesion.get("nombre", "")
         zona = sesion.get("zona", None)
         operacion = sesion.get("operacion", "venta")
-        if t in ("1", "lote", "lotes"):
-            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="Lote",
-                                  notas=f"Busca lote en {zona or 'zona no especificada'}")
-            _mostrar_lista(telefono, "Lote", "Lotes", operacion, zona)
-        elif t in ("2", "terreno", "terrenos"):
-            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="Terreno",
+        if t in ("1", "terreno", "terrenos", "lote", "lotes"):
+            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="terreno",
                                   notas=f"Busca terreno en {zona or 'zona no especificada'}")
-            _mostrar_lista(telefono, "Terreno", "Terrenos", operacion, zona)
-        elif t in ("3", "todos", "ver todos", "cualquiera"):
-            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="Lote/Terreno",
-                                  notas=f"Busca lotes y terrenos en {zona or 'zona no especificada'}")
-            props_lotes = _at_buscar_propiedades(tipo="Lote", operacion=operacion, zona=zona)
-            props_terrenos = _at_buscar_propiedades(tipo="Terreno", operacion=operacion, zona=zona)
-            props = props_lotes + props_terrenos
+            _mostrar_lista(telefono, "terreno", "Terrenos", operacion, zona)
+        elif t in ("2", "casa", "casas"):
+            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="casa",
+                                  notas=f"Busca casa en {zona or 'zona no especificada'}")
+            _mostrar_lista(telefono, "casa", "Casas", operacion, zona)
+        elif t in ("3", "todos", "ver todos", "cualquiera", "departamento", "depto"):
+            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="cualquiera",
+                                  notas=f"Busca cualquier tipo en {zona or 'zona no especificada'}")
+            props = _at_buscar_propiedades(zona=zona)
             zona_label = f" en {zona}" if zona and zona != "Otra Zona" else ""
             if not props:
                 SESIONES[telefono] = {**SESIONES.get(telefono, {}), "step": "zona", "operacion": operacion}
                 _enviar_texto(telefono,
-                    f"En este momento no tenemos lotes ni terrenos en venta{zona_label}. 😔\n\n"
+                    f"En este momento no tenemos propiedades disponibles{zona_label}. 😔\n\n"
                     f"¿Querés buscar en otra zona?\n\n{MSG_ZONA}")
             else:
-                SESIONES[telefono] = {"step": "lista", "props": props, "operacion": operacion, "tipo": "Lote/Terreno", "zona": zona}
-                _enviar_texto(telefono, _lista_titulos(props, f"Lotes y Terrenos en Venta{zona_label}"))
+                SESIONES[telefono] = {"step": "lista", "props": props, "operacion": operacion, "zona": zona}
+                _enviar_texto(telefono, _lista_titulos(props, f"Propiedades Disponibles{zona_label}"))
         elif t == "4":
             _ir_asesor(telefono)
         else:
