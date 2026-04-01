@@ -1306,28 +1306,31 @@ function openDetalle(id) {
 
   document.getElementById('detalleBody').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      ${[
-        ['Teléfono', l.phone || '—', ''],
-        ['Presupuesto', l.presupuesto || '—', 'color:var(--accent2)'],
-        ['Origen', og[l.origen] || l.origen || '—', ''],
-        ['Score', l.score ? `<span style="color:${scoreColor(l.score)};font-weight:700">${l.score} pts — ${scoreLabel(l.score)}</span>` : '—', ''],
-        ['Sub-nicho', l.subnicho ? l.subnicho.replace(/_/g,' ') : '—', 'text-transform:capitalize'],
-      ].map(([k,v,s]) => `
-        <div style="background:var(--surface2);border-radius:8px;padding:11px">
-          <div style="color:var(--text2);font-size:11px;margin-bottom:3px">${k}</div>
-          <div style="font-weight:600;${s}">${v}</div>
-        </div>`).join('')}
+      <div style="background:var(--surface2);border-radius:8px;padding:11px">
+        <div style="color:var(--text2);font-size:11px;margin-bottom:5px">Teléfono</div>
+        <input id="dl-phone" value="${l.phone||''}" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;width:100%">
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:11px">
+        <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Presupuesto</div>
+        <div style="font-weight:600;color:var(--accent2)">${l.presupuesto||'—'}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:11px">
+        <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Origen</div>
+        <div style="font-weight:600">${og[l.origen]||l.origen||'—'}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:11px">
+        <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Score</div>
+        <div style="font-weight:600">${l.score?`<span style="color:${scoreColor(l.score)}">${l.score} pts — ${scoreLabel(l.score)}</span>`:'—'}</div>
+      </div>
     </div>
 
     <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
       <div style="color:var(--text2);font-size:11px;margin-bottom:7px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">✏️ Cambiar estado</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <select id="selectEstado" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:13px;flex:1;min-width:160px;cursor:pointer">
-          ${estadoOpts.map(o => `<option value="${o.v}"${o.v===estadoAt?' selected':''}>${o.label}</option>`).join('')}
+          ${estadoOpts.map(o=>`<option value="${o.v}"${o.v===estadoAt?' selected':''}>${o.label}</option>`).join('')}
         </select>
-        <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="guardarEstado(${id})">
-          Guardar
-        </button>
+        <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="guardarLead(${id})">💾 Guardar</button>
         <span id="estadoFeedback" style="font-size:11px;color:var(--text2)"></span>
       </div>
     </div>
@@ -1336,35 +1339,35 @@ function openDetalle(id) {
       <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Propiedad / Interés</div>
       <div>${l.interes}</div>
     </div>
-    ${l.cita ? `<div style="background:#064e3b;border:1px solid #1a5c33;border-radius:8px;padding:11px;margin-bottom:14px;color:#34d399;font-size:13px">
+    ${l.cita?`<div style="background:#064e3b;border:1px solid #1a5c33;border-radius:8px;padding:11px;margin-bottom:14px;color:#34d399;font-size:13px">
       📅 Cita agendada: <strong>${l.cita}</strong> — coordinada automáticamente por el bot
-    </div>` : ''}
-    ${l.notas ? `<div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
-      <div style="color:var(--text2);font-size:11px;margin-bottom:3px">📝 Notas del bot</div>
-      <div style="font-size:13px;line-height:1.5;color:var(--text)">${l.notas}</div>
-    </div>` : ''}
+    </div>`:''}
+    <div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:5px">📝 Notas</div>
+      <textarea id="dl-notas" rows="3" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 9px;font-size:13px;width:100%;resize:vertical;line-height:1.5">${l.notas||''}</textarea>
+    </div>
     <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">Historial</div>
     <div class="timeline">
       <div class="tl-item">
         <div class="tl-dot" style="background:#6c63ff"></div>
-        <div><div class="tl-title">Lead registrado — via ${og[l.origen] || l.origen}</div><div class="tl-time">${l.fecha}</div></div>
+        <div><div class="tl-title">Lead registrado — via ${og[l.origen]||l.origen}</div><div class="tl-time">${l.fecha}</div></div>
       </div>
-      ${l.status !== 'nuevo' ? `<div class="tl-item">
+      ${l.status!=='nuevo'?`<div class="tl-item">
         <div class="tl-dot" style="background:#ffa94d"></div>
         <div><div class="tl-title">Bot inició conversación — respondió en segundos</div><div class="tl-time">${l.fecha}</div></div>
-      </div>` : ''}
-      ${['calificado','cita','cerrado'].includes(l.status) ? `<div class="tl-item">
+      </div>`:''}
+      ${['calificado','cita','cerrado'].includes(l.status)?`<div class="tl-item">
         <div class="tl-dot" style="background:#a78bfa"></div>
         <div><div class="tl-title">Calificado — presupuesto y necesidades confirmados</div><div class="tl-time">${l.fecha}</div></div>
-      </div>` : ''}
-      ${(l.status === 'cita' || l.cita) ? `<div class="tl-item">
+      </div>`:''}
+      ${(l.status==='cita'||l.cita)?`<div class="tl-item">
         <div class="tl-dot" style="background:#00d4aa"></div>
-        <div><div class="tl-title">Cita agendada por bot${l.cita ? ' — ' + l.cita : ''}</div><div class="tl-time">${l.fecha}</div></div>
-      </div>` : ''}
-      ${l.status === 'cerrado' ? `<div class="tl-item">
+        <div><div class="tl-title">Cita agendada por bot${l.cita?' — '+l.cita:''}</div><div class="tl-time">${l.fecha}</div></div>
+      </div>`:''}
+      ${l.status==='cerrado'?`<div class="tl-item">
         <div class="tl-dot" style="background:#34d399"></div>
         <div><div class="tl-title">🏆 Venta / alquiler cerrado</div><div class="tl-time">${l.fecha}</div></div>
-      </div>` : ''}
+      </div>`:''}
     </div>
     <div class="ma">
       <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
@@ -1372,38 +1375,44 @@ function openDetalle(id) {
   openModal('modalDetalle');
 }
 
-async function guardarEstado(id) {
+async function guardarLead(id) {
   const l = LEADS[id];
   if (!l) return;
   const nuevoAt = document.getElementById('selectEstado').value;
+  const phone   = (document.getElementById('dl-phone')?.value || '').trim();
+  const notas   = (document.getElementById('dl-notas')?.value || '').trim();
   const fb = document.getElementById('estadoFeedback');
   fb.textContent = '⏳ Guardando...';
   fb.style.color = 'var(--text2)';
+
+  const payload = { Estado: nuevoAt };
+  if (phone)  payload.Telefono  = phone;
+  if (notas !== l.notas) payload.Notas_Bot = notas;
 
   try {
     const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Estado: nuevoAt }),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(8000),
     });
     const data = await res.json();
     if (res.ok && data.status === 'ok') {
       fb.textContent = '✅ Guardado en Airtable';
       fb.style.color = 'var(--green)';
-      // Actualizar estado local
-      const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
-      LEADS[id].status = nuevoStatus;
+      LEADS[id].status = AT_TO_STATUS[nuevoAt] || 'nuevo';
+      LEADS[id].phone  = phone || l.phone;
+      LEADS[id].notas  = notas;
       renderLeads();
       renderKanbanFromLeads();
-      addAct(`<strong>${l.name}</strong> — estado actualizado a <em>${nuevoAt.replace('_',' ')}</em>`, 'var(--accent)', 'ahora mismo');
+      addAct(`<strong>${l.name}</strong> — actualizado: estado ${nuevoAt.replace(/_/g,' ')}`, 'var(--accent)', 'ahora mismo');
     } else {
       throw new Error(data.detalle || 'Error desconocido');
     }
   } catch (err) {
-    // Demo: actualizar localmente aunque falle el backend
-    const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
-    LEADS[id].status = nuevoStatus;
+    LEADS[id].status = AT_TO_STATUS[nuevoAt] || 'nuevo';
+    LEADS[id].phone  = phone || l.phone;
+    LEADS[id].notas  = notas;
     renderLeads();
     renderKanbanFromLeads();
     fb.textContent = '⚠ Actualizado localmente (backend offline)';

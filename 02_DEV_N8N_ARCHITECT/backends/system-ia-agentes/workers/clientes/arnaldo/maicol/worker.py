@@ -619,6 +619,24 @@ def crm_clientes():
     return {"records": records}
 
 
+@router.patch("/crm/clientes/{record_id}")
+async def crm_editar_cliente(record_id: str, request: Request):
+    """Actualiza un cliente en Airtable desde el CRM."""
+    from fastapi import HTTPException
+    data = await request.json()
+    # Aceptar campos directamente o bajo 'fields'
+    fields = data.get("fields", data)
+    # Validar Estado si viene
+    estados_validos = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
+    if "Estado" in fields and fields["Estado"] not in estados_validos:
+        raise HTTPException(status_code=422, detail=f"Estado inválido: {fields['Estado']}")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "record": r.json()}
+
+
 @router.get("/config")
 def ver_config():
     """Diagnóstico: muestra qué variables de entorno están cargadas (sin exponer valores)."""
