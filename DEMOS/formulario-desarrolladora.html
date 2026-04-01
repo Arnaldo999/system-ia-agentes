@@ -758,22 +758,22 @@ async function submitForm() {
     if(si < steps.length) document.getElementById('loadingText').textContent = steps[si++];
   }, 700);
 
-  // Payload para el backend
+  // Payload para el backend — campos planos que el worker lee directamente
+  const zonaVal = FORM.zona || document.getElementById('zona').value;
   const payload = {
-    nombre: FORM.nombre,
-    telefono: FORM.telefono,
-    email: FORM.email || null,
-    fuente: 'formulario-desarrolladora',
-    // Datos de calificación como notas
-    captura_completa: {
-      proposito: FORM.proposito,
-      zona: FORM.zona || document.getElementById('zona').value,
-      plazo: FORM.plazo,
-      superficie: FORM.superficie,
-      presupuesto: FORM.presupuesto,
-      pago: FORM.pago,
-      score_calculado: score,
-    },
+    Nombre:        FORM.nombre.split(' ')[0] || FORM.nombre,
+    Apellido:      FORM.nombre.split(' ').slice(1).join(' ') || '',
+    Telefono:      FORM.telefono,
+    Email:         FORM.email || '',
+    Operacion:     'venta',
+    Tipo_Propiedad:'terreno',
+    Zona:          zonaVal,
+    Presupuesto:   FORM.presupuesto,
+    urgencia:      FORM.plazo,
+    Sub_nicho:     'desarrolladora',
+    Fuente:        'formulario-desarrolladora',
+    Score:         score,
+    Notas_Bot:     `Lote ${FORM.superficie || ''}m² · ${FORM.proposito || ''} · Pago: ${FORM.pago || ''} · Score: ${score}`,
   };
 
   let success = false;

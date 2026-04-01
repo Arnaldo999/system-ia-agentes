@@ -1018,6 +1018,9 @@ async def recibir_lead_formulario(request: Request):
     presupuesto = (body.get("Presupuesto") or body.get("presupuesto") or "A consultar")
     urgencia  = (body.get("urgencia") or "").strip()
     notas_raw = (body.get("Notas_Bot") or body.get("notas") or "").strip()
+    sub_nicho = (body.get("Sub_nicho") or body.get("subnicho") or "").strip()
+    fuente    = (body.get("Fuente") or body.get("fuente") or "formulario").strip()
+    score_num = body.get("Score") or body.get("score_num")
 
     if not telefono_raw:
         return {"status": "error", "detalle": "Telefono requerido"}
@@ -1036,6 +1039,28 @@ async def recibir_lead_formulario(request: Request):
         email=email, ciudad=zona,
         notas=notas_at,
     )
+
+    # ── Guardar Sub_nicho, Fuente y Score numérico en Airtable ────────────────
+    if sub_nicho or fuente or score_num is not None:
+        if AIRTABLE_BASE_ID and AIRTABLE_TABLE_CLIENTES:
+            _url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
+            _buscar = requests.get(_url, headers=AT_HEADERS,
+                params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+            _recs = _buscar.json().get("records", []) if _buscar.status_code == 200 else []
+            if _recs:
+                _extra: dict = {}
+                if sub_nicho:
+                    _extra["Sub_nicho"] = sub_nicho
+                if fuente:
+                    _extra["Fuente"] = fuente
+                if score_num is not None:
+                    try:
+                        _extra["Score"] = int(score_num)
+                    except (ValueError, TypeError):
+                        pass
+                if _extra:
+                    requests.patch(f"{_url}/{_recs[0]['id']}", headers=AT_HEADERS,
+                                   json={"fields": _extra}, timeout=8)
 
     # ── Precargar sesión con datos del formulario ─────────────────────────────
     sesion_nueva = {

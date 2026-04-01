@@ -639,9 +639,19 @@ async function submitForm(){
 
   const pts=calcScore();const{cls,icon,label}=scoreLabel(pts);
   const payload={
-    subnicho:'agencia_inmobiliaria',
-    nombre:FORM.nombre,telefono:FORM.telefono,email:FORM.email,
-    captura_completa:{...FORM,score_calculado:pts,score_nivel:label}
+    Nombre:        FORM.nombre.split(' ')[0]||FORM.nombre,
+    Apellido:      FORM.nombre.split(' ').slice(1).join(' ')||'',
+    Telefono:      FORM.telefono,
+    Email:         FORM.email||'',
+    Operacion:     FORM.operacion||'venta',
+    Tipo_Propiedad:FORM.tipo||'',
+    Zona:          FORM.zona||'',
+    Presupuesto:   FORM.presupuesto||'',
+    urgencia:      FORM.plazo||'',
+    Sub_nicho:     'agencia_inmobiliaria',
+    Fuente:        'formulario-agencia',
+    Score:         pts,
+    Notas_Bot:     `${FORM.tipo||''} ${FORM.operacion||''} · Zona: ${FORM.zona||''} · Dormitorios: ${FORM.dormitorios||''} · Pago: ${FORM.pago||''} · Score: ${label}`,
   };
 
   let success=false;

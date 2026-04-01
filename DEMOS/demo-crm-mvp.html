@@ -682,7 +682,7 @@
       </div>
       <div class="leads-wrap">
         <table class="leads-tbl"><thead><tr>
-          <th>Nombre</th><th>Contacto</th><th>Origen</th><th>Interés</th><th>Estado</th><th>Registrado</th><th></th>
+          <th>Nombre</th><th>Contacto</th><th>Origen</th><th>Interés</th><th>Estado</th><th>Score</th><th></th>
         </tr></thead><tbody id="leadsBody"></tbody></table>
       </div>
     </div>
@@ -926,19 +926,39 @@
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────
-const LEADS = [
-  {id:0,name:"Carlos Mendoza",phone:"+52 55 1234-5678",origen:"wa",status:"nuevo",interes:"Lote en Fracc. Prados Norte",fecha:"2026-04-01",presupuesto:"$180K USD"},
-  {id:1,name:"María González",phone:"+52 55 2345-6789",origen:"web",status:"nuevo",interes:"Casa 3 recámaras, $150K",fecha:"2026-04-01",presupuesto:"$150K USD"},
-  {id:2,name:"Jorge Ramírez",phone:"+52 55 3456-7890",origen:"ref",status:"nuevo",interes:"Depto. centro histórico",fecha:"2026-03-31",presupuesto:"$220K USD"},
-  {id:3,name:"Ana Torres",phone:"+52 55 4567-8901",origen:"wa",status:"nuevo",interes:"Renta local comercial",fecha:"2026-03-31",presupuesto:"$3K/mes"},
-  {id:4,name:"Luis Hernández",phone:"+52 55 5678-9012",origen:"web",status:"nuevo",interes:"Terreno 300m² zona norte",fecha:"2026-03-30",presupuesto:"$120K USD"},
-  {id:5,name:"Carla Reyes",phone:"+52 55 6789-0123",origen:"wa",status:"contactado",interes:"Lote residencial Fracc. Sur",fecha:"2026-03-30",presupuesto:"$180K USD"},
-  {id:6,name:"Héctor Castillo",phone:"+52 55 7890-1234",origen:"ref",status:"contactado",interes:"2 deptos. Zona Polanco",fecha:"2026-03-29",presupuesto:"$400K USD"},
-  {id:7,name:"Patricia López",phone:"+52 55 8901-2345",origen:"web",status:"contactado",interes:"Casa con financiamiento",fecha:"2026-03-29",presupuesto:"$130K USD"},
-  {id:8,name:"Roberto Alvarado",phone:"+52 55 9012-3456",origen:"ref",status:"calificado",interes:"Lote #12, $200K",fecha:"2026-03-28",presupuesto:"$200K USD",cita:"Lun 7 Abr 11:00 AM"},
-  {id:9,name:"Sandra Ruiz",phone:"+52 55 0123-4567",origen:"wa",status:"calificado",interes:"3 propiedades en renta",fecha:"2026-03-28",presupuesto:"$50K/año"},
-  {id:10,name:"Marcos Vega",phone:"+52 55 1122-3344",origen:"web",status:"cita",interes:"Lote #47 Fracc. Norte",fecha:"2026-03-27",presupuesto:"$175K USD",cita:"Jue 3 Abr 10:00 AM"},
-  {id:11,name:"Diana Flores",phone:"+52 55 2233-4455",origen:"ref",status:"cita",interes:"Depto 502 Torre B",fecha:"2026-03-26",presupuesto:"$280K USD",cita:"Vie 4 Abr 3:00 PM"},
+// LEADS se carga desde Airtable al iniciar. Fallback a datos demo si el backend no responde.
+let LEADS = [];
+
+// Mapeo estado Airtable → estado visual del pipeline
+const ESTADO_MAP = {
+  'no_contactado': 'nuevo',
+  'contactado':    'contactado',
+  'en_negociacion':'calificado',
+  'cerrado':       'cerrado',
+  'descartado':    'perdido',
+};
+// Si las notas dicen "CITA AGENDADA" y tiene Fecha_Cita → se muestra como "cita"
+
+const FUENTE_ORIGEN = {
+  'formulario-desarrolladora': 'form',
+  'formulario-agencia':        'form',
+  'formulario-agente':         'form',
+  'whatsapp_directo':          'wa',
+};
+
+const LEADS_FALLBACK = [
+  {id:0,name:"Carlos Mendoza",phone:"+5493764112233",origen:"form",status:"nuevo",interes:"Lote 500m² · San Ignacio",fecha:"2026-04-01",presupuesto:"USD 50k-100k",score:12,subnicho:"desarrolladora",notas:"Interesado en lote de 500m2. Plazo: inmediato."},
+  {id:1,name:"María González",phone:"+5493764220011",origen:"form",status:"nuevo",interes:"Casa 3 dorm · Apóstoles",fecha:"2026-04-01",presupuesto:"USD 100k-200k",score:9,subnicho:"agencia_inmobiliaria",notas:"Busca casa 3 dorm para comprar. Crédito hipotecario."},
+  {id:2,name:"Lucas Romero",phone:"+5493764334455",origen:"form",status:"nuevo",interes:"Dpto 2 dorm alquiler · Roca",fecha:"2026-04-01",presupuesto:"Hasta USD 50k",score:6,subnicho:"agente_independiente",notas:"Alquiler dpto 2 dorm. Presupuesto ajustado."},
+  {id:3,name:"Sofía Fernández",phone:"+5493764556677",origen:"wa",status:"contactado",interes:"Lote residencial · San Ignacio",fecha:"2026-03-31",presupuesto:"USD 50k-100k",score:14,subnicho:"desarrolladora",notas:"Contactada. Pidió fotos del lote B-12."},
+  {id:4,name:"Martín López",phone:"+5493764668899",origen:"form",status:"contactado",interes:"Casa San Ignacio centro",fecha:"2026-03-31",presupuesto:"USD 100k-200k",score:11,subnicho:"agencia_inmobiliaria",notas:"Tiene pre-aprobación bancaria."},
+  {id:5,name:"Ana Pereyra",phone:"+5493764771100",origen:"wa",status:"contactado",interes:"Casa alquiler · Apóstoles",fecha:"2026-03-30",presupuesto:"Hasta USD 50k",score:7,subnicho:"agente_independiente",notas:"Llegó por WhatsApp. Tiene garante."},
+  {id:6,name:"Roberto Acosta",phone:"+5493764882211",origen:"form",status:"calificado",interes:"Lote A-3/B-7 · San Ignacio",fecha:"2026-03-29",presupuesto:"USD 100k-200k",score:16,subnicho:"desarrolladora",notas:"Visitó lotes. Pide reserva. 50% contado."},
+  {id:7,name:"Valeria Ríos",phone:"+5493764993322",origen:"form",status:"calificado",interes:"Casa con piscina · San Ignacio",fecha:"2026-03-29",presupuesto:"Más de USD 200k",score:18,subnicho:"agencia_inmobiliaria",notas:"Cliente premium. Mandó propuesta escrita."},
+  {id:8,name:"Fernanda Aguirre",phone:"+5493765771100",origen:"form",status:"cita",interes:"Lote sector este · San Ignacio",fecha:"2026-03-28",presupuesto:"USD 50k-100k",score:15,subnicho:"desarrolladora",notas:"CITA AGENDADA: 05/04 10:00hs. Viene con pareja.",cita:"Sáb 5 Abr 10:00 AM"},
+  {id:9,name:"Nicolás Herrera",phone:"+5493765882211",origen:"form",status:"cita",interes:"Casa barrio norte · San Ignacio",fecha:"2026-03-28",presupuesto:"USD 100k-200k",score:13,subnicho:"agencia_inmobiliaria",notas:"CITA AGENDADA: 07/04 15:00hs. Trae contador.",cita:"Lun 7 Abr 3:00 PM"},
+  {id:10,name:"Patricia Molina",phone:"+5493765115544",origen:"form",status:"cerrado",interes:"Lote C-5 · San Ignacio",fecha:"2026-03-25",presupuesto:"USD 50k-100k",score:15,subnicho:"desarrolladora",notas:"CERRADO. Compró lote C-5 a USD 62.000. Firmó boleto."},
+  {id:11,name:"Héctor Vargas",phone:"+5493765226655",origen:"form",status:"cerrado",interes:"Casa alquiler · San Ignacio",fecha:"2026-03-24",presupuesto:"Hasta USD 50k",score:10,subnicho:"agencia_inmobiliaria",notas:"CERRADO. Alquiler firmado 2 años. USD 350/mes."},
 ];
 
 const PROPS = [
@@ -1001,8 +1021,73 @@ function nav(id, el) {
   if(el) el.classList.add('active');
   if(id==='chat') renderResumenes();
   if(id==='leads') renderLeads();
+  if(id==='pipeline') renderKanbanFromLeads();
   if(id==='propiedades') renderProps();
   if(id==='agenda') renderAgenda();
+}
+
+// ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
+async function cargarLeads() {
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes`, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const records = data.records || [];
+    if (records.length === 0) throw new Error('Sin registros');
+
+    LEADS = records.map((r, idx) => {
+      const f = r;
+      const estadoAirtable = (f.Estado || '').toLowerCase();
+      // Si las notas dicen CITA AGENDADA y hay fecha → estado cita
+      const tieneCita = f.Fecha_Cita && (f.Notas_Bot || '').includes('CITA AGENDADA');
+      let status = tieneCita ? 'cita' : (ESTADO_MAP[estadoAirtable] || 'nuevo');
+
+      // Cita label legible
+      let citaLabel = '';
+      if (tieneCita && f.Fecha_Cita) {
+        const d = new Date(f.Fecha_Cita + 'T12:00:00');
+        const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        citaLabel = `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
+      }
+
+      const presupuestoLabel = {
+        'hata_50k':'Hasta USD 50k','50k_100k':'USD 50k-100k',
+        '100k_200k':'USD 100k-200k','mas_200k':'Más de USD 200k'
+      };
+      const operLabel = { 'venta':'Venta','alquiler':'Alquiler','Todo':'Compra/Alquiler' };
+
+      return {
+        id: idx,
+        atId: r.id || '',
+        name: `${f.Nombre || ''} ${f.Apellido || ''}`.trim() || 'Sin nombre',
+        phone: f.Telefono || '',
+        email: f.Email || '',
+        origen: FUENTE_ORIGEN[f.Fuente] || (f.Llego_WhatsApp ? 'wa' : 'form'),
+        status,
+        interes: [operLabel[f.Operacion] || f.Operacion, f.Tipo_Propiedad, f.Zona].filter(Boolean).join(' · ') || 'Sin especificar',
+        fecha: f.Fecha_WhatsApp || (r.createdTime ? r.createdTime.slice(0,10) : ''),
+        presupuesto: presupuestoLabel[f.Presupuesto] || f.Presupuesto || '',
+        score: f.Score || 0,
+        subnicho: f.Sub_nicho || '',
+        notas: f.Notas_Bot || '',
+        cita: citaLabel,
+        ciudad: f.Ciudad || '',
+      };
+    });
+
+    // Actualizar KPI total
+    const kt = document.getElementById('kpi-total');
+    if (kt) kt.textContent = LEADS.length;
+
+    renderLeads();
+    renderKanbanFromLeads();
+  } catch (err) {
+    console.warn('[Leads] Usando datos demo:', err.message);
+    LEADS = LEADS_FALLBACK;
+    renderLeads();
+    renderKanbanFromLeads();
+  }
 }
 
 // ── LEADS TABLE ────────────────────────────────────────────────────────────
@@ -1011,30 +1096,37 @@ function renderLeads(data) {
   const tb = document.getElementById('leadsBody');
   tb.innerHTML = '';
   const spills = {
-    nuevo:'<span class="spill s-nuevo">🔵 Nuevo</span>',
+    nuevo:     '<span class="spill s-nuevo">🔵 Nuevo</span>',
     contactado:'<span class="spill s-contactado">🟡 Contactado</span>',
     calificado:'<span class="spill s-calificado">🟣 Calificado</span>',
-    cita:'<span class="spill s-cita">🟢 Con cita</span>',
-    perdido:'<span class="spill s-perdido">🔴 Perdido</span>',
+    cita:      '<span class="spill s-cita">🟢 Con cita</span>',
+    cerrado:   '<span class="spill" style="background:#064e3b;color:#34d399;border:1px solid #1a5c33">🏆 Cerrado</span>',
+    perdido:   '<span class="spill s-perdido">🔴 Perdido</span>',
   };
   const origs = {
-    wa:'<span class="badge b-wa">💬 WhatsApp</span>',
-    web:'<span class="badge b-web">📋 Web</span>',
-    ref:'<span class="badge b-ref">🔥 Referido</span>',
+    wa:  '<span class="badge b-wa">💬 WhatsApp</span>',
+    web: '<span class="badge b-web">📋 Web</span>',
+    form:'<span class="badge b-web">📋 Formulario</span>',
+    ref: '<span class="badge b-ref">🔥 Referido</span>',
   };
   const ini = n=>n.split(' ').map(x=>x[0]).join('').substring(0,2);
-  data.forEach(l=>{
-    tb.innerHTML+=`
+  const scoreColor = s => s >= 12 ? 'var(--green)' : s >= 7 ? 'var(--yellow)' : 'var(--red)';
+
+  data.forEach(l => {
+    tb.innerHTML += `
       <tr onclick="openDetalle(${l.id})" style="cursor:pointer">
         <td><div style="display:flex;align-items:center;gap:8px">
           <div class="avatar" style="width:28px;height:28px;font-size:10px">${ini(l.name)}</div>
-          <strong>${l.name}</strong>
+          <div>
+            <strong>${l.name}</strong>
+            ${l.subnicho ? `<div style="font-size:10px;color:var(--text2)">${l.subnicho.replace('_',' ')}</div>` : ''}
+          </div>
         </div></td>
         <td style="color:var(--text2)">${l.phone}</td>
-        <td>${origs[l.origen]||''}</td>
+        <td>${origs[l.origen] || ''}</td>
         <td style="color:var(--text2);font-size:12px">${l.interes}</td>
-        <td>${spills[l.status]||''}</td>
-        <td style="color:var(--text2);font-size:12px">${l.fecha}</td>
+        <td>${spills[l.status] || ''}</td>
+        <td style="color:${scoreColor(l.score)};font-weight:600;font-size:12px">${l.score ? l.score + ' pts' : '—'}</td>
         <td><button class="btn" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button></td>
       </tr>`;
   });
@@ -1046,49 +1138,140 @@ function filterLeads(q) {
   });
 }
 
+// ── KANBAN DESDE LEADS ─────────────────────────────────────────────────────
+function renderKanbanFromLeads() {
+  const cols = {
+    nuevo: 'col-n', contactado: 'col-c', calificado: 'col-q',
+    cita: 'col-a', cerrado: 'col-z', perdido: 'col-p'
+  };
+  const cnts = {
+    nuevo: 'cnt-n', contactado: 'cnt-c', calificado: 'cnt-q',
+    cita: 'cnt-a', cerrado: 'cnt-z', perdido: 'cnt-p'
+  };
+  // Limpiar columnas
+  Object.values(cols).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+
+  const scoreColor = s => s >= 12 ? '#34d399' : s >= 7 ? '#fbbf24' : '#f87171';
+  const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
+
+  LEADS.forEach(l => {
+    const colId = cols[l.status];
+    const col = document.getElementById(colId);
+    if (!col) return;
+
+    const origenBadge = l.origen === 'wa'
+      ? '<span class="badge b-wa">💬 WhatsApp</span>'
+      : '<span class="badge b-web">📋 Formulario</span>';
+
+    // Botón de avance según estado
+    const nextMap = {
+      nuevo:     {next:'contactado', label:'→ Contactado'},
+      contactado:{next:'calificado', label:'→ Calificado'},
+      calificado:{next:'cita',       label:'→ Cita agendada'},
+      cita:      {next:'cerrado',    label:'✅ Cerrar venta'},
+    };
+    const nextInfo = nextMap[l.status];
+    const nextBtn = nextInfo
+      ? `<button class="btn ${nextInfo.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${nextInfo.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${l.id},'${nextInfo.next}')">${nextInfo.label}</button>`
+      : '';
+
+    const card = document.createElement('div');
+    card.className = 'lcard';
+    card.id = `kcard-${l.id}`;
+    card.onclick = () => openDetalle(l.id);
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      <div class="lcard-name">${l.name}</div>
+      <div class="lcard-meta">${l.interes}</div>
+      <div class="lcard-badges">${origenBadge}
+        ${l.score ? `<span class="badge" style="background:#0d1a0d;color:${scoreColor(l.score)};border:1px solid ${scoreColor(l.score)}44">${scoreLabel(l.score)}</span>` : ''}
+      </div>
+      ${l.cita ? `<div style="font-size:11px;color:#34d399;margin-top:4px">📅 Cita: ${l.cita}</div>` : ''}
+      <div class="lcard-actions">
+        <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button>
+        ${nextBtn}
+      </div>`;
+    col.appendChild(card);
+  });
+
+  // Actualizar contadores
+  Object.entries(cnts).forEach(([status, cntId]) => {
+    const cnt = document.getElementById(cntId);
+    const col = document.getElementById(cols[status]);
+    if (cnt && col) cnt.textContent = col.querySelectorAll('.lcard').length;
+  });
+
+  // Actualizar badge nav pipeline
+  const badge = document.getElementById('pipelineBadge');
+  if (badge) badge.textContent = LEADS.length;
+}
+
 // ── LEAD DETAIL ────────────────────────────────────────────────────────────
 function openDetalle(id) {
-  const l = LEADS[id]||LEADS[0];
+  const l = LEADS[id] || LEADS[0];
   document.getElementById('detalleTitulo').textContent = l.name;
-  const sl = {nuevo:'🔵 Nuevo',contactado:'🟡 Contactado',calificado:'🟣 Calificado',cita:'🟢 Con cita',perdido:'🔴 Perdido'};
-  const og = {wa:'💬 WhatsApp',web:'📋 Formulario web',ref:'🔥 Referido'};
-  document.getElementById('detalleBody').innerHTML=`
+  const sl = {
+    nuevo:'🔵 Nuevo', contactado:'🟡 Contactado', calificado:'🟣 Calificado',
+    cita:'🟢 Con cita', cerrado:'🏆 Cerrado', perdido:'🔴 Perdido'
+  };
+  const og = { wa:'💬 WhatsApp', form:'📋 Formulario', web:'📋 Formulario', ref:'🔥 Referido' };
+  const scoreColor = s => s >= 12 ? 'var(--green)' : s >= 7 ? 'var(--yellow)' : 'var(--red)';
+  const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
+
+  document.getElementById('detalleBody').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      ${[['Teléfono',l.phone,''],['Presupuesto',l.presupuesto,'color:var(--accent2)'],['Origen',og[l.origen],''],['Estado',sl[l.status],'']].map(([k,v,s])=>`
+      ${[
+        ['Teléfono', l.phone || '—', ''],
+        ['Presupuesto', l.presupuesto || '—', 'color:var(--accent2)'],
+        ['Origen', og[l.origen] || l.origen || '—', ''],
+        ['Estado', sl[l.status] || l.status, ''],
+        ['Score', l.score ? `<span style="color:${scoreColor(l.score)};font-weight:700">${l.score} pts — ${scoreLabel(l.score)}</span>` : '—', ''],
+        ['Sub-nicho', l.subnicho ? l.subnicho.replace(/_/g,' ') : '—', 'text-transform:capitalize'],
+      ].map(([k,v,s]) => `
         <div style="background:var(--surface2);border-radius:8px;padding:11px">
           <div style="color:var(--text2);font-size:11px;margin-bottom:3px">${k}</div>
           <div style="font-weight:600;${s}">${v}</div>
         </div>`).join('')}
     </div>
     <div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
-      <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Interés</div>
+      <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Propiedad / Interés</div>
       <div>${l.interes}</div>
     </div>
-    ${l.cita?`<div style="background:#064e3b;border:1px solid #1a5c33;border-radius:8px;padding:11px;margin-bottom:14px;color:#34d399;font-size:13px">
-      📅 Cita: <strong>${l.cita}</strong> — agendada automáticamente por el bot
-    </div>`:''}
+    ${l.cita ? `<div style="background:#064e3b;border:1px solid #1a5c33;border-radius:8px;padding:11px;margin-bottom:14px;color:#34d399;font-size:13px">
+      📅 Cita agendada: <strong>${l.cita}</strong> — coordinada automáticamente por el bot
+    </div>` : ''}
+    ${l.notas ? `<div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:3px">📝 Notas del bot</div>
+      <div style="font-size:13px;line-height:1.5;color:var(--text)">${l.notas}</div>
+    </div>` : ''}
     <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">Historial</div>
     <div class="timeline">
       <div class="tl-item">
         <div class="tl-dot" style="background:#6c63ff"></div>
-        <div><div class="tl-title">Lead registrado — via ${og[l.origen]}</div><div class="tl-time">${l.fecha}</div></div>
+        <div><div class="tl-title">Lead registrado — via ${og[l.origen] || l.origen}</div><div class="tl-time">${l.fecha}</div></div>
       </div>
-      ${l.status!=='nuevo'?`<div class="tl-item">
+      ${l.status !== 'nuevo' ? `<div class="tl-item">
         <div class="tl-dot" style="background:#ffa94d"></div>
-        <div><div class="tl-title">Bot inició conversación — respondió en 47 seg</div><div class="tl-time">${l.fecha}</div></div>
-      </div>`:''}
-      ${['calificado','cita'].includes(l.status)?`<div class="tl-item">
+        <div><div class="tl-title">Bot inició conversación — respondió en segundos</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+      ${['calificado','cita','cerrado'].includes(l.status) ? `<div class="tl-item">
         <div class="tl-dot" style="background:#a78bfa"></div>
         <div><div class="tl-title">Calificado — presupuesto y necesidades confirmados</div><div class="tl-time">${l.fecha}</div></div>
-      </div>`:''}
-      ${l.status==='cita'?`<div class="tl-item">
+      </div>` : ''}
+      ${(l.status === 'cita' || l.cita) ? `<div class="tl-item">
         <div class="tl-dot" style="background:#00d4aa"></div>
-        <div><div class="tl-title">Cita agendada por bot — ${l.cita}</div><div class="tl-time">${l.fecha}</div></div>
-      </div>`:''}
+        <div><div class="tl-title">Cita agendada por bot${l.cita ? ' — ' + l.cita : ''}</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+      ${l.status === 'cerrado' ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#34d399"></div>
+        <div><div class="tl-title">🏆 Venta / alquiler cerrado</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
     </div>
     <div class="ma">
       <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
-      <button class="btn btn-primary" onclick="closeModal('modalDetalle')">Editar estado ✏️</button>
     </div>`;
   openModal('modalDetalle');
 }
@@ -1558,7 +1741,7 @@ setTimeout(()=>showNotif('📅 Cita agendada automáticamente','Carla R. eligió
 setTimeout(()=>simLead(),40000);
 
 // ── INIT ────────────────────────────────────────────────────────────────────
-renderLeads();
+cargarLeads();   // carga leads desde Airtable → renderLeads() + renderKanbanFromLeads()
 renderProps();
 renderAgenda();
 </script>
