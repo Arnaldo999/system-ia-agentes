@@ -333,7 +333,7 @@
   <div class="user-chip-wrap">
     <div class="user-chip" onclick="togglePerfil(event)" title="Editar perfil">
       <div class="avatar" id="topAvatar">AR</div>
-      Hola, <span id="topUsuario">Arnaldo</span> ▾
+      Hola, <span id="topUsuario">Maicol</span> ▾
     </div>
     <!-- DROPDOWN PERFIL -->
     <div class="perfil-dropdown" id="perfilDropdown">
@@ -353,7 +353,7 @@
       <div class="mf-label">Nombre de la inmobiliaria</div>
       <input class="mf-input" id="pEmpresa" placeholder="Tu Inmobiliaria">
       <div class="mf-label">Tu nombre</div>
-      <input class="mf-input" id="pUsuario" placeholder="Arnaldo">
+      <input class="mf-input" id="pUsuario" placeholder="Tu nombre">
       <button class="btn btn-primary" style="width:100%;margin-top:2px" onclick="guardarPerfil()">Guardar cambios</button>
     </div>
   </div>
@@ -415,7 +415,7 @@
 
       <div class="sh">
         <div>
-          <div class="sh-title">Bienvenido, Arnaldo 👋</div>
+          <div class="sh-title">Bienvenido, <span id="dashUsuario">Maicol</span> 👋</div>
           <div class="sh-sub">Tu bot atendió <strong style="color:var(--green)">3 leads</strong> mientras estabas fuera. Hoy vas bien.</div>
         </div>
         <button class="btn btn-primary" onclick="simLead()">⚡ Simular lead nuevo</button>
@@ -1885,6 +1885,8 @@ function cargarPerfil() {
   document.title = empresa + ' — CRM';
   document.getElementById('topUsuario').textContent = usuario;
   document.getElementById('topAvatar').textContent = usuario.substring(0,2).toUpperCase();
+  const dash = document.getElementById('dashUsuario');
+  if (dash) dash.textContent = usuario.split(' ')[0];
   if (p.logo) aplicarLogo(p.logo);
 }
 
