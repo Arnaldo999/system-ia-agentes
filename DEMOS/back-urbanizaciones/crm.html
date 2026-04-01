@@ -1376,6 +1376,52 @@ async function guardarEstado(id) {
 
 // ── PROPS — conectado a Airtable via backend ────────────────────────────────
 const API_BASE = 'https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol';
+let PROPS_DATA = [];
+
+function abrirDetalleProp(i) {
+  const p = PROPS_DATA[i]; if(!p) return;
+  const titulo = p.Titulo || p.titulo || p.Nombre || 'Propiedad';
+  const precio = p.Precio || p.precio || 0;
+  const moneda = p.Moneda || p.moneda || 'USD';
+  const zona = p.Zona || p.zona || '';
+  const tipo = p.Tipo || p.tipo || '';
+  const operacion = p.Operacion || p.operacion || '';
+  const desc = p.Descripcion || p.descripcion || '';
+  const dorms = p.Dormitorios || p.dormitorios || '';
+  const metrosCub = p.Metros_Cubiertos || p.metros_cubiertos || '';
+  const metrosTerr = p.Metros_Terreno || p.metros_terreno || '';
+  const mapsUrl = p.Google_Maps_URL || p.google_maps_url || '';
+  const disponible = p.Disponible || p.disponible || '';
+  const notas = p.Notas || p.notas || p.Nota || '';
+  const precioStr = precio ? `$${Number(precio).toLocaleString('es')} ${moneda}` : 'Consultar';
+
+  let imgUrl = '';
+  const imgField = p.Imagen_URL || p.imagen_url || p.Foto || p.foto || '';
+  if(Array.isArray(imgField) && imgField.length > 0) {
+    imgUrl = imgField[0].url || imgField[0].thumbnails?.large?.url || '';
+  } else if(typeof imgField === 'string') { imgUrl = imgField; }
+
+  document.getElementById('detalleTitulo').textContent = titulo;
+  document.getElementById('detalleBody').innerHTML = `
+    ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:14px" onerror="this.remove()">` : ''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:14px">
+      <div><span style="color:var(--text2)">Precio</span><br><strong style="color:var(--accent2)">${precioStr}</strong></div>
+      <div><span style="color:var(--text2)">Estado</span><br><strong>${disponible}</strong></div>
+      ${zona ? `<div><span style="color:var(--text2)">Zona</span><br>${zona}</div>` : ''}
+      ${tipo ? `<div><span style="color:var(--text2)">Tipo</span><br>${tipo}</div>` : ''}
+      ${operacion ? `<div><span style="color:var(--text2)">Operación</span><br>${operacion}</div>` : ''}
+      ${dorms ? `<div><span style="color:var(--text2)">Dormitorios</span><br>${dorms}</div>` : ''}
+      ${metrosCub ? `<div><span style="color:var(--text2)">Cubiertos</span><br>${metrosCub} m²</div>` : ''}
+      ${metrosTerr ? `<div><span style="color:var(--text2)">Terreno</span><br>${metrosTerr} m²</div>` : ''}
+    </div>
+    ${desc ? `<div style="color:var(--text2);font-size:13px;line-height:1.5;margin-bottom:12px">${desc}</div>` : ''}
+    ${notas ? `<div style="background:var(--bg);border-radius:6px;padding:8px;font-size:12px;color:var(--text2);margin-bottom:12px">📝 ${notas}</div>` : ''}
+    <div class="ma">
+      ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn btn-primary" style="text-decoration:none">🗺 Ver en Maps</a>` : ''}
+      <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
+    </div>`;
+  openModal('modalDetalle');
+}
 
 async function renderProps() {
   const g = document.getElementById('propsGrid');
@@ -1404,8 +1450,9 @@ async function renderProps() {
     if(subEl) subEl.textContent = `${records.length} propiedades · datos en tiempo real desde Airtable`;
     if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ Airtable conectado · ${records.length} registros</span>`;
 
+    PROPS_DATA = records;
     g.innerHTML = '';
-    records.forEach(p => {
+    records.forEach((p, idx) => {
       // Normalizar campos Airtable
       const titulo = p.Titulo || p.titulo || p.Nombre || 'Propiedad';
       const precio = p.Precio || p.precio || 0;
@@ -1463,7 +1510,7 @@ async function renderProps() {
             <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
             <div style="display:flex;gap:5px">
               ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺 Maps</a>` : ''}
-              <button class="btn" style="padding:4px 10px;font-size:11px">Ver detalle</button>
+              <button class="btn" style="padding:4px 10px;font-size:11px" onclick="abrirDetalleProp(${idx})">Ver detalle</button>
             </div>
           </div>
         </div>`;

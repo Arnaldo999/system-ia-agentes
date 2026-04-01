@@ -41,7 +41,7 @@ SESIONES: dict[str, dict] = {}
 AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "application/json"}
 
 
-def _at_registrar_cliente(telefono: str, nombre: str, operacion: str = "", tipo: str = "", notas: str = "") -> None:
+def _at_registrar_cliente(telefono: str, nombre: str, notas: str = "") -> None:
     from datetime import date
     hoy = date.today().isoformat()
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
@@ -49,27 +49,21 @@ def _at_registrar_cliente(telefono: str, nombre: str, operacion: str = "", tipo:
         params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
     records = buscar.json().get("records", []) if buscar.status_code == 200 else []
 
+    # Campos reales en Airtable: Nombre, Telefono, Estado, Llego_WhatsApp, Notas_Bot, Fecha_WhatsApp
+    # Estado valores: no_contactado | contactado | en_negociacion | cerrado | descartado
     campos = {"Telefono": telefono, "Llego_WhatsApp": True}
     if nombre:
-        partes = nombre.strip().split(" ", 1)
-        campos["Nombre"] = partes[0]
-        if len(partes) > 1:
-            campos["Apellido"] = partes[1]
-    if operacion:
-        campos["Operacion"] = operacion.capitalize()
-        campos["Estado"] = "calificado"
-    if tipo:
-        campos["Tipo_Propiedad"] = tipo
+        campos["Nombre"] = nombre.strip()
     if notas:
         campos["Notas_Bot"] = notas
 
     if records:
         rec_id = records[0]["id"]
+        campos["Estado"] = "contactado"
         requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
     else:
         campos["Fecha_WhatsApp"] = hoy
-        if "Estado" not in campos:
-            campos["Estado"] = "nuevo"
+        campos["Estado"] = "no_contactado"
         requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
 
 
@@ -431,7 +425,7 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         nombre = sesion.get("nombre", "")
         if t in ("1", "ver", "lotes", "terrenos", "terreno", "lote", "comprar", "venta", "quiero comprar"):
             SESIONES[telefono] = {"step": "zona", "props": [], "operacion": "venta", "nombre": nombre}
-            _at_registrar_cliente(telefono, nombre, operacion="Venta", notas="Busca lotes/terrenos")
+            _at_registrar_cliente(telefono, nombre, notas="Busca lotes/terrenos")
             _enviar_texto(telefono, MSG_ZONA)
         elif t == "2":
             _ir_asesor(telefono)
@@ -465,16 +459,13 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         zona = sesion.get("zona", None)
         operacion = sesion.get("operacion", "venta")
         if t in ("1", "terreno", "terrenos", "lote", "lotes"):
-            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="terreno",
-                                  notas=f"Busca terreno en {zona or 'zona no especificada'}")
+            _at_registrar_cliente(telefono, nombre, notas=f"Busca terreno en {zona or 'zona no especificada'}")
             _mostrar_lista(telefono, "terreno", "Terrenos", operacion, zona)
         elif t in ("2", "casa", "casas"):
-            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="casa",
-                                  notas=f"Busca casa en {zona or 'zona no especificada'}")
+            _at_registrar_cliente(telefono, nombre, notas=f"Busca casa en {zona or 'zona no especificada'}")
             _mostrar_lista(telefono, "casa", "Casas", operacion, zona)
         elif t in ("3", "todos", "ver todos", "cualquiera", "departamento", "depto"):
-            _at_registrar_cliente(telefono, nombre, operacion=operacion, tipo="cualquiera",
-                                  notas=f"Busca cualquier tipo en {zona or 'zona no especificada'}")
+            _at_registrar_cliente(telefono, nombre, notas=f"Busca cualquier tipo en {zona or 'zona no especificada'}")
             props = _at_buscar_propiedades(zona=zona)
             zona_label = f" en {zona}" if zona and zona != "Otra Zona" else ""
             if not props:
@@ -647,7 +638,8 @@ async def recibir_lead(request: Request):
     records = buscar.json().get("records", []) if buscar.status_code == 200 else []
 
     # Solo campos que existen en la tabla Clientes de Maicol
-    estado_at = "calificado" if score == "caliente" else "nuevo"
+    # Estado: valores reales Airtable = no_contactado | contactado | en_negociacion | cerrado | descartado
+    estado_at = "contactado"  # llega del formulario = ya fue contactado por el bot
     nombre_completo_at = f"{nombre} {apellido}".strip()
     notas = f"Formulario web | Zona: {zona} | Tipo: {tipo} | Objetivo: {operacion} | Presupuesto: {presupuesto} | Plazo: {urgencia} | Score: {score}"
     if nota:
