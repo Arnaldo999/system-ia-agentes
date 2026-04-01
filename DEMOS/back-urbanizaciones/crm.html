@@ -425,7 +425,7 @@
       <div class="kpis">
         <div class="kpi" style="--c:#6c63ff">
           <div class="kpi-icon">👥</div>
-          <div class="kpi-val" id="kpi-total">47</div>
+          <div class="kpi-val" id="kpi-total">—</div>
           <div class="kpi-label">Total Leads</div>
           <div class="kpi-delta">↑ +5 esta semana</div>
         </div>
@@ -732,7 +732,7 @@
       <div class="sh">
         <div>
           <div class="sh-title">Mis Leads</div>
-          <div class="sh-sub" id="leadsCount">47 contactos registrados</div>
+          <div class="sh-sub" id="leadsCount">Cargando desde Airtable...</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div class="search-wrap">
@@ -1087,7 +1087,7 @@ function nav(id, el) {
   if(el) el.classList.add('active');
   if(id==='chat') renderResumenes();
   if(id==='leads') renderLeads();
-  if(id==='pipeline') renderKanbanFromLeads();
+  if(id==='pipeline') { if(LEADS.length > 0) renderKanbanFromLeads(); else cargarLeads(); }
   if(id==='propiedades') renderProps();
   if(id==='agenda') renderAgenda();
 }
@@ -1147,15 +1147,19 @@ async function cargarLeads() {
       };
     });
 
-    // Actualizar KPI total
+    // Actualizar KPIs y contadores
     const kt = document.getElementById('kpi-total');
     if (kt) kt.textContent = LEADS.length;
+    const lc = document.getElementById('leadsCount');
+    if (lc) lc.textContent = `${LEADS.length} contactos registrados`;
 
     renderLeads();
     renderKanbanFromLeads();
   } catch (err) {
     console.warn('[Leads] Backend no disponible:', err.message);
     LEADS = [];
+    const lc = document.getElementById('leadsCount');
+    if (lc) lc.textContent = 'Reconectando...';
     renderLeads();
     renderKanbanFromLeads();
     showNotif('⚠ Backend offline', 'Reconectando... los leads se cargarán en unos segundos');
