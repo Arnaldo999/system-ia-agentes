@@ -263,9 +263,37 @@
   ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
+  /* ── SEARCH BAR ── */
+  .search-wrap{position:relative;flex:1;max-width:320px;}
+  .search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px 6px 34px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s;}
+  .search-input::placeholder{color:var(--text2);}
+  .search-input:focus{border-color:var(--accent);}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;}
+  .search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:999;max-height:280px;overflow-y:auto;display:none;}
+  .search-results.show{display:block;}
+  .sr-item{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);transition:background .15s;}
+  .sr-item:last-child{border-bottom:none;}
+  .sr-item:hover{background:var(--surface2);}
+  .sr-av{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+  .sr-name{font-size:13px;font-weight:600;}
+  .sr-meta{font-size:11px;color:var(--text2);}
+  .sr-empty{padding:14px;text-align:center;color:var(--text2);font-size:13px;}
+
+  /* ── MODAL PERFIL ── */
+  .perfil-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;display:none;align-items:center;justify-content:center;}
+  .perfil-modal.show{display:flex;}
+  .perfil-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:340px;max-width:95vw;}
+  .perfil-title{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;}
+  .perfil-logo-preview{width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;overflow:hidden;}
+  .perfil-logo-preview img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
+  .mf-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;}
+  .mf-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;margin-bottom:12px;}
+  .mf-input:focus{border-color:var(--accent);}
+
   @media(max-width:760px){
     .sidebar{width:48px;}
     .sidebar-section,.nav-item span:not(.nav-icon),.nav-badge,.plan-chip small,.logo-sub{display:none;}
+    .search-wrap{max-width:160px;}
     .charts-row{grid-template-columns:1fr;}
     .chat-list-panel{display:none;}
   }
@@ -275,14 +303,19 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="logo">
-    <div class="logo-icon">🏠</div>
+  <div class="logo" id="topLogo">
+    <div class="logo-icon" id="topLogoIcon">🏠</div>
     <div>
-      Tu Inmobiliaria
+      <span id="topEmpresa">Tu Inmobiliaria</span>
       <span class="logo-sub">CRM · Powered by IA</span>
     </div>
   </div>
-  <div class="topbar-flex"></div>
+  <!-- BUSCADOR GLOBAL -->
+  <div class="search-wrap" style="margin:0 14px;">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="globalSearch" type="text" placeholder="Buscar lead, zona, teléfono..." oninput="buscarGlobal(this.value)" onblur="setTimeout(()=>cerrarBusqueda(),200)">
+    <div class="search-results" id="searchResults"></div>
+  </div>
   <div class="live-badge">
     <div class="live-dot"></div>
     Bot activo · 24/7
@@ -291,9 +324,27 @@
     <div class="notif-icon-wrap">🔔</div>
     <div class="notif-badge" id="notifBadge">3</div>
   </div>
-  <div class="user-chip">
-    <div class="avatar">AR</div>
-    Hola, Arnaldo ▾
+  <div class="user-chip" onclick="abrirPerfil()" title="Editar perfil">
+    <div class="avatar" id="topAvatar">AR</div>
+    Hola, <span id="topUsuario">Arnaldo</span> ▾
+  </div>
+</div>
+
+<!-- MODAL PERFIL -->
+<div class="perfil-modal" id="modalPerfil" onclick="if(event.target===this)cerrarPerfil()">
+  <div class="perfil-box">
+    <div class="perfil-title">
+      ✏️ Editar perfil
+      <span style="cursor:pointer;color:var(--text2);font-size:18px" onclick="cerrarPerfil()">×</span>
+    </div>
+    <div class="perfil-logo-preview" id="perfilLogoPreview">🏠</div>
+    <div class="mf-label">Logo — URL de imagen o emoji</div>
+    <input class="mf-input" id="pLogoUrl" placeholder="https://... o un emoji como 🏢" oninput="previewLogo(this.value)">
+    <div class="mf-label">Nombre de la inmobiliaria</div>
+    <input class="mf-input" id="pEmpresa" placeholder="Tu Inmobiliaria">
+    <div class="mf-label">Tu nombre</div>
+    <input class="mf-input" id="pUsuario" placeholder="Arnaldo">
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="guardarPerfil()">Guardar cambios</button>
   </div>
 </div>
 
@@ -1809,7 +1860,106 @@ setTimeout(()=>showNotif('🔥 Lead caliente detectado','Carlos M. respondió to
 setTimeout(()=>showNotif('📅 Cita agendada automáticamente','Carla R. eligió slot Vie 4 Abr 11:00 AM sin intervención tuya'),22000);
 setTimeout(()=>simLead(),40000);
 
+// ── BUSCADOR GLOBAL ──────────────────────────────────────────────────────────
+function buscarGlobal(q) {
+  const res = document.getElementById('searchResults');
+  q = q.trim();
+  if (!q) { res.classList.remove('show'); return; }
+  const hits = LEADS.filter(l =>
+    [l.name, l.phone, l.email, l.interes, l.ciudad, l.subnicho, l.notas]
+      .join(' ').toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 6);
+  if (!hits.length) {
+    res.innerHTML = `<div class="sr-empty">Sin resultados para "${q}"</div>`;
+  } else {
+    const ini = n => n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase();
+    const scoreEmoji = s => s >= 12 ? '🔥' : s >= 7 ? '🌡️' : '❄️';
+    res.innerHTML = hits.map(l => `
+      <div class="sr-item" onclick="irALead(${l.id})">
+        <div class="sr-av">${ini(l.name)}</div>
+        <div>
+          <div class="sr-name">${l.name} ${l.score ? scoreEmoji(l.score) : ''}</div>
+          <div class="sr-meta">${l.phone} · ${l.interes}</div>
+        </div>
+      </div>`).join('');
+  }
+  res.classList.add('show');
+}
+
+function cerrarBusqueda() {
+  document.getElementById('searchResults').classList.remove('show');
+  document.getElementById('globalSearch').value = '';
+}
+
+function irALead(id) {
+  cerrarBusqueda();
+  nav('leads');
+  setTimeout(() => openDetalle(id), 100);
+}
+
+// ── PERFIL EDITABLE ──────────────────────────────────────────────────────────
+function cargarPerfil() {
+  const p = JSON.parse(localStorage.getItem('crm_perfil') || '{}');
+  if (p.empresa) {
+    document.getElementById('topEmpresa').textContent = p.empresa;
+    document.title = p.empresa + ' — CRM';
+  }
+  if (p.usuario) {
+    document.getElementById('topUsuario').textContent = p.usuario;
+    document.getElementById('topAvatar').textContent = p.usuario.substring(0,2).toUpperCase();
+  }
+  if (p.logo) aplicarLogo(p.logo);
+}
+
+function aplicarLogo(val) {
+  const icon = document.getElementById('topLogoIcon');
+  if (!val) return;
+  // Si es URL → imagen, si es emoji/texto corto → texto
+  if (val.startsWith('http')) {
+    icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+  } else {
+    icon.textContent = val;
+  }
+}
+
+function abrirPerfil() {
+  const p = JSON.parse(localStorage.getItem('crm_perfil') || '{}');
+  document.getElementById('pLogoUrl').value = p.logo || '';
+  document.getElementById('pEmpresa').value = p.empresa || '';
+  document.getElementById('pUsuario').value = p.usuario || '';
+  previewLogo(p.logo || '');
+  document.getElementById('modalPerfil').classList.add('show');
+}
+
+function cerrarPerfil() {
+  document.getElementById('modalPerfil').classList.remove('show');
+}
+
+function previewLogo(val) {
+  const prev = document.getElementById('perfilLogoPreview');
+  if (!val) { prev.innerHTML = '🏠'; return; }
+  if (val.startsWith('http')) {
+    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:12px" onerror="this.innerHTML='🏠'">`;
+  } else {
+    prev.textContent = val;
+  }
+}
+
+function guardarPerfil() {
+  const logo = document.getElementById('pLogoUrl').value.trim();
+  const empresa = document.getElementById('pEmpresa').value.trim();
+  const usuario = document.getElementById('pUsuario').value.trim();
+  const perfil = { logo, empresa, usuario };
+  localStorage.setItem('crm_perfil', JSON.stringify(perfil));
+  if (empresa) { document.getElementById('topEmpresa').textContent = empresa; document.title = empresa + ' — CRM'; }
+  if (usuario) { document.getElementById('topUsuario').textContent = usuario; document.getElementById('topAvatar').textContent = usuario.substring(0,2).toUpperCase(); }
+  if (logo) aplicarLogo(logo);
+  cerrarPerfil();
+  showNotif('✅ Perfil actualizado', empresa || 'Cambios guardados');
+}
+
 // ── INIT ────────────────────────────────────────────────────────────────────
+cargarPerfil();
 cargarLeads();   // carga leads desde Airtable → renderLeads() + renderKanbanFromLeads()
 renderProps();
 renderAgenda();
