@@ -215,10 +215,11 @@
   .stars{color:#fbbf24;font-size:14px;letter-spacing:1px;}
 
   /* ── ESTADO PILLS — indicador de estado (no botón) ── */
-  .estado-pill{padding:3px 9px;border-radius:4px;font-size:11px;font-weight:600;cursor:default;border-left:3px solid;letter-spacing:.2px;}
-  .ep-pendiente{background:#0f1f35;color:#93c5fd;border-color:#3b82f6;}
-  .ep-completada{background:#052e1c;color:#6ee7b7;border-color:#10b981;}
-  .ep-cancelada{background:#2a0a0a;color:#fca5a5;border-color:#ef4444;}
+  .estado-pill{padding:3px 9px !important;border-radius:4px !important;font-size:11px;font-weight:600;cursor:default !important;border:none !important;border-left:3px solid !important;letter-spacing:.2px;display:inline-block;}
+  .estado-pill:hover{filter:none !important;}
+  .ep-pendiente{background:#0f1f35 !important;color:#93c5fd !important;border-color:#3b82f6 !important;}
+  .ep-completada{background:#052e1c !important;color:#6ee7b7 !important;border-color:#10b981 !important;}
+  .ep-cancelada{background:#2a0a0a !important;color:#fca5a5 !important;border-color:#ef4444 !important;}
 
   /* ── ACTIVITY ── */
   .act-feed{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
