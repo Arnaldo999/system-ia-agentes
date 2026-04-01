@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservá tu lote — Fracc. Prados Norte</title>
+<style>
+  :root {
+    --bg:#f8f7ff;
+    --surface:#ffffff;
+    --border:#e5e7eb;
+    --accent:#6c63ff;
+    --accent-d:#5a52d5;
+    --green:#10b981;
+    --yellow:#f59e0b;
+    --red:#ef4444;
+    --text:#111827;
+    --text2:#6b7280;
+    --text3:#9ca3af;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;}
+
+  /* ── HERO ── */
+  .hero{
+    background:linear-gradient(135deg,#1a0533 0%,#2d1060 50%,#1a0533 100%);
+    padding:36px 20px 28px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:'';position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+    border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(255,255,255,.9);
+    margin-bottom:16px;
+  }
+  .hero-badge-dot{width:7px;height:7px;background:#10b981;border-radius:50%;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+  .hero h1{color:#fff;font-size:clamp(22px,5vw,34px);font-weight:800;line-height:1.2;margin-bottom:10px;}
+  .hero h1 span{color:#a78bfa;}
+  .hero-sub{color:rgba(255,255,255,.75);font-size:clamp(13px,3vw,16px);line-height:1.5;max-width:480px;margin:0 auto 20px;}
+  .hero-stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;}
+  .hero-stat{text-align:center;}
+  .hero-stat-val{font-size:22px;font-weight:800;color:#fff;}
+  .hero-stat-label{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;}
+
+  /* ── URGENCY BAR ── */
+  .urgency-bar{
+    background:linear-gradient(90deg,#f59e0b,#ef4444);
+    padding:10px 20px;text-align:center;
+    font-size:13px;font-weight:600;color:#fff;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .urgency-bar span{background:rgba(0,0,0,.2);padding:2px 10px;border-radius:10px;font-size:12px;}
+
+  /* ── MAIN ── */
+  .main{max-width:560px;margin:0 auto;padding:24px 16px 60px;}
+
+  /* ── STEPS INDICATOR ── */
+  .steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:24px;}
+  .step{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;}
+  .step-circle{
+    width:32px;height:32px;border-radius:50%;border:2px solid var(--border);
+    background:var(--surface);display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:var(--text2);transition:all .3s;
+  }
+  .step.active .step-circle{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .step.done .step-circle{background:var(--green);border-color:var(--green);color:#fff;}
+  .step-label{font-size:10px;color:var(--text3);white-space:nowrap;}
+  .step.active .step-label{color:var(--accent);font-weight:600;}
+  .step.done .step-label{color:var(--green);}
+  .step-line{width:48px;height:2px;background:var(--border);margin-bottom:16px;transition:background .3s;}
+  .step-line.done{background:var(--green);}
+
+  /* ── FORM CARD ── */
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+  .form-step{display:none;padding:24px;}
+  .form-step.active{display:block;}
+  .step-title{font-size:17px;font-weight:700;margin-bottom:4px;}
+  .step-sub{color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.5;}
+
+  /* ── FIELDS ── */
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;}
+  .field label span{color:var(--red);margin-left:2px;}
+  .field input,.field select,.field textarea{
+    width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
+    font-size:14px;color:var(--text);background:#fff;outline:none;transition:border-color .2s;
+    -webkit-appearance:none;
+  }
+  .field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.1);}
+  .field input.error{border-color:var(--red);}
+  .field-hint{font-size:11px;color:var(--text3);margin-top:4px;}
+  .field-err{font-size:11px;color:var(--red);margin-top:4px;display:none;}
+  .field.has-error .field-err{display:block;}
+  .field.has-error input,.field.has-error select{border-color:var(--red);}
+
+  /* ── OPCIONES CARD ── */
+  .opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .opts-grid.cols3{grid-template-columns:repeat(3,1fr);}
+  .opt{
+    border:1.5px solid var(--border);border-radius:10px;padding:12px 10px;
+    cursor:pointer;text-align:center;transition:all .2s;background:#fff;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+  }
+  .opt:hover{border-color:var(--accent);background:#f5f3ff;}
+  .opt.selected{border-color:var(--accent);background:#f5f3ff;box-shadow:0 0 0 3px rgba(108,99,255,.12);}
+  .opt-icon{font-size:24px;}
+  .opt-label{font-size:12px;font-weight:600;color:var(--text);line-height:1.3;}
+  .opt-sub{font-size:10px;color:var(--text2);}
+
+  /* ── SCORE INDICATOR ── */
+  .score-bar{
+    border-radius:12px;padding:14px 16px;margin-bottom:18px;
+    display:flex;align-items:center;gap:12px;
+    transition:all .4s;border:1.5px solid;
+  }
+  .score-bar.caliente{background:#fef2f2;border-color:#fca5a5;}
+  .score-bar.tibio{background:#fffbeb;border-color:#fcd34d;}
+  .score-bar.frio{background:#f0f9ff;border-color:#93c5fd;}
+  .score-bar.hidden{display:none;}
+  .score-icon{font-size:28px;flex-shrink:0;}
+  .score-label{font-size:13px;font-weight:700;}
+  .score-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+
+  /* ── PROGRESS BAR ── */
+  .prog-wrap{height:4px;background:#f3f4f6;border-radius:2px;margin-bottom:20px;}
+  .prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),#a78bfa);border-radius:2px;transition:width .4s ease;}
+
+  /* ── BUTTONS ── */
+  .btn-next{
+    width:100%;padding:14px;background:var(--accent);color:#fff;
+    border:none;border-radius:10px;font-size:15px;font-weight:700;
+    cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-next:hover{background:var(--accent-d);transform:translateY(-1px);box-shadow:0 4px 14px rgba(108,99,255,.3);}
+  .btn-next:active{transform:translateY(0);}
+  .btn-next:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+  .btn-back{
+    width:100%;padding:12px;background:transparent;color:var(--text2);
+    border:1.5px solid var(--border);border-radius:10px;font-size:14px;
+    cursor:pointer;margin-bottom:10px;transition:all .15s;
+  }
+  .btn-back:hover{border-color:var(--text2);color:var(--text);}
+
+  /* ── TRUST SIGNALS ── */
+  .trust{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:16px;}
+  .trust-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+
+  /* ── SUCCESS SCREEN ── */
+  .success{display:none;text-align:center;padding:32px 24px;}
+  .success.show{display:block;}
+  .success-icon{font-size:56px;margin-bottom:12px;animation:pop .5s ease;}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+  .success h2{font-size:22px;font-weight:800;margin-bottom:8px;}
+  .success p{color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:20px;}
+  .score-final{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:12px 20px;border-radius:12px;font-weight:700;font-size:15px;
+    margin-bottom:24px;
+  }
+  .score-final.caliente{background:#fef2f2;color:#dc2626;border:2px solid #fca5a5;}
+  .score-final.tibio{background:#fffbeb;color:#d97706;border:2px solid #fcd34d;}
+  .score-final.frio{background:#f0f9ff;color:#2563eb;border:2px solid #93c5fd;}
+  .whatsapp-btn{
+    display:inline-flex;align-items:center;gap:10px;
+    background:#25d366;color:#fff;padding:14px 24px;border-radius:12px;
+    font-weight:700;font-size:15px;text-decoration:none;
+    box-shadow:0 4px 14px rgba(37,211,102,.3);transition:all .2s;
+  }
+  .whatsapp-btn:hover{background:#1fad54;transform:translateY(-1px);}
+  .next-steps{background:#f9fafb;border-radius:12px;padding:16px;text-align:left;margin-top:20px;}
+  .next-steps h4{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
+  .next-step-item{display:flex;gap:10px;margin-bottom:10px;font-size:13px;}
+  .next-step-item:last-child{margin-bottom:0;}
+  .ns-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+
+  /* ── LOADING ── */
+  .loading-overlay{
+    display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);
+    z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  }
+  .loading-overlay.show{display:flex;}
+  .spinner{width:44px;height:44px;border:4px solid #e5e7eb;border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:14px;color:var(--text2);}
+
+  /* ── FLOATING SOCIAL PROOF ── */
+  .social-proof{
+    position:fixed;bottom:20px;left:16px;right:16px;max-width:320px;
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);
+    display:flex;gap:10px;align-items:center;
+    animation:spIn .4s ease;z-index:50;
+  }
+  @keyframes spIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .sp-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+  .sp-text{font-size:12px;color:var(--text);line-height:1.4;}
+  .sp-text strong{display:block;margin-bottom:1px;}
+  .sp-time{font-size:10px;color:var(--text3);}
+  .sp-close{margin-left:auto;cursor:pointer;color:var(--text3);font-size:16px;align-self:flex-start;padding:2px;}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    Lotes disponibles — Fracc. Prados Norte
+  </div>
+  <h1>Tu lote propio en el<br><span>fraccionamiento que creció</span><br>más rápido este año</h1>
+  <p class="hero-sub">Completá el formulario y un asesor especializado te contacta en menos de 60 segundos con precio, planos y disponibilidad actual.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-val">34</div>
+      <div class="hero-stat-label">Lotes disponibles</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">$145K</div>
+      <div class="hero-stat-label">Desde USD</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">48hs</div>
+      <div class="hero-stat-label">Escrituración express</div>
+    </div>
+  </div>
+</div>
+
+<!-- URGENCY -->
+<div class="urgency-bar">
+  ⚡ Solo quedan <span id="lotsLeft">8 lotes</span> en la etapa actual al precio actual · El precio sube el 1 de mayo
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Analizando tu consulta...</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- STEPS -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="stp-1">
+      <div class="step-circle">1</div>
+      <div class="step-label">Tu perfil</div>
+    </div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step" id="stp-2">
+      <div class="step-circle">2</div>
+      <div class="step-label">Tu proyecto</div>
+    </div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step" id="stp-3">
+      <div class="step-circle">3</div>
+      <div class="step-label">Presupuesto</div>
+    </div>
+    <div class="step-line" id="line-3"></div>
+    <div class="step" id="stp-4">
+      <div class="step-circle">4</div>
+      <div class="step-label">Contacto</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="prog-wrap"><div class="prog-fill" id="progFill" style="width:25%"></div></div>
+
+  <!-- SCORE INDICATOR (visible from step 2) -->
+  <div class="score-bar hidden" id="scoreBar">
+    <div class="score-icon" id="scoreIcon">🌡️</div>
+    <div>
+      <div class="score-label" id="scoreLabel">Completá el formulario para ver tu calificación</div>
+      <div class="score-sub" id="scoreSub">El sistema evalúa tu perfil automáticamente</div>
+    </div>
+  </div>
+
+  <div class="form-card">
+
+    <!-- ══ STEP 1: PROPÓSITO ══ -->
+    <div class="form-step active" id="step-1">
+      <div class="step-title">¿Para qué querés el lote?</div>
+      <div class="step-sub">Esto nos ayuda a mostrarte las opciones que mejor se adaptan a vos</div>
+
+      <div class="field" id="f-proposito">
+        <div class="opts-grid">
+          <div class="opt" onclick="selectOpt('proposito','vivir',this)">
+            <div class="opt-icon">🏠</div>
+            <div class="opt-label">Construir mi casa</div>
+            <div class="opt-sub">Para vivir</div>
+          </div>
+          <div class="opt" onclick="selectOpt('proposito','invertir',this)">
+            <div class="opt-icon">📈</div>
+            <div class="opt-label">Inversión</div>
+            <div class="opt-sub">Reventa o renta</div>
+          </div>
+          <div class="opt" onclick="selectOpt('proposito','ambos',this)">
+            <div class="opt-icon">🎯</div>
+            <div class="opt-label">Ambas opciones</div>
+            <div class="opt-sub">Decido después</div>
+          </div>
+          <div class="opt" onclick="selectOpt('proposito','negocio',this)">
+            <div class="opt-icon">🏗️</div>
+            <div class="opt-label">Proyecto comercial</div>
+            <div class="opt-sub">Local o negocio</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná una opción</div>
+      </div>
+
+      <div class="field" id="f-zona">
+        <label>¿En qué zona preferís? <span>*</span></label>
+        <select id="zona">
+          <option value="">Seleccioná una zona</option>
+          <option value="norte">Zona Norte — Fracc. Prados Norte</option>
+          <option value="sur">Zona Sur — Fracc. Prados Sur</option>
+          <option value="centro">Zona Centro — acceso rápido a av. principal</option>
+          <option value="cualquiera">Sin preferencia — me interesa el precio</option>
+        </select>
+        <div class="field-err">Seleccioná una zona</div>
+      </div>
+
+      <button class="btn-next" onclick="goStep(2)">Continuar <span>→</span></button>
+
+      <div class="trust" style="margin-top:14px">
+        <div class="trust-item">🔒 Tus datos son privados</div>
+        <div class="trust-item">⚡ Respuesta en 60 segundos</div>
+        <div class="trust-item">✅ Sin compromiso</div>
+      </div>
+    </div>
+
+    <!-- ══ STEP 2: PLAZO Y SUPERFICIE ══ -->
+    <div class="form-step" id="step-2">
+      <div class="step-title">¿Cuándo querés comprar?</div>
+      <div class="step-sub">El plazo nos ayuda a darte la mejor oferta disponible hoy</div>
+
+      <div class="field" id="f-plazo">
+        <label>¿En qué plazo pensás comprar? <span>*</span></label>
+        <div class="opts-grid cols3">
+          <div class="opt" onclick="selectOpt('plazo','inmediato',this)">
+            <div class="opt-icon">🔥</div>
+            <div class="opt-label">Ahora mismo</div>
+            <div class="opt-sub">Listo para decidir</div>
+          </div>
+          <div class="opt" onclick="selectOpt('plazo','1-3meses',this)">
+            <div class="opt-icon">📅</div>
+            <div class="opt-label">1 a 3 meses</div>
+            <div class="opt-sub">Evaluando opciones</div>
+          </div>
+          <div class="opt" onclick="selectOpt('plazo','6meses',this)">
+            <div class="opt-icon">🌱</div>
+            <div class="opt-label">Más de 6 meses</div>
+            <div class="opt-sub">Explorando</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná un plazo</div>
+      </div>
+
+      <div class="field" id="f-superficie">
+        <label>¿Qué superficie necesitás? <span>*</span></label>
+        <div class="opts-grid">
+          <div class="opt" onclick="selectOpt('superficie','100-150',this)">
+            <div class="opt-icon">🟦</div>
+            <div class="opt-label">100 – 150 m²</div>
+            <div class="opt-sub">Económico</div>
+          </div>
+          <div class="opt" onclick="selectOpt('superficie','150-300',this)">
+            <div class="opt-icon">🟩</div>
+            <div class="opt-label">150 – 300 m²</div>
+            <div class="opt-sub">Más popular</div>
+          </div>
+          <div class="opt" onclick="selectOpt('superficie','300-500',this)">
+            <div class="opt-icon">🟧</div>
+            <div class="opt-label">300 – 500 m²</div>
+            <div class="opt-sub">Familiar</div>
+          </div>
+          <div class="opt" onclick="selectOpt('superficie','+500',this)">
+            <div class="opt-icon">🟥</div>
+            <div class="opt-label">Más de 500 m²</div>
+            <div class="opt-sub">Premium</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná una superficie</div>
+      </div>
+
+      <button class="btn-back" onclick="goStep(1)">← Volver</button>
+      <button class="btn-next" onclick="goStep(3)">Continuar <span>→</span></button>
+    </div>
+
+    <!-- ══ STEP 3: PRESUPUESTO Y PAGO ══ -->
+    <div class="form-step" id="step-3">
+      <div class="step-title">¿Cómo pensás pagarlo?</div>
+      <div class="step-sub">Con esto te mostramos la opción de financiamiento más conveniente para vos</div>
+
+      <div class="field" id="f-presupuesto">
+        <label>¿Cuál es tu presupuesto aproximado? <span>*</span></label>
+        <div class="opts-grid">
+          <div class="opt" onclick="selectOpt('presupuesto','menos-100k',this)">
+            <div class="opt-icon">💵</div>
+            <div class="opt-label">Menos de $100K</div>
+            <div class="opt-sub">USD</div>
+          </div>
+          <div class="opt" onclick="selectOpt('presupuesto','100k-200k',this)">
+            <div class="opt-icon">💰</div>
+            <div class="opt-label">$100K – $200K</div>
+            <div class="opt-sub">USD · más buscado</div>
+          </div>
+          <div class="opt" onclick="selectOpt('presupuesto','200k-350k',this)">
+            <div class="opt-icon">💎</div>
+            <div class="opt-label">$200K – $350K</div>
+            <div class="opt-sub">USD · premium</div>
+          </div>
+          <div class="opt" onclick="selectOpt('presupuesto','+350k',this)">
+            <div class="opt-icon">🏆</div>
+            <div class="opt-label">Más de $350K</div>
+            <div class="opt-sub">USD · exclusivo</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná un presupuesto</div>
+      </div>
+
+      <div class="field" id="f-pago">
+        <label>¿Cómo preferís pagar? <span>*</span></label>
+        <div class="opts-grid">
+          <div class="opt" onclick="selectOpt('pago','contado',this)">
+            <div class="opt-icon">💳</div>
+            <div class="opt-label">Contado</div>
+            <div class="opt-sub">Descuento 5%</div>
+          </div>
+          <div class="opt" onclick="selectOpt('pago','financiamiento-directo',this)">
+            <div class="opt-icon">📆</div>
+            <div class="opt-label">Financiamiento directo</div>
+            <div class="opt-sub">24 a 48 cuotas</div>
+          </div>
+          <div class="opt" onclick="selectOpt('pago','credito-bancario',this)">
+            <div class="opt-icon">🏦</div>
+            <div class="opt-label">Crédito bancario</div>
+            <div class="opt-sub">Pre-aprobado o por tramitar</div>
+          </div>
+          <div class="opt" onclick="selectOpt('pago','no-se',this)">
+            <div class="opt-icon">🤔</div>
+            <div class="opt-label">No sé aún</div>
+            <div class="opt-sub">Necesito asesoría</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná una forma de pago</div>
+      </div>
+
+      <button class="btn-back" onclick="goStep(2)">← Volver</button>
+      <button class="btn-next" onclick="goStep(4)">Continuar <span>→</span></button>
+    </div>
+
+    <!-- ══ STEP 4: CONTACTO ══ -->
+    <div class="form-step" id="step-4">
+      <div class="step-title">¡Casi listo! ¿A dónde te contactamos?</div>
+      <div class="step-sub">Un asesor te escribe por WhatsApp en menos de 60 segundos con toda la información</div>
+
+      <div class="field" id="f-nombre">
+        <label>Tu nombre completo <span>*</span></label>
+        <input type="text" id="nombre" placeholder="Ej: Juan Pérez" autocomplete="name">
+        <div class="field-err">Por favor ingresá tu nombre</div>
+      </div>
+
+      <div class="field" id="f-telefono">
+        <label>Tu WhatsApp <span>*</span></label>
+        <input type="tel" id="telefono" placeholder="+52 55 1234-5678" autocomplete="tel">
+        <div class="field-hint">Incluí el código de país · Te escribe el asesor en segundos</div>
+        <div class="field-err">Por favor ingresá tu WhatsApp con código de país</div>
+      </div>
+
+      <div class="field" id="f-email">
+        <label>Email (opcional)</label>
+        <input type="email" id="email" placeholder="tu@email.com" autocomplete="email">
+        <div class="field-hint">Para enviarte planos y ficha técnica</div>
+      </div>
+
+      <!-- SCORE PREVIEW antes de enviar -->
+      <div class="score-bar" id="scoreBarFinal" style="margin-bottom:16px"></div>
+
+      <button class="btn-next" id="submitBtn" onclick="submitForm()">
+        🔥 Quiero ver disponibilidad y precio ahora
+      </button>
+      <button class="btn-back" onclick="goStep(3)" style="margin-top:8px">← Volver</button>
+
+      <p style="text-align:center;color:var(--text3);font-size:11px;margin-top:10px;line-height:1.5">
+        Al enviar aceptás ser contactado por WhatsApp. Sin spam. Sin compromisos.
+      </p>
+    </div>
+
+  </div><!-- /form-card -->
+
+  <!-- SUCCESS -->
+  <div class="success" id="successScreen">
+    <div class="success-icon">🎉</div>
+    <h2>¡Tu consulta fue enviada!</h2>
+    <p>Un asesor especializado te escribirá por WhatsApp en <strong>menos de 60 segundos</strong> con precios actualizados, planos y disponibilidad real.</p>
+
+    <div class="score-final" id="scoreFinal"></div>
+
+    <div style="margin-bottom:20px">
+      <a href="#" class="whatsapp-btn" id="waBtn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Hablar con el asesor ahora
+      </a>
+    </div>
+
+    <div class="next-steps">
+      <h4>¿Qué pasa ahora?</h4>
+      <div class="next-step-item">
+        <div class="ns-num">1</div>
+        <div>El asesor te escribe por WhatsApp en <strong>menos de 60 segundos</strong></div>
+      </div>
+      <div class="next-step-item">
+        <div class="ns-num">2</div>
+        <div>Te comparte planos, precios actualizados y disponibilidad real de lotes</div>
+      </div>
+      <div class="next-step-item">
+        <div class="ns-num">3</div>
+        <div>Si querés, <strong>agendamos una visita al fraccionamiento</strong> — sin compromiso</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- FLOATING SOCIAL PROOF (aparece automáticamente) -->
+<div class="social-proof" id="socialProof" style="display:none">
+  <div class="sp-avatar" id="spAvatar">MR</div>
+  <div class="sp-text">
+    <strong id="spName">María R. acaba de consultar</strong>
+    <span id="spMsg">por un lote en Zona Norte</span>
+    <span class="sp-time" id="spTime">hace 2 min</span>
+  </div>
+  <span class="sp-close" onclick="document.getElementById('socialProof').style.display='none'">✕</span>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const API_BASE = 'https://system-ia-agentes.onrender.com/demos/inmobiliaria';
+const WA_NUMBER = ''; // se puede setear el número del bot demo
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const FORM = {
+  proposito: '',
+  zona: '',
+  plazo: '',
+  superficie: '',
+  presupuesto: '',
+  pago: '',
+  nombre: '',
+  telefono: '',
+  email: '',
+};
+
+let currentStep = 1;
+const TOTAL_STEPS = 4;
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function goStep(n) {
+  // Validate current step before advancing
+  if(n > currentStep && !validateStep(currentStep)) return;
+
+  // Update state from inputs
+  FORM.zona = document.getElementById('zona').value;
+  FORM.nombre = document.getElementById('nombre').value.trim();
+  FORM.telefono = document.getElementById('telefono').value.trim();
+  FORM.email = document.getElementById('email').value.trim();
+
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  currentStep = n;
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+
+  // Update steps bar
+  for(let i=1; i<=TOTAL_STEPS; i++) {
+    const stp = document.getElementById(`stp-${i}`);
+    stp.classList.remove('active','done');
+    if(i < currentStep) stp.classList.add('done');
+    else if(i === currentStep) stp.classList.add('active');
+  }
+  for(let i=1; i<TOTAL_STEPS; i++) {
+    const line = document.getElementById(`line-${i}`);
+    line.classList.toggle('done', i < currentStep);
+  }
+
+  // Update progress
+  document.getElementById('progFill').style.width = `${(currentStep/TOTAL_STEPS)*100}%`;
+
+  // Show score from step 2
+  if(currentStep >= 2) {
+    document.getElementById('scoreBar').classList.remove('hidden');
+    updateScore();
+  }
+
+  // Populate score in step 4
+  if(currentStep === 4) renderScorePreview();
+
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── VALIDATION ────────────────────────────────────────────────────────────────
+function validateStep(step) {
+  let valid = true;
+  if(step === 1) {
+    if(!FORM.proposito) { showErr('f-proposito'); valid=false; }
+    else clearErr('f-proposito');
+    const zona = document.getElementById('zona').value;
+    if(!zona) { showErr('f-zona'); valid=false; }
+    else clearErr('f-zona');
+  }
+  if(step === 2) {
+    if(!FORM.plazo) { showErr('f-plazo'); valid=false; }
+    else clearErr('f-plazo');
+    if(!FORM.superficie) { showErr('f-superficie'); valid=false; }
+    else clearErr('f-superficie');
+  }
+  if(step === 3) {
+    if(!FORM.presupuesto) { showErr('f-presupuesto'); valid=false; }
+    else clearErr('f-presupuesto');
+    if(!FORM.pago) { showErr('f-pago'); valid=false; }
+    else clearErr('f-pago');
+  }
+  return valid;
+}
+
+function showErr(id) { document.getElementById(id).classList.add('has-error'); }
+function clearErr(id) { document.getElementById(id).classList.remove('has-error'); }
+
+// ── OPT SELECTION ─────────────────────────────────────────────────────────────
+function selectOpt(field, value, el) {
+  FORM[field] = value;
+  const parent = el.parentElement;
+  parent.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  clearErr(`f-${field}`);
+  if(currentStep >= 2) updateScore();
+}
+
+// ── SCORE CALC ────────────────────────────────────────────────────────────────
+function calcScore() {
+  let pts = 0;
+
+  // Propósito — inversión o negocio es más caliente
+  if(['invertir','negocio'].includes(FORM.proposito)) pts += 3;
+  else if(FORM.proposito === 'vivir') pts += 2;
+  else if(FORM.proposito === 'ambos') pts += 2;
+
+  // Plazo — cuanto más urgente más caliente
+  if(FORM.plazo === 'inmediato') pts += 4;
+  else if(FORM.plazo === '1-3meses') pts += 2;
+  else if(FORM.plazo === '6meses') pts += 0;
+
+  // Presupuesto — mayor presupuesto más caliente
+  if(FORM.presupuesto === '+350k') pts += 4;
+  else if(FORM.presupuesto === '200k-350k') pts += 3;
+  else if(FORM.presupuesto === '100k-200k') pts += 2;
+  else if(FORM.presupuesto === 'menos-100k') pts += 1;
+
+  // Pago — contado o crédito aprobado = más caliente
+  if(FORM.pago === 'contado') pts += 3;
+  else if(FORM.pago === 'credito-bancario') pts += 3;
+  else if(FORM.pago === 'financiamiento-directo') pts += 2;
+  else if(FORM.pago === 'no-se') pts += 0;
+
+  // Superficie — mayor = más comprometido
+  if(FORM.superficie === '+500') pts += 2;
+  else if(FORM.superficie === '300-500') pts += 2;
+  else if(FORM.superficie === '150-300') pts += 1;
+  else if(FORM.superficie === '100-150') pts += 1;
+
+  // Total máx ≈ 16
+  if(pts >= 10) return 'caliente';
+  if(pts >= 5) return 'tibio';
+  return 'frio';
+}
+
+const SCORE_COPY = {
+  caliente: {
+    icon: '🔥',
+    label: '¡Lead Caliente! El asesor te contacta en segundos',
+    sub: 'Tu perfil es prioritario — tenemos opciones exactas para vos',
+    bg: 'caliente',
+  },
+  tibio: {
+    icon: '🌡️',
+    label: 'Perfil en evaluación — buenas opciones disponibles',
+    sub: 'El asesor te asesorará para encontrar la mejor alternativa',
+    bg: 'tibio',
+  },
+  frio: {
+    icon: '❄️',
+    label: 'Perfil en lista de espera — te informamos cuando haya novedades',
+    sub: 'Te enviamos información para que vayas considerando opciones',
+    bg: 'frio',
+  },
+};
+
+function updateScore() {
+  const score = calcScore();
+  const copy = SCORE_COPY[score];
+  const bar = document.getElementById('scoreBar');
+  bar.className = `score-bar ${copy.bg}`;
+  document.getElementById('scoreIcon').textContent = copy.icon;
+  document.getElementById('scoreLabel').textContent = copy.label;
+  document.getElementById('scoreSub').textContent = copy.sub;
+}
+
+function renderScorePreview() {
+  const score = calcScore();
+  const copy = SCORE_COPY[score];
+  const el = document.getElementById('scoreBarFinal');
+  el.className = `score-bar ${copy.bg}`;
+  el.innerHTML = `<div style="font-size:24px">${copy.icon}</div>
+    <div>
+      <div style="font-weight:700;font-size:13px">${copy.label}</div>
+      <div style="color:var(--text2);font-size:12px;margin-top:2px">${copy.sub}</div>
+    </div>`;
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
+async function submitForm() {
+  // Validate step 4
+  let valid = true;
+  FORM.nombre = document.getElementById('nombre').value.trim();
+  FORM.telefono = document.getElementById('telefono').value.trim();
+  FORM.email = document.getElementById('email').value.trim();
+
+  if(!FORM.nombre) { showErr('f-nombre'); valid=false; } else clearErr('f-nombre');
+  if(!FORM.telefono || FORM.telefono.replace(/\D/g,'').length < 8) {
+    showErr('f-telefono'); valid=false;
+  } else clearErr('f-telefono');
+  if(!valid) return;
+
+  // Disable button
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  const score = calcScore();
+
+  // Show loading
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  loadingOverlay.classList.add('show');
+
+  const steps = [
+    'Registrando tu consulta...',
+    'Calificando tu perfil...',
+    'Notificando al asesor...',
+    '¡Listo! Asesor en camino...',
+  ];
+  let si = 0;
+  const loadInterval = setInterval(()=>{
+    if(si < steps.length) document.getElementById('loadingText').textContent = steps[si++];
+  }, 700);
+
+  // Payload para el backend
+  const payload = {
+    nombre: FORM.nombre,
+    telefono: FORM.telefono,
+    email: FORM.email || null,
+    fuente: 'formulario-desarrolladora',
+    // Datos de calificación como notas
+    captura_completa: {
+      proposito: FORM.proposito,
+      zona: FORM.zona || document.getElementById('zona').value,
+      plazo: FORM.plazo,
+      superficie: FORM.superficie,
+      presupuesto: FORM.presupuesto,
+      pago: FORM.pago,
+      score_calculado: score,
+    },
+  };
+
+  let success = false;
+  try {
+    const res = await fetch(`${API_BASE}/lead`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15000),
+    });
+    success = res.ok;
+    if(!res.ok) console.warn('Backend respondió', res.status, await res.text());
+  } catch(err) {
+    console.warn('Backend no disponible:', err.message);
+    // En demo, siempre mostramos éxito
+    success = true;
+  }
+
+  clearInterval(loadInterval);
+  loadingOverlay.classList.remove('show');
+
+  // Siempre mostramos pantalla de éxito en la demo
+  showSuccess(score);
+}
+
+function showSuccess(score) {
+  // Hide form
+  document.getElementById('stepsBar').style.display = 'none';
+  document.querySelector('.prog-wrap').style.display = 'none';
+  document.getElementById('scoreBar').style.display = 'none';
+  document.getElementById('form-card') // no existe directamente
+  document.querySelector('.form-card').style.display = 'none';
+
+  const copy = SCORE_COPY[score];
+  const finalScore = document.getElementById('scoreFinal');
+  finalScore.className = `score-final ${score}`;
+  finalScore.innerHTML = `<span style="font-size:24px">${copy.icon}</span> ${copy.label}`;
+
+  // WhatsApp CTA
+  const tel = FORM.telefono.replace(/\D/g,'');
+  const msg = encodeURIComponent(`Hola, acabo de completar el formulario del fraccionamiento. Mi nombre es ${FORM.nombre} y me interesa un lote de ${FORM.superficie} m² en ${FORM.zona}. Presupuesto: ${FORM.presupuesto}.`);
+  const waUrl = WA_NUMBER
+    ? `https://wa.me/${WA_NUMBER.replace(/\D/g,'')}?text=${msg}`
+    : `https://wa.me/?text=${msg}`;
+  document.getElementById('waBtn').href = waUrl;
+
+  document.getElementById('successScreen').classList.add('show');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── SOCIAL PROOF AUTOMATION ───────────────────────────────────────────────────
+const SP_DATA = [
+  {av:'MR',name:'María R.',msg:'consultó por un lote en Zona Norte',time:'hace 2 min'},
+  {av:'JL',name:'Jorge L.',msg:'preguntó por financiamiento a 36 meses',time:'hace 5 min'},
+  {av:'CP',name:'Carlos P.',msg:'agendó visita al fraccionamiento',time:'hace 8 min'},
+  {av:'VA',name:'Valeria A.',msg:'reservó un lote de 300m² en Prados Sur',time:'hace 12 min'},
+  {av:'RM',name:'Roberto M.',msg:'confirmó disponibilidad de lote premium',time:'hace 15 min'},
+  {av:'SP',name:'Sofía P.',msg:'consultó por lotes de inversión',time:'hace 20 min'},
+];
+
+let spIndex = 0;
+function showSocialProof() {
+  const d = SP_DATA[spIndex % SP_DATA.length];
+  spIndex++;
+  document.getElementById('spAvatar').textContent = d.av;
+  document.getElementById('spName').textContent = d.name;
+  document.getElementById('spMsg').textContent = d.msg;
+  document.getElementById('spTime').textContent = d.time;
+  const el = document.getElementById('socialProof');
+  el.style.display = 'flex';
+  setTimeout(()=>{ el.style.display='none'; }, 5000);
+}
+
+// Show first after 4s, then every 18s
+setTimeout(()=>{ showSocialProof(); setInterval(showSocialProof, 18000); }, 4000);
+
+// ── URGENCY COUNTER ───────────────────────────────────────────────────────────
+// Simulate lot count slowly decreasing for urgency
+let lots = 8;
+setInterval(()=>{
+  if(lots > 5 && Math.random() > 0.7) {
+    lots--;
+    document.getElementById('lotsLeft').textContent = `${lots} lotes`;
+  }
+}, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM Dashboard — Inmobiliaria Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ══════════════════════════════════════════════
+       DESIGN SYSTEM — INMOBILIARIA DEMO
+       Premium Boutique Real Estate Dashboard
+    ══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --sidebar-bg: #0A261A;
+      --sidebar-hover: #163B2A;
+      --sidebar-active: #1D4B36;
+      --sidebar-text: #A6C2B4;
+      --sidebar-text-active: #FFFFFF;
+      --main-bg: #F8F9FA;
+      --card-bg: #FFFFFF;
+      --primary: #0A261A;
+      --primary-hover: #163B2A;
+      --accent: #E5B239;
+      --success: #1E6B47;
+      --success-bg: #DFF0E9;
+      --info: #3E7363;
+      --info-bg: #E3EFED;
+      --text-main: #111827;
+      --text-muted: #6B7280;
+      --border-color: #E5E7EB;
+      --font-heading: 'Manrope', 'Inter', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+    html, body { margin: 0 !important; padding: 0 !important; }
+    body {
+      font-family: var(--font-body);
+      background-color: var(--main-bg) !important;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px; background: var(--card-bg);
+      border: 1px solid var(--border-color); border-radius: 14px; padding: 16px 22px;
+      font-size: 0.9rem; font-weight: 500; font-family: var(--font-body); z-index: 2000;
+      box-shadow: 0px 10px 40px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px;
+      transform: translateY(100px); opacity: 0; transition: all 0.35s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid #EF4444; }
+
+    /* MODALS */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;
+      padding: 20px; opacity: 0; transition: opacity 0.3s ease;
+    }
+    .modal-overlay.open { display: flex; opacity: 1; }
+    .modal {
+      background: var(--card-bg); border-radius: 20px; padding: 32px; width: 100%; max-width: 600px;
+      max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+    }
+    .modal-close { position: absolute; top: 20px; right: 20px; background: #F3F4F6; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #666; }
+    .modal-title { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; margin-bottom: 24px; color: var(--primary); }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+    .form-control { width: 100%; background: #F9FAFB; border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; font-family: var(--font-body); outline: none; }
+    .form-control:focus { border-color: var(--primary); background: #FFF; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .modal-footer { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+    .img-preview { width: 100%; height: 160px; object-fit: cover; border-radius: 10px; display: none; margin-top: 10px; }
+
+    /* LAYOUT: SIDEBAR */
+    .dashboard-layout { display: flex; width: 100%; min-height: 100vh; }
+    .sidebar { width: 280px; background-color: var(--sidebar-bg); display: flex; flex-direction: column; padding: 32px 20px; flex-shrink: 0; }
+    .sidebar-logo { margin-bottom: 40px; padding: 0 12px; }
+    .sidebar-logo h2 { color: #FFF; font-family: var(--font-heading); font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo p { color: var(--sidebar-text); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 4px; }
+    .sidebar-nav { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; cursor: pointer;
+      color: var(--sidebar-text); font-family: var(--font-body); font-weight: 500; font-size: 0.9rem; letter-spacing: 0.03em; transition: all 0.2s;
+    }
+    .nav-item:hover { background-color: var(--sidebar-hover); color: var(--sidebar-text-active); }
+    .nav-item.active { background-color: var(--sidebar-active); color: var(--sidebar-text-active); font-weight: 600; border-left: 4px solid #16CE87; padding-left: 12px; }
+    .nav-item i { font-size: 1.1rem; opacity: 0.8; font-style: normal; }
+    .nav-item.active i { opacity: 1; }
+    .sidebar-footer { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto; }
+
+    /* MAIN CONTENT */
+    .main-wrapper { flex-grow: 1; padding: 32px 56px; display: flex; flex-direction: column; overflow-x: hidden; height: 100vh; overflow-y: auto; background: var(--main-bg); }
+
+    /* TOP HEADER */
+    .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
+    .search-bar { position: relative; width: 380px; }
+    .search-bar input {
+      width: 100%; border: 1px solid var(--border-color); border-radius: 99px; padding: 10px 20px 10px 48px;
+      font-size: 0.9rem; font-family: var(--font-body); outline: none; background: #FFF; color: var(--text-main);
+    }
+    .search-bar::before { content: '🔍'; position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; opacity: 0.4; }
+    .header-tools { display: flex; align-items: center; gap: 24px; }
+    .header-icon { font-size: 1.2rem; cursor: pointer; color: var(--text-muted); transition: color 0.2s; font-style: normal; }
+    .header-icon:hover { color: var(--primary); }
+    .user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .user-profile .name { font-size: 0.95rem; font-weight: 500; font-family: var(--font-body); color: var(--text-main); }
+    .user-profile .avatar { width: 40px; height: 40px; border-radius: 50%; background: #E5E7EB; overflow: hidden; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+
+    /* SECTION HERO */
+    .section-hero { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .section-title { font-family: var(--font-heading); }
+    .section-title .subtitle { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; margin-bottom: 8px; font-family: var(--font-body); }
+    .section-title h1 { font-size: 2.2rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
+    .section-title h1 span { color: var(--text-muted); opacity: 0.6; }
+    .view-actions { display: flex; gap: 12px; }
+    .btn { padding: 10px 20px; border-radius: 12px; font-family: var(--font-body); font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #FFF; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-outline { background: #FFF; border: 1px solid var(--border-color); color: var(--text-main); }
+    .btn-outline:hover { background: #F3F4F6; }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; }
+    .btn.loading { opacity: 0.6; pointer-events: none; }
+
+    /* FILTERS */
+    .filters-bar { display: flex; gap: 12px; margin-bottom: 40px; align-items: center; flex-wrap: wrap; }
+    .filter-chip {
+      background: #FFF; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 18px 10px 42px;
+      border-radius: 12px; font-size: 0.9rem; font-weight: 500; cursor: pointer; outline: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center; background-size: 16px;
+      position: relative; font-family: var(--font-body); box-shadow: 0 1px 2px rgba(0,0,0,0.02); height: 42px;
+    }
+    .filter-chip:hover { border-color: #D1D5DB; }
+    .filters-bar .fc-wrap { position: relative; }
+    .fc-zona::before { content: '📍'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
+    .fc-tipo::before { content: '🏢'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
+    .fc-estado::before { content: '🏷️'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
+    .fc-op::before { content: '🔄'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
+    .fc-subniche::before { content: '🏗️'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
+    .filter-count { margin-left: auto; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+
+    /* GALLERY GRID */
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px; }
+    .gallery-card {
+      background: var(--card-bg); border-radius: 20px; overflow: hidden;
+      border: 1px solid var(--border-color); transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column;
+    }
+    .gallery-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); }
+    .gallery-img-wrap { position: relative; height: 260px; padding: 12px; }
+    .gallery-img-wrap > img { border-radius: 12px; width: 100%; height: 100%; object-fit: cover; }
+    .gallery-img-placeholder { border-radius: 12px; width:100%; height:100%; background:#F3F4F6; display:flex; align-items:center; justify-content:center; font-size:3rem; }
+    .top-left-badges { position: absolute; top: 24px; left: 24px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge { padding: 6px 12px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; font-family: var(--font-body); border: none; }
+    .badge-primary { background: #3E6A5A; color: #FFF; }
+    .badge-accent { background: #E5B239; color: #FFF; }
+    .top-right-badges { position: absolute; top: 24px; right: 24px; }
+    .badge-info { background: #D0EEE8; color: #1E6B47; }
+    .badge-neutral { background: rgba(0,0,0,0.5); color: #FFF; backdrop-filter: blur(4px); }
+    .badge-disponible { background: var(--success-bg); color: var(--success); }
+    .badge-reservado { background: #FEF3C7; color: #D97706; }
+    .badge-no { background: #FEE2E2; color: #EF4444; }
+    .badge-venta { background: var(--primary); color: #FFF; }
+    .badge-alquiler { background: var(--info); color: #FFF; }
+    .price-overlay { position: absolute; bottom: 24px; left: 24px; font-family: var(--font-heading); font-weight: 800; font-size: 1.15rem; color: #10B981; text-shadow: 0px 1px 4px rgba(0,0,0,0.4); }
+    .gallery-body { padding: 20px 24px; display: flex; flex-direction: column; flex-grow: 1; }
+    .card-title { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: var(--text-main); line-height: 1.3; margin-bottom: 6px; }
+    .card-location { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+    .card-features { display: flex; align-items: center; gap: 14px; font-size: 0.85rem; color: var(--text-main); font-weight: 600; margin-bottom: 24px; }
+    .card-features span { display: flex; align-items: center; gap: 6px; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color); }
+    .card-price { font-family: var(--font-heading); font-size: 1.3rem; font-weight: 800; color: var(--text-main); }
+    .card-price-small { font-size: 1.1rem; color: var(--text-main); font-weight: 800; font-family: var(--font-heading); }
+    .btn-circle { width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: #FFF; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .btn-circle:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px; }
+    .stat-card { background: var(--card-bg); border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); }
+    .stat-card .num { font-size: 2.2rem; font-weight: 800; font-family: var(--font-heading); color: var(--text-main); margin-bottom: 4px; }
+    .stat-card .lbl { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-body); }
+    .stat-card.green .num { color: #10B981; }
+    .stat-card.yellow .num { color: #F59E0B; }
+    .stat-card.blue .num { color: #3B82F6; }
+    .stat-card.red .num { color: #EF4444; }
+    .stat-card.orange .num { color: #F97316; }
+
+    /* TABLE */
+    table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    thead { background: #F9FAFB; }
+    th { padding: 14px 24px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--border-color); }
+    td { padding: 16px 24px; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-main); font-family: var(--font-body); font-weight: 500; }
+    tr:last-child td { border-bottom: none; }
+
+    /* PANELS */
+    .panel { display: none; }
+    .panel.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* LEAD CARDS */
+    .leads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+    .lead-card { background: var(--card-bg); border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); }
+    .lead-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .lead-name { font-size: 1.15rem; font-weight: 800; font-family: var(--font-heading); }
+    .lead-origin-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .lead-meta { font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+    .lead-notas { font-size: 0.83rem; color: var(--text-muted); font-style: italic; background: #F9FAFB; border-radius: 8px; padding: 12px; margin-top: 12px; border: 1px solid var(--border-color); }
+    .estado-btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .estado-btn { padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; background: #F3F4F6; color: var(--text-muted); transition: all 0.2s; font-family: var(--font-body); }
+    .estado-btn:hover { background: #E5E7EB; color: var(--text-main); }
+    .estado-btn[class*="active-"] { box-shadow: 0 0 0 2px rgba(0,0,0,0.1); }
+    .active-no_contactado { background: #F3F4F6; color: #6B7280; border: 1px solid #D1D5DB; }
+    .active-contactado { background: var(--success-bg); color: #047857; }
+    .active-en_negociacion { background: #FEF3C7; color: #B45309; }
+    .active-cerrado { background: #DBEAFE; color: #1D4ED8; }
+
+    /* ORIGIN BADGE */
+    .badge-web { background: #EFF6FF; color: #1D4ED8; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; font-weight: 700; font-family: var(--font-body); }
+    .badge-wa { background: #DCFCE7; color: #15803D; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; font-weight: 700; font-family: var(--font-body); }
+    .badge-cita { background: #FEF3C7; color: #B45309; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; font-weight: 700; font-family: var(--font-body); }
+    .badge-caliente { background: #FEE2E2; color: #B91C1C; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; font-weight: 700; font-family: var(--font-body); }
+
+    /* SUBNICHE PILLS */
+    .subniche-pills { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .subniche-pill {
+      padding: 8px 18px; border-radius: 99px; border: 1px solid var(--border-color);
+      background: #FFF; color: var(--text-muted); font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; font-family: var(--font-body); transition: all 0.2s;
+    }
+    .subniche-pill:hover { background: #F3F4F6; color: var(--text-main); }
+    .subniche-pill.active { background: var(--primary); color: #FFF; border-color: var(--primary); }
+
+    /* PIPELINE / KANBAN */
+    .kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .kanban-col { background: #F3F4F6; border-radius: 16px; padding: 16px; }
+    .kanban-col-header { font-family: var(--font-heading); font-size: 0.85rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .kanban-col-header .col-count { background: var(--border-color); color: var(--text-muted); border-radius: 99px; padding: 2px 8px; font-size: 0.75rem; font-weight: 700; }
+    .kanban-col.col-new .kanban-col-header { color: #6B7280; }
+    .kanban-col.col-new .kanban-col-header .col-count { background: #E5E7EB; color: #6B7280; }
+    .kanban-col.col-contactado .kanban-col-header { color: #047857; }
+    .kanban-col.col-contactado .kanban-col-header .col-count { background: #D1FAE5; color: #047857; }
+    .kanban-col.col-negociacion .kanban-col-header { color: #B45309; }
+    .kanban-col.col-negociacion .kanban-col-header .col-count { background: #FEF3C7; color: #B45309; }
+    .kanban-col.col-cerrado .kanban-col-header { color: #1D4ED8; }
+    .kanban-col.col-cerrado .kanban-col-header .col-count { background: #DBEAFE; color: #1D4ED8; }
+    .kanban-cards { display: flex; flex-direction: column; gap: 12px; min-height: 80px; }
+    .kanban-card {
+      background: #FFF; border-radius: 12px; padding: 14px 16px;
+      border: 1px solid var(--border-color); cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    .kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .kanban-card .kc-name { font-size: 0.9rem; font-weight: 700; font-family: var(--font-heading); margin-bottom: 4px; color: var(--text-main); }
+    .kanban-card .kc-info { font-size: 0.78rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 2px; }
+    .kanban-card .kc-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+
+    .loading-msg, .empty-msg { text-align: center; padding: 80px; color: var(--text-muted); font-size: 1rem; font-weight: 500; font-family: var(--font-body); }
+    .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid var(--border-color); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .auto-refresh-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--success-bg); color: var(--success); border-radius: 99px; padding: 4px 12px; font-size: 0.75rem; font-weight: 700; font-family: var(--font-body); }
+    .auto-refresh-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<!-- MODAL PROPIEDAD -->
+<div id="modal-prop" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-prop')">✕</button>
+    <div class="modal-title" id="modal-prop-title">Editar propiedad</div>
+    <input type="hidden" id="mp-record-id" />
+    <div class="form-group">
+      <label>Título / Nombre de la propiedad</label>
+      <input class="form-control" id="mp-titulo" placeholder="Ej: Casa 3 dormitorios, barrio centro" />
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <textarea class="form-control" id="mp-descripcion" rows="3" placeholder="Describí la propiedad..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Precio</label>
+        <input class="form-control" id="mp-precio" type="number" placeholder="0" />
+      </div>
+      <div class="form-group">
+        <label>Moneda</label>
+        <select class="form-control" id="mp-moneda">
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Zona</label>
+        <select class="form-control" id="mp-zona">
+          <option value="San Ignacio">San Ignacio</option>
+          <option value="Gdor Roca">Gdor Roca</option>
+          <option value="Apóstoles">Apóstoles</option>
+          <option value="Posadas">Posadas</option>
+          <option value="Oberá">Oberá</option>
+          <option value="Leandro N. Alem">Leandro N. Alem</option>
+          <option value="Jardín América">Jardín América</option>
+          <option value="Otra">Otra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select class="form-control" id="mp-tipo">
+          <option value="Casa">Casa</option>
+          <option value="Departamento">Departamento</option>
+          <option value="Terreno">Terreno</option>
+          <option value="Lote">Lote</option>
+          <option value="Comercial">Comercial</option>
+          <option value="Loteo">Loteo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Operación</label>
+        <select class="form-control" id="mp-operacion">
+          <option value="Venta">Venta</option>
+          <option value="Alquiler">Alquiler</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Disponibilidad</label>
+        <select class="form-control" id="mp-disponible">
+          <option value="✅ Disponible">✅ Disponible</option>
+          <option value="⏳ Reservado">⏳ Reservado</option>
+          <option value="❌ No disponible">❌ No disponible</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Dormitorios</label>
+        <input class="form-control" id="mp-dormitorios" type="number" min="0" placeholder="—" />
+      </div>
+      <div class="form-group">
+        <label>Metros cubiertos (m²)</label>
+        <input class="form-control" id="mp-metros" type="number" min="0" placeholder="—" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>URL de imagen</label>
+      <input class="form-control" id="mp-imagen-url" placeholder="https://..." oninput="previewImg()" />
+      <img id="mp-img-preview" class="img-preview" alt="preview" />
+    </div>
+    <div class="form-group">
+      <label>Google Maps (URL) <span style="color:var(--text-muted);font-size:0.8rem">— opcional</span></label>
+      <input class="form-control" id="mp-maps-url" placeholder="https://maps.google.com/..." />
+    </div>
+    <div class="form-group">
+      <label>Video YouTube (URL) <span style="color:var(--text-muted);font-size:0.8rem">— opcional</span></label>
+      <input class="form-control" id="mp-video-url" placeholder="https://www.youtube.com/watch?v=..." />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-prop')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-prop" onclick="guardarPropiedad()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LEAD -->
+<div id="modal-lead" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-lead')">✕</button>
+    <div class="modal-title">✏️ Editar lead</div>
+    <input type="hidden" id="ml-record-id" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nombre</label>
+        <input class="form-control" id="ml-nombre" placeholder="Nombre" />
+      </div>
+      <div class="form-group">
+        <label>Apellido</label>
+        <input class="form-control" id="ml-apellido" placeholder="Apellido" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input class="form-control" id="ml-telefono" placeholder="+549..." />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input class="form-control" id="ml-email" type="email" placeholder="correo@..." />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Zona de interés</label>
+        <select class="form-control" id="ml-zona">
+          <option value="">— Sin especificar —</option>
+          <option>San Ignacio</option><option>Gdor Roca</option>
+          <option>Apóstoles</option><option>Posadas</option><option>Oberá</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Operación</label>
+        <select class="form-control" id="ml-operacion">
+          <option value="">— Sin especificar —</option>
+          <option value="venta">Venta</option>
+          <option value="alquiler">Alquiler</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo de propiedad</label>
+        <select class="form-control" id="ml-tipo">
+          <option value="">— Sin especificar —</option>
+          <option value="casa">Casa</option>
+          <option value="departamento">Departamento</option>
+          <option value="terreno">Terreno</option>
+          <option value="lote">Lote</option>
+          <option value="comercial">Comercial</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Presupuesto</label>
+        <select class="form-control" id="ml-presupuesto">
+          <option value="">— Sin especificar —</option>
+          <option value="hasta_50k">Hasta USD 50k</option>
+          <option value="50k_100k">USD 50k – 100k</option>
+          <option value="100k_200k">USD 100k – 200k</option>
+          <option value="mas_200k">Más de USD 200k</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Sub-nicho</label>
+      <select class="form-control" id="ml-subniche">
+        <option value="">— Sin especificar —</option>
+        <option value="desarrolladora">Desarrolladora</option>
+        <option value="inmobiliaria">Inmobiliaria</option>
+        <option value="agente">Agente independiente</option>
+        <option value="web">Desde formulario web</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notas</label>
+      <textarea class="form-control" id="ml-notas" rows="3" placeholder="Notas adicionales..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-lead')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-lead" onclick="guardarLead()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE PROPIEDAD -->
+<div id="modal-detalle" class="modal-overlay">
+  <div class="modal" style="max-width:700px;">
+    <button class="modal-close" onclick="closeModal('modal-detalle')">✕</button>
+    <div id="detalle-content"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD LAYOUT -->
+<div class="dashboard-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo" style="display:flex; flex-direction:column; align-items:flex-start; padding:0 12px;">
+      <div style="background:rgba(255,255,255,0.08); border-radius:14px; padding:12px 18px; margin-bottom:12px; display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.6rem;">🏠</span>
+        <div>
+          <div style="color:#FFF; font-family:var(--font-heading); font-weight:800; font-size:1.1rem; line-height:1.2;">Inmobiliaria</div>
+          <div style="color:#16CE87; font-family:var(--font-heading); font-weight:800; font-size:1.1rem; line-height:1.2;">Demo</div>
+        </div>
+      </div>
+      <p style="color:var(--sidebar-text); font-size:0.7rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;">CRM Dashboard</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item tab active" onclick="switchTab('resumen', this)"><i>📊</i> Resumen</div>
+      <div class="nav-item tab" onclick="switchTab('pipeline', this)"><i>🔄</i> Pipeline</div>
+      <div class="nav-item tab" onclick="switchTab('clientes', this)"><i>👥</i> Leads</div>
+      <div class="nav-item tab" onclick="switchTab('propiedades', this)"><i>📋</i> Propiedades</div>
+      <div class="nav-item tab" onclick="switchTab('galeria', this)"><i>🖼️</i> Galería</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-item" onclick="loadAll()" id="btn-refresh"><i>↻</i> Sincronizar</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-wrapper">
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="search-bar">
+        <input type="text" id="search-global" placeholder="Buscar leads o propiedades..." oninput="buscarGlobal()" />
+      </div>
+      <div class="header-tools">
+        <span class="auto-refresh-badge"><span class="auto-refresh-dot"></span> Auto-refresh 60s</span>
+        <i class="header-icon">🔔</i>
+        <i class="header-icon">⚙️</i>
+        <div class="user-profile">
+          <div class="avatar">🧑‍💼</div>
+          <span class="name">Asesor Demo</span>
+          <i class="header-icon" style="font-size:0.8rem">▼</i>
+        </div>
+      </div>
+    </header>
+
+    <div style="margin-bottom: 24px;">
+      <p id="last-update" style="font-size:0.85rem; color:var(--text-muted); font-weight:600; font-family:var(--font-body);">Cargando datos...</p>
+    </div>
+
+    <!-- PANEL RESUMEN -->
+    <div id="panel-resumen" class="panel active">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Visión General</div>
+          <h1>Resumen <span>General</span></h1>
+        </div>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+        <div class="stat-card"><div class="num" id="r-total-leads">—</div><div class="lbl">🎯 Total leads</div></div>
+        <div class="stat-card red"><div class="num" id="r-calientes">—</div><div class="lbl">🔥 Leads calientes</div></div>
+        <div class="stat-card yellow"><div class="num" id="r-sin-contactar">—</div><div class="lbl">🔕 Sin contactar</div></div>
+        <div class="stat-card green"><div class="num" id="r-con-cita">—</div><div class="lbl">📅 Con cita</div></div>
+        <div class="stat-card blue"><div class="num" id="r-desde-web">—</div><div class="lbl">📋 Desde formulario</div></div>
+        <div class="stat-card green"><div class="num" id="r-props">—</div><div class="lbl">🏠 Propiedades</div></div>
+      </div>
+
+      <!-- Mini charts: estado + operación -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:32px;">
+        <div style="background:#FFF; border-radius:16px; padding:24px; border:1px solid var(--border-color);">
+          <div style="font-family:var(--font-heading); font-size:0.85rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:16px;">Estado de leads</div>
+          <div id="chart-estado"></div>
+        </div>
+        <div style="background:#FFF; border-radius:16px; padding:24px; border:1px solid var(--border-color);">
+          <div style="font-family:var(--font-heading); font-size:0.85rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:16px;">Origen de leads</div>
+          <div id="chart-origen"></div>
+        </div>
+      </div>
+
+      <!-- Últimas actividades -->
+      <div style="background:#FFF; border-radius:16px; padding:24px; border:1px solid var(--border-color);">
+        <div style="font-family:var(--font-heading); font-size:0.85rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:16px;">Últimas 10 actividades</div>
+        <div id="tabla-actividades"></div>
+      </div>
+    </div>
+
+    <!-- PANEL PIPELINE -->
+    <div id="panel-pipeline" class="panel">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Funnel de Ventas</div>
+          <h1>Pipeline <span>Inmobiliario</span></h1>
+        </div>
+      </div>
+
+      <!-- Sub-niche pills -->
+      <div class="subniche-pills" id="pipeline-pills">
+        <div class="subniche-pill active" data-sniche="" onclick="setSnicheFilter(this, 'pipeline')">Todos</div>
+        <div class="subniche-pill" data-sniche="desarrolladora" onclick="setSnicheFilter(this, 'pipeline')">🏗️ Desarrolladora</div>
+        <div class="subniche-pill" data-sniche="inmobiliaria" onclick="setSnicheFilter(this, 'pipeline')">🏢 Inmobiliaria</div>
+        <div class="subniche-pill" data-sniche="agente" onclick="setSnicheFilter(this, 'pipeline')">🤝 Agente</div>
+        <div class="subniche-pill" data-sniche="web" onclick="setSnicheFilter(this, 'pipeline')">📋 Web</div>
+      </div>
+
+      <div class="kanban-board" id="kanban-board">
+        <div class="kanban-col col-new">
+          <div class="kanban-col-header">🔕 Sin contactar <span class="col-count" id="kc-no">0</span></div>
+          <div class="kanban-cards" id="kc-no_contactado"></div>
+        </div>
+        <div class="kanban-col col-contactado">
+          <div class="kanban-col-header">📱 Contactado <span class="col-count" id="kc-con">0</span></div>
+          <div class="kanban-cards" id="kc-contactado"></div>
+        </div>
+        <div class="kanban-col col-negociacion">
+          <div class="kanban-col-header">⭐ Negociación <span class="col-count" id="kc-neg">0</span></div>
+          <div class="kanban-cards" id="kc-en_negociacion"></div>
+        </div>
+        <div class="kanban-col col-cerrado">
+          <div class="kanban-col-header">✅ Cerrado <span class="col-count" id="kc-cer">0</span></div>
+          <div class="kanban-cards" id="kc-cerrado"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL LEADS -->
+    <div id="panel-clientes" class="panel">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Gestión de Leads</div>
+          <h1>Leads & <span>Clientes</span></h1>
+        </div>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openModalNuevoLead()">+ Nuevo Lead</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="num" id="s-no-contactados" style="color:#9ca3af">—</div><div class="lbl">Sin contactar</div></div>
+        <div class="stat-card green"><div class="num" id="s-contactados">—</div><div class="lbl">Contactados</div></div>
+        <div class="stat-card yellow"><div class="num" id="s-en-negociacion">—</div><div class="lbl">En negociación</div></div>
+        <div class="stat-card blue"><div class="num" id="s-cerrados">—</div><div class="lbl">Cerrados</div></div>
+        <div class="stat-card blue"><div class="num" id="s-total-leads">—</div><div class="lbl">Total leads</div></div>
+      </div>
+
+      <!-- Sub-niche pills -->
+      <div class="subniche-pills" id="leads-pills">
+        <div class="subniche-pill active" data-sniche="" onclick="setSnicheFilter(this, 'leads')">Todos</div>
+        <div class="subniche-pill" data-sniche="desarrolladora" onclick="setSnicheFilter(this, 'leads')">🏗️ Desarrolladora</div>
+        <div class="subniche-pill" data-sniche="inmobiliaria" onclick="setSnicheFilter(this, 'leads')">🏢 Inmobiliaria</div>
+        <div class="subniche-pill" data-sniche="agente" onclick="setSnicheFilter(this, 'leads')">🤝 Agente</div>
+        <div class="subniche-pill" data-sniche="web" onclick="setSnicheFilter(this, 'leads')">📋 Web</div>
+      </div>
+
+      <div class="filters-bar">
+        <div class="fc-wrap fc-estado">
+          <select class="filter-chip" id="f-estado-lead" onchange="renderLeads()">
+            <option value="">⚡ Todos los estados</option>
+            <option value="no_contactado">Sin contactar</option>
+            <option value="contactado">Contactado</option>
+            <option value="en_negociacion">En negociación</option>
+            <option value="cerrado">Cerrado</option>
+            <option value="descartado">Descartado</option>
+          </select>
+        </div>
+        <div class="search-bar" style="width:280px; margin-bottom:0;">
+          <input type="text" id="f-buscar-lead" placeholder="Buscar nombre o teléfono..." oninput="renderLeads()" />
+        </div>
+        <span class="filter-count" id="leads-count"></span>
+      </div>
+
+      <div id="leads-loading" class="loading-msg"><span class="spinner"></span> Cargando leads...</div>
+      <div class="leads-grid" id="leads-grid"></div>
+      <div id="leads-empty" class="empty-msg" style="display:none">No hay leads con esos filtros.</div>
+    </div>
+
+    <!-- PANEL PROPIEDADES -->
+    <div id="panel-propiedades" class="panel">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Inventario Global</div>
+          <h1>Propiedades <span>Disponibles</span></h1>
+        </div>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openModalNuevaPropiedad()">+ Nueva Propiedad</button>
+        </div>
+      </div>
+      <div class="stats-grid" id="stats-props">
+        <div class="stat-card green"><div class="num" id="s-disponibles">—</div><div class="lbl">✅ Disponibles</div></div>
+        <div class="stat-card yellow"><div class="num" id="s-reservadas">—</div><div class="lbl">⏳ Reservadas</div></div>
+        <div class="stat-card red"><div class="num" id="s-nodisponibles">—</div><div class="lbl">❌ No disponibles</div></div>
+        <div class="stat-card blue"><div class="num" id="s-total-props">—</div><div class="lbl">Total</div></div>
+      </div>
+      <div class="filters-bar">
+        <div class="fc-wrap fc-zona">
+          <select class="filter-chip" id="f-zona" onchange="renderProps()">
+            <option value="">📍 Todas las zonas</option>
+            <option>San Ignacio</option><option>Gdor Roca</option>
+            <option>Apóstoles</option><option>Posadas</option><option>Oberá</option>
+          </select>
+        </div>
+        <div class="fc-wrap fc-op">
+          <select class="filter-chip" id="f-operacion" onchange="renderProps()">
+            <option value="">🔄 Venta y Alquiler</option>
+            <option value="venta">Venta</option>
+            <option value="alquiler">Alquiler</option>
+          </select>
+        </div>
+        <div class="fc-wrap fc-tipo">
+          <select class="filter-chip" id="f-tipo" onchange="renderProps()">
+            <option value="">🏗️ Todos los tipos</option>
+            <option value="casa">Casa</option><option value="departamento">Departamento</option>
+            <option value="terreno">Terreno</option><option value="lote">Lote</option>
+            <option value="comercial">Comercial</option><option value="loteo">Loteo</option>
+          </select>
+        </div>
+        <div class="fc-wrap fc-estado">
+          <select class="filter-chip" id="f-estado" onchange="renderProps()">
+            <option value="">⚡ Todos los estados</option>
+            <option value="disponible">✅ Disponible</option>
+            <option value="reservado">⏳ Reservado</option>
+            <option value="no">❌ No disponible</option>
+          </select>
+        </div>
+        <span class="filter-count" id="props-count"></span>
+      </div>
+      <div class="table-wrap">
+        <div id="props-loading" class="loading-msg"><span class="spinner"></span> Cargando propiedades...</div>
+        <table id="props-table" style="display:none">
+          <thead>
+            <tr><th>Propiedad</th><th>Zona</th><th>Tipo</th><th>Operación</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="props-tbody"></tbody>
+        </table>
+        <div id="props-empty" class="empty-msg" style="display:none">No hay propiedades con esos filtros.</div>
+      </div>
+    </div>
+
+    <!-- PANEL GALERÍA -->
+    <div id="panel-galeria" class="panel">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Catálogo Premium</div>
+          <h1>Galería de <span>Propiedades</span></h1>
+        </div>
+      </div>
+      <div class="filters-bar">
+        <div class="fc-wrap fc-zona">
+          <select class="filter-chip" id="g-zona" onchange="renderGaleria()">
+            <option value="">📍 Todas las zonas</option>
+            <option>San Ignacio</option><option>Gdor Roca</option>
+            <option>Apóstoles</option><option>Posadas</option><option>Oberá</option>
+          </select>
+        </div>
+        <div class="fc-wrap fc-op">
+          <select class="filter-chip" id="g-operacion" onchange="renderGaleria()">
+            <option value="">🔄 Venta y Alquiler</option>
+            <option value="venta">Venta</option>
+            <option value="alquiler">Alquiler</option>
+          </select>
+        </div>
+        <div class="fc-wrap fc-tipo">
+          <select class="filter-chip" id="g-tipo" onchange="renderGaleria()">
+            <option value="">🏢 Todos los tipos</option>
+            <option value="casa">Casa</option><option value="departamento">Departamento</option>
+            <option value="terreno">Terreno</option><option value="lote">Lote</option>
+            <option value="comercial">Comercial</option><option value="loteo">Loteo</option>
+          </select>
+        </div>
+        <div class="fc-wrap fc-estado">
+          <select class="filter-chip" id="g-estado" onchange="renderGaleria()">
+            <option value="">⚡ Todos los estados</option>
+            <option value="disponible">✅ Disponible</option>
+            <option value="reservado">⏳ Reservado</option>
+            <option value="no">❌ No disponible</option>
+          </select>
+        </div>
+        <span class="filter-count" id="galeria-count"></span>
+      </div>
+      <div id="galeria-loading" class="loading-msg"><span class="spinner"></span> Cargando galería...</div>
+      <div id="galeria-grid" class="gallery-grid"></div>
+      <div id="galeria-empty" class="empty-msg" style="display:none">Sin coincidencias. Ajustá los filtros.</div>
+    </div>
+
+  </main>
+</div>
+
+
+<script>
+const API = 'https://system-ia-agentes.onrender.com';
+
+let allProps = [];
+let allLeads = [];
+let activeSnicheLeads = '';
+let activeSnichePipeline = '';
+
+// ── FETCH ──────────────────────────────────────────────────
+async function fetchProxy(endpoint) {
+  const r = await fetch(`${API}${endpoint}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status} en ${endpoint}`);
+  const d = await r.json();
+  return d.records || [];
+}
+
+async function patchProxy(endpoint, body) {
+  const r = await fetch(`${API}${endpoint}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function postProxy(endpoint, body) {
+  const r = await fetch(`${API}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── LOAD ──────────────────────────────────────────────────
+async function loadAll() {
+  document.getElementById('btn-refresh').classList.add('loading');
+  document.getElementById('last-update').textContent = 'Actualizando...';
+  try {
+    const [props, leads] = await Promise.all([
+      fetchProxy('/demos/inmobiliaria/crm/propiedades'),
+      fetchProxy('/demos/inmobiliaria/crm/clientes'),
+    ]);
+    allProps = props;
+    allLeads = leads;
+    renderAll();
+    const now = new Date().toLocaleString('es-AR');
+    document.getElementById('last-update').textContent = `Última actualización: ${now}`;
+  } catch(e) {
+    document.getElementById('last-update').textContent = `⚠️ Error: ${e.message}`;
+    showToast('Error al cargar datos: ' + e.message, 'error');
+    console.error(e);
+  }
+  document.getElementById('btn-refresh').classList.remove('loading');
+}
+
+function renderAll() {
+  renderStats();
+  renderResumen();
+  renderPipeline();
+  renderLeads();
+  renderProps();
+  renderGaleria();
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function estadoNorm(val) {
+  const v = (val || '').toLowerCase();
+  if (v.includes('reservado')) return 'reservado';
+  if (v.includes('no') || v.includes('❌')) return 'no';
+  return 'disponible';
+}
+
+function badgeDisponible(val) {
+  const n = estadoNorm(val);
+  if (n === 'reservado') return '<span class="badge badge-reservado">⏳ Reservado</span>';
+  if (n === 'no')        return '<span class="badge badge-no">❌ No disponible</span>';
+  return '<span class="badge badge-disponible">✅ Disponible</span>';
+}
+
+function badgeOp(op) {
+  if (!op) return '—';
+  const l = op.toLowerCase();
+  return l === 'venta'
+    ? '<span class="badge badge-venta">Venta</span>'
+    : '<span class="badge badge-alquiler">Alquiler</span>';
+}
+
+function fmtPrecio(p, m) {
+  if (!p) return 'Consultar';
+  return `${m === 'ARS' ? '$' : 'USD '}${Number(p).toLocaleString('es-AR')}`;
+}
+
+function getOrigen(lead) {
+  // Detecta origen por campo Origen o por presencia de Email (web normalmente tiene email)
+  if (lead.Origen) return lead.Origen.toLowerCase();
+  if (lead.Email) return 'web';
+  return 'wa';
+}
+
+function getSubniche(lead) {
+  // Usa campo Subniche si existe, o inferido por fuente
+  if (lead.Subniche) return lead.Subniche.toLowerCase();
+  if (lead.Email) return 'web';
+  return '';
+}
+
+function getScore(lead) {
+  if (lead.Score) return lead.Score.toLowerCase();
+  const urgencia = (lead.Urgencia || '').toLowerCase();
+  if (urgencia === 'inmediata' || urgencia === '1-3 meses' || urgencia === '1_3_meses') return 'caliente';
+  return 'tibio';
+}
+
+function tieneCita(lead) {
+  return !!(lead.Fecha_Cita || lead.Cal_Booking_Id || lead.Cita_Agendada);
+}
+
+function badgesOrigen(lead) {
+  const origen = getOrigen(lead);
+  const badges = [];
+  if (origen === 'web') badges.push('<span class="badge-web">📋 Web</span>');
+  else badges.push('<span class="badge-wa">💬 WA</span>');
+  if (getScore(lead) === 'caliente') badges.push('<span class="badge-caliente">🔥 Caliente</span>');
+  if (tieneCita(lead)) badges.push('<span class="badge-cita">📅 Con cita</span>');
+  return badges.join('');
+}
+
+// ── TOAST ──────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3500);
+}
+
+// ── STATS ──────────────────────────────────────────────────
+function renderStats() {
+  const disp = allProps.filter(p => estadoNorm(p.Disponible) === 'disponible').length;
+  const res  = allProps.filter(p => estadoNorm(p.Disponible) === 'reservado').length;
+  const noD  = allProps.filter(p => estadoNorm(p.Disponible) === 'no').length;
+  document.getElementById('s-disponibles').textContent  = disp;
+  document.getElementById('s-reservadas').textContent   = res;
+  document.getElementById('s-nodisponibles').textContent = noD;
+  document.getElementById('s-total-props').textContent  = allProps.length;
+
+  const noContactados  = allLeads.filter(l => !l.Estado || l.Estado === 'no_contactado').length;
+  const contactados    = allLeads.filter(l => l.Estado === 'contactado').length;
+  const enNegociacion  = allLeads.filter(l => l.Estado === 'en_negociacion').length;
+  const cerrados       = allLeads.filter(l => l.Estado === 'cerrado').length;
+  document.getElementById('s-no-contactados').textContent = noContactados;
+  document.getElementById('s-contactados').textContent    = contactados;
+  document.getElementById('s-en-negociacion').textContent = enNegociacion;
+  document.getElementById('s-cerrados').textContent       = cerrados;
+  document.getElementById('s-total-leads').textContent    = allLeads.length;
+}
+
+// ── RESUMEN ────────────────────────────────────────────────
+function renderResumen() {
+  const total    = allLeads.length;
+  const calientes = allLeads.filter(l => getScore(l) === 'caliente').length;
+  const sinCont  = allLeads.filter(l => !l.Estado || l.Estado === 'no_contactado').length;
+  const conCita  = allLeads.filter(tieneCita).length;
+  const desdeWeb = allLeads.filter(l => getOrigen(l) === 'web').length;
+
+  document.getElementById('r-total-leads').textContent = total;
+  document.getElementById('r-calientes').textContent   = calientes;
+  document.getElementById('r-sin-contactar').textContent = sinCont;
+  document.getElementById('r-con-cita').textContent    = conCita;
+  document.getElementById('r-desde-web').textContent   = desdeWeb;
+  document.getElementById('r-props').textContent       = allProps.filter(p => estadoNorm(p.Disponible) === 'disponible').length;
+
+  // Chart estado
+  const estadoGroups = {
+    'no_contactado': allLeads.filter(l => !l.Estado || l.Estado === 'no_contactado').length,
+    'contactado': allLeads.filter(l => l.Estado === 'contactado').length,
+    'en_negociacion': allLeads.filter(l => l.Estado === 'en_negociacion').length,
+    'cerrado': allLeads.filter(l => l.Estado === 'cerrado').length,
+    'descartado': allLeads.filter(l => l.Estado === 'descartado').length,
+  };
+  const maxE = Math.max(...Object.values(estadoGroups), 1);
+  const estadoLabels = { no_contactado:'Sin contactar', contactado:'Contactado', en_negociacion:'Negociación', cerrado:'Cerrado', descartado:'Descartado' };
+  const estadoColors = { no_contactado:'#9CA3AF', contactado:'#10B981', en_negociacion:'#F59E0B', cerrado:'#3B82F6', descartado:'#EF4444' };
+  document.getElementById('chart-estado').innerHTML = Object.entries(estadoGroups).map(([k,v]) => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="min-width:100px;font-size:0.8rem;color:var(--text-muted);font-weight:600">${estadoLabels[k]}</div>
+      <div style="flex:1;background:#F3F4F6;border-radius:99px;height:10px;overflow:hidden">
+        <div style="height:100%;width:${(v/maxE)*100}%;background:${estadoColors[k]};border-radius:99px;transition:width 0.5s"></div>
+      </div>
+      <div style="min-width:24px;font-size:0.85rem;font-weight:700;color:var(--text-main);text-align:right">${v}</div>
+    </div>
+  `).join('');
+
+  // Chart origen
+  const wa  = allLeads.filter(l => getOrigen(l) === 'wa').length;
+  const web = allLeads.filter(l => getOrigen(l) === 'web').length;
+  const otros = total - wa - web;
+  const maxO = Math.max(wa, web, otros, 1);
+  document.getElementById('chart-origen').innerHTML = [
+    { label: '💬 WhatsApp', val: wa, color: '#10B981' },
+    { label: '📋 Formulario web', val: web, color: '#3B82F6' },
+    { label: '📱 Otros', val: otros, color: '#9CA3AF' },
+  ].map(({label,val,color}) => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="min-width:130px;font-size:0.8rem;color:var(--text-muted);font-weight:600">${label}</div>
+      <div style="flex:1;background:#F3F4F6;border-radius:99px;height:10px;overflow:hidden">
+        <div style="height:100%;width:${(val/maxO)*100}%;background:${color};border-radius:99px;transition:width 0.5s"></div>
+      </div>
+      <div style="min-width:24px;font-size:0.85rem;font-weight:700;color:var(--text-main);text-align:right">${val}</div>
+    </div>
+  `).join('');
+
+  // Tabla actividades
+  const recientes = [...allLeads]
+    .sort((a,b) => new Date(b.fecha_ultimo_contacto||b.created_at||0) - new Date(a.fecha_ultimo_contacto||a.created_at||0))
+    .slice(0,10);
+
+  if (!recientes.length) {
+    document.getElementById('tabla-actividades').innerHTML = '<div class="empty-msg" style="padding:40px">Sin actividades aún.</div>';
+    return;
+  }
+
+  document.getElementById('tabla-actividades').innerHTML = `
+    <table>
+      <thead><tr><th>Lead</th><th>Estado</th><th>Origen</th><th>Zona</th><th>Último contacto</th></tr></thead>
+      <tbody>${recientes.map(l => {
+        const nombre = [l.Nombre, l.Apellido].filter(Boolean).join(' ') || 'Sin nombre';
+        const fecha  = l.fecha_ultimo_contacto ? new Date(l.fecha_ultimo_contacto).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+        const estado = l.Estado || 'no_contactado';
+        const estadoColors = { no_contactado:'#9CA3AF', contactado:'#10B981', en_negociacion:'#F59E0B', cerrado:'#3B82F6', descartado:'#EF4444' };
+        const estadoLabel  = { no_contactado:'Sin contactar', contactado:'Contactado', en_negociacion:'Negociación', cerrado:'Cerrado', descartado:'Descartado' };
+        return `
+          <tr>
+            <td><strong>${nombre}</strong></td>
+            <td><span style="color:${estadoColors[estado]||'#9CA3AF'};font-weight:700;font-size:0.85rem">${estadoLabel[estado]||estado}</span></td>
+            <td>${badgesOrigen(l)}</td>
+            <td>${l.Zona ? '📍 '+l.Zona : '—'}</td>
+            <td style="font-size:0.82rem;color:var(--text-muted)">${fecha}</td>
+          </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
+// ── PIPELINE / KANBAN ──────────────────────────────────────
+function renderPipeline() {
+  const filteredLeads = activeSnichePipeline
+    ? allLeads.filter(l => getSubniche(l) === activeSnichePipeline || (activeSnichePipeline === 'web' && getOrigen(l) === 'web'))
+    : allLeads;
+
+  const cols = { no_contactado: [], contactado: [], en_negociacion: [], cerrado: [] };
+  filteredLeads.forEach(l => {
+    const est = l.Estado || 'no_contactado';
+    if (cols[est] !== undefined) cols[est].push(l);
+  });
+
+  document.getElementById('kc-no').textContent  = cols.no_contactado.length;
+  document.getElementById('kc-con').textContent  = cols.contactado.length;
+  document.getElementById('kc-neg').textContent  = cols.en_negociacion.length;
+  document.getElementById('kc-cer').textContent  = cols.cerrado.length;
+
+  Object.entries(cols).forEach(([col, leads]) => {
+    const el = document.getElementById(`kc-${col}`);
+    if (!el) return;
+    if (!leads.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:0.8rem;padding:20px">Sin leads</div>';
+      return;
+    }
+    el.innerHTML = leads.map(l => {
+      const nombre = [l.Nombre, l.Apellido].filter(Boolean).join(' ') || 'Sin nombre';
+      return `
+        <div class="kanban-card" onclick="switchTab('clientes', document.querySelectorAll('.tab')[2]); setTimeout(()=>{ document.getElementById('f-buscar-lead').value='${(l.Nombre||'').replace(/'/g,"\\'")}'; renderLeads(); }, 200)">
+          <div class="kc-name">${nombre}</div>
+          <div class="kc-info">
+            ${l.Zona ? `<span>📍 ${l.Zona}</span>` : ''}
+            ${l.Operacion ? `<span>🔑 ${l.Operacion}</span>` : ''}
+            ${l.Presupuesto ? `<span>💰 ${l.Presupuesto}</span>` : ''}
+          </div>
+          <div class="kc-badges">${badgesOrigen(l)}</div>
+        </div>`;
+    }).join('');
+  });
+}
+
+// ── SUBNICHE FILTER ────────────────────────────────────────
+function setSnicheFilter(el, context) {
+  const container = context === 'leads' ? 'leads-pills' : 'pipeline-pills';
+  document.querySelectorAll(`#${container} .subniche-pill`).forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const val = el.dataset.sniche;
+  if (context === 'leads') {
+    activeSnicheLeads = val;
+    renderLeads();
+  } else {
+    activeSnichePipeline = val;
+    renderPipeline();
+  }
+}
+
+// ── PROPIEDADES ────────────────────────────────────────────
+function renderProps() {
+  const zona = document.getElementById('f-zona').value;
+  const op   = document.getElementById('f-operacion').value;
+  const tipo = document.getElementById('f-tipo').value;
+  const est  = document.getElementById('f-estado').value;
+
+  let data = allProps.filter(p => {
+    if (zona && p.Zona !== zona) return false;
+    if (op   && (p.Operacion || '').toLowerCase() !== op) return false;
+    if (tipo && (p.Tipo || '').toLowerCase() !== tipo) return false;
+    if (est  && estadoNorm(p.Disponible) !== est) return false;
+    return true;
+  });
+
+  document.getElementById('props-count').textContent = `${data.length} propiedad${data.length !== 1 ? 'es' : ''}`;
+  document.getElementById('props-loading').style.display = 'none';
+
+  if (!data.length) {
+    document.getElementById('props-table').style.display = 'none';
+    document.getElementById('props-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('props-empty').style.display = 'none';
+  document.getElementById('props-table').style.display = 'table';
+
+  document.getElementById('props-tbody').innerHTML = data.map(p => `
+    <tr>
+      <td><strong>${p.Titulo || '—'}</strong></td>
+      <td>📍 ${p.Zona || '—'}</td>
+      <td>${(p.Tipo || '—').charAt(0).toUpperCase() + (p.Tipo||'').slice(1)}</td>
+      <td>${badgeOp(p.Operacion)}</td>
+      <td><span style="font-weight:700">${fmtPrecio(p.Precio, p.Moneda)}</span> <small style="color:var(--text-muted)">${p.Moneda||''}</small></td>
+      <td>${badgeDisponible(p.Disponible)}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="openModalEditarProp('${p.id}')">✏️ Editar</button></td>
+    </tr>
+  `).join('');
+}
+
+// ── LEADS ──────────────────────────────────────────────────
+function renderLeads() {
+  const estFiltro = document.getElementById('f-estado-lead').value;
+  const buscar    = document.getElementById('f-buscar-lead').value.toLowerCase();
+
+  let data = allLeads.filter(l => {
+    if (estFiltro && (l.Estado || 'nuevo').toLowerCase() !== estFiltro) return false;
+    if (activeSnicheLeads) {
+      const sn = getSubniche(l);
+      const ori = getOrigen(l);
+      if (activeSnicheLeads === 'web' && ori !== 'web' && sn !== 'web') return false;
+      if (activeSnicheLeads !== 'web' && sn !== activeSnicheLeads) return false;
+    }
+    if (buscar) {
+      const nombre = `${l.Nombre||''} ${l.Apellido||''}`.toLowerCase();
+      const tel    = (l.Telefono || '').toLowerCase();
+      if (!nombre.includes(buscar) && !tel.includes(buscar)) return false;
+    }
+    return true;
+  });
+
+  data.sort((a, b) => {
+    const order = { en_negociacion: 0, contactado: 1, no_contactado: 2, cerrado: 3, descartado: 4 };
+    return (order[a.Estado||'no_contactado'] ?? 2) - (order[b.Estado||'no_contactado'] ?? 2);
+  });
+
+  document.getElementById('leads-count').textContent = `${data.length} lead${data.length !== 1 ? 's' : ''}`;
+  document.getElementById('leads-loading').style.display = 'none';
+
+  if (!data.length) {
+    document.getElementById('leads-grid').innerHTML = '';
+    document.getElementById('leads-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('leads-empty').style.display = 'none';
+
+  document.getElementById('leads-grid').innerHTML = data.map(l => {
+    const nombre  = [l.Nombre, l.Apellido].filter(Boolean).join(' ') || 'Sin nombre';
+    const tel     = l.Telefono || '';
+    const estado  = l.Estado || 'no_contactado';
+    const zona    = l.Zona ? `📍 ${l.Zona}` : '';
+    const op      = l.Operacion ? `🔑 ${l.Operacion}` : '';
+    const tipo    = l.Tipo_Propiedad ? `🏠 ${l.Tipo_Propiedad}` : '';
+    const pres    = l.Presupuesto ? `💰 ${l.Presupuesto}` : '';
+    const notas   = l.Notas_Bot ? `<div class="lead-notas">💬 ${l.Notas_Bot}</div>` : '';
+    const ultimoContacto = l.fecha_ultimo_contacto
+      ? `<span>🕐 ${new Date(l.fecha_ultimo_contacto).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`
+      : (l.Fecha_WhatsApp ? `<span>📅 ${l.Fecha_WhatsApp}</span>` : '');
+
+    const makeBtn = (est, label) =>
+      `<button class="estado-btn ${estado===est ? 'active-'+est : ''}" onclick="cambiarEstadoLead('${l.id}','${est}',event)">${label}</button>`;
+
+    return `
+    <div class="lead-card" id="lead-${l.id}">
+      <div class="lead-card-header">
+        <div class="lead-name">${nombre}</div>
+        <div class="lead-origin-badges">${badgesOrigen(l)}</div>
+      </div>
+      <div class="lead-meta">
+        ${tel ? `<span>📞 ${tel}</span>` : ''}
+        ${l.Email ? `<span>✉️ ${l.Email}</span>` : ''}
+        ${ultimoContacto}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        ${zona ? `<span class="badge badge-info">${zona}</span>` : ''}
+        ${op   ? `<span class="badge badge-info">${op}</span>` : ''}
+        ${tipo ? `<span class="badge badge-info">${tipo}</span>` : ''}
+        ${pres ? `<span class="badge badge-info">${pres}</span>` : ''}
+      </div>
+      ${notas}
+      <div class="estado-btn-group">
+        ${makeBtn('no_contactado','🔕 Sin contactar')}
+        ${makeBtn('contactado','📱 Contactado')}
+        ${makeBtn('en_negociacion','⭐ Negociando')}
+        ${makeBtn('cerrado','✅ Cerrado')}
+        ${makeBtn('descartado','❌ Descartar')}
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn btn-outline btn-sm" onclick="openModalEditarLead('${l.id}')">✏️ Editar datos</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function cambiarEstadoLead(recordId, nuevoEstado, event) {
+  const btn = event.target;
+  btn.textContent = '...';
+  btn.disabled = true;
+  try {
+    const ahora = new Date().toISOString();
+    await patchProxy(`/demos/inmobiliaria/crm/clientes/${recordId}`, { Estado: nuevoEstado });
+    const lead = allLeads.find(l => l.id === recordId);
+    if (lead) { lead.Estado = nuevoEstado; lead.fecha_ultimo_contacto = ahora; }
+    renderLeads();
+    renderStats();
+    renderPipeline();
+    renderResumen();
+    showToast(`Estado actualizado: ${nuevoEstado}`);
+  } catch(e) {
+    showToast('Error al actualizar estado: ' + e.message, 'error');
+    btn.disabled = false;
+  }
+}
+
+// ── GALERÍA ────────────────────────────────────────────────
+function renderGaleria() {
+  const zona = document.getElementById('g-zona').value;
+  const op   = document.getElementById('g-operacion').value;
+  const tipo = document.getElementById('g-tipo').value;
+  const est  = document.getElementById('g-estado').value;
+
+  let data = allProps.filter(p => {
+    if (zona && p.Zona !== zona) return false;
+    if (op   && (p.Operacion || '').toLowerCase() !== op) return false;
+    if (tipo && (p.Tipo || '').toLowerCase() !== tipo) return false;
+    if (est  && estadoNorm(p.Disponible) !== est) return false;
+    return true;
+  });
+
+  document.getElementById('galeria-count').textContent = `${data.length} propiedad${data.length !== 1 ? 'es' : ''}`;
+  document.getElementById('galeria-loading').style.display = 'none';
+
+  if (!data.length) {
+    document.getElementById('galeria-grid').innerHTML = '';
+    document.getElementById('galeria-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('galeria-empty').style.display = 'none';
+
+  const iconos = { casa: '🏠', departamento: '🏢', terreno: '🌿', lote: '🌿', loteo: '🌄', comercial: '🏪' };
+
+  document.getElementById('galeria-grid').innerHTML = data.map(p => {
+    let imgUrl = '';
+    const imgField = p.Imagen_URL;
+    if (Array.isArray(imgField) && imgField.length > 0) {
+      imgUrl = imgField[0].thumbnails?.large?.url || imgField[0].url || '';
+    } else if (typeof imgField === 'string') {
+      imgUrl = imgField;
+    }
+
+    const icono = iconos[(p.Tipo||'').toLowerCase()] || '🏠';
+    const imgHtml = imgUrl
+      ? `<img src="${imgUrl}" alt="${p.Titulo||''}" loading="lazy" style="border-radius:12px;width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<div class=\\'gallery-img-placeholder\\'>${icono}</div>'">`
+      : `<div class="gallery-img-placeholder">${icono}</div>`;
+
+    const ytEmbed = p.Video_URL ? (() => {
+      const m = p.Video_URL.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
+      if (!m) return '';
+      return `<div style="margin-top:10px;border-radius:8px;overflow:hidden">
+        <iframe width="100%" height="180" src="https://www.youtube.com/embed/${m[1]}" frameborder="0" allowfullscreen style="display:block"></iframe>
+      </div>`;
+    })() : '';
+
+    return `
+    <div class="gallery-card">
+      <div class="gallery-img-wrap">
+        ${imgHtml}
+        <div class="top-left-badges">
+          ${p.Operacion ? `<span class="badge ${p.Operacion.toLowerCase() === 'venta' ? 'badge-primary' : 'badge-accent'}">${p.Operacion}</span>` : ''}
+          ${p.Precio && p.Precio > 100000 ? `<span class="badge badge-accent">PREMIUM</span>` : ''}
+        </div>
+        <div class="top-right-badges">${badgeDisponible(p.Disponible)}</div>
+      </div>
+      <div class="gallery-body">
+        <h3 class="card-title">${p.Titulo || 'Sin título'}</h3>
+        <p class="card-location">📍 ${p.Zona || '—'}</p>
+        <div class="card-features">
+          ${p.Dormitorios ? `<span>🛏 ${p.Dormitorios} dor.</span>` : ''}
+          ${p.Metros_Cubiertos || p.Metros_Terreno ? `<span>📐 ${p.Metros_Cubiertos || p.Metros_Terreno}m²</span>` : ''}
+        </div>
+        ${ytEmbed}
+        <div class="card-footer">
+          <div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Valor de Lista</div>
+            <div class="card-price">${fmtPrecio(p.Precio, null)} <span class="card-price-small">${p.Moneda||'USD'}</span></div>
+          </div>
+          <button class="btn-circle" onclick="verDetalle('${p.id}')">↗</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MODAL DETALLE ──────────────────────────────────────────
+function verDetalle(recordId) {
+  const p = allProps.find(x => x.id === recordId);
+  if (!p) return;
+
+  let imgUrl = '';
+  const imgField = p.Imagen_URL;
+  if (Array.isArray(imgField) && imgField.length > 0) {
+    imgUrl = imgField[0].thumbnails?.large?.url || imgField[0].url || '';
+  } else if (typeof imgField === 'string') {
+    imgUrl = imgField;
+  }
+
+  const imgHtml = imgUrl
+    ? `<img src="${imgUrl}" style="width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-bottom:16px;" />`
+    : '';
+
+  const ytEmbed = p.Video_URL ? (() => {
+    const m = p.Video_URL.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
+    if (!m) return '';
+    return `<div style="margin-top:12px;border-radius:10px;overflow:hidden">
+      <iframe width="100%" height="250" src="https://www.youtube.com/embed/${m[1]}" frameborder="0" allowfullscreen style="display:block"></iframe>
+    </div>`;
+  })() : '';
+
+  const detalles = [
+    p.Tipo ? `<b>Tipo:</b> ${p.Tipo}` : '',
+    p.Operacion ? `<b>Operación:</b> ${p.Operacion}` : '',
+    p.Zona ? `<b>Zona:</b> ${p.Zona}` : '',
+    p.Dormitorios ? `<b>Dormitorios:</b> ${p.Dormitorios}` : '',
+    p.Metros_Cubiertos ? `<b>m² cubiertos:</b> ${p.Metros_Cubiertos}` : '',
+    p.Metros_Terreno ? `<b>m² terreno:</b> ${p.Metros_Terreno}` : '',
+    p.Disponible ? `<b>Estado:</b> ${p.Disponible}` : '',
+  ].filter(Boolean).map(d => `<div style="padding:6px 0;border-bottom:1px solid #e8f0e4">${d}</div>`).join('');
+
+  document.getElementById('detalle-content').innerHTML = `
+    ${imgHtml}
+    <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:4px;color:var(--primary)">${p.Titulo || 'Sin título'}</h2>
+    <div style="font-size:1.1rem;font-weight:800;color:#3a6b35;margin-bottom:12px">${fmtPrecio(p.Precio, p.Moneda)} ${p.Moneda||''}</div>
+    <div style="font-size:0.88rem;color:#4a5a3a;margin-bottom:16px">${p.Descripcion || ''}</div>
+    <div style="font-size:0.85rem">${detalles}</div>
+    ${ytEmbed}
+    <div style="margin-top:16px;display:flex;gap:8px;">
+      <button class="btn btn-outline btn-sm" onclick="openModalEditarProp('${p.id}');closeModal('modal-detalle')">✏️ Editar</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-detalle')">Cerrar</button>
+    </div>
+  `;
+  openModal('modal-detalle');
+}
+
+// ── MODAL PROPIEDAD ────────────────────────────────────────
+function openModalEditarProp(recordId) {
+  const p = allProps.find(x => x.id === recordId);
+  if (!p) return;
+  document.getElementById('modal-prop-title').textContent = 'Editar propiedad';
+  document.getElementById('mp-record-id').value   = recordId;
+  document.getElementById('mp-titulo').value      = p.Titulo || '';
+  document.getElementById('mp-descripcion').value = p.Descripcion || '';
+  document.getElementById('mp-precio').value      = p.Precio || '';
+  document.getElementById('mp-moneda').value      = p.Moneda || 'USD';
+  setSelectVal('mp-zona', p.Zona || 'San Ignacio');
+  setSelectVal('mp-tipo', (p.Tipo||'').charAt(0).toUpperCase()+(p.Tipo||'').slice(1) || 'Casa');
+  setSelectVal('mp-operacion', (p.Operacion||'').charAt(0).toUpperCase()+(p.Operacion||'').slice(1) || 'Venta');
+  document.getElementById('mp-disponible').value  = p.Disponible || '✅ Disponible';
+  document.getElementById('mp-dormitorios').value = p.Dormitorios || '';
+  document.getElementById('mp-metros').value      = p.Metros_Cubiertos || '';
+  let imgUrl = '';
+  if (Array.isArray(p.Imagen_URL) && p.Imagen_URL.length > 0) imgUrl = p.Imagen_URL[0].url || '';
+  else if (typeof p.Imagen_URL === 'string') imgUrl = p.Imagen_URL;
+  document.getElementById('mp-imagen-url').value  = imgUrl;
+  previewImg();
+  document.getElementById('mp-maps-url').value    = p.Google_Maps_URL || '';
+  document.getElementById('mp-video-url').value   = p.Video_URL || '';
+  document.getElementById('modal-prop').classList.add('open');
+}
+
+function openModalNuevaPropiedad() {
+  document.getElementById('modal-prop-title').textContent = 'Nueva propiedad';
+  ['mp-record-id','mp-titulo','mp-descripcion','mp-precio','mp-dormitorios','mp-metros','mp-imagen-url','mp-maps-url','mp-video-url']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mp-moneda').value    = 'USD';
+  document.getElementById('mp-zona').value      = 'San Ignacio';
+  document.getElementById('mp-tipo').value      = 'Casa';
+  document.getElementById('mp-operacion').value = 'Venta';
+  document.getElementById('mp-disponible').value = '✅ Disponible';
+  previewImg();
+  document.getElementById('modal-prop').classList.add('open');
+}
+
+function setSelectVal(id, val) {
+  const sel = document.getElementById(id);
+  for (const opt of sel.options) {
+    if (opt.value === val || opt.text === val) { sel.value = opt.value; return; }
+  }
+}
+
+function previewImg() {
+  const url = document.getElementById('mp-imagen-url').value.trim();
+  const img = document.getElementById('mp-img-preview');
+  if (url) { img.src = url; img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+}
+
+async function guardarPropiedad() {
+  const recordId = document.getElementById('mp-record-id').value;
+  const titulo   = document.getElementById('mp-titulo').value.trim();
+  if (!titulo) { showToast('El título es obligatorio', 'error'); return; }
+
+  const btn = document.getElementById('btn-guardar-prop');
+  btn.classList.add('loading'); btn.textContent = 'Guardando...';
+
+  const fields = {
+    Titulo:      titulo,
+    Descripcion: document.getElementById('mp-descripcion').value.trim() || undefined,
+    Precio:      parseFloat(document.getElementById('mp-precio').value) || undefined,
+    Moneda:      document.getElementById('mp-moneda').value,
+    Zona:        document.getElementById('mp-zona').value,
+    Tipo:        document.getElementById('mp-tipo').value.toLowerCase(),
+    Operacion:   document.getElementById('mp-operacion').value.toLowerCase(),
+    Disponible:  document.getElementById('mp-disponible').value,
+  };
+  const dormitorios = parseInt(document.getElementById('mp-dormitorios').value);
+  if (dormitorios) fields.Dormitorios = dormitorios;
+  const metros = parseInt(document.getElementById('mp-metros').value);
+  if (metros) fields.Metros_Cubiertos = metros;
+  const imgUrl = document.getElementById('mp-imagen-url').value.trim();
+  if (imgUrl) fields.Imagen_URL = imgUrl;
+  const mapsUrl = document.getElementById('mp-maps-url').value.trim();
+  fields.Google_Maps_URL = mapsUrl || null;
+  const videoUrl = document.getElementById('mp-video-url').value.trim();
+  fields.Video_URL = videoUrl || null;
+  Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
+
+  try {
+    if (recordId) {
+      await patchProxy(`/demos/inmobiliaria/crm/propiedades/${recordId}`, fields);
+      showToast('Propiedad actualizada correctamente');
+    } else {
+      await postProxy('/demos/inmobiliaria/crm/propiedades', fields);
+      showToast('Propiedad creada correctamente');
+    }
+    closeModal('modal-prop');
+    await loadAll();
+  } catch(e) {
+    showToast('Error al guardar: ' + e.message, 'error');
+  }
+
+  btn.classList.remove('loading'); btn.textContent = '💾 Guardar';
+}
+
+// ── MODAL LEAD ─────────────────────────────────────────────
+function openModalEditarLead(recordId) {
+  const l = allLeads.find(x => x.id === recordId);
+  if (!l) return;
+  document.getElementById('ml-record-id').value  = recordId;
+  document.getElementById('ml-nombre').value     = l.Nombre || '';
+  document.getElementById('ml-apellido').value   = l.Apellido || '';
+  document.getElementById('ml-telefono').value   = l.Telefono || '';
+  document.getElementById('ml-email').value      = l.Email || '';
+  document.getElementById('ml-notas').value      = l.Notas_Bot || '';
+  setSelectVal('ml-zona', l.Zona || '');
+  setSelectVal('ml-operacion', (l.Operacion || '').toLowerCase());
+  setSelectVal('ml-tipo', (l.Tipo_Propiedad || '').toLowerCase());
+  setSelectVal('ml-presupuesto', l.Presupuesto || '');
+  setSelectVal('ml-subniche', getSubniche(l));
+  document.getElementById('modal-lead').classList.add('open');
+}
+
+function openModalNuevoLead() {
+  document.getElementById('ml-record-id').value = '';
+  ['ml-nombre','ml-apellido','ml-telefono','ml-email','ml-notas'].forEach(id => document.getElementById(id).value = '');
+  ['ml-zona','ml-operacion','ml-tipo','ml-presupuesto','ml-subniche'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modal-lead').classList.add('open');
+}
+
+async function guardarLead() {
+  const recordId = document.getElementById('ml-record-id').value;
+  const btn = document.getElementById('btn-guardar-lead');
+  btn.classList.add('loading'); btn.textContent = 'Guardando...';
+
+  const fields = {};
+  const nombre     = document.getElementById('ml-nombre').value.trim();
+  const apellido   = document.getElementById('ml-apellido').value.trim();
+  const telefono   = document.getElementById('ml-telefono').value.trim();
+  const email      = document.getElementById('ml-email').value.trim();
+  const zona       = document.getElementById('ml-zona').value;
+  const operacion  = document.getElementById('ml-operacion').value;
+  const tipo       = document.getElementById('ml-tipo').value;
+  const presupuesto = document.getElementById('ml-presupuesto').value;
+  const subniche   = document.getElementById('ml-subniche').value;
+  const notas      = document.getElementById('ml-notas').value.trim();
+
+  if (nombre) fields.Nombre = nombre;
+  if (apellido) fields.Apellido = apellido;
+  if (telefono) fields.Telefono = telefono;
+  if (email) fields.Email = email;
+  if (zona) fields.Zona = zona;
+  if (operacion) fields.Operacion = operacion;
+  if (tipo) fields.Tipo_Propiedad = tipo;
+  if (presupuesto) fields.Presupuesto = presupuesto;
+  if (subniche) fields.Subniche = subniche;
+  if (notas) fields.Notas_Bot = notas;
+
+  try {
+    await patchProxy(`/demos/inmobiliaria/crm/clientes/${recordId}`, fields);
+    const lead = allLeads.find(l => l.id === recordId);
+    if (lead) Object.assign(lead, { Nombre: nombre, Apellido: apellido, Telefono: telefono, Email: email, Zona: zona, Operacion: operacion, Tipo_Propiedad: tipo, Presupuesto: presupuesto, Subniche: subniche, Notas_Bot: notas });
+    closeModal('modal-lead');
+    renderLeads();
+    showToast('Lead actualizado correctamente');
+  } catch(e) {
+    showToast('Error al guardar: ' + e.message, 'error');
+  }
+
+  btn.classList.remove('loading'); btn.textContent = '💾 Guardar';
+}
+
+// ── BÚSQUEDA GLOBAL ────────────────────────────────────────
+function buscarGlobal() {
+  const q = document.getElementById('search-global').value.toLowerCase();
+  if (!q) return;
+  // Si hay resultado en leads → ir a Leads con filtro
+  const matchLead = allLeads.some(l => `${l.Nombre||''} ${l.Apellido||''} ${l.Telefono||''}`.toLowerCase().includes(q));
+  if (matchLead) {
+    switchTab('clientes', document.querySelectorAll('.tab')[2]);
+    document.getElementById('f-buscar-lead').value = q;
+    renderLeads();
+  }
+}
+
+// ── MODAL UTILS ────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
+
+// ── TABS ───────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ── INIT + AUTO-REFRESH ────────────────────────────────────
+loadAll();
+setInterval(loadAll, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiero más leads calificados — Agencia Inmobiliaria</title>
+<style>
+  :root {
+    --bg:#f0f4ff;
+    --surface:#ffffff;
+    --border:#e5e7eb;
+    --accent:#2563eb;
+    --accent-d:#1d4ed8;
+    --green:#10b981;
+    --yellow:#f59e0b;
+    --red:#ef4444;
+    --text:#111827;
+    --text2:#6b7280;
+    --text3:#9ca3af;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;}
+
+  /* ── HERO ── */
+  .hero{
+    background:linear-gradient(135deg,#0c1445 0%,#1e3a8a 50%,#0c1445 100%);
+    padding:36px 20px 28px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:'';position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+    border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(255,255,255,.9);
+    margin-bottom:16px;
+  }
+  .hero-badge-dot{width:7px;height:7px;background:#10b981;border-radius:50%;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+  .hero h1{color:#fff;font-size:clamp(20px,5vw,32px);font-weight:800;line-height:1.2;margin-bottom:10px;}
+  .hero h1 span{color:#93c5fd;}
+  .hero-sub{color:rgba(255,255,255,.75);font-size:clamp(13px,3vw,16px);line-height:1.5;max-width:500px;margin:0 auto 20px;}
+  .hero-stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;}
+  .hero-stat{text-align:center;}
+  .hero-stat-val{font-size:22px;font-weight:800;color:#fff;}
+  .hero-stat-label{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;}
+
+  /* ── URGENCY BAR ── */
+  .urgency-bar{
+    background:linear-gradient(90deg,#1d4ed8,#7c3aed);
+    padding:10px 20px;text-align:center;
+    font-size:13px;font-weight:600;color:#fff;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .urgency-bar span{background:rgba(0,0,0,.2);padding:2px 10px;border-radius:10px;font-size:12px;}
+
+  /* ── MAIN ── */
+  .main{max-width:560px;margin:0 auto;padding:24px 16px 60px;}
+
+  /* ── STEPS INDICATOR ── */
+  .steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:24px;}
+  .step{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;}
+  .step-circle{
+    width:32px;height:32px;border-radius:50%;border:2px solid var(--border);
+    background:var(--surface);display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:var(--text2);transition:all .3s;
+  }
+  .step.active .step-circle{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .step.done .step-circle{background:var(--green);border-color:var(--green);color:#fff;}
+  .step-label{font-size:10px;color:var(--text3);white-space:nowrap;}
+  .step.active .step-label{color:var(--accent);font-weight:600;}
+  .step.done .step-label{color:var(--green);}
+  .step-line{width:48px;height:2px;background:var(--border);margin-bottom:16px;transition:background .3s;}
+  .step-line.done{background:var(--green);}
+
+  /* ── FORM CARD ── */
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+  .form-step{display:none;padding:24px;}
+  .form-step.active{display:block;}
+  .step-title{font-size:17px;font-weight:700;margin-bottom:4px;}
+  .step-sub{color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.5;}
+
+  /* ── FIELDS ── */
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;}
+  .field label span{color:var(--red);margin-left:2px;}
+  .field input,.field select,.field textarea{
+    width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
+    font-size:14px;color:var(--text);background:#fff;outline:none;transition:border-color .2s;
+    -webkit-appearance:none;
+  }
+  .field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+  .field-hint{font-size:11px;color:var(--text3);margin-top:4px;}
+  .field-err{font-size:11px;color:var(--red);margin-top:4px;display:none;}
+  .field.has-error .field-err{display:block;}
+  .field.has-error input,.field.has-error select{border-color:var(--red);}
+
+  /* ── OPCIONES CARD ── */
+  .opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .opts-grid.cols3{grid-template-columns:repeat(3,1fr);}
+  .opt{
+    border:1.5px solid var(--border);border-radius:10px;padding:12px 10px;
+    cursor:pointer;text-align:center;transition:all .2s;background:#fff;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+  }
+  .opt:hover{border-color:var(--accent);background:#eff6ff;}
+  .opt.selected{border-color:var(--accent);background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  .opt-icon{font-size:24px;}
+  .opt-label{font-size:12px;font-weight:600;color:var(--text);line-height:1.3;}
+  .opt-sub{font-size:10px;color:var(--text2);}
+
+  /* ── SCORE INDICATOR ── */
+  .score-bar{
+    border-radius:12px;padding:14px 16px;margin-bottom:18px;
+    display:flex;align-items:center;gap:12px;
+    transition:all .4s;border:1.5px solid;
+  }
+  .score-bar.caliente{background:#fef2f2;border-color:#fca5a5;}
+  .score-bar.tibio{background:#fffbeb;border-color:#fcd34d;}
+  .score-bar.frio{background:#f0f9ff;border-color:#93c5fd;}
+  .score-bar.hidden{display:none;}
+  .score-icon{font-size:28px;flex-shrink:0;}
+  .score-label{font-size:13px;font-weight:700;}
+  .score-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+
+  /* ── PROGRESS BAR ── */
+  .prog-wrap{height:4px;background:#f3f4f6;border-radius:2px;margin-bottom:20px;}
+  .prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),#60a5fa);border-radius:2px;transition:width .4s ease;}
+
+  /* ── BUTTONS ── */
+  .btn-next{
+    width:100%;padding:14px;background:var(--accent);color:#fff;
+    border:none;border-radius:10px;font-size:15px;font-weight:700;
+    cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-next:hover{background:var(--accent-d);transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,.3);}
+  .btn-next:active{transform:translateY(0);}
+  .btn-next:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+  .btn-back{
+    width:100%;padding:12px;background:transparent;color:var(--text2);
+    border:1.5px solid var(--border);border-radius:10px;font-size:14px;
+    cursor:pointer;margin-bottom:10px;transition:all .15s;
+  }
+  .btn-back:hover{border-color:var(--text2);color:var(--text);}
+
+  /* ── TRUST SIGNALS ── */
+  .trust{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:16px;}
+  .trust-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+
+  /* ── SUCCESS SCREEN ── */
+  .success{display:none;text-align:center;padding:32px 24px;}
+  .success.show{display:block;}
+  .success-icon{font-size:56px;margin-bottom:12px;animation:pop .5s ease;}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+  .success h2{font-size:22px;font-weight:800;margin-bottom:8px;}
+  .success p{color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:20px;}
+  .score-final{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:12px 20px;border-radius:12px;font-weight:700;font-size:15px;
+    margin-bottom:24px;
+  }
+  .score-final.caliente{background:#fef2f2;color:#dc2626;border:2px solid #fca5a5;}
+  .score-final.tibio{background:#fffbeb;color:#d97706;border:2px solid #fcd34d;}
+  .score-final.frio{background:#f0f9ff;color:#2563eb;border:2px solid #93c5fd;}
+  .whatsapp-btn{
+    display:inline-flex;align-items:center;gap:10px;
+    background:#25d366;color:#fff;padding:14px 24px;border-radius:12px;
+    font-weight:700;font-size:15px;text-decoration:none;
+    box-shadow:0 4px 14px rgba(37,211,102,.3);transition:all .2s;
+  }
+  .whatsapp-btn:hover{background:#1fad54;transform:translateY(-1px);}
+  .next-steps{background:#f9fafb;border-radius:12px;padding:16px;text-align:left;margin-top:20px;}
+  .next-steps h4{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
+  .next-step-item{display:flex;gap:10px;margin-bottom:10px;font-size:13px;}
+  .next-step-item:last-child{margin-bottom:0;}
+  .ns-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+
+  /* ── LOADING ── */
+  .loading-overlay{
+    display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);
+    z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  }
+  .loading-overlay.show{display:flex;}
+  .spinner{width:44px;height:44px;border:4px solid #e5e7eb;border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:14px;color:var(--text2);}
+
+  /* ── FLOATING SOCIAL PROOF ── */
+  .social-proof{
+    position:fixed;bottom:20px;left:16px;right:16px;max-width:320px;
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);
+    display:flex;gap:10px;align-items:center;
+    animation:spIn .4s ease;z-index:50;
+  }
+  @keyframes spIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .sp-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+  .sp-text{font-size:12px;color:var(--text);line-height:1.4;}
+  .sp-text strong{display:block;margin-bottom:1px;}
+  .sp-time{font-size:10px;color:var(--text3);}
+  .sp-close{margin-left:auto;cursor:pointer;color:var(--text3);font-size:16px;align-self:flex-start;padding:2px;}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    Sistema de captación activo — Agencias en MX y LATAM
+  </div>
+  <h1>¿Tu agencia pierde leads por<br><span>no responder a tiempo?</span></h1>
+  <p class="hero-sub">Completá el formulario y te mostramos cómo automatizar la calificación de leads para tu equipo de asesores — respuesta en 60 segundos, 24/7.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-val">60s</div>
+      <div class="hero-stat-label">Tiempo de respuesta</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">+40%</div>
+      <div class="hero-stat-label">Más citas agendadas</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">24/7</div>
+      <div class="hero-stat-label">Sin días libres</div>
+    </div>
+  </div>
+</div>
+
+<!-- URGENCY -->
+<div class="urgency-bar">
+  🚀 Solo <span id="spotsLeft">3 cupos disponibles</span> este mes para onboarding de agencias · Precio especial de lanzamiento
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Analizando el perfil de tu agencia...</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- STEPS -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="stp-1">
+      <div class="step-circle">1</div>
+      <div class="step-label">Tu agencia</div>
+    </div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step" id="stp-2">
+      <div class="step-circle">2</div>
+      <div class="step-label">Operación</div>
+    </div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step" id="stp-3">
+      <div class="step-circle">3</div>
+      <div class="step-label">Dolor actual</div>
+    </div>
+    <div class="step-line" id="line-3"></div>
+    <div class="step" id="stp-4">
+      <div class="step-circle">4</div>
+      <div class="step-label">Contacto</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="prog-wrap"><div class="prog-fill" id="progFill" style="width:25%"></div></div>
+
+  <!-- SCORE INDICATOR (visible from step 2) -->
+  <div class="score-bar hidden" id="scoreBar">
+    <div class="score-icon" id="scoreIcon">🌡️</div>
+    <div>
+      <div class="score-label" id="scoreLabel">Completá el formulario para ver la compatibilidad</div>
+      <div class="score-sub" id="scoreSub">El sistema evalúa si el bot es la solución ideal para vos</div>
+    </div>
+  </div>
+
+  <div class="form-card">
+
+    <!-- ══ STEP 1: TAMAÑO Y TIPO DE AGENCIA ══ -->
+    <div class="form-step active" id="step-1">
+      <div class="step-title">Contanos sobre tu agencia</div>
+      <div class="step-sub">Esto nos ayuda a entender cuántos leads manejás y qué automatización necesitás</div>
+
+      <div class="field" id="f-tamano">
+        <label>¿Cuántos asesores tiene tu agencia? <span>*</span></label>
+        <div class="opts-grid">
+          <div class="opt" onclick="selectOpt('tamano','solo',this)">
+            <div class="opt-icon">👤</div>
+            <div class="opt-label">Solo yo</div>
+            <div class="opt-sub">1 asesor</div>
+          </div>
+          <div class="opt" onclick="selectOpt('tamano','pequena',this)">
+            <div class="opt-icon">👥</div>
+            <div class="opt-label">2 a 5 asesores</div>
+            <div class="opt-sub">Agencia pequeña</div>
+          </div>
+          <div class="opt" onclick="selectOpt('tamano','mediana',this)">
+            <div class="opt-icon">🏢</div>
+            <div class="opt-label">6 a 20 asesores</div>
+            <div class="opt-sub">Agencia mediana</div>
+          </div>
+          <div class="opt" onclick="selectOpt('tamano','grande',this)">
+            <div class="opt-icon">🏙️</div>
+            <div class="opt-label">Más de 20</div>
+            <div class="opt-sub">Agencia grande</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná el tamaño de tu agencia</div>
+      </div>
+
+      <div class="field" id="f-tipo">
+        <label>¿En qué tipo de propiedades se especializa tu agencia? <span>*</span></label>
+        <div class="opts-grid">
+          <div class="opt" onclick="selectOpt('tipo','residencial',this)">
+            <div class="opt-icon">🏠</div>
+            <div class="opt-label">Residencial</div>
+            <div class="opt-sub">Casas y dptos</div>
+          </div>
+          <div class="opt" onclick="selectOpt('tipo','comercial',this)">
+            <div class="opt-icon">🏪</div>
+            <div class="opt-label">Comercial</div>
+            <div class="opt-sub">Locales y oficinas</div>
+          </div>
+          <div class="opt" onclick="selectOpt('tipo','terrenos',this)">
+            <div class="opt-icon">🌍</div>
+            <div class="opt-label">Terrenos / Lotes</div>
+            <div class="opt-sub">Para construir</div>
+          </div>
+          <div class="opt" onclick="selectOpt('tipo','mixto',this)">
+            <div class="opt-icon">🎯</div>
+            <div class="opt-label">Mixto</div>
+            <div class="opt-sub">Varios tipos</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná el tipo de propiedades</div>
+      </div>
+
+      <button class="btn-next" onclick="goStep(2)">Continuar <span>→</span></button>
+
+      <div class="trust" style="margin-top:14px">
+        <div class="trust-item">🔒 Tus datos son privados</div>
+        <div class="trust-item">⚡ Demo en 60 segundos</div>
+        <div class="trust-item">✅ Sin compromiso</div>
+      </div>
+    </div>
+
+    <!-- ══ STEP 2: OPERACIÓN ══ -->
+    <div class="form-step" id="step-2">
+      <div class="step-title">¿Cómo operás hoy?</div>
+      <div class="step-sub">Entender tu operación actual nos permite saber dónde el bot tiene más impacto</div>
+
+      <div class="field" id="f-leads-mes">
+        <label>¿Cuántos leads nuevos recibe tu agencia por mes? <span>*</span></label>
+        <div class="opts-grid cols3">
+          <div class="opt" onclick="selectOpt('leads_mes','menos-20',this)">
+            <div class="opt-icon">🌱</div>
+            <div class="opt-label">Menos de 20</div>
+            <div class="opt-sub">Creciendo</div>
+          </div>
+          <div class="opt" onclick="selectOpt('leads_mes','20-100',this)">
+            <div class="opt-icon">📈</div>
+            <div class="opt-label">20 a 100</div>
+            <div class="opt-sub">Activo</div>
+          </div>
+          <div class="opt" onclick="selectOpt('leads_mes','mas-100',this)">
+            <div class="opt-icon">🚀</div>
+            <div class="opt-label">Más de 100</div>
+            <div class="opt-sub">Alto volumen</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná el volumen de leads</div>
+      </div>
+
+      <div class="field" id="f-canal">
+        <label>¿Por dónde llegan la mayoría de tus leads? <span>*</span></label>
+        <div class="opts-grid">
+          <div class="opt" onclick="selectOpt('canal','meta-ads',this)">
+            <div class="opt-icon">📱</div>
+            <div class="opt-label">Meta Ads</div>
+            <div class="opt-sub">FB / Instagram</div>
+          </div>
+          <div class="opt" onclick="selectOpt('canal','portales',this)">
+            <div class="opt-icon">🌐</div>
+            <div class="opt-label">Portales</div>
+            <div class="opt-sub">Lamudi, Trovit, etc</div>
+          </div>
+          <div class="opt" onclick="selectOpt('canal','referidos',this)">
+            <div class="opt-icon">🤝</div>
+            <div class="opt-label">Referidos</div>
+            <div class="opt-sub">Boca a boca</div>
+          </div>
+          <div class="opt" onclick="selectOpt('canal','mixto',this)">
+            <div class="opt-icon">🎯</div>
+            <div class="opt-label">Varios canales</div>
+            <div class="opt-sub">Diversificado</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná el canal principal</div>
+      </div>
+
+      <button class="btn-back" onclick="goStep(1)">← Volver</button>
+      <button class="btn-next" onclick="goStep(3)">Continuar <span>→</span></button>
+    </div>
+
+    <!-- ══ STEP 3: DOLOR ACTUAL ══ -->
+    <div class="form-step" id="step-3">
+      <div class="step-title">¿Cuál es tu mayor problema hoy?</div>
+      <div class="step-sub">Sé directo — esto nos permite mostrarte la solución exacta que necesitás</div>
+
+      <div class="field" id="f-dolor">
+        <label>El problema más grande de tu agencia es... <span>*</span></label>
+        <div class="opts-grid">
+          <div class="opt" onclick="selectOpt('dolor','leads-frios',this)">
+            <div class="opt-icon">❄️</div>
+            <div class="opt-label">Leads fríos sin filtrar</div>
+            <div class="opt-sub">Perdemos tiempo con curiosos</div>
+          </div>
+          <div class="opt" onclick="selectOpt('dolor','respuesta-lenta',this)">
+            <div class="opt-icon">⏰</div>
+            <div class="opt-label">Respuesta lenta</div>
+            <div class="opt-sub">Llegamos tarde y el lead se pierde</div>
+          </div>
+          <div class="opt" onclick="selectOpt('dolor','seguimiento',this)">
+            <div class="opt-icon">🔁</div>
+            <div class="opt-label">Seguimiento manual</div>
+            <div class="opt-sub">Se nos olvidan leads calientes</div>
+          </div>
+          <div class="opt" onclick="selectOpt('dolor','citas',this)">
+            <div class="opt-icon">📅</div>
+            <div class="opt-label">Agendar citas</div>
+            <div class="opt-sub">10 mensajes por cada visita</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná tu mayor problema</div>
+      </div>
+
+      <div class="field" id="f-presupuesto">
+        <label>¿Cuánto invertís en tecnología/CRM por mes actualmente? <span>*</span></label>
+        <div class="opts-grid cols3">
+          <div class="opt" onclick="selectOpt('presupuesto','nada',this)">
+            <div class="opt-icon">🚫</div>
+            <div class="opt-label">Nada aún</div>
+            <div class="opt-sub">Todo manual</div>
+          </div>
+          <div class="opt" onclick="selectOpt('presupuesto','menos-100',this)">
+            <div class="opt-icon">💵</div>
+            <div class="opt-label">Menos de $100</div>
+            <div class="opt-sub">USD/mes</div>
+          </div>
+          <div class="opt" onclick="selectOpt('presupuesto','mas-100',this)">
+            <div class="opt-icon">💰</div>
+            <div class="opt-label">Más de $100</div>
+            <div class="opt-sub">USD/mes</div>
+          </div>
+        </div>
+        <div class="field-err">Por favor seleccioná tu inversión actual</div>
+      </div>
+
+      <button class="btn-back" onclick="goStep(2)">← Volver</button>
+      <button class="btn-next" onclick="goStep(4)">Continuar <span>→</span></button>
+    </div>
+
+    <!-- ══ STEP 4: CONTACTO ══ -->
+    <div class="form-step" id="step-4">
+      <div class="step-title">¡Casi listo! ¿Dónde hablamos?</div>
+      <div class="step-sub">Un especialista te muestra una demo personalizada para tu agencia en menos de 24hs</div>
+
+      <div class="field" id="f-nombre">
+        <label>Tu nombre completo <span>*</span></label>
+        <input type="text" id="nombre" placeholder="Ej: Carlos Mendoza" autocomplete="name">
+        <div class="field-err">Por favor ingresá tu nombre</div>
+      </div>
+
+      <div class="field" id="f-agencia">
+        <label>Nombre de tu agencia <span>*</span></label>
+        <input type="text" id="agencia" placeholder="Ej: Inmobiliaria Mendoza" autocomplete="organization">
+        <div class="field-err">Por favor ingresá el nombre de tu agencia</div>
+      </div>
+
+      <div class="field" id="f-telefono">
+        <label>Tu WhatsApp <span>*</span></label>
+        <input type="tel" id="telefono" placeholder="+52 55 1234-5678" autocomplete="tel">
+        <div class="field-hint">Incluí el código de país · Te contactamos para la demo</div>
+        <div class="field-err">Por favor ingresá tu WhatsApp con código de país</div>
+      </div>
+
+      <div class="field" id="f-email">
+        <label>Email (opcional)</label>
+        <input type="email" id="email" placeholder="carlos@agencia.com" autocomplete="email">
+        <div class="field-hint">Para enviarte el material de la demo</div>
+      </div>
+
+      <!-- SCORE PREVIEW antes de enviar -->
+      <div class="score-bar" id="scoreBarFinal" style="margin-bottom:16px"></div>
+
+      <button class="btn-next" id="submitBtn" onclick="submitForm()">
+        🚀 Quiero ver la demo de mi agencia
+      </button>
+      <button class="btn-back" onclick="goStep(3)" style="margin-top:8px">← Volver</button>
+
+      <p style="text-align:center;color:var(--text3);font-size:11px;margin-top:10px;line-height:1.5">
+        Al enviar aceptás ser contactado por WhatsApp. Sin spam. Sin compromisos.
+      </p>
+    </div>
+
+  </div><!-- /form-card -->
+
+  <!-- SUCCESS -->
+  <div class="success" id="successScreen">
+    <div class="success-icon">🎉</div>
+    <h2>¡Solicitud recibida!</h2>
+    <p>Un especialista te contactará por WhatsApp en <strong>menos de 24 horas</strong> para mostrarte una demo personalizada para tu agencia.</p>
+
+    <div class="score-final" id="scoreFinal"></div>
+
+    <div style="margin-bottom:20px">
+      <a href="#" class="whatsapp-btn" id="waBtn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Hablar con el especialista
+      </a>
+    </div>
+
+    <div class="next-steps">
+      <h4>¿Qué pasa ahora?</h4>
+      <div class="next-step-item">
+        <div class="ns-num">1</div>
+        <div>Un especialista te escribe por WhatsApp en <strong>menos de 24 horas</strong></div>
+      </div>
+      <div class="next-step-item">
+        <div class="ns-num">2</div>
+        <div>Te mostramos una <strong>demo en vivo</strong> del bot funcionando con leads reales de tu tipo de agencia</div>
+      </div>
+      <div class="next-step-item">
+        <div class="ns-num">3</div>
+        <div>Si te convence, <strong>activamos el sistema en 48hs</strong> — sin contratos largos</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- FLOATING SOCIAL PROOF -->
+<div class="social-proof" id="socialProof" style="display:none">
+  <div class="sp-avatar" id="spAvatar">AG</div>
+  <div class="sp-text">
+    <strong id="spName">Agencia Hernández acaba de consultar</strong>
+    <span id="spMsg">automatización para 8 asesores</span>
+    <span class="sp-time" id="spTime">hace 3 min</span>
+  </div>
+  <span class="sp-close" onclick="document.getElementById('socialProof').style.display='none'">✕</span>
+</div>
+
+<script>
+const API_BASE = 'https://system-ia-agentes.onrender.com/demos/inmobiliaria';
+
+const FORM = {
+  tamano: '',
+  tipo: '',
+  leads_mes: '',
+  canal: '',
+  dolor: '',
+  presupuesto: '',
+  nombre: '',
+  agencia: '',
+  telefono: '',
+  email: '',
+};
+
+let currentStep = 1;
+const TOTAL_STEPS = 4;
+
+function goStep(n) {
+  if(n > currentStep && !validateStep(currentStep)) return;
+
+  FORM.nombre = (document.getElementById('nombre').value || '').trim();
+  FORM.agencia = (document.getElementById('agencia').value || '').trim();
+  FORM.telefono = (document.getElementById('telefono').value || '').trim();
+  FORM.email = (document.getElementById('email').value || '').trim();
+
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  currentStep = n;
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+
+  // Update steps bar
+  for(let i = 1; i <= TOTAL_STEPS; i++) {
+    const s = document.getElementById(`stp-${i}`);
+    s.classList.remove('active','done');
+    if(i < n) s.classList.add('done');
+    else if(i === n) s.classList.add('active');
+    if(i < TOTAL_STEPS) {
+      const l = document.getElementById(`line-${i}`);
+      l.classList.toggle('done', i < n);
+    }
+  }
+
+  // Progress bar
+  document.getElementById('progFill').style.width = `${(n/TOTAL_STEPS)*100}%`;
+
+  // Score visible from step 2
+  if(n >= 2) {
+    updateScore();
+    document.getElementById('scoreBar').classList.remove('hidden');
+  }
+
+  // Score preview in step 4
+  if(n === 4) renderScoreFinal();
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function validateStep(s) {
+  let ok = true;
+  const required = {
+    1: ['tamano','tipo'],
+    2: ['leads_mes','canal'],
+    3: ['dolor','presupuesto'],
+    4: ['nombre','agencia','telefono'],
+  };
+  (required[s] || []).forEach(k => {
+    const fEl = document.getElementById(`f-${k.replace('_','-')}`);
+    if(!FORM[k] && !['nombre','agencia','telefono'].includes(k)) {
+      if(fEl) fEl.classList.add('has-error');
+      ok = false;
+    } else if(['nombre','agencia','telefono'].includes(k)) {
+      const inputVal = document.getElementById(k)?.value?.trim() || '';
+      if(!inputVal) {
+        if(fEl) fEl.classList.add('has-error');
+        ok = false;
+      } else {
+        FORM[k] = inputVal;
+        if(fEl) fEl.classList.remove('has-error');
+      }
+    } else {
+      if(fEl) fEl.classList.remove('has-error');
+    }
+  });
+  return ok;
+}
+
+function selectOpt(field, value, el) {
+  FORM[field] = value;
+  el.closest('.opts-grid').querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const fId = `f-${field.replace('_','-')}`;
+  const fEl = document.getElementById(fId);
+  if(fEl) fEl.classList.remove('has-error');
+  if(currentStep >= 2) updateScore();
+}
+
+// Scoring: tamaño(0-3) + leads_mes(0-3) + canal(0-2) + dolor(0-3) + presupuesto(0-2)
+function calcScore() {
+  let pts = 0;
+  const T = {solo:1, pequena:2, mediana:3, grande:3};
+  const L = {'menos-20':1, '20-100':2, 'mas-100':3};
+  const C = {'meta-ads':2, portales:2, referidos:1, mixto:2};
+  const D = {'leads-frios':3, 'respuesta-lenta':3, seguimiento:2, citas:2};
+  const P = {nada:1, 'menos-100':2, 'mas-100':2};
+
+  pts += T[FORM.tamano] || 0;
+  pts += L[FORM.leads_mes] || 0;
+  pts += C[FORM.canal] || 0;
+  pts += D[FORM.dolor] || 0;
+  pts += P[FORM.presupuesto] || 0;
+  return pts;
+}
+
+function scoreLabel(pts) {
+  if(pts >= 10) return {cls:'caliente', icon:'🔥', label:'Agencia Ideal', sub:'Tu perfil encaja perfectamente con el sistema — demo prioritaria'};
+  if(pts >= 5)  return {cls:'tibio',   icon:'🌡️', label:'Buen encaje',   sub:'El bot puede resolver varios de tus dolores actuales'};
+  return                {cls:'frio',   icon:'❄️', label:'Explorando',    sub:'Podemos analizar si el sistema es adecuado para tu etapa'};
+}
+
+function updateScore() {
+  const pts = calcScore();
+  const {cls, icon, label, sub} = scoreLabel(pts);
+  ['scoreBar','scoreBarFinal'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className = `score-bar ${cls}`;
+    el.innerHTML = `<div class="score-icon">${icon}</div><div><div class="score-label">${label}</div><div class="score-sub">${sub}</div></div>`;
+  });
+}
+
+function renderScoreFinal() {
+  updateScore();
+}
+
+async function submitForm() {
+  if(!validateStep(4)) return;
+  const btn = document.getElementById('submitBtn');
+  const overlay = document.getElementById('loadingOverlay');
+  btn.disabled = true;
+  overlay.classList.add('show');
+
+  const pts = calcScore();
+  const {cls, icon, label} = scoreLabel(pts);
+
+  const payload = {
+    subnicho: 'agencia_inmobiliaria',
+    nombre: FORM.nombre,
+    telefono: FORM.telefono,
+    email: FORM.email,
+    captura_completa: { ...FORM, score_calculado: pts, score_nivel: label }
+  };
+
+  let success = false;
+  try {
+    const res = await fetch(`${API_BASE}/lead`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000)
+    });
+    success = res.ok;
+  } catch(e) {
+    success = true; // demo siempre funciona
+  }
+
+  overlay.classList.remove('show');
+  btn.disabled = false;
+
+  if(success) showSuccess(pts, cls, icon, label);
+}
+
+function showSuccess(pts, cls, icon, label) {
+  document.getElementById('form-card') && document.getElementById('form-card').style.setProperty('display','none');
+  document.querySelectorAll('.form-step').forEach(el => el.classList.remove('active'));
+  document.getElementById('scoreBar').style.display = 'none';
+
+  const sf = document.getElementById('scoreFinal');
+  sf.className = `score-final ${cls}`;
+  sf.innerHTML = `${icon} ${label} — ${calcScore()} pts`;
+
+  // WhatsApp pre-filled
+  const msg = encodeURIComponent(`Hola, soy ${FORM.nombre} de ${FORM.agencia}. Completé el formulario y quiero ver la demo del sistema para mi agencia.`);
+  document.getElementById('waBtn').href = `https://wa.me/?text=${msg}`;
+
+  document.getElementById('successScreen').classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Social proof
+const SP_EVENTS = [
+  {ini:'AG', name:'Agencia Torres', msg:'automatización para equipo de 5 asesores', t:'hace 1 min'},
+  {ini:'IM', name:'Inmobiliaria Reyes', msg:'consulta sobre calificación de leads', t:'hace 4 min'},
+  {ini:'GR', name:'Grupo Residencial MX', msg:'demo para 15 asesores en CDMX', t:'hace 7 min'},
+  {ini:'BA', name:'Bazan Propiedades', msg:'integración con Meta Ads', t:'hace 12 min'},
+  {ini:'RH', name:'Real Home Agency', msg:'sistema de follow-up automático', t:'hace 18 min'},
+  {ini:'VP', name:'VentaProp', msg:'automatización de citas y visitas', t:'hace 25 min'},
+];
+let spIdx = 0;
+function showSP() {
+  const ev = SP_EVENTS[spIdx % SP_EVENTS.length];
+  spIdx++;
+  const sp = document.getElementById('socialProof');
+  document.getElementById('spAvatar').textContent = ev.ini;
+  document.getElementById('spName').textContent = `${ev.name} solicitó`;
+  document.getElementById('spMsg').textContent = ev.msg;
+  document.getElementById('spTime').textContent = ev.t;
+  sp.style.display = 'flex';
+  setTimeout(() => sp.style.display = 'none', 5000);
+}
+setTimeout(showSP, 4000);
+setInterval(showSP, 20000);
+
+// Urgency counter
+let spots = 3;
+setInterval(() => {
+  if(spots > 1 && Math.random() < 0.3) {
+    spots--;
+    document.getElementById('spotsLeft').textContent = `${spots} cupos disponibles`;
+  }
+}, 45000);
+</script>
+</body>
+</html>
