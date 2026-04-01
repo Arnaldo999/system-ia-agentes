@@ -594,7 +594,6 @@ async def recibir_lead(request: Request):
     nombre    = data.get("nombre", "").strip()
     apellido  = data.get("apellido", "").strip()
     telefono  = _normalizar_telefono(data.get("telefono", ""))
-    email     = data.get("email", "")
     zona      = data.get("zona", "")
     tipo      = data.get("tipo", "")
     operacion = data.get("operacion", "")
@@ -612,20 +611,20 @@ async def recibir_lead(request: Request):
         params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
     records = buscar.json().get("records", []) if buscar.status_code == 200 else []
 
-    # Estado solo acepta valores que existen en Airtable: "nuevo", "calificado", "contactado"
+    # Solo campos que existen en la tabla Clientes de Maicol
     estado_at = "calificado" if score == "caliente" else "nuevo"
+    nombre_completo_at = f"{nombre} {apellido}".strip()
+    notas = f"Formulario web | Zona: {zona} | Tipo: {tipo} | Objetivo: {operacion} | Presupuesto: {presupuesto} | Plazo: {urgencia} | Score: {score}"
+    if nota:
+        notas += f" | Nota: {nota}"
 
     campos = {
-        "Nombre": nombre, "Apellido": apellido, "Telefono": telefono,
-        "Zona": zona, "Tipo_Propiedad": tipo,
-        "Operacion": "Venta",
+        "Nombre": nombre_completo_at,
+        "Telefono": telefono,
         "Estado": estado_at,
-        "Notas_Bot": f"Score: {score}. Objetivo: {operacion}. Presupuesto: {presupuesto}. Plazo: {urgencia}. {nota}".strip(". "),
+        "Notas_Bot": notas,
         "Llego_WhatsApp": False,
     }
-    # Campos opcionales — solo agregar si tienen valor para no romper validaciones Airtable
-    if email:
-        campos["Email"] = email
     if records:
         r_at = requests.patch(f"{url_at}/{records[0]['id']}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
         print(f"[MAICOL-LEAD] PATCH Airtable {r_at.status_code}: {r_at.text[:200]}")

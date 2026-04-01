@@ -528,28 +528,28 @@
 
   <!-- STEP 2: Lote y Zona -->
   <div class="form-step" id="step-2">
-    <div class="step-title">¿Qué tipo de lote buscás?</div>
+    <div class="step-title">¿Qué tipo de propiedad buscás?</div>
     <div class="step-subtitle">Seleccioná el que más se ajusta a tu proyecto.</div>
     <div class="option-grid">
-      <button class="opt-btn" data-field="tipo" data-value="Lote urbano" onclick="selectChip(this)">
+      <button class="opt-btn" data-field="tipo" data-value="terreno" onclick="selectChip(this)">
         <div class="check">✓</div>
-        <div class="opt-icon">🏙️</div>
-        <div class="opt-label">Lote urbano</div>
-        <div class="opt-sub">Dentro del ejido urbano</div>
+        <div class="opt-icon">🌿</div>
+        <div class="opt-label">Terreno / Lote</div>
+        <div class="opt-sub">Para construir o invertir</div>
       </button>
-      <button class="opt-btn" data-field="tipo" data-value="Lote rural" onclick="selectChip(this)">
+      <button class="opt-btn" data-field="tipo" data-value="casa" onclick="selectChip(this)">
         <div class="check">✓</div>
-        <div class="opt-icon">🌾</div>
-        <div class="opt-label">Lote rural</div>
-        <div class="opt-sub">Campo o zona periurbana</div>
+        <div class="opt-icon">🏡</div>
+        <div class="opt-label">Casa</div>
+        <div class="opt-sub">Vivienda lista para habitar</div>
       </button>
-      <button class="opt-btn" data-field="tipo" data-value="Lote en loteo" onclick="selectChip(this)">
+      <button class="opt-btn" data-field="tipo" data-value="casa_terreno" onclick="selectChip(this)">
         <div class="check">✓</div>
-        <div class="opt-icon">🗺️</div>
-        <div class="opt-label">Loteo privado</div>
-        <div class="opt-sub">Con servicios e infraestructura</div>
+        <div class="opt-icon">🏗️</div>
+        <div class="opt-label">Casa + Terreno</div>
+        <div class="opt-sub">Propiedad con espacio extra</div>
       </button>
-      <button class="opt-btn" data-field="tipo" data-value="Indiferente" onclick="selectChip(this)">
+      <button class="opt-btn" data-field="tipo" data-value="" onclick="selectChip(this)">
         <div class="check">✓</div>
         <div class="opt-icon">🔍</div>
         <div class="opt-label">Cualquier tipo</div>
@@ -560,7 +560,7 @@
     <div class="step-title" style="font-size:0.95rem; margin-bottom:8px;">¿En qué zona de Misiones?</div>
     <div class="chips" id="zona-chips">
       <button class="chip" data-field="zona" data-value="San Ignacio" onclick="selectChipSingle(this, 'zona-chips')">📍 San Ignacio</button>
-      <button class="chip" data-field="zona" data-value="Gdor. Roca" onclick="selectChipSingle(this, 'zona-chips')">📍 Gdor. Roca</button>
+      <button class="chip" data-field="zona" data-value="Gdor Roca" onclick="selectChipSingle(this, 'zona-chips')">📍 Gdor Roca</button>
       <button class="chip" data-field="zona" data-value="Apóstoles" onclick="selectChipSingle(this, 'zona-chips')">📍 Apóstoles</button>
       <button class="chip" data-field="zona" data-value="Posadas" onclick="selectChipSingle(this, 'zona-chips')">📍 Posadas</button>
       <button class="chip" data-field="zona" data-value="Otra zona" onclick="selectChipSingle(this, 'zona-chips')">🔎 Otra zona</button>
