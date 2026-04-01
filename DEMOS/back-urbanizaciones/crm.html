@@ -1288,7 +1288,10 @@ function abrirModalProp(idx) {
   document.getElementById('pp-dorms').value      = p?.Dormitorios || '';
   document.getElementById('pp-maps').value       = p?.Google_Maps_URL || '';
   document.getElementById('pp-desc').value       = p?.Descripcion || '';
-  document.getElementById('pp-imagen').value     = p?.Imagen_URL || '';
+  // Imagen_URL es attachment en Airtable → extraer URL del primer item
+  const imgRaw = p?.Imagen_URL;
+  const imgVal = Array.isArray(imgRaw) ? (imgRaw[0]?.url || '') : (imgRaw || '');
+  document.getElementById('pp-imagen').value     = imgVal;
   document.getElementById('pp-video').value      = p?.Video_URL || '';
   document.getElementById('propFeedback').textContent = '';
   openModal('modalProp');
@@ -1307,7 +1310,8 @@ async function guardarProp() {
     Disponible:       document.getElementById('pp-disponible').value,
     Descripcion:      document.getElementById('pp-desc').value.trim() || undefined,
     Google_Maps_URL:  document.getElementById('pp-maps').value.trim() || undefined,
-    Imagen_URL:       document.getElementById('pp-imagen').value.trim() || undefined,
+    // Imagen_URL es campo attachment en Airtable → enviar como array [{url}]
+    Imagen_URL:       document.getElementById('pp-imagen').value.trim() ? [{url: document.getElementById('pp-imagen').value.trim()}] : undefined,
     Video_URL:        document.getElementById('pp-video').value.trim() || undefined,
   };
   const precio = parseFloat(document.getElementById('pp-precio').value);
