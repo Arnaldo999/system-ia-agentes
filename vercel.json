@@ -4,6 +4,8 @@
     { "source": "/informe",                  "destination": "/DEMOS/informe-mercado-inmobiliario.html" },
     { "source": "/formulario-desarrolladora","destination": "/DEMOS/formulario-desarrolladora.html" },
     { "source": "/formulario-agencia",       "destination": "/DEMOS/formulario-agencia.html" },
-    { "source": "/formulario-agente",        "destination": "/DEMOS/formulario-agente.html" }
+    { "source": "/formulario-agente",        "destination": "/DEMOS/formulario-agente.html" },
+    { "source": "/back-urbanizaciones/crm",       "destination": "/DEMOS/back-urbanizaciones/crm.html" },
+    { "source": "/back-urbanizaciones/formulario","destination": "/DEMOS/back-urbanizaciones/formulario.html" }
   ]
 }
