@@ -1106,6 +1106,22 @@ async def recibir_lead_formulario(request: Request):
     )
     _enviar_texto(telefono, msg_bienvenida)
 
+    # ── Notificar al asesor que llegó un lead nuevo ───────────────────────────
+    if NUMERO_ASESOR:
+        score_emoji = {"caliente": "🔥", "tibio": "🌡️"}.get(score, "❄️")
+        asesor_tel = re.sub(r'\D', '', NUMERO_ASESOR)
+        _enviar_texto(asesor_tel,
+            f"🏠 *Nuevo lead desde el formulario web*\n\n"
+            f"👤 *Nombre:* {nombre_completo}\n"
+            f"📱 *Teléfono:* {telefono}\n"
+            f"📍 *Zona:* {zona or '-'}\n"
+            f"🏷 *Tipo:* {tipo or '-'} · {operacion or '-'}\n"
+            f"💰 *Presupuesto:* {presupuesto}\n"
+            f"⏱ *Urgencia:* {urgencia or '-'}\n"
+            f"{score_emoji} *Score:* {score}\n\n"
+            f"_El bot ya le escribió y le está mostrando propiedades._"
+        )
+
     # ── Mostrar propiedades o agendar según urgencia ──────────────────────────
     if score == "caliente" and _cal_disponible():
         # Lead urgente → ir directo a agenda
