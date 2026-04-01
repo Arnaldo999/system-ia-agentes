@@ -1488,9 +1488,9 @@ function renderAgenda() {
           <div style="color:var(--text2);font-size:12px">${c.hora} · ${c.prop}</div>
           <div class="cita-actions">
             <span class="estado-pill ${estadoClass}">${estadoLabel}</span>
-            <button class="btn" style="font-size:11px;padding:3px 8px" onclick="abrirDetalleCita(${i})">📋 Ver lead</button>
             <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="cambiarEstadoCita(${i},'completada')">✅ Completar</button>
             <button class="btn" style="font-size:11px;padding:3px 8px;background:#3d0d0d;border-color:#7a1a1a;color:#f87171" onclick="cambiarEstadoCita(${i},'cancelada')">✗ Cancelar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;margin-left:auto" onclick="abrirDetalleCita(${i})">📋 Ver lead</button>
           </div>
         </div>
       </div>`;
