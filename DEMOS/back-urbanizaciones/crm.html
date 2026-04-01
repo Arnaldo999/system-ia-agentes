@@ -1,1254 +1,2008 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRM Dashboard — Inmobiliaria Back Urbanizaciones</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <style>
-    /* ══════════════════════════════════════════════
-       DESIGN SYSTEM — INMOBILIARIA BACK URBANIZACIONES
-       Premium Boutique Real Estate Dashboard
-    ══════════════════════════════════════════════ */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --sidebar-bg: #0A261A;
-      --sidebar-hover: #163B2A;
-      --sidebar-active: #1D4B36;
-      --sidebar-text: #A6C2B4;
-      --sidebar-text-active: #FFFFFF;
-      --main-bg: #F8F9FA;
-      --card-bg: #FFFFFF;
-      
-      --primary: #0A261A;
-      --primary-hover: #163B2A;
-      --accent: #E5B239; /* Gold/yellow for Premium badge */
-      --success: #1E6B47;
-      --success-bg: #DFF0E9;
-      --info: #3E7363;
-      --info-bg: #E3EFED;
-      
-      --text-main: #111827;
-      --text-muted: #6B7280;
-      --border-color: #E5E7EB;
-      --font-heading: 'Manrope', 'Inter', sans-serif;
-      --font-body: 'Inter', sans-serif;
-    }
-    html, body {
-      margin: 0 !important; padding: 0 !important;
-    }
-    body {
-      font-family: var(--font-body);
-      background-color: var(--main-bg) !important;
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: flex-start;
-    }
-    
-    /* MODALS and TOASTS (Keep mostly as is but cleaner) */
-    .toast {
-      position: fixed; bottom: 28px; right: 28px; background: var(--card-bg);
-      border: 1px solid var(--border-color); border-radius: 14px; padding: 16px 22px;
-      font-size: 0.9rem; font-weight: 500; font-family: var(--font-body); z-index: 2000;
-      box-shadow: 0px 10px 40px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px;
-      transform: translateY(100px); opacity: 0; transition: all 0.35s ease;
-    }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast.success { border-left: 4px solid var(--success); }
-    .toast.error { border-left: 4px solid #EF4444; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back Urbanizaciones — CRM Dashboard</title>
+<style>
+  :root {
+    --bg:#0f1117; --surface:#1a1d27; --surface2:#222636; --border:#2e3347;
+    --accent:#154D24; --accent2:#b8942e; --text:#e8eaf0; --text2:#8b92a5;
+    --green:#1a6b33; --red:#ff6b6b; --yellow:#b8942e; --blue:#4d9fff; --purple:#a78bfa;
+    --s1:#154D24; --s2:#b8942e; --s3:#8b5cf6; --s4:#10b981; --s5:#ef4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh;}
 
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-      backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;
-      padding: 20px; opacity: 0; transition: opacity 0.3s ease;
-    }
-    .modal-overlay.open { display: flex; opacity: 1; }
-    .modal {
-      background: var(--card-bg); border-radius: 20px; padding: 32px; width: 100%; max-width: 600px;
-      max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-    }
-    .modal-close { position: absolute; top: 20px; right: 20px; background: #F3F4F6; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #666; }
-    .modal-title { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; margin-bottom: 24px; color: var(--primary); }
-    .form-group { margin-bottom: 18px; }
-    .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
-    .form-control { width: 100%; background: #F9FAFB; border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; font-family: var(--font-body); outline: none; }
-    .form-control:focus { border-color: var(--primary); background: #FFF; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .modal-footer { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
-    .img-preview { width: 100%; height: 160px; object-fit: cover; border-radius: 10px; display: none; margin-top: 10px; }
+  /* ── TOPBAR ── */
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;height:56px;position:sticky;top:0;z-index:100;}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+  .logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .logo-sub{color:var(--text2);font-size:10px;font-weight:400;display:block;}
+  .topbar-flex{flex:1;}
+  .live-badge{display:flex;align-items:center;gap:6px;background:#0d2e1a;border:1px solid #1a5c33;padding:4px 12px;border-radius:20px;font-size:11px;color:var(--green);}
+  .live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+  .notif-btn{position:relative;cursor:pointer;}
+  .notif-icon-wrap{width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .notif-badge{position:absolute;top:-4px;right:-4px;background:var(--red);width:16px;height:16px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .user-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);padding:4px 12px 4px 6px;border-radius:20px;font-size:13px;cursor:pointer;}
+  .avatar{width:26px;height:26px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
 
-    /* LAYOUT: SIDEBAR */
-    .dashboard-layout { display: flex; width: 100%; min-height: 100vh; }
-    .sidebar { width: 280px; background-color: var(--sidebar-bg); display: flex; flex-direction: column; padding: 32px 20px; flex-shrink: 0; }
-    .sidebar-logo { margin-bottom: 40px; padding: 0 12px; }
-    .sidebar-logo h2 { color: #FFF; font-family: var(--font-heading); font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
-    .sidebar-logo p { color: var(--sidebar-text); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 4px; }
-    
-    .sidebar-nav { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
-    .nav-item {
-      display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; cursor: pointer;
-      color: var(--sidebar-text); font-family: var(--font-body); font-weight: 500; font-size: 0.9rem; letter-spacing: 0.03em; transition: all 0.2s;
-    }
-    .nav-item:hover { background-color: var(--sidebar-hover); color: var(--sidebar-text-active); }
-    .nav-item.active { background-color: var(--sidebar-active); color: var(--sidebar-text-active); font-weight: 600; border-left: 4px solid #16CE87; padding-left: 12px; }
-    .nav-item i { font-size: 1.1rem; opacity: 0.8; font-style: normal; }
-    .nav-item.active i { opacity: 1; }
-    .sidebar-footer { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto; }
-    
-    /* MAIN CONTENT */
-    .main-wrapper { flex-grow: 1; padding: 32px 56px; display: flex; flex-direction: column; overflow-x: hidden; height: 100vh; overflow-y: auto; background: var(--main-bg); }
-    
-    /* TOP HEADER */
-    .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
-    .search-bar { position: relative; width: 380px; }
-    .search-bar input {
-      width: 100%; border: 1px solid var(--border-color); border-radius: 99px; padding: 10px 20px 10px 48px;
-      font-size: 0.9rem; font-family: var(--font-body); outline: none; background: #FFF; color: var(--text-main);
-    }
-    .search-bar::before { content: '🔍'; position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; opacity: 0.4; }
-    .header-tools { display: flex; align-items: center; gap: 24px; }
-    .header-icon { font-size: 1.2rem; cursor: pointer; color: var(--text-muted); transition: color 0.2s; font-style: normal; }
-    .header-icon:hover { color: var(--primary); }
-    .user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-    .user-profile .name { font-size: 0.95rem; font-weight: 500; font-family: var(--font-body); color: var(--text-main); }
-    .user-profile .avatar { width: 40px; height: 40px; border-radius: 50%; background: #E5E7EB; overflow: hidden; }
-    .user-profile .avatar img { width:100%; height:100%; object-fit:cover; }
-    
-    /* SECTION HERO */
-    .section-hero { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; }
-    .section-title { font-family: var(--font-heading); }
-    .section-title .subtitle { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; margin-bottom: 8px; font-family: var(--font-body); }
-    .section-title h1 { font-size: 2.2rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
-    .section-title h1 span { color: var(--text-muted); opacity: 0.6; } /* Optional light text inside */
-    
-    .view-actions { display: flex; gap: 12px; }
-    .btn { padding: 10px 20px; border-radius: 12px; font-family: var(--font-body); font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
-    .btn-primary { background: var(--primary); color: #FFF; }
-    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-    .btn-outline { background: #FFF; border: 1px solid var(--border-color); color: var(--text-main); }
-    .btn-outline:hover { background: #F3F4F6; }
-    .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; }
-    .btn.loading { opacity: 0.6; pointer-events: none; }
-    
-    /* FILTERS (pill style) */
-    .filters-bar { display: flex; gap: 12px; margin-bottom: 40px; align-items: center; flex-wrap: wrap; }
-    .filter-chip {
-      background: #FFF; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 18px 10px 42px;
-      border-radius: 12px; font-size: 0.9rem; font-weight: 500; cursor: pointer; outline: none; appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 14px center; background-size: 16px;
-      position: relative; font-family: var(--font-body); box-shadow: 0 1px 2px rgba(0,0,0,0.02); height: 42px;
-    }
-    .filter-chip:hover { border-color: #D1D5DB; }
-    .filters-bar .fc-wrap { position: relative; }
-    .fc-zona::before { content: '📍'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
-    .fc-tipo::before { content: '🏢'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
-    .fc-estado::before { content: '🏷️'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
-    .fc-op::before { content: '🔄'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 10; font-size: 0.9rem; pointer-events: none; }
-    
-    .filter-count { margin-left: auto; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
-    
-    /* GALLERY GRID */
-    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px; }
-    .gallery-card {
-      background: var(--card-bg); border-radius: 20px; overflow: hidden;
-      border: 1px solid var(--border-color); transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex; flex-direction: column;
-    }
-    .gallery-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); }
-    .gallery-img-wrap { position: relative; height: 260px; padding: 12px; }
-    .gallery-img-wrap > img { border-radius: 12px; width: 100%; height: 100%; object-fit: cover; }
-    .gallery-img-placeholder { border-radius: 12px; width:100%; height:100%; background:#F3F4F6; display:flex; align-items:center; justify-content:center; font-size:3rem; }
-    
-    /* Card Badges overlay */
-    .top-left-badges { position: absolute; top: 24px; left: 24px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .badge { padding: 6px 12px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; font-family: var(--font-body); border: none; }
-    .badge-primary { background: #3E6A5A; color: #FFF; }
-    .badge-accent { background: #E5B239; color: #FFF; }
-    
-    .top-right-badges { position: absolute; top: 24px; right: 24px; }
-    .badge-info { background: #D0EEE8; color: #1E6B47; }
-    .badge-neutral { background: rgba(0,0,0,0.5); color: #FFF; backdrop-filter: blur(4px); }
-    
-    /* Legacy badges mapped to new palette */
-    .badge-disponible { background: var(--success-bg); color: var(--success); }
-    .badge-reservado { background: #FEF3C7; color: #D97706; }
-    .badge-no { background: #FEE2E2; color: #EF4444; }
-    .badge-venta { background: var(--primary); color: #FFF; }
-    .badge-alquiler { background: var(--info); color: #FFF; }
-    .price-overlay { position: absolute; bottom: 24px; left: 24px; font-family: var(--font-heading); font-weight: 800; font-size: 1.15rem; color: #10B981; text-shadow: 0px 1px 4px rgba(0,0,0,0.4); }
+  /* ── LAYOUT ── */
+  .layout{display:flex;height:calc(100vh - 56px);}
+  .sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:12px 0;flex-shrink:0;display:flex;flex-direction:column;}
+  .sidebar-section{padding:8px 16px 4px;color:var(--text2);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;color:var(--text2);cursor:pointer;font-size:13px;transition:all .15s;border-left:3px solid transparent;margin:1px 0;}
+  .nav-item:hover{color:var(--text);background:var(--surface2);}
+  .nav-item.active{color:var(--text);background:var(--surface2);border-left-color:var(--accent);}
+  .nav-icon{font-size:15px;width:20px;text-align:center;}
+  .nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;}
+  .nav-badge.green{background:#064e3b;color:var(--green);}
+  .sidebar-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);}
+  .plan-chip{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;padding:8px 10px;font-size:11px;font-weight:600;text-align:center;}
+  .plan-chip small{display:block;font-weight:400;opacity:.8;margin-top:2px;}
 
-    /* Card Body */
-    .gallery-body { padding: 20px 24px; display: flex; flex-direction: column; flex-grow: 1; }
-    .card-title { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: var(--text-main); line-height: 1.3; margin-bottom: 6px; }
-    .card-location { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
-    .card-features { display: flex; align-items: center; gap: 14px; font-size: 0.85rem; color: var(--text-main); font-weight: 600; margin-bottom: 24px; }
-    .card-features span { display: flex; align-items: center; gap: 6px; }
-    
-    .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color); }
-    .card-price { font-family: var(--font-heading); font-size: 1.3rem; font-weight: 800; color: var(--text-main); }
-    .card-price-small { font-size: 1.1rem; color: var(--text-main); font-weight: 800; font-family: var(--font-heading); }
-    .btn-circle { width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: #FFF; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .btn-circle:hover { background: var(--primary-hover); transform: translateY(-2px); }
+  .main{flex:1;overflow-y:auto;padding:20px 24px;}
 
-    /* LEADS / TABLE / STATS */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px; }
-    .stat-card { background: var(--card-bg); border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); }
-    .stat-card .num { font-size: 2.2rem; font-weight: 800; font-family: var(--font-heading); color: var(--text-main); margin-bottom: 4px; }
-    .stat-card .lbl { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-body); }
-    .stat-card.green .num { color: #10B981; }
-    .stat-card.yellow .num { color: #F59E0B; }
-    .stat-card.blue .num { color: #3B82F6; }
+  /* ── PANELS ── */
+  .panel{display:none;}
+  .panel.active{display:block;}
 
-    table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    thead { background: #F9FAFB; }
-    th { padding: 14px 24px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--border-color); }
-    td { padding: 16px 24px; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-main); font-family: var(--font-body); font-weight: 500; }
-    tr:last-child td { border-bottom: none; }
-    
-    .panel { display: none; }
-    .panel.active { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    
-    /* LEAD CARDS */
-    .leads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
-    .lead-card { background: var(--card-bg); border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); }
-    .lead-name { font-size: 1.15rem; font-weight: 800; font-family: var(--font-heading); margin-bottom: 6px; }
-    .lead-meta { font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
-    .lead-notas { font-size: 0.83rem; color: var(--text-muted); font-style: italic; background: #F9FAFB; border-radius: 8px; padding: 12px; margin-top: 12px; border: 1px solid var(--border-color); }
-    .estado-btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-    .estado-btn { padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; background: #F3F4F6; color: var(--text-muted); transition: all 0.2s; font-family: var(--font-body); }
-    .estado-btn:hover { background: #E5E7EB; color: var(--text-main); }
-    .estado-btn[class*="active-"] { box-shadow: 0 0 0 2px rgba(0,0,0,0.1); }
-    .active-no_contactado { background: #F3F4F6; color: #6B7280; border: 1px solid #D1D5DB; }
-    .active-contactado { background: var(--success-bg); color: #047857; }
-    .active-en_negociacion { background: #FEF3C7; color: #B45309; }
-    .active-cerrado { background: #DBEAFE; color: #1D4ED8; }
-    
-    .loading-msg, .empty-msg { text-align: center; padding: 80px; color: var(--text-muted); font-size: 1rem; font-weight: 500; font-family: var(--font-body); }
-    .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid var(--border-color); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 12px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+  /* ── KPIs ── */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px;margin-bottom:22px;}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;}
+  .kpi:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3);}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c,var(--accent));}
+  .kpi-icon{font-size:22px;margin-bottom:6px;}
+  .kpi-val{font-size:26px;font-weight:700;line-height:1;}
+  .kpi-label{color:var(--text2);font-size:12px;margin-top:4px;}
+  .kpi-delta{font-size:11px;margin-top:5px;color:var(--green);}
+  .kpi-delta.neg{color:var(--yellow);}
+
+  /* ── SECTION HEADER ── */
+  .sh{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .sh-title{font-size:17px;font-weight:700;}
+  .sh-sub{color:var(--text2);font-size:12px;margin-top:3px;}
+  .btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;transition:all .15s;white-space:nowrap;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#5a52d5;border-color:#5a52d5;color:#fff;}
+  .btn-green{background:#064e3b;border-color:#1a5c33;color:var(--green);}
+
+  /* ── CHARTS ── */
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .chart-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:.4px;}
+  .bar-chart{display:flex;flex-direction:column;gap:9px;}
+  .bar-row{display:flex;align-items:center;gap:8px;}
+  .bar-label{width:88px;font-size:12px;color:var(--text2);text-align:right;flex-shrink:0;}
+  .bar-track{flex:1;height:22px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:11px;font-weight:600;transition:width 1.2s ease;}
+  .bar-num{width:28px;font-size:12px;font-weight:600;text-align:right;color:var(--text2);}
+
+  /* ── KANBAN ── */
+  .kanban{display:flex;gap:11px;overflow-x:auto;padding-bottom:8px;}
+  .kanban-col{min-width:205px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);flex-shrink:0;}
+  .kanban-head{padding:11px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .kanban-head-left{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;}
+  .stage-dot{width:8px;height:8px;border-radius:50%;}
+  .kanban-cnt{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1px 8px;font-size:11px;color:var(--text2);}
+  .kanban-body{padding:9px;display:flex;flex-direction:column;gap:7px;min-height:80px;}
+
+  /* ── LEAD CARD ── */
+  .lcard{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px;cursor:pointer;transition:all .2s;}
+  .lcard:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 14px rgba(108,99,255,.18);}
+  .lcard.fresh{animation:slideIn .45s ease;border-color:var(--green);}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+  .lcard-name{font-weight:600;font-size:13px;margin-bottom:4px;}
+  .lcard-meta{color:var(--text2);font-size:11px;line-height:1.6;}
+  .lcard-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px;}
+  .badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;}
+  .b-wa{background:#0d3d21;color:#25d366;border:1px solid #1a5c33;}
+  .b-web{background:#0d1e3d;color:#60a5fa;border:1px solid #1a3a7a;}
+  .b-ref{background:#3d1a0d;color:#fb923c;border:1px solid #7a3a1a;}
+  .b-cita{background:#0d2e1a;color:#34d399;border:1px solid #1a5c33;}
+  .b-hot{background:#3d0d0d;color:#f87171;border:1px solid #7a1a1a;}
+
+  /* ── LEADS TABLE ── */
+  .leads-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .leads-tbl{width:100%;border-collapse:collapse;}
+  .leads-tbl th{color:var(--text2);font-weight:500;font-size:11px;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.4px;}
+  .leads-tbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;}
+  .leads-tbl tr:last-child td{border-bottom:none;}
+  .leads-tbl tr:hover td{background:var(--surface2);}
+  .spill{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:500;}
+  .s-nuevo{background:#1e3a5f;color:#60a5fa;}
+  .s-contactado{background:#3d2800;color:#fbbf24;}
+  .s-calificado{background:#2d1f5e;color:#a78bfa;}
+  .s-cita{background:#064e3b;color:#34d399;}
+  .s-perdido{background:#3d0d0d;color:#f87171;}
+  .search-wrap{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;min-width:220px;}
+  .search-wrap input{background:none;border:none;color:var(--text);outline:none;font-size:13px;width:100%;}
+
+  /* ── CHAT ── */
+  .chat-layout{display:flex;gap:14px;height:calc(100vh - 190px);min-height:480px;}
+  .chat-list-panel{width:250px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow-y:auto;flex-shrink:0;}
+  .clp-head{padding:12px 14px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;}
+  .cli{padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:9px;align-items:flex-start;transition:background .12s;}
+  .cli:hover,.cli.active{background:var(--surface2);}
+  .chat-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+  .cli-info{flex:1;min-width:0;}
+  .cli-name{font-weight:600;font-size:12px;display:flex;justify-content:space-between;}
+  .cli-msg{color:var(--text2);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .cli-time{color:var(--text2);font-size:10px;}
+  .cli-unread{background:var(--green);color:#000;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:2px;}
+  .chat-win{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;}
+  .cw-head{padding:13px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+  .cw-info{flex:1;}
+  .cw-name{font-weight:600;font-size:14px;}
+  .cw-status{color:var(--green);font-size:11px;margin-top:1px;}
+  .ia-chip{font-size:10px;background:#0d1e3d;color:#60a5fa;border:1px solid #1a3a7a;padding:3px 9px;border-radius:10px;}
+  .cw-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px;}
+  .msg{max-width:78%;}
+  .msg-bot{align-self:flex-start;}
+  .msg-user{align-self:flex-end;}
+  .msg-bubble{padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.55;}
+  .msg-bot .msg-bubble{background:var(--surface2);border:1px solid var(--border);border-radius:4px 12px 12px 12px;}
+  .msg-user .msg-bubble{background:var(--accent);color:#fff;border-radius:12px 12px 4px 12px;}
+  .bot-tag{font-size:10px;color:var(--accent2);font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:3px;}
+  .msg-time{color:var(--text2);font-size:10px;margin-top:3px;}
+  .msg-user .msg-time{text-align:right;}
+  .typing-ind{display:flex;gap:4px;align-items:center;padding:9px 13px;background:var(--surface2);border-radius:4px 12px 12px 12px;width:fit-content;border:1px solid var(--border);}
+  .td{width:6px;height:6px;background:var(--text2);border-radius:50%;animation:ty .8s infinite;}
+  .td:nth-child(2){animation-delay:.15s;}.td:nth-child(3){animation-delay:.3s;}
+  @keyframes ty{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+  .cw-input{padding:11px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
+  .cw-input input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;}
+  .cw-input input:focus{border-color:var(--accent);}
+  .send-btn{background:var(--accent);border:none;color:#fff;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px;}
+
+  /* ── PROPIEDADES ── */
+  .props-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+  .pcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .2s,border-color .2s;cursor:pointer;}
+  .pcard:hover{transform:translateY(-3px);border-color:var(--accent);}
+  .pcard-img{height:130px;background:linear-gradient(135deg,#1a2a4a,#2a1a4a);display:flex;align-items:center;justify-content:center;font-size:46px;position:relative;}
+  .pcard-status{position:absolute;top:8px;right:8px;font-size:11px;padding:3px 9px;border-radius:8px;font-weight:600;}
+  .ps-disp{background:#064e3b;color:#34d399;} .ps-res{background:#451a03;color:#fbbf24;} .ps-vend{background:#3d0d0d;color:#f87171;}
+  .pcard-body{padding:13px;}
+  .pcard-title{font-weight:600;font-size:13px;margin-bottom:3px;}
+  .pcard-loc{color:var(--text2);font-size:12px;margin-bottom:7px;}
+  .pcard-price{font-size:17px;font-weight:700;color:var(--accent2);margin-bottom:7px;}
+  .pcard-specs{display:flex;gap:10px;color:var(--text2);font-size:12px;}
+  .pcard-foot{padding:9px 13px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+
+  /* ── FORMULARIOS (sección especial) ── */
+  .forms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-bottom:24px;}
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .2s,border-color .2s;}
+  .form-card:hover{transform:translateY(-2px);border-color:var(--accent);}
+  .form-card-head{padding:16px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;}
+  .form-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .form-card-body{padding:14px;}
+  .form-feature{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.4;}
+  .form-feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px;}
+  .form-card-foot{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
+  .info-banner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start;}
+  .info-banner-icon{font-size:24px;flex-shrink:0;margin-top:2px;}
+  .info-banner strong{font-size:14px;display:block;margin-bottom:4px;}
+  .info-banner p{color:var(--text2);font-size:13px;line-height:1.5;}
+
+  /* ── AGENDA ── */
+  .cita-item{padding:12px 15px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;}
+  .cita-item:last-child{border-bottom:none;}
+  .cita-date-box{width:44px;height:44px;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+  .cita-date-day{font-size:9px;font-weight:700;text-transform:uppercase;}
+  .cita-date-num{font-size:18px;font-weight:700;line-height:1;}
+  .cita-body{flex:1;min-width:0;}
+  .cita-actions{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;}
+
+  /* ── LEAD CARD ACTIONS ── */
+  .lcard-actions{display:flex;gap:5px;margin-top:8px;border-top:1px solid var(--border);padding-top:8px;}
+
+  /* ── RESUMEN CARD ── */
+  .rcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .rcard-head{padding:13px 15px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;}
+  .rcard-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+  .rcard-info{flex:1;}
+  .rcard-name{font-weight:600;font-size:14px;}
+  .rcard-sub{color:var(--text2);font-size:12px;margin-top:2px;}
+  .rcard-body{padding:13px 15px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .rcard-field{background:var(--surface2);border-radius:8px;padding:10px;}
+  .rcard-field-label{color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+  .rcard-field-val{font-size:13px;font-weight:500;line-height:1.4;}
+  .rcard-summary{padding:0 15px 13px;grid-column:1/-1;}
+  .rcard-foot{padding:10px 15px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;}
+  .stars{color:#fbbf24;font-size:14px;letter-spacing:1px;}
+
+  /* ── ESTADO PILLS — indicador de estado (no botón) ── */
+  .estado-pill{padding:3px 9px !important;border-radius:4px !important;font-size:11px;font-weight:600;cursor:default !important;border:none !important;border-left:3px solid !important;letter-spacing:.2px;display:inline-block;}
+  .estado-pill:hover{filter:none !important;}
+  .ep-pendiente{background:#0f1f35 !important;color:#93c5fd !important;border-color:#3b82f6 !important;}
+  .ep-completada{background:#052e1c !important;color:#6ee7b7 !important;border-color:#10b981 !important;}
+  .ep-cancelada{background:#2a0a0a !important;color:#fca5a5 !important;border-color:#ef4444 !important;}
+
+  /* ── ACTIVITY ── */
+  .act-feed{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .act-head{padding:12px 15px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;}
+  .act-item{padding:10px 15px;border-bottom:1px solid var(--border);display:flex;gap:9px;align-items:flex-start;}
+  .act-item:last-child{border-bottom:none;}
+  .act-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+  .act-text{flex:1;font-size:12px;line-height:1.5;color:var(--text2);}
+  .act-text strong{color:var(--text);}
+  .act-time{color:var(--text2);font-size:11px;flex-shrink:0;}
+
+  /* ── NOTIF POPUP ── */
+  .notif-popup{position:fixed;top:68px;right:18px;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;min-width:270px;max-width:310px;box-shadow:0 8px 32px rgba(0,0,0,.45);display:none;gap:10px;align-items:flex-start;}
+  .notif-popup.show{display:flex;animation:notifIn .3s ease;}
+  @keyframes notifIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+  .np-icon{font-size:22px;flex-shrink:0;}
+  .np-body strong{font-size:13px;display:block;margin-bottom:2px;}
+  .np-body span{color:var(--text2);font-size:12px;}
+  .np-close{margin-left:auto;cursor:pointer;color:var(--text2);font-size:15px;align-self:flex-start;}
+
+  /* ── MODAL ── */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;display:none;align-items:center;justify-content:center;}
+  .modal-bg.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;min-width:360px;max-width:480px;width:92%;position:relative;max-height:90vh;overflow-y:auto;}
+  .mc{position:absolute;top:14px;right:14px;cursor:pointer;color:var(--text2);font-size:19px;background:none;border:none;}
+  .modal h3{font-size:15px;margin-bottom:14px;}
+  .mf{margin-bottom:11px;}
+  .mf label{display:block;color:var(--text2);font-size:11px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+  .mf input,.mf select,.mf textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;outline:none;}
+  .mf input:focus,.mf select:focus{border-color:var(--accent);}
+  .ma{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+  .timeline{display:flex;flex-direction:column;}
+  .tl-item{display:flex;gap:11px;padding-bottom:14px;position:relative;}
+  .tl-item:not(:last-child)::before{content:'';position:absolute;left:6px;top:14px;bottom:0;width:2px;background:var(--border);}
+  .tl-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:2px;}
+  .tl-title{font-size:13px;font-weight:500;}
+  .tl-time{color:var(--text2);font-size:11px;margin-top:1px;}
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+  /* ── SEARCH BAR ── */
+  .search-wrap{position:relative;flex:1;max-width:320px;}
+  .search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px 6px 34px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s;}
+  .search-input::placeholder{color:var(--text2);}
+  .search-input:focus{border-color:var(--accent);}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;}
+  .search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:999;max-height:280px;overflow-y:auto;display:none;}
+  .search-results.show{display:block;}
+  .sr-item{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);transition:background .15s;}
+  .sr-item:last-child{border-bottom:none;}
+  .sr-item:hover{background:var(--surface2);}
+  .sr-av{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+  .sr-name{font-size:13px;font-weight:600;}
+  .sr-meta{font-size:11px;color:var(--text2);}
+  .sr-empty{padding:14px;text-align:center;color:var(--text2);font-size:13px;}
+
+  /* ── DROPDOWN PERFIL ── */
+  .perfil-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:2000;display:none;padding:16px;}
+  .perfil-dropdown.show{display:block;}
+  .perfil-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+  .perfil-logo-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .perfil-logo-preview{width:48px;height:48px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0;}
+  .perfil-logo-preview img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+  .upload-btn{flex:1;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:7px 10px;color:var(--text2);font-size:12px;cursor:pointer;text-align:center;transition:border-color .2s;}
+  .upload-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .mf-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+  .mf-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px;outline:none;margin-bottom:10px;}
+  .mf-input:focus{border-color:var(--accent);}
+  .user-chip-wrap{position:relative;display:flex;align-items:center;}
+  .perfil-dropdown{right:0!important;left:auto!important;}
+
+  @media(max-width:760px){
+    .sidebar{width:48px;}
+    .sidebar-section,.nav-item span:not(.nav-icon),.nav-badge,.plan-chip small,.logo-sub{display:none;}
+    .search-wrap{max-width:160px;}
+    .charts-row{grid-template-columns:1fr;}
+    .chat-list-panel{display:none;}
+  }
+</style>
 </head>
 <body>
 
-<!-- TOAST -->
-<div id="toast" class="toast"></div>
-
-<!-- MODAL PROPIEDAD -->
-<div id="modal-prop" class="modal-overlay">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('modal-prop')">✕</button>
-    <div class="modal-title" id="modal-prop-title">Editar propiedad</div>
-
-    <input type="hidden" id="mp-record-id" />
-
-    <div class="form-group">
-      <label>Título / Nombre de la propiedad</label>
-      <input class="form-control" id="mp-titulo" placeholder="Ej: Casa 3 dormitorios, barrio centro" />
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo" id="topLogo">
+    <div class="logo-icon" id="topLogoIcon" style="background:none;padding:0;overflow:hidden;">
+      <img src="https://backurbanizaciones.com/wp-content/uploads/2024/04/logo-back-urbanizaciones.png" style="width:34px;height:34px;object-fit:contain;" onerror="this.style.display='none';this.parentElement.textContent='🏠'">
     </div>
-    <div class="form-group">
-      <label>Descripción</label>
-      <textarea class="form-control" id="mp-descripcion" rows="3" placeholder="Describí la propiedad..."></textarea>
+    <div>
+      <span id="topEmpresa">Back Urbanizaciones</span>
+      <span class="logo-sub">CRM · Powered by IA</span>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Precio</label>
-        <input class="form-control" id="mp-precio" type="number" placeholder="0" />
-      </div>
-      <div class="form-group">
-        <label>Moneda</label>
-        <select class="form-control" id="mp-moneda">
-          <option value="USD">USD</option>
-          <option value="ARS">ARS</option>
-        </select>
-      </div>
+  </div>
+  <!-- BUSCADOR GLOBAL -->
+  <div class="search-wrap" style="margin:0 14px;">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="globalSearch" type="text" placeholder="Buscar lead, zona, teléfono..." oninput="buscarGlobal(this.value)" onblur="setTimeout(()=>cerrarBusqueda(),200)">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    Bot activo · 24/7
+  </div>
+  <div class="notif-btn" onclick="toggleNotif()">
+    <div class="notif-icon-wrap">🔔</div>
+    <div class="notif-badge" id="notifBadge">3</div>
+  </div>
+  <div class="user-chip-wrap">
+    <div class="user-chip" onclick="togglePerfil(event)" title="Editar perfil">
+      <div class="avatar" id="topAvatar">AR</div>
+      Hola, <span id="topUsuario">Arnaldo</span> ▾
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Zona</label>
-        <select class="form-control" id="mp-zona">
-          <option value="San Ignacio">San Ignacio</option>
-          <option value="Gdor Roca">Gdor Roca</option>
-          <option value="Apóstoles">Apóstoles</option>
-          <option value="Posadas">Posadas</option>
-          <option value="Oberá">Oberá</option>
-          <option value="Leandro N. Alem">Leandro N. Alem</option>
-          <option value="Jardín América">Jardín América</option>
-          <option value="Otra">Otra</option>
-        </select>
+    <!-- DROPDOWN PERFIL -->
+    <div class="perfil-dropdown" id="perfilDropdown">
+      <div class="perfil-title">
+        ✏️ Editar perfil
+        <span style="cursor:pointer;color:var(--text2);font-size:18px" onclick="cerrarPerfil()">×</span>
       </div>
-      <div class="form-group">
-        <label>Tipo</label>
-        <select class="form-control" id="mp-tipo">
-          <option value="Casa">Casa</option>
-          <option value="Departamento">Departamento</option>
-          <option value="Terreno">Terreno</option>
-          <option value="Lote">Lote</option>
-          <option value="Comercial">Comercial</option>
-          <option value="Loteo">Loteo</option>
-        </select>
+      <!-- Logo preview + subir -->
+      <div class="perfil-logo-row">
+        <div class="perfil-logo-preview" id="perfilLogoPreview">🏠</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <label class="upload-btn" for="pLogoFile">📁 Subir imagen</label>
+          <input type="file" id="pLogoFile" accept="image/*" style="display:none" onchange="subirLogo(this)">
+          <input class="mf-input" id="pLogoUrl" placeholder="o pegá una URL / emoji 🏢" oninput="previewLogo(this.value)" style="margin-bottom:0">
+        </div>
       </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Operación</label>
-        <select class="form-control" id="mp-operacion">
-          <option value="Venta">Venta</option>
-          <option value="Alquiler">Alquiler</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Disponibilidad</label>
-        <select class="form-control" id="mp-disponible">
-          <option value="✅ Disponible">✅ Disponible</option>
-          <option value="⏳ Reservado">⏳ Reservado</option>
-          <option value="❌ No disponible">❌ No disponible</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Dormitorios</label>
-        <input class="form-control" id="mp-dormitorios" type="number" min="0" placeholder="—" />
-      </div>
-      <div class="form-group">
-        <label>Metros cubiertos (m²)</label>
-        <input class="form-control" id="mp-metros" type="number" min="0" placeholder="—" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>URL de imagen (link directo a la foto)</label>
-      <input class="form-control" id="mp-imagen-url" placeholder="https://..." oninput="previewImg()" />
-      <div class="img-preview-wrap" style="margin-top:8px">
-        <img id="mp-img-preview" class="img-preview" alt="preview" />
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>Google Maps (URL) <span style="color:var(--muted);font-size:0.8rem">— opcional</span></label>
-      <input class="form-control" id="mp-maps-url" placeholder="https://maps.google.com/..." />
-    </div>
-
-    <div class="form-group">
-      <label>Video YouTube (URL) <span style="color:var(--muted);font-size:0.8rem">— opcional</span></label>
-      <input class="form-control" id="mp-video-url" placeholder="https://www.youtube.com/watch?v=..." />
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-prop')">Cancelar</button>
-      <button class="btn btn-primary" id="btn-guardar-prop" onclick="guardarPropiedad()">💾 Guardar</button>
+      <div class="mf-label">Nombre de la inmobiliaria</div>
+      <input class="mf-input" id="pEmpresa" placeholder="Tu Inmobiliaria">
+      <div class="mf-label">Tu nombre</div>
+      <input class="mf-input" id="pUsuario" placeholder="Arnaldo">
+      <button class="btn btn-primary" style="width:100%;margin-top:2px" onclick="guardarPerfil()">Guardar cambios</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL LEAD -->
-<div id="modal-lead" class="modal-overlay">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('modal-lead')">✕</button>
-    <div class="modal-title">✏️ Editar lead</div>
-    <input type="hidden" id="ml-record-id" />
-
-    <div class="form-row">
-      <div class="form-group">
-        <label>Nombre</label>
-        <input class="form-control" id="ml-nombre" placeholder="Nombre" />
-      </div>
-      <div class="form-group">
-        <label>Apellido</label>
-        <input class="form-control" id="ml-apellido" placeholder="Apellido" />
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Teléfono</label>
-        <input class="form-control" id="ml-telefono" placeholder="+549..." />
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input class="form-control" id="ml-email" type="email" placeholder="correo@..." />
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Zona de interés</label>
-        <select class="form-control" id="ml-zona">
-          <option value="">— Sin especificar —</option>
-          <option>San Ignacio</option>
-          <option>Gdor Roca</option>
-          <option>Apóstoles</option>
-          <option>Posadas</option>
-          <option>Oberá</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Operación</label>
-        <select class="form-control" id="ml-operacion">
-          <option value="">— Sin especificar —</option>
-          <option value="venta">Venta</option>
-          <option value="alquiler">Alquiler</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Tipo de propiedad</label>
-        <select class="form-control" id="ml-tipo">
-          <option value="">— Sin especificar —</option>
-          <option value="casa">Casa</option>
-          <option value="departamento">Departamento</option>
-          <option value="terreno">Terreno</option>
-          <option value="lote">Lote</option>
-          <option value="comercial">Comercial</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Presupuesto</label>
-        <select class="form-control" id="ml-presupuesto">
-          <option value="">— Sin especificar —</option>
-          <option value="menos_50k">Menos de USD 50k</option>
-          <option value="50k_100k">USD 50k – 100k</option>
-          <option value="100k_200k">USD 100k – 200k</option>
-          <option value="mas_200k">Más de USD 200k</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Notas</label>
-      <textarea class="form-control" id="ml-notas" rows="3" placeholder="Notas adicionales..."></textarea>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-lead')">Cancelar</button>
-      <button class="btn btn-primary" id="btn-guardar-lead" onclick="guardarLead()">💾 Guardar</button>
-    </div>
+<!-- NOTIFICATION POPUP -->
+<div class="notif-popup" id="notifPopup">
+  <div class="np-icon">🔥</div>
+  <div class="np-body">
+    <strong id="npTitle">Nuevo lead caliente</strong>
+    <span id="npBody">Carlos M. preguntó por lote via WhatsApp</span>
   </div>
+  <div class="np-close" onclick="hideNotif()">✕</div>
 </div>
 
-<!-- MODAL DETALLE PROPIEDAD -->
-<div id="modal-detalle" class="modal-overlay">
-  <div class="modal" style="max-width:700px;">
-    <button class="modal-close" onclick="closeModal('modal-detalle')">✕</button>
-    <div id="detalle-content"></div>
-  </div>
-</div>
+<!-- LAYOUT -->
+<div class="layout">
 
-<!-- DASHBOARD LAYOUT -->
-<div class="dashboard-layout">
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
-      <div style="background:#fff; border-radius:14px; padding:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-        <img src="https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png" alt="Back Urbanizaciones" style="height:150px; width:auto;">
-      </div>
-      <p style="margin-top:4px; font-weight:600; letter-spacing:1px;">CRM Dashboard</p>
+  <div class="sidebar">
+    <div class="sidebar-section">Principal</div>
+    <div class="nav-item active" onclick="nav('inicio',this)">
+      <span class="nav-icon">📊</span><span>Inicio</span>
     </div>
-    <nav class="sidebar-nav">
-      <div class="nav-item tab active" onclick="switchTab('propiedades', this)"><i>🏠</i> Propiedades</div>
-      <div class="nav-item tab" onclick="switchTab('clientes', this)"><i>👥</i> Clientes / Leads</div>
-      <div class="nav-item tab" onclick="switchTab('galeria', this)"><i>🖼️</i> Galería</div>
-    </nav>
+    <div class="nav-item" onclick="nav('pipeline',this)">
+      <span class="nav-icon">🔀</span><span>Mi Pipeline</span>
+      <span class="nav-badge" id="pipelineBadge">12</span>
+    </div>
+    <div class="nav-item" onclick="nav('leads',this)">
+      <span class="nav-icon">👥</span><span>Mis Leads</span>
+    </div>
+    <div class="nav-item" onclick="nav('chat',this)">
+      <span class="nav-icon">🤖</span><span>Resúmenes IA</span>
+      <span class="nav-badge green" id="chatBadge">4 leads</span>
+    </div>
+    <div class="nav-item" onclick="nav('propiedades',this)">
+      <span class="nav-icon">🏘️</span><span>Propiedades</span>
+    </div>
+    <div class="nav-item" onclick="nav('agenda',this)">
+      <span class="nav-icon">📅</span><span>Mi Agenda</span>
+    </div>
+    <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
+    <div class="nav-item" onclick="nav('formularios',this)">
+      <span class="nav-icon">📋</span><span>Formularios</span>
+    </div>
     <div class="sidebar-footer">
-      <div class="nav-item" onclick="loadAll()" id="btn-refresh"><i>↻</i> Sincronizar</div>
+      <div class="plan-chip">
+        🤖 IA activa
+        <small>Bot respondiendo leads</small>
+      </div>
     </div>
-  </aside>
+  </div>
 
   <!-- MAIN CONTENT -->
-  <main class="main-wrapper">
-    <!-- TOP HEADER -->
-    <header class="top-header">
-      <div class="search-bar">
-        <input type="text" placeholder="Buscar en Inmobiliaria Back..." disabled>
+  <div class="main">
+
+    <!-- ══════════ INICIO ══════════ -->
+    <div class="panel active" id="panel-inicio">
+
+      <div class="sh">
+        <div>
+          <div class="sh-title">Bienvenido, Arnaldo 👋</div>
+          <div class="sh-sub">Tu bot atendió <strong style="color:var(--green)">3 leads</strong> mientras estabas fuera. Hoy vas bien.</div>
+        </div>
+        <button class="btn btn-primary" onclick="simLead()">⚡ Simular lead nuevo</button>
       </div>
-      <div class="header-tools">
-        <i class="header-icon">🔔</i>
-        <i class="header-icon">⚙️</i>
-        <div class="user-profile">
-          <div class="avatar">
-            <img src="https://ui-avatars.com/api/?name=Maicol+Back&background=0A261A&color=fff" alt="Maicol Back" />
+
+      <!-- KPIs -->
+      <div class="kpis">
+        <div class="kpi" style="--c:#6c63ff">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-val" id="kpi-total">47</div>
+          <div class="kpi-label">Total Leads</div>
+          <div class="kpi-delta">↑ +5 esta semana</div>
+        </div>
+        <div class="kpi" style="--c:#ff6b6b">
+          <div class="kpi-icon">🔥</div>
+          <div class="kpi-val" id="kpi-hot">12</div>
+          <div class="kpi-label">Leads Calientes</div>
+          <div class="kpi-delta">↑ +3 hoy</div>
+        </div>
+        <div class="kpi" style="--c:#00d4aa">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-val" id="kpi-citas">8</div>
+          <div class="kpi-label">Citas Agendadas</div>
+          <div class="kpi-delta">↑ 100% por el bot</div>
+        </div>
+        <div class="kpi" style="--c:#ffa94d">
+          <div class="kpi-icon">🤖</div>
+          <div class="kpi-val">47s</div>
+          <div class="kpi-label">Tiempo de respuesta</div>
+          <div class="kpi-delta">Promedio del bot</div>
+        </div>
+        <div class="kpi" style="--c:#4d9fff">
+          <div class="kpi-icon">📋</div>
+          <div class="kpi-val" id="kpi-form">23</div>
+          <div class="kpi-label">Desde tus formularios</div>
+          <div class="kpi-delta">↑ +7 esta semana</div>
+        </div>
+        <div class="kpi" style="--c:#a78bfa">
+          <div class="kpi-icon">🏠</div>
+          <div class="kpi-val">34</div>
+          <div class="kpi-label">Propiedades activas</div>
+          <div class="kpi-delta">5 con interés hoy</div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Origen de tus leads este mes</div>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <div class="bar-label">📋 Formulario</div>
+              <div class="bar-track"><div class="bar-fill" style="width:69%;background:#6c63ff;color:#fff">49%</div></div>
+              <div class="bar-num">23</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">💬 WhatsApp</div>
+              <div class="bar-track"><div class="bar-fill" style="width:44%;background:#25d366;color:#fff">31%</div></div>
+              <div class="bar-num">15</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">🔥 Referidos</div>
+              <div class="bar-track"><div class="bar-fill" style="width:28%;background:#ffa94d;color:#000">20%</div></div>
+              <div class="bar-num">9</div>
+            </div>
           </div>
-          <span class="name">Maicol Back</span>
-          <i class="header-icon" style="font-size:0.8rem">▼</i>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Estado actual del pipeline</div>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <div class="bar-label">🔵 Nuevos</div>
+              <div class="bar-track"><div class="bar-fill" style="width:53%;background:#3b82f6;color:#fff">5</div></div>
+              <div class="bar-num">5</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">🟡 Contactados</div>
+              <div class="bar-track"><div class="bar-fill" style="width:32%;background:#f59e0b;color:#000">3</div></div>
+              <div class="bar-num">3</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">🟣 Calificados</div>
+              <div class="bar-track"><div class="bar-fill" style="width:21%;background:#8b5cf6;color:#fff">2</div></div>
+              <div class="bar-num">2</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">🟢 Con cita</div>
+              <div class="bar-track"><div class="bar-fill" style="width:21%;background:#10b981;color:#fff">2</div></div>
+              <div class="bar-num">2</div>
+            </div>
+          </div>
         </div>
       </div>
-    </header>
 
-    <div style="margin-bottom: 24px;">
-      <p id="last-update" style="font-size:0.85rem; color:var(--text-muted); font-weight:600; font-family:var(--font-body);">Cargando datos...</p>
-    </div>
-
-    <!-- PANEL PROPIEDADES -->
-    <div id="panel-propiedades" class="panel active">
-      <div class="section-hero">
-        <div class="section-title">
-          <div><div class="subtitle">Inventario Global</div><h1>Propiedades <span>Disponibles</span></h1></div>
+      <!-- ACTIVITY -->
+      <div class="act-feed">
+        <div class="act-head">
+          Lo que hizo tu bot hoy
+          <span style="color:var(--text2);font-size:11px;font-weight:400">mientras vos hacías otras cosas</span>
         </div>
-        <div class="view-actions">
-          <button class="btn btn-primary" onclick="openModalNuevaPropiedad()">+ Nueva Propiedad</button>
+        <div id="actList">
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--green)"></div>
+            <div class="act-text"><strong>Calificó a Carla R.</strong> — respondió 8 preguntas via WhatsApp, detectó presupuesto $180K, interés confirmado en lote residencial</div>
+            <div class="act-time">hace 3 min</div>
+          </div>
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--accent)"></div>
+            <div class="act-text"><strong>Agendó cita automáticamente</strong> — Marcos V. eligió slot Jue 3 Abr 10:00 AM sin que vos intervinieras</div>
+            <div class="act-time">hace 12 min</div>
+          </div>
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--yellow)"></div>
+            <div class="act-text"><strong>Seguimiento automático</strong> — Andrea G. no respondía hace 4h, el bot envió mensaje de seguimiento y reactivó la conversación</div>
+            <div class="act-time">hace 28 min</div>
+          </div>
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--blue)"></div>
+            <div class="act-text"><strong>Nuevo lead desde tu formulario web</strong> — Lucía M. completó el form, bot inició conversación en 47 segundos</div>
+            <div class="act-time">hace 1h</div>
+          </div>
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--s4)"></div>
+            <div class="act-text"><strong>Envió catálogo de propiedades</strong> — Roberto A. pidió opciones, bot le mandó 3 fichas personalizadas según su presupuesto</div>
+            <div class="act-time">hace 2h</div>
+          </div>
         </div>
-      </div>
-      <div class="stats-grid" id="stats-props">
-        <div class="stat-card green"><div class="num" id="s-disponibles">—</div><div class="lbl">✅ Disponibles</div></div>
-        <div class="stat-card yellow"><div class="num" id="s-reservadas">—</div><div class="lbl">⏳ Reservadas</div></div>
-        <div class="stat-card red"><div class="num" id="s-nodisponibles">—</div><div class="lbl">❌ No disponibles</div></div>
-        <div class="stat-card blue"><div class="num" id="s-total-props">—</div><div class="lbl">Total</div></div>
-      </div>
-      <div class="filters-bar">
-        <div class="fc-wrap fc-zona">
-          <select class="filter-chip" id="f-zona" onchange="renderProps()">
-            <option value="">📍 Todas las zonas</option>
-            <option>San Ignacio</option><option>Gdor Roca</option><option>Apóstoles</option>
-            <option>Posadas</option><option>Oberá</option>
-          </select>
-        </div>
-        <div class="fc-wrap fc-op">
-          <select class="filter-chip" id="f-operacion" onchange="renderProps()">
-            <option value="">🔄 Venta y Alquiler</option>
-            <option value="venta">Venta</option>
-            <option value="alquiler">Alquiler</option>
-          </select>
-        </div>
-        <div class="fc-wrap fc-tipo">
-          <select class="filter-chip" id="f-tipo" onchange="renderProps()">
-            <option value="">🏗️ Todos los tipos</option>
-            <option value="casa">Casa</option><option value="departamento">Departamento</option>
-            <option value="terreno">Terreno</option><option value="lote">Lote</option>
-            <option value="comercial">Comercial</option><option value="loteo">Loteo</option>
-          </select>
-        </div>
-        <div class="fc-wrap fc-estado">
-          <select class="filter-chip" id="f-estado" onchange="renderProps()">
-            <option value="">⚡ Todos los estados</option>
-            <option value="disponible">✅ Disponible</option>
-            <option value="reservado">⏳ Reservado</option>
-            <option value="no">❌ No disponible</option>
-          </select>
-        </div>
-        <span class="filter-count" id="props-count"></span>
-      </div>
-      
-      <div class="table-wrap">
-        <div id="props-loading" class="loading-msg"><span class="spinner"></span> Cargando propiedades...</div>
-        <table id="props-table" style="display:none">
-          <thead>
-            <tr><th>Propiedad</th><th>Zona</th><th>Tipo</th><th>Operación</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr>
-          </thead>
-          <tbody id="props-tbody"></tbody>
-        </table>
-        <div id="props-empty" class="empty-msg" style="display:none">No hay propiedades con esos filtros.</div>
       </div>
     </div>
 
-    <!-- PANEL CLIENTES -->
-    <div id="panel-clientes" class="panel">
-      <div class="section-hero">
-        <div class="section-title">
-          <div><div class="subtitle">Funnel de Ventas</div><h1>Leads & Clientes</h1></div>
+    <!-- ══════════ PIPELINE ══════════ -->
+    <div class="panel" id="panel-pipeline">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Mi Pipeline de Ventas</div>
+          <div class="sh-sub">Todos tus leads ordenados por etapa — el bot mueve los contactados automáticamente</div>
         </div>
-        <div class="view-actions">
-          <button class="btn btn-primary" onclick="openModalNuevoLead()">+ Nuevo Lead</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-green" onclick="simLead()">⚡ Simular lead nuevo</button>
+          <button class="btn btn-primary" onclick="openModal('modalNuevo')">+ Agregar lead</button>
         </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="num" id="s-no-contactados" style="color:#9ca3af">—</div><div class="lbl">Sin contactar</div></div>
-        <div class="stat-card green"><div class="num" id="s-contactados">—</div><div class="lbl">Contactados</div></div>
-        <div class="stat-card yellow"><div class="num" id="s-en-negociacion">—</div><div class="lbl">En negociación</div></div>
-        <div class="stat-card blue"><div class="num" id="s-cerrados">—</div><div class="lbl">Cerrados</div></div>
-        <div class="stat-card blue"><div class="num" id="s-total-leads">—</div><div class="lbl">Total leads</div></div>
-      </div>
-      <div class="filters-bar">
-        <div class="fc-wrap fc-estado">
-          <select class="filter-chip" id="f-estado-lead" onchange="renderLeads()">
-            <option value="">⚡ Todos los estados</option>
-            <option value="no_contactado">Sin contactar</option>
-            <option value="contactado">Contactado</option>
-            <option value="en_negociacion">En negociación</option>
-            <option value="cerrado">Cerrado</option>
-            <option value="descartado">Descartado</option>
-          </select>
+
+      <div class="kanban" id="kanban">
+        <!-- Nuevo -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s1)"></div>Nuevo</div>
+            <div class="kanban-cnt" id="cnt-n">5</div>
+          </div>
+          <div class="kanban-body" id="col-n">
+            <div class="lcard" id="kcard-0">
+              <div class="lcard-name">Carlos Mendoza</div>
+              <div class="lcard-meta">+52 55 1234-5678<br>Lote Fracc. Prados Norte</div>
+              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(0)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(0,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-1">
+              <div class="lcard-name">María González</div>
+              <div class="lcard-meta">Formulario web<br>Casa 3 rec. $150K</div>
+              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(1)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(1,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-2">
+              <div class="lcard-name">Jorge Ramírez</div>
+              <div class="lcard-meta">Referido<br>Depto. centro histórico</div>
+              <div class="lcard-badges"><span class="badge b-ref">🔥 Referido</span><span class="badge b-hot">Caliente</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(2)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(2,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-3">
+              <div class="lcard-name">Ana Torres</div>
+              <div class="lcard-meta">WhatsApp<br>Renta local comercial</div>
+              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(3)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(3,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-4">
+              <div class="lcard-name">Luis Hernández</div>
+              <div class="lcard-meta">Formulario<br>Terreno 300m²</div>
+              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(4)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(4,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="search-bar" style="width:280px; margin-bottom:0;">
-          <input type="text" id="f-buscar-lead" placeholder="Buscar nombre o teléfono..." oninput="renderLeads()" />
+        <!-- Contactado -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s2)"></div>Contactado</div>
+            <div class="kanban-cnt" id="cnt-c">3</div>
+          </div>
+          <div class="kanban-body" id="col-c">
+            <div class="lcard" id="kcard-5">
+              <div class="lcard-name">Carla Reyes</div>
+              <div class="lcard-meta">Bot respondió en 2 min<br>Presupuesto $180K</div>
+              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span><span class="badge b-hot">Caliente</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(5)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(5,'calificado')">→ Calificado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-6">
+              <div class="lcard-name">Héctor Castillo</div>
+              <div class="lcard-meta">2 propiedades de interés<br>Zona Polanco</div>
+              <div class="lcard-badges"><span class="badge b-ref">🔥 Referido</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(6)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(6,'calificado')">→ Calificado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-7">
+              <div class="lcard-name">Patricia López</div>
+              <div class="lcard-meta">Requiere financiamiento<br>Casa 2 rec.</div>
+              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(7)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(7,'calificado')">→ Calificado</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <span class="filter-count" id="leads-count"></span>
+        <!-- Calificado -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s3)"></div>Calificado</div>
+            <div class="kanban-cnt" id="cnt-q">2</div>
+          </div>
+          <div class="kanban-body" id="col-q">
+            <div class="lcard" id="kcard-8">
+              <div class="lcard-name">Roberto Alvarado</div>
+              <div class="lcard-meta">✅ Presupuesto confirmado<br>Lote #12, $200K</div>
+              <div class="lcard-badges"><span class="badge b-hot">Caliente</span><span class="badge b-cita">📅 Con cita</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(8)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(8,'cita')">→ Cita agendada</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-9">
+              <div class="lcard-name">Sandra Ruiz</div>
+              <div class="lcard-meta">3 propiedades en renta<br>Presupuesto $50K/año</div>
+              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(9)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(9,'cita')">→ Cita agendada</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Cita -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s4)"></div>Cita Agendada</div>
+            <div class="kanban-cnt" id="cnt-a">2</div>
+          </div>
+          <div class="kanban-body" id="col-a">
+            <div class="lcard" id="kcard-10">
+              <div class="lcard-name">Marcos Vega</div>
+              <div class="lcard-meta">📅 Jue 3 Abr · 10:00 AM<br>Lote #47 Fracc. Norte</div>
+              <div class="lcard-badges"><span class="badge b-cita">📅 Cita</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(10)">Ver</button>
+                <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="event.stopPropagation();moverLead(10,'cerrado')">✅ Cerrar venta</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-11">
+              <div class="lcard-name">Diana Flores</div>
+              <div class="lcard-meta">📅 Vie 4 Abr · 3:00 PM<br>Depto 502, Torre B</div>
+              <div class="lcard-badges"><span class="badge b-cita">📅 Cita</span><span class="badge b-hot">Caliente</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(11)">Ver</button>
+                <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="event.stopPropagation();moverLead(11,'cerrado')">✅ Cerrar venta</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Cerrado -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:#00d4aa"></div>Cerrado 🏆</div>
+            <div class="kanban-cnt" id="cnt-z">0</div>
+          </div>
+          <div class="kanban-body" id="col-z">
+            <div style="color:var(--text2);font-size:12px;text-align:center;padding:18px 0">Las ventas cerradas aparecen aquí 🏆</div>
+          </div>
+        </div>
+        <!-- Perdido -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s5)"></div>Perdido</div>
+            <div class="kanban-cnt" id="cnt-p">0</div>
+          </div>
+          <div class="kanban-body" id="col-p">
+            <div style="color:var(--text2);font-size:12px;text-align:center;padding:18px 0">Sin leads perdidos esta semana 🎉</div>
+          </div>
+        </div>
       </div>
-      <div id="leads-loading" class="loading-msg"><span class="spinner"></span> Cargando leads...</div>
-      <div class="leads-grid" id="leads-grid"></div>
-      <div id="leads-empty" class="empty-msg" style="display:none">No hay leads con esos filtros.</div>
     </div>
 
-    <!-- PANEL GALERIA -->
-    <div id="panel-galeria" class="panel">
-      <div class="section-hero">
-        <div class="section-title">
-          <div><div class="subtitle">Catálogo Premium</div><h1>Galería de Propiedades</h1></div>
+    <!-- ══════════ LEADS TABLE ══════════ -->
+    <div class="panel" id="panel-leads">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Mis Leads</div>
+          <div class="sh-sub" id="leadsCount">47 contactos registrados</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="search-wrap">
+            <span>🔍</span>
+            <input type="text" placeholder="Buscar..." oninput="filterLeads(this.value)" id="searchInput">
+          </div>
+          <button class="btn btn-primary" onclick="openModal('modalNuevo')">+ Nuevo lead</button>
         </div>
       </div>
-      <div class="filters-bar">
-        <div class="fc-wrap fc-zona">
-          <select class="filter-chip" id="g-zona" onchange="renderGaleria()">
-            <option value="">📍 Todas las zonas</option>
-            <option>San Ignacio</option><option>Gdor Roca</option><option>Apóstoles</option>
-            <option>Posadas</option><option>Oberá</option>
-          </select>
-        </div>
-        <div class="fc-wrap fc-op">
-          <select class="filter-chip" id="g-operacion" onchange="renderGaleria()">
-            <option value="">🔄 Venta y Alquiler</option>
-            <option value="venta">Venta</option>
-            <option value="alquiler">Alquiler</option>
-          </select>
-        </div>
-        <div class="fc-wrap fc-tipo">
-          <select class="filter-chip" id="g-tipo" onchange="renderGaleria()">
-            <option value="">🏢 Todos los tipos</option>
-            <option value="casa">Casa</option><option value="departamento">Departamento</option>
-            <option value="terreno">Terreno</option><option value="lote">Lote</option>
-            <option value="comercial">Comercial</option><option value="loteo">Loteo</option>
-          </select>
-        </div>
-        <div class="fc-wrap fc-estado">
-          <select class="filter-chip" id="g-estado" onchange="renderGaleria()">
-            <option value="">⚡ Todos los estados</option>
-            <option value="disponible">✅ Disponible</option>
-            <option value="reservado">⏳ Reservado</option>
-            <option value="no">❌ No disponible</option>
-          </select>
-        </div>
-        <span class="filter-count" id="galeria-count"></span>
+      <div class="leads-wrap">
+        <table class="leads-tbl"><thead><tr>
+          <th>Nombre</th><th>Contacto</th><th>Origen</th><th>Interés</th><th>Estado</th><th>Score</th><th></th>
+        </tr></thead><tbody id="leadsBody"></tbody></table>
       </div>
-
-      <div id="galeria-loading" class="loading-msg"><span class="spinner"></span> Cargando galería...</div>
-      <div id="galeria-grid" class="gallery-grid"></div>
-      <div id="galeria-empty" class="empty-msg" style="display:none">Sin coincidencias. Ajustá los filtros.</div>
     </div>
 
-  </main>
+    <!-- ══════════ RESÚMENES IA ══════════ -->
+    <div class="panel" id="panel-chat">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Resúmenes de conversación</div>
+          <div class="sh-sub">Lo que tu bot extrajo de cada lead — llegás a la cita sabiendo todo</div>
+        </div>
+        <span class="ia-chip">🤖 Generados automáticamente por IA</span>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:center">
+        <span style="font-size:20px">💡</span>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">Las conversaciones de WhatsApp quedan en el celular del lead y en el tuyo — son privadas. Acá tu bot te deja un resumen inteligente de cada charla para que llegués preparado a cada cita.</div>
+      </div>
+      <div id="resumenesGrid" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+
+    <!-- ══════════ PROPIEDADES ══════════ -->
+    <div class="panel" id="panel-propiedades">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Mis Propiedades</div>
+          <div class="sh-sub" id="propsSub">Tu catálogo que el bot muestra automáticamente a los leads</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div id="propsStatus" style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"></div>
+          <button class="btn" onclick="renderProps()">↺ Actualizar</button>
+          <button class="btn btn-primary">+ Agregar propiedad</button>
+        </div>
+      </div>
+      <div class="props-grid" id="propsGrid">
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
+          <div style="font-size:32px;margin-bottom:8px">⏳</div>
+          Cargando propiedades desde Airtable...
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ AGENDA ══════════ -->
+    <div class="panel" id="panel-agenda">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Mi Agenda</div>
+          <div class="sh-sub">Citas agendadas automáticamente por tu bot — vos solo te presentás</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <div class="act-head">Próximas citas <span style="color:var(--accent2);font-size:11px;font-weight:400">📅 8 esta semana</span></div>
+          <div id="citasList" style="padding:4px 0"></div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px">
+          <div class="chart-title">Estadísticas de agenda</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
+              <div style="font-size:20px;margin-bottom:3px">📅</div>
+              <div style="font-size:20px;font-weight:700;color:#00d4aa">8</div>
+              <div style="color:var(--text2);font-size:11px">Citas esta semana</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
+              <div style="font-size:20px;margin-bottom:3px">✅</div>
+              <div style="font-size:20px;font-weight:700;color:#10b981">6</div>
+              <div style="color:var(--text2);font-size:11px">Completadas</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
+              <div style="font-size:20px;margin-bottom:3px">⏳</div>
+              <div style="font-size:20px;font-weight:700;color:#ffa94d">2</div>
+              <div style="color:var(--text2);font-size:11px">Pendientes</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
+              <div style="font-size:20px;margin-bottom:3px">🤖</div>
+              <div style="font-size:20px;font-weight:700;color:#6c63ff">100%</div>
+              <div style="color:var(--text2);font-size:11px">Agendadas por bot</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;background:#064e3b;border:1px solid #1a5c33;border-radius:8px;padding:11px;color:#34d399;font-size:12px;line-height:1.5">
+            🤖 <strong>El 100% de tus citas fueron agendadas por el bot</strong> — sin que intervinieras una sola vez.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FORMULARIOS ══════════ -->
+    <div class="panel" id="panel-formularios">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Formularios de Captación</div>
+          <div class="sh-sub">Cada formulario está optimizado para tu tipo de negocio y conectado a tu bot</div>
+        </div>
+      </div>
+
+      <div class="info-banner">
+        <div class="info-banner-icon">💡</div>
+        <div>
+          <strong>¿Para qué sirven estos formularios?</strong>
+          <p>Los publicás en tus ads de Facebook/Instagram o en tu sitio web. Cada lead que complete el form llega directo a tu CRM y el bot lo contacta en menos de 60 segundos — automáticamente.</p>
+        </div>
+      </div>
+
+      <div class="forms-grid">
+        <!-- Desarrolladora -->
+        <div class="form-card">
+          <div class="form-card-head">
+            <div class="form-icon" style="background:#1e3a5f">🏗️</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Desarrolladora / Fraccionamiento</div>
+              <div style="color:var(--text2);font-size:12px;margin-top:2px">Lotes, casas en preventa, nuevos desarrollos</div>
+            </div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-feature">Captura: nombre, WhatsApp, zona de interés, presupuesto y tipo de lote</div>
+            <div class="form-feature">Pregunta de calificación: ¿es para construir o invertir?</div>
+            <div class="form-feature">Bot pregunta si tiene financiamiento o paga contado</div>
+            <div class="form-feature">Ofrece visita al fraccionamiento directamente</div>
+          </div>
+          <div class="form-card-foot">
+            <button class="btn btn-primary" onclick="previewForm('dev')">👁 Ver formulario</button>
+            <button class="btn">📋 Copiar link</button>
+          </div>
+        </div>
+
+        <!-- Agencia -->
+        <div class="form-card">
+          <div class="form-card-head">
+            <div class="form-icon" style="background:#2d1f5e">🏢</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Agencia Inmobiliaria</div>
+              <div style="color:var(--text2);font-size:12px;margin-top:2px">Venta y renta de propiedades diversas</div>
+            </div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-feature">Captura: nombre, WhatsApp, operación (compra/renta), zona y presupuesto</div>
+            <div class="form-feature">Filtro: cantidad de recámaras, garage, amenidades deseadas</div>
+            <div class="form-feature">Bot envía catálogo personalizado según criterios</div>
+            <div class="form-feature">Agenda visita con el asesor disponible</div>
+          </div>
+          <div class="form-card-foot">
+            <button class="btn btn-primary" onclick="previewForm('agency')">👁 Ver formulario</button>
+            <button class="btn">📋 Copiar link</button>
+          </div>
+        </div>
+
+        <!-- Agente Individual -->
+        <div class="form-card">
+          <div class="form-card-head">
+            <div class="form-icon" style="background:#064e3b">🤝</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Agente Individual</div>
+              <div style="color:var(--text2);font-size:12px;margin-top:2px">Captación personal, seguimiento 1 a 1</div>
+            </div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-feature">Captura: nombre, WhatsApp, tipo de propiedad buscada</div>
+            <div class="form-feature">Pregunta cuánto tiempo lleva buscando (urgencia)</div>
+            <div class="form-feature">Bot califica y asigna directamente al agente</div>
+            <div class="form-feature">Seguimiento automático si no responde en 2h</div>
+          </div>
+          <div class="form-card-foot">
+            <button class="btn btn-primary" onclick="previewForm('agent')">👁 Ver formulario</button>
+            <button class="btn">📋 Copiar link</button>
+          </div>
+        </div>
+
+        <!-- Property Manager -->
+        <div class="form-card">
+          <div class="form-card-head">
+            <div class="form-icon" style="background:#451a03">🔑</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Property Manager</div>
+              <div style="color:var(--text2);font-size:12px;margin-top:2px">Administración de propiedades en renta</div>
+            </div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-feature">Captura: nombre, WhatsApp, tipo de propiedad disponible</div>
+            <div class="form-feature">Pregunta: ¿busca inquilino o quiere administración completa?</div>
+            <div class="form-feature">Bot explica el servicio y solicita datos de la propiedad</div>
+            <div class="form-feature">Genera contrato de administración automáticamente</div>
+          </div>
+          <div class="form-card-foot">
+            <button class="btn btn-primary" onclick="previewForm('pm')">👁 Ver formulario</button>
+            <button class="btn">📋 Copiar link</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px">¿Cómo funciona el flujo completo?</div>
+        <div style="display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:4px">
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📣</div><div style="font-size:12px;font-weight:600">Anuncio en ads</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Facebook / Instagram</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📋</div><div style="font-size:12px;font-weight:600">Lead completa form</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Datos al instante</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🔔</div><div style="font-size:12px;font-weight:600">Llega a tu CRM</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Registrado automáticamente</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🤖</div><div style="font-size:12px;font-weight:600">Bot lo contacta</div><div style="color:var(--text2);font-size:11px;margin-top:2px">En menos de 60 seg</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🎯</div><div style="font-size:12px;font-weight:600">Califica al lead</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Presupuesto, zona, urgencia</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📅</div><div style="font-size:12px;font-weight:600">Agenda la cita</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Sin que vos intervengas</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🏠</div><div style="font-size:12px;font-weight:600">Vos cerrás la venta</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Solo te presentás</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- MODAL: LEAD DETAIL -->
+<div class="modal-bg" id="modalDetalle">
+  <div class="modal">
+    <button class="mc" onclick="closeModal('modalDetalle')">✕</button>
+    <h3 id="detalleTitulo">Detalle del Lead</h3>
+    <div id="detalleBody"></div>
+  </div>
 </div>
 
+<!-- MODAL: NUEVO LEAD -->
+<div class="modal-bg" id="modalNuevo">
+  <div class="modal">
+    <button class="mc" onclick="closeModal('modalNuevo')">✕</button>
+    <h3>Agregar nuevo lead</h3>
+    <div class="mf"><label>Nombre completo</label><input type="text" placeholder="Ej: Juan Pérez" id="nl-name"></div>
+    <div class="mf"><label>Teléfono WhatsApp</label><input type="tel" placeholder="+52 55 1234-5678"></div>
+    <div class="mf"><label>Interés / Propiedad</label><input type="text" placeholder="Ej: Lote en Fracc. Norte, $200K"></div>
+    <div class="mf"><label>Origen</label>
+      <select><option>💬 WhatsApp</option><option>📋 Formulario Web</option><option>🔥 Referido</option></select>
+    </div>
+    <div class="mf"><label>Notas</label><textarea rows="2" placeholder="Observaciones..."></textarea></div>
+    <div class="ma">
+      <button class="btn" onclick="closeModal('modalNuevo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearLead()">Crear + Iniciar bot 🤖</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: FORM PREVIEW -->
+<div class="modal-bg" id="modalForm">
+  <div class="modal" style="max-width:440px">
+    <button class="mc" onclick="closeModal('modalForm')">✕</button>
+    <div id="formPreviewBody"></div>
+  </div>
+</div>
 
 <script>
-const API = 'https://system-ia-agentes.onrender.com';
+// ── DATA ──────────────────────────────────────────────────────────────────
+// LEADS se carga desde Airtable al iniciar. Fallback a datos demo si el backend no responde.
+let LEADS = [];
 
-let allProps  = [];
-let allLeads  = [];
+// Mapeo estado Airtable → estado visual del pipeline
+const ESTADO_MAP = {
+  'no_contactado': 'nuevo',
+  'contactado':    'contactado',
+  'en_negociacion':'calificado',
+  'cerrado':       'cerrado',
+  'descartado':    'perdido',
+};
+// Si las notas dicen "CITA AGENDADA" y tiene Fecha_Cita → se muestra como "cita"
 
-// ── FETCH ─────────────────────────────────────────────────
-async function fetchProxy(endpoint) {
-  const r = await fetch(`${API}${endpoint}`);
-  if (!r.ok) throw new Error(`HTTP ${r.status} en ${endpoint}`);
-  const d = await r.json();
-  return d.records || [];
+const FUENTE_ORIGEN = {
+  'formulario-desarrolladora': 'form',
+  'formulario-agencia':        'form',
+  'formulario-agente':         'form',
+  'whatsapp_directo':          'wa',
+};
+
+const LEADS_FALLBACK = [
+  {id:0,name:"Carlos Mendoza",phone:"+5493764112233",origen:"form",status:"nuevo",interes:"Lote 500m² · San Ignacio",fecha:"2026-04-01",presupuesto:"USD 50k-100k",score:12,subnicho:"desarrolladora",notas:"Interesado en lote de 500m2. Plazo: inmediato."},
+  {id:1,name:"María González",phone:"+5493764220011",origen:"form",status:"nuevo",interes:"Casa 3 dorm · Apóstoles",fecha:"2026-04-01",presupuesto:"USD 100k-200k",score:9,subnicho:"agencia_inmobiliaria",notas:"Busca casa 3 dorm para comprar. Crédito hipotecario."},
+  {id:2,name:"Lucas Romero",phone:"+5493764334455",origen:"form",status:"nuevo",interes:"Dpto 2 dorm alquiler · Roca",fecha:"2026-04-01",presupuesto:"Hasta USD 50k",score:6,subnicho:"agente_independiente",notas:"Alquiler dpto 2 dorm. Presupuesto ajustado."},
+  {id:3,name:"Sofía Fernández",phone:"+5493764556677",origen:"wa",status:"contactado",interes:"Lote residencial · San Ignacio",fecha:"2026-03-31",presupuesto:"USD 50k-100k",score:14,subnicho:"desarrolladora",notas:"Contactada. Pidió fotos del lote B-12."},
+  {id:4,name:"Martín López",phone:"+5493764668899",origen:"form",status:"contactado",interes:"Casa San Ignacio centro",fecha:"2026-03-31",presupuesto:"USD 100k-200k",score:11,subnicho:"agencia_inmobiliaria",notas:"Tiene pre-aprobación bancaria."},
+  {id:5,name:"Ana Pereyra",phone:"+5493764771100",origen:"wa",status:"contactado",interes:"Casa alquiler · Apóstoles",fecha:"2026-03-30",presupuesto:"Hasta USD 50k",score:7,subnicho:"agente_independiente",notas:"Llegó por WhatsApp. Tiene garante."},
+  {id:6,name:"Roberto Acosta",phone:"+5493764882211",origen:"form",status:"calificado",interes:"Lote A-3/B-7 · San Ignacio",fecha:"2026-03-29",presupuesto:"USD 100k-200k",score:16,subnicho:"desarrolladora",notas:"Visitó lotes. Pide reserva. 50% contado."},
+  {id:7,name:"Valeria Ríos",phone:"+5493764993322",origen:"form",status:"calificado",interes:"Casa con piscina · San Ignacio",fecha:"2026-03-29",presupuesto:"Más de USD 200k",score:18,subnicho:"agencia_inmobiliaria",notas:"Cliente premium. Mandó propuesta escrita."},
+  {id:8,name:"Fernanda Aguirre",phone:"+5493765771100",origen:"form",status:"cita",interes:"Lote sector este · San Ignacio",fecha:"2026-03-28",presupuesto:"USD 50k-100k",score:15,subnicho:"desarrolladora",notas:"CITA AGENDADA: 05/04 10:00hs. Viene con pareja.",cita:"Sáb 5 Abr 10:00 AM"},
+  {id:9,name:"Nicolás Herrera",phone:"+5493765882211",origen:"form",status:"cita",interes:"Casa barrio norte · San Ignacio",fecha:"2026-03-28",presupuesto:"USD 100k-200k",score:13,subnicho:"agencia_inmobiliaria",notas:"CITA AGENDADA: 07/04 15:00hs. Trae contador.",cita:"Lun 7 Abr 3:00 PM"},
+  {id:10,name:"Patricia Molina",phone:"+5493765115544",origen:"form",status:"cerrado",interes:"Lote C-5 · San Ignacio",fecha:"2026-03-25",presupuesto:"USD 50k-100k",score:15,subnicho:"desarrolladora",notas:"CERRADO. Compró lote C-5 a USD 62.000. Firmó boleto."},
+  {id:11,name:"Héctor Vargas",phone:"+5493765226655",origen:"form",status:"cerrado",interes:"Casa alquiler · San Ignacio",fecha:"2026-03-24",presupuesto:"Hasta USD 50k",score:10,subnicho:"agencia_inmobiliaria",notas:"CERRADO. Alquiler firmado 2 años. USD 350/mes."},
+];
+
+const PROPS = [
+  {emoji:"🏠",title:"Casa Fracc. Prados Norte",loc:"Zona Norte · 180 m²",price:"$145,000 USD",specs:["3 rec","2 baños","Garage"],status:"disponible"},
+  {emoji:"🏢",title:"Depto 502 Torre B",loc:"Centro · 85 m²",price:"$280,000 USD",specs:["2 rec","2 baños","Terraza"],status:"reservado"},
+  {emoji:"🌿",title:"Lote Residencial #47",loc:"Fracc. Norte · 300 m²",price:"$175,000 USD",specs:["300 m²","Servicios","Escritura"],status:"disponible"},
+  {emoji:"🏬",title:"Local Plaza Sur",loc:"Av. Principal · 120 m²",price:"$3,500/mes",specs:["120 m²","A/C","Bodega"],status:"disponible"},
+  {emoji:"🏡",title:"Casa Colonial Centro",loc:"Col. Centro · 220 m²",price:"$320,000 USD",specs:["4 rec","3 baños","Jardín"],status:"disponible"},
+  {emoji:"🏘️",title:"Lote Industrial #12",loc:"Parque Industrial · 800 m²",price:"$200,000 USD",specs:["800 m²","Nave","Oficinas"],status:"vendido"},
+];
+
+const CHATS = [
+  {id:0,name:"Carlos Mendoza",initials:"CM",color:"#3b82f6",unread:2,lastMsg:"Sí, me interesa el lote de 300m²",time:"2 min"},
+  {id:1,name:"Carla Reyes",initials:"CR",color:"#8b5cf6",unread:1,lastMsg:"¿Cuándo puedo visitar?",time:"15 min"},
+  {id:2,name:"Héctor Castillo",initials:"HC",color:"#f59e0b",unread:0,lastMsg:"Ok, quedo pendiente",time:"1h"},
+  {id:3,name:"Marcos Vega",initials:"MV",color:"#10b981",unread:0,lastMsg:"Perfecto, ahí estaré el jueves 👍",time:"2h"},
+];
+
+const CONV = {
+  0:[
+    {t:"bot",m:"¡Hola Carlos! 👋 Soy el asistente de **Tu Inmobiliaria**. Vi que te interesaron nuestros lotes en Fracc. Prados Norte. ¿Qué tipo de lote buscás?",h:"10:32"},
+    {t:"user",m:"Hola, sí me interesa. ¿Cuánto cuesta un lote de 300m²?",h:"10:33"},
+    {t:"bot",m:"¡Excelente elección! 🌿 Los lotes de 300m² están desde **$175,000 USD**, con:\n✅ Escrituración incluida\n✅ Todos los servicios\n✅ Acceso a amenidades\n\n¿Tu presupuesto está en ese rango?",h:"10:33"},
+    {t:"user",m:"Sí. ¿Tienen financiamiento?",h:"10:35"},
+    {t:"bot",m:"¡Claro! 💳 Opciones disponibles:\n\n1. **Contado** — 5% descuento\n2. **Financiamiento directo** — 24 a 48 meses\n3. **Crédito bancario** — te asesoramos\n\n¿Cuál preferís?",h:"10:35"},
+    {t:"user",m:"Prefiero financiamiento a 36 meses",h:"10:38"},
+    {t:"bot",m:"Perfecto 🎯 Con 36 meses: **~$5,200 USD/mes** con 20% de enganche (~$35,000 USD).\n\n¿Querés agendar una visita para ver el fraccionamiento y revisar el plan de pagos?",h:"10:38"},
+    {t:"user",m:"Sí, me interesa visitar",h:"10:40"},
+    {t:"bot",m:"¡Genial! 📅 Tengo disponibilidad:\n\n• **Jueves 3 Abr** — 10:00 AM o 4:00 PM\n• **Viernes 4 Abr** — 11:00 AM o 3:00 PM\n\n¿Cuál te viene mejor?",h:"10:40"},
+    {t:"user",m:"El jueves a las 10",h:"10:41"},
+    {t:"bot",m:"✅ ¡Cita confirmada! **Jueves 3 de Abril, 10:00 AM**.\n📍 Te envío la dirección exacta.\n📲 Recibirás un recordatorio 24h antes.\n\n¿Algo más en que pueda ayudarte?",h:"10:41"},
+  ],
+  1:[
+    {t:"bot",m:"¡Hola Carla! 👋 Gracias por escribirnos. ¿Qué tipo de propiedad buscás?",h:"09:15"},
+    {t:"user",m:"Hola, vi un lote en su página. ¿Está disponible?",h:"09:16"},
+    {t:"bot",m:"¡Sí! 🌿 Tenemos lotes disponibles. ¿Qué superficie buscás y cuál es tu presupuesto aproximado?",h:"09:16"},
+    {t:"user",m:"Algo de 250-300m² para construir casa. Presupuesto hasta $180K",h:"09:18"},
+    {t:"bot",m:"Tengo opciones perfectas:\n\n🌿 **Lote #47** — 300m², $175K, Fracc. Norte\n🌿 **Lote #23** — 250m², $145K, Fracc. Sur\n\nAmbos con todos los servicios y escrituración. ¿Cuál te llama más?",h:"09:18"},
+    {t:"user",m:"El lote #47. ¿Cuándo puedo visitar?",h:"09:45"},
+    {t:"bot",m:"¡Excelente elección! Buscando disponibilidad para visita... 📅",h:"09:45"},
+  ],
+};
+
+const CITAS = [
+  {name:"Marcos Vega",dia:"JUE",num:"3",mes:"ABR",hora:"10:00 AM",prop:"Lote #47 Fracc. Norte",color:"#3b82f6"},
+  {name:"Diana Flores",dia:"VIE",num:"4",mes:"ABR",hora:"3:00 PM",prop:"Depto 502 Torre B",color:"#8b5cf6"},
+  {name:"Roberto Alvarado",dia:"LUN",num:"7",mes:"ABR",hora:"11:00 AM",prop:"Lote #12 Fracc. Sur",color:"#10b981"},
+  {name:"Sandra Ruiz",dia:"MAR",num:"8",mes:"ABR",hora:"4:00 PM",prop:"Local Comercial Plaza",color:"#f59e0b"},
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let activeChat = 0;
+let simCount = 0;
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function nav(id, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  if(id==='chat') renderResumenes();
+  if(id==='leads') renderLeads();
+  if(id==='pipeline') renderKanbanFromLeads();
+  if(id==='propiedades') renderProps();
+  if(id==='agenda') renderAgenda();
 }
 
-async function patchProxy(endpoint, body) {
-  const r = await fetch(`${API}${endpoint}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
-async function postProxy(endpoint, body) {
-  const r = await fetch(`${API}${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
-// ── LOAD ──────────────────────────────────────────────────
-async function loadAll() {
-  document.getElementById('btn-refresh').classList.add('loading');
-  document.getElementById('last-update').textContent = 'Actualizando...';
+// ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
+async function cargarLeads() {
   try {
-    const [props, leads] = await Promise.all([
-      fetchProxy('/crm/propiedades?cliente_id=maicol'),
-      fetchProxy('/crm/clientes?cliente_id=maicol'),
-    ]);
-    allProps = props;
-    allLeads = leads;
-    document.getElementById('f-estado-lead').value = '';
-    document.getElementById('f-buscar-lead').value = '';
-    renderStats();
-    renderProps();
+    const res = await fetch(`${API_BASE}/crm/clientes`, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const records = data.records || [];
+    if (records.length === 0) throw new Error('Sin registros');
+
+    LEADS = records.map((r, idx) => {
+      const f = r;
+      const estadoAirtable = (f.Estado || '').toLowerCase();
+      // Si las notas dicen CITA AGENDADA y hay fecha → estado cita
+      const tieneCita = f.Fecha_Cita && (f.Notas_Bot || '').includes('CITA AGENDADA');
+      let status = tieneCita ? 'cita' : (ESTADO_MAP[estadoAirtable] || 'nuevo');
+
+      // Cita label legible
+      let citaLabel = '';
+      if (tieneCita && f.Fecha_Cita) {
+        const d = new Date(f.Fecha_Cita + 'T12:00:00');
+        const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        citaLabel = `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
+      }
+
+      const presupuestoLabel = {
+        'hata_50k':'Hasta USD 50k','50k_100k':'USD 50k-100k',
+        '100k_200k':'USD 100k-200k','mas_200k':'Más de USD 200k'
+      };
+      const operLabel = { 'venta':'Venta','alquiler':'Alquiler','Todo':'Compra/Alquiler' };
+
+      return {
+        id: idx,
+        atId: r.id || '',
+        name: `${f.Nombre || ''} ${f.Apellido || ''}`.trim() || 'Sin nombre',
+        phone: f.Telefono || '',
+        email: f.Email || '',
+        origen: FUENTE_ORIGEN[f.Fuente] || (f.Llego_WhatsApp ? 'wa' : 'form'),
+        status,
+        interes: [operLabel[f.Operacion] || f.Operacion, f.Tipo_Propiedad, f.Zona].filter(Boolean).join(' · ') || 'Sin especificar',
+        fecha: f.Fecha_WhatsApp || (r.createdTime ? r.createdTime.slice(0,10) : ''),
+        presupuesto: presupuestoLabel[f.Presupuesto] || f.Presupuesto || '',
+        score: f.Score || 0,
+        subnicho: f.Sub_nicho || '',
+        notas: f.Notas_Bot || '',
+        cita: citaLabel,
+        ciudad: f.Ciudad || '',
+      };
+    });
+
+    // Actualizar KPI total
+    const kt = document.getElementById('kpi-total');
+    if (kt) kt.textContent = LEADS.length;
+
     renderLeads();
-    renderGaleria();
-    const now = new Date().toLocaleString('es-AR');
-    document.getElementById('last-update').textContent = `Última actualización: ${now}`;
-  } catch(e) {
-    document.getElementById('last-update').textContent = `⚠️ Error: ${e.message}`;
-    showToast('Error al cargar datos: ' + e.message, 'error');
-    console.error(e);
-  }
-  document.getElementById('btn-refresh').classList.remove('loading');
-}
-
-// ── STATS ─────────────────────────────────────────────────
-function renderStats() {
-  const disp = allProps.filter(p => estadoNorm(p.Disponible) === 'disponible').length;
-  const res  = allProps.filter(p => estadoNorm(p.Disponible) === 'reservado').length;
-  const noD  = allProps.filter(p => estadoNorm(p.Disponible) === 'no').length;
-  document.getElementById('s-disponibles').textContent  = disp;
-  document.getElementById('s-reservadas').textContent   = res;
-  document.getElementById('s-nodisponibles').textContent = noD;
-  document.getElementById('s-total-props').textContent  = allProps.length;
-
-  const noContactados  = allLeads.filter(l => !l.Estado || l.Estado === 'no_contactado').length;
-  const contactados    = allLeads.filter(l => l.Estado === 'contactado').length;
-  const enNegociacion  = allLeads.filter(l => l.Estado === 'en_negociacion').length;
-  const cerrados       = allLeads.filter(l => l.Estado === 'cerrado').length;
-  document.getElementById('s-no-contactados').textContent = noContactados;
-  document.getElementById('s-contactados').textContent    = contactados;
-  document.getElementById('s-en-negociacion').textContent = enNegociacion;
-  document.getElementById('s-cerrados').textContent       = cerrados;
-  document.getElementById('s-total-leads').textContent    = allLeads.length;
-}
-
-// ── HELPERS ───────────────────────────────────────────────
-function estadoNorm(val) {
-  const v = (val || '').toLowerCase();
-  if (v.includes('reservado')) return 'reservado';
-  if (v.includes('no') || v.includes('❌')) return 'no';
-  return 'disponible';
-}
-
-function badgeDisponible(val) {
-  const n = estadoNorm(val);
-  if (n === 'reservado') return '<span class="badge badge-reservado">⏳ Reservado</span>';
-  if (n === 'no')        return '<span class="badge badge-no">❌ No disponible</span>';
-  return '<span class="badge badge-disponible">✅ Disponible</span>';
-}
-
-function badgeOp(op) {
-  if (!op) return '—';
-  const l = op.toLowerCase();
-  return l === 'venta'
-    ? '<span class="badge badge-venta">Venta</span>'
-    : '<span class="badge badge-alquiler">Alquiler</span>';
-}
-
-function badgeEstadoLead(estado) {
-  const l = (estado || 'no_contactado');
-  if (l === 'contactado')     return '<span class="badge badge-contactado">📱 Contactado</span>';
-  if (l === 'en_negociacion') return '<span class="badge badge-en_negociacion">⭐ En negociación</span>';
-  if (l === 'cerrado')        return '<span class="badge badge-cerrado">✅ Cerrado</span>';
-  if (l === 'descartado')     return '<span class="badge badge-descartado">❌ Descartado</span>';
-  return '<span class="badge badge-no_contactado">🔕 Sin contactar</span>';
-}
-
-function fmtPrecio(p, m) {
-  if (!p) return 'Consultar';
-  return `${m === 'ARS' ? '$' : 'USD '}${Number(p).toLocaleString('es-AR')}`;
-}
-
-// ── TOAST ─────────────────────────────────────────────────
-let toastTimer = null;
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  t.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
-  t.className = `toast ${type} show`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3500);
-}
-
-// ── PROPIEDADES ───────────────────────────────────────────
-function renderProps() {
-  const zona = document.getElementById('f-zona').value;
-  const op   = document.getElementById('f-operacion').value;
-  const tipo = document.getElementById('f-tipo').value;
-  const est  = document.getElementById('f-estado').value;
-
-  let data = allProps.filter(p => {
-    if (zona && p.Zona !== zona) return false;
-    if (op   && (p.Operacion || '').toLowerCase() !== op) return false;
-    if (tipo && (p.Tipo || '').toLowerCase() !== tipo) return false;
-    if (est  && estadoNorm(p.Disponible) !== est) return false;
-    return true;
-  });
-
-  document.getElementById('props-count').textContent = `${data.length} propiedad${data.length !== 1 ? 'es' : ''}`;
-  document.getElementById('props-loading').style.display = 'none';
-
-  if (!data.length) {
-    document.getElementById('props-table').style.display = 'none';
-    document.getElementById('props-empty').style.display = 'block';
-    return;
-  }
-  document.getElementById('props-empty').style.display = 'none';
-  document.getElementById('props-table').style.display = 'table';
-
-  const tbody = document.getElementById('props-tbody');
-  tbody.innerHTML = data.map(p => `
-    <tr>
-      <td data-label="Propiedad"><strong>${p.Titulo || '—'}</strong></td>
-      <td data-label="Zona"><span class="zona-tag">📍 ${p.Zona || '—'}</span></td>
-      <td data-label="Tipo">${(p.Tipo || '—').charAt(0).toUpperCase() + (p.Tipo||'').slice(1)}</td>
-      <td data-label="Operación">${badgeOp(p.Operacion)}</td>
-      <td data-label="Precio"><span class="price">${fmtPrecio(p.Precio, p.Moneda)}</span> <small style="color:var(--muted)">${p.Moneda||''}</small></td>
-      <td data-label="Estado">${badgeDisponible(p.Disponible)}</td>
-      <td data-label="Acciones">
-        <button class="btn btn-outline btn-sm" onclick="openModalEditarProp('${p.id}')">✏️ Editar</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-// ── MODAL DETALLE ─────────────────────────────────────────
-function verDetalle(recordId) {
-  const p = allProps.find(x => x.id === recordId);
-  if (!p) return;
-
-  let imgUrl = '';
-  const imgField = p.Imagen_URL;
-  if (Array.isArray(imgField) && imgField.length > 0) {
-    imgUrl = imgField[0].thumbnails?.large?.url || imgField[0].url || '';
-  } else if (typeof imgField === 'string') {
-    imgUrl = imgField;
-  }
-
-  const imgHtml = imgUrl
-    ? `<img src="${imgUrl}" style="width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-bottom:16px;" />`
-    : '';
-
-  const ytEmbed = p.Video_URL ? (() => {
-    const m = p.Video_URL.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
-    if (!m) return '';
-    return `<div style="margin-top:12px;border-radius:10px;overflow:hidden">
-      <iframe width="100%" height="250" src="https://www.youtube.com/embed/${m[1]}" frameborder="0" allowfullscreen style="display:block"></iframe>
-    </div>`;
-  })() : '';
-
-  const detalles = [
-    p.Tipo ? `<b>Tipo:</b> ${p.Tipo}` : '',
-    p.Operacion ? `<b>Operación:</b> ${p.Operacion}` : '',
-    p.Zona ? `<b>Zona:</b> ${p.Zona}` : '',
-    p.Dormitorios ? `<b>Dormitorios:</b> ${p.Dormitorios}` : '',
-    p.Metros_Cubiertos ? `<b>m² cubiertos:</b> ${p.Metros_Cubiertos}` : '',
-    p.Metros_Terreno ? `<b>m² terreno:</b> ${p.Metros_Terreno}` : '',
-    p.Disponible ? `<b>Estado:</b> ${p.Disponible}` : '',
-  ].filter(Boolean).map(d => `<div style="padding:6px 0;border-bottom:1px solid #e8f0e4">${d}</div>`).join('');
-
-  document.getElementById('detalle-content').innerHTML = `
-    ${imgHtml}
-    <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:4px;color:#1e2d1a">${p.Titulo || 'Sin título'}</h2>
-    <div style="font-size:1.1rem;font-weight:800;color:#3a6b35;margin-bottom:12px">${fmtPrecio(p.Precio, p.Moneda)} ${p.Moneda||''}</div>
-    <div style="font-size:0.88rem;color:#4a5a3a;margin-bottom:16px">${p.Descripcion || ''}</div>
-    <div style="font-size:0.85rem;color:#1e2d1a">${detalles}</div>
-    ${ytEmbed}
-    <div style="margin-top:16px;display:flex;gap:8px;">
-      <button class="btn btn-outline btn-sm" onclick="openModalEditarProp('${p.id}');closeModal('modal-detalle')">✏️ Editar</button>
-      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-detalle')">Cerrar</button>
-    </div>
-  `;
-  openModal('modal-detalle');
-}
-
-// ── MODAL PROPIEDAD ───────────────────────────────────────
-function openModalEditarProp(recordId) {
-  const p = allProps.find(x => x.id === recordId);
-  if (!p) return;
-
-  document.getElementById('modal-prop-title').textContent = 'Editar propiedad';
-  document.getElementById('mp-record-id').value = recordId;
-  document.getElementById('mp-titulo').value = p.Titulo || '';
-  document.getElementById('mp-descripcion').value = p.Descripcion || '';
-  document.getElementById('mp-precio').value = p.Precio || '';
-  document.getElementById('mp-moneda').value = p.Moneda || 'USD';
-  setSelectVal('mp-zona', p.Zona || 'San Ignacio');
-  setSelectVal('mp-tipo', (p.Tipo||'').charAt(0).toUpperCase()+(p.Tipo||'').slice(1) || 'Casa');
-  setSelectVal('mp-operacion', (p.Operacion||'').charAt(0).toUpperCase()+(p.Operacion||'').slice(1) || 'Venta');
-  document.getElementById('mp-disponible').value = p.Disponible || '✅ Disponible';
-  document.getElementById('mp-dormitorios').value = p.Dormitorios || '';
-  document.getElementById('mp-metros').value = p.Metros_Cubiertos || '';
-
-  // Imagen
-  let imgUrl = '';
-  const imgField = p.Imagen_URL;
-  if (Array.isArray(imgField) && imgField.length > 0) {
-    imgUrl = imgField[0].url || '';
-  } else if (typeof imgField === 'string') {
-    imgUrl = imgField;
-  }
-  document.getElementById('mp-imagen-url').value = imgUrl;
-  previewImg();
-  document.getElementById('mp-maps-url').value = p.Google_Maps_URL || '';
-  document.getElementById('mp-video-url').value = p.Video_URL || '';
-
-  document.getElementById('modal-prop').classList.add('open');
-}
-
-function openModalNuevaPropiedad() {
-  document.getElementById('modal-prop-title').textContent = 'Nueva propiedad';
-  document.getElementById('mp-record-id').value = '';
-  document.getElementById('mp-titulo').value = '';
-  document.getElementById('mp-descripcion').value = '';
-  document.getElementById('mp-precio').value = '';
-  document.getElementById('mp-moneda').value = 'USD';
-  document.getElementById('mp-zona').value = 'San Ignacio';
-  document.getElementById('mp-tipo').value = 'Casa';
-  document.getElementById('mp-operacion').value = 'Venta';
-  document.getElementById('mp-disponible').value = '✅ Disponible';
-  document.getElementById('mp-dormitorios').value = '';
-  document.getElementById('mp-metros').value = '';
-  document.getElementById('mp-imagen-url').value = '';
-  document.getElementById('mp-maps-url').value = '';
-  document.getElementById('mp-video-url').value = '';
-  previewImg();
-  document.getElementById('modal-prop').classList.add('open');
-}
-
-function setSelectVal(id, val) {
-  const sel = document.getElementById(id);
-  for (const opt of sel.options) {
-    if (opt.value === val || opt.text === val) { sel.value = opt.value; return; }
+    renderKanbanFromLeads();
+  } catch (err) {
+    console.warn('[Leads] Usando datos demo:', err.message);
+    LEADS = LEADS_FALLBACK;
+    renderLeads();
+    renderKanbanFromLeads();
   }
 }
 
-function previewImg() {
-  const url = document.getElementById('mp-imagen-url').value.trim();
-  const img = document.getElementById('mp-img-preview');
-  if (url) {
-    img.src = url;
-    img.style.display = 'block';
-  } else {
-    img.style.display = 'none';
-  }
-}
-
-async function guardarPropiedad() {
-  const recordId = document.getElementById('mp-record-id').value;
-  const titulo = document.getElementById('mp-titulo').value.trim();
-  if (!titulo) { showToast('El título es obligatorio', 'error'); return; }
-
-  const btn = document.getElementById('btn-guardar-prop');
-  btn.classList.add('loading');
-  btn.textContent = 'Guardando...';
-
-  const fields = {
-    Titulo: titulo,
-    Descripcion: document.getElementById('mp-descripcion').value.trim() || undefined,
-    Precio: parseFloat(document.getElementById('mp-precio').value) || undefined,
-    Moneda: document.getElementById('mp-moneda').value,
-    Zona: document.getElementById('mp-zona').value,
-    Tipo: document.getElementById('mp-tipo').value.toLowerCase(),
-    Operacion: document.getElementById('mp-operacion').value.toLowerCase(),
-    Disponible: document.getElementById('mp-disponible').value,
+// ── LEADS TABLE ────────────────────────────────────────────────────────────
+function renderLeads(data) {
+  data = data || LEADS;
+  const tb = document.getElementById('leadsBody');
+  tb.innerHTML = '';
+  const spills = {
+    nuevo:     '<span class="spill s-nuevo">🔵 Nuevo</span>',
+    contactado:'<span class="spill s-contactado">🟡 Contactado</span>',
+    calificado:'<span class="spill s-calificado">🟣 Calificado</span>',
+    cita:      '<span class="spill s-cita">🟢 Con cita</span>',
+    cerrado:   '<span class="spill" style="background:#064e3b;color:#34d399;border:1px solid #1a5c33">🏆 Cerrado</span>',
+    perdido:   '<span class="spill s-perdido">🔴 Perdido</span>',
   };
-  const dormitorios = parseInt(document.getElementById('mp-dormitorios').value);
-  if (dormitorios) fields.Dormitorios = dormitorios;
-  const metros = parseInt(document.getElementById('mp-metros').value);
-  if (metros) fields.Metros_Cubiertos = metros;
+  const origs = {
+    wa:  '<span class="badge b-wa">💬 WhatsApp</span>',
+    web: '<span class="badge b-web">📋 Web</span>',
+    form:'<span class="badge b-web">📋 Formulario</span>',
+    ref: '<span class="badge b-ref">🔥 Referido</span>',
+  };
+  const ini = n=>n.split(' ').map(x=>x[0]).join('').substring(0,2);
+  const scoreColor = s => s >= 12 ? 'var(--green)' : s >= 7 ? 'var(--yellow)' : 'var(--red)';
 
-  // Imagen como URL de texto (si no hay attachment existente, usamos campo Imagen_URL como string)
-  const imgUrl = document.getElementById('mp-imagen-url').value.trim();
-  if (imgUrl) fields.Imagen_URL = imgUrl;
-
-  const mapsUrl = document.getElementById('mp-maps-url').value.trim();
-  if (mapsUrl) fields.Google_Maps_URL = mapsUrl;
-  else fields.Google_Maps_URL = null;
-
-  const videoUrl = document.getElementById('mp-video-url').value.trim();
-  if (videoUrl) fields.Video_URL = videoUrl;
-  else fields.Video_URL = null;
-
-  // Limpiar undefined
-  Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
-
-  try {
-    if (recordId) {
-      await patchProxy(`/crm/propiedades/${recordId}`, fields);
-      showToast('Propiedad actualizada correctamente');
-    } else {
-      await postProxy('/crm/propiedades', fields);
-      showToast('Propiedad creada correctamente');
-    }
-    closeModal('modal-prop');
-    await loadAll();
-  } catch(e) {
-    showToast('Error al guardar: ' + e.message, 'error');
-  }
-
-  btn.classList.remove('loading');
-  btn.textContent = '💾 Guardar';
+  data.forEach(l => {
+    tb.innerHTML += `
+      <tr onclick="openDetalle(${l.id})" style="cursor:pointer">
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="width:28px;height:28px;font-size:10px">${ini(l.name)}</div>
+          <div>
+            <strong>${l.name}</strong>
+            ${l.subnicho ? `<div style="font-size:10px;color:var(--text2)">${l.subnicho.replace('_',' ')}</div>` : ''}
+          </div>
+        </div></td>
+        <td style="color:var(--text2)">${l.phone}</td>
+        <td>${origs[l.origen] || ''}</td>
+        <td style="color:var(--text2);font-size:12px">${l.interes}</td>
+        <td>${spills[l.status] || ''}</td>
+        <td style="color:${scoreColor(l.score)};font-weight:600;font-size:12px">${l.score ? l.score + ' pts' : '—'}</td>
+        <td><button class="btn" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button></td>
+      </tr>`;
+  });
 }
 
-// ── LEADS ─────────────────────────────────────────────────
-function renderLeads() {
-  const estFiltro = document.getElementById('f-estado-lead').value;
-  const buscar    = document.getElementById('f-buscar-lead').value.toLowerCase();
+function filterLeads(q) {
+  document.querySelectorAll('#leadsBody tr').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
 
-  let data = allLeads.filter(l => {
-    if (estFiltro && (l.Estado || 'nuevo').toLowerCase() !== estFiltro) return false;
-    if (buscar) {
-      const nombre = `${l.Nombre||''} ${l.Apellido||''}`.toLowerCase();
-      const tel    = (l.Telefono || '').toLowerCase();
-      if (!nombre.includes(buscar) && !tel.includes(buscar)) return false;
-    }
-    return true;
+// ── KANBAN DESDE LEADS ─────────────────────────────────────────────────────
+function renderKanbanFromLeads() {
+  const cols = {
+    nuevo: 'col-n', contactado: 'col-c', calificado: 'col-q',
+    cita: 'col-a', cerrado: 'col-z', perdido: 'col-p'
+  };
+  const cnts = {
+    nuevo: 'cnt-n', contactado: 'cnt-c', calificado: 'cnt-q',
+    cita: 'cnt-a', cerrado: 'cnt-z', perdido: 'cnt-p'
+  };
+  // Limpiar columnas
+  Object.values(cols).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
   });
 
-  data.sort((a, b) => {
-    const order = { en_negociacion: 0, contactado: 1, no_contactado: 2, cerrado: 3, descartado: 4 };
-    return (order[a.Estado||'no_contactado'] ?? 2) - (order[b.Estado||'no_contactado'] ?? 2);
+  const scoreColor = s => s >= 12 ? '#34d399' : s >= 7 ? '#fbbf24' : '#f87171';
+  const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
+
+  LEADS.forEach(l => {
+    const colId = cols[l.status];
+    const col = document.getElementById(colId);
+    if (!col) return;
+
+    const origenBadge = l.origen === 'wa'
+      ? '<span class="badge b-wa">💬 WhatsApp</span>'
+      : '<span class="badge b-web">📋 Formulario</span>';
+
+    // Botón de avance según estado
+    const nextMap = {
+      nuevo:     {next:'contactado', label:'→ Contactado'},
+      contactado:{next:'calificado', label:'→ Calificado'},
+      calificado:{next:'cita',       label:'→ Cita agendada'},
+      cita:      {next:'cerrado',    label:'✅ Cerrar venta'},
+    };
+    const nextInfo = nextMap[l.status];
+    const nextBtn = nextInfo
+      ? `<button class="btn ${nextInfo.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${nextInfo.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${l.id},'${nextInfo.next}')">${nextInfo.label}</button>`
+      : '';
+
+    const card = document.createElement('div');
+    card.className = 'lcard';
+    card.id = `kcard-${l.id}`;
+    card.onclick = () => openDetalle(l.id);
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      <div class="lcard-name">${l.name}</div>
+      <div class="lcard-meta">${l.interes}</div>
+      <div class="lcard-badges">${origenBadge}
+        ${l.score ? `<span class="badge" style="background:#0d1a0d;color:${scoreColor(l.score)};border:1px solid ${scoreColor(l.score)}44">${scoreLabel(l.score)}</span>` : ''}
+      </div>
+      ${l.cita ? `<div style="font-size:11px;color:#34d399;margin-top:4px">📅 Cita: ${l.cita}</div>` : ''}
+      <div class="lcard-actions">
+        <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button>
+        ${nextBtn}
+      </div>`;
+    col.appendChild(card);
   });
 
-  document.getElementById('leads-count').textContent = `${data.length} lead${data.length !== 1 ? 's' : ''}`;
-  document.getElementById('leads-loading').style.display = 'none';
+  // Actualizar contadores
+  Object.entries(cnts).forEach(([status, cntId]) => {
+    const cnt = document.getElementById(cntId);
+    const col = document.getElementById(cols[status]);
+    if (cnt && col) cnt.textContent = col.querySelectorAll('.lcard').length;
+  });
 
-  if (!data.length) {
-    document.getElementById('leads-grid').innerHTML = '';
-    document.getElementById('leads-empty').style.display = 'block';
-    return;
-  }
-  document.getElementById('leads-empty').style.display = 'none';
+  // Actualizar badge nav pipeline
+  const badge = document.getElementById('pipelineBadge');
+  if (badge) badge.textContent = LEADS.length;
+}
 
-  document.getElementById('leads-grid').innerHTML = data.map(l => {
-    const nombre       = [l.Nombre, l.Apellido].filter(Boolean).join(' ') || 'Sin nombre';
-    const tel          = l.Telefono || '';
-    const estado       = l.Estado || 'no_contactado';
-    const zona         = l.Zona ? `📍 ${l.Zona}` : '';
-    const op           = l.Operacion ? `🔑 ${l.Operacion}` : '';
-    const tipo         = l.Tipo_Propiedad ? `🏠 ${l.Tipo_Propiedad}` : '';
-    const pres         = l.Presupuesto ? `💰 ${l.Presupuesto}` : '';
-    const notas        = l.Notas_Bot ? `<div class="lead-notas">💬 ${l.Notas_Bot}</div>` : '';
-    const ultimoContacto = l.fecha_ultimo_contacto
-      ? `<span>🕐 Último contacto: ${new Date(l.fecha_ultimo_contacto).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`
-      : (l.Fecha_WhatsApp ? `<span>📅 ${l.Fecha_WhatsApp}</span>` : '');
+// ── LEAD DETAIL ────────────────────────────────────────────────────────────
+// Mapeo visual status → valor Airtable
+const STATUS_TO_AT = {
+  nuevo:'no_contactado', contactado:'contactado', calificado:'en_negociacion',
+  cita:'en_negociacion', cerrado:'cerrado', perdido:'descartado'
+};
+// Mapeo Airtable → visual (para re-render tras guardar)
+const AT_TO_STATUS = {
+  no_contactado:'nuevo', contactado:'contactado', en_negociacion:'calificado',
+  cerrado:'cerrado', descartado:'perdido'
+};
 
-    const btnNoContactado  = `<button class="estado-btn ${estado==='no_contactado' ? 'active-no_contactado' : 'inactive'}" onclick="cambiarEstadoLead('${l.id}','no_contactado',event)">🔕 Sin contactar</button>`;
-    const btnContactado    = `<button class="estado-btn ${estado==='contactado' ? 'active-contactado' : 'inactive'}" onclick="cambiarEstadoLead('${l.id}','contactado',event)">📱 Contactado</button>`;
-    const btnNegociacion   = `<button class="estado-btn ${estado==='en_negociacion' ? 'active-en_negociacion' : 'inactive'}" onclick="cambiarEstadoLead('${l.id}','en_negociacion',event)">⭐ Negociando</button>`;
-    const btnCerrado       = `<button class="estado-btn ${estado==='cerrado' ? 'active-cerrado' : 'inactive'}" onclick="cambiarEstadoLead('${l.id}','cerrado',event)">✅ Cerrado</button>`;
-    const btnDescartado    = `<button class="estado-btn ${estado==='descartado' ? 'active-descartado' : 'inactive'}" onclick="cambiarEstadoLead('${l.id}','descartado',event)">❌ Descartar</button>`;
+function openDetalle(id) {
+  const l = LEADS[id] || LEADS[0];
+  document.getElementById('detalleTitulo').textContent = l.name;
+  const og = { wa:'💬 WhatsApp', form:'📋 Formulario', web:'📋 Formulario', ref:'🔥 Referido' };
+  const scoreColor = s => s >= 12 ? 'var(--green)' : s >= 7 ? 'var(--yellow)' : 'var(--red)';
+  const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
 
-    return `
-    <div class="lead-card" id="lead-${l.id}">
-      <div class="lead-name">${nombre}</div>
-      <div class="lead-meta">
-        ${tel ? `<span>📞 ${tel}</span>` : ''}
-        ${l.Email ? `<span>✉️ ${l.Email}</span>` : ''}
-        ${ultimoContacto}
+  // Valor actual en Airtable
+  const estadoAt = STATUS_TO_AT[l.status] || 'no_contactado';
+  const estadoOpts = [
+    {v:'no_contactado', label:'🔵 No contactado'},
+    {v:'contactado',    label:'🟡 Contactado'},
+    {v:'en_negociacion',label:'🟣 En negociación'},
+    {v:'cerrado',       label:'🏆 Cerrado'},
+    {v:'descartado',    label:'🔴 Descartado'},
+  ];
+
+  document.getElementById('detalleBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      ${[
+        ['Teléfono', l.phone || '—', ''],
+        ['Presupuesto', l.presupuesto || '—', 'color:var(--accent2)'],
+        ['Origen', og[l.origen] || l.origen || '—', ''],
+        ['Score', l.score ? `<span style="color:${scoreColor(l.score)};font-weight:700">${l.score} pts — ${scoreLabel(l.score)}</span>` : '—', ''],
+        ['Sub-nicho', l.subnicho ? l.subnicho.replace(/_/g,' ') : '—', 'text-transform:capitalize'],
+      ].map(([k,v,s]) => `
+        <div style="background:var(--surface2);border-radius:8px;padding:11px">
+          <div style="color:var(--text2);font-size:11px;margin-bottom:3px">${k}</div>
+          <div style="font-weight:600;${s}">${v}</div>
+        </div>`).join('')}
+    </div>
+
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:7px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">✏️ Cambiar estado</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="selectEstado" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:13px;flex:1;min-width:160px;cursor:pointer">
+          ${estadoOpts.map(o => `<option value="${o.v}"${o.v===estadoAt?' selected':''}>${o.label}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="guardarEstado(${id})">
+          Guardar
+        </button>
+        <span id="estadoFeedback" style="font-size:11px;color:var(--text2)"></span>
       </div>
-      <div class="lead-tags">
-        ${badgeEstadoLead(estado)}
-        ${zona ? `<span class="badge" style="background:rgba(255,255,255,0.05);color:var(--muted)">${zona}</span>` : ''}
-        ${op   ? `<span class="badge" style="background:rgba(255,255,255,0.05);color:var(--muted)">${op}</span>` : ''}
-        ${tipo ? `<span class="badge" style="background:rgba(255,255,255,0.05);color:var(--muted)">${tipo}</span>` : ''}
-        ${pres ? `<span class="badge" style="background:rgba(255,255,255,0.05);color:var(--muted)">${pres}</span>` : ''}
+    </div>
+
+    <div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Propiedad / Interés</div>
+      <div>${l.interes}</div>
+    </div>
+    ${l.cita ? `<div style="background:#064e3b;border:1px solid #1a5c33;border-radius:8px;padding:11px;margin-bottom:14px;color:#34d399;font-size:13px">
+      📅 Cita agendada: <strong>${l.cita}</strong> — coordinada automáticamente por el bot
+    </div>` : ''}
+    ${l.notas ? `<div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:3px">📝 Notas del bot</div>
+      <div style="font-size:13px;line-height:1.5;color:var(--text)">${l.notas}</div>
+    </div>` : ''}
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">Historial</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot" style="background:#6c63ff"></div>
+        <div><div class="tl-title">Lead registrado — via ${og[l.origen] || l.origen}</div><div class="tl-time">${l.fecha}</div></div>
       </div>
-      ${notas}
-      <div class="estado-btn-group">
-        ${btnNoContactado}${btnContactado}${btnNegociacion}${btnCerrado}${btnDescartado}
-      </div>
-      <div style="margin-top:10px">
-        <button class="btn btn-outline btn-sm" onclick="openModalEditarLead('${l.id}')">✏️ Editar datos</button>
-      </div>
+      ${l.status !== 'nuevo' ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#ffa94d"></div>
+        <div><div class="tl-title">Bot inició conversación — respondió en segundos</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+      ${['calificado','cita','cerrado'].includes(l.status) ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#a78bfa"></div>
+        <div><div class="tl-title">Calificado — presupuesto y necesidades confirmados</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+      ${(l.status === 'cita' || l.cita) ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#00d4aa"></div>
+        <div><div class="tl-title">Cita agendada por bot${l.cita ? ' — ' + l.cita : ''}</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+      ${l.status === 'cerrado' ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#34d399"></div>
+        <div><div class="tl-title">🏆 Venta / alquiler cerrado</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+    </div>
+    <div class="ma">
+      <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
     </div>`;
-  }).join('');
+  openModal('modalDetalle');
 }
 
-async function cambiarEstadoLead(recordId, nuevoEstado, event) {
-  const btn = event.target;
-  btn.textContent = '...';
-  btn.disabled = true;
+async function guardarEstado(id) {
+  const l = LEADS[id];
+  if (!l) return;
+  const nuevoAt = document.getElementById('selectEstado').value;
+  const fb = document.getElementById('estadoFeedback');
+  fb.textContent = '⏳ Guardando...';
+  fb.style.color = 'var(--text2)';
+
   try {
-    const ahora = new Date().toISOString();
-    await patchProxy(`/crm/clientes/${recordId}`, { Estado: nuevoEstado });
-    const lead = allLeads.find(l => l.id === recordId);
-    if (lead) { lead.Estado = nuevoEstado; lead.fecha_ultimo_contacto = ahora; }
+    const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Estado: nuevoAt }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'ok') {
+      fb.textContent = '✅ Guardado en Airtable';
+      fb.style.color = 'var(--green)';
+      // Actualizar estado local
+      const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
+      LEADS[id].status = nuevoStatus;
+      renderLeads();
+      renderKanbanFromLeads();
+      addAct(`<strong>${l.name}</strong> — estado actualizado a <em>${nuevoAt.replace('_',' ')}</em>`, 'var(--accent)', 'ahora mismo');
+    } else {
+      throw new Error(data.detalle || 'Error desconocido');
+    }
+  } catch (err) {
+    // Demo: actualizar localmente aunque falle el backend
+    const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
+    LEADS[id].status = nuevoStatus;
     renderLeads();
-    renderStats();
-    showToast(`Estado actualizado: ${nuevoEstado}`);
-  } catch(e) {
-    showToast('Error al actualizar estado: ' + e.message, 'error');
-    btn.disabled = false;
+    renderKanbanFromLeads();
+    fb.textContent = '⚠ Actualizado localmente (backend offline)';
+    fb.style.color = 'var(--yellow)';
   }
 }
 
-// ── GALERÍA ───────────────────────────────────────────────
-function renderGaleria() {
-  const zona = document.getElementById('g-zona').value;
-  const op   = document.getElementById('g-operacion').value;
-  const tipo = document.getElementById('g-tipo').value;
-  const est  = document.getElementById('g-estado').value;
+// ── PROPS — conectado a Airtable via backend ────────────────────────────────
+const API_BASE = 'https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol';
 
-  let data = allProps.filter(p => {
-    if (zona && p.Zona !== zona) return false;
-    if (op   && (p.Operacion || '').toLowerCase() !== op) return false;
-    if (tipo && (p.Tipo || '').toLowerCase() !== tipo) return false;
-    if (est  && estadoNorm(p.Disponible) !== est) return false;
-    return true;
-  });
+async function renderProps() {
+  const g = document.getElementById('propsGrid');
+  const statusEl = document.getElementById('propsStatus');
+  const subEl = document.getElementById('propsSub');
 
-  document.getElementById('galeria-count').textContent = `${data.length} propiedad${data.length !== 1 ? 'es' : ''}`;
-  document.getElementById('galeria-loading').style.display = 'none';
+  g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
+    <div style="font-size:32px;margin-bottom:8px">⏳</div>Cargando desde Airtable...
+  </div>`;
+  if(statusEl) statusEl.innerHTML = '<span style="color:var(--yellow)">⏳ Conectando...</span>';
 
-  if (!data.length) {
-    document.getElementById('galeria-grid').innerHTML = '';
-    document.getElementById('galeria-empty').style.display = 'block';
-    return;
-  }
-  document.getElementById('galeria-empty').style.display = 'none';
+  try {
+    const res = await fetch(`${API_BASE}/crm/propiedades`, { signal: AbortSignal.timeout(12000) });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const records = data.records || [];
 
-  const iconos = { casa: '🏠', departamento: '🏢', terreno: '🌿', lote: '🌿', loteo: '🌄', comercial: '🏪' };
-
-  document.getElementById('galeria-grid').innerHTML = data.map(p => {
-    let imgUrl = '';
-    const imgField = p.Imagen_URL;
-    if (Array.isArray(imgField) && imgField.length > 0) {
-      imgUrl = imgField[0].thumbnails?.large?.url || imgField[0].url || '';
-    } else if (typeof imgField === 'string') {
-      imgUrl = imgField;
+    if(records.length === 0) {
+      g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
+        <div style="font-size:32px;margin-bottom:8px">🏠</div>No hay propiedades cargadas en Airtable aún.
+      </div>`;
+      if(statusEl) statusEl.innerHTML = '<span style="color:var(--text2)">0 propiedades</span>';
+      return;
     }
 
-    const icono = iconos[(p.Tipo||'').toLowerCase()] || '🏠';
-    const imgHtml = imgUrl
-      ? `<img class="gallery-img" src="${imgUrl}" alt="${p.Titulo||''}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'gallery-img-placeholder\\'>${icono}</div>'">`
-      : `<div class="gallery-img-placeholder">${icono}</div>`;
+    if(subEl) subEl.textContent = `${records.length} propiedades · datos en tiempo real desde Airtable`;
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ Airtable conectado · ${records.length} registros</span>`;
 
-    const detalles = [
-      p.Dormitorios ? `🛏 ${p.Dormitorios}` : '',
-      p.Metros_Cubiertos ? `📐 ${p.Metros_Cubiertos}m²` : '',
-      p.Metros_Terreno ? `🌿 ${p.Metros_Terreno}m²` : '',
-    ].filter(Boolean).join('  ');
+    g.innerHTML = '';
+    records.forEach(p => {
+      // Normalizar campos Airtable
+      const titulo = p.Titulo || p.titulo || p.Nombre || 'Propiedad';
+      const precio = p.Precio || p.precio || 0;
+      const moneda = p.Moneda || p.moneda || 'USD';
+      const precioStr = precio ? `$${Number(precio).toLocaleString('es')} ${moneda}` : 'Consultar precio';
+      const disponible = p.Disponible || p.disponible || '';
+      const zona = p.Zona || p.zona || '';
+      const tipo = p.Tipo || p.tipo || '';
+      const operacion = p.Operacion || p.operacion || '';
+      const desc = p.Descripcion || p.descripcion || '';
+      const dorms = p.Dormitorios || p.dormitorios || '';
+      const metrosCub = p.Metros_Cubiertos || p.metros_cubiertos || '';
+      const metrosTerr = p.Metros_Terreno || p.metros_terreno || '';
+      const mapsUrl = p.Google_Maps_URL || p.google_maps_url || '';
 
-    const ytEmbed = p.Video_URL ? (() => {
-      const m = p.Video_URL.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
-      if (!m) return '';
-      return `<div style="margin-top:10px">
-        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px">▶ Tour virtual — hacé clic para ver el video</div>
-        <div style="border-radius:8px;overflow:hidden">
-          <iframe width="100%" height="180" src="https://www.youtube.com/embed/${m[1]}" frameborder="0" allowfullscreen style="display:block"></iframe>
+      // Imagen — puede ser array Airtable [{url:...}] o string
+      let imgUrl = '';
+      const imgField = p.Imagen_URL || p.imagen_url || p.Foto || p.foto || '';
+      if(Array.isArray(imgField) && imgField.length > 0) {
+        imgUrl = imgField[0].url || imgField[0].thumbnails?.large?.url || '';
+      } else if(typeof imgField === 'string') {
+        imgUrl = imgField;
+      }
+
+      // Status
+      const isDisp = disponible.includes('Disponible') || disponible.includes('disponible');
+      const isRes  = disponible.includes('Reservado') || disponible.includes('reservado');
+      const sc = isDisp ? 'ps-disp' : isRes ? 'ps-res' : 'ps-vend';
+      const sl = isDisp ? 'Disponible' : isRes ? 'Reservado' : 'No disponible';
+
+      // Specs
+      const specs = [];
+      if(dorms) specs.push(`🛏 ${dorms} dorm.`);
+      if(metrosCub) specs.push(`📐 ${metrosCub}m²`);
+      if(metrosTerr) specs.push(`🌿 ${metrosTerr}m² terreno`);
+      if(tipo) specs.push(tipo);
+      if(operacion) specs.push(operacion);
+
+      // Imagen o emoji fallback
+      const imgContent = imgUrl
+        ? `<img src="${imgUrl}" alt="${titulo}" style="width:100%;height:100%;object-fit:cover;border-radius:0" onerror="this.parentElement.innerHTML='🏠'">`
+        : '🏠';
+
+      g.innerHTML += `
+        <div class="pcard">
+          <div class="pcard-img" style="${imgUrl?'padding:0;overflow:hidden':''}">${imgContent}<span class="pcard-status ${sc}">${sl}</span></div>
+          <div class="pcard-body">
+            <div class="pcard-title">${titulo}</div>
+            ${zona ? `<div class="pcard-loc">📍 ${zona}</div>` : ''}
+            <div class="pcard-price">${precioStr}</div>
+            ${specs.length ? `<div class="pcard-specs">${specs.map(s=>`<span>${s}</span>`).join('')}</div>` : ''}
+            ${desc ? `<div style="color:var(--text2);font-size:12px;margin-top:6px;line-height:1.4">${desc.substring(0,90)}${desc.length>90?'…':''}</div>` : ''}
+          </div>
+          <div class="pcard-foot">
+            <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
+            <div style="display:flex;gap:5px">
+              ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺 Maps</a>` : ''}
+              <button class="btn" style="padding:4px 10px;font-size:11px">Ver detalle</button>
+            </div>
+          </div>
+        </div>`;
+    });
+
+  } catch(err) {
+    // Fallback a datos simulados si el backend no responde
+    console.warn('[Propiedades] Backend no disponible, usando datos demo:', err.message);
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--yellow)">⚠ Datos demo (backend offline)</span>`;
+    if(subEl) subEl.textContent = 'Mostrando datos de ejemplo — conectado a Airtable en producción';
+    g.innerHTML = '';
+    PROPS.forEach(p=>{
+      const sc=p.status==='disponible'?'ps-disp':p.status==='reservado'?'ps-res':'ps-vend';
+      const sl=p.status==='disponible'?'Disponible':p.status==='reservado'?'Reservado':'No disponible';
+      g.innerHTML+=`
+        <div class="pcard">
+          <div class="pcard-img">${p.emoji}<span class="pcard-status ${sc}">${sl}</span></div>
+          <div class="pcard-body">
+            <div class="pcard-title">${p.title}</div>
+            <div class="pcard-loc">📍 ${p.loc}</div>
+            <div class="pcard-price">${p.price}</div>
+            <div class="pcard-specs">${p.specs.map(s=>`<span>✓ ${s}</span>`).join('')}</div>
+          </div>
+          <div class="pcard-foot">
+            <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
+            <button class="btn" style="padding:4px 10px;font-size:11px">Ver detalle</button>
+          </div>
+        </div>`;
+    });
+  }
+}
+
+// ── AGENDA ─────────────────────────────────────────────────────────────────
+const CITA_ESTADOS = {}; // id -> estado actual
+
+function renderAgenda() {
+  const list=document.getElementById('citasList'); if(!list) return;
+  list.innerHTML='';
+  CITAS.forEach((c,i)=>{
+    const estado = CITA_ESTADOS[i] || 'pendiente';
+    const estadoClass = estado==='completada'?'ep-completada':estado==='cancelada'?'ep-cancelada':'ep-pendiente';
+    const estadoLabel = estado==='completada'?'✅ Completada':estado==='cancelada'?'❌ Cancelada':'⏳ Pendiente';
+    list.innerHTML+=`
+      <div class="cita-item" id="cita-${i}">
+        <div class="cita-date-box" style="background:${c.color}22;border:1px solid ${c.color}44">
+          <div class="cita-date-day" style="color:${c.color}">${c.dia} ${c.mes}</div>
+          <div class="cita-date-num" style="color:${c.color}">${c.num}</div>
+        </div>
+        <div class="cita-body">
+          <div style="font-weight:600;font-size:13px">${c.name}</div>
+          <div style="color:var(--text2);font-size:12px">${c.hora} · ${c.prop}</div>
+          <div class="cita-actions">
+            <span class="estado-pill ${estadoClass}">${estadoLabel}</span>
+            <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="cambiarEstadoCita(${i},'completada')">✅ Completar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;background:#3d0d0d;border-color:#7a1a1a;color:#f87171" onclick="cambiarEstadoCita(${i},'cancelada')">✗ Cancelar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;margin-left:auto" onclick="abrirDetalleCita(${i})">📋 Ver lead</button>
+          </div>
         </div>
       </div>`;
-    })() : '';
+  });
+}
 
-    return `
-    <div class="gallery-card">
-      <div class="gallery-img-wrap">
-        ${imgHtml}
-        <div class="top-left-badges">
-          ${p.Operacion ? `<span class="badge ${p.Operacion.toLowerCase() === 'venta' ? 'badge-primary' : 'badge-accent'}">${p.Operacion}</span>` : ''}
-          ${p.Precio && p.Precio > 100000 ? `<span class="badge badge-accent">PREMIUM</span>` : ''}
-        </div>
-        <div class="top-right-badges">
-          ${badgeDisponible(p.Disponible)}
-        </div>
-      </div>
-      <div class="gallery-body">
-        <h3 class="card-title">${p.Titulo || 'Sin título'}</h3>
-        <p class="card-location">📍 ${p.Zona || '—'}</p>
-        <div class="card-features">
-          ${p.Dormitorios ? `<span>🛏 ${p.Dormitorios} dor.</span>` : ''}
-          ${p.Metros_Cubiertos || p.Metros_Terreno ? `<span>📐 ${p.Metros_Cubiertos || p.Metros_Terreno}m²</span>` : ''}
-        </div>
-        ${ytEmbed}
-        <div class="card-footer">
-          <div>
-            <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Valor de Lista</div>
-            <div class="card-price">${fmtPrecio(p.Precio, null)} <span class="card-price-small">${p.Moneda||'USD'}</span></div>
+function cambiarEstadoCita(i, nuevoEstado) {
+  CITA_ESTADOS[i] = nuevoEstado;
+  renderAgenda();
+  const c = CITAS[i];
+  const msg = nuevoEstado==='completada'
+    ? `<strong>Cita completada</strong> — ${c.name} visitó ${c.prop}`
+    : `<strong>Cita cancelada</strong> — ${c.name} · ${c.prop}`;
+  addAct(msg, nuevoEstado==='completada'?'var(--green)':'var(--red)', 'ahora mismo');
+  if(nuevoEstado==='completada') showNotif('🏆 Cita completada', `${c.name} — marcá el lead como Cerrado si cerraste la venta`);
+}
+
+function abrirDetalleCita(i) {
+  const c = CITAS[i];
+  // Find matching lead
+  const lead = LEADS.find(l=>l.name===c.name) || LEADS[10];
+  openDetalle(lead.id);
+}
+
+// ── MOVER LEAD EN KANBAN ────────────────────────────────────────────────────
+const COL_MAP = {
+  contactado:{col:'col-c',cnt:'cnt-c',label:'Contactado',next:'calificado',nextLabel:'→ Calificado'},
+  calificado:{col:'col-q',cnt:'cnt-q',label:'Calificado',next:'cita',nextLabel:'→ Cita agendada'},
+  cita:{col:'col-a',cnt:'cnt-a',label:'Cita Agendada',next:'cerrado',nextLabel:'✅ Cerrar venta'},
+  cerrado:{col:'col-z',cnt:'cnt-z',label:'Cerrado 🏆',next:null,nextLabel:''},
+};
+
+function moverLead(id, destino) {
+  const card = document.getElementById(`kcard-${id}`);
+  if(!card) return;
+
+  // remove from current col
+  card.parentElement.removeChild(card);
+
+  // update all kanban counts
+  ['cnt-n','cnt-c','cnt-q','cnt-a','cnt-z'].forEach(cntId=>{
+    const el=document.getElementById(cntId);
+    if(el){
+      const col=document.getElementById(cntId.replace('cnt-','col-').replace('n','n').replace('c','c').replace('q','q').replace('a','a').replace('z','z'));
+    }
+  });
+
+  // add to dest col
+  const info = COL_MAP[destino];
+  const destCol = document.getElementById(info.col);
+  if(!destCol) return;
+
+  const l = LEADS[id];
+  const origenBadge = l.origen==='wa'?'<span class="badge b-wa">💬 WhatsApp</span>':l.origen==='web'?'<span class="badge b-web">📋 Web</span>':'<span class="badge b-ref">🔥 Referido</span>';
+
+  card.className='lcard fresh';
+  const nextBtn = info.next
+    ? `<button class="btn ${info.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${info.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${id},'${info.next}')">${info.nextLabel}</button>`
+    : `<span style="color:var(--green);font-size:11px;font-weight:600">🏆 Venta cerrada</span>`;
+
+  card.querySelector('.lcard-actions').innerHTML = `
+    <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(${id})">Ver</button>
+    ${nextBtn}
+  `;
+  destCol.insertBefore(card, destCol.firstChild);
+
+  // recount
+  recontarKanban();
+
+  // update lead data
+  const statusMap = {contactado:'contactado',calificado:'calificado',cita:'cita',cerrado:'cita'};
+  if(LEADS[id]) LEADS[id].status = statusMap[destino]||destino;
+
+  // feedback
+  const msgs = {
+    contactado:`<strong>${l.name}</strong> movido a Contactado`,
+    calificado:`<strong>${l.name}</strong> calificado — bot confirmó presupuesto y necesidades`,
+    cita:`<strong>${l.name}</strong> tiene cita agendada 📅`,
+    cerrado:`🏆 <strong>¡Venta cerrada!</strong> — ${l.name}`,
+  };
+  addAct(msgs[destino]||'Lead actualizado','var(--accent)','ahora mismo');
+  if(destino==='cerrado') showNotif('🏆 ¡Venta cerrada!',`${l.name} — ¡felicitaciones!`);
+
+  // refresh leads table if visible
+  renderLeads();
+}
+
+function recontarKanban() {
+  const map = {n:'col-n',c:'col-c',q:'col-q',a:'col-a',z:'col-z',p:'col-p'};
+  Object.entries(map).forEach(([k,colId])=>{
+    const col=document.getElementById(colId);
+    const cnt=document.getElementById(`cnt-${k}`);
+    if(col&&cnt) cnt.textContent=[...col.querySelectorAll('.lcard')].length;
+  });
+}
+
+// ── RESÚMENES IA ────────────────────────────────────────────────────────────
+const RESUMENES = [
+  {leadId:5,stars:4,duracion:"8 min",mensajes:12,
+   resumen:"Busca lote residencial entre 250-300m² para construir casa familiar. Tiene presupuesto aprobado de $180K USD. Prefiere financiamiento directo a 36 meses. Muy interesado, preguntó por amenidades y vecindario.",
+   datos:{presupuesto:"$180K USD",zona:"Fracc. Sur",urgencia:"Alta — quiere decidir este mes",financiamiento:"36 meses directo"}},
+  {leadId:8,stars:5,duracion:"12 min",mensajes:18,
+   resumen:"Lead caliente. Confirmó presupuesto de $200K USD para Lote #12. Ya visitó el fraccionamiento anteriormente. Está comparando con otra opción. Cita agendada para cerrar trato.",
+   datos:{presupuesto:"$200K USD",zona:"Fracc. Sur · Lote #12",urgencia:"Muy alta — decidiendo esta semana",financiamiento:"Contado"}},
+  {leadId:10,stars:5,duracion:"6 min",mensajes:9,
+   resumen:"Lead altamente calificado. Tiene pre-aprobación bancaria. Solo necesita visitar el lote físicamente para confirmar. Llegará con su esposa a la cita. Muy amigable.",
+   datos:{presupuesto:"$175K USD",zona:"Fracc. Norte · Lote #47",urgencia:"Alta — cita confirmada Jue 3 Abr",financiamiento:"Crédito bancario pre-aprobado"}},
+  {leadId:6,stars:3,duracion:"5 min",mensajes:7,
+   resumen:"Interesado en 2 departamentos en Zona Polanco. Presupuesto alto pero indeciso. Comparando varias opciones. Recomendable hacer seguimiento personal.",
+   datos:{presupuesto:"$400K USD",zona:"Polanco",urgencia:"Media — sin fecha definida",financiamiento:"Por confirmar"}},
+];
+
+function renderResumenes() {
+  const grid = document.getElementById('resumenesGrid');
+  if(!grid) return;
+  grid.innerHTML='';
+  RESUMENES.forEach(r=>{
+    const l = LEADS[r.leadId];
+    const ini = l.name.split(' ').map(x=>x[0]).join('').substring(0,2);
+    const stars = '⭐'.repeat(r.stars) + '☆'.repeat(5-r.stars);
+    grid.innerHTML+=`
+      <div class="rcard">
+        <div class="rcard-head">
+          <div class="rcard-av" style="background:linear-gradient(135deg,#6c63ff,#a78bfa)">${ini}</div>
+          <div class="rcard-info">
+            <div class="rcard-name">${l.name}</div>
+            <div class="rcard-sub">🤖 Bot conversó ${r.duracion} · ${r.mensajes} mensajes · ${l.fecha}</div>
           </div>
-          <button class="btn-circle" onclick="verDetalle('${p.id}')">↗</button>
+          <div style="text-align:right">
+            <div class="stars">${stars}</div>
+            <div style="color:var(--text2);font-size:11px;margin-top:2px">Calificación del bot</div>
+          </div>
         </div>
-      </div>
-    </div>`;
-  }).join('');
+        <div class="rcard-body">
+          <div class="rcard-field">
+            <div class="rcard-field-label">💰 Presupuesto</div>
+            <div class="rcard-field-val" style="color:var(--accent2);font-weight:700">${r.datos.presupuesto}</div>
+          </div>
+          <div class="rcard-field">
+            <div class="rcard-field-label">📍 Zona de interés</div>
+            <div class="rcard-field-val">${r.datos.zona}</div>
+          </div>
+          <div class="rcard-field">
+            <div class="rcard-field-label">⚡ Urgencia</div>
+            <div class="rcard-field-val">${r.datos.urgencia}</div>
+          </div>
+          <div class="rcard-field">
+            <div class="rcard-field-label">🏦 Financiamiento</div>
+            <div class="rcard-field-val">${r.datos.financiamiento}</div>
+          </div>
+          <div style="grid-column:1/-1;background:var(--surface2);border-radius:8px;padding:10px">
+            <div style="color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">📝 Resumen generado por bot</div>
+            <div style="font-size:13px;line-height:1.6;color:var(--text)">${r.resumen}</div>
+          </div>
+        </div>
+        <div class="rcard-foot">
+          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openDetalle(${r.leadId})">Ver perfil completo</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="moverLead(${r.leadId},'${LEADS[r.leadId].status==='contactado'?'calificado':'cita'}')">Avanzar etapa →</button>
+          <span style="margin-left:auto;color:var(--text2);font-size:11px">Estado: <strong style="color:var(--text)">${LEADS[r.leadId].status}</strong></span>
+        </div>
+      </div>`;
+  });
 }
 
-// ── MODAL LEAD ────────────────────────────────────────────
-function openModalEditarLead(recordId) {
-  const l = allLeads.find(x => x.id === recordId);
-  if (!l) return;
-  document.getElementById('ml-record-id').value   = recordId;
-  document.getElementById('ml-nombre').value      = l.Nombre || '';
-  document.getElementById('ml-apellido').value    = l.Apellido || '';
-  document.getElementById('ml-telefono').value    = l.Telefono || '';
-  document.getElementById('ml-email').value       = l.Email || '';
-  document.getElementById('ml-notas').value       = l.Notas_Bot || '';
-  setSelectVal('ml-zona', l.Zona || '');
-  setSelectVal('ml-operacion', (l.Operacion || '').toLowerCase());
-  setSelectVal('ml-tipo', (l.Tipo_Propiedad || '').toLowerCase());
-  setSelectVal('ml-presupuesto', l.Presupuesto || '');
-  document.getElementById('modal-lead').classList.add('open');
-}
+// ── SIMULATE NEW LEAD ──────────────────────────────────────────────────────
+function simLead() {
+  const names=["Felipe Morales","Valentina Cruz","Andrés Ramos","Sofía Jiménez","Miguel Díaz","Luciana Pérez"];
+  const interes=["Lote residencial zona norte","Casa 3 rec. con jardín","Depto. torre céntrica","Local comercial av. principal","Terreno 500m² inversión"];
+  const n=names[simCount%names.length];
+  const it=interes[simCount%interes.length];
+  simCount++;
 
-async function guardarLead() {
-  const recordId = document.getElementById('ml-record-id').value;
-  const btn = document.getElementById('btn-guardar-lead');
-  btn.classList.add('loading');
-  btn.textContent = 'Guardando...';
-
-  const fields = {};
-  const nombre = document.getElementById('ml-nombre').value.trim();
-  const apellido = document.getElementById('ml-apellido').value.trim();
-  const telefono = document.getElementById('ml-telefono').value.trim();
-  const email = document.getElementById('ml-email').value.trim();
-  const zona = document.getElementById('ml-zona').value;
-  const operacion = document.getElementById('ml-operacion').value;
-  const tipo = document.getElementById('ml-tipo').value;
-  const presupuesto = document.getElementById('ml-presupuesto').value;
-  const notas = document.getElementById('ml-notas').value.trim();
-
-  if (nombre) fields.Nombre = nombre;
-  if (apellido) fields.Apellido = apellido;
-  if (telefono) fields.Telefono = telefono;
-  if (email) fields.Email = email;
-  if (zona) fields.Zona = zona;
-  if (operacion) fields.Operacion = operacion;
-  if (tipo) fields.Tipo_Propiedad = tipo;
-  if (presupuesto) fields.Presupuesto = presupuesto;
-  if (notas) fields.Notas_Bot = notas;
-
-  try {
-    await patchProxy(`/crm/clientes/${recordId}`, fields);
-    const lead = allLeads.find(l => l.id === recordId);
-    if (lead) Object.assign(lead, { Nombre: nombre, Apellido: apellido, Telefono: telefono, Email: email, Zona: zona, Operacion: operacion, Tipo_Propiedad: tipo, Presupuesto: presupuesto, Notas_Bot: notas });
-    closeModal('modal-lead');
-    renderLeads();
-    showToast('Lead actualizado correctamente');
-  } catch(e) {
-    showToast('Error al guardar: ' + e.message, 'error');
+  // Add to kanban col-n
+  const col=document.getElementById('col-n');
+  if(col){
+    const card=document.createElement('div');
+    card.className='lcard fresh';
+    card.innerHTML=`<div class="lcard-name">${n}</div><div class="lcard-meta">💬 WhatsApp · Ahora mismo<br>${it}</div><div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span><span class="badge" style="background:#0d2e1a;color:#34d399;border:1px solid #1a5c33">🤖 Bot respondiendo</span></div>`;
+    col.insertBefore(card,col.firstChild);
+    const cnt=document.getElementById('cnt-n');
+    if(cnt) cnt.textContent=parseInt(cnt.textContent)+1;
   }
 
-  btn.classList.remove('loading');
-  btn.textContent = '💾 Guardar';
+  // KPI
+  const kt=document.getElementById('kpi-total');
+  if(kt) kt.textContent=parseInt(kt.textContent)+1;
+
+  // Notif
+  showNotif(`🔔 Nuevo lead: ${n}`,`Llegó via WhatsApp · Bot ya lo está atendiendo`);
+
+  // Activity
+  addAct(`<strong>Nuevo lead atendido por bot</strong> — ${n} escribió por WhatsApp, interés: ${it}`, 'var(--green)', 'ahora mismo');
 }
 
-// ── MODAL UTILS ───────────────────────────────────────────
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
+// ── NOTIF ──────────────────────────────────────────────────────────────────
+function showNotif(title,body) {
+  document.getElementById('npTitle').textContent=title;
+  document.getElementById('npBody').textContent=body;
+  const p=document.getElementById('notifPopup'); p.classList.add('show');
+  const b=document.getElementById('notifBadge'); b.textContent=parseInt(b.textContent)+1;
+  setTimeout(()=>p.classList.remove('show'),4500);
+}
+function hideNotif(){ document.getElementById('notifPopup').classList.remove('show'); }
+function toggleNotif(){ document.getElementById('notifBadge').textContent='0'; }
+
+// ── ACTIVITY ───────────────────────────────────────────────────────────────
+function addAct(text,color,time) {
+  const list=document.getElementById('actList'); if(!list) return;
+  const item=document.createElement('div');
+  item.className='act-item'; item.style.animation='slideIn .4s ease';
+  item.innerHTML=`<div class="act-dot" style="background:${color}"></div><div class="act-text">${text}</div><div class="act-time">${time}</div>`;
+  list.insertBefore(item,list.firstChild);
+  while(list.children.length>7) list.removeChild(list.lastChild);
 }
 
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+
+function crearLead() {
+  const name=document.getElementById('nl-name').value||'Nuevo Contacto';
+  closeModal('modalNuevo');
+  showNotif('✅ Lead creado','Bot iniciará conversación en WhatsApp en segundos');
+  addAct(`<strong>Lead creado manualmente: ${name}</strong> — bot iniciará contacto en WhatsApp`, 'var(--accent)', 'ahora mismo');
+  const kt=document.getElementById('kpi-total');
+  if(kt) kt.textContent=parseInt(kt.textContent)+1;
 }
 
-// Cerrar modal al hacer click fuera
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeModal(overlay.id);
-  });
+// ── FORM PREVIEWS ──────────────────────────────────────────────────────────
+const FORM_DATA = {
+  dev:{
+    title:"🏗️ Formulario — Desarrolladora",
+    sub:"Para anuncios de lotes / casas en preventa",
+    color:"#3b82f6",
+    fields:[
+      {label:"¿Cuál es tu nombre?",type:"text",placeholder:"Tu nombre completo"},
+      {label:"Tu WhatsApp",type:"tel",placeholder:"+52 55 0000-0000"},
+      {label:"¿Qué tipo de lote buscás?",type:"select",opts:["Lote residencial","Lote comercial","Casa en preventa"]},
+      {label:"¿Cuál es tu presupuesto aproximado?",type:"select",opts:["Menos de $100K USD","$100K - $200K USD","Más de $200K USD"]},
+      {label:"¿Para qué lo usarías?",type:"select",opts:["Construir mi casa","Inversión / reventa"]},
+    ],
+    cta:"Quiero que me contacten 🏗️",
+  },
+  agency:{
+    title:"🏢 Formulario — Agencia Inmobiliaria",
+    sub:"Para anuncios de compra/renta de propiedades",
+    color:"#8b5cf6",
+    fields:[
+      {label:"¿Cuál es tu nombre?",type:"text",placeholder:"Tu nombre completo"},
+      {label:"Tu WhatsApp",type:"tel",placeholder:"+52 55 0000-0000"},
+      {label:"¿Buscás comprar o rentar?",type:"select",opts:["Comprar","Rentar"]},
+      {label:"¿Qué zona preferís?",type:"text",placeholder:"Ej: Zona Norte, Centro..."},
+      {label:"¿Cuántas recámaras necesitás?",type:"select",opts:["1","2","3","4 o más"]},
+      {label:"Presupuesto mensual / total",type:"text",placeholder:"Ej: $2,500/mes o $180K"},
+    ],
+    cta:"Ver propiedades disponibles 🏢",
+  },
+  agent:{
+    title:"🤝 Formulario — Agente Individual",
+    sub:"Captación personal, atención 1 a 1",
+    color:"#10b981",
+    fields:[
+      {label:"¿Cuál es tu nombre?",type:"text",placeholder:"Tu nombre completo"},
+      {label:"Tu WhatsApp",type:"tel",placeholder:"+52 55 0000-0000"},
+      {label:"¿Qué tipo de propiedad buscás?",type:"select",opts:["Casa","Departamento","Local comercial","Terreno"]},
+      {label:"¿Hace cuánto tiempo lo buscás?",type:"select",opts:["Recién empecé","1 a 3 meses","Más de 3 meses"]},
+      {label:"¿Cuál es tu presupuesto?",type:"text",placeholder:"Ej: hasta $150K USD"},
+    ],
+    cta:"Hablar con un asesor ahora 🤝",
+  },
+  pm:{
+    title:"🔑 Formulario — Property Manager",
+    sub:"Para dueños que quieren administrar su propiedad",
+    color:"#f59e0b",
+    fields:[
+      {label:"¿Cuál es tu nombre?",type:"text",placeholder:"Tu nombre completo"},
+      {label:"Tu WhatsApp",type:"tel",placeholder:"+52 55 0000-0000"},
+      {label:"¿Qué tipo de propiedad tenés?",type:"select",opts:["Casa","Departamento","Local comercial","Oficina"]},
+      {label:"¿Qué necesitás?",type:"select",opts:["Encontrar inquilino","Administración completa","Mantenimiento","Todo incluido"]},
+      {label:"Colonia / Zona de la propiedad",type:"text",placeholder:"Ej: Col. Centro, Zona Norte"},
+    ],
+    cta:"Quiero que administren mi propiedad 🔑",
+  },
+};
+
+function previewForm(type) {
+  const fd=FORM_DATA[type];
+  document.getElementById('formPreviewBody').innerHTML=`
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:32px;margin-bottom:6px">${fd.title.split(' ')[0]}</div>
+      <div style="font-weight:700;font-size:15px">${fd.title.substring(fd.title.indexOf(' ')+1)}</div>
+      <div style="color:var(--text2);font-size:12px;margin-top:3px">${fd.sub}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:14px">
+      ${fd.fields.map(f=>`
+        <div class="mf">
+          <label>${f.label}</label>
+          ${f.type==='select'
+            ?`<select>${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`
+            :`<input type="${f.type}" placeholder="${f.placeholder||''}">`
+          }
+        </div>`).join('')}
+      <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="closeModal('modalForm');showNotif('📋 Lead registrado','Bot lo contactará en menos de 60 segundos')">
+        ${fd.cta}
+      </button>
+    </div>
+    <div style="color:var(--text2);font-size:11px;text-align:center">
+      🤖 Al enviar, el bot contacta al lead en menos de 60 segundos
+    </div>`;
+  openModal('modalForm');
+}
+
+// ── AUTO NOTIFS ─────────────────────────────────────────────────────────────
+setTimeout(()=>showNotif('🔥 Lead caliente detectado','Carlos M. respondió todas las preguntas de calificación. ¡Listo para cita!'),5000);
+setTimeout(()=>showNotif('📅 Cita agendada automáticamente','Carla R. eligió slot Vie 4 Abr 11:00 AM sin intervención tuya'),22000);
+setTimeout(()=>simLead(),40000);
+
+// ── BUSCADOR GLOBAL ──────────────────────────────────────────────────────────
+function buscarGlobal(q) {
+  const res = document.getElementById('searchResults');
+  q = q.trim();
+  if (!q) { res.classList.remove('show'); return; }
+  const hits = LEADS.filter(l =>
+    [l.name, l.phone, l.email, l.interes, l.ciudad, l.subnicho, l.notas]
+      .join(' ').toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 6);
+  if (!hits.length) {
+    res.innerHTML = `<div class="sr-empty">Sin resultados para "${q}"</div>`;
+  } else {
+    const ini = n => n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase();
+    const scoreEmoji = s => s >= 12 ? '🔥' : s >= 7 ? '🌡️' : '❄️';
+    res.innerHTML = hits.map(l => `
+      <div class="sr-item" onclick="irALead(${l.id})">
+        <div class="sr-av">${ini(l.name)}</div>
+        <div>
+          <div class="sr-name">${l.name} ${l.score ? scoreEmoji(l.score) : ''}</div>
+          <div class="sr-meta">${l.phone} · ${l.interes}</div>
+        </div>
+      </div>`).join('');
+  }
+  res.classList.add('show');
+}
+
+function cerrarBusqueda() {
+  document.getElementById('searchResults').classList.remove('show');
+  document.getElementById('globalSearch').value = '';
+}
+
+function irALead(id) {
+  cerrarBusqueda();
+  nav('leads');
+  setTimeout(() => openDetalle(id), 100);
+}
+
+// ── PERFIL EDITABLE ──────────────────────────────────────────────────────────
+function cargarPerfil() {
+  const defaults = { empresa: 'Back Urbanizaciones', usuario: 'Maicol Back' };
+  const p = JSON.parse(localStorage.getItem('crm_perfil') || '{}');
+  const empresa = p.empresa || defaults.empresa;
+  const usuario = p.usuario || defaults.usuario;
+  document.getElementById('topEmpresa').textContent = empresa;
+  document.title = empresa + ' — CRM';
+  document.getElementById('topUsuario').textContent = usuario;
+  document.getElementById('topAvatar').textContent = usuario.substring(0,2).toUpperCase();
+  if (p.logo) aplicarLogo(p.logo);
+}
+
+function aplicarLogo(val) {
+  const icon = document.getElementById('topLogoIcon');
+  if (!val) return;
+  if (val.startsWith('http') || val.startsWith('data:')) {
+    icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+  } else {
+    icon.textContent = val;
+  }
+}
+
+function togglePerfil(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('perfilDropdown');
+  const isOpen = dd.classList.contains('show');
+  // cerrar cualquier otro dropdown abierto
+  document.querySelectorAll('.perfil-dropdown.show').forEach(el => el.classList.remove('show'));
+  if (!isOpen) {
+    const p = JSON.parse(localStorage.getItem('crm_perfil') || '{}');
+    document.getElementById('pLogoUrl').value = p.logo || '';
+    document.getElementById('pEmpresa').value = p.empresa || '';
+    document.getElementById('pUsuario').value = p.usuario || '';
+    previewLogo(p.logo || '');
+    dd.classList.add('show');
+  }
+}
+
+function cerrarPerfil() {
+  document.getElementById('perfilDropdown').classList.remove('show');
+}
+
+// Cerrar dropdown al hacer click fuera
+document.addEventListener('click', e => {
+  const dd = document.getElementById('perfilDropdown');
+  if (dd && !dd.closest('.user-chip-wrap').contains(e.target)) cerrarPerfil();
 });
 
-// ── TABS ──────────────────────────────────────────────────
-function switchTab(name, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('panel-' + name).classList.add('active');
+function subirLogo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    document.getElementById('pLogoUrl').value = '';
+    previewLogo(dataUrl);
+    // guardar base64 en perfil temporal
+    document.getElementById('perfilDropdown').dataset.logoBase64 = dataUrl;
+  };
+  reader.readAsDataURL(file);
 }
 
-// ── INIT ──────────────────────────────────────────────────
-loadAll();
+function previewLogo(val) {
+  const prev = document.getElementById('perfilLogoPreview');
+  if (!val) { prev.innerHTML = '🏠'; return; }
+  if (val.startsWith('http') || val.startsWith('data:')) {
+    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" onerror="this.parentElement.textContent='🏠'">`;
+  } else {
+    prev.textContent = val;
+  }
+}
+
+function guardarPerfil() {
+  const dd = document.getElementById('perfilDropdown');
+  const logoBase64 = dd.dataset.logoBase64 || '';
+  const logoUrl = document.getElementById('pLogoUrl').value.trim();
+  const logo = logoBase64 || logoUrl;
+  const empresa = document.getElementById('pEmpresa').value.trim();
+  const usuario = document.getElementById('pUsuario').value.trim();
+  const perfil = { logo, empresa, usuario };
+  localStorage.setItem('crm_perfil', JSON.stringify(perfil));
+  if (empresa) { document.getElementById('topEmpresa').textContent = empresa; document.title = empresa + ' — CRM'; }
+  if (usuario) { document.getElementById('topUsuario').textContent = usuario; document.getElementById('topAvatar').textContent = usuario.substring(0,2).toUpperCase(); }
+  if (logo) aplicarLogo(logo);
+  dd.dataset.logoBase64 = '';
+  cerrarPerfil();
+  showNotif('✅ Perfil actualizado', empresa || 'Cambios guardados');
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+cargarPerfil();
+cargarLeads();   // carga leads desde Airtable → renderLeads() + renderKanbanFromLeads()
+renderProps();
+renderAgenda();
 </script>
 </body>
 </html>
