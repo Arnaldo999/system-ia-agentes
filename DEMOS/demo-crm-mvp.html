@@ -279,16 +279,19 @@
   .sr-meta{font-size:11px;color:var(--text2);}
   .sr-empty{padding:14px;text-align:center;color:var(--text2);font-size:13px;}
 
-  /* ── MODAL PERFIL ── */
-  .perfil-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;display:none;align-items:center;justify-content:center;}
-  .perfil-modal.show{display:flex;}
-  .perfil-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:340px;max-width:95vw;}
-  .perfil-title{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;}
-  .perfil-logo-preview{width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;overflow:hidden;}
-  .perfil-logo-preview img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
-  .mf-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;}
-  .mf-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;margin-bottom:12px;}
+  /* ── DROPDOWN PERFIL ── */
+  .perfil-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:2000;display:none;padding:16px;}
+  .perfil-dropdown.show{display:block;}
+  .perfil-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+  .perfil-logo-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .perfil-logo-preview{width:48px;height:48px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0;}
+  .perfil-logo-preview img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+  .upload-btn{flex:1;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:7px 10px;color:var(--text2);font-size:12px;cursor:pointer;text-align:center;transition:border-color .2s;}
+  .upload-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .mf-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+  .mf-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px;outline:none;margin-bottom:10px;}
   .mf-input:focus{border-color:var(--accent);}
+  .user-chip-wrap{position:relative;}
 
   @media(max-width:760px){
     .sidebar{width:48px;}
@@ -324,27 +327,32 @@
     <div class="notif-icon-wrap">🔔</div>
     <div class="notif-badge" id="notifBadge">3</div>
   </div>
-  <div class="user-chip" onclick="abrirPerfil()" title="Editar perfil">
-    <div class="avatar" id="topAvatar">AR</div>
-    Hola, <span id="topUsuario">Arnaldo</span> ▾
-  </div>
-</div>
-
-<!-- MODAL PERFIL -->
-<div class="perfil-modal" id="modalPerfil" onclick="if(event.target===this)cerrarPerfil()">
-  <div class="perfil-box">
-    <div class="perfil-title">
-      ✏️ Editar perfil
-      <span style="cursor:pointer;color:var(--text2);font-size:18px" onclick="cerrarPerfil()">×</span>
+  <div class="user-chip-wrap">
+    <div class="user-chip" onclick="togglePerfil(event)" title="Editar perfil">
+      <div class="avatar" id="topAvatar">AR</div>
+      Hola, <span id="topUsuario">Arnaldo</span> ▾
     </div>
-    <div class="perfil-logo-preview" id="perfilLogoPreview">🏠</div>
-    <div class="mf-label">Logo — URL de imagen o emoji</div>
-    <input class="mf-input" id="pLogoUrl" placeholder="https://... o un emoji como 🏢" oninput="previewLogo(this.value)">
-    <div class="mf-label">Nombre de la inmobiliaria</div>
-    <input class="mf-input" id="pEmpresa" placeholder="Tu Inmobiliaria">
-    <div class="mf-label">Tu nombre</div>
-    <input class="mf-input" id="pUsuario" placeholder="Arnaldo">
-    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="guardarPerfil()">Guardar cambios</button>
+    <!-- DROPDOWN PERFIL -->
+    <div class="perfil-dropdown" id="perfilDropdown">
+      <div class="perfil-title">
+        ✏️ Editar perfil
+        <span style="cursor:pointer;color:var(--text2);font-size:18px" onclick="cerrarPerfil()">×</span>
+      </div>
+      <!-- Logo preview + subir -->
+      <div class="perfil-logo-row">
+        <div class="perfil-logo-preview" id="perfilLogoPreview">🏠</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <label class="upload-btn" for="pLogoFile">📁 Subir imagen</label>
+          <input type="file" id="pLogoFile" accept="image/*" style="display:none" onchange="subirLogo(this)">
+          <input class="mf-input" id="pLogoUrl" placeholder="o pegá una URL / emoji 🏢" oninput="previewLogo(this.value)" style="margin-bottom:0">
+        </div>
+      </div>
+      <div class="mf-label">Nombre de la inmobiliaria</div>
+      <input class="mf-input" id="pEmpresa" placeholder="Tu Inmobiliaria">
+      <div class="mf-label">Tu nombre</div>
+      <input class="mf-input" id="pUsuario" placeholder="Arnaldo">
+      <button class="btn btn-primary" style="width:100%;margin-top:2px" onclick="guardarPerfil()">Guardar cambios</button>
+    </div>
   </div>
 </div>
 
@@ -1914,39 +1922,68 @@ function cargarPerfil() {
 function aplicarLogo(val) {
   const icon = document.getElementById('topLogoIcon');
   if (!val) return;
-  // Si es URL → imagen, si es emoji/texto corto → texto
-  if (val.startsWith('http')) {
+  if (val.startsWith('http') || val.startsWith('data:')) {
     icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
   } else {
     icon.textContent = val;
   }
 }
 
-function abrirPerfil() {
-  const p = JSON.parse(localStorage.getItem('crm_perfil') || '{}');
-  document.getElementById('pLogoUrl').value = p.logo || '';
-  document.getElementById('pEmpresa').value = p.empresa || '';
-  document.getElementById('pUsuario').value = p.usuario || '';
-  previewLogo(p.logo || '');
-  document.getElementById('modalPerfil').classList.add('show');
+function togglePerfil(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('perfilDropdown');
+  const isOpen = dd.classList.contains('show');
+  // cerrar cualquier otro dropdown abierto
+  document.querySelectorAll('.perfil-dropdown.show').forEach(el => el.classList.remove('show'));
+  if (!isOpen) {
+    const p = JSON.parse(localStorage.getItem('crm_perfil') || '{}');
+    document.getElementById('pLogoUrl').value = p.logo || '';
+    document.getElementById('pEmpresa').value = p.empresa || '';
+    document.getElementById('pUsuario').value = p.usuario || '';
+    previewLogo(p.logo || '');
+    dd.classList.add('show');
+  }
 }
 
 function cerrarPerfil() {
-  document.getElementById('modalPerfil').classList.remove('show');
+  document.getElementById('perfilDropdown').classList.remove('show');
+}
+
+// Cerrar dropdown al hacer click fuera
+document.addEventListener('click', e => {
+  const dd = document.getElementById('perfilDropdown');
+  if (dd && !dd.closest('.user-chip-wrap').contains(e.target)) cerrarPerfil();
+});
+
+function subirLogo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    document.getElementById('pLogoUrl').value = '';
+    previewLogo(dataUrl);
+    // guardar base64 en perfil temporal
+    document.getElementById('perfilDropdown').dataset.logoBase64 = dataUrl;
+  };
+  reader.readAsDataURL(file);
 }
 
 function previewLogo(val) {
   const prev = document.getElementById('perfilLogoPreview');
   if (!val) { prev.innerHTML = '🏠'; return; }
-  if (val.startsWith('http')) {
-    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:12px" onerror="this.innerHTML='🏠'">`;
+  if (val.startsWith('http') || val.startsWith('data:')) {
+    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" onerror="this.parentElement.textContent='🏠'">`;
   } else {
     prev.textContent = val;
   }
 }
 
 function guardarPerfil() {
-  const logo = document.getElementById('pLogoUrl').value.trim();
+  const dd = document.getElementById('perfilDropdown');
+  const logoBase64 = dd.dataset.logoBase64 || '';
+  const logoUrl = document.getElementById('pLogoUrl').value.trim();
+  const logo = logoBase64 || logoUrl;
   const empresa = document.getElementById('pEmpresa').value.trim();
   const usuario = document.getElementById('pUsuario').value.trim();
   const perfil = { logo, empresa, usuario };
@@ -1954,6 +1991,7 @@ function guardarPerfil() {
   if (empresa) { document.getElementById('topEmpresa').textContent = empresa; document.title = empresa + ' — CRM'; }
   if (usuario) { document.getElementById('topUsuario').textContent = usuario; document.getElementById('topAvatar').textContent = usuario.substring(0,2).toUpperCase(); }
   if (logo) aplicarLogo(logo);
+  dd.dataset.logoBase64 = '';
   cerrarPerfil();
   showNotif('✅ Perfil actualizado', empresa || 'Cambios guardados');
 }
