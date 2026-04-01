@@ -1099,7 +1099,12 @@ async function cargarLeads() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const records = data.records || [];
-    if (records.length === 0) throw new Error('Sin registros');
+    if (records.length === 0) {
+      LEADS = [];
+      renderLeads();
+      renderKanbanFromLeads();
+      return;
+    }
 
     LEADS = records.map((r, idx) => {
       const f = r;
@@ -1149,10 +1154,12 @@ async function cargarLeads() {
     renderLeads();
     renderKanbanFromLeads();
   } catch (err) {
-    console.warn('[Leads] Usando datos demo:', err.message);
-    LEADS = LEADS_FALLBACK;
+    console.warn('[Leads] Backend no disponible:', err.message);
+    LEADS = [];
     renderLeads();
     renderKanbanFromLeads();
+    showNotif('⚠ Backend offline', 'Reconectando... los leads se cargarán en unos segundos');
+    setTimeout(cargarLeads, 8000); // reintentar en 8 seg (Render puede estar dormido)
   }
 }
 
