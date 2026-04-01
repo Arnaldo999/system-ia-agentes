@@ -663,21 +663,62 @@ async def recibir_lead(request: Request):
         params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
     records = buscar.json().get("records", []) if buscar.status_code == 200 else []
 
-    # Solo campos que existen en la tabla Clientes de Maicol
-    # Estado: valores reales Airtable = no_contactado | contactado | en_negociacion | cerrado | descartado
-    estado_at = "contactado"  # llega del formulario = ya fue contactado por el bot
-    nombre_completo_at = f"{nombre} {apellido}".strip()
+    # Mapear valores del formulario a los valores reales de Airtable
+    # Operacion: formulario manda construir-vivienda/inversion/etc → Airtable: Todo|venta|alquiler
+    op_map = {"venta": "venta", "compra": "venta", "alquiler": "alquiler",
+              "construir-vivienda": "Todo", "inversion": "Todo",
+              "emprendimiento": "Todo", "segunda-residencia": "Todo"}
+    operacion_at = op_map.get(operacion.lower(), "Todo") if operacion else None
+
+    # Tipo_Propiedad: formulario puede mandar lista — tomar primero
+    tipo_limpio = tipo.split(",")[0].strip() if isinstance(tipo, str) else (tipo[0] if isinstance(tipo, list) and tipo else "")
+    tipo_map = {"terreno": "terreno", "casa": "casa", "departamento": "departamento",
+                "casa_terreno": "casa_terreno", "": None}
+    tipo_at = tipo_map.get(tipo_limpio.lower(), "otro") if tipo_limpio else None
+
+    # Presupuesto: número → rango Airtable (hata_50k|50k_100k|100k_200k|mas_200k)
+    try:
+        p_num = float(presupuesto) if presupuesto else 0
+        # Si es ARS estimamos en USD /1000 aprox para el rango
+        if data.get("moneda", "USD") == "ARS":
+            p_num = p_num / 1200
+    except (ValueError, TypeError):
+        p_num = 0
+    if p_num <= 50000:
+        presupuesto_at = "hata_50k"
+    elif p_num <= 100000:
+        presupuesto_at = "50k_100k"
+    elif p_num <= 200000:
+        presupuesto_at = "100k_200k"
+    else:
+        presupuesto_at = "mas_200k"
+
+    # Zona: verificar que sea un valor válido
+    zonas_validas = {"San Ignacio", "Gdor Roca", "Apóstoles", "Leandro N. Alem"}
+    zona_at = zona if zona in zonas_validas else None
+
+    estado_at = "contactado"
     notas = f"Formulario web | Zona: {zona} | Tipo: {tipo} | Objetivo: {operacion} | Presupuesto: {presupuesto} | Plazo: {urgencia} | Score: {score}"
     if nota:
         notas += f" | Nota: {nota}"
 
     campos = {
-        "Nombre": nombre_completo_at,
+        "Nombre": nombre.strip() or nombre_completo,
         "Telefono": telefono,
         "Estado": estado_at,
         "Notas_Bot": notas,
         "Llego_WhatsApp": False,
     }
+    if apellido:
+        campos["Apellido"] = apellido.strip()
+    if operacion_at:
+        campos["Operacion"] = operacion_at
+    if tipo_at:
+        campos["Tipo_Propiedad"] = tipo_at
+    if presupuesto_at:
+        campos["Presupuesto"] = presupuesto_at
+    if zona_at:
+        campos["Zona"] = zona_at
     if records:
         r_at = requests.patch(f"{url_at}/{records[0]['id']}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
         print(f"[MAICOL-LEAD] PATCH Airtable {r_at.status_code}: {r_at.text[:200]}")
