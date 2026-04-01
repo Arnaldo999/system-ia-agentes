@@ -52,6 +52,7 @@ def root():
         },
         "demos": {
             "inmobiliaria": [
+                "POST /demos/inmobiliaria/lead",
                 "POST /demos/inmobiliaria/whatsapp",
                 "GET  /demos/inmobiliaria/propiedades",
                 "GET  /demos/inmobiliaria/crm/propiedades",

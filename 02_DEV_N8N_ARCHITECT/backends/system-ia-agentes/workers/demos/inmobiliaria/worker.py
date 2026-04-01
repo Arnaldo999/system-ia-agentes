@@ -724,6 +724,11 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         return
 
     # ── PASO: captura de datos del lead (nombre, email, ciudad) ─────────────
+    # Si el lead viene del formulario, ya tiene todos los datos — saltar directo a slots
+    if step == "captura_datos" and sesion.get("captura_completa"):
+        _mostrar_slots(telefono, sesion)
+        return
+
     if step == "captura_datos":
         campo = sesion.get("captura_campo", "nombre")
         valor = texto.strip()
@@ -980,6 +985,121 @@ def _ir_asesor(telefono: str) -> None:
 
 
 # ─── ENDPOINTS ────────────────────────────────────────────────────────────────
+
+@router.post("/lead")
+async def recibir_lead_formulario(request: Request):
+    """
+    Endpoint para leads que vienen del formulario web.
+    El lead ya viene con todos sus datos precargados (nombre, apellido, email,
+    teléfono, operación, tipo de propiedad, zona, presupuesto).
+
+    Acción:
+      1. Registrar el lead en Airtable directamente (sin pedir más datos).
+      2. Enviar mensaje de WhatsApp de bienvenida personalizado.
+      3. Cargar sesión con los datos ya precargados y mostrar propiedades
+         (o slots de agenda si urgencia es inmediata).
+
+    El bot NO vuelve a pedir nombre/email/ciudad — ya los tiene.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return {"status": "error", "detalle": "body no es JSON válido"}
+
+    # ── Extraer campos del formulario ──────────────────────────────────────────
+    nombre    = (body.get("Nombre") or body.get("nombre") or "").strip()
+    apellido  = (body.get("Apellido") or body.get("apellido") or "").strip()
+    nombre_completo = (nombre + " " + apellido).strip()
+    telefono_raw = str(body.get("Telefono") or body.get("telefono") or "")
+    email     = (body.get("Email") or body.get("email") or "").strip()
+    operacion = (body.get("Operacion") or body.get("operacion") or "venta").lower()
+    tipo      = (body.get("Tipo_Propiedad") or body.get("tipo_propiedad") or "").lower()
+    zona      = (body.get("Zona") or body.get("zona") or "").strip()
+    presupuesto = (body.get("Presupuesto") or body.get("presupuesto") or "A consultar")
+    urgencia  = (body.get("urgencia") or "").strip()
+    notas_raw = (body.get("Notas_Bot") or body.get("notas") or "").strip()
+
+    if not telefono_raw:
+        return {"status": "error", "detalle": "Telefono requerido"}
+
+    telefono = _norm_tel(telefono_raw)
+    nombre_corto = nombre or "allí"
+
+    # ── Determinar score basado en urgencia ────────────────────────────────────
+    score = "caliente" if urgencia in ("inmediata", "1-3 meses") else "tibio"
+
+    # ── Registrar en Airtable inmediatamente con todos los datos ──────────────
+    notas_at = f"Lead formulario web | Urgencia: {urgencia or '-'} | {notas_raw}".strip(" |")
+    _at_registrar_lead(
+        telefono, nombre_completo,
+        score=score, operacion=operacion, tipo=tipo,
+        email=email, ciudad=zona,
+        notas=notas_at,
+    )
+
+    # ── Precargar sesión con datos del formulario ─────────────────────────────
+    sesion_nueva = {
+        "step":               "lista",
+        "subniche":           "inmobiliaria",
+        "score":              score,
+        "operacion":          operacion,
+        "tipo":               tipo,
+        "zona":               zona,
+        "nombre":             nombre_completo,
+        "email_lead":         email,
+        "telefono_lead":      telefono,
+        "ciudad_lead":        zona,
+        "presupuesto":        str(presupuesto),
+        "urgencia":           urgencia,
+        "captura_completa":   True,   # flag: no volver a pedir datos
+        "props":              [],
+        "historial":          [],
+        "preguntas_hechas":   0,
+        "respuestas_precal":  [],
+        "origen":             "formulario",
+    }
+    SESIONES[telefono] = sesion_nueva
+
+    # ── Enviar bienvenida personalizada via WhatsApp ───────────────────────────
+    if not YCLOUD_API_KEY or not NUMERO_BOT:
+        print(f"[LEAD-FORM] tel={telefono} — YCloud no configurado, solo Airtable registrado")
+        return {"status": "ok_airtable_only", "telefono": telefono, "score": score}
+
+    # Saludo personalizado
+    saludo_tipo = {
+        "venta": "propiedades en venta",
+        "alquiler": "propiedades en alquiler",
+    }.get(operacion, "propiedades")
+
+    msg_bienvenida = (
+        f"¡Hola {nombre_corto}! 👋 Recibimos tu consulta desde el formulario web.\n\n"
+        f"Buscamos las *{saludo_tipo}*"
+        + (f" en *{zona}*" if zona else "")
+        + (f" — tipo: _{tipo}_" if tipo else "")
+        + ".\n\n"
+        f"Te muestro las opciones disponibles ahora mismo 🏠"
+    )
+    _enviar_texto(telefono, msg_bienvenida)
+
+    # ── Mostrar propiedades o agendar según urgencia ──────────────────────────
+    if score == "caliente" and _cal_disponible():
+        # Lead urgente → ir directo a agenda
+        sesion_nueva["step"] = "agendamiento"
+        SESIONES[telefono] = sesion_nueva
+        _mostrar_slots(telefono, sesion_nueva)
+    else:
+        # Mostrar propiedades filtradas por sus preferencias
+        _mostrar_propiedades(telefono, sesion_nueva)
+
+    return {
+        "status": "ok",
+        "telefono": telefono,
+        "nombre": nombre_completo,
+        "score": score,
+        "step": SESIONES.get(telefono, {}).get("step"),
+    }
+
+
 @router.post("/whatsapp")
 async def procesar_whatsapp(request: Request):
     try:
