@@ -612,19 +612,27 @@ async def recibir_lead(request: Request):
         params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
     records = buscar.json().get("records", []) if buscar.status_code == 200 else []
 
+    # Estado solo acepta valores que existen en Airtable: "nuevo", "calificado", "contactado"
+    estado_at = "calificado" if score == "caliente" else "nuevo"
+
     campos = {
         "Nombre": nombre, "Apellido": apellido, "Telefono": telefono,
-        "Email": email, "Zona": zona, "Tipo_Propiedad": tipo,
-        "Operacion": "Venta", "Presupuesto": presupuesto, "Urgencia": urgencia,
-        "Estado": "calificado" if score == "caliente" else "potencial",
-        "Notas_Bot": f"Score: {score}. Objetivo: {operacion}. {nota}".strip(". "),
-        "Llego_WhatsApp": False, "Origen": data.get("origen", "Formulario Web"),
+        "Zona": zona, "Tipo_Propiedad": tipo,
+        "Operacion": "Venta",
+        "Estado": estado_at,
+        "Notas_Bot": f"Score: {score}. Objetivo: {operacion}. Presupuesto: {presupuesto}. Plazo: {urgencia}. {nota}".strip(". "),
+        "Llego_WhatsApp": False,
     }
+    # Campos opcionales — solo agregar si tienen valor para no romper validaciones Airtable
+    if email:
+        campos["Email"] = email
     if records:
-        requests.patch(f"{url_at}/{records[0]['id']}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        r_at = requests.patch(f"{url_at}/{records[0]['id']}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        print(f"[MAICOL-LEAD] PATCH Airtable {r_at.status_code}: {r_at.text[:200]}")
     else:
         campos["Fecha_WhatsApp"] = hoy
-        requests.post(url_at, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        r_at = requests.post(url_at, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        print(f"[MAICOL-LEAD] POST Airtable {r_at.status_code}: {r_at.text[:200]}")
 
     # Pre-cargar sesión para que el bot no repita preguntas
     SESIONES[telefono] = {
@@ -650,10 +658,14 @@ async def recibir_lead(request: Request):
     )
     _enviar_texto(telefono, msg_bienvenida)
 
-    # Mostrar propiedades disponibles
-    props = _at_buscar_propiedades(tipo=tipo, zona=zona)
+    # Mostrar propiedades — si el tipo tiene comas (multi-select), tomar solo el primero
+    tipo_busqueda = tipo.split(",")[0].strip() if tipo else None
+    props = _at_buscar_propiedades(tipo=tipo_busqueda, zona=zona if zona != "Otra zona" else None)
+    # Fallback: buscar sin filtro de tipo si no hay resultados
+    if not props and tipo_busqueda:
+        props = _at_buscar_propiedades(zona=zona if zona != "Otra zona" else None)
     if props:
-        _mostrar_lista(telefono, tipo, "lotes disponibles", "Venta", zona)
+        _mostrar_lista(telefono, tipo_busqueda or "lote", "lotes disponibles", "Venta", zona)
     else:
         _enviar_texto(telefono, "📋 Estamos actualizando nuestro inventario. Un asesor te contacta en breve con las opciones disponibles.")
 
