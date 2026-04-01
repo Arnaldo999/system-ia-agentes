@@ -802,7 +802,20 @@
       <div class="mf"><label>Dormitorios</label><input type="number" id="pp-dorms" placeholder="2" min="0"></div>
       <div class="mf"><label>Google Maps URL</label><input type="url" id="pp-maps" placeholder="https://maps.google.com/..."></div>
       <div class="mf" style="grid-column:1/-1"><label>Descripción</label><textarea id="pp-desc" rows="3" placeholder="Descripción detallada de la propiedad..."></textarea></div>
-      <div class="mf" style="grid-column:1/-1"><label>Imagen URL <span style="font-weight:400;color:var(--text2);font-size:11px">— link directo a imagen (jpg, png, etc)</span></label><input type="url" id="pp-imagen" placeholder="https://...imagen.jpg"></div>
+      <div class="mf" style="grid-column:1/-1">
+        <label>Imagen <span style="font-weight:400;color:var(--text2);font-size:11px">— subí desde tu dispositivo o pegá una URL</span></label>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <input type="url" id="pp-imagen" placeholder="https://...imagen.jpg" style="flex:1">
+          <label style="cursor:pointer;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;white-space:nowrap;color:var(--text)" id="pp-imagen-label">
+            📁 Subir foto
+            <input type="file" id="pp-imagen-file" accept="image/*" style="display:none" onchange="subirImagenProp(this)">
+          </label>
+        </div>
+        <div id="pp-imagen-preview" style="display:none;margin-top:4px">
+          <img id="pp-imagen-img" src="" style="max-height:80px;border-radius:6px;border:1px solid var(--border)">
+          <span id="pp-imagen-status" style="font-size:11px;color:var(--text2);margin-left:8px"></span>
+        </div>
+      </div>
       <div class="mf" style="grid-column:1/-1"><label>Video YouTube URL <span style="font-weight:400;color:var(--text2);font-size:11px">— el bot lo envía automáticamente</span></label><input type="url" id="pp-video" placeholder="https://youtube.com/watch?v=..."></div>
     </div>
     <div id="propFeedback" style="font-size:12px;min-height:18px;margin-bottom:6px"></div>
@@ -1294,7 +1307,45 @@ function abrirModalProp(idx) {
   document.getElementById('pp-imagen').value     = imgVal;
   document.getElementById('pp-video').value      = p?.Video_URL || '';
   document.getElementById('propFeedback').textContent = '';
+  // Reset file input y preview
+  const fi = document.getElementById('pp-imagen-file'); if(fi) fi.value = '';
+  const prev = document.getElementById('pp-imagen-preview'); if(prev) prev.style.display='none';
+  // Mostrar preview si ya tiene imagen
+  if(imgVal) {
+    const img = document.getElementById('pp-imagen-img'); if(img) img.src = imgVal;
+    if(prev) prev.style.display = 'block';
+    const st = document.getElementById('pp-imagen-status'); if(st) st.textContent = '';
+  }
   openModal('modalProp');
+}
+
+async function subirImagenProp(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const preview = document.getElementById('pp-imagen-preview');
+  const img     = document.getElementById('pp-imagen-img');
+  const status  = document.getElementById('pp-imagen-status');
+  const urlInput = document.getElementById('pp-imagen');
+
+  // Mostrar preview local inmediato
+  img.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+  status.textContent = '⏳ Subiendo...';
+  status.style.color = 'var(--text2)';
+
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${API_BASE}/crm/upload-imagen`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    urlInput.value = data.url;
+    status.textContent = '✅ Subida OK';
+    status.style.color = 'var(--green)';
+  } catch(err) {
+    status.textContent = '❌ Error: ' + err.message;
+    status.style.color = 'var(--red)';
+  }
 }
 
 async function guardarProp() {

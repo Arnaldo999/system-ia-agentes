@@ -14,6 +14,8 @@ from fastapi import APIRouter, Request
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY        = os.environ.get("GEMINI_API_KEY", "")
+CLOUDINARY_CLOUD_NAME   = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_UPLOAD_PRESET = os.environ.get("CLOUDINARY_UPLOAD_PRESET", "")
 YCLOUD_API_KEY        = os.environ.get("YCLOUD_API_KEY_MAICOL", "") or os.environ.get("YCLOUD_API_KEY", "")
 AIRTABLE_TOKEN        = os.environ.get("AIRTABLE_TOKEN_MAICOL", "") or os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
 AIRTABLE_BASE_ID      = os.environ.get("AIRTABLE_BASE_ID_MAICOL", "appaDT7uwHnimVZLM")
@@ -656,6 +658,28 @@ async def crm_editar_cliente(record_id: str, request: Request):
     if r.status_code not in (200, 201):
         raise HTTPException(status_code=r.status_code, detail=r.text)
     return {"status": "ok", "record": r.json()}
+
+
+@router.post("/crm/upload-imagen")
+async def crm_upload_imagen(request: Request):
+    """Recibe imagen multipart, la sube a Cloudinary y devuelve la URL."""
+    from fastapi import HTTPException
+    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_UPLOAD_PRESET:
+        raise HTTPException(status_code=500, detail="Cloudinary no configurado")
+    form = await request.form()
+    file = form.get("file")
+    if not file:
+        raise HTTPException(status_code=400, detail="No se recibió ningún archivo")
+    content = await file.read()
+    resp = requests.post(
+        f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+        files={"file": (file.filename, content, file.content_type)},
+        data={"upload_preset": CLOUDINARY_UPLOAD_PRESET},
+        timeout=30,
+    )
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=resp.status_code, detail=resp.text[:300])
+    return {"url": resp.json().get("secure_url")}
 
 
 @router.get("/config")
