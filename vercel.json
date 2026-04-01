@@ -1,11 +1,13 @@
 {
   "rewrites": [
-    { "source": "/crm",                      "destination": "/DEMOS/demo-crm-mvp.html" },
-    { "source": "/informe",                  "destination": "/DEMOS/informe-mercado-inmobiliario.html" },
-    { "source": "/formulario-desarrolladora","destination": "/DEMOS/formulario-desarrolladora.html" },
-    { "source": "/formulario-agencia",       "destination": "/DEMOS/formulario-agencia.html" },
-    { "source": "/formulario-agente",        "destination": "/DEMOS/formulario-agente.html" },
-    { "source": "/back-urbanizaciones/crm",       "destination": "/DEMOS/back-urbanizaciones/crm.html" },
-    { "source": "/back-urbanizaciones/formulario","destination": "/DEMOS/back-urbanizaciones/formulario.html" }
+    { "source": "/(.*)", "has": [{"type":"host","value":"form.backurbanizaciones.com.ar"}], "destination": "/DEMOS/back-urbanizaciones/formulario.html" },
+    { "source": "/(.*)", "has": [{"type":"host","value":"crm.backurbanizaciones.com.ar"}],  "destination": "/DEMOS/back-urbanizaciones/crm.html" },
+    { "source": "/crm",                       "destination": "/DEMOS/demo-crm-mvp.html" },
+    { "source": "/informe",                   "destination": "/DEMOS/informe-mercado-inmobiliario.html" },
+    { "source": "/formulario-desarrolladora", "destination": "/DEMOS/formulario-desarrolladora.html" },
+    { "source": "/formulario-agencia",        "destination": "/DEMOS/formulario-agencia.html" },
+    { "source": "/formulario-agente",         "destination": "/DEMOS/formulario-agente.html" },
+    { "source": "/back-urbanizaciones/crm",        "destination": "/DEMOS/back-urbanizaciones/crm.html" },
+    { "source": "/back-urbanizaciones/formulario", "destination": "/DEMOS/back-urbanizaciones/formulario.html" }
   ]
 }
