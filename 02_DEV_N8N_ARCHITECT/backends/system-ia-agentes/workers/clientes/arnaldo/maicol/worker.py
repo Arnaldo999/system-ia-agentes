@@ -619,6 +619,27 @@ def crm_clientes():
     return {"records": records}
 
 
+@router.post("/crm/clientes")
+async def crm_crear_cliente(request: Request):
+    """Crea un nuevo cliente en Airtable desde el CRM."""
+    from fastapi import HTTPException
+    data = await request.json()
+    campos_validos = {
+        "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
+        "Presupuesto", "Zona", "Estado", "Llego_WhatsApp", "Notas_Bot", "Fuente",
+    }
+    campos = {k: v for k, v in data.items() if k in campos_validos and v is not None}
+    estados_validos = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
+    campos.setdefault("Estado", "no_contactado")
+    if campos["Estado"] not in estados_validos:
+        raise HTTPException(status_code=422, detail=f"Estado inválido: {campos['Estado']}")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "record": r.json()}
+
+
 @router.patch("/crm/clientes/{record_id}")
 async def crm_editar_cliente(record_id: str, request: Request):
     """Actualiza un cliente en Airtable desde el CRM."""

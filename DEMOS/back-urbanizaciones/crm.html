@@ -418,7 +418,6 @@
           <div class="sh-title">Bienvenido, <span id="dashUsuario">Maicol</span> 👋</div>
           <div class="sh-sub" id="dashSub">Cargando datos desde Airtable...</div>
         </div>
-        <button class="btn btn-primary" onclick="simLead()">⚡ Simular lead nuevo</button>
       </div>
 
       <!-- KPIs -->
@@ -501,7 +500,6 @@
           <div class="sh-sub">Todos tus leads ordenados por etapa — el bot mueve los contactados automáticamente</div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-green" onclick="simLead()">⚡ Simular lead nuevo</button>
           <button class="btn btn-primary" onclick="openModal('modalNuevo')">+ Agregar lead</button>
         </div>
       </div>
@@ -763,15 +761,15 @@
     <button class="mc" onclick="closeModal('modalNuevo')">✕</button>
     <h3>Agregar nuevo lead</h3>
     <div class="mf"><label>Nombre completo</label><input type="text" placeholder="Ej: Juan Pérez" id="nl-name"></div>
-    <div class="mf"><label>Teléfono WhatsApp</label><input type="tel" placeholder="+52 55 1234-5678"></div>
-    <div class="mf"><label>Interés / Propiedad</label><input type="text" placeholder="Ej: Lote en Fracc. Norte, $200K"></div>
+    <div class="mf"><label>Teléfono WhatsApp</label><input type="tel" placeholder="+543765384843" id="nl-phone"></div>
+    <div class="mf"><label>Interés / Propiedad</label><input type="text" placeholder="Ej: Lote en San Ignacio" id="nl-interes"></div>
     <div class="mf"><label>Origen</label>
-      <select><option>💬 WhatsApp</option><option>📋 Formulario Web</option><option>🔥 Referido</option></select>
+      <select id="nl-origen"><option value="wa">💬 WhatsApp</option><option value="form">📋 Formulario Web</option></select>
     </div>
-    <div class="mf"><label>Notas</label><textarea rows="2" placeholder="Observaciones..."></textarea></div>
+    <div class="mf"><label>Notas</label><textarea rows="2" placeholder="Observaciones..." id="nl-notas"></textarea></div>
     <div class="ma">
       <button class="btn" onclick="closeModal('modalNuevo')">Cancelar</button>
-      <button class="btn btn-primary" onclick="crearLead()">Crear + Iniciar bot 🤖</button>
+      <button class="btn btn-primary" id="btnCrearLead" onclick="crearLead()">Crear + Iniciar bot 🤖</button>
     </div>
   </div>
 </div>
@@ -1741,13 +1739,45 @@ function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
 
-function crearLead() {
-  const name=document.getElementById('nl-name').value||'Nuevo Contacto';
-  closeModal('modalNuevo');
-  showNotif('✅ Lead creado','Bot iniciará conversación en WhatsApp en segundos');
-  addAct(`<strong>Lead creado manualmente: ${name}</strong> — bot iniciará contacto en WhatsApp`, 'var(--accent)', 'ahora mismo');
-  const kt=document.getElementById('kpi-total');
-  if(kt) kt.textContent=parseInt(kt.textContent)+1;
+async function crearLead() {
+  const name   = document.getElementById('nl-name').value.trim();
+  const phone  = document.getElementById('nl-phone').value.trim();
+  const interes= document.getElementById('nl-interes').value.trim();
+  const origen = document.getElementById('nl-origen').value;
+  const notas  = document.getElementById('nl-notas').value.trim();
+
+  if (!name || !phone) {
+    showNotif('⚠ Faltan datos', 'Nombre y teléfono son obligatorios');
+    return;
+  }
+
+  const btn = document.getElementById('btnCrearLead');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        Nombre: name,
+        Telefono: phone,
+        Notas_Bot: [interes, notas].filter(Boolean).join(' — ') || '',
+        Llego_WhatsApp: origen === 'wa',
+        Estado: 'no_contactado',
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    closeModal('modalNuevo');
+    // limpiar campos
+    ['nl-name','nl-phone','nl-interes','nl-notas'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    showNotif('✅ Lead creado', `${name} guardado en Airtable`);
+    addAct(`<strong>Lead creado manualmente: ${name}</strong> — guardado en Airtable`, 'var(--accent)', 'ahora mismo');
+    await cargarLeads();
+  } catch(err) {
+    showNotif('❌ Error al guardar', err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Crear + Iniciar bot 🤖'; }
+  }
 }
 
 // ── FORM PREVIEWS ──────────────────────────────────────────────────────────
