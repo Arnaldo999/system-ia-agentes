@@ -5,8 +5,8 @@
     "Micaela Colmenares"
   ],
   "timestamp_ultima_actualizacion": "2026-03-29T20:17:00",
-  "agente_activo": "crm",
-  "ultimo_modelo": "claude-sonnet-4-6",
+  "agente_activo": "dev",
+  "ultimo_modelo": "gemini",
 
   "infraestructura_por_proyecto": {
     "arnaldo_proyectos_propios": {
@@ -147,7 +147,7 @@
     "Micaela: Revisar analisis_gastronomia.md y armar propuesta/brief de servicios gastronómicos"
   ],
   "creditos_agotados": {
-    "claude": false,
+    "claude": true,
     "gemini": false
   }
 }
