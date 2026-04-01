@@ -576,6 +576,32 @@ def crm_propiedades():
     return {"records": records}
 
 
+@router.post("/crm/propiedades")
+async def crm_crear_propiedad(request: Request):
+    """Crea una nueva propiedad en Airtable."""
+    data = await request.json()
+    fields = data.get("fields", {})
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+
+@router.patch("/crm/propiedades/{record_id}")
+async def crm_editar_propiedad(record_id: str, request: Request):
+    """Actualiza una propiedad existente en Airtable."""
+    data = await request.json()
+    fields = data.get("fields", {})
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+
 @router.get("/crm/clientes")
 def crm_clientes():
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"

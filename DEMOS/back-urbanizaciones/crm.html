@@ -775,7 +775,7 @@
         <div style="display:flex;gap:8px;align-items:center">
           <div id="propsStatus" style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"></div>
           <button class="btn" onclick="renderProps()">↺ Actualizar</button>
-          <button class="btn btn-primary">+ Agregar propiedad</button>
+          <button class="btn btn-primary" onclick="abrirModalProp(null)">+ Agregar propiedad</button>
         </div>
       </div>
       <div class="props-grid" id="propsGrid">
@@ -941,6 +941,43 @@
     <div class="ma">
       <button class="btn" onclick="closeModal('modalNuevo')">Cancelar</button>
       <button class="btn btn-primary" onclick="crearLead()">Crear + Iniciar bot 🤖</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PROPIEDAD (agregar / editar) -->
+<div class="modal-bg" id="modalProp">
+  <div class="modal" style="max-width:520px">
+    <button class="mc" onclick="closeModal('modalProp')">✕</button>
+    <h3 id="modalPropTitulo">Nueva propiedad</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="mf" style="grid-column:1/-1"><label>Título *</label><input type="text" id="pp-titulo" placeholder="Ej: Terreno esquina ideal construcción"></div>
+      <div class="mf"><label>Operación *</label>
+        <select id="pp-operacion"><option value="">-- elegir --</option><option value="venta">Venta</option><option value="alquiler">Alquiler</option></select>
+      </div>
+      <div class="mf"><label>Tipo *</label>
+        <select id="pp-tipo"><option value="">-- elegir --</option><option value="terreno">Terreno</option><option value="casa">Casa</option><option value="departamento">Departamento</option><option value="casa_terreno">Casa + Terreno</option></select>
+      </div>
+      <div class="mf"><label>Zona *</label>
+        <select id="pp-zona"><option value="">-- elegir --</option><option value="San Ignacio">San Ignacio</option><option value="Gdor Roca">Gdor Roca</option><option value="Apóstoles">Apóstoles</option><option value="Leandro N. Alem">Leandro N. Alem</option></select>
+      </div>
+      <div class="mf"><label>Estado</label>
+        <select id="pp-disponible"><option value="✅ Disponible">✅ Disponible</option><option value="⏳ Reservado">⏳ Reservado</option><option value="❌ No disponible">❌ No disponible</option></select>
+      </div>
+      <div class="mf"><label>Precio</label><input type="number" id="pp-precio" placeholder="28000"></div>
+      <div class="mf"><label>Moneda</label>
+        <select id="pp-moneda"><option value="USD">USD</option><option value="ARS">ARS</option></select>
+      </div>
+      <div class="mf"><label>Metros cubiertos</label><input type="number" id="pp-m-cub" placeholder="55"></div>
+      <div class="mf"><label>Metros terreno</label><input type="number" id="pp-m-terr" placeholder="450"></div>
+      <div class="mf"><label>Dormitorios</label><input type="number" id="pp-dorms" placeholder="2" min="0"></div>
+      <div class="mf"><label>Google Maps URL</label><input type="url" id="pp-maps" placeholder="https://maps.google.com/..."></div>
+      <div class="mf" style="grid-column:1/-1"><label>Descripción</label><textarea id="pp-desc" rows="3" placeholder="Descripción detallada de la propiedad..."></textarea></div>
+    </div>
+    <div id="propFeedback" style="font-size:12px;min-height:18px;margin-bottom:6px"></div>
+    <div class="ma">
+      <button class="btn" onclick="closeModal('modalProp')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProp()">💾 Guardar en Airtable</button>
     </div>
   </div>
 </div>
@@ -1377,6 +1414,71 @@ async function guardarEstado(id) {
 // ── PROPS — conectado a Airtable via backend ────────────────────────────────
 const API_BASE = 'https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol';
 let PROPS_DATA = [];
+let PROP_EDIT_ID = null; // Airtable record ID cuando editamos
+
+function abrirModalProp(idx) {
+  // idx = número → editar existente | undefined/null → nueva propiedad
+  const p = (idx != null) ? PROPS_DATA[idx] : null;
+  PROP_EDIT_ID = p ? (p.id || null) : null;
+  document.getElementById('modalPropTitulo').textContent = p ? 'Editar propiedad' : 'Nueva propiedad';
+
+  document.getElementById('pp-titulo').value     = p?.Titulo || '';
+  document.getElementById('pp-operacion').value  = p?.Operacion || '';
+  document.getElementById('pp-tipo').value       = p?.Tipo || '';
+  document.getElementById('pp-zona').value       = p?.Zona || '';
+  document.getElementById('pp-disponible').value = p?.Disponible || '✅ Disponible';
+  document.getElementById('pp-precio').value     = p?.Precio || '';
+  document.getElementById('pp-moneda').value     = p?.Moneda || 'USD';
+  document.getElementById('pp-m-cub').value      = p?.Metros_Cubiertos || '';
+  document.getElementById('pp-m-terr').value     = p?.Metros_Terreno || '';
+  document.getElementById('pp-dorms').value      = p?.Dormitorios || '';
+  document.getElementById('pp-maps').value       = p?.Google_Maps_URL || '';
+  document.getElementById('pp-desc').value       = p?.Descripcion || '';
+  document.getElementById('propFeedback').textContent = '';
+  openModal('modalProp');
+}
+
+async function guardarProp() {
+  const fb = document.getElementById('propFeedback');
+  const titulo = document.getElementById('pp-titulo').value.trim();
+  if(!titulo) { fb.textContent = '⚠ El título es obligatorio.'; fb.style.color='var(--red,#f87171)'; return; }
+
+  const fields = {
+    Titulo:           titulo,
+    Operacion:        document.getElementById('pp-operacion').value || undefined,
+    Tipo:             document.getElementById('pp-tipo').value || undefined,
+    Zona:             document.getElementById('pp-zona').value || undefined,
+    Disponible:       document.getElementById('pp-disponible').value,
+    Descripcion:      document.getElementById('pp-desc').value.trim() || undefined,
+    Google_Maps_URL:  document.getElementById('pp-maps').value.trim() || undefined,
+  };
+  const precio = parseFloat(document.getElementById('pp-precio').value);
+  if(!isNaN(precio) && precio > 0) { fields.Precio = precio; fields.Moneda = document.getElementById('pp-moneda').value; }
+  const mc = parseInt(document.getElementById('pp-m-cub').value);   if(!isNaN(mc)  && mc  > 0) fields.Metros_Cubiertos = mc;
+  const mt = parseInt(document.getElementById('pp-m-terr').value);  if(!isNaN(mt)  && mt  > 0) fields.Metros_Terreno  = mt;
+  const dd = parseInt(document.getElementById('pp-dorms').value);   if(!isNaN(dd)  && dd >= 0) fields.Dormitorios      = dd;
+  // limpiar undefined
+  Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
+
+  fb.textContent = '⏳ Guardando...'; fb.style.color = 'var(--text2)';
+  try {
+    const url = PROP_EDIT_ID
+      ? `${API_BASE}/crm/propiedades/${PROP_EDIT_ID}`
+      : `${API_BASE}/crm/propiedades`;
+    const method = PROP_EDIT_ID ? 'PATCH' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({fields}),
+      signal: AbortSignal.timeout(12000)
+    });
+    if(!res.ok) { const err = await res.text(); throw new Error(err); }
+    fb.textContent = '✅ Guardado correctamente'; fb.style.color = 'var(--green,#34d399)';
+    setTimeout(() => { closeModal('modalProp'); renderProps(); }, 900);
+  } catch(e) {
+    fb.textContent = '❌ Error: ' + (e.message||'no se pudo guardar'); fb.style.color = 'var(--red,#f87171)';
+  }
+}
 
 function abrirDetalleProp(i) {
   const p = PROPS_DATA[i]; if(!p) return;
@@ -1418,6 +1520,7 @@ function abrirDetalleProp(i) {
     ${notas ? `<div style="background:var(--bg);border-radius:6px;padding:8px;font-size:12px;color:var(--text2);margin-bottom:12px">📝 ${notas}</div>` : ''}
     <div class="ma">
       ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn btn-primary" style="text-decoration:none">🗺 Ver en Maps</a>` : ''}
+      <button class="btn" onclick="closeModal('modalDetalle');abrirModalProp(${i})">✏️ Editar</button>
       <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
     </div>`;
   openModal('modalDetalle');
