@@ -670,6 +670,7 @@ async def recibir_lead(request: Request):
     presupuesto = data.get("presupuesto", "")
     urgencia  = data.get("urgencia", "")
     nota      = data.get("nota", "")
+    email     = data.get("email", "").strip()
 
     nombre_completo = f"{nombre} {apellido}".strip()
     score = "caliente" if urgencia in ("inmediata", "1-3 meses") else "tibio" if urgencia == "3-6 meses" else "frio"
@@ -737,6 +738,8 @@ async def recibir_lead(request: Request):
         campos["Presupuesto"] = presupuesto_at
     if zona_at:
         campos["Zona"] = zona_at
+    if email:
+        campos["Email"] = email
     if records:
         r_at = requests.patch(f"{url_at}/{records[0]['id']}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
         print(f"[MAICOL-LEAD] PATCH Airtable {r_at.status_code}: {r_at.text[:200]}")

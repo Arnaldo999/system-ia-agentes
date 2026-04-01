@@ -1311,6 +1311,10 @@ function openDetalle(id) {
         <input id="dl-phone" value="${l.phone||''}" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;width:100%">
       </div>
       <div style="background:var(--surface2);border-radius:8px;padding:11px">
+        <div style="color:var(--text2);font-size:11px;margin-bottom:5px">Email</div>
+        <input id="dl-email" value="${l.email||''}" type="email" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;width:100%">
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:11px">
         <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Presupuesto</div>
         <div style="font-weight:600;color:var(--accent2)">${l.presupuesto||'—'}</div>
       </div>
@@ -1380,6 +1384,7 @@ async function guardarLead(id) {
   if (!l) return;
   const nuevoAt = document.getElementById('selectEstado').value;
   const phone   = (document.getElementById('dl-phone')?.value || '').trim();
+  const email   = (document.getElementById('dl-email')?.value || '').trim();
   const notas   = (document.getElementById('dl-notas')?.value || '').trim();
   const fb = document.getElementById('estadoFeedback');
   fb.textContent = '⏳ Guardando...';
@@ -1387,6 +1392,7 @@ async function guardarLead(id) {
 
   const payload = { Estado: nuevoAt };
   if (phone)  payload.Telefono  = phone;
+  if (email)  payload.Email     = email;
   if (notas !== l.notas) payload.Notas_Bot = notas;
 
   try {
@@ -1402,6 +1408,7 @@ async function guardarLead(id) {
       fb.style.color = 'var(--green)';
       LEADS[id].status = AT_TO_STATUS[nuevoAt] || 'nuevo';
       LEADS[id].phone  = phone || l.phone;
+      LEADS[id].email  = email || l.email;
       LEADS[id].notas  = notas;
       renderLeads();
       renderKanbanFromLeads();
@@ -1412,6 +1419,7 @@ async function guardarLead(id) {
   } catch (err) {
     LEADS[id].status = AT_TO_STATUS[nuevoAt] || 'nuevo';
     LEADS[id].phone  = phone || l.phone;
+    LEADS[id].email  = email || l.email;
     LEADS[id].notas  = notas;
     renderLeads();
     renderKanbanFromLeads();
