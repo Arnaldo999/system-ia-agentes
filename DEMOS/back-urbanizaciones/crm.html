@@ -1428,7 +1428,7 @@ function abrirDetalleProp(i) {
   document.getElementById('detalleTitulo').textContent = titulo;
   document.getElementById('detalleBody').innerHTML = `
     ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:10px" onerror="this.remove()">` : ''}
-    ${videoId ? `<a href="${videoUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:14px;text-decoration:none;color:var(--text)"><img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" style="width:80px;height:50px;object-fit:cover;border-radius:5px;flex-shrink:0"><span style="font-size:13px;color:var(--accent)">▶ Ver en video</span></a>` : ''}
+    ${videoId ? `<a href="${videoUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:14px;text-decoration:none"><img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" style="width:80px;height:50px;object-fit:cover;border-radius:5px;flex-shrink:0"><span style="font-size:13px;font-weight:600;color:#fff">▶ Ver en video</span></a>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:14px">
       <div><span style="color:var(--text2)">Precio</span><br><strong style="color:var(--accent2)">${precioStr}</strong></div>
       <div><span style="color:var(--text2)">Estado</span><br><strong>${disponible}</strong></div>
