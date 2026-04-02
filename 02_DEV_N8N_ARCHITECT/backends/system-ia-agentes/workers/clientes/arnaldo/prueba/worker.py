@@ -211,7 +211,12 @@ async def whatsapp_webhook(request: Request):
     texto    = (wa_msg.get("text", {}) or {}).get("body", "").strip()
     nombre   = body.get("customerProfile", {}).get("name", "")
 
+    print(f"[Prueba] PARSED telefono={repr(telefono)} texto={repr(texto)} nombre={repr(nombre)}", flush=True)
+
     messages = [{"telefono": telefono, "texto": texto, "nombre": nombre}] if telefono and texto else []
+
+    if not messages:
+        print("[Prueba] SKIP — telefono o texto vacíos", flush=True)
 
     for msg in messages:
         telefono = msg["telefono"]
@@ -221,7 +226,7 @@ async def whatsapp_webhook(request: Request):
         if not telefono or not texto:
             continue
 
-        logger.info("[Prueba] Mensaje de %s: %s", telefono, texto[:50])
+        print(f"[Prueba] Procesando mensaje de {telefono}: {texto[:50]}", flush=True)
 
         # Actualizar sesión
         if telefono not in SESIONES:
@@ -231,11 +236,15 @@ async def whatsapp_webhook(request: Request):
         SESIONES[telefono]["historial"].append({"rol": "Usuario", "msg": texto})
 
         # Generar respuesta
+        print(f"[Prueba] Llamando Gemini... gemini_client={bool(_gemini_client)}", flush=True)
         respuesta = _responder_con_gemini(telefono, texto)
+        print(f"[Prueba] Gemini respondió: {respuesta[:80]}", flush=True)
         SESIONES[telefono]["historial"].append({"rol": "Asistente", "msg": respuesta})
 
         # Enviar por WhatsApp
+        print(f"[Prueba] Enviando YCloud a {telefono} key={'OK' if YCLOUD_API_KEY else 'VACIA'}", flush=True)
         _ycloud_send(telefono, respuesta)
+        print(f"[Prueba] YCloud send completado", flush=True)
 
         # Sincronizar en Chatwoot
         _sincronizar_chatwoot(telefono, SESIONES[telefono]["nombre"], texto, respuesta)
