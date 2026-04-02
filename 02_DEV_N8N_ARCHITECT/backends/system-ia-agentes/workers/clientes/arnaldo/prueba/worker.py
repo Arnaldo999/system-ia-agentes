@@ -63,7 +63,9 @@ def _cw_get_or_create_contact(telefono: str, nombre: str = "") -> str | None:
         print(f"[CW] search status={r.status_code} body={r.text[:200]}", flush=True)
         if r.status_code == 200:
             payload = r.json()
-            results = payload.get("payload", {}).get("contacts", []) or payload.get("payload", [])
+            # payload puede ser lista directa o dict con key "payload"
+            raw = payload.get("payload", []) if isinstance(payload, dict) else payload
+            results = raw.get("contacts", raw) if isinstance(raw, dict) else raw
             if results:
                 return str(results[0]["id"])
 
@@ -185,7 +187,7 @@ Asistente:"""
     if _gemini_client:
         try:
             resp = _gemini_client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-2.0-flash-lite",
                 contents=prompt,
             )
             return resp.text.strip()
