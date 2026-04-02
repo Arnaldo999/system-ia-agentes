@@ -195,11 +195,17 @@ Asistente:"""
 @router.post("/whatsapp")
 async def whatsapp_webhook(request: Request):
     try:
-        body = await request.json()
-    except Exception:
+        raw = await request.body()
+        print("[Prueba] RAW BYTES:", raw[:500], flush=True)
+        import json
+        body = json.loads(raw)
+    except Exception as e:
+        print("[Prueba] ERROR parsing body:", e, flush=True)
         return {"status": "ok"}
 
     print("[Prueba] RAW BODY:", str(body)[:500], flush=True)
+    print("[Prueba] KEYS:", list(body.keys()), flush=True)
+    print("[Prueba] from_raw:", repr(body.get("from")), flush=True)
 
     # Formato YCloud: type=whatsapp.inbound_message.received
     # Estructura: {type, from, to, customerProfile, whatsappInboundMessage: {text: {body}}}
