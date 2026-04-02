@@ -49,6 +49,7 @@ def _cw_base():
 
 def _cw_get_or_create_contact(telefono: str, nombre: str = "") -> str | None:
     """Busca o crea un contacto en Chatwoot. Retorna el contact_id."""
+    print(f"[CW] token={'OK' if CHATWOOT_API_TOKEN else 'VACIO'} url={CHATWOOT_URL} account={CHATWOOT_ACCOUNT_ID} inbox={CHATWOOT_INBOX_ID}", flush=True)
     if not CHATWOOT_API_TOKEN:
         return None
     try:
@@ -59,6 +60,7 @@ def _cw_get_or_create_contact(telefono: str, nombre: str = "") -> str | None:
             params={"q": telefono, "page": 1},
             timeout=8,
         )
+        print(f"[CW] search status={r.status_code} body={r.text[:200]}", flush=True)
         if r.status_code == 200:
             payload = r.json()
             results = payload.get("payload", {}).get("contacts", []) or payload.get("payload", [])
@@ -70,10 +72,11 @@ def _cw_get_or_create_contact(telefono: str, nombre: str = "") -> str | None:
         if nombre:
             body["name"] = nombre.strip()
         r2 = requests.post(f"{_cw_base()}/contacts", headers=_CW_HEADERS(), json=body, timeout=8)
+        print(f"[CW] create contact status={r2.status_code} body={r2.text[:200]}", flush=True)
         if r2.status_code in (200, 201):
             return str(r2.json().get("id") or r2.json().get("payload", {}).get("id"))
     except Exception as e:
-        logger.warning("[Chatwoot] Error get_or_create_contact: %s", e)
+        print(f"[CW] ERROR get_or_create_contact: {e}", flush=True)
     return None
 
 
