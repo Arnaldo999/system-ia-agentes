@@ -926,6 +926,7 @@ async function cargarLeads() {
         phone: f.Telefono || '',
         email: f.Email || '',
         origen: FUENTE_ORIGEN[f.Fuente] || (f.Llego_WhatsApp ? 'wa' : 'form'),
+        estadoAt: estadoAirtable,  // estado real de Airtable, sin transformar
         status,
         interes: [operLabel[f.Operacion] || f.Operacion, f.Tipo_Propiedad, f.Zona].filter(Boolean).join(' · ') || 'Sin especificar',
         fecha: f.Fecha_WhatsApp || (r.createdTime ? r.createdTime.slice(0,10) : ''),
@@ -1144,8 +1145,8 @@ function openDetalle(id) {
   const scoreColor = s => s >= 12 ? 'var(--green)' : s >= 7 ? 'var(--yellow)' : 'var(--red)';
   const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
 
-  // Valor actual en Airtable
-  const estadoAt = STATUS_TO_AT[l.status] || 'no_contactado';
+  // Valor actual en Airtable — usar directamente el estado real guardado
+  const estadoAt = l.estadoAt || STATUS_TO_AT[l.status] || 'no_contactado';
   const estadoOpts = [
     {v:'no_contactado', label:'🔵 No contactado'},
     {v:'contactado',    label:'🟡 Contactado'},
@@ -1256,7 +1257,10 @@ async function guardarLead(id) {
     if (res.ok && data.status === 'ok') {
       fb.textContent = '✅ Guardado en Airtable';
       fb.style.color = 'var(--green)';
-      LEADS[id].status = AT_TO_STATUS[nuevoAt] || 'nuevo';
+      LEADS[id].estadoAt = nuevoAt;
+      LEADS[id].status = l.status === 'cita' && nuevoAt === 'en_negociacion'
+        ? 'cita'  // conservar columna cita si tenía cita y no cambió lógicamente
+        : (AT_TO_STATUS[nuevoAt] || 'nuevo');
       LEADS[id].phone  = phone || l.phone;
       LEADS[id].email  = email || l.email;
       LEADS[id].notas  = notas;
