@@ -1337,7 +1337,7 @@ async def crm_upload_imagen(request: Request):
     resp = requests.post(
         f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
         files={"file": (file.filename, content, file.content_type)},
-        data={"upload_preset": CLOUDINARY_UPLOAD_PRESET},
+        data={"upload_preset": CLOUDINARY_UPLOAD_PRESET, "folder": "demos/inmobiliaria"},
         timeout=30,
     )
     if resp.status_code not in (200, 201):
