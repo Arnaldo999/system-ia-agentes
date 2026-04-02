@@ -736,26 +736,33 @@ async def recibir_lead(request: Request):
 
     # Tipo_Propiedad: formulario puede mandar lista — tomar primero
     tipo_limpio = tipo.split(",")[0].strip() if isinstance(tipo, str) else (tipo[0] if isinstance(tipo, list) and tipo else "")
-    tipo_map = {"terreno": "terreno", "casa": "casa", "departamento": "departamento",
-                "casa_terreno": "casa_terreno", "": None}
-    tipo_at = tipo_map.get(tipo_limpio.lower(), "otro") if tipo_limpio else None
+    # Mapear a valores exactos del singleSelect de Airtable
+    tipo_map = {
+        "lote residencial": "Lote residencial",
+        "lote comercial":   "Lote comercial",
+        "lote en esquina":  "Lote en esquina",
+        "terreno rural":    "Terreno rural",
+        "terreno":          "Terreno rural",
+        "casa":             "Casa",
+        "departamento":     "Departamento",
+        "lote":             "Lote residencial",
+    }
+    tipo_at = tipo_map.get(tipo_limpio.lower()) if tipo_limpio else None
 
-    # Presupuesto: número → rango Airtable (hata_50k|50k_100k|100k_200k|mas_200k)
-    try:
-        p_num = float(presupuesto) if presupuesto else 0
-        # Si es ARS estimamos en USD /1000 aprox para el rango
-        if data.get("moneda", "USD") == "ARS":
-            p_num = p_num / 1200
-    except (ValueError, TypeError):
-        p_num = 0
-    if p_num <= 50000:
-        presupuesto_at = "hata_50k"
-    elif p_num <= 100000:
-        presupuesto_at = "50k_100k"
-    elif p_num <= 200000:
-        presupuesto_at = "100k_200k"
-    else:
-        presupuesto_at = "mas_200k"
+    # Presupuesto: el formulario ya manda string legible — mapear a singleSelect Airtable
+    pres_map = {
+        "hasta usd 20.000":   "hata_50k",
+        "hasta usd 50.000":   "hata_50k",
+        "hasta usd 80.000":   "50k_100k",
+        "hasta usd 120.000":  "100k_200k",
+        "hasta usd 200.000":  "100k_200k",
+        "más de usd 200.000": "mas_200k",
+        "mas de usd 200.000": "mas_200k",
+        # también acepta valores crudos por si acaso
+        "hata_50k": "hata_50k", "50k_100k": "50k_100k",
+        "100k_200k": "100k_200k", "mas_200k": "mas_200k",
+    }
+    presupuesto_at = pres_map.get((presupuesto or "").lower().strip()) or None
 
     # Zona: verificar que sea un valor válido
     zonas_validas = {"San Ignacio", "Gdor Roca", "Apóstoles", "Leandro N. Alem"}
