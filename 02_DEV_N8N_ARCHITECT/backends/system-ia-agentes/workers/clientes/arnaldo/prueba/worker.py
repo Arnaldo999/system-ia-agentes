@@ -182,7 +182,7 @@ Asistente:"""
     if _gemini_client:
         try:
             resp = _gemini_client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash-preview-04-17",
                 contents=prompt,
             )
             return resp.text.strip()
@@ -195,15 +195,9 @@ Asistente:"""
 @router.post("/whatsapp")
 async def whatsapp_webhook(request: Request):
     try:
-        raw = await request.body()
-        print("[Prueba] RAW BYTES:", raw[:500], flush=True)
-        import json
-        body = json.loads(raw)
-    except Exception as e:
-        print("[Prueba] ERROR parsing body:", e, flush=True)
+        body = await request.json()
+    except Exception:
         return {"status": "ok"}
-
-    print("[Prueba] RAW BODY:", str(body)[:300], flush=True)
 
     # Formato YCloud real: from/customerProfile están DENTRO de whatsappInboundMessage
     if body.get("type") != "whatsapp.inbound_message.received":
@@ -214,43 +208,27 @@ async def whatsapp_webhook(request: Request):
     texto    = (wa_msg.get("text", {}) or {}).get("body", "").strip()
     nombre   = (wa_msg.get("customerProfile", {}) or {}).get("name", "")
 
-    print(f"[Prueba] PARSED telefono={repr(telefono)} texto={repr(texto)} nombre={repr(nombre)}", flush=True)
+    if not telefono or not texto:
+        return {"status": "ignored", "detail": "sin telefono o texto"}
 
-    messages = [{"telefono": telefono, "texto": texto, "nombre": nombre}] if telefono and texto else []
+    logger.info("[Prueba] Mensaje de %s: %s", telefono, texto[:50])
 
-    if not messages:
-        print("[Prueba] SKIP — telefono o texto vacíos", flush=True)
+    # Actualizar sesión
+    if telefono not in SESIONES:
+        SESIONES[telefono] = {"nombre": nombre, "historial": []}
+    if nombre:
+        SESIONES[telefono]["nombre"] = nombre
+    SESIONES[telefono]["historial"].append({"rol": "Usuario", "msg": texto})
 
-    for msg in messages:
-        telefono = msg["telefono"]
-        texto    = msg["texto"]
-        nombre   = msg["nombre"]
+    # Generar respuesta
+    respuesta = _responder_con_gemini(telefono, texto)
+    SESIONES[telefono]["historial"].append({"rol": "Asistente", "msg": respuesta})
 
-        if not telefono or not texto:
-            continue
+    # Enviar por WhatsApp
+    _ycloud_send(telefono, respuesta)
 
-        print(f"[Prueba] Procesando mensaje de {telefono}: {texto[:50]}", flush=True)
-
-        # Actualizar sesión
-        if telefono not in SESIONES:
-            SESIONES[telefono] = {"nombre": nombre, "historial": []}
-        if nombre:
-            SESIONES[telefono]["nombre"] = nombre
-        SESIONES[telefono]["historial"].append({"rol": "Usuario", "msg": texto})
-
-        # Generar respuesta
-        print(f"[Prueba] Llamando Gemini... gemini_client={bool(_gemini_client)}", flush=True)
-        respuesta = _responder_con_gemini(telefono, texto)
-        print(f"[Prueba] Gemini respondió: {respuesta[:80]}", flush=True)
-        SESIONES[telefono]["historial"].append({"rol": "Asistente", "msg": respuesta})
-
-        # Enviar por WhatsApp
-        print(f"[Prueba] Enviando YCloud a {telefono} key={'OK' if YCLOUD_API_KEY else 'VACIA'}", flush=True)
-        _ycloud_send(telefono, respuesta)
-        print(f"[Prueba] YCloud send completado", flush=True)
-
-        # Sincronizar en Chatwoot
-        _sincronizar_chatwoot(telefono, SESIONES[telefono]["nombre"], texto, respuesta)
+    # Sincronizar en Chatwoot
+    _sincronizar_chatwoot(telefono, SESIONES[telefono]["nombre"], texto, respuesta)
 
     return {"status": "ok"}
 
