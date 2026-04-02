@@ -356,8 +356,15 @@
       </div>
     </div>
     <div class="form-group">
-      <label>URL de imagen</label>
-      <input class="form-control" id="mp-imagen-url" placeholder="https://..." oninput="previewImg()" />
+      <label>Imagen</label>
+      <input class="form-control" id="mp-imagen-url" placeholder="https://... (pegar URL)" oninput="previewImg()" style="margin-bottom:8px" />
+      <div style="display:flex;align-items:center;gap:10px;">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">
+          📂 Subir desde dispositivo
+          <input type="file" id="mp-imagen-file" accept="image/*" style="display:none" onchange="uploadImgDemo(this)" />
+        </label>
+        <span id="mp-upload-status" style="font-size:0.8rem;color:var(--text-muted)"></span>
+      </div>
       <img id="mp-img-preview" class="img-preview" alt="preview" />
     </div>
     <div class="form-group">
@@ -379,7 +386,7 @@
 <div id="modal-lead" class="modal-overlay">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-lead')">✕</button>
-    <div class="modal-title">✏️ Editar lead</div>
+    <div class="modal-title" id="modal-lead-title">✏️ Editar lead</div>
     <input type="hidden" id="ml-record-id" />
     <div class="form-row">
       <div class="form-group">
@@ -1244,12 +1251,13 @@ function renderGaleria() {
       ? `<img src="${imgUrl}" alt="${p.Titulo||''}" loading="lazy" style="border-radius:12px;width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<div class=\\'gallery-img-placeholder\\'>${icono}</div>'">`
       : `<div class="gallery-img-placeholder">${icono}</div>`;
 
-    const ytEmbed = p.Video_URL ? (() => {
+    const ytLink = p.Video_URL ? (() => {
       const m = p.Video_URL.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
       if (!m) return '';
-      return `<div style="margin-top:10px;border-radius:8px;overflow:hidden">
-        <iframe width="100%" height="180" src="https://www.youtube.com/embed/${m[1]}" frameborder="0" allowfullscreen style="display:block"></iframe>
-      </div>`;
+      return `<a href="${p.Video_URL}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;background:#f3f4f6;border-radius:8px;padding:7px;margin-top:10px;text-decoration:none;color:inherit">
+        <img src="https://img.youtube.com/vi/${m[1]}/mqdefault.jpg" style="width:72px;height:45px;object-fit:cover;border-radius:5px;flex-shrink:0">
+        <span style="font-size:12px;color:var(--success);font-weight:600">▶ Ver en video</span>
+      </a>`;
     })() : '';
 
     return `
@@ -1269,7 +1277,7 @@ function renderGaleria() {
           ${p.Dormitorios ? `<span>🛏 ${p.Dormitorios} dor.</span>` : ''}
           ${p.Metros_Cubiertos || p.Metros_Terreno ? `<span>📐 ${p.Metros_Cubiertos || p.Metros_Terreno}m²</span>` : ''}
         </div>
-        ${ytEmbed}
+        ${ytLink}
         <div class="card-footer">
           <div>
             <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Valor de Lista</div>
@@ -1299,12 +1307,13 @@ function verDetalle(recordId) {
     ? `<img src="${imgUrl}" style="width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-bottom:16px;" />`
     : '';
 
-  const ytEmbed = p.Video_URL ? (() => {
+  const ytLink = p.Video_URL ? (() => {
     const m = p.Video_URL.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
     if (!m) return '';
-    return `<div style="margin-top:12px;border-radius:10px;overflow:hidden">
-      <iframe width="100%" height="250" src="https://www.youtube.com/embed/${m[1]}" frameborder="0" allowfullscreen style="display:block"></iframe>
-    </div>`;
+    return `<a href="${p.Video_URL}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:#f3f4f6;border-radius:8px;padding:8px;margin-top:12px;text-decoration:none;color:inherit">
+      <img src="https://img.youtube.com/vi/${m[1]}/mqdefault.jpg" style="width:80px;height:50px;object-fit:cover;border-radius:5px;flex-shrink:0">
+      <span style="font-size:13px;color:var(--success);font-weight:600">▶ Ver en video</span>
+    </a>`;
   })() : '';
 
   const detalles = [
@@ -1323,7 +1332,7 @@ function verDetalle(recordId) {
     <div style="font-size:1.1rem;font-weight:800;color:#3a6b35;margin-bottom:12px">${fmtPrecio(p.Precio, p.Moneda)} ${p.Moneda||''}</div>
     <div style="font-size:0.88rem;color:#4a5a3a;margin-bottom:16px">${p.Descripcion || ''}</div>
     <div style="font-size:0.85rem">${detalles}</div>
-    ${ytEmbed}
+    ${ytLink}
     <div style="margin-top:16px;display:flex;gap:8px;">
       <button class="btn btn-outline btn-sm" onclick="openModalEditarProp('${p.id}');closeModal('modal-detalle')">✏️ Editar</button>
       <button class="btn btn-outline btn-sm" onclick="closeModal('modal-detalle')">Cerrar</button>
@@ -1385,6 +1394,25 @@ function previewImg() {
   else { img.style.display = 'none'; }
 }
 
+async function uploadImgDemo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('mp-upload-status');
+  status.textContent = 'Subiendo...';
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const r = await fetch(`${API}/demos/inmobiliaria/crm/upload-imagen`, { method: 'POST', body: form });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { url } = await r.json();
+    document.getElementById('mp-imagen-url').value = url;
+    previewImg();
+    status.textContent = '✅ Imagen subida';
+  } catch(e) {
+    status.textContent = '❌ Error: ' + e.message;
+  }
+}
+
 async function guardarPropiedad() {
   const recordId = document.getElementById('mp-record-id').value;
   const titulo   = document.getElementById('mp-titulo').value.trim();
@@ -1424,6 +1452,7 @@ async function guardarPropiedad() {
       showToast('Propiedad creada correctamente');
     }
     closeModal('modal-prop');
+    document.getElementById('mp-upload-status').textContent = '';
     await loadAll();
   } catch(e) {
     showToast('Error al guardar: ' + e.message, 'error');
@@ -1436,6 +1465,7 @@ async function guardarPropiedad() {
 function openModalEditarLead(recordId) {
   const l = allLeads.find(x => x.id === recordId);
   if (!l) return;
+  document.getElementById('modal-lead-title').textContent = '✏️ Editar lead';
   document.getElementById('ml-record-id').value  = recordId;
   document.getElementById('ml-nombre').value     = l.Nombre || '';
   document.getElementById('ml-apellido').value   = l.Apellido || '';
@@ -1451,6 +1481,7 @@ function openModalEditarLead(recordId) {
 }
 
 function openModalNuevoLead() {
+  document.getElementById('modal-lead-title').textContent = '+ Nuevo lead';
   document.getElementById('ml-record-id').value = '';
   ['ml-nombre','ml-apellido','ml-telefono','ml-email','ml-notas'].forEach(id => document.getElementById(id).value = '');
   ['ml-zona','ml-operacion','ml-tipo','ml-presupuesto','ml-subniche'].forEach(id => document.getElementById(id).value = '');
@@ -1486,12 +1517,21 @@ async function guardarLead() {
   if (notas) fields.Notas_Bot = notas;
 
   try {
-    await patchProxy(`/demos/inmobiliaria/crm/clientes/${recordId}`, fields);
-    const lead = allLeads.find(l => l.id === recordId);
-    if (lead) Object.assign(lead, { Nombre: nombre, Apellido: apellido, Telefono: telefono, Email: email, Zona: zona, Operacion: operacion, Tipo_Propiedad: tipo, Presupuesto: presupuesto, Subniche: subniche, Notas_Bot: notas });
+    if (recordId) {
+      await patchProxy(`/demos/inmobiliaria/crm/clientes/${recordId}`, fields);
+      const lead = allLeads.find(l => l.id === recordId);
+      if (lead) Object.assign(lead, { Nombre: nombre, Apellido: apellido, Telefono: telefono, Email: email, Zona: zona, Operacion: operacion, Tipo_Propiedad: tipo, Presupuesto: presupuesto, Subniche: subniche, Notas_Bot: notas });
+      showToast('Lead actualizado correctamente');
+    } else {
+      await postProxy('/demos/inmobiliaria/crm/clientes', fields);
+      await loadAll();
+      showToast('Lead creado correctamente');
+    }
     closeModal('modal-lead');
     renderLeads();
-    showToast('Lead actualizado correctamente');
+    renderStats();
+    renderPipeline();
+    renderResumen();
   } catch(e) {
     showToast('Error al guardar: ' + e.message, 'error');
   }

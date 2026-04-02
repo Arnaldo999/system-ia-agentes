@@ -45,7 +45,9 @@ from fastapi import APIRouter, Request
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY", "")
-AIRTABLE_TOKEN  = os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
+AIRTABLE_TOKEN       = os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
+CLOUDINARY_CLOUD_NAME   = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_UPLOAD_PRESET = os.environ.get("CLOUDINARY_UPLOAD_PRESET", "")
 YCLOUD_API_KEY  = os.environ.get("INMO_DEMO_YCLOUD_KEY", "") or os.environ.get("YCLOUD_API_KEY", "")
 
 NOMBRE_EMPRESA  = os.environ.get("INMO_DEMO_NOMBRE",       "System IA — Demo Inmobiliaria")
@@ -1234,8 +1236,9 @@ def crm_clientes():
 
 
 @router.patch("/crm/clientes/{record_id}")
-async def actualizar_estado_cliente(record_id: str, request: Request):
-    """Actualiza el Estado (y opcionalmente Notas_Bot) de un lead en Airtable."""
+async def actualizar_cliente(record_id: str, request: Request):
+    """Actualiza campos de un lead en Airtable (Estado, datos, notas, etc.)."""
+    from fastapi import HTTPException
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
         return {"status": "error", "detalle": "Airtable no configurado"}
     try:
@@ -1243,26 +1246,103 @@ async def actualizar_estado_cliente(record_id: str, request: Request):
     except Exception:
         return {"status": "error", "detalle": "body no es JSON válido"}
 
+    CAMPOS_VALIDOS = {
+        "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
+        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Subniche", "Fuente",
+        "fecha_ultimo_contacto",
+    }
     ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
-    nuevo_estado = body.get("Estado", "").strip()
-    if nuevo_estado and nuevo_estado not in ESTADOS_VALIDOS:
-        return {"status": "error", "detalle": f"Estado inválido. Valores: {sorted(ESTADOS_VALIDOS)}"}
 
-    campos: dict = {}
-    if nuevo_estado:
-        campos["Estado"] = nuevo_estado
-    notas = body.get("Notas_Bot", "").strip()
-    if notas:
-        campos["Notas_Bot"] = notas
+    # Acepta campos directamente o bajo 'fields'
+    fields = body.get("fields", body)
+    campos = {k: v for k, v in fields.items() if k in CAMPOS_VALIDOS and v is not None}
+
+    if "Estado" in campos and campos["Estado"] not in ESTADOS_VALIDOS:
+        raise HTTPException(status_code=422, detail=f"Estado inválido. Valores: {sorted(ESTADOS_VALIDOS)}")
 
     if not campos:
         return {"status": "error", "detalle": "Nada que actualizar"}
 
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}/{record_id}"
     r = requests.patch(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
-    if r.status_code == 200:
+    if r.status_code in (200, 201):
         return {"status": "ok", "record_id": record_id, "campos": campos}
-    return {"status": "error", "detalle": r.text[:200]}
+    raise HTTPException(status_code=r.status_code, detail=r.text[:200])
+
+
+@router.post("/crm/clientes")
+async def crm_crear_cliente(request: Request):
+    """Crea un nuevo lead en Airtable desde el CRM."""
+    from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
+    data = await request.json()
+    CAMPOS_VALIDOS = {
+        "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
+        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Subniche", "Fuente", "Llego_WhatsApp",
+    }
+    campos = {k: v for k, v in data.items() if k in CAMPOS_VALIDOS and v is not None}
+    campos.setdefault("Estado", "no_contactado")
+    ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
+    if campos["Estado"] not in ESTADOS_VALIDOS:
+        raise HTTPException(status_code=422, detail=f"Estado inválido: {campos['Estado']}")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "record": r.json()}
+
+
+@router.post("/crm/propiedades")
+async def crm_crear_propiedad(request: Request):
+    """Crea una nueva propiedad en Airtable."""
+    from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
+    data = await request.json()
+    fields = data.get("fields", data)
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+
+@router.patch("/crm/propiedades/{record_id}")
+async def crm_editar_propiedad(record_id: str, request: Request):
+    """Actualiza una propiedad existente en Airtable."""
+    from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
+    data = await request.json()
+    fields = data.get("fields", data)
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+
+@router.post("/crm/upload-imagen")
+async def crm_upload_imagen(request: Request):
+    """Recibe imagen multipart, la sube a Cloudinary y devuelve la URL."""
+    from fastapi import HTTPException
+    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_UPLOAD_PRESET:
+        raise HTTPException(status_code=500, detail="Cloudinary no configurado")
+    form = await request.form()
+    file = form.get("file")
+    if not file:
+        raise HTTPException(status_code=400, detail="No se recibió ningún archivo")
+    content = await file.read()
+    resp = requests.post(
+        f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+        files={"file": (file.filename, content, file.content_type)},
+        data={"upload_preset": CLOUDINARY_UPLOAD_PRESET},
+        timeout=30,
+    )
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=resp.status_code, detail=resp.text[:300])
+    return {"url": resp.json().get("secure_url")}
 
 
 @router.get("/config")

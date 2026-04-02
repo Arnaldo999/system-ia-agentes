@@ -886,7 +886,7 @@ function nav(id, el) {
 // ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
 async function cargarLeads() {
   try {
-    const res = await fetch(`${API_BASE}/crm/clientes`, { signal: AbortSignal.timeout(10000) });
+    const res = await fetch(`${API_BASE}/crm/clientes`, { signal: AbortSignal.timeout(35000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const records = data.records || [];
@@ -1250,7 +1250,7 @@ async function guardarLead(id) {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(35000),
     });
     const data = await res.json();
     if (res.ok && data.status === 'ok') {
@@ -1383,7 +1383,7 @@ async function guardarProp() {
       method,
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({fields}),
-      signal: AbortSignal.timeout(12000)
+      signal: AbortSignal.timeout(35000)
     });
     if(!res.ok) { const err = await res.text(); throw new Error(err); }
     fb.textContent = '✅ Guardado correctamente'; fb.style.color = 'var(--green,#34d399)';
@@ -1411,13 +1411,13 @@ function abrirDetalleProp(i) {
   const videoUrl = p.Video_URL || p.video_url || '';
   const precioStr = precio ? `$${Number(precio).toLocaleString('es')} ${moneda}` : 'Consultar';
 
-  // Convertir URL de YouTube a embed
-  function youtubeEmbedUrl(url) {
+  // Extraer ID de YouTube
+  function youtubeVideoId(url) {
     if (!url) return '';
     const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([A-Za-z0-9_-]{11})/);
-    return m ? `https://www.youtube.com/embed/${m[1]}` : '';
+    return m ? m[1] : '';
   }
-  const embedUrl = youtubeEmbedUrl(videoUrl);
+  const videoId = youtubeVideoId(videoUrl);
 
   let imgUrl = '';
   const imgField = p.Imagen_URL || p.imagen_url || p.Foto || p.foto || '';
@@ -1427,7 +1427,8 @@ function abrirDetalleProp(i) {
 
   document.getElementById('detalleTitulo').textContent = titulo;
   document.getElementById('detalleBody').innerHTML = `
-    ${embedUrl ? `<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;margin-bottom:14px"><iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy"></iframe></div>` : imgUrl ? `<img src="${imgUrl}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:14px" onerror="this.remove()">` : ''}
+    ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:10px" onerror="this.remove()">` : ''}
+    ${videoId ? `<a href="${videoUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:14px;text-decoration:none;color:var(--text)"><img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" style="width:80px;height:50px;object-fit:cover;border-radius:5px;flex-shrink:0"><span style="font-size:13px;color:var(--accent)">▶ Ver en video</span></a>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:14px">
       <div><span style="color:var(--text2)">Precio</span><br><strong style="color:var(--accent2)">${precioStr}</strong></div>
       <div><span style="color:var(--text2)">Estado</span><br><strong>${disponible}</strong></div>
@@ -1454,12 +1455,12 @@ async function renderProps() {
   const subEl = document.getElementById('propsSub');
 
   g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
-    <div style="font-size:32px;margin-bottom:8px">⏳</div>Cargando desde Airtable...
+    <div style="font-size:32px;margin-bottom:8px">⏳</div>Cargando desde Airtable...<br><span style="font-size:12px;opacity:0.6">Si es la primera visita del día puede tardar ~20s</span>
   </div>`;
   if(statusEl) statusEl.innerHTML = '<span style="color:var(--yellow)">⏳ Conectando...</span>';
 
   try {
-    const res = await fetch(`${API_BASE}/crm/propiedades`, { signal: AbortSignal.timeout(12000) });
+    const res = await fetch(`${API_BASE}/crm/propiedades`, { signal: AbortSignal.timeout(35000) });
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const records = data.records || [];
