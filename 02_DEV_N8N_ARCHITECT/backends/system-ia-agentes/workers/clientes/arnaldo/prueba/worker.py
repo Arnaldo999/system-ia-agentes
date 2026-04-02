@@ -201,35 +201,22 @@ async def whatsapp_webhook(request: Request):
 
     print("[Prueba] RAW BODY:", str(body)[:500], flush=True)
 
-    # YCloud manda los mensajes bajo body o body.object
-    messages = []
-    if isinstance(body, list):
-        messages = body
-    elif body.get("type") == "whatsapp.inbound_message.received":
-        messages = [body]
-    else:
-        messages = body.get("messages", [body] if body.get("from") else [])
+    # Formato YCloud: type=whatsapp.inbound_message.received
+    # Estructura: {type, from, to, customerProfile, whatsappInboundMessage: {text: {body}}}
+    if body.get("type") != "whatsapp.inbound_message.received":
+        return {"status": "ignored", "type": body.get("type")}
+
+    telefono = body.get("from", "").replace("+", "").strip()
+    wa_msg   = body.get("whatsappInboundMessage", {})
+    texto    = (wa_msg.get("text", {}) or {}).get("body", "").strip()
+    nombre   = body.get("customerProfile", {}).get("name", "")
+
+    messages = [{"telefono": telefono, "texto": texto, "nombre": nombre}] if telefono and texto else []
 
     for msg in messages:
-        # Extraer datos según formato YCloud
-        telefono = (
-            msg.get("from") or
-            msg.get("message", {}).get("from") or
-            ""
-        ).replace("+", "").strip()
-
-        texto = (
-            msg.get("text", {}).get("body") or
-            msg.get("message", {}).get("text", {}).get("body") or
-            msg.get("body") or
-            ""
-        ).strip()
-
-        nombre = (
-            msg.get("customerProfile", {}).get("name") or
-            msg.get("pushName") or
-            ""
-        )
+        telefono = msg["telefono"]
+        texto    = msg["texto"]
+        nombre   = msg["nombre"]
 
         if not telefono or not texto:
             continue
