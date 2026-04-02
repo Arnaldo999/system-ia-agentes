@@ -199,7 +199,7 @@ async def whatsapp_webhook(request: Request):
     except Exception:
         return {"status": "ok"}
 
-    logger.info("[Prueba] RAW BODY: %s", str(body)[:500])
+    print("[Prueba] RAW BODY:", str(body)[:500], flush=True)
 
     # YCloud manda los mensajes bajo body o body.object
     messages = []
