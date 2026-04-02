@@ -608,6 +608,9 @@
       <textarea id="f-nota" rows="2" placeholder="Ej: busco lote con vista, cerca del río, acceso asfaltado..."></textarea>
     </div>
 
+    <div id="submit-error" style="display:none;background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:10px">
+      ⚠️ Hubo un problema al enviar. Por favor intentá de nuevo en unos segundos.
+    </div>
     <div class="btn-row">
       <button class="btn-back" onclick="goStep(3)">← Volver</button>
       <button class="btn-next accent" id="btn-submit" onclick="submitForm()">
@@ -747,14 +750,13 @@
   }
 
   // ── SUBMIT ──
-  function submitForm() {
+  async function submitForm() {
     lead.nombre   = document.getElementById('f-nombre').value.trim();
     lead.apellido = document.getElementById('f-apellido').value.trim();
     lead.telefono = document.getElementById('f-telefono').value.trim();
     lead.email    = document.getElementById('f-email').value.trim();
     lead.nota     = document.getElementById('f-nota').value.trim();
 
-    // Validación básica
     const nameEl  = document.getElementById('f-nombre');
     const telEl   = document.getElementById('f-telefono');
     let valid = true;
@@ -762,18 +764,29 @@
     if (!lead.telefono) { telEl.classList.add('error'); valid = false; } else telEl.classList.remove('error');
     if (!valid) return;
 
-    // Enviar datos al Webhook de n8n para mayor seguridad (n8n llama a la FastAPI y a Airtable)
-    enviarWebhookN8n();
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
 
-    // ── LÓGICA DE CALIFICACIÓN ──
-    // Calificado → urgencia inmediata o 1-3 meses Y tiene tipo seleccionado
+    try {
+      await enviarWebhookN8n();
+    } catch (err) {
+      console.error('[submit]', err);
+      btn.disabled = false;
+      btn.textContent = 'Enviar';
+      const errBanner = document.getElementById('submit-error');
+      if (errBanner) errBanner.style.display = 'block';
+      return;
+    }
+
     const calificado = lead.urgencia === 'inmediata' || lead.urgencia === '1-3 meses';
-
     if (calificado) {
       mostrarResultadoWA();
     } else {
       mostrarResultadoIG();
     }
+    btn.disabled = false;
+    btn.textContent = 'Enviar';
   }
 
   function mostrarResultadoWA() {
@@ -812,7 +825,7 @@
   }
 
   // ── WEBHOOKS ──
-  function enviarWebhookN8n() {
+  async function enviarWebhookN8n() {
     const N8N_WEBHOOK_URL = 'https://n8n.arnaldoayalaestratega.cloud/webhook/inmobiliaria-demo-formulario';
 
     const tel      = lead.telefono.replace(/\D/g,'');
@@ -847,20 +860,27 @@
       urgencia:       lead.urgencia || '',
     };
 
-    // 1. n8n — registra en Airtable y dispara secuencias
+    // 1. FastAPI /lead — activa el bot de WhatsApp con datos precargados
+    //    El bot va directo a propiedades o agenda, sin volver a pedir nombre/email/ciudad
+    try {
+      const res = await fetch('https://system-ia-agentes.onrender.com/demos/inmobiliaria/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(35000),
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) console.error('[BOT] HTTP', res.status);
+    } catch (err) {
+      console.error('[BOT]', err);
+    }
+
+    // 2. n8n — fire-and-forget (registro secundario)
     fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(35000),
       body: JSON.stringify(payload)
     }).catch(err => console.error('[N8N]', err));
-
-    // 2. FastAPI /lead — activa el bot de WhatsApp con datos precargados
-    //    El bot va directo a propiedades o agenda, sin volver a pedir nombre/email/ciudad
-    fetch('https://system-ia-agentes.onrender.com/demos/inmobiliaria/lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(err => console.error('[BOT]', err));
   }
 
   // Init

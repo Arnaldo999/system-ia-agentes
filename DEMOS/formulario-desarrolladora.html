@@ -776,26 +776,27 @@ async function submitForm() {
     Notas_Bot:     `Lote ${FORM.superficie || ''}m² · ${FORM.proposito || ''} · Pago: ${FORM.pago || ''} · Score: ${score}`,
   };
 
-  let success = false;
   try {
     const res = await fetch(`${API_BASE}/lead`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(35000),
     });
-    success = res.ok;
     if(!res.ok) console.warn('Backend respondió', res.status, await res.text());
   } catch(err) {
     console.warn('Backend no disponible:', err.message);
-    // En demo, siempre mostramos éxito
-    success = true;
+    clearInterval(loadInterval);
+    loadingOverlay.classList.remove('show');
+    btn.disabled = false;
+    btn.textContent = 'Enviar consulta';
+    alert('⚠️ Hubo un problema al enviar. Por favor intentá de nuevo en unos segundos.');
+    return;
   }
 
   clearInterval(loadInterval);
   loadingOverlay.classList.remove('show');
 
-  // Siempre mostramos pantalla de éxito en la demo
   showSuccess(score);
 }
 

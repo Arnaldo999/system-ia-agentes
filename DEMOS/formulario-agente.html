@@ -621,14 +621,18 @@ async function submitForm(){
     Notas_Bot:     `${FORM.tipo||''} ${FORM.operacion||''} · Zona: ${FORM.zona||''} · Pago: ${FORM.pago||''} · Score: ${label}`,
   };
 
-  let success=false;
   try{
-    const res=await fetch(`${API_BASE}/lead`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(10000)});
-    success=res.ok;
-  }catch(e){success=true;}
+    const res=await fetch(`${API_BASE}/lead`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(35000)});
+    if(!res.ok) console.warn('Backend respondió',res.status);
+  }catch(e){
+    console.warn('Backend no disponible:',e.message);
+    ov.classList.remove('show');btn.disabled=false;
+    alert('⚠️ Hubo un problema al enviar. Por favor intentá de nuevo en unos segundos.');
+    return;
+  }
 
   ov.classList.remove('show');btn.disabled=false;
-  if(success)showSuccess(pts,cls,icon,label);
+  showSuccess(pts,cls,icon,label);
 }
 
 function showSuccess(pts,cls,icon,label){
