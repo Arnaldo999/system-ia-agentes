@@ -187,7 +187,7 @@ Asistente:"""
     if _gemini_client:
         try:
             resp = _gemini_client.models.generate_content(
-                model="gemini-2.0-flash-lite",
+                model="gemini-2.5-flash-preview-04-17",
                 contents=prompt,
             )
             return resp.text.strip()
