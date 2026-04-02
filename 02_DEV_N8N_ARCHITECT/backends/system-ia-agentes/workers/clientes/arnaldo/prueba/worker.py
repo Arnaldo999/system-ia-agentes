@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # ─── CONFIG (todo desde env vars) ─────────────────────────────────────────────
 GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY", "")
-YCLOUD_API_KEY   = os.environ.get("YCLOUD_API_KEY_PRUEBA", "")
+YCLOUD_API_KEY   = os.environ.get("YCLOUD_API_KEY_PRUEBA", "") or os.environ.get("YCLOUD_API_KEY_MAICOL", "") or os.environ.get("YCLOUD_API_KEY", "")
 NUMERO_BOT       = os.environ.get("NUMERO_BOT_PRUEBA", "5493764815689")
 
 # Chatwoot
@@ -68,7 +68,6 @@ def _cw_get_or_create_contact(telefono: str, nombre: str = "") -> str | None:
         # Crear si no existe
         body = {"phone_number": f"+{telefono.lstrip('+')}"}
         if nombre:
-            parts = nombre.strip().split(" ", 1)
             body["name"] = nombre.strip()
         r2 = requests.post(f"{_cw_base()}/contacts", headers=_CW_HEADERS(), json=body, timeout=8)
         if r2.status_code in (200, 201):
@@ -78,7 +77,7 @@ def _cw_get_or_create_contact(telefono: str, nombre: str = "") -> str | None:
     return None
 
 
-def _cw_get_or_create_conversation(contact_id: str, telefono: str) -> str | None:
+def _cw_get_or_create_conversation(contact_id: str) -> str | None:
     """Obtiene conversación abierta o crea una nueva. Retorna conversation_id."""
     if not CHATWOOT_API_TOKEN or not CHATWOOT_INBOX_ID:
         return None
@@ -137,7 +136,7 @@ def _sincronizar_chatwoot(telefono: str, nombre: str, msg_cliente: str, respuest
     contact_id = _cw_get_or_create_contact(telefono, nombre)
     if not contact_id:
         return
-    conv_id = _cw_get_or_create_conversation(contact_id, telefono)
+    conv_id = _cw_get_or_create_conversation(contact_id)
     if not conv_id:
         return
     _cw_send_message(conv_id, msg_cliente, "incoming")
