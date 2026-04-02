@@ -105,7 +105,7 @@ def _cw_get_or_create_conversation(contact_id: str) -> str | None:
         # Crear nueva conversación
         body = {
             "contact_id": int(contact_id),
-            "inbox_id": int(CHATWOOT_INBOX_ID),
+            "inbox_id": int(CHATWOOT_INBOX_ID or 0),
         }
         r2 = requests.post(f"{_cw_base()}/conversations", headers=_CW_HEADERS(), json=body, timeout=8)
         if r2.status_code in (200, 201):
@@ -187,7 +187,7 @@ Asistente:"""
     if _gemini_client:
         try:
             resp = _gemini_client.models.generate_content(
-                model="gemini-2.5-flash-preview-04-17",
+                model="gemini-2.5-flash-lite",
                 contents=prompt,
             )
             return resp.text.strip()
