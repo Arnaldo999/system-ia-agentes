@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # ── Clientes Arnaldo ──────────────────────────────────────────────────────────
 from workers.clientes.arnaldo.maicol.worker import router as maicol_router
+from workers.clientes.arnaldo.prueba.worker import router as prueba_router
 
 # ── Demos ─────────────────────────────────────────────────────────────────────
 from workers.demos.inmobiliaria.worker import router as demo_inmobiliaria_router
@@ -30,6 +31,7 @@ app.add_middleware(
 
 # ── Registrar routers ─────────────────────────────────────────────────────────
 app.include_router(maicol_router)
+app.include_router(prueba_router)
 app.include_router(demo_inmobiliaria_router)
 app.include_router(social_router)
 
