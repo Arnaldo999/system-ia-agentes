@@ -849,9 +849,10 @@
       const objetivoMap = { 'construir-vivienda':'Construir mi casa','inversion':'Inversión','emprendimiento':'Emprendimiento','segunda-residencia':'Segunda residencia' };
       const tipoLote = (lead.tipo || []).join(', ') || 'Lote residencial';
 
-      await fetch('https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol/lead', {
+      const res = await fetch('https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(35000),
         body: JSON.stringify({
           nombre:    lead.nombre,
           apellido:  lead.apellido,
@@ -866,11 +867,15 @@
           origen:    'Formulario Web — Back Urbanizaciones'
         })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch(e) {
-      // Silencioso — no bloquear UX si hay error de red
-      console.error('Backend error (silenciado):', e);
-      // Fallback: enviar igual al webhook n8n
-      enviarWebhookN8n();
+      console.error('Backend error:', e);
+      ocultarLoading();
+      btn.disabled = false;
+      document.getElementById('f-nombre').closest('.step')
+        .insertAdjacentHTML('afterbegin', '<div style="background:#fee2e2;color:#b91c1c;padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:14px">⚠️ Hubo un problema al enviar. Por favor intentá de nuevo en unos segundos.</div>');
+      setTimeout(() => document.querySelector('.step [style*="fee2e2"]')?.remove(), 5000);
+      return;
     }
 
     // Ocultar loading y mostrar resultado según calificación
