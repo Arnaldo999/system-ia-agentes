@@ -1118,9 +1118,11 @@ async def whatsapp(req: Request):
     """Endpoint principal — recibe mensaje de WhatsApp (YCloud / n8n)."""
     body = await req.json()
 
-    tel_raw = (body.get("from") or body.get("telefono") or
+    wim     = body.get("whatsappInboundMessage", {})
+    tel_raw = (wim.get("from") or body.get("from") or body.get("telefono") or
                body.get("data", {}).get("from") or "")
-    texto   = (body.get("text", {}).get("body") or body.get("mensaje") or
+    texto   = (wim.get("text", {}).get("body") or
+               body.get("text", {}).get("body") or body.get("mensaje") or
                body.get("data", {}).get("text", {}).get("body") or "")
 
     if not tel_raw or not texto:
