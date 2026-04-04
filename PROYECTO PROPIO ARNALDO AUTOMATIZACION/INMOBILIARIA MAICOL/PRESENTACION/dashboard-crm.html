@@ -49,8 +49,8 @@
       .toast.error { @apply border-l-4 border-l-red-500; }
 
       /* MODAL */
-      .modal-overlay { @apply hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] items-center justify-center p-5 opacity-0 transition-opacity duration-300; }
-      .modal-overlay.open { @apply flex opacity-100; }
+      .modal-overlay { @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] items-center justify-center p-5 opacity-0 transition-opacity duration-300; display: none; }
+      .modal-overlay.open { display: flex; @apply opacity-100; }
       .modal { @apply bg-card rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-2xl; }
       .modal-close { @apply absolute top-5 right-5 bg-gray-100 border-none w-8 h-8 rounded-full cursor-pointer flex items-center justify-center text-base text-gray-500 hover:bg-gray-200; }
       .modal-title { @apply font-heading text-xl font-extrabold mb-6 text-primary; }
@@ -419,15 +419,63 @@
       <div class="header-tools">
         <i class="header-icon">🔔</i>
         <i class="header-icon">⚙️</i>
-        <div class="user-profile">
-          <div class="avatar">
-            <img src="https://ui-avatars.com/api/?name=Maicol+Back&background=0A261A&color=fff" alt="Maicol Back" />
+        <div class="relative" id="profile-wrapper">
+          <div class="user-profile" id="profile-chip" onclick="toggleProfileMenu()">
+            <div class="avatar">
+              <img id="profile-avatar-img" src="https://ui-avatars.com/api/?name=Maicol+Back&background=0A261A&color=fff" alt="Maicol Back" />
+            </div>
+            <span class="name" id="profile-name-display">Maicol Back</span>
+            <i class="header-icon text-[0.8rem]" id="profile-chevron">▼</i>
           </div>
-          <span class="name">Maicol Back</span>
-          <i class="header-icon text-[0.8rem]">▼</i>
+          <!-- Dropdown -->
+          <div id="profile-menu" class="hidden absolute right-0 top-14 bg-card border border-brd rounded-2xl shadow-2xl w-52 z-[500] py-2 animate-fadein">
+            <div class="px-4 py-3 border-b border-brd">
+              <p class="text-xs text-txt-muted font-semibold uppercase tracking-wide">Cuenta</p>
+              <p class="text-sm font-semibold text-txt mt-0.5" id="profile-menu-name">Maicol Back</p>
+            </div>
+            <button onclick="openProfileEdit(); toggleProfileMenu()" class="w-full text-left px-4 py-2.5 text-sm text-txt hover:bg-gray-50 flex items-center gap-2.5 transition-colors">
+              ✏️ <span>Editar perfil</span>
+            </button>
+            <button onclick="switchTab('propiedades', document.querySelector('.tab')); toggleProfileMenu()" class="w-full text-left px-4 py-2.5 text-sm text-txt hover:bg-gray-50 flex items-center gap-2.5 transition-colors">
+              🏠 <span>Ir a Propiedades</span>
+            </button>
+            <button onclick="switchTab('clientes', document.querySelectorAll('.tab')[1]); toggleProfileMenu()" class="w-full text-left px-4 py-2.5 text-sm text-txt hover:bg-gray-50 flex items-center gap-2.5 transition-colors">
+              👥 <span>Ir a Clientes</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>
+
+    <!-- MODAL EDITAR PERFIL -->
+    <div id="modal-perfil" class="modal-overlay">
+      <div class="modal max-w-sm">
+        <button class="modal-close" onclick="closeModal('modal-perfil')">✕</button>
+        <h3 class="modal-title">Editar perfil</h3>
+        <div class="flex flex-col items-center gap-4 mb-6">
+          <div class="relative group cursor-pointer" onclick="document.getElementById('perfil-avatar-file').click()">
+            <img id="perfil-preview" src="https://ui-avatars.com/api/?name=Maicol+Back&background=0A261A&color=fff" class="w-20 h-20 rounded-full object-cover border-4 border-brd" />
+            <div class="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <span class="text-white text-xl">📷</span>
+            </div>
+          </div>
+          <input type="file" id="perfil-avatar-file" accept="image/*" class="hidden" onchange="onPerfilAvatarChange(this)" />
+          <p class="text-xs text-txt-muted">Clic en la imagen para cambiar el avatar</p>
+        </div>
+        <div class="form-group">
+          <label>Nombre visible</label>
+          <input type="text" id="perfil-nombre-input" class="form-control" placeholder="Ej: Maicol Back" />
+        </div>
+        <div class="form-group">
+          <label>Empresa / Agencia</label>
+          <input type="text" id="perfil-empresa-input" class="form-control" placeholder="Back Urbanizaciones" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-perfil')">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarPerfil()">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
 
     <div class="mb-6">
       <p id="last-update" class="text-sm text-txt-muted font-semibold">Cargando datos...</p>
@@ -1213,7 +1261,82 @@ function switchTab(name, el) {
   document.getElementById('panel-' + name).classList.add('active');
 }
 
+// ── PERFIL ────────────────────────────────────────────────
+const PERFIL_KEY = 'crm_perfil_maicol';
+let _perfilAvatarUrl = null;
+
+function loadPerfil() {
+  const saved = JSON.parse(localStorage.getItem(PERFIL_KEY) || '{}');
+  if (saved.nombre) {
+    document.getElementById('profile-name-display').textContent = saved.nombre;
+    document.getElementById('profile-menu-name').textContent = saved.nombre;
+  }
+  if (saved.avatarUrl) {
+    document.getElementById('profile-avatar-img').src = saved.avatarUrl;
+  }
+}
+
+function toggleProfileMenu() {
+  const menu = document.getElementById('profile-menu');
+  const chevron = document.getElementById('profile-chevron');
+  menu.classList.toggle('hidden');
+  chevron.style.transform = menu.classList.contains('hidden') ? '' : 'rotate(180deg)';
+}
+
+// Cerrar dropdown al hacer click fuera
+document.addEventListener('click', e => {
+  const wrapper = document.getElementById('profile-wrapper');
+  if (wrapper && !wrapper.contains(e.target)) {
+    document.getElementById('profile-menu').classList.add('hidden');
+    document.getElementById('profile-chevron').style.transform = '';
+  }
+});
+
+function openProfileEdit() {
+  const saved = JSON.parse(localStorage.getItem(PERFIL_KEY) || '{}');
+  document.getElementById('perfil-nombre-input').value = saved.nombre || 'Maicol Back';
+  document.getElementById('perfil-empresa-input').value = saved.empresa || 'Back Urbanizaciones';
+  const avatarSrc = saved.avatarUrl || document.getElementById('profile-avatar-img').src;
+  document.getElementById('perfil-preview').src = avatarSrc;
+  _perfilAvatarUrl = saved.avatarUrl || null;
+  openModal('modal-perfil');
+}
+
+function onPerfilAvatarChange(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('perfil-preview').src = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+  // Upload a Cloudinary
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+  formData.append('upload_preset', 'social_media_posts');
+  fetch('https://api.cloudinary.com/v1_1/dmqkqcreo/image/upload', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => { _perfilAvatarUrl = data.secure_url; showToast('Avatar subido ✓', 'success'); })
+    .catch(() => {
+      // fallback: usar DataURL local
+      _perfilAvatarUrl = document.getElementById('perfil-preview').src;
+    });
+}
+
+function guardarPerfil() {
+  const nombre = document.getElementById('perfil-nombre-input').value.trim() || 'Maicol Back';
+  const empresa = document.getElementById('perfil-empresa-input').value.trim() || 'Back Urbanizaciones';
+  const avatarUrl = _perfilAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=0A261A&color=fff`;
+  localStorage.setItem(PERFIL_KEY, JSON.stringify({ nombre, empresa, avatarUrl }));
+  // Actualizar UI
+  document.getElementById('profile-name-display').textContent = nombre;
+  document.getElementById('profile-menu-name').textContent = nombre;
+  document.getElementById('profile-avatar-img').src = avatarUrl;
+  closeModal('modal-perfil');
+  showToast('Perfil actualizado ✓', 'success');
+}
+
 // ── INIT ──────────────────────────────────────────────────
+loadPerfil();
 loadAll();
 </script>
 </body>
