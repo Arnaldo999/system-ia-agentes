@@ -329,9 +329,9 @@
     <div class="notif-badge" id="notifBadge">3</div>
   </div>
   <div class="user-chip-wrap">
-    <div class="user-chip" onclick="togglePerfil(event)" title="Editar perfil">
-      <div class="avatar" id="topAvatar">AR</div>
-      Hola, <span id="topUsuario">Arnaldo</span> ▾
+    <div class="user-chip" onclick="irConfiguracion()" title="Ir a Configuración" style="cursor:pointer">
+      <div class="avatar" id="topAvatar">LV</div>
+      <span id="topUsuario">LovBot CRM</span> ▾
     </div>
     <!-- DROPDOWN PERFIL -->
     <div class="perfil-dropdown" id="perfilDropdown">
@@ -1612,6 +1612,11 @@ async function initTenant() {
     document.getElementById('page-title').textContent = `${t.nombre} — CRM`;
     const topEmpresa = document.getElementById('topEmpresa');
     if (topEmpresa) topEmpresa.textContent = t.nombre;
+    // Actualizar chip del topbar con nombre del tenant
+    const topUsuario = document.getElementById('topUsuario');
+    const topAvatar = document.getElementById('topAvatar');
+    if (topUsuario) topUsuario.textContent = t.nombre;
+    if (topAvatar) topAvatar.textContent = t.nombre.substring(0,2).toUpperCase();
     if (t.logo_url) aplicarLogo(t.logo_url);
     if (t.color_primario) document.documentElement.style.setProperty('--accent', t.color_primario);
 
@@ -2180,6 +2185,11 @@ function togglePerfil(e) {
 
 function cerrarPerfil() {
   document.getElementById('perfilDropdown').classList.remove('show');
+}
+
+function irConfiguracion() {
+  const navItem = document.querySelector('.nav-item[onclick*="configuracion"]');
+  nav('configuracion', navItem);
 }
 
 // Cerrar dropdown al hacer click fuera
