@@ -280,6 +280,8 @@
   .sr-empty{padding:14px;text-align:center;color:var(--text2);font-size:13px;}
 
   /* ── DROPDOWN PERFIL ── */
+  .pin-btn{background:#222636;border:1px solid #2e3347;border-radius:12px;color:#e8eaf0;font-size:1.3rem;font-weight:600;padding:18px 0;cursor:pointer;transition:background .15s;}
+  .pin-btn:hover{background:#2e3347;}
   .perfil-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:2000;display:none;padding:16px;}
   .perfil-dropdown.show{display:block;}
   .perfil-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
@@ -405,6 +407,7 @@
         🤖 IA activa
         <small>Bot respondiendo leads</small>
       </div>
+      <button onclick="cerrarSesion()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:7px;cursor:pointer;">🔒 Cerrar sesión</button>
     </div>
   </div>
 
@@ -1088,24 +1091,24 @@
     </div>
 
     <!-- Teclado numérico -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-      <script>
-        // Generar botones 1-9 + 0
-        const nums = [1,2,3,4,5,6,7,8,9,'',0,'⌫'];
-        document.write(nums.map(n => `
-          <button onclick="pinKey('${n}')" style="
-            background:#222636; border:1px solid #2e3347; border-radius:12px;
-            color:#e8eaf0; font-size:1.3rem; font-weight:600; padding:18px 0;
-            cursor:pointer; transition:all .15s;
-            ${n===''?'visibility:hidden':''}
-          " onmouseover="this.style.background='#2e3347'" onmouseout="this.style.background='#222636'"
-          >${n}</button>
-        `).join(''));
-      </script>
+    <div id="pinTeclado" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <button onclick="pinKey('1')" class="pin-btn">1</button>
+      <button onclick="pinKey('2')" class="pin-btn">2</button>
+      <button onclick="pinKey('3')" class="pin-btn">3</button>
+      <button onclick="pinKey('4')" class="pin-btn">4</button>
+      <button onclick="pinKey('5')" class="pin-btn">5</button>
+      <button onclick="pinKey('6')" class="pin-btn">6</button>
+      <button onclick="pinKey('7')" class="pin-btn">7</button>
+      <button onclick="pinKey('8')" class="pin-btn">8</button>
+      <button onclick="pinKey('9')" class="pin-btn">9</button>
+      <button style="visibility:hidden" class="pin-btn"></button>
+      <button onclick="pinKey('0')" class="pin-btn">0</button>
+      <button onclick="pinKey('⌫')" class="pin-btn">⌫</button>
     </div>
 
     <div id="loginError" style="color:#f87171;font-size:0.85rem;min-height:20px;margin-bottom:8px"></div>
-    <div style="font-size:0.75rem;color:#4b5563;margin-top:8px">Powered by System IA</div>
+    <div style="font-size:0.75rem;color:#4b5563;margin-top:8px">Powered by LovBot IA</div>
+    <button onclick="cerrarSesion()" style="margin-top:14px;background:none;border:none;color:#4b5563;font-size:0.75rem;cursor:pointer;text-decoration:underline">Cerrar sesión</button>
   </div>
 </div>
 
@@ -2190,6 +2193,11 @@ function cerrarPerfil() {
 function irConfiguracion() {
   const navItem = document.querySelector('.nav-item[onclick*="configuracion"]');
   nav('configuracion', navItem);
+}
+
+function cerrarSesion() {
+  sessionStorage.removeItem(`crm_token_${TENANT_SLUG}`);
+  location.reload();
 }
 
 // Cerrar dropdown al hacer click fuera
