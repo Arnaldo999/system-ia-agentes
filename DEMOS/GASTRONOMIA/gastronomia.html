@@ -23,151 +23,112 @@
         }
     </script>
     <style>
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body { background: #0a0f1e; overscroll-behavior: none; font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body { background: #0a0f1e; overscroll-behavior: none; font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-        .screen { display: none; }
-        .screen.active { display: block; animation: fadeUp 0.25s ease-out; }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+    /* Screen transitions — JS toggles .active */
+    .screen { display: none; }
+    .screen.active { display: block; animation: fadeUp 0.25s ease-out; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
 
-        .glass { background: rgba(17,24,39,0.75); backdrop-filter: blur(12px); border: 1px solid rgba(99,102,241,0.15); }
-        .glass-surface { background: rgba(26,34,52,0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.06); }
+    /* POS screens override display:block → flex on desktop */
+    @media (min-width: 768px) {
+        #appWrapper { display: flex; height: 100vh; overflow: hidden; }
+        #sideNav { display: flex !important; flex-direction: column; width: 230px; flex-shrink: 0;
+            padding: 24px 16px; gap: 2px; border-right: 1px solid rgba(99,102,241,0.12);
+            background: rgba(11,16,30,0.98); }
+        #bottomNav { display: none !important; }
+        #mainArea { flex: 1; min-width: 0; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+        #appHeader { padding: 20px 32px 16px; }
+        .screen-inner { padding: 0 32px 32px; }
+        .fab { display: none !important; }
+        .screen-pos.active { display: flex; flex-direction: row;
+            flex: 1; min-height: 0; overflow: hidden;
+            animation: fadeUp 0.25s ease-out; }
+        .pos-left  { flex: 1; min-width: 0; overflow-y: auto; padding: 0 16px 32px 32px; }
+        .pos-right { width: 260px; flex-shrink: 0; overflow-y: auto;
+            border-left: 1px solid rgba(99,102,241,0.12);
+            padding: 0 16px 32px 16px; background: rgba(10,15,30,0.4); }
+    }
+    @media (min-width: 768px) and (max-width: 1100px) { .pos-right { width: 240px; } }
+    @media (min-width: 768px) and (max-width: 920px)  { .pos-right { width: 220px; } }
+    @media (max-width: 767px) {
+        #sideNav { display: none !important; }
+        #appWrapper { display: flex; flex-direction: column; height: 100dvh; }
+        #mainArea { flex: 1; overflow-y: auto; }
+        .screen-inner { padding: 0 16px 16px; }
+        #appHeader { padding: 16px 16px 12px; }
+        .screen-pos.active { display: block; }
+        .pos-left  { padding: 0 16px 16px; }
+        .pos-right { padding: 16px; border-top: 1px solid rgba(99,102,241,0.1); }
+    }
 
-        /* Layout PC */
-        @media (min-width: 768px) {
-            #appWrapper { display: flex; height: 100vh; overflow: hidden; }
-            #sideNav { display: flex; flex-direction: column; width: 230px; flex-shrink: 0;
-                padding: 24px 16px; gap: 2px; border-right: 1px solid rgba(99,102,241,0.12);
-                background: rgba(11,16,30,0.98); }
-            #bottomNav { display: none !important; }
-            #mainArea { flex: 1; min-width: 0; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
-            #appHeader { padding: 20px 32px 16px; }
-            .screen-inner { padding: 0 32px 32px; }
-            .fab { display: none !important; }
-        }
-        @media (max-width: 767px) {
-            #sideNav { display: none !important; }
-            #appWrapper { display: flex; flex-direction: column; height: 100dvh; }
-            #mainArea { flex: 1; overflow-y: auto; }
-            .screen-inner { padding: 0 16px 16px; }
-            #appHeader { padding: 16px 16px 12px; }
-        }
+    /* Nav — JS adds/removes .active, icons/labels inherit color */
+    .nav-item { display: flex; align-items: center; cursor: pointer; transition: all 0.2s; border-radius: 10px; }
+    .nav-item.active { background: rgba(99,102,241,0.15); }
+    .nav-item.active .nav-icon, .nav-item.active .nav-label { color: #6366f1; }
+    .nav-item:not(.active) .nav-icon, .nav-item:not(.active) .nav-label { color: #9ca3af; }
+    .nav-item:hover:not(.active) { background: rgba(255,255,255,0.04); }
+    #sideNav .nav-item { flex-direction: row; gap: 12px; padding: 10px 14px; }
+    #sideNav .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+    #sideNav .nav-label { font-size: 0.875rem; font-weight: 600; }
+    #bottomNav .nav-item { flex-direction: column; gap: 3px; padding: 8px 4px; flex: 1; justify-content: center; border-radius: 0; }
+    #bottomNav .nav-icon { font-size: 1.1rem; }
+    #bottomNav .nav-label { font-size: 0.65rem; font-weight: 500; }
+    .nav-sep { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 0; }
 
-        /* Nav */
-        .nav-item { display: flex; align-items: center; cursor: pointer; transition: all 0.2s; border-radius: 10px; }
-        .nav-item.active { background: rgba(99,102,241,0.15); }
-        .nav-item.active .nav-icon, .nav-item.active .nav-label { color: #6366f1; }
-        .nav-item:not(.active) .nav-icon, .nav-item:not(.active) .nav-label { color: #9ca3af; }
-        .nav-item:hover:not(.active) { background: rgba(255,255,255,0.04); }
-        #sideNav .nav-item { flex-direction: row; gap: 12px; padding: 10px 14px; }
-        #sideNav .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
-        #sideNav .nav-label { font-size: 0.875rem; font-weight: 600; }
-        #bottomNav .nav-item { flex-direction: column; gap: 3px; padding: 8px 4px; flex: 1; justify-content: center; border-radius: 0; }
-        #bottomNav .nav-icon { font-size: 1.1rem; }
-        #bottomNav .nav-label { font-size: 0.65rem; font-weight: 500; }
-        .nav-sep { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 0; }
+    /* px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 .active — JS toggles this class */
+    .cat-tab.active { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white; border-color: transparent; }
 
-        /* Buttons */
-        .btn-primary { background: linear-gradient(135deg,#6366f1,#8b5cf6); transition:all 0.2s; }
-        .btn-primary:hover { opacity:.9; transform:translateY(-1px); }
-        .btn-primary:active { transform:scale(.98); }
-        .btn-success { background: linear-gradient(135deg,#10b981,#059669); transition:all 0.2s; }
-        .btn-warning { background: linear-gradient(135deg,#f59e0b,#d97706); transition:all 0.2s; }
-        .btn-danger  { background: linear-gradient(135deg,#ef4444,#dc2626); transition:all 0.2s; }
+    /* code-key variants toggled by JS */
+    .code-key.action       { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); color: #818cf8; }
+    .code-key.action-green { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #34d399; }
+    .code-key.action-red   { background: rgba(239,68,68,0.15);  border-color: rgba(239,68,68,0.4);  color: #f87171; }
 
-        /* Inputs */
-        .input-field { background:rgba(255,255,255,0.05); border:1px solid rgba(99,102,241,0.25); transition:border-color 0.3s; color:white; }
-        .input-field:focus { outline:none; border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.1); }
-        .input-field::placeholder { color:#4b5563; }
-        select.input-field option { background:#1a2234; color:white; }
+    /* comanda rows — used in JS-generated HTML */
+    .comanda-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .comanda-row:last-child { border-bottom: none; }
 
-        /* Modal */
-        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:200; display:flex; align-items:flex-end; justify-content:center; }
-        .modal-content { background:#111827; border-radius:24px 24px 0 0; width:100%; max-width:640px; max-height:92vh; overflow-y:auto; padding:24px; border-top:1px solid rgba(99,102,241,0.3); animation:slideUp 0.3s ease-out; }
-        @media (min-width:768px) { .modal-overlay{align-items:center;} .modal-content{border-radius:20px;border:1px solid rgba(99,102,241,0.2);animation:fadeUp 0.25s ease-out;} }
-        @keyframes slideUp { from{transform:translateY(100%);opacity:0;}to{transform:translateY(0);opacity:1;} }
+    /* numpad grid */
+    .numpad { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
 
-        /* Badges */
-        .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:0.72rem; font-weight:600; }
-        .badge-nuevo      { background:rgba(99,102,241,0.15);  color:#818cf8; border:1px solid rgba(99,102,241,0.3); }
-        .badge-preparando { background:rgba(245,158,11,0.15);  color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
-        .badge-listo      { background:rgba(16,185,129,0.15);  color:#34d399; border:1px solid rgba(16,185,129,0.3); }
-        .badge-entregado  { background:rgba(107,114,128,0.15); color:#9ca3af; border:1px solid rgba(107,114,128,0.3); }
+    /* stock bar — JS-generated */
+    .stock-bar  { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.08); overflow: hidden; }
+    .stock-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
 
-        /* POS — Caja y Delivery */
-        @media (min-width: 768px) {
-            /* screen-pos ocupa el espacio restante debajo del header */
-            .screen-pos.active { display: flex; flex-direction: row;
-                          flex: 1; min-height: 0; overflow: hidden;
-                          animation: fadeUp 0.25s ease-out; }
-            .pos-left  { flex: 1; min-width: 0; overflow-y: auto;
-                         padding: 0 16px 32px 32px; }
-            .pos-right { width: 260px; flex-shrink: 0; overflow-y: auto;
-                         border-left: 1px solid rgba(99,102,241,0.12);
-                         padding: 0 16px 32px 16px;
-                         background: rgba(10,15,30,0.4); }
-        }
-        @media (min-width: 768px) and (max-width: 1100px) { .pos-right { width: 240px; } }
-        @media (min-width: 768px) and (max-width: 920px)  { .pos-right { width: 220px; } }
-        @media (max-width: 767px) {
-            .screen-pos.active { display: block; }
-            .pos-left   { padding: 0 16px 16px; }
-            .pos-right  { padding: 16px;
-                          border-top: 1px solid rgba(99,102,241,0.1); }
-        }
+    /* toast position */
+    #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 300; transition: all 0.3s; pointer-events: none; }
+    @media (min-width:768px) { #toast { bottom: 28px; } }
 
-        .code-key { background:rgba(26,34,52,0.9); border:1px solid rgba(99,102,241,0.2); border-radius:12px;
-            padding:14px 8px; font-size:1.1rem; font-weight:700; color:white; cursor:pointer;
-            transition:all 0.15s; user-select:none; text-align:center; }
-        .code-key:hover { background:rgba(99,102,241,0.2); border-color:rgba(99,102,241,0.5); }
-        .code-key:active { transform:scale(0.93); background:rgba(99,102,241,0.35); }
-        .code-key.action { background:rgba(99,102,241,0.15); border-color:rgba(99,102,241,0.4); color:#818cf8; }
-        .code-key.action-green { background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.4); color:#34d399; }
-        .code-key.action-red   { background:rgba(239,68,68,0.15);  border-color:rgba(239,68,68,0.4);  color:#f87171; }
+    /* Pulsating border for new kitchen orders */
+    .pedido-nuevo { animation: pulseBorder 2s ease-in-out infinite; }
+    @keyframes pulseBorder { 0%,100%{box-shadow:0 0 0 1px rgba(99,102,241,0.4);}50%{box-shadow:0 0 0 2px rgba(99,102,241,0.7),0 0 20px rgba(99,102,241,0.15);} }
 
-        .comanda-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
-        .comanda-row:last-child { border-bottom:none; }
+    /* Modal slide-up on mobile */
+    @keyframes slideUp { from{transform:translateY(100%);opacity:0;}to{transform:translateY(0);opacity:1;} }
 
-        /* Teclado numérico grande */
-        .numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    /* Typing dots animation */
+    .td { width: 6px; height: 6px; border-radius: 50%; background: #818cf8; animation: tdPulse 1.2s ease-in-out infinite; }
+    .td:nth-child(2) { animation-delay: 0.2s; }
+    .td:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes tdPulse { 0%,100%{opacity:0.3;transform:scale(0.8);}50%{opacity:1;transform:scale(1);} }
 
-        /* Pedido-cocina pulsante */
-        .pedido-nuevo { animation:pulseBorder 2s ease-in-out infinite; }
-        @keyframes pulseBorder { 0%,100%{box-shadow:0 0 0 1px rgba(99,102,241,0.4);}50%{box-shadow:0 0 0 2px rgba(99,102,241,0.7),0 0 20px rgba(99,102,241,0.15);} }
-
-        /* Cat tabs */
-        .cat-tab { padding:6px 16px; border-radius:999px; font-size:0.8rem; font-weight:600; cursor:pointer; transition:all 0.2s; white-space:nowrap; border:1px solid rgba(99,102,241,0.2); color:#6b7280; }
-        .cat-tab.active { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:white; border-color:transparent; }
-        .cat-tab:hover:not(.active) { border-color:rgba(99,102,241,0.4); color:#a5b4fc; }
-
-        /* KPI */
-        .kpi-card { transition:transform 0.2s; }
-        .kpi-card:hover { transform:translateY(-2px); }
-
-        /* Stock bar */
-        .stock-bar { height:4px; border-radius:2px; background:rgba(255,255,255,0.08); overflow:hidden; }
-        .stock-fill { height:100%; border-radius:2px; transition:width 0.5s; }
-
-        /* Toast */
-        #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); z-index:300; transition:all 0.3s; pointer-events:none; }
-        @media (min-width:768px){ #toast{bottom:28px;} }
-
-        /* Print */
-        @media print {
-            body { background: white !important; color: black !important; }
-            #appWrapper, #appHeader, #sideNav, #bottomNav, .no-print { display: none !important; }
-            #ticketPrint { display: block !important; }
-        }
-    </style>
+    /* Print */
+    @media print {
+        body { background: white !important; color: black !important; }
+        #appWrapper, #appHeader, #sideNav, #bottomNav, .no-print { display: none !important; }
+        #ticketPrint { display: block !important; }
+    }
+</style>
 </head>
 <body class="text-white">
 
 <!-- TOAST -->
 <div id="toast" class="hidden">
-    <div class="glass px-5 py-3 rounded-2xl text-sm font-medium flex items-center gap-3">
+    <div class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl px-5 py-3 rounded-2xl text-sm font-medium flex items-center gap-3">
         <i id="toastIcon" class="fas fa-check-circle text-success"></i>
         <span id="toastMsg">Listo</span>
     </div>
@@ -251,7 +212,7 @@
                 <p id="headerSub" class="text-gray-500 text-xs mt-0.5">Resumen del día</p>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="showScreen('cocina')" class="relative glass rounded-xl px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                <button onclick="showScreen('cocina')" class="relative bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-xl px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2">
                     <i class="fas fa-fire-burner"></i>
                     <span id="badgeCocina" class="font-semibold text-warning">0</span>
                     <span class="hidden md:inline text-gray-500">en cocina</span>
@@ -265,7 +226,7 @@
         <!-- ======= INICIO ======= -->
         <div id="screen-inicio" class="screen active screen-inner">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Comandas hoy</span>
                         <i class="fas fa-receipt text-primary text-sm"></i>
@@ -273,7 +234,7 @@
                     <div id="kpiComandas" class="text-2xl font-bold">0</div>
                     <div class="text-gray-500 text-xs mt-1">registradas</div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">En cocina</span>
                         <i class="fas fa-fire text-warning text-sm"></i>
@@ -281,7 +242,7 @@
                     <div id="kpiCocina" class="text-2xl font-bold text-warning">0</div>
                     <div class="text-gray-500 text-xs mt-1">preparando</div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Entregados</span>
                         <i class="fas fa-check text-success text-sm"></i>
@@ -289,7 +250,7 @@
                     <div id="kpiEntregados" class="text-2xl font-bold text-success">0</div>
                     <div class="text-gray-500 text-xs mt-1">cerrados</div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Venta del día</span>
                         <i class="fas fa-dollar-sign text-accent text-sm"></i>
@@ -301,7 +262,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Comandas recientes -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-semibold text-sm">Comandas recientes</h3>
                         <button onclick="showScreen('caja')" class="text-primary text-xs hover:underline">Nueva →</button>
@@ -310,7 +271,7 @@
                 </div>
 
                 <!-- Alertas stock -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-semibold text-sm">Stock bajo</h3>
                         <button onclick="showScreen('inventario')" class="text-primary text-xs hover:underline">Ver stock →</button>
@@ -320,7 +281,7 @@
             </div>
 
             <!-- Gráfico ventas -->
-            <div class="glass-surface rounded-2xl p-5 mt-4">
+            <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5 mt-4">
                 <h3 class="font-semibold text-sm mb-4">Ventas esta semana</h3>
                 <canvas id="chartVentas" height="90"></canvas>
             </div>
@@ -333,24 +294,24 @@
             <div class="pos-left">
 
                 <!-- Mesa / Comanda -->
-                <div class="glass-surface rounded-2xl p-4 mb-3">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 mb-3">
                     <label class="text-gray-400 text-xs mb-1.5 block"><i class="fas fa-chair mr-1 text-primary"></i>Mesa / Comanda</label>
                     <div class="flex gap-2">
-                        <input type="text" id="inputMesa" placeholder="Mesa o nombre" class="input-field flex-1 rounded-xl px-3 py-2.5 text-sm">
-                        <input type="text" id="inputComanda" placeholder="# comanda" class="input-field w-24 rounded-xl px-3 py-2.5 text-sm">
+                        <input type="text" id="inputMesa" placeholder="Mesa o nombre" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all flex-1 rounded-xl px-3 py-2.5 text-sm">
+                        <input type="text" id="inputComanda" placeholder="# comanda" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-24 rounded-xl px-3 py-2.5 text-sm">
                     </div>
                 </div>
 
                 <!-- Agregar producto — código rápido O manual -->
-                <div class="glass-surface rounded-2xl p-4 mb-3">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 mb-3">
                     <!-- Tabs modo -->
                     <div class="flex gap-2 mb-3">
                         <button onclick="setCajaMode('codigo')" id="cmode-codigo"
-                            class="cat-tab active text-xs py-1.5 px-3">
+                            class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 active text-xs py-1.5 px-3">
                             <i class="fas fa-barcode mr-1"></i>Por código
                         </button>
                         <button onclick="setCajaMode('manual')" id="cmode-manual"
-                            class="cat-tab text-xs py-1.5 px-3">
+                            class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 text-xs py-1.5 px-3">
                             <i class="fas fa-pen mr-1"></i>Manual
                         </button>
                     </div>
@@ -359,10 +320,10 @@
                     <div id="cajaModeCodigo">
                         <div class="flex gap-2">
                             <input type="text" id="inputCodigo" placeholder="Ej: 4x2  o  4x1 7x2"
-                                class="input-field flex-1 rounded-xl px-3 py-2.5 text-sm font-mono"
+                                class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all flex-1 rounded-xl px-3 py-2.5 text-sm font-mono"
                                 onkeydown="if(event.key==='Enter'){procesarCodigo()}"
                                 autocomplete="off" autocorrect="off" spellcheck="false">
-                            <button onclick="procesarCodigo()" class="btn-primary rounded-xl px-4 text-white font-bold text-sm">
+                            <button onclick="procesarCodigo()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-4 text-white font-bold text-sm">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
@@ -375,25 +336,25 @@
                             <!-- Nombre con autocompletado -->
                             <div class="relative">
                                 <input type="text" id="manualNombre" placeholder="Nombre del producto (o buscá en carta)"
-                                    class="input-field w-full rounded-xl px-3 py-2.5 text-sm"
+                                    class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-3 py-2.5 text-sm"
                                     oninput="autocompletarManual()"
                                     autocomplete="off">
-                                <div id="manualSugerencias" class="hidden absolute left-0 right-0 top-full mt-1 glass rounded-xl overflow-hidden z-50 max-h-44 overflow-y-auto"></div>
+                                <div id="manualSugerencias" class="hidden absolute left-0 right-0 top-full mt-1 bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-xl overflow-hidden z-50 max-h-44 overflow-y-auto"></div>
                             </div>
                             <!-- Cantidad + Precio -->
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="text-gray-500 text-xs mb-1 block">Cantidad</label>
                                     <input type="number" id="manualCant" value="1" min="1"
-                                        class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-center font-bold">
+                                        class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-3 py-2.5 text-sm text-center font-bold">
                                 </div>
                                 <div>
                                     <label class="text-gray-500 text-xs mb-1 block">Precio unitario</label>
                                     <input type="number" id="manualPrecio" placeholder="0"
-                                        class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                                        class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-3 py-2.5 text-sm">
                                 </div>
                             </div>
-                            <button onclick="agregarManual()" class="btn-primary w-full rounded-xl py-2.5 text-white font-semibold text-sm">
+                            <button onclick="agregarManual()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-2.5 text-white font-semibold text-sm">
                                 <i class="fas fa-plus mr-2"></i>Agregar a la comanda
                             </button>
                         </div>
@@ -401,10 +362,10 @@
                 </div>
 
                 <!-- Carta de referencia (códigos) -->
-                <div class="glass-surface rounded-2xl p-4">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-semibold text-sm"><i class="fas fa-list-ol mr-2 text-primary"></i>Carta de códigos</h3>
-                        <input type="text" id="buscarCarta" placeholder="Buscar..." oninput="renderCarta()" class="input-field rounded-xl px-3 py-1.5 text-xs w-32">
+                        <input type="text" id="buscarCarta" placeholder="Buscar..." oninput="renderCarta()" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all rounded-xl px-3 py-1.5 text-xs w-32">
                     </div>
                     <div class="flex gap-2 overflow-x-auto pb-2 mb-3" id="cartaTabs"></div>
                     <div id="cartaPlatos" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
@@ -417,7 +378,7 @@
                 <div class="flex items-center justify-between mb-4 pt-4">
                     <h3 class="font-semibold">Comanda</h3>
                     <div class="flex items-center gap-2">
-                        <span id="comandaMesaLabel" class="text-gray-400 text-xs glass px-2 py-1 rounded-lg">Sin mesa</span>
+                        <span id="comandaMesaLabel" class="text-gray-400 text-xs bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl px-2 py-1 rounded-lg">Sin mesa</span>
                         <button onclick="limpiarComanda()" class="text-gray-600 hover:text-red-400 text-xs transition-colors"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
@@ -448,14 +409,14 @@
 
                 <!-- Acciones -->
                 <div class="space-y-2">
-                    <button onclick="registrarComanda()" class="btn-success w-full rounded-xl py-3 text-white font-semibold text-sm">
+                    <button onclick="registrarComanda()" class="bg-gradient-to-br from-emerald-500 to-emerald-700 transition-all w-full rounded-xl py-3 text-white font-semibold text-sm">
                         <i class="fas fa-floppy-disk mr-2"></i>Registrar comanda
                     </button>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="imprimirTicket()" class="glass rounded-xl py-2.5 text-white text-sm font-medium hover:bg-white/5 transition-colors border-0">
+                        <button onclick="imprimirTicket()" class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-xl py-2.5 text-white text-sm font-medium hover:bg-white/5 transition-colors border-0">
                             <i class="fas fa-print mr-1.5"></i>Ticket
                         </button>
-                        <button onclick="cobrarComanda()" class="btn-primary rounded-xl py-2.5 text-white text-sm font-semibold">
+                        <button onclick="cobrarComanda()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl py-2.5 text-white text-sm font-semibold">
                             <i class="fas fa-hand-holding-dollar mr-1.5"></i>Cobrar
                         </button>
                     </div>
@@ -470,20 +431,20 @@
                         <i class="fas fa-keyboard mr-1"></i>Teclado numérico
                     </summary>
                     <div class="numpad mt-3">
-                        <button class="code-key" onclick="appendNumpad('1')">1</button>
-                        <button class="code-key" onclick="appendNumpad('2')">2</button>
-                        <button class="code-key" onclick="appendNumpad('3')">3</button>
-                        <button class="code-key" onclick="appendNumpad('4')">4</button>
-                        <button class="code-key" onclick="appendNumpad('5')">5</button>
-                        <button class="code-key" onclick="appendNumpad('6')">6</button>
-                        <button class="code-key" onclick="appendNumpad('7')">7</button>
-                        <button class="code-key" onclick="appendNumpad('8')">8</button>
-                        <button class="code-key" onclick="appendNumpad('9')">9</button>
-                        <button class="code-key action" onclick="appendNumpad('x')">×</button>
-                        <button class="code-key" onclick="appendNumpad('0')">0</button>
-                        <button class="code-key action-red" onclick="borrarNumpad()">⌫</button>
-                        <button class="code-key action" onclick="appendNumpad(' ')" style="grid-column:span 2;">Separar</button>
-                        <button class="code-key action-green" onclick="procesarCodigo()">✓ OK</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('1')">1</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('2')">2</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('3')">3</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('4')">4</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('5')">5</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('6')">6</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('7')">7</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('8')">8</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('9')">9</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center action" onclick="appendNumpad('x')">×</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center" onclick="appendNumpad('0')">0</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center action-red" onclick="borrarNumpad()">⌫</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center action" onclick="appendNumpad(' ')" style="grid-column:span 2;">Separar</button>
+                        <button class="bg-gray-800/90 border border-indigo-500/20 rounded-xl p-3.5 text-lg font-bold text-white cursor-pointer transition-all hover:bg-indigo-500/20 hover:border-indigo-500/50 active:scale-95 select-none text-center action-green" onclick="procesarCodigo()">✓ OK</button>
                     </div>
                 </details>
 
@@ -496,7 +457,7 @@
                             <span id="countComandasAbiertas" class="bg-primary/20 text-primary text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
                         </h3>
                         <input type="text" id="buscarComanda" placeholder="Mesa o #..." oninput="renderComandasAbiertas()"
-                               class="input-field rounded-xl px-3 py-1.5 text-xs w-32">
+                               class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all rounded-xl px-3 py-1.5 text-xs w-32">
                     </div>
                     <div id="comandasAbiertasGrid" class="space-y-2"></div>
                 </div>
@@ -507,13 +468,13 @@
         <!-- ======= COCINA ======= -->
         <div id="screen-cocina" class="screen screen-inner">
             <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
-                <button onclick="filtrarCocina('activos')" class="cat-tab active" id="ctab-activos">
+                <button onclick="filtrarCocina('activos')" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 active" id="ctab-activos">
                     <i class="fas fa-fire text-warning mr-1 text-xs"></i>Activos
                 </button>
-                <button onclick="filtrarCocina('nuevo')" class="cat-tab" id="ctab-nuevo">Nuevos</button>
-                <button onclick="filtrarCocina('preparando')" class="cat-tab" id="ctab-preparando">Preparando</button>
-                <button onclick="filtrarCocina('listo')" class="cat-tab" id="ctab-listo">Listos</button>
-                <button onclick="filtrarCocina('entregado')" class="cat-tab" id="ctab-entregado">Entregados</button>
+                <button onclick="filtrarCocina('nuevo')" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ctab-nuevo">Nuevos</button>
+                <button onclick="filtrarCocina('preparando')" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ctab-preparando">Preparando</button>
+                <button onclick="filtrarCocina('listo')" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ctab-listo">Listos</button>
+                <button onclick="filtrarCocina('entregado')" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ctab-entregado">Entregados</button>
             </div>
             <div id="cocinaPedidos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
@@ -523,17 +484,17 @@
 
             <!-- Izquierda: Carta con códigos (igual que Caja) -->
             <div class="pos-left">
-                <div class="glass-surface rounded-2xl p-5 mb-4">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5 mb-4">
                     <div class="flex items-center gap-2 mb-3">
                         <i class="fas fa-barcode text-primary"></i>
                         <label class="text-gray-400 text-xs">Ingresá código y cantidad</label>
                     </div>
                     <div class="flex gap-2 mb-3">
                         <input type="text" id="dlvInputCodigo" placeholder="Ej: 4x2  o  4x1 7x2"
-                            class="input-field flex-1 rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider"
+                            class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all flex-1 rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider"
                             onkeydown="if(event.key==='Enter'){procesarCodigoDelivery()}"
                             autocomplete="off" autocorrect="off" spellcheck="false">
-                        <button onclick="procesarCodigoDelivery()" class="btn-primary rounded-xl px-5 text-white font-bold text-sm">
+                        <button onclick="procesarCodigoDelivery()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-5 text-white font-bold text-sm">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -541,10 +502,10 @@
                 </div>
 
                 <!-- Carta de referencia (códigos) -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-semibold text-sm"><i class="fas fa-list-ol mr-2 text-primary"></i>Carta de códigos</h3>
-                        <input type="text" id="dlvBuscarCarta" placeholder="Buscar..." oninput="renderCartaDelivery()" class="input-field rounded-xl px-3 py-1.5 text-xs w-36">
+                        <input type="text" id="dlvBuscarCarta" placeholder="Buscar..." oninput="renderCartaDelivery()" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all rounded-xl px-3 py-1.5 text-xs w-36">
                     </div>
                     <div class="flex gap-2 overflow-x-auto pb-2 mb-3" id="dlvCartaTabs"></div>
                     <div id="dlvCartaPlatos" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
@@ -562,19 +523,19 @@
                     <div class="space-y-1.5 mb-3 pb-3 border-b border-white/10">
                         <div>
                             <label class="text-gray-500 text-xs mb-1 block"><i class="fas fa-user mr-1 text-primary"></i>Nombre</label>
-                            <input type="text" id="dlvNombre" placeholder="Nombre y apellido" class="input-field w-full rounded-lg px-3 py-2 text-xs">
+                            <input type="text" id="dlvNombre" placeholder="Nombre y apellido" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-lg px-3 py-2 text-xs">
                         </div>
                         <div>
                             <label class="text-gray-500 text-xs mb-1 block"><i class="fab fa-whatsapp mr-1 text-success"></i>Teléfono</label>
-                            <input type="tel" id="dlvTel" placeholder="+54 9 11 0000-0000" class="input-field w-full rounded-lg px-3 py-2 text-xs">
+                            <input type="tel" id="dlvTel" placeholder="+54 9 11 0000-0000" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-lg px-3 py-2 text-xs">
                         </div>
                         <div>
                             <label class="text-gray-500 text-xs mb-1 block"><i class="fas fa-location-dot mr-1 text-danger"></i>Dirección</label>
-                            <input type="text" id="dlvDir" placeholder="Calle 123, Piso 2" class="input-field w-full rounded-lg px-3 py-2 text-xs">
+                            <input type="text" id="dlvDir" placeholder="Calle 123, Piso 2" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-lg px-3 py-2 text-xs">
                         </div>
                         <div>
                             <label class="text-gray-500 text-xs mb-1 block"><i class="fas fa-note-sticky mr-1 text-accent"></i>Notas</label>
-                            <input type="text" id="dlvNotas" placeholder="Sin cebolla, timbre 3B…" class="input-field w-full rounded-lg px-3 py-2 text-xs">
+                            <input type="text" id="dlvNotas" placeholder="Sin cebolla, timbre 3B…" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-lg px-3 py-2 text-xs">
                         </div>
                     </div>
 
@@ -604,10 +565,10 @@
 
                     <!-- Acciones -->
                     <div class="space-y-2">
-                        <button onclick="registrarDelivery()" class="btn-warning w-full rounded-xl py-2.5 text-white font-semibold text-sm">
+                        <button onclick="registrarDelivery()" class="bg-gradient-to-br from-amber-500 to-amber-700 transition-all w-full rounded-xl py-2.5 text-white font-semibold text-sm">
                             <i class="fas fa-floppy-disk mr-2"></i>Registrar
                         </button>
-                        <button onclick="cobrarDelivery()" class="btn-primary w-full rounded-xl py-2.5 text-white text-sm font-semibold">
+                        <button onclick="cobrarDelivery()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-2.5 text-white text-sm font-semibold">
                             <i class="fas fa-hand-holding-dollar mr-1.5"></i>Cobrar al entregar
                         </button>
                         <p class="text-gray-600 text-xs text-center">
@@ -622,21 +583,21 @@
         <div id="screen-inventario" class="screen screen-inner">
             <div class="flex items-center justify-between mb-4 gap-3">
                 <div class="flex gap-2 overflow-x-auto">
-                    <button onclick="filtrarInv('todo')"    class="cat-tab active" id="itab-todo">Todo</button>
-                    <button onclick="filtrarInv('bajo')"    class="cat-tab" id="itab-bajo"><i class="fas fa-triangle-exclamation text-warning text-xs mr-1"></i>Bajo</button>
-                    <button onclick="filtrarInv('critico')" class="cat-tab" id="itab-critico"><i class="fas fa-circle-exclamation text-danger text-xs mr-1"></i>Crítico</button>
+                    <button onclick="filtrarInv('todo')"    class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 active" id="itab-todo">Todo</button>
+                    <button onclick="filtrarInv('bajo')"    class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="itab-bajo"><i class="fas fa-triangle-exclamation text-warning text-xs mr-1"></i>Bajo</button>
+                    <button onclick="filtrarInv('critico')" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="itab-critico"><i class="fas fa-circle-exclamation text-danger text-xs mr-1"></i>Crítico</button>
                 </div>
                 <div class="flex gap-2 flex-shrink-0">
-                    <button onclick="abrirEntradaMercaderia()" class="btn-success rounded-xl px-3 py-2 text-white text-sm font-semibold flex items-center gap-1.5" title="Sumar stock a un ingrediente existente">
+                    <button onclick="abrirEntradaMercaderia()" class="bg-gradient-to-br from-emerald-500 to-emerald-700 transition-all rounded-xl px-3 py-2 text-white text-sm font-semibold flex items-center gap-1.5" title="Sumar stock a un ingrediente existente">
                         <i class="fas fa-truck-ramp-box"></i><span class="hidden md:inline">+ Stock</span>
                     </button>
-                    <button onclick="abrirModalIngrediente(null)" class="btn-primary rounded-xl px-3 py-2 text-white text-sm font-semibold flex items-center gap-1.5" title="Agregar ingrediente nuevo al sistema">
+                    <button onclick="abrirModalIngrediente(null)" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-3 py-2 text-white text-sm font-semibold flex items-center gap-1.5" title="Agregar ingrediente nuevo al sistema">
                         <i class="fas fa-plus"></i><span class="hidden md:inline">Nuevo ingrediente</span>
                     </button>
                 </div>
             </div>
 
-            <div class="glass-surface rounded-2xl overflow-hidden">
+            <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl overflow-hidden">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-white/5">
@@ -656,13 +617,13 @@
         <!-- ======= MENÚ ======= -->
         <div id="screen-menu" class="screen screen-inner">
             <div class="flex gap-2 mb-5">
-                <button onclick="menuTab('platos')"     id="mtab-platos"     class="cat-tab active"><i class="fas fa-utensils mr-1.5"></i>Platos</button>
-                <button onclick="menuTab('categorias')" id="mtab-categorias" class="cat-tab"><i class="fas fa-tags mr-1.5"></i>Categorías</button>
+                <button onclick="menuTab('platos')"     id="mtab-platos"     class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 active"><i class="fas fa-utensils mr-1.5"></i>Platos</button>
+                <button onclick="menuTab('categorias')" id="mtab-categorias" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300"><i class="fas fa-tags mr-1.5"></i>Categorías</button>
                 <div id="menuAcciones" class="ml-auto flex gap-2">
-                    <button id="btnNuevoPlato" onclick="abrirModalPlato(null)" class="btn-primary rounded-xl px-4 py-2 text-white text-sm font-semibold flex items-center gap-2">
+                    <button id="btnNuevoPlato" onclick="abrirModalPlato(null)" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-4 py-2 text-white text-sm font-semibold flex items-center gap-2">
                         <i class="fas fa-plus"></i><span class="hidden md:inline">Nuevo plato</span>
                     </button>
-                    <button id="btnNuevaCat" onclick="abrirModalCategoria()" class="btn-primary rounded-xl px-4 py-2 text-white text-sm font-semibold hidden flex items-center gap-2">
+                    <button id="btnNuevaCat" onclick="abrirModalCategoria()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-4 py-2 text-white text-sm font-semibold hidden flex items-center gap-2">
                         <i class="fas fa-plus"></i><span class="hidden md:inline">Nueva categoría</span>
                     </button>
                 </div>
@@ -676,19 +637,19 @@
             <div class="flex items-center justify-between mb-4 gap-3">
                 <div class="relative flex-1">
                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
-                    <input type="text" id="buscarCliente" placeholder="Buscar por nombre o teléfono..." oninput="renderClientes()" class="input-field w-full rounded-xl pl-9 pr-4 py-2.5 text-sm">
+                    <input type="text" id="buscarCliente" placeholder="Buscar por nombre o teléfono..." oninput="renderClientes()" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl pl-9 pr-4 py-2.5 text-sm">
                 </div>
-                <button onclick="abrirModalCliente(null)" class="btn-primary rounded-xl px-4 py-2.5 text-white text-sm font-semibold flex items-center gap-2 flex-shrink-0">
+                <button onclick="abrirModalCliente(null)" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-4 py-2.5 text-white text-sm font-semibold flex items-center gap-2 flex-shrink-0">
                     <i class="fas fa-user-plus"></i><span class="hidden md:inline">Nuevo</span>
                 </button>
             </div>
 
             <!-- Filtro canal -->
             <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
-                <button onclick="filtrarClientes('todos')"       class="cat-tab active" id="ctab-todos">Todos</button>
-                <button onclick="filtrarClientes('whatsapp')"    class="cat-tab" id="ctab-whatsapp"><i class="fab fa-whatsapp text-success mr-1"></i>WhatsApp</button>
-                <button onclick="filtrarClientes('delivery')"    class="cat-tab" id="ctab-delivery"><i class="fas fa-motorcycle text-warning mr-1"></i>Delivery</button>
-                <button onclick="filtrarClientes('salon')"       class="cat-tab" id="ctab-salon"><i class="fas fa-chair text-primary mr-1"></i>Salón</button>
+                <button onclick="filtrarClientes('todos')"       class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 active" id="ctab-todos">Todos</button>
+                <button onclick="filtrarClientes('whatsapp')"    class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ctab-whatsapp"><i class="fab fa-whatsapp text-success mr-1"></i>WhatsApp</button>
+                <button onclick="filtrarClientes('delivery')"    class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ctab-delivery"><i class="fas fa-motorcycle text-warning mr-1"></i>Delivery</button>
+                <button onclick="filtrarClientes('salon')"       class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ctab-salon"><i class="fas fa-chair text-primary mr-1"></i>Salón</button>
             </div>
 
             <!-- Grid clientes -->
@@ -699,11 +660,11 @@
         <div id="screen-reservas" class="screen screen-inner">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex gap-2 overflow-x-auto">
-                    <button onclick="filtrarReservas('hoy')"      class="cat-tab active" id="rtab-hoy">Hoy</button>
-                    <button onclick="filtrarReservas('proximas')" class="cat-tab" id="rtab-proximas">Próximas</button>
-                    <button onclick="filtrarReservas('todas')"    class="cat-tab" id="rtab-todas">Todas</button>
+                    <button onclick="filtrarReservas('hoy')"      class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 active" id="rtab-hoy">Hoy</button>
+                    <button onclick="filtrarReservas('proximas')" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="rtab-proximas">Próximas</button>
+                    <button onclick="filtrarReservas('todas')"    class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="rtab-todas">Todas</button>
                 </div>
-                <button onclick="abrirModalReserva(null)" class="btn-primary rounded-xl px-4 py-2.5 text-white text-sm font-semibold flex items-center gap-2 flex-shrink-0">
+                <button onclick="abrirModalReserva(null)" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-4 py-2.5 text-white text-sm font-semibold flex items-center gap-2 flex-shrink-0">
                     <i class="fas fa-plus"></i><span class="hidden md:inline">Nueva reserva</span>
                 </button>
             </div>
@@ -717,17 +678,17 @@
 
             <!-- Selector período + Exportar -->
             <div class="flex gap-2 mb-5 flex-wrap">
-                <button onclick="setPeriodo('hoy')"    class="cat-tab active" id="ptab-hoy">Hoy</button>
-                <button onclick="setPeriodo('semana')" class="cat-tab" id="ptab-semana">Esta semana</button>
-                <button onclick="setPeriodo('mes')"    class="cat-tab" id="ptab-mes">Este mes</button>
-                <button onclick="exportarCSV()" class="btn-success ml-auto rounded-xl px-4 py-2 text-white text-sm font-semibold flex items-center gap-2">
+                <button onclick="setPeriodo('hoy')"    class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 active" id="ptab-hoy">Hoy</button>
+                <button onclick="setPeriodo('semana')" class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ptab-semana">Esta semana</button>
+                <button onclick="setPeriodo('mes')"    class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300" id="ptab-mes">Este mes</button>
+                <button onclick="exportarCSV()" class="bg-gradient-to-br from-emerald-500 to-emerald-700 transition-all ml-auto rounded-xl px-4 py-2 text-white text-sm font-semibold flex items-center gap-2">
                     <i class="fas fa-file-csv"></i><span class="hidden md:inline">Exportar CSV</span>
                 </button>
             </div>
 
             <!-- Fila 1: KPIs financieros (6 cards) -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Total vendido</span>
                         <i class="fas fa-dollar-sign text-accent text-xs"></i>
@@ -735,7 +696,7 @@
                     <div id="rpVenta" class="text-xl font-bold text-accent">$0</div>
                     <div class="text-gray-600 text-xs mt-1">cobrado</div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Ticket prom.</span>
                         <i class="fas fa-receipt text-primary text-xs"></i>
@@ -743,7 +704,7 @@
                     <div id="rpTicket" class="text-xl font-bold text-primary">$0</div>
                     <div class="text-gray-600 text-xs mt-1">por comanda</div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Comandas</span>
                         <i class="fas fa-utensils text-white text-xs"></i>
@@ -751,7 +712,7 @@
                     <div id="rpComandas" class="text-xl font-bold">0</div>
                     <div class="text-gray-600 text-xs mt-1">registradas</div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Delivery</span>
                         <i class="fas fa-motorcycle text-warning text-xs"></i>
@@ -759,7 +720,7 @@
                     <div id="rpDelivery" class="text-xl font-bold text-warning">0</div>
                     <div id="rpDeliveryMonto" class="text-gray-600 text-xs mt-1">$0</div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Reservas</span>
                         <i class="fas fa-calendar-check text-success text-xs"></i>
@@ -767,7 +728,7 @@
                     <div id="rpReservas" class="text-xl font-bold text-success">0</div>
                     <div class="text-gray-600 text-xs mt-1">confirmadas</div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 hover:-translate-y-0.5 transition-transform">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-gray-400 text-xs">Clientes</span>
                         <i class="fas fa-users text-primary text-xs"></i>
@@ -779,7 +740,7 @@
 
             <!-- Fila 2: Ventas por canal (3 cards horizontales) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 flex items-center gap-4">
                     <div class="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-chair text-primary text-lg"></i>
                     </div>
@@ -789,7 +750,7 @@
                         <div id="rpSalonCant" class="text-gray-500 text-xs">0 comandas</div>
                     </div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 flex items-center gap-4">
                     <div class="w-12 h-12 rounded-2xl bg-warning/15 flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-motorcycle text-warning text-lg"></i>
                     </div>
@@ -799,7 +760,7 @@
                         <div id="rpDeliveryCant" class="text-gray-500 text-xs">0 pedidos</div>
                     </div>
                 </div>
-                <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 flex items-center gap-4">
                     <div class="w-12 h-12 rounded-2xl bg-success/15 flex items-center justify-center flex-shrink-0">
                         <i class="fab fa-whatsapp text-success text-lg"></i>
                     </div>
@@ -814,26 +775,26 @@
             <!-- Fila 3: Top platos + Top clientes + Gráfico canal -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <!-- Top platos -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <h3 class="font-semibold text-sm mb-4"><i class="fas fa-trophy text-warning mr-2"></i>Top platos</h3>
                     <div id="rpTopPlatos" class="space-y-3"></div>
                 </div>
 
                 <!-- Top clientes -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <h3 class="font-semibold text-sm mb-4"><i class="fas fa-star text-accent mr-2"></i>Clientes frecuentes</h3>
                     <div id="rpTopClientes" class="space-y-3"></div>
                 </div>
 
                 <!-- Gráfico canal -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <h3 class="font-semibold text-sm mb-4"><i class="fas fa-chart-pie text-primary mr-2"></i>Ventas por canal</h3>
                     <canvas id="chartCanal" height="160"></canvas>
                 </div>
             </div>
 
             <!-- Fila 4: Tabla detalle comandas -->
-            <div class="glass-surface rounded-2xl overflow-hidden">
+            <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl overflow-hidden">
                 <div class="px-5 py-3 border-b border-white/5 flex justify-between items-center">
                     <h3 class="font-semibold text-sm">Detalle de comandas</h3>
                     <span id="rpComandasLabel" class="text-gray-500 text-xs"></span>
@@ -859,14 +820,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <!-- Editor -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <h3 class="font-semibold text-sm mb-4 flex items-center gap-2">
                         <i class="fas fa-bullhorn text-primary"></i> Nueva difusión WhatsApp
                     </h3>
                     <div class="space-y-3">
                         <div>
                             <label class="text-gray-500 text-xs mb-1 block">Plantilla rápida</label>
-                            <select id="difPlantilla" onchange="cargarPlantilla()" class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                            <select id="difPlantilla" onchange="cargarPlantilla()" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-3 py-2.5 text-sm">
                                 <option value="menu">📋 Menú del día</option>
                                 <option value="promo">🎉 Promoción especial</option>
                                 <option value="evento">📅 Evento / mesa disponible</option>
@@ -876,11 +837,11 @@
                         <div>
                             <label class="text-gray-500 text-xs mb-1 block">Mensaje</label>
                             <textarea id="difMensaje" oninput="actualizarPreviewDif()" rows="7"
-                                class="input-field w-full rounded-xl px-3 py-2.5 text-sm resize-none"></textarea>
+                                class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-3 py-2.5 text-sm resize-none"></textarea>
                         </div>
                         <div>
                             <label class="text-gray-500 text-xs mb-1 block">Destino</label>
-                            <select class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                            <select class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-3 py-2.5 text-sm">
                                 <option>📋 Todos los clientes (47 contactos)</option>
                                 <option>⭐ Clientes frecuentes (18)</option>
                                 <option>🛵 Clientes delivery (23)</option>
@@ -889,13 +850,13 @@
                         </div>
                         <div>
                             <label class="text-gray-500 text-xs mb-1 block">Programar</label>
-                            <select class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                            <select class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-3 py-2.5 text-sm">
                                 <option>Ahora</option>
                                 <option>Mañana 8:00 hs</option>
                                 <option>Viernes 12:00 hs</option>
                             </select>
                         </div>
-                        <button onclick="enviarDifusion()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm">
+                        <button onclick="enviarDifusion()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-3 text-white font-semibold text-sm">
                             <i class="fas fa-paper-plane mr-2"></i>Enviar difusión WhatsApp
                         </button>
                     </div>
@@ -954,7 +915,7 @@
                     </div>
 
                     <!-- Estado conexión backend (mini, solo lectura) -->
-                    <div class="glass-surface rounded-2xl p-3 mt-5">
+                    <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-3 mt-5">
                         <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Estado del backend</div>
                         <p id="botApiStatus" class="text-xs text-gray-400">⏳ Verificando…</p>
                     </div>
@@ -984,8 +945,8 @@
                         <!-- Input -->
                         <div class="p-3 flex gap-2 flex-shrink-0" style="border-top:1px solid rgba(99,102,241,0.1);">
                             <input type="text" id="botInput" placeholder="Escribí un mensaje..." onkeydown="if(event.key==='Enter')enviarMsgBot()"
-                                class="input-field flex-1 rounded-xl px-3 py-2 text-sm">
-                            <button onclick="enviarMsgBot()" class="btn-primary rounded-xl px-4 text-white text-sm font-bold">
+                                class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all flex-1 rounded-xl px-3 py-2 text-sm">
+                            <button onclick="enviarMsgBot()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-4 text-white text-sm font-bold">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -999,36 +960,36 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <!-- Datos del restaurante -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <h3 class="font-semibold mb-4"><i class="fas fa-store mr-2 text-primary"></i>Datos del restaurante</h3>
                     <div class="space-y-3">
                         <div>
                             <label class="text-gray-400 text-xs mb-1.5 block">Nombre</label>
-                            <input type="text" id="cfgNombre" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="Nombre del restaurante">
+                            <input type="text" id="cfgNombre" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm" placeholder="Nombre del restaurante">
                         </div>
                         <div>
                             <label class="text-gray-400 text-xs mb-1.5 block">Teléfono / WhatsApp</label>
-                            <input type="text" id="cfgTel" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="+54 9 11 0000-0000">
+                            <input type="text" id="cfgTel" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm" placeholder="+54 9 11 0000-0000">
                         </div>
                         <div>
                             <label class="text-gray-400 text-xs mb-1.5 block">Dirección</label>
-                            <input type="text" id="cfgDir" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="Calle 123, Ciudad">
+                            <input type="text" id="cfgDir" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm" placeholder="Calle 123, Ciudad">
                         </div>
                         <div>
                             <label class="text-gray-400 text-xs mb-1.5 block">Email</label>
-                            <input type="email" id="cfgEmail" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="contacto@restaurante.com">
+                            <input type="email" id="cfgEmail" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm" placeholder="contacto@restaurante.com">
                         </div>
-                        <button onclick="guardarConfig()" class="btn-primary w-full rounded-xl py-2.5 text-white font-semibold text-sm">
+                        <button onclick="guardarConfig()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-2.5 text-white font-semibold text-sm">
                             <i class="fas fa-save mr-2"></i>Guardar
                         </button>
                     </div>
                 </div>
 
                 <!-- Mesas -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-semibold"><i class="fas fa-chair mr-2 text-primary"></i>Mesas del salón</h3>
-                        <button onclick="agregarMesa()" class="btn-primary rounded-xl px-3 py-1.5 text-white text-xs font-semibold">
+                        <button onclick="agregarMesa()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-3 py-1.5 text-white text-xs font-semibold">
                             <i class="fas fa-plus mr-1"></i>Agregar
                         </button>
                     </div>
@@ -1036,21 +997,21 @@
                 </div>
 
                 <!-- Horarios -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-semibold"><i class="fas fa-clock mr-2 text-primary"></i>Horarios de atención</h3>
-                        <button onclick="agregarHorario()" class="glass rounded-xl px-3 py-1.5 text-xs text-primary font-semibold hover:bg-primary/10 transition-colors">
+                        <button onclick="agregarHorario()" class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-xl px-3 py-1.5 text-xs text-primary font-semibold hover:bg-primary/10 transition-colors">
                             <i class="fas fa-plus mr-1"></i>Agregar
                         </button>
                     </div>
                     <div id="horariosLista" class="space-y-2"></div>
-                    <button onclick="guardarHorarios()" class="btn-primary w-full rounded-xl py-2.5 text-white font-semibold text-sm mt-3">
+                    <button onclick="guardarHorarios()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-2.5 text-white font-semibold text-sm mt-3">
                         <i class="fas fa-save mr-2"></i>Guardar horarios
                     </button>
                 </div>
 
                 <!-- Reseñas -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <h3 class="font-semibold mb-1"><i class="fas fa-star mr-2 text-warning"></i>Reseñas de clientes</h3>
                     <p class="text-gray-500 text-xs mb-4">Configurá los links para que el mozo pueda pedirle reseña al cliente al cobrar.</p>
                     <div class="space-y-3">
@@ -1059,7 +1020,7 @@
                                 <i class="fab fa-google text-yellow-400"></i>Google Maps — URL del negocio
                             </label>
                             <input type="url" id="cfgGooglePlaceId" placeholder="https://www.google.com/maps/place/Tu+Restaurante/..."
-                                class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                                class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                             <p class="text-gray-600 text-xs mt-1"><i class="fas fa-info-circle mr-1"></i>Buscá tu negocio en Google Maps, copiá la URL completa y pegala acá.</p>
                         </div>
                         <div>
@@ -1067,16 +1028,16 @@
                                 <i class="fab fa-facebook text-blue-400"></i>Facebook — URL de reseñas
                             </label>
                             <input type="url" id="cfgFacebookUrl" placeholder="https://www.facebook.com/tupagina/reviews"
-                                class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                                class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                         </div>
                         <div>
                             <label class="text-gray-400 text-xs mb-1.5 flex items-center gap-1.5 block">
                                 <i class="fas fa-map-marked-alt text-green-400"></i>TripAdvisor — URL de reseñas
                             </label>
                             <input type="url" id="cfgTripAdvisorUrl" placeholder="https://www.tripadvisor.com/Restaurant_Review-..."
-                                class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                                class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                         </div>
-                        <button onclick="guardarConfig()" class="btn-primary w-full rounded-xl py-2.5 text-white font-semibold text-sm">
+                        <button onclick="guardarConfig()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-2.5 text-white font-semibold text-sm">
                             <i class="fas fa-save mr-2"></i>Guardar
                         </button>
                         <!-- QR generado -->
@@ -1088,7 +1049,7 @@
                 </div>
 
                 <!-- Datos & Reset -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <h3 class="font-semibold mb-1"><i class="fas fa-database mr-2 text-primary"></i>Datos del sistema</h3>
                     <p class="text-gray-500 text-xs mb-4">Los datos se guardan automáticamente en este dispositivo.</p>
                     <div class="space-y-2">
@@ -1102,14 +1063,14 @@
                                 <span class="text-success text-xs font-semibold">Activo</span>
                             </div>
                         </div>
-                        <button onclick="limpiarDatosDemo()" class="btn-danger w-full rounded-xl py-2.5 text-white text-sm font-semibold">
+                        <button onclick="limpiarDatosDemo()" class="bg-gradient-to-br from-red-500 to-red-700 transition-all w-full rounded-xl py-2.5 text-white text-sm font-semibold">
                             <i class="fas fa-trash mr-2"></i>Borrar datos demo y empezar desde cero
                         </button>
                     </div>
                 </div>
 
                 <!-- Integración System IA — estado real -->
-                <div class="glass-surface rounded-2xl p-5">
+                <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5">
                     <h3 class="font-semibold mb-1"><i class="fas fa-plug mr-2 text-accent"></i>Backend System IA</h3>
                     <p class="text-gray-500 text-xs mb-4">Estado de las integraciones conectadas a este CRM.</p>
 
@@ -1149,9 +1110,9 @@
                     <div class="border-t border-white/5 pt-3">
                         <div class="text-gray-500 text-xs mb-2">URL del backend</div>
                         <div class="flex gap-2">
-                            <input type="text" id="apiBaseInput" class="input-field flex-1 rounded-xl px-3 py-2 text-xs font-mono"
+                            <input type="text" id="apiBaseInput" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all flex-1 rounded-xl px-3 py-2 text-xs font-mono"
                                 placeholder="https://agentes.arnaldoayalaestratega.cloud">
-                            <button onclick="guardarAPIBase()" class="btn-primary rounded-xl px-3 text-white text-xs font-bold">Conectar</button>
+                            <button onclick="guardarAPIBase()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-3 text-white text-xs font-bold">Conectar</button>
                         </div>
                     </div>
                 </div>
@@ -1195,18 +1156,18 @@
 <!-- ========== MODALES ========== -->
 
 <!-- Modal: Cobrar / Cerrar comanda -->
-<div id="modalCobrar" class="modal-overlay hidden">
-    <div class="modal-content">
+<div id="modalCobrar" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-5">
             <h3 class="text-lg font-bold"><i class="fas fa-hand-holding-dollar mr-2 text-success"></i>Cobrar comanda</h3>
             <button onclick="cerrarModal('modalCobrar')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
         </div>
 
         <!-- Resumen items -->
-        <div id="cobrarResumen" class="glass-surface rounded-xl p-4 mb-4 space-y-1.5 max-h-40 overflow-y-auto text-sm"></div>
+        <div id="cobrarResumen" class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl p-4 mb-4 space-y-1.5 max-h-40 overflow-y-auto text-sm"></div>
 
         <!-- Total destacado -->
-        <div class="glass-surface rounded-2xl p-4 mb-5 flex items-center justify-between">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 mb-5 flex items-center justify-between">
             <span class="text-gray-400 font-medium">TOTAL A COBRAR</span>
             <span id="cobrarTotal" class="text-white font-bold text-2xl"></span>
         </div>
@@ -1220,7 +1181,7 @@
 
                 <!-- Efectivo -->
                 <button onclick="selMetodo('efectivo')" id="met-efectivo"
-                    class="glass rounded-2xl p-4 text-left transition-all border border-white/10 hover:border-success/40 group relative">
+                    class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-2xl p-4 text-left transition-all border border-white/10 hover:border-success/40 group relative">
                     <i class="met-check fas fa-check-circle text-success absolute top-3 right-3 text-sm hidden"></i>
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-9 h-9 rounded-xl bg-success/10 flex items-center justify-center group-hover:bg-success/20 transition-colors">
@@ -1233,7 +1194,7 @@
 
                 <!-- Transferencia / Digital -->
                 <button onclick="selMetodo('transferencia')" id="met-transferencia"
-                    class="glass rounded-2xl p-4 text-left transition-all border border-white/10 hover:border-primary/40 group relative">
+                    class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-2xl p-4 text-left transition-all border border-white/10 hover:border-primary/40 group relative">
                     <i class="met-check fas fa-check-circle text-primary absolute top-3 right-3 text-sm hidden"></i>
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -1255,7 +1216,7 @@
             </div>
         </div>
 
-        <button onclick="confirmarCobro()" class="btn-success w-full rounded-xl py-3.5 text-white font-semibold text-base">
+        <button onclick="confirmarCobro()" class="bg-gradient-to-br from-emerald-500 to-emerald-700 transition-all w-full rounded-xl py-3.5 text-white font-semibold text-base">
             <i class="fas fa-check-circle mr-2"></i>Confirmar cobro
         </button>
 
@@ -1271,8 +1232,8 @@
 </div>
 
 <!-- Modal: Selector plataforma reseña -->
-<div id="modalResena" class="modal-overlay hidden">
-    <div class="modal-content max-w-sm">
+<div id="modalResena" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out] max-w-sm">
         <div class="flex items-center justify-between mb-5">
             <h3 class="text-lg font-bold"><i class="fas fa-star mr-2 text-warning"></i>¿Dónde pedir la reseña?</h3>
             <button onclick="cerrarModal('modalResena')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
@@ -1284,8 +1245,8 @@
 </div>
 
 <!-- Modal: Ingrediente -->
-<div id="modalIngrediente" class="modal-overlay hidden">
-    <div class="modal-content">
+<div id="modalIngrediente" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-5">
             <h3 id="ingModalTitle" class="text-lg font-bold">Ingrediente</h3>
             <button onclick="cerrarModal('modalIngrediente')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
@@ -1293,37 +1254,37 @@
         <div class="grid grid-cols-2 gap-3">
             <div class="col-span-2">
                 <label class="text-gray-400 text-xs mb-1.5 block">Nombre *</label>
-                <input type="text" id="ingNombre" placeholder="Carne vacuna" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="ingNombre" placeholder="Carne vacuna" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Categoría</label>
-                <input type="text" id="ingCat" placeholder="Carnes" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="ingCat" placeholder="Carnes" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Unidad</label>
-                <select id="ingUnidad" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <select id="ingUnidad" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                     <option>kg</option><option>g</option><option>L</option><option>ml</option><option>unidades</option><option>porciones</option>
                 </select>
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Stock actual *</label>
-                <input type="number" id="ingStock" placeholder="0" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="number" id="ingStock" placeholder="0" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Stock mínimo *</label>
-                <input type="number" id="ingMin" placeholder="0" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="number" id="ingMin" placeholder="0" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
         </div>
         <input type="hidden" id="ingEditId">
-        <button onclick="guardarIngrediente()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
+        <button onclick="guardarIngrediente()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
             <i class="fas fa-save mr-2"></i>Guardar
         </button>
     </div>
 </div>
 
 <!-- Modal: Categoría -->
-<div id="modalCategoria" class="modal-overlay hidden">
-    <div class="modal-content">
+<div id="modalCategoria" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-5">
             <h3 id="catModalTitle" class="text-lg font-bold"><i class="fas fa-tags mr-2 text-primary"></i>Nueva categoría</h3>
             <button onclick="cerrarModal('modalCategoria')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
@@ -1332,22 +1293,22 @@
         <div class="space-y-3 mb-5">
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Nombre *</label>
-                <input type="text" id="catNombre" placeholder="Ej: Sándwiches" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="catNombre" placeholder="Ej: Sándwiches" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Ícono (emoji)</label>
-                <input type="text" id="catIcono" placeholder="🍴" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" maxlength="4">
+                <input type="text" id="catIcono" placeholder="🍴" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm" maxlength="4">
             </div>
         </div>
-        <button onclick="guardarCategoria()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm">
+        <button onclick="guardarCategoria()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-3 text-white font-semibold text-sm">
             <i class="fas fa-save mr-2"></i>Guardar categoría
         </button>
     </div>
 </div>
 
 <!-- Modal: Entrada de mercadería -->
-<div id="modalEntrada" class="modal-overlay hidden">
-    <div class="modal-content">
+<div id="modalEntrada" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-5">
             <h3 class="text-lg font-bold"><i class="fas fa-truck-ramp-box mr-2 text-success"></i>Sumar stock — ingrediente existente</h3>
             <button onclick="cerrarModal('modalEntrada')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
@@ -1355,32 +1316,32 @@
         <div class="space-y-3 mb-5">
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Ingrediente</label>
-                <select id="entradaIng" class="input-field w-full rounded-xl px-4 py-2.5 text-sm"></select>
+                <select id="entradaIng" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm"></select>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="text-gray-400 text-xs mb-1.5 block">Cantidad que entra *</label>
-                    <input type="number" id="entradaCant" placeholder="0" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                    <input type="number" id="entradaCant" placeholder="0" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                 </div>
                 <div>
                     <label class="text-gray-400 text-xs mb-1.5 block">Proveedor</label>
-                    <input type="text" id="entradaProv" placeholder="Proveedor" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                    <input type="text" id="entradaProv" placeholder="Proveedor" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                 </div>
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Notas</label>
-                <input type="text" id="entradaNotas" placeholder="Opcional" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="entradaNotas" placeholder="Opcional" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
         </div>
-        <button onclick="confirmarEntrada()" class="btn-success w-full rounded-xl py-3 text-white font-semibold text-sm">
+        <button onclick="confirmarEntrada()" class="bg-gradient-to-br from-emerald-500 to-emerald-700 transition-all w-full rounded-xl py-3 text-white font-semibold text-sm">
             <i class="fas fa-plus-circle mr-2"></i>Registrar entrada
         </button>
     </div>
 </div>
 
 <!-- Modal: Plato -->
-<div id="modalPlato" class="modal-overlay hidden">
-    <div class="modal-content">
+<div id="modalPlato" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-5">
             <h3 id="platoModalTitle" class="text-lg font-bold">Nuevo plato</h3>
             <button onclick="cerrarModal('modalPlato')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
@@ -1388,46 +1349,46 @@
         <div class="grid grid-cols-2 gap-3">
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Código *</label>
-                <input type="number" id="platoCod" placeholder="1" class="input-field w-full rounded-xl px-4 py-2.5 text-sm font-mono">
+                <input type="number" id="platoCod" placeholder="1" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm font-mono">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Categoría</label>
-                <select id="platoCat" class="input-field w-full rounded-xl px-4 py-2.5 text-sm"></select>
+                <select id="platoCat" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm"></select>
             </div>
             <div class="col-span-2">
                 <label class="text-gray-400 text-xs mb-1.5 block">Nombre *</label>
-                <input type="text" id="platoNom" placeholder="Milanesa napolitana" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="platoNom" placeholder="Milanesa napolitana" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Precio *</label>
-                <input type="number" id="platoPrecio" placeholder="0" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="number" id="platoPrecio" placeholder="0" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Tiempo prep (min)</label>
-                <input type="number" id="platoTiempo" placeholder="15" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="number" id="platoTiempo" placeholder="15" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div class="col-span-2">
                 <label class="text-gray-400 text-xs mb-1.5 block">Descripción</label>
-                <input type="text" id="platoDesc" placeholder="Descripción breve" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="platoDesc" placeholder="Descripción breve" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Estado</label>
-                <select id="platoActivo" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <select id="platoActivo" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                     <option value="true">Disponible</option>
                     <option value="false">No disponible</option>
                 </select>
             </div>
         </div>
         <input type="hidden" id="platoEditId">
-        <button onclick="guardarPlato()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
+        <button onclick="guardarPlato()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
             <i class="fas fa-save mr-2"></i>Guardar plato
         </button>
     </div>
 </div>
 
 <!-- Modal: Cliente -->
-<div id="modalCliente" class="modal-overlay hidden">
-    <div class="modal-content">
+<div id="modalCliente" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-5">
             <h3 id="clienteModalTitle" class="text-lg font-bold">Nuevo cliente</h3>
             <button onclick="cerrarModal('modalCliente')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
@@ -1435,23 +1396,23 @@
         <div class="grid grid-cols-2 gap-3">
             <div class="col-span-2">
                 <label class="text-gray-400 text-xs mb-1.5 block">Nombre completo *</label>
-                <input type="text" id="cliNombre" placeholder="Juan Pérez" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="cliNombre" placeholder="Juan Pérez" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Teléfono / WhatsApp *</label>
-                <input type="tel" id="cliTel" placeholder="+54 9 11 0000-0000" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="tel" id="cliTel" placeholder="+54 9 11 0000-0000" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Email</label>
-                <input type="email" id="cliEmail" placeholder="correo@mail.com" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="email" id="cliEmail" placeholder="correo@mail.com" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Cumpleaños</label>
-                <input type="date" id="cliCumple" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="date" id="cliCumple" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Canal preferido</label>
-                <select id="cliCanal" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <select id="cliCanal" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                     <option value="whatsapp">WhatsApp</option>
                     <option value="salon">Salón</option>
                     <option value="delivery">Delivery</option>
@@ -1460,34 +1421,34 @@
             </div>
             <div class="col-span-2">
                 <label class="text-gray-400 text-xs mb-1.5 block">Notas / preferencias</label>
-                <input type="text" id="cliNotas" placeholder="Sin cebolla, alérgico a..." class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="cliNotas" placeholder="Sin cebolla, alérgico a..." class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
         </div>
         <input type="hidden" id="cliEditId">
-        <button onclick="guardarCliente()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
+        <button onclick="guardarCliente()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
             <i class="fas fa-save mr-2"></i>Guardar cliente
         </button>
     </div>
 </div>
 
 <!-- Modal: Historial cliente -->
-<div id="modalHistorial" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width:560px;">
+<div id="modalHistorial" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out]" style="max-width:560px;">
         <div class="flex items-center justify-between mb-5">
             <h3 id="historialTitle" class="text-lg font-bold">Historial</h3>
             <button onclick="cerrarModal('modalHistorial')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
         </div>
         <!-- Info cliente -->
-        <div id="historialClienteInfo" class="glass-surface rounded-xl p-4 mb-4"></div>
+        <div id="historialClienteInfo" class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl p-4 mb-4"></div>
         <!-- Pedidos -->
         <h4 class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Pedidos anteriores</h4>
         <div id="historialPedidos" class="space-y-3 max-h-64 overflow-y-auto"></div>
         <!-- Acciones seguimiento -->
         <div class="grid grid-cols-2 gap-2 mt-5">
-            <button id="btnWaCliente" class="btn-success rounded-xl py-2.5 text-white text-sm font-semibold flex items-center justify-center gap-2">
+            <button id="btnWaCliente" class="bg-gradient-to-br from-emerald-500 to-emerald-700 transition-all rounded-xl py-2.5 text-white text-sm font-semibold flex items-center justify-center gap-2">
                 <i class="fab fa-whatsapp"></i>WhatsApp
             </button>
-            <button id="btnEmailCliente" class="btn-primary rounded-xl py-2.5 text-white text-sm font-semibold flex items-center justify-center gap-2">
+            <button id="btnEmailCliente" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl py-2.5 text-white text-sm font-semibold flex items-center justify-center gap-2">
                 <i class="fas fa-envelope"></i>Email
             </button>
         </div>
@@ -1495,8 +1456,8 @@
 </div>
 
 <!-- Modal: Reserva -->
-<div id="modalReserva" class="modal-overlay hidden">
-    <div class="modal-content">
+<div id="modalReserva" class="modal-overlay fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center hidden">
+    <div class="bg-gray-900 rounded-t-3xl md:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6 border-t md:border border-indigo-500/30 [animation:slideUp_0.3s_ease-out] md:[animation:fadeUp_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-5">
             <h3 id="reservaModalTitle" class="text-lg font-bold">Nueva reserva</h3>
             <button onclick="cerrarModal('modalReserva')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
@@ -1504,15 +1465,15 @@
         <div class="grid grid-cols-2 gap-3">
             <div class="col-span-2">
                 <label class="text-gray-400 text-xs mb-1.5 block">Cliente (nombre o buscar)</label>
-                <input type="text" id="resCliente" placeholder="Nombre del cliente" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="resCliente" placeholder="Nombre del cliente" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Teléfono *</label>
-                <input type="tel" id="resTel" placeholder="+54 9 11..." class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="tel" id="resTel" placeholder="+54 9 11..." class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Canal de contacto</label>
-                <select id="resCanal" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <select id="resCanal" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                     <option value="whatsapp">WhatsApp</option>
                     <option value="telefono">Teléfono</option>
                     <option value="instagram">Instagram</option>
@@ -1521,29 +1482,29 @@
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Fecha *</label>
-                <input type="date" id="resFecha" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="date" id="resFecha" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Hora *</label>
-                <input type="time" id="resHora" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="time" id="resHora" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Personas</label>
-                <input type="number" id="resPersonas" placeholder="2" min="1" max="50" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="number" id="resPersonas" placeholder="2" min="1" max="50" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
             <div>
                 <label class="text-gray-400 text-xs mb-1.5 block">Mesa asignada</label>
-                <select id="resMesa" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <select id="resMesa" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
                     <option value="">Sin asignar</option>
                 </select>
             </div>
             <div class="col-span-2">
                 <label class="text-gray-400 text-xs mb-1.5 block">Notas</label>
-                <input type="text" id="resNotas" placeholder="Ocasión especial, menú especial..." class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                <input type="text" id="resNotas" placeholder="Ocasión especial, menú especial..." class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all w-full rounded-xl px-4 py-2.5 text-sm">
             </div>
         </div>
         <input type="hidden" id="resEditId">
-        <button onclick="guardarReserva()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
+        <button onclick="guardarReserva()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
             <i class="fas fa-calendar-check mr-2"></i>Guardar reserva
         </button>
     </div>
@@ -1675,7 +1636,7 @@ function renderInicio() {
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <span class="badge badge-${p.estado}">${ESTADO_LBL[p.estado]}</span>
+                <span class="${badgeCls(p.estado)}">${ESTADO_LBL[p.estado]}</span>
                 <span class="text-white text-sm font-semibold">${fmt(p.total)}</span>
             </div>
         </div>`).join('');
@@ -1723,8 +1684,8 @@ function renderCarta() {
 
     // Tabs
     el('cartaTabs').innerHTML =
-        `<button class="cat-tab ${catCartaFiltro===0?'active':''}" onclick="setCatCarta(0)">Todos</button>` +
-        CATS.map(c => `<button class="cat-tab ${catCartaFiltro===c.id?'active':''}" onclick="setCatCarta(${c.id})">${c.icono} ${c.nombre}</button>`).join('');
+        `<button class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 ${catCartaFiltro===0?'active':''}" onclick="setCatCarta(0)">Todos</button>` +
+        CATS.map(c => `<button class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 ${catCartaFiltro===c.id?'active':''}" onclick="setCatCarta(${c.id})">${c.icono} ${c.nombre}</button>`).join('');
 
     let platos = PLATOS.filter(p => p.activo);
     if (catCartaFiltro > 0) platos = platos.filter(p => p.cat === catCartaFiltro);
@@ -1733,7 +1694,7 @@ function renderCarta() {
     renderComandasAbiertas();
 
     el('cartaPlatos').innerHTML = platos.map(p => `
-        <div class="glass-surface rounded-xl px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:border-primary/40 transition-colors border border-white/5"
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:border-primary/40 transition-colors border border-white/5"
              onclick="agregarPorCodigo(${p.cod}, 1)">
             <span class="font-mono font-bold text-primary text-lg w-8 flex-shrink-0">${p.cod}</span>
             <div class="flex-1 min-w-0">
@@ -1758,15 +1719,15 @@ function renderCartaDelivery() {
     const q = (el('dlvBuscarCarta')?.value||'').toLowerCase();
 
     el('dlvCartaTabs').innerHTML =
-        `<button class="cat-tab ${dlvCatFiltro===0?'active':''}" onclick="setDlvCat(0)">Todos</button>` +
-        CATS.map(c => `<button class="cat-tab ${dlvCatFiltro===c.id?'active':''}" onclick="setDlvCat(${c.id})">${c.icono} ${c.nombre}</button>`).join('');
+        `<button class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 ${dlvCatFiltro===0?'active':''}" onclick="setDlvCat(0)">Todos</button>` +
+        CATS.map(c => `<button class="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 ${dlvCatFiltro===c.id?'active':''}" onclick="setDlvCat(${c.id})">${c.icono} ${c.nombre}</button>`).join('');
 
     let platos = PLATOS.filter(p => p.activo);
     if (dlvCatFiltro > 0) platos = platos.filter(p => p.cat === dlvCatFiltro);
     if (q) platos = platos.filter(p => p.nombre.toLowerCase().includes(q) || String(p.cod).includes(q));
 
     el('dlvCartaPlatos').innerHTML = platos.map(p => `
-        <div class="glass-surface rounded-xl px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:border-primary/40 transition-colors border border-white/5"
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:border-primary/40 transition-colors border border-white/5"
              onclick="dlvAgregarPorCodigo(${p.cod}, 1)">
             <span class="font-mono font-bold text-primary text-lg w-8 flex-shrink-0">${p.cod}</span>
             <div class="flex-1 min-w-0">
@@ -1921,7 +1882,7 @@ function renderComandasAbiertas() {
 
     if (abiertas.length === 0) {
         el('comandasAbiertasGrid').innerHTML = `
-            <div class="glass-surface rounded-xl py-6 text-center text-gray-500 text-sm">
+            <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl py-6 text-center text-gray-500 text-sm">
                 <i class="fas fa-check-circle text-success text-xl mb-2 block"></i>
                 ${q ? 'Sin resultados' : 'Sin comandas abiertas'}
             </div>`;
@@ -1935,11 +1896,11 @@ function renderComandasAbiertas() {
     };
 
     el('comandasAbiertasGrid').innerHTML = abiertas.map(p => `
-        <div class="glass-surface rounded-xl p-3 border border-white/5 border-l-2 ${ESTADO_COLOR[p.estado]||'border-l-white/20'}">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl p-3 border border-white/5 border-l-2 ${ESTADO_COLOR[p.estado]||'border-l-white/20'}">
             <div class="flex items-center justify-between mb-1.5">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="text-white font-bold text-sm truncate">${p.mesa}</span>
-                    <span class="badge badge-${p.estado} text-xs">${ESTADO_LBL[p.estado]}</span>
+                    <span class="${badgeCls(p.estado)}">${ESTADO_LBL[p.estado]}</span>
                 </div>
                 <span class="text-white font-bold text-sm flex-shrink-0">${fmt(p.total)}</span>
             </div>
@@ -1948,11 +1909,11 @@ function renderComandasAbiertas() {
             </div>
             <div class="flex gap-1.5">
                 <button onclick="cargarComandaEnCaja(${p.id})"
-                        class="glass rounded-lg py-1.5 px-2 text-gray-300 text-xs font-medium hover:text-white hover:bg-white/5 transition-colors flex-1">
+                        class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-lg py-1.5 px-2 text-gray-300 text-xs font-medium hover:text-white hover:bg-white/5 transition-colors flex-1">
                     <i class="fas fa-pen mr-1"></i>Editar
                 </button>
                 <button onclick="cobrarPedidoDirecto(${p.id})"
-                        class="btn-success rounded-lg py-1.5 px-2 text-white text-xs font-semibold flex-1">
+                        class="bg-gradient-to-br from-emerald-500 to-emerald-700 transition-all rounded-lg py-1.5 px-2 text-white text-xs font-semibold flex-1">
                     <i class="fas fa-circle-check mr-1"></i>Cerrar mesa
                 </button>
             </div>
@@ -2352,19 +2313,19 @@ function renderCocina() {
 
     el('cocinaPedidos').innerHTML = pedidos.map(p => {
         const btnAccion = {
-            nuevo:      `<button onclick="cambiarEstado(${p.id},'preparando')" class="btn-warning w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-fire mr-1.5"></i>Iniciar preparación</button>`,
-            preparando: `<button onclick="cambiarEstado(${p.id},'listo')"      class="btn-success w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-check mr-1.5"></i>Marcar listo</button>`,
-            listo:      `<button onclick="cambiarEstado(${p.id},'entregado')"  class="btn-primary w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-paper-plane mr-1.5"></i>Marcar entregado</button>`,
+            nuevo:      `<button onclick="cambiarEstado(${p.id},'preparando')" class="bg-gradient-to-br from-amber-500 to-amber-700 transition-all w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-fire mr-1.5"></i>Iniciar preparación</button>`,
+            preparando: `<button onclick="cambiarEstado(${p.id},'listo')"      class="bg-gradient-to-br from-emerald-500 to-emerald-700 transition-all w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-check mr-1.5"></i>Marcar listo</button>`,
+            listo:      `<button onclick="cambiarEstado(${p.id},'entregado')"  class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-paper-plane mr-1.5"></i>Marcar entregado</button>`,
             entregado:  `<div class="text-center text-success text-sm py-1"><i class="fas fa-check-circle mr-1"></i>Entregado</div>`,
         };
         return `
-        <div class="glass-surface rounded-2xl p-5 border border-white/5 ${p.estado==='nuevo'?'pedido-nuevo':''}">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-5 border border-white/5 ${p.estado==='nuevo'?'pedido-nuevo':''}">
             <div class="flex justify-between items-start mb-3">
                 <div>
                     <div class="flex items-center gap-2 mb-1">
                         <span class="font-bold text-white">#${p.numero}</span>
                         <span class="text-gray-500 text-xs font-mono">cmd:${p.comanda}</span>
-                        <span class="badge badge-${p.estado}">${ESTADO_LBL[p.estado]}</span>
+                        <span class="${badgeCls(p.estado)}">${ESTADO_LBL[p.estado]}</span>
                     </div>
                     <div class="text-white font-medium">${p.mesa}</div>
                     <div class="text-gray-500 text-xs mt-0.5"><i class="fas ${TIPO_ICON[p.tipo]} mr-1"></i>${TIPO_LBL[p.tipo]}</div>
@@ -2508,7 +2469,7 @@ function renderMenuPlatos() {
     el('menuPlatosLista').innerHTML = PLATOS.map(p => {
         const cat = CATS.find(c=>c.id===p.cat)||{};
         return `
-        <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 flex items-center gap-4">
             <span class="font-mono font-bold text-primary text-xl w-10 text-center flex-shrink-0">${p.cod}</span>
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
@@ -2540,17 +2501,17 @@ function menuTab(tab) {
 
 function renderMenuCats() {
     el('menuCatLista').innerHTML = CATS.map(c=>`
-        <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 flex items-center gap-4">
             <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl">${c.icono}</div>
             <div class="flex-1">
                 <div class="text-white font-semibold">${c.nombre}</div>
                 <div class="text-gray-500 text-xs">${PLATOS.filter(p=>p.cat===c.id).length} plato${PLATOS.filter(p=>p.cat===c.id).length!==1?'s':''}</div>
             </div>
             <div class="flex gap-2">
-                <button onclick="editarCategoria(${c.id})" class="glass rounded-xl px-3 py-1.5 text-gray-400 hover:text-white text-xs transition-colors">
+                <button onclick="editarCategoria(${c.id})" class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-xl px-3 py-1.5 text-gray-400 hover:text-white text-xs transition-colors">
                     <i class="fas fa-pen"></i>
                 </button>
-                <button onclick="eliminarCategoria(${c.id})" class="glass rounded-xl px-3 py-1.5 text-gray-400 hover:text-red-400 text-xs transition-colors">
+                <button onclick="eliminarCategoria(${c.id})" class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-xl px-3 py-1.5 text-gray-400 hover:text-red-400 text-xs transition-colors">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -2679,7 +2640,7 @@ function renderClientes() {
         })() : '';
         const iniciales = c.nombre.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
         return `
-        <div class="glass-surface rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors border border-white/5" onclick="verHistorial(${c.id})">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors border border-white/5" onclick="verHistorial(${c.id})">
             <div class="flex items-start gap-3 mb-3">
                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold flex-shrink-0">${iniciales}</div>
                 <div class="flex-1 min-w-0">
@@ -2778,14 +2739,14 @@ function verHistorial(id) {
     el('historialPedidos').innerHTML = pedidosCli.length === 0
         ? `<p class="text-gray-500 text-sm text-center py-6">Sin pedidos registrados en el sistema</p>`
         : pedidosCli.map(p=>`
-            <div class="glass-surface rounded-xl p-3 flex items-center justify-between">
+            <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl p-3 flex items-center justify-between">
                 <div>
                     <div class="text-white text-sm font-medium">#${p.numero} · ${p.hora}</div>
                     <div class="text-gray-500 text-xs">${p.items.map(i=>`×${i.cant} ${i.nombre}`).join(', ')}</div>
                 </div>
                 <div class="text-right">
                     <div class="text-primary font-bold text-sm">${fmt(p.total)}</div>
-                    <span class="badge badge-${p.estado} text-xs">${ESTADO_LBL[p.estado]}</span>
+                    <span class="${badgeCls(p.estado)}">${ESTADO_LBL[p.estado]}</span>
                 </div>
             </div>`).join('');
 
@@ -2823,7 +2784,7 @@ function renderReservas() {
     el('reservasLista').innerHTML = lista.map(r => {
         const esHoy = r.fecha === hoyStr;
         return `
-        <div class="glass-surface rounded-2xl p-4 border border-white/5 flex items-start gap-4">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-2xl p-4 border border-white/5 flex items-start gap-4">
             <div class="text-center flex-shrink-0 w-14">
                 <div class="text-primary font-bold text-lg leading-none">${r.hora.slice(0,5)}</div>
                 <div class="text-gray-500 text-xs mt-1">${esHoy?'Hoy':r.fecha.slice(5).replace('-','/')}</div>
@@ -2831,7 +2792,7 @@ function renderReservas() {
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-white font-semibold">${r.cliente}</span>
-                    <span class="badge ${r.estado==='confirmada'?'badge-listo':'badge-nuevo'}">${r.estado==='confirmada'?'Confirmada':'Pendiente'}</span>
+                    <span class="${r.estado==='confirmada'?'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30':'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'}">${r.estado==='confirmada'?'Confirmada':'Pendiente'}</span>
                 </div>
                 <div class="flex items-center gap-3 mt-1 text-xs text-gray-500">
                     <span><i class="fas fa-users mr-1"></i>${r.personas} personas</span>
@@ -3024,7 +2985,7 @@ function renderReportes() {
             </td>
             <td class="px-4 py-2.5 text-gray-500 text-xs hidden md:table-cell">${p.hora}</td>
             <td class="px-4 py-2.5 hidden md:table-cell">
-                <span class="badge badge-${p.estado} text-xs">${ESTADO_LBL[p.estado]||p.estado}</span>
+                <span class="${badgeCls(p.estado)}">${ESTADO_LBL[p.estado]||p.estado}</span>
             </td>
             <td class="px-4 py-2.5 text-right font-semibold ${p.estado==='entregado'?'text-success':'text-gray-400'}">${fmt(p.total)}</td>
         </tr>`).join('');
@@ -3069,16 +3030,16 @@ function renderConfig() {
     renderQRResena();
 
     el('mesasGrid').innerHTML = CFG.mesas.map((m,i)=>`
-        <div class="glass-surface rounded-xl p-2 text-center text-xs text-white font-medium cursor-default">${m}</div>`).join('') +
-        `<button onclick="agregarMesa()" class="glass-surface rounded-xl p-2 text-center text-xs text-gray-500 hover:text-primary transition-colors border border-dashed border-white/10">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl p-2 text-center text-xs text-white font-medium cursor-default">${m}</div>`).join('') +
+        `<button onclick="agregarMesa()" class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl p-2 text-center text-xs text-gray-500 hover:text-primary transition-colors border border-dashed border-white/10">
             <i class="fas fa-plus block text-base mb-0.5"></i>Nueva
         </button>`;
 
     el('horariosLista').innerHTML = CFG.horarios.map((h,i)=>`
-        <div class="glass-surface rounded-xl p-3 space-y-2" id="horario-row-${i}">
+        <div class="bg-gray-800/50 backdrop-blur-lg border border-white/[0.06] rounded-2xl rounded-xl p-3 space-y-2" id="horario-row-${i}">
             <div class="flex items-center gap-2">
                 <input type="text" value="${h.dia}" placeholder="Ej: Lunes - Viernes"
-                    class="input-field rounded-lg px-3 py-1.5 text-sm flex-1 min-w-0"
+                    class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all rounded-lg px-3 py-1.5 text-sm flex-1 min-w-0"
                     id="h-dia-${i}">
                 <label class="flex items-center gap-1.5 cursor-pointer flex-shrink-0">
                     <div class="relative">
@@ -3094,9 +3055,9 @@ function renderConfig() {
             </div>
             <div class="flex items-center gap-2">
                 <label class="text-xs text-gray-500 w-14 flex-shrink-0">Apertura</label>
-                <input type="time" value="${h.apertura}" class="input-field rounded-lg px-3 py-1.5 text-sm flex-1" id="h-apertura-${i}">
+                <input type="time" value="${h.apertura}" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all rounded-lg px-3 py-1.5 text-sm flex-1" id="h-apertura-${i}">
                 <label class="text-xs text-gray-500 w-10 flex-shrink-0 text-center">Cierre</label>
-                <input type="time" value="${h.cierre}" class="input-field rounded-lg px-3 py-1.5 text-sm flex-1" id="h-cierre-${i}">
+                <input type="time" value="${h.cierre}" class="bg-white/5 border border-indigo-500/25 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-white placeholder-gray-600 transition-all rounded-lg px-3 py-1.5 text-sm flex-1" id="h-cierre-${i}">
             </div>
         </div>`).join('');
 }
@@ -3139,7 +3100,7 @@ function renderQRResena() {
         <div class="flex flex-col items-center gap-3">
             <img src="${qrUrl}" alt="QR Reseña" class="rounded-xl border border-white/10 w-40 h-40">
             <p class="text-gray-500 text-xs text-center">QR principal: ${url.includes('google') ? 'Google Maps' : url.includes('facebook') ? 'Facebook' : 'TripAdvisor'}</p>
-            <a href="${qrUrl}" download="qr-resena.png" class="btn-primary rounded-xl px-4 py-2 text-white text-xs font-semibold">
+            <a href="${qrUrl}" download="qr-resena.png" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all rounded-xl px-4 py-2 text-white text-xs font-semibold">
                 <i class="fas fa-download mr-1.5"></i>Descargar QR
             </a>
         </div>`;
@@ -3158,7 +3119,7 @@ function pedirResena(tel) {
     }
 
     el('modalResenaPlataformas').innerHTML = plataformas.map(p => `
-        <button onclick="enviarLinkResena('${tel}','${p.url}')" class="glass rounded-2xl p-4 text-center hover:border-primary/40 transition-all border border-white/10">
+        <button onclick="enviarLinkResena('${tel}','${p.url}')" class="bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl rounded-2xl p-4 text-center hover:border-primary/40 transition-all border border-white/10">
             <i class="${p.icon} ${p.color} text-2xl block mb-2"></i>
             <span class="text-white text-sm font-semibold">${p.label}</span>
         </button>`).join('');
@@ -3212,6 +3173,15 @@ function agregarMesa() {
 function el(id) { return document.getElementById(id); }
 function fmt(n) { return '$' + (n||0).toLocaleString('es-AR'); }
 function cerrarModal(id) { el(id).classList.add('hidden'); }
+
+// Badge helper — returns Tailwind classes for a given estado
+const BADGE_CLASSES = {
+    nuevo:      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30',
+    preparando: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30',
+    listo:      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+    entregado:  'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-500/15 text-gray-400 border border-gray-500/30',
+};
+function badgeCls(estado) { return BADGE_CLASSES[estado] || BADGE_CLASSES.nuevo; }
 
 function showToast(msg, tipo='success') {
     const icons = { success:'fa-check-circle text-success', warning:'fa-triangle-exclamation text-warning', error:'fa-circle-xmark text-danger' };
@@ -3436,7 +3406,7 @@ function initBotEjemplos() {
     if (!cont) return;
     BOT_EJEMPLOS.forEach(msg => {
         const btn = document.createElement('button');
-        btn.className = 'glass w-full text-left rounded-xl px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors';
+        btn.className = 'bg-gray-900/70 backdrop-blur-xl border border-indigo-500/15 rounded-2xl w-full text-left rounded-xl px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors';
         btn.innerHTML = `<i class="fas fa-comment text-primary mr-2 text-xs"></i>${msg}`;
         btn.onclick = () => simularMsg(msg);
         cont.appendChild(btn);
