@@ -976,6 +976,54 @@
   </div>
 </div>
 
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="
+  display:none; position:fixed; inset:0; background:#0f1117;
+  z-index:9999; align-items:center; justify-content:center; flex-direction:column;
+">
+  <div style="
+    background:#1a1d27; border:1px solid #2e3347; border-radius:20px;
+    padding:40px 36px; width:100%; max-width:380px; text-align:center;
+    box-shadow:0 25px 60px rgba(0,0,0,0.5);
+  ">
+    <div id="loginLogo" style="
+      width:64px; height:64px; background:linear-gradient(135deg,#6c63ff,#00d4aa);
+      border-radius:16px; display:flex; align-items:center; justify-content:center;
+      font-size:32px; margin:0 auto 20px;
+    ">🏠</div>
+    <div id="loginEmpresa" style="font-size:1.3rem;font-weight:700;color:#e8eaf0;margin-bottom:6px">CRM</div>
+    <div style="font-size:0.85rem;color:#8b92a5;margin-bottom:32px">Ingresá tu PIN para continuar</div>
+
+    <!-- PIN dots display -->
+    <div style="display:flex;justify-content:center;gap:12px;margin-bottom:28px">
+      <div id="dot0" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot1" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot2" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot3" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+    </div>
+
+    <!-- Teclado numérico -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <script>
+        // Generar botones 1-9 + 0
+        const nums = [1,2,3,4,5,6,7,8,9,'',0,'⌫'];
+        document.write(nums.map(n => `
+          <button onclick="pinKey('${n}')" style="
+            background:#222636; border:1px solid #2e3347; border-radius:12px;
+            color:#e8eaf0; font-size:1.3rem; font-weight:600; padding:18px 0;
+            cursor:pointer; transition:all .15s;
+            ${n===''?'visibility:hidden':''}
+          " onmouseover="this.style.background='#2e3347'" onmouseout="this.style.background='#222636'"
+          >${n}</button>
+        `).join(''));
+      </script>
+    </div>
+
+    <div id="loginError" style="color:#f87171;font-size:0.85rem;min-height:20px;margin-bottom:8px"></div>
+    <div style="font-size:0.75rem;color:#4b5563;margin-top:8px">Powered by System IA</div>
+  </div>
+</div>
+
 <!-- MODAL: FORM PREVIEW -->
 <div class="modal-bg" id="modalForm">
   <div class="modal" style="max-width:440px">
@@ -1405,31 +1453,103 @@ async function guardarEstado(id) {
   }
 }
 
-// ── MULTI-TENANT — config dinámica por ?tenant=slug ────────────────────────
+// ── MULTI-TENANT + LOGIN ─────────────────────────────────────────────────────
 const SAAS_API = 'https://agentes.arnaldoayalaestratega.cloud';
-let API_BASE = `${SAAS_API}/demos/inmobiliaria`; // fallback por defecto
+let API_BASE = `${SAAS_API}/demos/inmobiliaria`; // fallback
+let TENANT_SLUG = 'demo';
+let pinBuffer = '';
 
+// ── PIN keyboard ─────────────────────────────────────────────────────────────
+function pinKey(k) {
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  if (k === '⌫') {
+    pinBuffer = pinBuffer.slice(0, -1);
+  } else if (k !== '' && pinBuffer.length < 4) {
+    pinBuffer += k;
+  }
+  // Actualizar dots
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`dot${i}`);
+    dot.style.background = i < pinBuffer.length ? '#6c63ff' : '#2e3347';
+  }
+  if (pinBuffer.length === 4) {
+    setTimeout(submitPin, 200);
+  }
+}
+
+async function submitPin() {
+  const err = document.getElementById('loginError');
+  try {
+    const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: pinBuffer }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      sessionStorage.setItem(`crm_token_${TENANT_SLUG}`, data.token);
+      // Ocultar login, mostrar app
+      document.getElementById('loginScreen').style.display = 'none';
+      document.querySelector('.layout') && (document.querySelector('.layout').style.display = '');
+      cargarLeads();
+      renderProps();
+      renderAgenda();
+    } else {
+      pinBuffer = '';
+      for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).style.background = '#f87171';
+      setTimeout(() => {
+        for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).style.background = '#2e3347';
+      }, 600);
+      err.textContent = 'PIN incorrecto. Intentá de nuevo.';
+    }
+  } catch(e) {
+    pinBuffer = '';
+    err.textContent = 'Error de conexión. Reintentá.';
+  }
+}
+
+// ── Init tenant + login flow ─────────────────────────────────────────────────
 async function initTenant() {
   const params = new URLSearchParams(window.location.search);
-  const slug = params.get('tenant') || 'demo';
+  TENANT_SLUG = params.get('tenant') || 'demo';
   try {
-    const res = await fetch(`${SAAS_API}/tenant/${slug}`, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) throw new Error(`tenant no encontrado: ${slug}`);
+    const res = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`tenant no encontrado: ${TENANT_SLUG}`);
     const t = await res.json();
-    // Actualizar API_BASE con el prefix del tenant
+
+    // Aplicar API_BASE
     API_BASE = `${SAAS_API}${t.api_prefix}`;
-    // Aplicar branding del tenant
+
+    // Aplicar branding
     document.getElementById('page-title').textContent = `${t.nombre} — CRM`;
     const topEmpresa = document.getElementById('topEmpresa');
     if (topEmpresa) topEmpresa.textContent = t.nombre;
     if (t.logo_url) aplicarLogo(t.logo_url);
-    // Aplicar colores si difieren del default
-    if (t.color_primario) {
-      document.documentElement.style.setProperty('--accent', t.color_primario);
+    if (t.color_primario) document.documentElement.style.setProperty('--accent', t.color_primario);
+
+    // Login si requiere PIN
+    if (t.requiere_pin) {
+      const token = sessionStorage.getItem(`crm_token_${TENANT_SLUG}`);
+      if (!token) {
+        // Mostrar pantalla de login
+        const ls = document.getElementById('loginScreen');
+        document.getElementById('loginEmpresa').textContent = t.nombre;
+        if (t.logo_url) {
+          document.getElementById('loginLogo').innerHTML = `<img src="${t.logo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`;
+        }
+        ls.style.display = 'flex';
+        // Ocultar layout principal hasta autenticar
+        const layout = document.querySelector('.layout');
+        if (layout) layout.style.display = 'none';
+        return false; // no continuar cargando datos
+      }
     }
   } catch(err) {
     console.warn('[Tenant] Usando config por defecto:', err.message);
   }
+  return true; // continuar cargando datos
 }
 
 // ── PROPS — conectado a Airtable via backend ────────────────────────────────
@@ -2025,10 +2145,13 @@ function guardarPerfil() {
 
 // ── INIT ────────────────────────────────────────────────────────────────────
 cargarPerfil();
-initTenant().then(() => {
-  cargarLeads();   // carga leads desde Airtable → renderLeads() + renderKanbanFromLeads()
-  renderProps();
-  renderAgenda();
+initTenant().then(ok => {
+  if (ok) {
+    cargarLeads();
+    renderProps();
+    renderAgenda();
+  }
+  // Si ok=false → login screen visible, datos se cargan desde submitPin()
 });
 </script>
 </body>
