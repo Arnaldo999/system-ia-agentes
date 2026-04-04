@@ -240,12 +240,10 @@
       <div class="form-group">
         <label>Tipo</label>
         <select class="form-control" id="mp-tipo">
-          <option value="Casa">Casa</option>
-          <option value="Departamento">Departamento</option>
-          <option value="Terreno">Terreno</option>
-          <option value="Lote">Lote</option>
-          <option value="Comercial">Comercial</option>
-          <option value="Loteo">Loteo</option>
+          <option value="Lote residencial">Lote residencial</option>
+          <option value="Lote comercial">Lote comercial</option>
+          <option value="Lote en esquina">Lote en esquina</option>
+          <option value="Terreno rural">Terreno rural</option>
         </select>
       </div>
     </div>
@@ -354,9 +352,10 @@
         <label>Tipo de propiedad</label>
         <select class="form-control" id="ml-tipo">
           <option value="">— Sin especificar —</option>
-          <option value="casa">Casa</option><option value="departamento">Departamento</option>
-          <option value="terreno">Terreno</option><option value="lote">Lote</option>
-          <option value="comercial">Comercial</option>
+          <option value="Lote residencial">Lote residencial</option>
+          <option value="Lote comercial">Lote comercial</option>
+          <option value="Lote en esquina">Lote en esquina</option>
+          <option value="Terreno rural">Terreno rural</option>
         </select>
       </div>
       <div class="form-group">
@@ -532,9 +531,10 @@
         <div class="fc-wrap fc-tipo">
           <select class="filter-chip" id="f-tipo" onchange="renderProps()">
             <option value="">🏗️ Todos los tipos</option>
-            <option value="casa">Casa</option><option value="departamento">Departamento</option>
-            <option value="terreno">Terreno</option><option value="lote">Lote</option>
-            <option value="comercial">Comercial</option><option value="loteo">Loteo</option>
+            <option value="Lote residencial">Lote residencial</option>
+            <option value="Lote comercial">Lote comercial</option>
+            <option value="Lote en esquina">Lote en esquina</option>
+            <option value="Terreno rural">Terreno rural</option>
           </select>
         </div>
         <div class="fc-wrap fc-estado">
@@ -628,9 +628,10 @@
         <div class="fc-wrap fc-tipo">
           <select class="filter-chip" id="g-tipo" onchange="renderGaleria()">
             <option value="">🏢 Todos los tipos</option>
-            <option value="casa">Casa</option><option value="departamento">Departamento</option>
-            <option value="terreno">Terreno</option><option value="lote">Lote</option>
-            <option value="comercial">Comercial</option><option value="loteo">Loteo</option>
+            <option value="Lote residencial">Lote residencial</option>
+            <option value="Lote comercial">Lote comercial</option>
+            <option value="Lote en esquina">Lote en esquina</option>
+            <option value="Terreno rural">Terreno rural</option>
           </select>
         </div>
         <div class="fc-wrap fc-estado">
@@ -791,7 +792,7 @@ function renderProps() {
   let data = allProps.filter(p => {
     if (zona && p.Zona !== zona) return false;
     if (op   && (p.Operacion || '').toLowerCase() !== op) return false;
-    if (tipo && (p.Tipo || '').toLowerCase() !== tipo) return false;
+    if (tipo && p.Tipo !== tipo) return false;
     if (est  && estadoNorm(p.Disponible) !== est) return false;
     return true;
   });
@@ -885,7 +886,7 @@ function openModalEditarProp(recordId) {
   document.getElementById('mp-precio').value = p.Precio || '';
   document.getElementById('mp-moneda').value = p.Moneda || 'USD';
   setSelectVal('mp-zona', p.Zona || 'San Ignacio');
-  setSelectVal('mp-tipo', (p.Tipo||'').charAt(0).toUpperCase()+(p.Tipo||'').slice(1) || 'Casa');
+  setSelectVal('mp-tipo', p.Tipo || 'Lote residencial');
   setSelectVal('mp-operacion', (p.Operacion||'').charAt(0).toUpperCase()+(p.Operacion||'').slice(1) || 'Venta');
   document.getElementById('mp-disponible').value = p.Disponible || '✅ Disponible';
   document.getElementById('mp-dormitorios').value = p.Dormitorios || '';
@@ -911,7 +912,7 @@ function openModalNuevaPropiedad() {
   ['mp-record-id','mp-titulo','mp-descripcion','mp-precio','mp-imagen-url','mp-maps-url','mp-video-url','mp-dormitorios','mp-metros'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('mp-moneda').value = 'USD';
   document.getElementById('mp-zona').value = 'San Ignacio';
-  document.getElementById('mp-tipo').value = 'Casa';
+  document.getElementById('mp-tipo').value = 'Lote residencial';
   document.getElementById('mp-operacion').value = 'Venta';
   document.getElementById('mp-disponible').value = '✅ Disponible';
   previewImg();
@@ -1116,7 +1117,7 @@ function renderGaleria() {
   let data = allProps.filter(p => {
     if (zona && p.Zona !== zona) return false;
     if (op   && (p.Operacion || '').toLowerCase() !== op) return false;
-    if (tipo && (p.Tipo || '').toLowerCase() !== tipo) return false;
+    if (tipo && p.Tipo !== tipo) return false;
     if (est  && estadoNorm(p.Disponible) !== est) return false;
     return true;
   });
@@ -1208,7 +1209,7 @@ function openModalEditarLead(recordId) {
   document.getElementById('ml-notas').value       = l.Notas_Bot || '';
   setSelectVal('ml-zona', l.Zona || '');
   setSelectVal('ml-operacion', (l.Operacion || '').toLowerCase());
-  setSelectVal('ml-tipo', (l.Tipo_Propiedad || '').toLowerCase());
+  setSelectVal('ml-tipo', l.Tipo_Propiedad || '');
   setSelectVal('ml-presupuesto', l.Presupuesto || '');
   document.getElementById('modal-lead').classList.add('open');
 }
