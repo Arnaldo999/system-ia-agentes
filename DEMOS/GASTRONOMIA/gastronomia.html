@@ -83,6 +83,9 @@
     /* px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border border-indigo-500/20 text-gray-500 hover:border-indigo-500/40 hover:text-indigo-300 .active — JS toggles this class */
     .cat-tab.active { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white; border-color: transparent; }
 
+    /* sub-niche active button */
+    .sn-btn.active { background: rgba(99,102,241,0.18); color: #818cf8; font-weight: 700; }
+
     /* code-key variants toggled by JS */
     .code-key.action       { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); color: #818cf8; }
     .code-key.action-green { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #34d399; }
@@ -190,6 +193,20 @@
         <div class="nav-item" onclick="showScreen('bot')">
             <i class="nav-icon fas fa-robot"></i><span class="nav-label">Bot Simulador</span>
         </div>
+        <div class="nav-sep"></div>
+
+        <!-- SUB-NICHE SWITCHER -->
+        <div class="px-2 mb-1">
+            <div class="text-gray-600 text-xs font-semibold uppercase tracking-wider px-2 mb-2">Demo — Sub-nicho</div>
+            <div id="subnicheBtns" class="flex flex-col gap-1">
+                <button onclick="cambiarSubniche('cafeteria')"   data-sn="cafeteria"      class="sn-btn text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5">☕ Cafetería</button>
+                <button onclick="cambiarSubniche('pizzeria')"    data-sn="pizzeria"       class="sn-btn text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5">🍕 Pizzería</button>
+                <button onclick="cambiarSubniche('rotiseria')"   data-sn="rotiseria"      class="sn-btn text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5">🍗 Rotisería</button>
+                <button onclick="cambiarSubniche('hamburgueseria')" data-sn="hamburgueseria" class="sn-btn text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5">🍔 Hamburguesería</button>
+                <button onclick="cambiarSubniche('parrilla')"    data-sn="parrilla"       class="sn-btn text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5">🥩 Parrilla</button>
+            </div>
+        </div>
+
         <div class="nav-sep"></div>
         <div class="nav-item" onclick="showScreen('config')">
             <i class="nav-icon fas fa-sliders"></i><span class="nav-label">Config</span>
@@ -3227,6 +3244,61 @@ function limpiarDatosDemo() {
     }
 }
 
+// ===== SUB-NICHE SWITCHER =====
+const _SN_DATA = {
+    cafeteria:       { emoji: '☕', nombre: 'Café Demo',          horario: 'Lun–Sáb 7:30–21:00 hs' },
+    pizzeria:        { emoji: '🍕', nombre: 'Pizzería Demo',      horario: 'Mar–Dom 19:00–00:00 hs' },
+    rotiseria:       { emoji: '🍗', nombre: 'Rotisería Demo',     horario: 'Lun–Sáb 9:00–20:00 hs'  },
+    hamburgueseria:  { emoji: '🍔', nombre: 'Burger Demo',        horario: 'Todos los días 11:00–23:00 hs' },
+    parrilla:        { emoji: '🥩', nombre: 'La Parrilla Demo',   horario: 'Mar–Dom: Almuerzo 12–16 hs, Cena 20–00 hs' },
+};
+let _currentSubniche = localStorage.getItem('gastro_subniche') || 'cafeteria';
+
+function cambiarSubniche(sn) {
+    if (!_SN_DATA[sn]) return;
+    _currentSubniche = sn;
+    localStorage.setItem('gastro_subniche', sn);
+    // Actualizar botones
+    document.querySelectorAll('.sn-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.sn === sn);
+    });
+    // Resetear sesión del bot para que empiece fresco con el nuevo subniche
+    window._botSesionId = '549' + Math.floor(Math.random() * 9e9);
+    // Actualizar UI
+    const d = _SN_DATA[sn];
+    el('sideNegocio').textContent = d.nombre;
+    if (el('botNombreLocal'))  el('botNombreLocal').textContent  = `${d.emoji} ${d.nombre}`;
+    if (el('botNombreLocal2')) el('botNombreLocal2').textContent = d.nombre;
+    if (el('previewNombreLocal')) el('previewNombreLocal').textContent = d.nombre;
+    // Limpiar chat del bot
+    const chatBox = el('botChatBox');
+    if (chatBox) {
+        chatBox.innerHTML = `
+            <div class="flex gap-3 items-start">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <i class="fas fa-robot text-white text-xs"></i>
+                </div>
+                <div class="bg-gray-800/60 border border-white/[0.06] rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%]">
+                    <p class="text-sm text-gray-200">¡Hola! Soy el bot de <strong>${d.emoji} ${d.nombre}</strong>. ¿En qué puedo ayudarte?</p>
+                </div>
+            </div>`;
+    }
+    showToast(`Sub-nicho: ${d.emoji} ${d.nombre}`, 'success');
+}
+
+// Marcar el botón activo al cargar
+function _initSubnicheUI() {
+    document.querySelectorAll('.sn-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.sn === _currentSubniche);
+    });
+    const d = _SN_DATA[_currentSubniche];
+    if (d) {
+        el('sideNegocio').textContent = d.nombre;
+        if (el('botNombreLocal'))  el('botNombreLocal').textContent  = `${d.emoji} ${d.nombre}`;
+        if (el('botNombreLocal2')) el('botNombreLocal2').textContent = d.nombre;
+    }
+}
+
 // ===== API BASE (backend System IA) =====
 const API_BASE_DEFAULT = 'https://agentes.arnaldoayalaestratega.cloud';
 let API_BASE = localStorage.getItem('gastro_api_base') || API_BASE_DEFAULT;
@@ -3447,7 +3519,7 @@ async function simularMsg(msg) {
             const r = await fetch(`${API_BASE}/demos/gastronomico/mensaje`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ telefono: window._botSesionId, mensaje: msg, nombre: 'Demo Visitor' }),
+                body: JSON.stringify({ telefono: window._botSesionId, mensaje: msg, nombre: 'Demo Visitor', subniche: _currentSubniche }),
             });
             const data = await r.json();
             respuesta = data.respuesta || '';
@@ -3483,7 +3555,7 @@ async function simularMsg(msg) {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
     cargarLS();
-    el('sideNegocio').textContent = CFG.nombre || 'Restaurante Demo';
+    _initSubnicheUI();  // marca el botón activo + sincroniza nombre/emoji en sidebar
 
     // API backend — conecta al backend de producción automáticamente
     cargarConfigBackend().then(() => {

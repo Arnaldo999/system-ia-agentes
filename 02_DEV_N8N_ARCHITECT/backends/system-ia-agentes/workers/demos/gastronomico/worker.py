@@ -780,17 +780,77 @@ def _ejecutar_accion(accion: dict, tel: str) -> dict:
 
 
 # ─── GEMINI ───────────────────────────────────────────────────────────────────
-def _llamar_gemini(historial: list) -> str:
+def _build_system_prompt_for(sn: str) -> str:
+    """Construye un SYSTEM_PROMPT dinámico para el subniche indicado (demo mode)."""
+    if sn not in _SUBNICHE_DEFAULTS:
+        return SYSTEM_PROMPT
+    d = _SUBNICHE_DEFAULTS[sn]
+    nombre  = os.environ.get("GASTRO_DEMO_NOMBRE") or d["nombre"]
+    horario = os.environ.get("GASTRO_DEMO_HORARIO") or d["horario"]
+    alias   = os.environ.get("GASTRO_DEMO_ALIAS_PAGO") or d["alias_pago"]
+    emoji   = d.get("emoji", "🍴")
+    return f"""════════════════════════════════════════════════════════
+ROL
+════════════════════════════════════════════════════════
+Sos la asistente virtual de *{nombre}* ({sn}).
+Tu trabajo es atender clientes por WhatsApp:
+mostrar el menú, tomar pedidos de delivery, gestionar encargues, reservas de mesa y responder consultas de presupuesto.
+{d['tareas_extra']}
+
+PERSONALIDAD:
+- {d['personalidad']}
+- Español neutro: NUNCA usés "vos", "che", "dale", "genial", "bárbaro", "re", "copado", "pibe"
+- Tratá al cliente de "usted" o "tú" (nunca "vos")
+- Emojis con moderación: máximo 1-2 por mensaje
+- Respuestas cortas y directas — máximo 6 líneas salvo que el menú lo requiera
+
+════════════════════════════════════════════════════════
+DATOS DEL LOCAL
+════════════════════════════════════════════════════════
+- Nombre: {nombre}
+- Horario: {horario}
+- Alias de pago (seña): *{alias}*
+- Fecha de hoy: {HOY}
+- Todos los precios incluyen IVA.
+
+════════════════════════════════════════════════════════
+MENÚ PRINCIPAL (punto de entrada)
+════════════════════════════════════════════════════════
+CUÁNDO mostrarlo: ante cualquier primer mensaje, saludo, o cuando el cliente escriba "0" o "menu".
+
+TEXTO EXACTO:
+*¡Bienvenido a {nombre}!* {emoji}
+¿En qué puedo ayudarte?
+
+1️⃣ {d['menu_label']} 🍽️
+2️⃣ Hacer un pedido / delivery 🛵
+3️⃣ Encargue especial 📦
+4️⃣ Reservar una mesa 📅
+5️⃣ Pedir presupuesto para evento 💬
+
+REGLA: Esperá que el cliente elija. No agregues texto extra.
+"""
+
+
+def _llamar_gemini(historial: list, subniche_override: str = "") -> str:
     if not _gemini_client:
         return "⚠️ Sistema no disponible. Contáctenos directamente."
     try:
         # Intentar leer menú del día desde Airtable, fallback a hardcodeado
         menu_live = _at_leer_menu_dia()
         menu_txt  = _menu_texto(menu_live) if menu_live else _menu_texto()
+        # Si viene un subniche del CRM demo, usar su prompt
+        if subniche_override and subniche_override in _SUBNICHE_DEFAULTS:
+            sn_prompt = _build_system_prompt_for(subniche_override)
+            # Menú fallback del subniche correcto
+            sn_menu = _menu_texto(_MENUS_FALLBACK.get(subniche_override, {}))
+            sys_instr = sn_prompt + "\n\n## MENÚ\n" + sn_menu
+        else:
+            sys_instr = SYSTEM_PROMPT + "\n\n## MENÚ\n" + menu_txt
         resp = _gemini_client.models.generate_content(
             model="gemini-2.5-flash-lite",
             contents=historial,
-            config={"system_instruction": SYSTEM_PROMPT + "\n\n## MENÚ\n" + menu_txt},
+            config={"system_instruction": sys_instr},
         )
         return resp.text or ""
     except Exception as e:
@@ -806,6 +866,7 @@ class _MsgIn(BaseModel):
     telefono: str
     mensaje: str
     nombre: str = ""
+    subniche: str = ""  # opcional — para demo multi-subniche desde el CRM HTML
 
 
 @router.post("/whatsapp")
@@ -859,14 +920,14 @@ async def whatsapp(req: Request):
 
 @router.post("/mensaje")
 async def mensaje(data: _MsgIn):
-    """Endpoint alternativo tipo POST JSON (para tests / n8n)."""
+    """Endpoint alternativo tipo POST JSON (para tests / n8n / demo CRM)."""
     tel = _norm_tel(data.telefono)
     if tel not in SESIONES:
         SESIONES[tel] = []
     SESIONES[tel].append({"role": "user", "parts": [{"text": data.mensaje}]})
     SESIONES[tel] = SESIONES[tel][-20:]
 
-    respuesta_raw = _llamar_gemini(SESIONES[tel])
+    respuesta_raw = _llamar_gemini(SESIONES[tel], subniche_override=data.subniche)
 
     accion_match  = re.search(r"ACCION:\s*(\{.*\})", respuesta_raw, re.DOTALL)
     texto_visible = re.sub(r"ACCION:\s*\{.*\}", "", respuesta_raw, flags=re.DOTALL).strip()
