@@ -60,6 +60,14 @@ _SUBNICHE_DEFAULTS = {
         "menu_label":  "☕ Menú del día",
         "personalidad": "Cordial y acogedora, como una cafetería de barrio. Tono cálido, informal pero respetuoso.",
         "tareas_extra": "También gestionás encargues de tortas y catering para reuniones de empresa.",
+        "opciones_menu": [
+            ("☕ Menú del día", "🍽️"),
+            ("Hacer un pedido / delivery", "🛵"),
+            ("Encargue especial (tortas, catering)", "📦"),
+            ("Reservar una mesa", "📅"),
+            ("Presupuesto para evento", "💬"),
+            ("Dejar un comentario", "⭐"),
+        ],
     },
     "pizzeria": {
         "nombre":      "Pizzería Demo",
@@ -68,7 +76,14 @@ _SUBNICHE_DEFAULTS = {
         "emoji":       "🍕",
         "menu_label":  "🍕 Nuestra carta",
         "personalidad": "Dinámica y directa, como una pizzería familiar. Rápido en respuestas, eficiente.",
-        "tareas_extra": "Manejás pedidos de delivery (mínimo 2 pizzas para delivery), takeaway y reservas de salón.",
+        "tareas_extra": "Manejás pedidos de delivery (mínimo 2 pizzas), takeaway y reservas de salón.",
+        "opciones_menu": [
+            ("Nuestra carta", "🍕"),
+            ("Pedir delivery / takeaway", "🛵"),
+            ("Reservar mesa en el salón", "📅"),
+            ("Presupuesto para evento", "💬"),
+            ("Dejar un comentario", "⭐"),
+        ],
     },
     "rotiseria": {
         "nombre":      "Rotisería Demo",
@@ -78,6 +93,13 @@ _SUBNICHE_DEFAULTS = {
         "menu_label":  "🍗 Menú del día",
         "personalidad": "Práctica y eficiente. El cliente quiere comer rico y rápido. Mostrá opciones del día con claridad.",
         "tareas_extra": "Gestionás viandas en cantidad para empresas (encargues con 48hs de anticipación).",
+        "opciones_menu": [
+            ("Menú del día", "🍗"),
+            ("Hacer un pedido / delivery", "🛵"),
+            ("Encargue de viandas (empresas)", "📦"),
+            ("Presupuesto para evento", "💬"),
+            ("Dejar un comentario", "⭐"),
+        ],
     },
     "hamburgueseria": {
         "nombre":      "Burger Demo",
@@ -85,8 +107,15 @@ _SUBNICHE_DEFAULTS = {
         "alias_pago":  "burgerdemo.pagos",
         "emoji":       "🍔",
         "menu_label":  "🍔 Nuestra carta",
-        "personalidad": "Joven y energética. Podés usar un tono más casual (pero nunca maleducado). Emojis al máximo 2.",
-        "tareas_extra": "Deliverys con tiempo estimado, combos personalizables, y eventos de cumpleaños.",
+        "personalidad": "Joven y energética. Tono casual pero respetuoso. Máximo 2 emojis.",
+        "tareas_extra": "Deliverys con tiempo estimado, combos personalizables y eventos de cumpleaños.",
+        "opciones_menu": [
+            ("Nuestra carta", "🍔"),
+            ("Pedir delivery / takeaway", "🛵"),
+            ("Combo para evento / cumpleaños", "🎉"),
+            ("Presupuesto para grupo", "💬"),
+            ("Dejar un comentario", "⭐"),
+        ],
     },
     "parrilla": {
         "nombre":      "La Parrilla Demo",
@@ -96,6 +125,30 @@ _SUBNICHE_DEFAULTS = {
         "menu_label":  "🥩 Nuestra carta",
         "personalidad": "Clásica y cálida, estilo parrilla argentina tradicional. Tono formal pero cercano.",
         "tareas_extra": "Reservas son el foco principal. También manejás encargues de asados para eventos.",
+        "opciones_menu": [
+            ("Nuestra carta", "🥩"),
+            ("Reservar una mesa", "📅"),
+            ("Encargue de asado para evento", "🔥"),
+            ("Presupuesto para grupo", "💬"),
+            ("Dejar un comentario", "⭐"),
+        ],
+    },
+    "restaurante": {
+        "nombre":      "Restaurante Demo",
+        "horario":     "Todos los días — Almuerzo 12-15hs, Cena 20-23hs",
+        "alias_pago":  "restaurantedemo.pagos",
+        "emoji":       "🍽️",
+        "menu_label":  "🍽️ Nuestra carta",
+        "personalidad": "Versátil y profesional, como un restaurante completo. Atiende desde delivery hasta eventos.",
+        "tareas_extra": "Gestionás delivery, takeaway, reservas de salón, encargues, catering y presupuestos para eventos.",
+        "opciones_menu": [
+            ("Nuestra carta del día", "🍽️"),
+            ("Pedir delivery / takeaway", "🛵"),
+            ("Reservar una mesa", "📅"),
+            ("Encargue especial / catering", "📦"),
+            ("Presupuesto para evento", "💬"),
+            ("Dejar un comentario", "⭐"),
+        ],
     },
 }
 
@@ -131,20 +184,22 @@ SESION_SUBNICHE: dict[str, str] = {}
 
 _SELECTOR_SUBNICHOS = (
     "¡Hola! 👋 Soy el asistente virtual de *System IA Demo*.\n\n"
-    "¿Con qué tipo de negocio podemos ayudarte hoy?\n\n"
+    "¿Con qué tipo de negocio gastronómico podemos ayudarte hoy?\n\n"
     "1️⃣ ☕ Cafetería\n"
     "2️⃣ 🍕 Pizzería\n"
     "3️⃣ 🍗 Rotisería\n"
     "4️⃣ 🍔 Hamburguesería\n"
-    "5️⃣ 🥩 Parrilla"
+    "5️⃣ 🥩 Parrilla\n"
+    "6️⃣ 🍽️ Restaurante (todo en uno)"
 )
 _SELECTOR_MAP = {
-    "1": "cafeteria", "cafeteria": "cafeteria", "cafe": "cafeteria", "cafetería": "cafeteria",
-    "2": "pizzeria",  "pizzeria":  "pizzeria",  "pizza": "pizzeria", "pizzería": "pizzeria",
-    "3": "rotiseria", "rotiseria": "rotiseria", "rotis": "rotiseria", "rotisería": "rotiseria",
+    "1": "cafeteria",      "cafeteria": "cafeteria",      "cafe": "cafeteria",      "cafetería": "cafeteria",
+    "2": "pizzeria",       "pizzeria":  "pizzeria",       "pizza": "pizzeria",      "pizzería": "pizzeria",
+    "3": "rotiseria",      "rotiseria": "rotiseria",      "rotis": "rotiseria",     "rotisería": "rotiseria",
     "4": "hamburgueseria", "hamburgueseria": "hamburgueseria", "burger": "hamburgueseria",
-          "hamburguesa": "hamburgueseria", "hamburguesería": "hamburgueseria",
-    "5": "parrilla",  "parrilla": "parrilla", "asado": "parrilla",
+         "hamburguesa": "hamburgueseria", "hamburguesería": "hamburgueseria",
+    "5": "parrilla",       "parrilla": "parrilla",        "asado": "parrilla",
+    "6": "restaurante",    "restaurante": "restaurante",  "resto": "restaurante",   "restaurant": "restaurante",
 }
 
 # ─── MENÚ FALLBACK por sub-niche ─────────────────────────────────────────────
@@ -261,9 +316,46 @@ _MENUS_FALLBACK: dict[str, dict] = {
             ("Limonada con menta", 1_200),
         ],
     },
+    "restaurante": {
+        "🥗 Entradas": [
+            ("Tabla de fiambres y quesos", 4_800),
+            ("Ensalada mixta", 2_200),
+            ("Sopa del día", 2_500),
+        ],
+        "🍝 Pastas / Principales": [
+            ("Tallarines al tuco con carne", 5_500),
+            ("Milanesa napolitana + guarnición", 6_800),
+            ("Pollo grillado + verduras", 6_200),
+            ("Bife de chorizo + papas", 9_500),
+        ],
+        "🍰 Postres": [
+            ("Flan casero con dulce de leche", 1_800),
+            ("Torta del día (porción)", 2_200),
+        ],
+        "🍷 Bebidas": [
+            ("Agua mineral 500ml", 600),
+            ("Vino de la casa (copa)", 2_500),
+            ("Gaseosa 500ml", 900),
+        ],
+    },
 }
 
 MENU_FALLBACK = _MENUS_FALLBACK.get(SUBNICHE, _MENUS_FALLBACK["cafeteria"])
+
+_NUMEROS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"]
+
+
+def _build_menu_opciones(sn: str, incluir_nav: bool = True) -> str:
+    """Construye el texto del menú de opciones adaptado al sub-niche."""
+    d = _SUBNICHE_DEFAULTS.get(sn, _SUBNICHE_DEFAULTS["cafeteria"])
+    opciones = d.get("opciones_menu", [])
+    lineas = []
+    for i, (texto_op, emoji_op) in enumerate(opciones):
+        lineas.append(f"{_NUMEROS[i]} {texto_op} {emoji_op}")
+    resultado = "\n".join(lineas)
+    if incluir_nav:
+        resultado += "\n\n_(Escribí *0* o *Menú* para ver esto de nuevo | *00* para cambiar negocio)_"
+    return resultado
 
 
 def _menu_texto(menu: dict | None = None) -> str:
@@ -315,13 +407,7 @@ TEXTO EXACTO:
 *¡Bienvenido a {NOMBRE_LOCAL}!* {_EMOJI_LOCAL}
 ¿En qué puedo ayudarte?
 
-1️⃣ {_MENU_LABEL} 🍽️
-2️⃣ Hacer un pedido / delivery 🛵
-3️⃣ Encargue especial (tortas, catering, salados) 📦
-4️⃣ Reservar una mesa 📅
-5️⃣ Pedir presupuesto para evento 💬
-6️⃣ Cancelar o modificar una reserva ✏️
-7️⃣ Dejar un comentario ⭐
+{_build_menu_opciones(SUBNICHE, incluir_nav=False)}
 
 REGLA: Esperá que el cliente elija. No agregues texto extra.
 
@@ -815,6 +901,11 @@ def _ejecutar_accion(accion: dict, tel: str) -> dict:
                 f"📞 {tel}\n"
                 + (f"📆 Cal.com: ✅ agendado" if cal_ok else "📆 Cal.com: registrado en CRM")
             )
+            cal_nota = (
+                "\n\n📧 Recibirá un email de confirmación con el link para *modificar o cancelar* "
+                "su reserva directamente desde Cal.com si lo necesita."
+                if cal_ok else ""
+            )
             return {
                 "ok": True,
                 "mensaje_confirmacion": (
@@ -823,7 +914,8 @@ def _ejecutar_accion(accion: dict, tel: str) -> dict:
                     f"👤 {nombre}\n"
                     f"👥 {accion.get('personas')} personas\n"
                     f"📅 {accion.get('fecha_legible', accion.get('fecha_iso'))} a las {accion.get('hora')} hs\n\n"
-                    f"¡Los esperamos! {_EMOJI_LOCAL} Un asesor le confirmará los detalles."
+                    f"¡Los esperamos! {_EMOJI_LOCAL}"
+                    + cal_nota
                 ),
             }
         return {
@@ -1019,19 +1111,15 @@ MENÚ PRINCIPAL
 *¡Bienvenido a {nombre}!* {emoji}
 ¿En qué puedo ayudarte?
 
-1️⃣ {d['menu_label']} 🍽️
-2️⃣ Hacer un pedido / delivery 🛵
-3️⃣ Encargue especial 📦
-4️⃣ Reservar una mesa 📅
-5️⃣ Pedir presupuesto para evento 💬
-6️⃣ Cancelar o modificar una reserva ✏️
-7️⃣ Dejar un comentario ⭐
+{_build_menu_opciones(sn, incluir_nav=False)}
+
+REGLA: Esperá que el cliente elija. No agregues texto extra.
+IMPORTANTE: Al confirmar una reserva, recordá al cliente que puede modificarla o cancelarla directamente desde el link de confirmación que recibe en su email (gestionado por Cal.com).
 
 Para delivery/encargue/presupuesto → al finalizar usar:
 ACCION: {{"tipo": "derivar_asesor", "motivo": "delivery|encargue|presupuesto_evento", "nombre": "...", "detalle": "...", "total": N}}
 
 Para reservas → ACCION: {{"tipo": "crear_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
-Para cancelar → ACCION: {{"tipo": "cancelar_reserva", "nombre": "...", "fecha_legible": "...", "hora": "..."}}
 Para reseñas  → ACCION: {{"tipo": "registrar_resena", "nombre": "...", "comentario": "...", "valoracion": "positiva|negativa|neutra"}}
 """
 
@@ -1084,14 +1172,7 @@ def _procesar_mensaje(tel: str, texto: str, subniche_override: str = "") -> str:
             bienvenida = (
                 f"*¡Bienvenido a {d['nombre']}!* {d['emoji']}\n"
                 f"¿En qué puedo ayudarte?\n\n"
-                f"1️⃣ {d['menu_label']} 🍽️\n"
-                f"2️⃣ Hacer un pedido / delivery 🛵\n"
-                f"3️⃣ Encargue especial (tortas, catering, salados) 📦\n"
-                f"4️⃣ Reservar una mesa 📅\n"
-                f"5️⃣ Pedir presupuesto para evento 💬\n"
-                f"6️⃣ Cancelar o modificar una reserva ✏️\n"
-                f"7️⃣ Dejar un comentario ⭐\n\n"
-                f"_(Escribí *0* o *Menú* para ver esto de nuevo | *00* para cambiar negocio)_"
+                + _build_menu_opciones(sn)
             )
             SESIONES[tel] = [
                 {"role": "user",  "parts": [{"text": texto}]},
@@ -1113,19 +1194,7 @@ def _procesar_mensaje(tel: str, texto: str, subniche_override: str = "") -> str:
     if texto.strip() in ("0", "menu", "menú", "Menu", "Menú", "MENU"):
         sn = SESION_SUBNICHE.get(tel, SUBNICHE)
         d  = _SUBNICHE_DEFAULTS[sn]
-        menu_principal = (
-            f"*¡Hola de nuevo!* {d['emoji']}\n"
-            f"¿En qué puedo ayudarte?\n\n"
-            f"1️⃣ {d['menu_label']} 🍽️\n"
-            f"2️⃣ Hacer un pedido / delivery 🛵\n"
-            f"3️⃣ Encargue especial 📦\n"
-            f"4️⃣ Reservar una mesa 📅\n"
-            f"5️⃣ Presupuesto para evento 💬\n"
-            f"6️⃣ Cancelar / modificar reserva ✏️\n"
-            f"7️⃣ Dejar un comentario ⭐\n\n"
-            f"_(Escribí 00 para cambiar de tipo de negocio)_"
-        )
-        return menu_principal
+        return f"*¡Hola de nuevo!* {d['emoji']}\n¿En qué puedo ayudarte?\n\n" + _build_menu_opciones(sn)
 
     # ── SUBNICHE YA ELEGIDO → GEMINI ──────────────────────────────────────────
     sn_activo = subniche_override or SESION_SUBNICHE.get(tel, SUBNICHE)
