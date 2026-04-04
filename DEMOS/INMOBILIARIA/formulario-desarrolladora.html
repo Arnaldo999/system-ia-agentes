@@ -542,7 +542,19 @@
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const API_BASE = 'https://agentes.arnaldoayalaestratega.cloud/demos/inmobiliaria';
+const SAAS_API = 'https://agentes.arnaldoayalaestratega.cloud';
+let API_BASE = \`\${SAAS_API}/demos/inmobiliaria\`; // fallback
+
+(async function initTenant() {
+  const slug = new URLSearchParams(window.location.search).get('tenant') || 'demo';
+  try {
+    const r = await fetch(\`\${SAAS_API}/tenant/\${slug}\`, { signal: AbortSignal.timeout(6000) });
+    if (r.ok) {
+      const t = await r.json();
+      API_BASE = \`\${SAAS_API}\${t.api_prefix}\`;
+    }
+  } catch(e) { console.warn('[tenant]', e.message); }
+})();
 const WA_NUMBER = ''; // se puede setear el número del bot demo
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
