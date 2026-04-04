@@ -411,7 +411,8 @@
       <p class="text-sidebar-text text-xs font-semibold tracking-widest uppercase mt-1">CRM Dashboard</p>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item tab active" onclick="switchTab('propiedades', this)"><i>🏠</i> Propiedades</div>
+      <div class="nav-item tab active" onclick="switchTab('inicio', this)"><i>📋</i> Inicio</div>
+      <div class="nav-item tab" onclick="switchTab('propiedades', this)"><i>🏠</i> Propiedades</div>
       <div class="nav-item tab" onclick="switchTab('pipeline', this)"><i>📊</i> Pipeline</div>
       <div class="nav-item tab" onclick="switchTab('clientes', this)"><i>👥</i> Leads</div>
       <div class="nav-item tab" onclick="switchTab('galeria', this)"><i>🖼️</i> Galería</div>
@@ -512,8 +513,47 @@
       <p id="last-update" class="text-sm text-txt-muted font-semibold">Cargando datos...</p>
     </div>
 
+    <!-- PANEL INICIO -->
+    <div id="panel-inicio" class="panel active">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Resumen general</div>
+          <h1>Inicio <span class="text-txt-muted opacity-60">Dashboard</span></h1>
+        </div>
+        <button class="btn btn-outline" onclick="loadAll()">↻ Actualizar</button>
+      </div>
+
+      <!-- KPIs Propiedades -->
+      <p class="text-xs text-txt-muted font-bold uppercase tracking-widest mb-3">Propiedades</p>
+      <div class="stats-grid mb-8">
+        <div class="stat-card green"><div class="num" id="hi-disponibles">—</div><div class="lbl">✅ Disponibles</div></div>
+        <div class="stat-card yellow"><div class="num" id="hi-reservadas">—</div><div class="lbl">⏳ Reservadas</div></div>
+        <div class="stat-card red"><div class="num" id="hi-nodisponibles">—</div><div class="lbl">❌ No disp.</div></div>
+        <div class="stat-card blue"><div class="num" id="hi-total-props">—</div><div class="lbl">Total props.</div></div>
+      </div>
+
+      <!-- KPIs Leads -->
+      <p class="text-xs text-txt-muted font-bold uppercase tracking-widest mb-3">Leads & Clientes</p>
+      <div class="stats-grid mb-8">
+        <div class="stat-card"><div class="num text-gray-400" id="hi-no-contactados">—</div><div class="lbl">Sin contactar</div></div>
+        <div class="stat-card green"><div class="num" id="hi-contactados">—</div><div class="lbl">Contactados</div></div>
+        <div class="stat-card yellow"><div class="num" id="hi-en-negociacion">—</div><div class="lbl">En negociación</div></div>
+        <div class="stat-card blue"><div class="num" id="hi-cerrados">—</div><div class="lbl">Cerrados</div></div>
+        <div class="stat-card blue"><div class="num" id="hi-total-leads">—</div><div class="lbl">Total leads</div></div>
+      </div>
+
+      <!-- Accesos rápidos -->
+      <p class="text-xs text-txt-muted font-bold uppercase tracking-widest mb-3">Accesos rápidos</p>
+      <div class="flex gap-3 flex-wrap">
+        <button class="btn btn-primary" onclick="switchTab('propiedades', document.querySelectorAll('.tab')[1])">🏠 Ver propiedades</button>
+        <button class="btn btn-primary" onclick="switchTab('pipeline', document.querySelectorAll('.tab')[2])">📊 Ver pipeline</button>
+        <button class="btn btn-outline" onclick="openModalNuevaPropiedad()">+ Nueva propiedad</button>
+        <button class="btn btn-outline" onclick="openModalNuevoLead()">+ Nuevo lead</button>
+      </div>
+    </div>
+
     <!-- PANEL PROPIEDADES -->
-    <div id="panel-propiedades" class="panel active">
+    <div id="panel-propiedades" class="panel">
       <div class="section-hero">
         <div class="section-title">
           <div class="subtitle">Inventario Global</div>
@@ -779,6 +819,10 @@ function renderStats() {
   document.getElementById('s-reservadas').textContent   = res;
   document.getElementById('s-nodisponibles').textContent = noD;
   document.getElementById('s-total-props').textContent  = allProps.length;
+  document.getElementById('hi-disponibles').textContent  = disp;
+  document.getElementById('hi-reservadas').textContent   = res;
+  document.getElementById('hi-nodisponibles').textContent = noD;
+  document.getElementById('hi-total-props').textContent  = allProps.length;
 
   const noContactados  = allLeads.filter(l => !l.Estado || l.Estado === 'no_contactado').length;
   const contactados    = allLeads.filter(l => l.Estado === 'contactado').length;
@@ -789,6 +833,11 @@ function renderStats() {
   document.getElementById('s-en-negociacion').textContent = enNegociacion;
   document.getElementById('s-cerrados').textContent       = cerrados;
   document.getElementById('s-total-leads').textContent    = allLeads.length;
+  document.getElementById('hi-no-contactados').textContent = noContactados;
+  document.getElementById('hi-contactados').textContent    = contactados;
+  document.getElementById('hi-en-negociacion').textContent = enNegociacion;
+  document.getElementById('hi-cerrados').textContent       = cerrados;
+  document.getElementById('hi-total-leads').textContent    = allLeads.length;
 }
 
 // ── HELPERS ───────────────────────────────────────────────
