@@ -8,7 +8,6 @@ from workers.clientes.arnaldo.prueba.worker import router as prueba_router
 
 # ── Demos ─────────────────────────────────────────────────────────────────────
 from workers.demos.inmobiliaria.worker  import router as demo_inmobiliaria_router
-from workers.demos.gastronomico.worker  import router as demo_gastronomico_router
 
 # ── SaaS ──────────────────────────────────────────────────────────────────────
 from workers.shared.tenants import router as tenants_router
@@ -38,7 +37,6 @@ app.include_router(tenants_router)
 app.include_router(maicol_router)
 app.include_router(prueba_router)
 app.include_router(demo_inmobiliaria_router)
-app.include_router(demo_gastronomico_router)
 app.include_router(social_router)
 
 
@@ -67,15 +65,6 @@ def root():
                 "GET  /demos/inmobiliaria/crm/propiedades",
                 "GET  /demos/inmobiliaria/crm/clientes",
                 "GET  /demos/inmobiliaria/config",
-            ],
-            "gastronomico": [
-                "POST /demos/gastronomico/whatsapp",
-                "POST /demos/gastronomico/mensaje",
-                "POST /demos/gastronomico/difusion",
-                "GET  /demos/gastronomico/crm/reservas",
-                "GET  /demos/gastronomico/crm/pedidos",
-                "GET  /demos/gastronomico/crm/clientes",
-                "GET  /demos/gastronomico/config",
             ],
         },
         "system_ia": {
