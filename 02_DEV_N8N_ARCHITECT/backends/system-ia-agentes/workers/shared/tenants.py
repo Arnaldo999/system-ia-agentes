@@ -1,7 +1,8 @@
 """
 Router SaaS — /tenant/{slug}
-GET  /tenant/{slug}        → config pública del tenant (nombre, logo, colores, api_prefix)
-POST /tenant/{slug}/auth   → valida PIN, devuelve token simple
+GET   /tenant/{slug}        → config pública del tenant (nombre, logo, colores, api_prefix)
+POST  /tenant/{slug}/auth   → valida PIN, devuelve token simple
+PATCH /tenant/{slug}/marca  → actualiza branding (nombre, logo, colores, ciudad, moneda)
 """
 import os
 import hashlib
@@ -35,6 +36,14 @@ def _get_tenant(slug: str) -> dict:
 # ── Schemas ────────────────────────────────────────────────────────────────────
 class AuthRequest(BaseModel):
     pin: str
+
+class MarcaUpdate(BaseModel):
+    nombre:         str | None = None
+    logo_url:       str | None = None
+    color_primario: str | None = None
+    color_acento:   str | None = None
+    ciudad:         str | None = None
+    moneda:         str | None = None
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -77,4 +86,27 @@ def tenant_auth(slug: str, body: AuthRequest):
         "status": "ok",
         "token":  token,
         "nombre": t["nombre"],
+    }
+
+
+@router.patch("/{slug}/marca")
+def tenant_update_marca(slug: str, body: MarcaUpdate):
+    """Actualiza branding del tenant: nombre, logo, colores, ciudad, moneda."""
+    _get_tenant(slug)  # verifica que existe
+    sb = _get_sb()
+    update = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not update:
+        raise HTTPException(status_code=400, detail="Nada que actualizar")
+    update["updated_at"] = "now()"
+    res = sb.table("tenants").update(update).eq("slug", slug).execute()
+    t = res.data[0] if res.data else {}
+    return {
+        "status":         "ok",
+        "slug":           slug,
+        "nombre":         t.get("nombre"),
+        "logo_url":       t.get("logo_url"),
+        "color_primario": t.get("color_primario"),
+        "color_acento":   t.get("color_acento"),
+        "ciudad":         t.get("ciudad"),
+        "moneda":         t.get("moneda"),
     }

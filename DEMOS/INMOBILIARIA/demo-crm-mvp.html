@@ -397,6 +397,9 @@
     <div class="nav-item" onclick="nav('formularios',this)">
       <span class="nav-icon">📋</span><span>Formularios</span>
     </div>
+    <div class="nav-item" onclick="nav('configuracion',this)">
+      <span class="nav-icon">⚙️</span><span>Configuración</span>
+    </div>
     <div class="sidebar-footer">
       <div class="plan-chip">
         🤖 IA activa
@@ -976,6 +979,88 @@
   </div>
 </div>
 
+    <div class="panel" id="panel-configuracion">
+      <div class="sh">
+        <div>
+          <div class="sh-title">⚙️ Configuración de Marca</div>
+          <div class="sh-sub">Personalizá tu CRM — los cambios se aplican en tiempo real</div>
+        </div>
+        <button class="btn btn-primary" onclick="guardarMarca()" id="btnGuardarMarca">💾 Guardar cambios</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px">
+
+        <!-- Identidad -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:16px;color:var(--text)">🏢 Identidad</div>
+
+          <div class="mf">
+            <label>Nombre de la empresa</label>
+            <input id="cfg-nombre" class="mi" type="text" placeholder="Ej: Back Urbanizaciones">
+          </div>
+          <div class="mf">
+            <label>Ciudad / Zona</label>
+            <input id="cfg-ciudad" class="mi" type="text" placeholder="Ej: San Ignacio, Misiones">
+          </div>
+          <div class="mf">
+            <label>Moneda</label>
+            <select id="cfg-moneda" class="mi">
+              <option value="USD">USD — Dólar</option>
+              <option value="ARS">ARS — Peso Argentino</option>
+              <option value="MXN">MXN — Peso Mexicano</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Branding visual -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:16px;color:var(--text)">🎨 Branding Visual</div>
+
+          <div class="mf">
+            <label>URL del Logo</label>
+            <input id="cfg-logo" class="mi" type="url" placeholder="https://tu-logo.com/logo.png" oninput="previewCfgLogo(this.value)">
+          </div>
+          <div id="cfg-logo-preview" style="width:60px;height:60px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:16px">🏠</div>
+
+          <div class="mf" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label>Color principal</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <input id="cfg-color-primary" type="color" value="#6c63ff" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;background:none">
+                <input id="cfg-color-primary-hex" class="mi" type="text" value="#6c63ff" style="font-size:12px" oninput="syncColor('primary')">
+              </div>
+            </div>
+            <div>
+              <label>Color acento</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <input id="cfg-color-accent" type="color" value="#00d4aa" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;background:none">
+                <input id="cfg-color-accent-hex" class="mi" type="text" value="#00d4aa" style="font-size:12px" oninput="syncColor('accent')">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Preview en vivo -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:20px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:16px;color:var(--text)">👁 Preview en vivo</div>
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface2);border-radius:10px">
+          <div id="cfg-prev-logo" style="width:44px;height:44px;background:linear-gradient(135deg,#6c63ff,#00d4aa);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px">🏠</div>
+          <div>
+            <div id="cfg-prev-nombre" style="font-weight:700;font-size:15px;color:var(--text)">Tu Empresa</div>
+            <div id="cfg-prev-ciudad" style="font-size:12px;color:var(--text2)">Ciudad</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <div id="cfg-prev-btn1" style="background:#6c63ff;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600">Ver leads</div>
+            <div id="cfg-prev-btn2" style="background:#00d4aa22;color:#00d4aa;border:1px solid #00d4aa44;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600">Propiedades</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cfg-feedback" style="margin-top:12px;font-size:13px;min-height:20px"></div>
+    </div>
+
 <!-- LOGIN SCREEN -->
 <div id="loginScreen" style="
   display:none; position:fixed; inset:0; background:#0f1117;
@@ -1132,6 +1217,7 @@ function nav(id, el) {
   if(id==='pipeline') renderKanbanFromLeads();
   if(id==='propiedades') renderProps();
   if(id==='agenda') renderAgenda();
+  if(id==='configuracion') cargarConfiguracion();
 }
 
 // ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
@@ -2141,6 +2227,121 @@ function guardarPerfil() {
   dd.dataset.logoBase64 = '';
   cerrarPerfil();
   showNotif('✅ Perfil actualizado', empresa || 'Cambios guardados');
+}
+
+
+// ── CONFIGURACIÓN DE MARCA ──────────────────────────────────────────────────
+function cargarConfiguracion() {
+  // Cargar valores actuales del tenant en los inputs
+  fetch(`${SAAS_API}/tenant/${TENANT_SLUG}`)
+    .then(r => r.json())
+    .then(t => {
+      document.getElementById('cfg-nombre').value = t.nombre || '';
+      document.getElementById('cfg-ciudad').value = t.ciudad || '';
+      document.getElementById('cfg-moneda').value = t.moneda || 'USD';
+      document.getElementById('cfg-logo').value = t.logo_url || '';
+      document.getElementById('cfg-color-primary').value = t.color_primario || '#6c63ff';
+      document.getElementById('cfg-color-primary-hex').value = t.color_primario || '#6c63ff';
+      document.getElementById('cfg-color-accent').value = t.color_acento || '#00d4aa';
+      document.getElementById('cfg-color-accent-hex').value = t.color_acento || '#00d4aa';
+      actualizarPreview();
+      if (t.logo_url) previewCfgLogo(t.logo_url);
+    }).catch(() => {});
+}
+
+function previewCfgLogo(url) {
+  const el = document.getElementById('cfg-logo-preview');
+  const prev = document.getElementById('cfg-prev-logo');
+  if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+    const img = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+    el.innerHTML = img;
+    prev.innerHTML = img;
+  } else {
+    el.textContent = '🏠';
+    prev.textContent = '🏠';
+  }
+}
+
+function syncColor(tipo) {
+  if (tipo === 'primary') {
+    const hex = document.getElementById('cfg-color-primary-hex').value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) document.getElementById('cfg-color-primary').value = hex;
+  } else {
+    const hex = document.getElementById('cfg-color-accent-hex').value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) document.getElementById('cfg-color-accent').value = hex;
+  }
+  actualizarPreview();
+}
+
+function actualizarPreview() {
+  const nombre = document.getElementById('cfg-nombre').value || 'Tu Empresa';
+  const ciudad = document.getElementById('cfg-ciudad').value || 'Ciudad';
+  const c1 = document.getElementById('cfg-color-primary').value;
+  const c2 = document.getElementById('cfg-color-accent').value;
+  document.getElementById('cfg-prev-nombre').textContent = nombre;
+  document.getElementById('cfg-prev-ciudad').textContent = ciudad;
+  document.getElementById('cfg-prev-btn1').style.background = c1;
+  document.getElementById('cfg-prev-btn2').style.color = c2;
+  document.getElementById('cfg-prev-btn2').style.borderColor = c2 + '44';
+  document.getElementById('cfg-prev-btn2').style.background = c2 + '22';
+}
+
+// Live preview al escribir
+['cfg-nombre','cfg-ciudad'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', actualizarPreview);
+});
+['cfg-color-primary','cfg-color-accent'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    const tipo = id.includes('primary') ? 'primary' : 'accent';
+    const hexId = id + '-hex';
+    document.getElementById(hexId).value = el.value;
+    actualizarPreview();
+  });
+});
+
+async function guardarMarca() {
+  const fb = document.getElementById('cfg-feedback');
+  const btn = document.getElementById('btnGuardarMarca');
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+  fb.textContent = '';
+  try {
+    const payload = {
+      nombre:         document.getElementById('cfg-nombre').value.trim() || undefined,
+      logo_url:       document.getElementById('cfg-logo').value.trim() || undefined,
+      color_primario: document.getElementById('cfg-color-primary').value,
+      color_acento:   document.getElementById('cfg-color-accent').value,
+      ciudad:         document.getElementById('cfg-ciudad').value.trim() || undefined,
+      moneda:         document.getElementById('cfg-moneda').value,
+    };
+    // Limpiar undefined
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+    const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/marca`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (\!r.ok) throw new Error('Error ' + r.status);
+    const data = await r.json();
+    // Aplicar cambios al CRM en vivo
+    if (data.nombre) {
+      document.getElementById('topEmpresa').textContent = data.nombre;
+      document.getElementById('page-title').textContent = data.nombre + ' — CRM';
+    }
+    if (data.color_primario) document.documentElement.style.setProperty('--accent', data.color_primario);
+    if (data.logo_url) aplicarLogo(data.logo_url);
+    fb.style.color = 'var(--green)';
+    fb.textContent = '✅ Cambios guardados y aplicados';
+    showNotif('✅ Marca actualizada', data.nombre || 'Cambios guardados');
+  } catch(e) {
+    fb.style.color = 'var(--red)';
+    fb.textContent = '❌ Error al guardar: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Guardar cambios';
+  }
 }
 
 // ── INIT ────────────────────────────────────────────────────────────────────
