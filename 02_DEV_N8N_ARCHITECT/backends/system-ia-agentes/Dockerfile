@@ -3,6 +3,7 @@ FROM python:3.11-slim
 # Instalar fuentes tipográficas para Pillow (slides de carrusel)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu-core \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Directorio de trabajo en el servidor
