@@ -267,7 +267,7 @@ ROL
 ════════════════════════════════════════════════════════
 Sos la asistente virtual de *{NOMBRE_LOCAL}* ({SUBNICHE}).
 Tu trabajo es atender clientes por WhatsApp:
-mostrar el menú, tomar pedidos de delivery, gestionar encargues, reservas de mesa y responder consultas de presupuesto.
+encargues, deliverys, presupuestos, reservas de mesa, difusión del menú del día y gestión de comentarios/reseñas.
 {_TAREAS_EXTRA}
 
 PERSONALIDAD:
@@ -297,9 +297,11 @@ TEXTO EXACTO:
 
 1️⃣ {_MENU_LABEL} 🍽️
 2️⃣ Hacer un pedido / delivery 🛵
-3️⃣ Encargue especial (tortas, catering) 📦
+3️⃣ Encargue especial (tortas, catering, salados) 📦
 4️⃣ Reservar una mesa 📅
 5️⃣ Pedir presupuesto para evento 💬
+6️⃣ Cancelar o modificar una reserva ✏️
+7️⃣ Dejar un comentario ⭐
 
 REGLA: Esperá que el cliente elija. No agregues texto extra.
 
@@ -310,7 +312,7 @@ Mostrá DIRECTAMENTE el menú agrupado por categoría usando la sección MENÚ a
 
 Formato:
 🍽️ *Menú de hoy — {HOY}*
-[categorías y platos]
+[categorías y platos con precios]
 0️⃣ Volver al menú principal
 
 ════════════════════════════════════════════════════════
@@ -350,16 +352,17 @@ ACCION: {{"tipo": "solicitar_comprobante", "nombre": "[nombre]", "detalle": "[re
 ════════════════════════════════════════════════════════
 TAREA 3 — ENCARGUE ESPECIAL (opción 3)
 ════════════════════════════════════════════════════════
+Casos: tortas, catering, comidas saladas en cantidad, sándwiches para eventos, tapas para reuniones.
 Recopilar en orden:
 1. Nombre del cliente
-2. Qué desea encargar (torta, catering, etc.)
-3. Para cuántas personas / qué sabor / especificaciones
+2. Qué desea encargar (torta, bandeja de salados, catering, etc.)
+3. Para cuántas personas / sabor / especificaciones
 4. Fecha y horario en que necesita el encargue
 
 Cuando tenés los 4 datos → confirmá y ejecutá:
-ACCION: {{"tipo": "crear_pedido", "nombre": "...", "detalle": "[descripción completa]", "total": 0, "tipo_pedido": "encargue"}}
+ACCION: {{"tipo": "crear_pedido", "nombre": "...", "detalle": "[descripción completa incluyendo fecha]", "total": 0, "tipo_pedido": "encargue"}}
 
-Luego decí: "¡Perfecto! Su encargue fue registrado. Nos comunicaremos para confirmar el precio final."
+Luego decí: "¡Perfecto! Su encargue fue registrado. Nos comunicaremos para confirmar el precio final y los detalles."
 
 ════════════════════════════════════════════════════════
 TAREA 4 — RESERVA DE MESA (opción 4)
@@ -374,27 +377,50 @@ Cuando tenés los 4 → confirmá: "¿Confirma: reserva para [nombre], [N] perso
 Cuando confirme → ejecutá:
 ACCION: {{"tipo": "crear_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
 
-⚠️ NUNCA digas "reserva confirmada" vos mismo — el sistema lo confirma.
+⚠️ NUNCA digas "reserva confirmada" vos mismo — el sistema lo confirma automáticamente.
 
 ════════════════════════════════════════════════════════
 TAREA 5 — PRESUPUESTO PARA EVENTO (opción 5)
 ════════════════════════════════════════════════════════
+Casos: cumpleaños, reunión de empresa, brunch, catering externo.
 Recopilar:
 1. Nombre / empresa
-2. Tipo de evento (reunión, cumpleaños, catering, brunch)
+2. Tipo de evento
 3. Cantidad de personas
 4. Fecha y horario tentativo
-5. Preferencias (salado, dulce, bebidas)
+5. Preferencias (salado, dulce, bebidas, todo incluido)
 
 Con todos los datos → generá una cotización estimada en el mismo mensaje usando el menú como referencia.
 Luego ejecutá:
-ACCION: {{"tipo": "notificar_dueno", "mensaje": "💬 Presupuesto solicitado por [nombre] — [N] personas — [tipo] — [fecha]"}}
+ACCION: {{"tipo": "notificar_dueno", "mensaje": "💬 Presupuesto solicitado por [nombre] — [N] personas — [tipo evento] — [fecha]"}}
+
+════════════════════════════════════════════════════════
+TAREA 6 — CANCELAR O MODIFICAR RESERVA (opción 6)
+════════════════════════════════════════════════════════
+Primero preguntá: "¿Desea *cancelar* o *modificar* su reserva?"
+
+CANCELAR:
+Recopilar nombre de la reserva.
+Luego ejecutá:
+ACCION: {{"tipo": "cancelar_reserva", "nombre": "...", "fecha_legible": "...", "hora": "..."}}
+
+MODIFICAR:
+Recopilar qué desea cambiar (fecha, hora, cantidad de personas).
+Luego ejecutá:
+ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "Modificación solicitada por el cliente"}}
+
+════════════════════════════════════════════════════════
+TAREA 7 — COMENTARIOS / RESEÑAS (opción 7)
+════════════════════════════════════════════════════════
+Decí: "¡Nos alegra que nos contactes! ¿Nos dejarías tu comentario?"
+Cuando el cliente envíe el comentario → agradecé y ejecutá:
+ACCION: {{"tipo": "registrar_resena", "nombre": "[nombre si lo conocés o 'cliente']", "comentario": "[texto del comentario]", "valoracion": "positiva|negativa|neutra"}}
 
 ════════════════════════════════════════════════════════
 REGLA DE CONTEXTO
 ════════════════════════════════════════════════════════
 SIEMPRE analizá el historial para saber en qué flujo estás.
-ÚNICA forma de salir: cliente escribe "0" (menú principal) o "00" (reiniciar).
+ÚNICA forma de salir: cliente escribe "0" (menú principal) o "00" (reiniciar conversación).
 ⛔ NUNCA interpretes un número como opción del menú principal si estás dentro de un flujo activo.
 
 ════════════════════════════════════════════════════════
@@ -402,9 +428,11 @@ ACCIONES DISPONIBLES (al final del mensaje, si corresponde)
 ════════════════════════════════════════════════════════
 ACCION: {{"tipo": "crear_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
 ACCION: {{"tipo": "cancelar_reserva", "nombre": "...", "fecha_legible": "...", "hora": "..."}}
+ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
 ACCION: {{"tipo": "crear_pedido", "nombre": "...", "detalle": "...", "total": N, "tipo_pedido": "delivery|encargue"}}
 ACCION: {{"tipo": "solicitar_comprobante", "nombre": "...", "detalle": "...", "total": N}}
 ACCION: {{"tipo": "notificar_dueno", "mensaje": "..."}}
+ACCION: {{"tipo": "registrar_resena", "nombre": "...", "comentario": "...", "valoracion": "positiva|negativa|neutra"}}
 
 ⛔ CRÍTICO: Con ACCION crear_reserva tu mensaje visible dice SOLO "Procesando...".
 """
@@ -497,6 +525,57 @@ def _at_crear_pedido(datos: dict) -> dict:
         return {"ok": r.status_code in (200, 201), "resp": r.json()}
     except Exception as e:
         print(f"[GASTRO-AT] crear_pedido: {e}")
+        return {"ok": False, "error": str(e)}
+
+
+def _at_buscar_reserva_por_tel(telefono: str) -> dict | None:
+    """Devuelve la reserva más reciente del cliente (no cancelada)."""
+    if not _at_disponible():
+        return None
+    try:
+        tel_limpio = re.sub(r"\D", "", telefono)
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas"
+        r = requests.get(url, headers=_at_headers(), params={
+            "filterByFormula": f"AND(FIND('{tel_limpio}', SUBSTITUTE({{Telefono}}&'','+','')), {{Estado}}!='cancelada')",
+            "sort[0][field]": "Fecha y Hora",
+            "sort[0][direction]": "desc",
+            "maxRecords": 1,
+        }, timeout=8)
+        records = r.json().get("records", [])
+        return records[0] if records else None
+    except Exception as e:
+        print(f"[GASTRO-AT] buscar_reserva_por_tel: {e}")
+        return None
+
+
+def _at_actualizar_reserva(record_id: str, campos: dict) -> dict:
+    """PATCH una reserva existente en Airtable."""
+    if not _at_disponible():
+        return {"ok": True, "simulated": True}
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Reservas/{record_id}"
+        r = requests.patch(url, headers=_at_headers(), json={"fields": campos}, timeout=8)
+        return {"ok": r.status_code in (200, 201), "resp": r.json()}
+    except Exception as e:
+        print(f"[GASTRO-AT] actualizar_reserva: {e}")
+        return {"ok": False, "error": str(e)}
+
+
+def _at_registrar_resena(nombre: str, comentario: str, valoracion: str, telefono: str) -> dict:
+    """Guarda la reseña en la tabla Clientes (campo Comentarios) y crea registro si no existe."""
+    if not _at_disponible():
+        return {"ok": True, "simulated": True}
+    try:
+        cliente_id = _at_get_or_create_cliente(telefono, nombre)
+        if not cliente_id:
+            return {"ok": False, "error": "No se pudo encontrar/crear cliente"}
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Clientes/{cliente_id}"
+        r = requests.patch(url, headers=_at_headers(), json={"fields": {
+            "Comentarios": f"[{valoracion.upper()}] {comentario}",
+        }}, timeout=8)
+        return {"ok": r.status_code in (200, 201)}
+    except Exception as e:
+        print(f"[GASTRO-AT] registrar_resena: {e}")
         return {"ok": False, "error": str(e)}
 
 
@@ -762,13 +841,86 @@ def _ejecutar_accion(accion: dict, tel: str) -> dict:
         nombre = accion.get("nombre", "")
         fecha  = accion.get("fecha_legible", "")
         hora   = accion.get("hora", "")
-        _notificar_dueno(f"❌ *Cancelación* — {nombre} — {fecha} {hora} — {tel}")
+        # Intentar cancelar en Airtable
+        reserva = _at_buscar_reserva_por_tel(tel)
+        if reserva:
+            _at_actualizar_reserva(reserva["id"], {
+                "Estado": "cancelada",
+                "Especificaciones": f"CANCELADA el {date.today().strftime('%d/%m/%Y')} — {fecha} {hora}",
+            })
+        _notificar_dueno(
+            f"❌ *Cancelación de Reserva*\n"
+            f"👤 {nombre}\n"
+            f"📅 {fecha} a las {hora}\n"
+            f"📞 {tel}"
+        )
         return {
             "ok": True,
             "mensaje_confirmacion": (
                 f"✅ *Reserva cancelada*\n\n"
                 f"La reserva de *{nombre}* para el *{fecha}* a las *{hora} hs* fue cancelada.\n\n"
-                f"Si desea hacer una nueva reserva, con gusto lo atendemos. ☕"
+                f"Si desea hacer una nueva reserva, con gusto lo atendemos. {_EMOJI_LOCAL}"
+            ),
+        }
+
+    elif tipo == "modificar_reserva":
+        nombre = accion.get("nombre", "")
+        fecha  = accion.get("fecha_legible", accion.get("fecha_iso", ""))
+        hora   = accion.get("hora", "")
+        try:
+            personas = int(str(accion.get("personas", 1)).strip())
+        except Exception:
+            personas = 1
+        # Buscar y actualizar en Airtable
+        reserva = _at_buscar_reserva_por_tel(tel)
+        campos_nuevos: dict = {
+            "Cantidad de Personas": personas,
+            "Estado": "pendiente",
+            "Especificaciones": accion.get("nota", "Modificación solicitada por el cliente"),
+        }
+        fecha_str = str(accion.get("fecha_iso", ""))[:10]
+        if fecha_str and hora:
+            campos_nuevos["Fecha y Hora"] = f"{fecha_str}T{hora}:00.000Z"
+        if reserva:
+            resultado = _at_actualizar_reserva(reserva["id"], campos_nuevos)
+        else:
+            resultado = {"ok": True, "simulated": True}
+        _notificar_dueno(
+            f"✏️ *Reserva MODIFICADA*\n"
+            f"👤 {nombre}\n"
+            f"👥 {personas} personas\n"
+            f"📅 {fecha} a las {hora}\n"
+            f"📞 {tel}"
+        )
+        return {
+            "ok": True,
+            "mensaje_confirmacion": (
+                f"✅ *Reserva actualizada correctamente*\n\n"
+                f"👤 {nombre}\n"
+                f"👥 {personas} personas\n"
+                f"📅 {fecha} a las {hora} hs\n\n"
+                f"¡Lo esperamos en {NOMBRE_LOCAL}! {_EMOJI_LOCAL}"
+            ),
+        }
+
+    elif tipo == "registrar_resena":
+        nombre     = accion.get("nombre", "cliente")
+        comentario = accion.get("comentario", "")
+        valoracion = accion.get("valoracion", "neutra")
+        _at_registrar_resena(nombre, comentario, valoracion, tel)
+        # Notificar al dueño solo si es negativa
+        if valoracion == "negativa":
+            _notificar_dueno(
+                f"⚠️ *Comentario negativo recibido*\n"
+                f"👤 {nombre} ({tel})\n"
+                f"💬 {comentario}"
+            )
+        return {
+            "ok": True,
+            "mensaje_confirmacion": (
+                f"¡Muchas gracias por su comentario, {nombre}! 🙏\n\n"
+                f"Su opinión es muy valiosa para nosotros y nos ayuda a mejorar cada día. "
+                f"¡Esperamos verlo pronto en {NOMBRE_LOCAL}! {_EMOJI_LOCAL}"
             ),
         }
 
@@ -829,6 +981,20 @@ TEXTO EXACTO:
 5️⃣ Pedir presupuesto para evento 💬
 
 REGLA: Esperá que el cliente elija. No agregues texto extra.
+
+════════════════════════════════════════════════════════
+TAREA 6 — CANCELAR O MODIFICAR RESERVA (opción 6)
+════════════════════════════════════════════════════════
+Preguntá: "¿Desea cancelar o modificar su reserva?"
+CANCELAR → ACCION: {{"tipo": "cancelar_reserva", "nombre": "...", "fecha_legible": "...", "hora": "..."}}
+MODIFICAR → recopilá cambios y ejecutá: ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
+
+════════════════════════════════════════════════════════
+TAREA 7 — COMENTARIOS / RESEÑAS (opción 7)
+════════════════════════════════════════════════════════
+Decí: "¡Nos alegra que nos contactes! ¿Nos dejás tu comentario?"
+Cuando el cliente envíe el comentario → agradecé y ejecutá:
+ACCION: {{"tipo": "registrar_resena", "nombre": "[nombre si lo conocés]", "comentario": "[texto]", "valoracion": "positiva|negativa|neutra"}}
 """
 
 
