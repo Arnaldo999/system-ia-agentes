@@ -158,6 +158,18 @@
       .active-cerrado { @apply bg-blue-50 text-blue-700; }
       .active-descartado { @apply bg-red-50 text-red-500; }
 
+      /* KANBAN */
+      .kanban-board { @apply flex gap-5 overflow-x-auto pb-4; }
+      .kanban-col { @apply flex flex-col rounded-2xl bg-gray-50 border border-brd min-w-[240px] w-[240px] shrink-0; }
+      .kanban-col-header { @apply flex items-center justify-between px-4 py-3 border-b border-brd; }
+      .kanban-col-title { @apply text-[0.85rem] font-bold uppercase tracking-wide; }
+      .kanban-col-count { @apply text-xs font-bold bg-white border border-brd rounded-full w-6 h-6 flex items-center justify-center; }
+      .kanban-cards { @apply flex flex-col gap-3 p-3 flex-1 min-h-[200px]; }
+      .kanban-card { @apply bg-card border border-brd rounded-xl p-4 cursor-pointer hover:shadow-md hover:-translate-y-px transition-all; }
+      .kanban-card-name { @apply text-[0.9rem] font-bold text-txt leading-tight mb-1; }
+      .kanban-card-sub { @apply text-[0.78rem] text-txt-muted; }
+      .kanban-card-tags { @apply flex gap-1.5 mt-2.5 flex-wrap; }
+
       /* GALLERY */
       .gallery-grid { @apply grid gap-7; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
       .gallery-card { @apply bg-card rounded-2xl overflow-hidden border border-brd flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl; }
@@ -400,7 +412,8 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-item tab active" onclick="switchTab('propiedades', this)"><i>🏠</i> Propiedades</div>
-      <div class="nav-item tab" onclick="switchTab('clientes', this)"><i>👥</i> Clientes / Leads</div>
+      <div class="nav-item tab" onclick="switchTab('pipeline', this)"><i>📊</i> Pipeline</div>
+      <div class="nav-item tab" onclick="switchTab('clientes', this)"><i>👥</i> Leads</div>
       <div class="nav-item tab" onclick="switchTab('galeria', this)"><i>🖼️</i> Galería</div>
     </nav>
     <div class="sidebar-footer">
@@ -438,8 +451,11 @@
             <button onclick="switchTab('propiedades', document.querySelector('.tab')); toggleProfileMenu()" class="w-full text-left px-4 py-2.5 text-sm text-txt hover:bg-gray-50 flex items-center gap-2.5 transition-colors">
               🏠 <span>Ir a Propiedades</span>
             </button>
-            <button onclick="switchTab('clientes', document.querySelectorAll('.tab')[1]); toggleProfileMenu()" class="w-full text-left px-4 py-2.5 text-sm text-txt hover:bg-gray-50 flex items-center gap-2.5 transition-colors">
-              👥 <span>Ir a Clientes</span>
+            <button onclick="switchTab('pipeline', document.querySelectorAll('.tab')[1]); toggleProfileMenu()" class="w-full text-left px-4 py-2.5 text-sm text-txt hover:bg-gray-50 flex items-center gap-2.5 transition-colors">
+              📊 <span>Ir a Pipeline</span>
+            </button>
+            <button onclick="switchTab('clientes', document.querySelectorAll('.tab')[2]); toggleProfileMenu()" class="w-full text-left px-4 py-2.5 text-sm text-txt hover:bg-gray-50 flex items-center gap-2.5 transition-colors">
+              👥 <span>Ir a Leads</span>
             </button>
           </div>
         </div>
@@ -557,6 +573,20 @@
           <tbody id="props-tbody"></tbody>
         </table>
         <div id="props-empty" class="empty-msg" style="display:none">No hay propiedades con esos filtros.</div>
+      </div>
+    </div>
+
+    <!-- PANEL PIPELINE -->
+    <div id="panel-pipeline" class="panel">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Visión general</div>
+          <h1>Pipeline <span class="text-txt-muted opacity-60">de Ventas</span></h1>
+        </div>
+        <button class="btn btn-primary" onclick="openModalNuevoLead()">+ Nuevo Lead</button>
+      </div>
+      <div class="kanban-board" id="kanban-board">
+        <!-- columnas generadas por JS -->
       </div>
     </div>
 
@@ -703,6 +733,7 @@ async function loadAll() {
     renderStats();
     renderProps();
     renderLeads();
+    renderKanban();
     renderGaleria();
     const now = new Date().toLocaleString('es-AR');
     document.getElementById('last-update').textContent = `Última actualización: ${now}`;
@@ -1012,6 +1043,46 @@ async function guardarPropiedad() {
 
   btn.classList.remove('loading');
   btn.textContent = '💾 Guardar';
+}
+
+// ── PIPELINE KANBAN ───────────────────────────────────────
+const KANBAN_COLS = [
+  { key: 'no_contactado', label: 'Sin contactar', color: '#6B7280', dot: '#9CA3AF' },
+  { key: 'contactado',    label: 'Contactado',    color: '#1E6B47', dot: '#16CE87' },
+  { key: 'en_negociacion',label: 'En negociación',color: '#B45309', dot: '#F59E0B' },
+  { key: 'cerrado',       label: 'Cerrado 🏆',    color: '#1D4ED8', dot: '#60A5FA' },
+  { key: 'descartado',    label: 'Descartado',    color: '#991B1B', dot: '#F87171' },
+];
+
+function renderKanban() {
+  const board = document.getElementById('kanban-board');
+  if (!board) return;
+  board.innerHTML = '';
+  KANBAN_COLS.forEach(col => {
+    const cards = allLeads.filter(l => (l.Estado || 'no_contactado') === col.key);
+    const cardsHtml = cards.map(l => {
+      const nombre = l.Nombre || '—';
+      const tel    = l.Telefono || '';
+      const zona   = l.Zona ? `📍 ${l.Zona}` : '';
+      const op     = l.Operacion ? `🔑 ${l.Operacion}` : '';
+      return `<div class="kanban-card" onclick="openModalEditarLead('${l.id}')">
+        <div class="kanban-card-name">${nombre}</div>
+        <div class="kanban-card-sub">${tel}</div>
+        ${zona || op ? `<div class="kanban-card-tags"><span class="zona-tag text-[0.75rem]">${[zona,op].filter(Boolean).join(' · ')}</span></div>` : ''}
+      </div>`;
+    }).join('') || `<div class="text-xs text-txt-muted text-center py-4 opacity-60">Sin leads</div>`;
+
+    board.innerHTML += `
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title" style="color:${col.color}">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col.dot};margin-right:6px;"></span>${col.label}
+          </span>
+          <span class="kanban-col-count">${cards.length}</span>
+        </div>
+        <div class="kanban-cards">${cardsHtml}</div>
+      </div>`;
+  });
 }
 
 // ── LEADS ─────────────────────────────────────────────────
