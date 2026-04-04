@@ -426,11 +426,11 @@
     <!-- TOP HEADER -->
     <header class="top-header">
       <div class="search-bar">
-        <input type="text" placeholder="Buscar en Inmobiliaria Back..." disabled />
+        <input type="text" id="global-search" placeholder="Buscar propiedad, lead, zona..." oninput="globalSearch(this.value)" />
       </div>
       <div class="header-tools">
-        <i class="header-icon">🔔</i>
-        <i class="header-icon">⚙️</i>
+        <i class="header-icon" title="Notificaciones" onclick="showToast('Sin notificaciones nuevas', 'success')">🔔</i>
+        <i class="header-icon" title="Configuración" onclick="showToast('Configuración — próximamente', 'success')">⚙️</i>
         <div class="relative" id="profile-wrapper">
           <div class="user-profile" id="profile-chip" onclick="toggleProfileMenu()">
             <div class="avatar">
@@ -839,17 +839,19 @@ function showToast(msg, type = 'success') {
 }
 
 // ── PROPIEDADES ───────────────────────────────────────────
-function renderProps() {
+function renderProps(q = '') {
   const zona = document.getElementById('f-zona').value;
   const op   = document.getElementById('f-operacion').value;
   const tipo = document.getElementById('f-tipo').value;
   const est  = document.getElementById('f-estado').value;
+  const ql   = q.toLowerCase();
 
   let data = allProps.filter(p => {
     if (zona && p.Zona !== zona) return false;
     if (op   && (p.Operacion || '').toLowerCase() !== op) return false;
     if (tipo && p.Tipo !== tipo) return false;
     if (est  && estadoNorm(p.Disponible) !== est) return false;
+    if (ql && !`${p.Titulo||''} ${p.Zona||''} ${p.Tipo||''}`.toLowerCase().includes(ql)) return false;
     return true;
   });
 
@@ -1070,6 +1072,26 @@ async function guardarPropiedad() {
   btn.textContent = '💾 Guardar';
 }
 
+// ── BÚSQUEDA GLOBAL ───────────────────────────────────────
+function globalSearch(q) {
+  const query = q.toLowerCase().trim();
+  // Detectar panel activo y aplicar búsqueda
+  const activePanel = document.querySelector('.panel.active');
+  if (!activePanel) return;
+  const id = activePanel.id;
+  if (id === 'panel-propiedades') {
+    // Inyectar en el filtro de zona no alcanza — filtrar directamente
+    renderProps(query);
+  } else if (id === 'panel-clientes') {
+    document.getElementById('f-buscar-lead').value = q;
+    renderLeads();
+  } else if (id === 'panel-galeria') {
+    renderGaleria(query);
+  } else if (id === 'panel-pipeline') {
+    renderKanban(query);
+  }
+}
+
 // ── PIPELINE KANBAN ───────────────────────────────────────
 const KANBAN_COLS = [
   { key: 'no_contactado', label: 'Sin contactar', color: '#6B7280', dot: '#9CA3AF' },
@@ -1079,12 +1101,14 @@ const KANBAN_COLS = [
   { key: 'descartado',    label: 'Descartado',    color: '#991B1B', dot: '#F87171' },
 ];
 
-function renderKanban() {
+function renderKanban(q = '') {
   const board = document.getElementById('kanban-board');
   if (!board) return;
+  const ql = q.toLowerCase();
   board.innerHTML = '';
   KANBAN_COLS.forEach(col => {
-    const cards = allLeads.filter(l => (l.Estado || 'no_contactado') === col.key);
+    let cards = allLeads.filter(l => (l.Estado || 'no_contactado') === col.key);
+    if (ql) cards = cards.filter(l => `${l.Nombre||''} ${l.Telefono||''} ${l.Zona||''}`.toLowerCase().includes(ql));
     const cardsHtml = cards.map(l => {
       const nombre = l.Nombre || '—';
       const tel    = l.Telefono || '';
@@ -1204,17 +1228,19 @@ async function cambiarEstadoLead(recordId, nuevoEstado, event) {
 }
 
 // ── GALERÍA ───────────────────────────────────────────────
-function renderGaleria() {
+function renderGaleria(q = '') {
   const zona = document.getElementById('g-zona').value;
   const op   = document.getElementById('g-operacion').value;
   const tipo = document.getElementById('g-tipo').value;
   const est  = document.getElementById('g-estado').value;
+  const ql   = q.toLowerCase();
 
   let data = allProps.filter(p => {
     if (zona && p.Zona !== zona) return false;
     if (op   && (p.Operacion || '').toLowerCase() !== op) return false;
     if (tipo && p.Tipo !== tipo) return false;
     if (est  && estadoNorm(p.Disponible) !== est) return false;
+    if (ql && !`${p.Titulo||''} ${p.Zona||''} ${p.Tipo||''}`.toLowerCase().includes(ql)) return false;
     return true;
   });
 
