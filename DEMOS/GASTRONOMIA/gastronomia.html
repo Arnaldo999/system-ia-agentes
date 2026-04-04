@@ -1,0 +1,3551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RestIA — Sistema de Restaurante</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0a0f1e', card: '#111827', surface: '#1a2234',
+                        primary: '#6366f1', accent: '#8b5cf6',
+                        success: '#10b981', warning: '#f59e0b', danger: '#ef4444',
+                    },
+                    fontFamily: { sans: ['Inter','sans-serif'], mono: ['Orbitron','monospace'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { background: #0a0f1e; overscroll-behavior: none; font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeUp 0.25s ease-out; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+
+        .glass { background: rgba(17,24,39,0.75); backdrop-filter: blur(12px); border: 1px solid rgba(99,102,241,0.15); }
+        .glass-surface { background: rgba(26,34,52,0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.06); }
+
+        /* Layout PC */
+        @media (min-width: 768px) {
+            #appWrapper { display: flex; height: 100vh; overflow: hidden; }
+            #sideNav { display: flex; flex-direction: column; width: 230px; flex-shrink: 0;
+                padding: 24px 16px; gap: 2px; border-right: 1px solid rgba(99,102,241,0.12);
+                background: rgba(11,16,30,0.98); }
+            #bottomNav { display: none !important; }
+            #mainArea { flex: 1; min-width: 0; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+            #appHeader { padding: 20px 32px 16px; }
+            .screen-inner { padding: 0 32px 32px; }
+            .fab { display: none !important; }
+        }
+        @media (max-width: 767px) {
+            #sideNav { display: none !important; }
+            #appWrapper { display: flex; flex-direction: column; height: 100dvh; }
+            #mainArea { flex: 1; overflow-y: auto; }
+            .screen-inner { padding: 0 16px 16px; }
+            #appHeader { padding: 16px 16px 12px; }
+        }
+
+        /* Nav */
+        .nav-item { display: flex; align-items: center; cursor: pointer; transition: all 0.2s; border-radius: 10px; }
+        .nav-item.active { background: rgba(99,102,241,0.15); }
+        .nav-item.active .nav-icon, .nav-item.active .nav-label { color: #6366f1; }
+        .nav-item:not(.active) .nav-icon, .nav-item:not(.active) .nav-label { color: #9ca3af; }
+        .nav-item:hover:not(.active) { background: rgba(255,255,255,0.04); }
+        #sideNav .nav-item { flex-direction: row; gap: 12px; padding: 10px 14px; }
+        #sideNav .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+        #sideNav .nav-label { font-size: 0.875rem; font-weight: 600; }
+        #bottomNav .nav-item { flex-direction: column; gap: 3px; padding: 8px 4px; flex: 1; justify-content: center; border-radius: 0; }
+        #bottomNav .nav-icon { font-size: 1.1rem; }
+        #bottomNav .nav-label { font-size: 0.65rem; font-weight: 500; }
+        .nav-sep { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 0; }
+
+        /* Buttons */
+        .btn-primary { background: linear-gradient(135deg,#6366f1,#8b5cf6); transition:all 0.2s; }
+        .btn-primary:hover { opacity:.9; transform:translateY(-1px); }
+        .btn-primary:active { transform:scale(.98); }
+        .btn-success { background: linear-gradient(135deg,#10b981,#059669); transition:all 0.2s; }
+        .btn-warning { background: linear-gradient(135deg,#f59e0b,#d97706); transition:all 0.2s; }
+        .btn-danger  { background: linear-gradient(135deg,#ef4444,#dc2626); transition:all 0.2s; }
+
+        /* Inputs */
+        .input-field { background:rgba(255,255,255,0.05); border:1px solid rgba(99,102,241,0.25); transition:border-color 0.3s; color:white; }
+        .input-field:focus { outline:none; border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.1); }
+        .input-field::placeholder { color:#4b5563; }
+        select.input-field option { background:#1a2234; color:white; }
+
+        /* Modal */
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:200; display:flex; align-items:flex-end; justify-content:center; }
+        .modal-content { background:#111827; border-radius:24px 24px 0 0; width:100%; max-width:640px; max-height:92vh; overflow-y:auto; padding:24px; border-top:1px solid rgba(99,102,241,0.3); animation:slideUp 0.3s ease-out; }
+        @media (min-width:768px) { .modal-overlay{align-items:center;} .modal-content{border-radius:20px;border:1px solid rgba(99,102,241,0.2);animation:fadeUp 0.25s ease-out;} }
+        @keyframes slideUp { from{transform:translateY(100%);opacity:0;}to{transform:translateY(0);opacity:1;} }
+
+        /* Badges */
+        .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:0.72rem; font-weight:600; }
+        .badge-nuevo      { background:rgba(99,102,241,0.15);  color:#818cf8; border:1px solid rgba(99,102,241,0.3); }
+        .badge-preparando { background:rgba(245,158,11,0.15);  color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+        .badge-listo      { background:rgba(16,185,129,0.15);  color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+        .badge-entregado  { background:rgba(107,114,128,0.15); color:#9ca3af; border:1px solid rgba(107,114,128,0.3); }
+
+        /* POS — Caja y Delivery */
+        @media (min-width: 768px) {
+            /* screen-pos ocupa el espacio restante debajo del header */
+            .screen-pos.active { display: flex; flex-direction: row;
+                          flex: 1; min-height: 0; overflow: hidden;
+                          animation: fadeUp 0.25s ease-out; }
+            .pos-left  { flex: 1; min-width: 0; overflow-y: auto;
+                         padding: 0 16px 32px 32px; }
+            .pos-right { width: 260px; flex-shrink: 0; overflow-y: auto;
+                         border-left: 1px solid rgba(99,102,241,0.12);
+                         padding: 0 16px 32px 16px;
+                         background: rgba(10,15,30,0.4); }
+        }
+        @media (min-width: 768px) and (max-width: 1100px) { .pos-right { width: 240px; } }
+        @media (min-width: 768px) and (max-width: 920px)  { .pos-right { width: 220px; } }
+        @media (max-width: 767px) {
+            .screen-pos.active { display: block; }
+            .pos-left   { padding: 0 16px 16px; }
+            .pos-right  { padding: 16px;
+                          border-top: 1px solid rgba(99,102,241,0.1); }
+        }
+
+        .code-key { background:rgba(26,34,52,0.9); border:1px solid rgba(99,102,241,0.2); border-radius:12px;
+            padding:14px 8px; font-size:1.1rem; font-weight:700; color:white; cursor:pointer;
+            transition:all 0.15s; user-select:none; text-align:center; }
+        .code-key:hover { background:rgba(99,102,241,0.2); border-color:rgba(99,102,241,0.5); }
+        .code-key:active { transform:scale(0.93); background:rgba(99,102,241,0.35); }
+        .code-key.action { background:rgba(99,102,241,0.15); border-color:rgba(99,102,241,0.4); color:#818cf8; }
+        .code-key.action-green { background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.4); color:#34d399; }
+        .code-key.action-red   { background:rgba(239,68,68,0.15);  border-color:rgba(239,68,68,0.4);  color:#f87171; }
+
+        .comanda-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+        .comanda-row:last-child { border-bottom:none; }
+
+        /* Teclado numérico grande */
+        .numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+
+        /* Pedido-cocina pulsante */
+        .pedido-nuevo { animation:pulseBorder 2s ease-in-out infinite; }
+        @keyframes pulseBorder { 0%,100%{box-shadow:0 0 0 1px rgba(99,102,241,0.4);}50%{box-shadow:0 0 0 2px rgba(99,102,241,0.7),0 0 20px rgba(99,102,241,0.15);} }
+
+        /* Cat tabs */
+        .cat-tab { padding:6px 16px; border-radius:999px; font-size:0.8rem; font-weight:600; cursor:pointer; transition:all 0.2s; white-space:nowrap; border:1px solid rgba(99,102,241,0.2); color:#6b7280; }
+        .cat-tab.active { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:white; border-color:transparent; }
+        .cat-tab:hover:not(.active) { border-color:rgba(99,102,241,0.4); color:#a5b4fc; }
+
+        /* KPI */
+        .kpi-card { transition:transform 0.2s; }
+        .kpi-card:hover { transform:translateY(-2px); }
+
+        /* Stock bar */
+        .stock-bar { height:4px; border-radius:2px; background:rgba(255,255,255,0.08); overflow:hidden; }
+        .stock-fill { height:100%; border-radius:2px; transition:width 0.5s; }
+
+        /* Toast */
+        #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); z-index:300; transition:all 0.3s; pointer-events:none; }
+        @media (min-width:768px){ #toast{bottom:28px;} }
+
+        /* Print */
+        @media print {
+            body { background: white !important; color: black !important; }
+            #appWrapper, #appHeader, #sideNav, #bottomNav, .no-print { display: none !important; }
+            #ticketPrint { display: block !important; }
+        }
+    </style>
+</head>
+<body class="text-white">
+
+<!-- TOAST -->
+<div id="toast" class="hidden">
+    <div class="glass px-5 py-3 rounded-2xl text-sm font-medium flex items-center gap-3">
+        <i id="toastIcon" class="fas fa-check-circle text-success"></i>
+        <span id="toastMsg">Listo</span>
+    </div>
+</div>
+
+<!-- TICKET PRINT (oculto, solo se muestra al imprimir) -->
+<div id="ticketPrint" style="display:none; font-family:monospace; color:black; max-width:300px; margin:0 auto; padding:16px;">
+</div>
+
+<!-- APP -->
+<div id="appWrapper">
+
+    <!-- SIDEBAR PC -->
+    <nav id="sideNav">
+        <div class="flex items-center gap-3 px-2 mb-6">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-utensils text-white text-sm"></i>
+            </div>
+            <div>
+                <div class="font-mono text-sm font-bold text-white tracking-wider">RestIA</div>
+                <div id="sideNegocio" class="text-gray-500 text-xs truncate max-w-[140px]">Restaurante</div>
+            </div>
+        </div>
+        <div class="nav-sep"></div>
+
+        <div class="nav-item active mt-2" onclick="showScreen('inicio')">
+            <i class="nav-icon fas fa-chart-line"></i><span class="nav-label">Inicio</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('caja')">
+            <i class="nav-icon fas fa-cash-register"></i><span class="nav-label">Caja</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('cocina')">
+            <i class="nav-icon fas fa-fire-burner"></i>
+            <span class="nav-label">Cocina</span>
+            <span id="sideCocinaBadge" class="ml-auto bg-warning text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold hidden">0</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('delivery')">
+            <i class="nav-icon fas fa-motorcycle"></i><span class="nav-label">Delivery</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('inventario')">
+            <i class="nav-icon fas fa-boxes-stacked"></i><span class="nav-label">Inventario</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('menu')">
+            <i class="nav-icon fas fa-book-open"></i><span class="nav-label">Carta</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('clientes')">
+            <i class="nav-icon fas fa-users"></i><span class="nav-label">Clientes</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('reservas')">
+            <i class="nav-icon fas fa-calendar-check"></i><span class="nav-label">Reservas</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('reportes')">
+            <i class="nav-icon fas fa-chart-bar"></i><span class="nav-label">Reportes</span>
+        </div>
+        <div class="nav-sep"></div>
+        <div class="nav-item" onclick="showScreen('difusion')">
+            <i class="nav-icon fas fa-bullhorn"></i><span class="nav-label">Difusión WA</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('bot')">
+            <i class="nav-icon fas fa-robot"></i><span class="nav-label">Bot Simulador</span>
+        </div>
+        <div class="nav-sep"></div>
+        <div class="nav-item" onclick="showScreen('config')">
+            <i class="nav-icon fas fa-sliders"></i><span class="nav-label">Config</span>
+        </div>
+
+        <div class="nav-sep mt-auto"></div>
+        <div class="nav-item" onclick="cerrarSesion()">
+            <i class="nav-icon fas fa-right-from-bracket text-red-500"></i>
+            <span class="nav-label text-red-500">Salir</span>
+        </div>
+    </nav>
+
+    <!-- MAIN AREA -->
+    <div id="mainArea">
+
+        <!-- HEADER -->
+        <div id="appHeader" class="flex items-center justify-between flex-shrink-0">
+            <div>
+                <h2 id="headerTitle" class="text-lg font-bold text-white">Inicio</h2>
+                <p id="headerSub" class="text-gray-500 text-xs mt-0.5">Resumen del día</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="showScreen('cocina')" class="relative glass rounded-xl px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                    <i class="fas fa-fire-burner"></i>
+                    <span id="badgeCocina" class="font-semibold text-warning">0</span>
+                    <span class="hidden md:inline text-gray-500">en cocina</span>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center cursor-pointer" onclick="cerrarSesion()">
+                    <i class="fas fa-user text-white text-xs"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= INICIO ======= -->
+        <div id="screen-inicio" class="screen active screen-inner">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Comandas hoy</span>
+                        <i class="fas fa-receipt text-primary text-sm"></i>
+                    </div>
+                    <div id="kpiComandas" class="text-2xl font-bold">0</div>
+                    <div class="text-gray-500 text-xs mt-1">registradas</div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">En cocina</span>
+                        <i class="fas fa-fire text-warning text-sm"></i>
+                    </div>
+                    <div id="kpiCocina" class="text-2xl font-bold text-warning">0</div>
+                    <div class="text-gray-500 text-xs mt-1">preparando</div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Entregados</span>
+                        <i class="fas fa-check text-success text-sm"></i>
+                    </div>
+                    <div id="kpiEntregados" class="text-2xl font-bold text-success">0</div>
+                    <div class="text-gray-500 text-xs mt-1">cerrados</div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Venta del día</span>
+                        <i class="fas fa-dollar-sign text-accent text-sm"></i>
+                    </div>
+                    <div id="kpiVenta" class="text-2xl font-bold text-accent">$0</div>
+                    <div class="text-gray-500 text-xs mt-1">facturado</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Comandas recientes -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-sm">Comandas recientes</h3>
+                        <button onclick="showScreen('caja')" class="text-primary text-xs hover:underline">Nueva →</button>
+                    </div>
+                    <div id="recentComandas" class="space-y-3"></div>
+                </div>
+
+                <!-- Alertas stock -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-sm">Stock bajo</h3>
+                        <button onclick="showScreen('inventario')" class="text-primary text-xs hover:underline">Ver stock →</button>
+                    </div>
+                    <div id="alertasStock" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- Gráfico ventas -->
+            <div class="glass-surface rounded-2xl p-5 mt-4">
+                <h3 class="font-semibold text-sm mb-4">Ventas esta semana</h3>
+                <canvas id="chartVentas" height="90"></canvas>
+            </div>
+        </div>
+
+        <!-- ======= CAJA / MOZO ======= -->
+        <div id="screen-caja" class="screen screen-pos">
+
+            <!-- Izquierda: Mesa + Agregar producto + Carta -->
+            <div class="pos-left">
+
+                <!-- Mesa / Comanda -->
+                <div class="glass-surface rounded-2xl p-4 mb-3">
+                    <label class="text-gray-400 text-xs mb-1.5 block"><i class="fas fa-chair mr-1 text-primary"></i>Mesa / Comanda</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="inputMesa" placeholder="Mesa o nombre" class="input-field flex-1 rounded-xl px-3 py-2.5 text-sm">
+                        <input type="text" id="inputComanda" placeholder="# comanda" class="input-field w-24 rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                </div>
+
+                <!-- Agregar producto — código rápido O manual -->
+                <div class="glass-surface rounded-2xl p-4 mb-3">
+                    <!-- Tabs modo -->
+                    <div class="flex gap-2 mb-3">
+                        <button onclick="setCajaMode('codigo')" id="cmode-codigo"
+                            class="cat-tab active text-xs py-1.5 px-3">
+                            <i class="fas fa-barcode mr-1"></i>Por código
+                        </button>
+                        <button onclick="setCajaMode('manual')" id="cmode-manual"
+                            class="cat-tab text-xs py-1.5 px-3">
+                            <i class="fas fa-pen mr-1"></i>Manual
+                        </button>
+                    </div>
+
+                    <!-- Modo código -->
+                    <div id="cajaModeCodigo">
+                        <div class="flex gap-2">
+                            <input type="text" id="inputCodigo" placeholder="Ej: 4x2  o  4x1 7x2"
+                                class="input-field flex-1 rounded-xl px-3 py-2.5 text-sm font-mono"
+                                onkeydown="if(event.key==='Enter'){procesarCodigo()}"
+                                autocomplete="off" autocorrect="off" spellcheck="false">
+                            <button onclick="procesarCodigo()" class="btn-primary rounded-xl px-4 text-white font-bold text-sm">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <p class="text-gray-600 text-xs mt-2"><i class="fas fa-info-circle mr-1"></i>Ej: <span class="text-primary font-mono">4x2</span> = 2 milanesas · <span class="text-primary font-mono">4x1 7x2</span> = varios juntos</p>
+                    </div>
+
+                    <!-- Modo manual -->
+                    <div id="cajaModeManual" class="hidden">
+                        <div class="space-y-2">
+                            <!-- Nombre con autocompletado -->
+                            <div class="relative">
+                                <input type="text" id="manualNombre" placeholder="Nombre del producto (o buscá en carta)"
+                                    class="input-field w-full rounded-xl px-3 py-2.5 text-sm"
+                                    oninput="autocompletarManual()"
+                                    autocomplete="off">
+                                <div id="manualSugerencias" class="hidden absolute left-0 right-0 top-full mt-1 glass rounded-xl overflow-hidden z-50 max-h-44 overflow-y-auto"></div>
+                            </div>
+                            <!-- Cantidad + Precio -->
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-gray-500 text-xs mb-1 block">Cantidad</label>
+                                    <input type="number" id="manualCant" value="1" min="1"
+                                        class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-center font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs mb-1 block">Precio unitario</label>
+                                    <input type="number" id="manualPrecio" placeholder="0"
+                                        class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                                </div>
+                            </div>
+                            <button onclick="agregarManual()" class="btn-primary w-full rounded-xl py-2.5 text-white font-semibold text-sm">
+                                <i class="fas fa-plus mr-2"></i>Agregar a la comanda
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carta de referencia (códigos) -->
+                <div class="glass-surface rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-sm"><i class="fas fa-list-ol mr-2 text-primary"></i>Carta de códigos</h3>
+                        <input type="text" id="buscarCarta" placeholder="Buscar..." oninput="renderCarta()" class="input-field rounded-xl px-3 py-1.5 text-xs w-32">
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto pb-2 mb-3" id="cartaTabs"></div>
+                    <div id="cartaPlatos" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+                </div>
+
+            </div><!-- /pos-left -->
+
+            <!-- Derecha: Comanda activa -->
+            <div class="pos-right">
+                <div class="flex items-center justify-between mb-4 pt-4">
+                    <h3 class="font-semibold">Comanda</h3>
+                    <div class="flex items-center gap-2">
+                        <span id="comandaMesaLabel" class="text-gray-400 text-xs glass px-2 py-1 rounded-lg">Sin mesa</span>
+                        <button onclick="limpiarComanda()" class="text-gray-600 hover:text-red-400 text-xs transition-colors"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+
+                <!-- Items de la comanda -->
+                <div id="comandaItems" class="space-y-1 min-h-[120px] max-h-60 overflow-y-auto mb-4">
+                    <div id="comandaVacia" class="text-gray-600 text-sm text-center py-10">
+                        <i class="fas fa-utensils text-2xl mb-2 block opacity-20"></i>
+                        Ingresá códigos para agregar
+                    </div>
+                </div>
+
+                <!-- Total -->
+                <div class="border-t border-white/10 pt-3 mb-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400 text-sm">Subtotal</span>
+                        <span id="comandaSubtotal" class="text-white font-semibold">$0</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-gray-400 text-sm">Items</span>
+                        <span id="comandaCantItems" class="text-gray-400 text-sm">0</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-white font-bold">TOTAL</span>
+                        <span id="comandaTotal" class="text-white font-bold text-xl">$0</span>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="space-y-2">
+                    <button onclick="registrarComanda()" class="btn-success w-full rounded-xl py-3 text-white font-semibold text-sm">
+                        <i class="fas fa-floppy-disk mr-2"></i>Registrar comanda
+                    </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="imprimirTicket()" class="glass rounded-xl py-2.5 text-white text-sm font-medium hover:bg-white/5 transition-colors border-0">
+                            <i class="fas fa-print mr-1.5"></i>Ticket
+                        </button>
+                        <button onclick="cobrarComanda()" class="btn-primary rounded-xl py-2.5 text-white text-sm font-semibold">
+                            <i class="fas fa-hand-holding-dollar mr-1.5"></i>Cobrar
+                        </button>
+                    </div>
+                    <p class="text-gray-600 text-xs text-center pt-1">
+                        <i class="fas fa-circle-info mr-1"></i>Cocina la ve automáticamente
+                    </p>
+                </div>
+
+                <!-- Numpad rápido (opcional) -->
+                <details class="mt-4">
+                    <summary class="text-gray-500 text-xs cursor-pointer hover:text-gray-300 transition-colors select-none">
+                        <i class="fas fa-keyboard mr-1"></i>Teclado numérico
+                    </summary>
+                    <div class="numpad mt-3">
+                        <button class="code-key" onclick="appendNumpad('1')">1</button>
+                        <button class="code-key" onclick="appendNumpad('2')">2</button>
+                        <button class="code-key" onclick="appendNumpad('3')">3</button>
+                        <button class="code-key" onclick="appendNumpad('4')">4</button>
+                        <button class="code-key" onclick="appendNumpad('5')">5</button>
+                        <button class="code-key" onclick="appendNumpad('6')">6</button>
+                        <button class="code-key" onclick="appendNumpad('7')">7</button>
+                        <button class="code-key" onclick="appendNumpad('8')">8</button>
+                        <button class="code-key" onclick="appendNumpad('9')">9</button>
+                        <button class="code-key action" onclick="appendNumpad('x')">×</button>
+                        <button class="code-key" onclick="appendNumpad('0')">0</button>
+                        <button class="code-key action-red" onclick="borrarNumpad()">⌫</button>
+                        <button class="code-key action" onclick="appendNumpad(' ')" style="grid-column:span 2;">Separar</button>
+                        <button class="code-key action-green" onclick="procesarCodigo()">✓ OK</button>
+                    </div>
+                </details>
+
+                <!-- ── COMANDAS ABIERTAS ── -->
+                <div class="mt-5 border-t border-white/10 pt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-sm text-white flex items-center gap-2">
+                            <i class="fas fa-rectangle-list text-primary"></i>
+                            Abiertas
+                            <span id="countComandasAbiertas" class="bg-primary/20 text-primary text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
+                        </h3>
+                        <input type="text" id="buscarComanda" placeholder="Mesa o #..." oninput="renderComandasAbiertas()"
+                               class="input-field rounded-xl px-3 py-1.5 text-xs w-32">
+                    </div>
+                    <div id="comandasAbiertasGrid" class="space-y-2"></div>
+                </div>
+            </div><!-- /pos-right -->
+
+        </div><!-- /screen-caja -->
+
+        <!-- ======= COCINA ======= -->
+        <div id="screen-cocina" class="screen screen-inner">
+            <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
+                <button onclick="filtrarCocina('activos')" class="cat-tab active" id="ctab-activos">
+                    <i class="fas fa-fire text-warning mr-1 text-xs"></i>Activos
+                </button>
+                <button onclick="filtrarCocina('nuevo')" class="cat-tab" id="ctab-nuevo">Nuevos</button>
+                <button onclick="filtrarCocina('preparando')" class="cat-tab" id="ctab-preparando">Preparando</button>
+                <button onclick="filtrarCocina('listo')" class="cat-tab" id="ctab-listo">Listos</button>
+                <button onclick="filtrarCocina('entregado')" class="cat-tab" id="ctab-entregado">Entregados</button>
+            </div>
+            <div id="cocinaPedidos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <!-- ======= DELIVERY ======= -->
+        <div id="screen-delivery" class="screen screen-pos">
+
+            <!-- Izquierda: Carta con códigos (igual que Caja) -->
+            <div class="pos-left">
+                <div class="glass-surface rounded-2xl p-5 mb-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fas fa-barcode text-primary"></i>
+                        <label class="text-gray-400 text-xs">Ingresá código y cantidad</label>
+                    </div>
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="dlvInputCodigo" placeholder="Ej: 4x2  o  4x1 7x2"
+                            class="input-field flex-1 rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider"
+                            onkeydown="if(event.key==='Enter'){procesarCodigoDelivery()}"
+                            autocomplete="off" autocorrect="off" spellcheck="false">
+                        <button onclick="procesarCodigoDelivery()" class="btn-primary rounded-xl px-5 text-white font-bold text-sm">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-600 text-xs"><i class="fas fa-info-circle mr-1"></i>Formato: <span class="text-gray-400">código×cantidad</span> — ej: <span class="text-primary font-mono">4x2</span> agrega 2 milanesas.</p>
+                </div>
+
+                <!-- Carta de referencia (códigos) -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-sm"><i class="fas fa-list-ol mr-2 text-primary"></i>Carta de códigos</h3>
+                        <input type="text" id="dlvBuscarCarta" placeholder="Buscar..." oninput="renderCartaDelivery()" class="input-field rounded-xl px-3 py-1.5 text-xs w-36">
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto pb-2 mb-3" id="dlvCartaTabs"></div>
+                    <div id="dlvCartaPlatos" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+                </div>
+            </div><!-- /pos-left -->
+
+            <!-- Derecha: Datos del cliente + pedido delivery -->
+            <div class="pos-right">
+                    <div class="flex items-center justify-between pt-4 mb-3">
+                        <h3 class="font-semibold text-sm"><i class="fas fa-motorcycle text-warning mr-2"></i>Delivery</h3>
+                        <button onclick="limpiarDelivery()" class="text-gray-600 hover:text-red-400 text-xs transition-colors"><i class="fas fa-trash"></i></button>
+                    </div>
+
+                    <!-- Datos del cliente — inputs compactos -->
+                    <div class="space-y-1.5 mb-3 pb-3 border-b border-white/10">
+                        <div>
+                            <label class="text-gray-500 text-xs mb-1 block"><i class="fas fa-user mr-1 text-primary"></i>Nombre</label>
+                            <input type="text" id="dlvNombre" placeholder="Nombre y apellido" class="input-field w-full rounded-lg px-3 py-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="text-gray-500 text-xs mb-1 block"><i class="fab fa-whatsapp mr-1 text-success"></i>Teléfono</label>
+                            <input type="tel" id="dlvTel" placeholder="+54 9 11 0000-0000" class="input-field w-full rounded-lg px-3 py-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="text-gray-500 text-xs mb-1 block"><i class="fas fa-location-dot mr-1 text-danger"></i>Dirección</label>
+                            <input type="text" id="dlvDir" placeholder="Calle 123, Piso 2" class="input-field w-full rounded-lg px-3 py-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="text-gray-500 text-xs mb-1 block"><i class="fas fa-note-sticky mr-1 text-accent"></i>Notas</label>
+                            <input type="text" id="dlvNotas" placeholder="Sin cebolla, timbre 3B…" class="input-field w-full rounded-lg px-3 py-2 text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Items del pedido -->
+                    <div id="dlvItems" class="space-y-1 min-h-[60px] mb-3">
+                        <div id="dlvVacio" class="text-gray-600 text-xs text-center py-5">
+                            <i class="fas fa-motorcycle text-xl mb-1.5 block opacity-20"></i>
+                            Ingresá códigos a la izquierda
+                        </div>
+                    </div>
+
+                    <!-- Total -->
+                    <div class="border-t border-white/10 pt-2.5 mb-3 space-y-1">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-xs">Subtotal</span>
+                            <span id="dlvSubtotal" class="text-white text-sm font-semibold">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-xs">Items</span>
+                            <span id="dlvCantItems" class="text-gray-500 text-xs">0</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-white font-bold text-sm">TOTAL</span>
+                            <span id="dlvTotal" class="text-white font-bold text-lg">$0</span>
+                        </div>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="space-y-2">
+                        <button onclick="registrarDelivery()" class="btn-warning w-full rounded-xl py-2.5 text-white font-semibold text-sm">
+                            <i class="fas fa-floppy-disk mr-2"></i>Registrar
+                        </button>
+                        <button onclick="cobrarDelivery()" class="btn-primary w-full rounded-xl py-2.5 text-white text-sm font-semibold">
+                            <i class="fas fa-hand-holding-dollar mr-1.5"></i>Cobrar al entregar
+                        </button>
+                        <p class="text-gray-600 text-xs text-center">
+                            <i class="fas fa-circle-info mr-1"></i>Cocina lo recibe automáticamente
+                        </p>
+                    </div>
+            </div><!-- /pos-right -->
+
+        </div><!-- /screen-delivery -->
+
+        <!-- ======= INVENTARIO ======= -->
+        <div id="screen-inventario" class="screen screen-inner">
+            <div class="flex items-center justify-between mb-4 gap-3">
+                <div class="flex gap-2 overflow-x-auto">
+                    <button onclick="filtrarInv('todo')"    class="cat-tab active" id="itab-todo">Todo</button>
+                    <button onclick="filtrarInv('bajo')"    class="cat-tab" id="itab-bajo"><i class="fas fa-triangle-exclamation text-warning text-xs mr-1"></i>Bajo</button>
+                    <button onclick="filtrarInv('critico')" class="cat-tab" id="itab-critico"><i class="fas fa-circle-exclamation text-danger text-xs mr-1"></i>Crítico</button>
+                </div>
+                <div class="flex gap-2 flex-shrink-0">
+                    <button onclick="abrirEntradaMercaderia()" class="btn-success rounded-xl px-3 py-2 text-white text-sm font-semibold flex items-center gap-1.5" title="Sumar stock a un ingrediente existente">
+                        <i class="fas fa-truck-ramp-box"></i><span class="hidden md:inline">+ Stock</span>
+                    </button>
+                    <button onclick="abrirModalIngrediente(null)" class="btn-primary rounded-xl px-3 py-2 text-white text-sm font-semibold flex items-center gap-1.5" title="Agregar ingrediente nuevo al sistema">
+                        <i class="fas fa-plus"></i><span class="hidden md:inline">Nuevo ingrediente</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-surface rounded-2xl overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-white/5">
+                            <th class="text-left text-gray-500 font-medium px-4 py-3">Ingrediente</th>
+                            <th class="text-left text-gray-500 font-medium px-4 py-3 hidden md:table-cell">Categoría</th>
+                            <th class="text-center text-gray-500 font-medium px-4 py-3">Stock</th>
+                            <th class="text-center text-gray-500 font-medium px-4 py-3 hidden md:table-cell">Mínimo</th>
+                            <th class="text-center text-gray-500 font-medium px-4 py-3">Estado</th>
+                            <th class="px-4 py-3 text-right text-gray-500 font-medium">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ======= MENÚ ======= -->
+        <div id="screen-menu" class="screen screen-inner">
+            <div class="flex gap-2 mb-5">
+                <button onclick="menuTab('platos')"     id="mtab-platos"     class="cat-tab active"><i class="fas fa-utensils mr-1.5"></i>Platos</button>
+                <button onclick="menuTab('categorias')" id="mtab-categorias" class="cat-tab"><i class="fas fa-tags mr-1.5"></i>Categorías</button>
+                <div id="menuAcciones" class="ml-auto flex gap-2">
+                    <button id="btnNuevoPlato" onclick="abrirModalPlato(null)" class="btn-primary rounded-xl px-4 py-2 text-white text-sm font-semibold flex items-center gap-2">
+                        <i class="fas fa-plus"></i><span class="hidden md:inline">Nuevo plato</span>
+                    </button>
+                    <button id="btnNuevaCat" onclick="abrirModalCategoria()" class="btn-primary rounded-xl px-4 py-2 text-white text-sm font-semibold hidden flex items-center gap-2">
+                        <i class="fas fa-plus"></i><span class="hidden md:inline">Nueva categoría</span>
+                    </button>
+                </div>
+            </div>
+            <div id="menuPlatosLista"    class="space-y-2"></div>
+            <div id="menuCatLista"       class="space-y-2 hidden"></div>
+        </div>
+
+        <!-- ======= CLIENTES ======= -->
+        <div id="screen-clientes" class="screen screen-inner">
+            <div class="flex items-center justify-between mb-4 gap-3">
+                <div class="relative flex-1">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                    <input type="text" id="buscarCliente" placeholder="Buscar por nombre o teléfono..." oninput="renderClientes()" class="input-field w-full rounded-xl pl-9 pr-4 py-2.5 text-sm">
+                </div>
+                <button onclick="abrirModalCliente(null)" class="btn-primary rounded-xl px-4 py-2.5 text-white text-sm font-semibold flex items-center gap-2 flex-shrink-0">
+                    <i class="fas fa-user-plus"></i><span class="hidden md:inline">Nuevo</span>
+                </button>
+            </div>
+
+            <!-- Filtro canal -->
+            <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
+                <button onclick="filtrarClientes('todos')"       class="cat-tab active" id="ctab-todos">Todos</button>
+                <button onclick="filtrarClientes('whatsapp')"    class="cat-tab" id="ctab-whatsapp"><i class="fab fa-whatsapp text-success mr-1"></i>WhatsApp</button>
+                <button onclick="filtrarClientes('delivery')"    class="cat-tab" id="ctab-delivery"><i class="fas fa-motorcycle text-warning mr-1"></i>Delivery</button>
+                <button onclick="filtrarClientes('salon')"       class="cat-tab" id="ctab-salon"><i class="fas fa-chair text-primary mr-1"></i>Salón</button>
+            </div>
+
+            <!-- Grid clientes -->
+            <div id="clientesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </div>
+
+        <!-- ======= RESERVAS ======= -->
+        <div id="screen-reservas" class="screen screen-inner">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex gap-2 overflow-x-auto">
+                    <button onclick="filtrarReservas('hoy')"      class="cat-tab active" id="rtab-hoy">Hoy</button>
+                    <button onclick="filtrarReservas('proximas')" class="cat-tab" id="rtab-proximas">Próximas</button>
+                    <button onclick="filtrarReservas('todas')"    class="cat-tab" id="rtab-todas">Todas</button>
+                </div>
+                <button onclick="abrirModalReserva(null)" class="btn-primary rounded-xl px-4 py-2.5 text-white text-sm font-semibold flex items-center gap-2 flex-shrink-0">
+                    <i class="fas fa-plus"></i><span class="hidden md:inline">Nueva reserva</span>
+                </button>
+            </div>
+
+            <!-- Timeline reservas -->
+            <div id="reservasLista" class="space-y-3"></div>
+        </div>
+
+        <!-- ======= REPORTES ======= -->
+        <div id="screen-reportes" class="screen screen-inner">
+
+            <!-- Selector período + Exportar -->
+            <div class="flex gap-2 mb-5 flex-wrap">
+                <button onclick="setPeriodo('hoy')"    class="cat-tab active" id="ptab-hoy">Hoy</button>
+                <button onclick="setPeriodo('semana')" class="cat-tab" id="ptab-semana">Esta semana</button>
+                <button onclick="setPeriodo('mes')"    class="cat-tab" id="ptab-mes">Este mes</button>
+                <button onclick="exportarCSV()" class="btn-success ml-auto rounded-xl px-4 py-2 text-white text-sm font-semibold flex items-center gap-2">
+                    <i class="fas fa-file-csv"></i><span class="hidden md:inline">Exportar CSV</span>
+                </button>
+            </div>
+
+            <!-- Fila 1: KPIs financieros (6 cards) -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Total vendido</span>
+                        <i class="fas fa-dollar-sign text-accent text-xs"></i>
+                    </div>
+                    <div id="rpVenta" class="text-xl font-bold text-accent">$0</div>
+                    <div class="text-gray-600 text-xs mt-1">cobrado</div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Ticket prom.</span>
+                        <i class="fas fa-receipt text-primary text-xs"></i>
+                    </div>
+                    <div id="rpTicket" class="text-xl font-bold text-primary">$0</div>
+                    <div class="text-gray-600 text-xs mt-1">por comanda</div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Comandas</span>
+                        <i class="fas fa-utensils text-white text-xs"></i>
+                    </div>
+                    <div id="rpComandas" class="text-xl font-bold">0</div>
+                    <div class="text-gray-600 text-xs mt-1">registradas</div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Delivery</span>
+                        <i class="fas fa-motorcycle text-warning text-xs"></i>
+                    </div>
+                    <div id="rpDelivery" class="text-xl font-bold text-warning">0</div>
+                    <div id="rpDeliveryMonto" class="text-gray-600 text-xs mt-1">$0</div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Reservas</span>
+                        <i class="fas fa-calendar-check text-success text-xs"></i>
+                    </div>
+                    <div id="rpReservas" class="text-xl font-bold text-success">0</div>
+                    <div class="text-gray-600 text-xs mt-1">confirmadas</div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 kpi-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-400 text-xs">Clientes</span>
+                        <i class="fas fa-users text-primary text-xs"></i>
+                    </div>
+                    <div id="rpClientes" class="text-xl font-bold text-primary">0</div>
+                    <div class="text-gray-600 text-xs mt-1">en base</div>
+                </div>
+            </div>
+
+            <!-- Fila 2: Ventas por canal (3 cards horizontales) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-chair text-primary text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-gray-400 text-xs mb-0.5">Salón / Caja</div>
+                        <div id="rpSalonMonto" class="text-white font-bold text-lg">$0</div>
+                        <div id="rpSalonCant" class="text-gray-500 text-xs">0 comandas</div>
+                    </div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-warning/15 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-motorcycle text-warning text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-gray-400 text-xs mb-0.5">Delivery</div>
+                        <div id="rpDeliveryMonto2" class="text-white font-bold text-lg">$0</div>
+                        <div id="rpDeliveryCant" class="text-gray-500 text-xs">0 pedidos</div>
+                    </div>
+                </div>
+                <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-success/15 flex items-center justify-center flex-shrink-0">
+                        <i class="fab fa-whatsapp text-success text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-gray-400 text-xs mb-0.5">WhatsApp / Bot</div>
+                        <div id="rpWaMonto" class="text-white font-bold text-lg">$0</div>
+                        <div id="rpWaCant" class="text-gray-500 text-xs">0 pedidos</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fila 3: Top platos + Top clientes + Gráfico canal -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <!-- Top platos -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <h3 class="font-semibold text-sm mb-4"><i class="fas fa-trophy text-warning mr-2"></i>Top platos</h3>
+                    <div id="rpTopPlatos" class="space-y-3"></div>
+                </div>
+
+                <!-- Top clientes -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <h3 class="font-semibold text-sm mb-4"><i class="fas fa-star text-accent mr-2"></i>Clientes frecuentes</h3>
+                    <div id="rpTopClientes" class="space-y-3"></div>
+                </div>
+
+                <!-- Gráfico canal -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <h3 class="font-semibold text-sm mb-4"><i class="fas fa-chart-pie text-primary mr-2"></i>Ventas por canal</h3>
+                    <canvas id="chartCanal" height="160"></canvas>
+                </div>
+            </div>
+
+            <!-- Fila 4: Tabla detalle comandas -->
+            <div class="glass-surface rounded-2xl overflow-hidden">
+                <div class="px-5 py-3 border-b border-white/5 flex justify-between items-center">
+                    <h3 class="font-semibold text-sm">Detalle de comandas</h3>
+                    <span id="rpComandasLabel" class="text-gray-500 text-xs"></span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead><tr class="border-b border-white/5">
+                            <th class="text-left text-gray-500 font-medium px-4 py-2">#</th>
+                            <th class="text-left text-gray-500 font-medium px-4 py-2">Mesa / Cliente</th>
+                            <th class="text-left text-gray-500 font-medium px-4 py-2 hidden md:table-cell">Canal</th>
+                            <th class="text-left text-gray-500 font-medium px-4 py-2 hidden md:table-cell">Hora</th>
+                            <th class="text-left text-gray-500 font-medium px-4 py-2 hidden md:table-cell">Estado</th>
+                            <th class="text-right text-gray-500 font-medium px-4 py-2">Total</th>
+                        </tr></thead>
+                        <tbody id="rpTabla"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= DIFUSIÓN WA ======= -->
+        <div id="screen-difusion" class="screen screen-inner">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <!-- Editor -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <h3 class="font-semibold text-sm mb-4 flex items-center gap-2">
+                        <i class="fas fa-bullhorn text-primary"></i> Nueva difusión WhatsApp
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-gray-500 text-xs mb-1 block">Plantilla rápida</label>
+                            <select id="difPlantilla" onchange="cargarPlantilla()" class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                                <option value="menu">📋 Menú del día</option>
+                                <option value="promo">🎉 Promoción especial</option>
+                                <option value="evento">📅 Evento / mesa disponible</option>
+                                <option value="libre">✏️ Mensaje libre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-gray-500 text-xs mb-1 block">Mensaje</label>
+                            <textarea id="difMensaje" oninput="actualizarPreviewDif()" rows="7"
+                                class="input-field w-full rounded-xl px-3 py-2.5 text-sm resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="text-gray-500 text-xs mb-1 block">Destino</label>
+                            <select class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                                <option>📋 Todos los clientes (47 contactos)</option>
+                                <option>⭐ Clientes frecuentes (18)</option>
+                                <option>🛵 Clientes delivery (23)</option>
+                                <option>📅 Con reservas anteriores (12)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-gray-500 text-xs mb-1 block">Programar</label>
+                            <select class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                                <option>Ahora</option>
+                                <option>Mañana 8:00 hs</option>
+                                <option>Viernes 12:00 hs</option>
+                            </select>
+                        </div>
+                        <button onclick="enviarDifusion()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm">
+                            <i class="fas fa-paper-plane mr-2"></i>Enviar difusión WhatsApp
+                        </button>
+                    </div>
+
+                    <!-- Historial -->
+                    <div class="mt-5">
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Historial de envíos</h4>
+                        <div class="space-y-2" id="difHistorial">
+                            <div class="flex items-center justify-between py-2 border-b border-white/5">
+                                <div><div class="text-sm font-medium">Menú del día</div><div class="text-xs text-gray-500">Hoy 8:00 hs · 47 enviados</div></div>
+                                <span class="text-xs bg-green-900/40 text-green-400 border border-green-800 px-2 py-0.5 rounded-full">87% apertura</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 border-b border-white/5">
+                                <div><div class="text-sm font-medium">Promo especial</div><div class="text-xs text-gray-500">Ayer 12:00 hs · 35 enviados</div></div>
+                                <span class="text-xs bg-green-900/40 text-green-400 border border-green-800 px-2 py-0.5 rounded-full">91% apertura</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview WhatsApp -->
+                <div>
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Vista previa</h4>
+                    <div class="rounded-2xl overflow-hidden" style="background:#0b1422;border:1px solid rgba(99,102,241,0.15);">
+                        <div class="flex items-center gap-3 p-3" style="background:#1a2234;">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center text-lg" style="background:rgba(99,102,241,0.2);">☕</div>
+                            <div>
+                                <div class="text-sm font-bold text-white" id="previewNombreLocal">Café Demo</div>
+                                <div class="text-xs" style="color:#25d366;">🟢 IA Activa</div>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="rounded-xl rounded-tl-none p-3 text-sm leading-relaxed ml-4 whitespace-pre-wrap"
+                                 id="difPreviewBubble"
+                                 style="background:#1a2234;border:1px solid rgba(99,102,241,0.15);color:#e8eaf0;max-width:90%;">
+                            </div>
+                            <div class="text-right text-xs text-gray-600 mt-1 mr-1">Ahora ✓✓</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= BOT SIMULADOR ======= -->
+        <div id="screen-bot" class="screen screen-inner">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <!-- Botones de prueba rápida -->
+                <div>
+                    <h3 class="font-semibold text-sm mb-1 flex items-center gap-2">
+                        <i class="fas fa-robot text-primary"></i> Simulador Bot WhatsApp
+                    </h3>
+                    <p class="text-gray-500 text-xs mb-4">Así responde la IA a tus clientes, las 24hs del día.</p>
+                    <div class="space-y-2" id="botEjemplos">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Mensajes de prueba:</p>
+                    </div>
+
+                    <!-- Estado conexión backend (mini, solo lectura) -->
+                    <div class="glass-surface rounded-2xl p-3 mt-5">
+                        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Estado del backend</div>
+                        <p id="botApiStatus" class="text-xs text-gray-400">⏳ Verificando…</p>
+                    </div>
+                </div>
+
+                <!-- Chat window -->
+                <div>
+                    <div class="rounded-2xl overflow-hidden flex flex-col" style="background:#0b1422;border:1px solid rgba(99,102,241,0.15);height:520px;">
+                        <!-- Header -->
+                        <div class="flex items-center gap-3 p-3 flex-shrink-0" style="background:#1a2234;">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0" style="background:rgba(99,102,241,0.2);">☕</div>
+                            <div>
+                                <div class="text-sm font-bold text-white" id="botNombreLocal">Café Demo</div>
+                                <div class="text-xs" style="color:#25d366;">🟢 IA Respondiendo en segundos</div>
+                            </div>
+                        </div>
+                        <!-- Mensajes -->
+                        <div id="botChat" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style="background:#0b1422;">
+                            <div class="self-end max-w-xs">
+                                <div class="text-xs mb-1" style="color:#6366f1;">🤖 System IA</div>
+                                <div class="rounded-xl rounded-tr-none p-3 text-sm leading-relaxed" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.2);color:#e8eaf0;">
+                                    ¡Hola! 👋 Soy la asistente de <span class="font-semibold" id="botNombreLocal2">Café Demo</span>. Disponible 24hs para pedidos, delivery, reservas y consultas. ¿En qué puedo ayudarte?
+                                </div>
+                                <div class="text-xs text-gray-600 text-right mt-1">Ahora ✓✓</div>
+                            </div>
+                        </div>
+                        <!-- Input -->
+                        <div class="p-3 flex gap-2 flex-shrink-0" style="border-top:1px solid rgba(99,102,241,0.1);">
+                            <input type="text" id="botInput" placeholder="Escribí un mensaje..." onkeydown="if(event.key==='Enter')enviarMsgBot()"
+                                class="input-field flex-1 rounded-xl px-3 py-2 text-sm">
+                            <button onclick="enviarMsgBot()" class="btn-primary rounded-xl px-4 text-white text-sm font-bold">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= CONFIG ======= -->
+        <div id="screen-config" class="screen screen-inner">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <!-- Datos del restaurante -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <h3 class="font-semibold mb-4"><i class="fas fa-store mr-2 text-primary"></i>Datos del restaurante</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1.5 block">Nombre</label>
+                            <input type="text" id="cfgNombre" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="Nombre del restaurante">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1.5 block">Teléfono / WhatsApp</label>
+                            <input type="text" id="cfgTel" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="+54 9 11 0000-0000">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1.5 block">Dirección</label>
+                            <input type="text" id="cfgDir" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="Calle 123, Ciudad">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1.5 block">Email</label>
+                            <input type="email" id="cfgEmail" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="contacto@restaurante.com">
+                        </div>
+                        <button onclick="guardarConfig()" class="btn-primary w-full rounded-xl py-2.5 text-white font-semibold text-sm">
+                            <i class="fas fa-save mr-2"></i>Guardar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mesas -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold"><i class="fas fa-chair mr-2 text-primary"></i>Mesas del salón</h3>
+                        <button onclick="agregarMesa()" class="btn-primary rounded-xl px-3 py-1.5 text-white text-xs font-semibold">
+                            <i class="fas fa-plus mr-1"></i>Agregar
+                        </button>
+                    </div>
+                    <div id="mesasGrid" class="grid grid-cols-4 gap-2"></div>
+                </div>
+
+                <!-- Horarios -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold"><i class="fas fa-clock mr-2 text-primary"></i>Horarios de atención</h3>
+                        <button onclick="agregarHorario()" class="glass rounded-xl px-3 py-1.5 text-xs text-primary font-semibold hover:bg-primary/10 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>Agregar
+                        </button>
+                    </div>
+                    <div id="horariosLista" class="space-y-2"></div>
+                    <button onclick="guardarHorarios()" class="btn-primary w-full rounded-xl py-2.5 text-white font-semibold text-sm mt-3">
+                        <i class="fas fa-save mr-2"></i>Guardar horarios
+                    </button>
+                </div>
+
+                <!-- Reseñas -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <h3 class="font-semibold mb-1"><i class="fas fa-star mr-2 text-warning"></i>Reseñas de clientes</h3>
+                    <p class="text-gray-500 text-xs mb-4">Configurá los links para que el mozo pueda pedirle reseña al cliente al cobrar.</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1.5 flex items-center gap-1.5 block">
+                                <i class="fab fa-google text-yellow-400"></i>Google Maps — URL del negocio
+                            </label>
+                            <input type="url" id="cfgGooglePlaceId" placeholder="https://www.google.com/maps/place/Tu+Restaurante/..."
+                                class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                            <p class="text-gray-600 text-xs mt-1"><i class="fas fa-info-circle mr-1"></i>Buscá tu negocio en Google Maps, copiá la URL completa y pegala acá.</p>
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1.5 flex items-center gap-1.5 block">
+                                <i class="fab fa-facebook text-blue-400"></i>Facebook — URL de reseñas
+                            </label>
+                            <input type="url" id="cfgFacebookUrl" placeholder="https://www.facebook.com/tupagina/reviews"
+                                class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs mb-1.5 flex items-center gap-1.5 block">
+                                <i class="fas fa-map-marked-alt text-green-400"></i>TripAdvisor — URL de reseñas
+                            </label>
+                            <input type="url" id="cfgTripAdvisorUrl" placeholder="https://www.tripadvisor.com/Restaurant_Review-..."
+                                class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                        </div>
+                        <button onclick="guardarConfig()" class="btn-primary w-full rounded-xl py-2.5 text-white font-semibold text-sm">
+                            <i class="fas fa-save mr-2"></i>Guardar
+                        </button>
+                        <!-- QR generado -->
+                        <div class="border-t border-white/10 pt-4 mt-2">
+                            <p class="text-gray-400 text-xs font-semibold mb-3"><i class="fas fa-qrcode mr-1 text-primary"></i>QR para imprimir en mesa</p>
+                            <div id="qrResenaWrap"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datos & Reset -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <h3 class="font-semibold mb-1"><i class="fas fa-database mr-2 text-primary"></i>Datos del sistema</h3>
+                    <p class="text-gray-500 text-xs mb-4">Los datos se guardan automáticamente en este dispositivo.</p>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-success/5 border border-success/20">
+                            <div>
+                                <div class="text-white text-sm font-medium">Guardado automático</div>
+                                <div class="text-gray-500 text-xs">Pedidos, clientes, inventario, carta</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+                                <span class="text-success text-xs font-semibold">Activo</span>
+                            </div>
+                        </div>
+                        <button onclick="limpiarDatosDemo()" class="btn-danger w-full rounded-xl py-2.5 text-white text-sm font-semibold">
+                            <i class="fas fa-trash mr-2"></i>Borrar datos demo y empezar desde cero
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Integración System IA — estado real -->
+                <div class="glass-surface rounded-2xl p-5">
+                    <h3 class="font-semibold mb-1"><i class="fas fa-plug mr-2 text-accent"></i>Backend System IA</h3>
+                    <p class="text-gray-500 text-xs mb-4">Estado de las integraciones conectadas a este CRM.</p>
+
+                    <!-- Estado resumen (se llena con cargarConfigBackend) -->
+                    <div class="mb-3 text-xs rounded-xl px-3 py-2 font-mono" style="background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.18);">
+                        <span id="apiStatus" class="text-gray-400">⏳ Verificando conexión…</span>
+                    </div>
+
+                    <!-- Items de integración -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center justify-between p-3 rounded-xl" style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);">
+                            <div><div class="text-white text-sm font-medium">🗃️ Airtable CRM</div>
+                                <div class="text-gray-500 text-xs">Reservas · Pedidos · Clientes</div></div>
+                            <span class="text-success text-xs font-semibold">Live</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl" style="background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.2);">
+                            <div><div class="text-white text-sm font-medium">📅 Cal.com</div>
+                                <div class="text-gray-500 text-xs">Reservas de mesa · Slots automáticos</div></div>
+                            <span class="text-primary text-xs font-semibold">Activo</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl" style="background:rgba(37,211,102,0.07);border:1px solid rgba(37,211,102,0.2);">
+                            <div><div class="text-white text-sm font-medium">💬 WhatsApp (YCloud)</div>
+                                <div class="text-gray-500 text-xs">Bot 24hs · Número +54 9376 4815689</div></div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-full animate-pulse" style="background:#25d366;"></div>
+                                <span class="text-xs font-semibold" style="color:#25d366;">Activo</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl" style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);">
+                            <div><div class="text-white text-sm font-medium">🤖 Gemini 2.5 Flash</div>
+                                <div class="text-gray-500 text-xs">IA conversacional · Respuestas en segundos</div></div>
+                            <span class="text-warning text-xs font-semibold">Online</span>
+                        </div>
+                    </div>
+
+                    <!-- Cambiar URL backend -->
+                    <div class="border-t border-white/5 pt-3">
+                        <div class="text-gray-500 text-xs mb-2">URL del backend</div>
+                        <div class="flex gap-2">
+                            <input type="text" id="apiBaseInput" class="input-field flex-1 rounded-xl px-3 py-2 text-xs font-mono"
+                                placeholder="https://agentes.arnaldoayalaestratega.cloud">
+                            <button onclick="guardarAPIBase()" class="btn-primary rounded-xl px-3 text-white text-xs font-bold">Conectar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV mobile (scrollable) -->
+        <nav id="bottomNav" class="flex border-t border-white/5 bg-card/95 backdrop-blur-lg flex-shrink-0 overflow-x-auto" style="padding-bottom:env(safe-area-inset-bottom);">
+            <div class="nav-item active" onclick="showScreen('inicio')">
+                <i class="nav-icon fas fa-chart-line"></i><span class="nav-label">Inicio</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('caja')">
+                <i class="nav-icon fas fa-cash-register"></i><span class="nav-label">Caja</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('cocina')">
+                <i class="nav-icon fas fa-fire-burner"></i><span class="nav-label">Cocina</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('delivery')">
+                <i class="nav-icon fas fa-motorcycle"></i><span class="nav-label">Delivery</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('clientes')">
+                <i class="nav-icon fas fa-users"></i><span class="nav-label">Clientes</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('reservas')">
+                <i class="nav-icon fas fa-calendar-check"></i><span class="nav-label">Reservas</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('inventario')">
+                <i class="nav-icon fas fa-boxes-stacked"></i><span class="nav-label">Stock</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('menu')">
+                <i class="nav-icon fas fa-book-open"></i><span class="nav-label">Carta</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('reportes')">
+                <i class="nav-icon fas fa-chart-bar"></i><span class="nav-label">Reportes</span>
+            </div>
+        </nav>
+
+    </div><!-- /mainArea -->
+</div><!-- /appWrapper -->
+
+<!-- ========== MODALES ========== -->
+
+<!-- Modal: Cobrar / Cerrar comanda -->
+<div id="modalCobrar" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-bold"><i class="fas fa-hand-holding-dollar mr-2 text-success"></i>Cobrar comanda</h3>
+            <button onclick="cerrarModal('modalCobrar')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+
+        <!-- Resumen items -->
+        <div id="cobrarResumen" class="glass-surface rounded-xl p-4 mb-4 space-y-1.5 max-h-40 overflow-y-auto text-sm"></div>
+
+        <!-- Total destacado -->
+        <div class="glass-surface rounded-2xl p-4 mb-5 flex items-center justify-between">
+            <span class="text-gray-400 font-medium">TOTAL A COBRAR</span>
+            <span id="cobrarTotal" class="text-white font-bold text-2xl"></span>
+        </div>
+
+        <!-- Método de pago -->
+        <div class="mb-5">
+            <label class="text-gray-400 text-xs mb-3 block font-semibold uppercase tracking-wider">
+                <i class="fas fa-circle-question mr-1 text-primary"></i>¿Cómo pagó?
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+
+                <!-- Efectivo -->
+                <button onclick="selMetodo('efectivo')" id="met-efectivo"
+                    class="glass rounded-2xl p-4 text-left transition-all border border-white/10 hover:border-success/40 group relative">
+                    <i class="met-check fas fa-check-circle text-success absolute top-3 right-3 text-sm hidden"></i>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-9 h-9 rounded-xl bg-success/10 flex items-center justify-center group-hover:bg-success/20 transition-colors">
+                            <i class="fas fa-money-bill-wave text-success"></i>
+                        </div>
+                        <span class="text-white font-semibold text-sm">Efectivo</span>
+                    </div>
+                    <p class="text-gray-500 text-xs">Billetes y monedas</p>
+                </button>
+
+                <!-- Transferencia / Digital -->
+                <button onclick="selMetodo('transferencia')" id="met-transferencia"
+                    class="glass rounded-2xl p-4 text-left transition-all border border-white/10 hover:border-primary/40 group relative">
+                    <i class="met-check fas fa-check-circle text-primary absolute top-3 right-3 text-sm hidden"></i>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                            <i class="fas fa-qrcode text-primary"></i>
+                        </div>
+                        <span class="text-white font-semibold text-sm">Transferencia</span>
+                    </div>
+                    <p class="text-gray-500 text-xs">QR · Tarjeta · Cripto · Débito</p>
+                </button>
+
+            </div>
+
+            <!-- Nota informativa -->
+            <div class="mt-3 flex items-start gap-2 p-3 rounded-xl bg-white/3 border border-white/5">
+                <i class="fas fa-circle-info text-gray-500 text-xs mt-0.5 flex-shrink-0"></i>
+                <p class="text-gray-500 text-xs leading-relaxed">
+                    El pago con QR, tarjeta o cripto se procesa en la máquina del local. Una vez que el cliente pagó, seleccioná <strong class="text-gray-300">Transferencia</strong> y confirmá acá.
+                </p>
+            </div>
+        </div>
+
+        <button onclick="confirmarCobro()" class="btn-success w-full rounded-xl py-3.5 text-white font-semibold text-base">
+            <i class="fas fa-check-circle mr-2"></i>Confirmar cobro
+        </button>
+
+        <!-- Pedir reseña -->
+        <div class="mt-3 border-t border-white/10 pt-3">
+            <p class="text-gray-500 text-xs text-center mb-2">¿El cliente quedó conforme?</p>
+            <button onclick="pedirResena(document.getElementById('cobrarClienteTel')?.value || '')"
+                class="w-full rounded-xl py-2.5 text-white text-sm font-semibold border border-warning/30 bg-warning/5 hover:bg-warning/10 transition-colors">
+                <i class="fas fa-star text-warning mr-2"></i>Pedir reseña al cliente
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Selector plataforma reseña -->
+<div id="modalResena" class="modal-overlay hidden">
+    <div class="modal-content max-w-sm">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-bold"><i class="fas fa-star mr-2 text-warning"></i>¿Dónde pedir la reseña?</h3>
+            <button onclick="cerrarModal('modalResena')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <p class="text-gray-400 text-sm mb-4">Elegí la plataforma — se abrirá WhatsApp con el mensaje listo para enviar al cliente.</p>
+        <div id="modalResenaPlataformas" class="grid grid-cols-3 gap-3"></div>
+        <p class="text-gray-600 text-xs text-center mt-4"><i class="fas fa-circle-info mr-1"></i>Si el cliente no tiene teléfono registrado, se abre el link directo.</p>
+    </div>
+</div>
+
+<!-- Modal: Ingrediente -->
+<div id="modalIngrediente" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="ingModalTitle" class="text-lg font-bold">Ingrediente</h3>
+            <button onclick="cerrarModal('modalIngrediente')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="col-span-2">
+                <label class="text-gray-400 text-xs mb-1.5 block">Nombre *</label>
+                <input type="text" id="ingNombre" placeholder="Carne vacuna" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Categoría</label>
+                <input type="text" id="ingCat" placeholder="Carnes" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Unidad</label>
+                <select id="ingUnidad" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                    <option>kg</option><option>g</option><option>L</option><option>ml</option><option>unidades</option><option>porciones</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Stock actual *</label>
+                <input type="number" id="ingStock" placeholder="0" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Stock mínimo *</label>
+                <input type="number" id="ingMin" placeholder="0" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+        </div>
+        <input type="hidden" id="ingEditId">
+        <button onclick="guardarIngrediente()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
+            <i class="fas fa-save mr-2"></i>Guardar
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Categoría -->
+<div id="modalCategoria" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="catModalTitle" class="text-lg font-bold"><i class="fas fa-tags mr-2 text-primary"></i>Nueva categoría</h3>
+            <button onclick="cerrarModal('modalCategoria')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <input type="hidden" id="catEditId">
+        <div class="space-y-3 mb-5">
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Nombre *</label>
+                <input type="text" id="catNombre" placeholder="Ej: Sándwiches" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Ícono (emoji)</label>
+                <input type="text" id="catIcono" placeholder="🍴" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" maxlength="4">
+            </div>
+        </div>
+        <button onclick="guardarCategoria()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm">
+            <i class="fas fa-save mr-2"></i>Guardar categoría
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Entrada de mercadería -->
+<div id="modalEntrada" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-bold"><i class="fas fa-truck-ramp-box mr-2 text-success"></i>Sumar stock — ingrediente existente</h3>
+            <button onclick="cerrarModal('modalEntrada')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <div class="space-y-3 mb-5">
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Ingrediente</label>
+                <select id="entradaIng" class="input-field w-full rounded-xl px-4 py-2.5 text-sm"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-gray-400 text-xs mb-1.5 block">Cantidad que entra *</label>
+                    <input type="number" id="entradaCant" placeholder="0" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="text-gray-400 text-xs mb-1.5 block">Proveedor</label>
+                    <input type="text" id="entradaProv" placeholder="Proveedor" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Notas</label>
+                <input type="text" id="entradaNotas" placeholder="Opcional" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+        </div>
+        <button onclick="confirmarEntrada()" class="btn-success w-full rounded-xl py-3 text-white font-semibold text-sm">
+            <i class="fas fa-plus-circle mr-2"></i>Registrar entrada
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Plato -->
+<div id="modalPlato" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="platoModalTitle" class="text-lg font-bold">Nuevo plato</h3>
+            <button onclick="cerrarModal('modalPlato')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Código *</label>
+                <input type="number" id="platoCod" placeholder="1" class="input-field w-full rounded-xl px-4 py-2.5 text-sm font-mono">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Categoría</label>
+                <select id="platoCat" class="input-field w-full rounded-xl px-4 py-2.5 text-sm"></select>
+            </div>
+            <div class="col-span-2">
+                <label class="text-gray-400 text-xs mb-1.5 block">Nombre *</label>
+                <input type="text" id="platoNom" placeholder="Milanesa napolitana" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Precio *</label>
+                <input type="number" id="platoPrecio" placeholder="0" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Tiempo prep (min)</label>
+                <input type="number" id="platoTiempo" placeholder="15" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div class="col-span-2">
+                <label class="text-gray-400 text-xs mb-1.5 block">Descripción</label>
+                <input type="text" id="platoDesc" placeholder="Descripción breve" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Estado</label>
+                <select id="platoActivo" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                    <option value="true">Disponible</option>
+                    <option value="false">No disponible</option>
+                </select>
+            </div>
+        </div>
+        <input type="hidden" id="platoEditId">
+        <button onclick="guardarPlato()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
+            <i class="fas fa-save mr-2"></i>Guardar plato
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Cliente -->
+<div id="modalCliente" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="clienteModalTitle" class="text-lg font-bold">Nuevo cliente</h3>
+            <button onclick="cerrarModal('modalCliente')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="col-span-2">
+                <label class="text-gray-400 text-xs mb-1.5 block">Nombre completo *</label>
+                <input type="text" id="cliNombre" placeholder="Juan Pérez" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Teléfono / WhatsApp *</label>
+                <input type="tel" id="cliTel" placeholder="+54 9 11 0000-0000" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Email</label>
+                <input type="email" id="cliEmail" placeholder="correo@mail.com" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Cumpleaños</label>
+                <input type="date" id="cliCumple" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Canal preferido</label>
+                <select id="cliCanal" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="salon">Salón</option>
+                    <option value="delivery">Delivery</option>
+                    <option value="instagram">Instagram</option>
+                </select>
+            </div>
+            <div class="col-span-2">
+                <label class="text-gray-400 text-xs mb-1.5 block">Notas / preferencias</label>
+                <input type="text" id="cliNotas" placeholder="Sin cebolla, alérgico a..." class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+        </div>
+        <input type="hidden" id="cliEditId">
+        <button onclick="guardarCliente()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
+            <i class="fas fa-save mr-2"></i>Guardar cliente
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Historial cliente -->
+<div id="modalHistorial" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width:560px;">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="historialTitle" class="text-lg font-bold">Historial</h3>
+            <button onclick="cerrarModal('modalHistorial')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <!-- Info cliente -->
+        <div id="historialClienteInfo" class="glass-surface rounded-xl p-4 mb-4"></div>
+        <!-- Pedidos -->
+        <h4 class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Pedidos anteriores</h4>
+        <div id="historialPedidos" class="space-y-3 max-h-64 overflow-y-auto"></div>
+        <!-- Acciones seguimiento -->
+        <div class="grid grid-cols-2 gap-2 mt-5">
+            <button id="btnWaCliente" class="btn-success rounded-xl py-2.5 text-white text-sm font-semibold flex items-center justify-center gap-2">
+                <i class="fab fa-whatsapp"></i>WhatsApp
+            </button>
+            <button id="btnEmailCliente" class="btn-primary rounded-xl py-2.5 text-white text-sm font-semibold flex items-center justify-center gap-2">
+                <i class="fas fa-envelope"></i>Email
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Reserva -->
+<div id="modalReserva" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="reservaModalTitle" class="text-lg font-bold">Nueva reserva</h3>
+            <button onclick="cerrarModal('modalReserva')" class="text-gray-500 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="col-span-2">
+                <label class="text-gray-400 text-xs mb-1.5 block">Cliente (nombre o buscar)</label>
+                <input type="text" id="resCliente" placeholder="Nombre del cliente" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Teléfono *</label>
+                <input type="tel" id="resTel" placeholder="+54 9 11..." class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Canal de contacto</label>
+                <select id="resCanal" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="telefono">Teléfono</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="presencial">Presencial</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Fecha *</label>
+                <input type="date" id="resFecha" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Hora *</label>
+                <input type="time" id="resHora" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Personas</label>
+                <input type="number" id="resPersonas" placeholder="2" min="1" max="50" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="text-gray-400 text-xs mb-1.5 block">Mesa asignada</label>
+                <select id="resMesa" class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+                    <option value="">Sin asignar</option>
+                </select>
+            </div>
+            <div class="col-span-2">
+                <label class="text-gray-400 text-xs mb-1.5 block">Notas</label>
+                <input type="text" id="resNotas" placeholder="Ocasión especial, menú especial..." class="input-field w-full rounded-xl px-4 py-2.5 text-sm">
+            </div>
+        </div>
+        <input type="hidden" id="resEditId">
+        <button onclick="guardarReserva()" class="btn-primary w-full rounded-xl py-3 text-white font-semibold text-sm mt-5">
+            <i class="fas fa-calendar-check mr-2"></i>Guardar reserva
+        </button>
+    </div>
+</div>
+
+<!-- ========== JAVASCRIPT ========== -->
+<script>
+
+// ===== DATOS DEMO =====
+let CATS = [
+    { id:1, nombre:'Entradas',   icono:'🥗' },
+    { id:2, nombre:'Principales',icono:'🍽️' },
+    { id:3, nombre:'Pastas',     icono:'🍝' },
+    { id:4, nombre:'Bebidas',    icono:'🥤' },
+    { id:5, nombre:'Postres',    icono:'🍰' },
+    { id:6, nombre:'Desayuno',   icono:'☕' },
+    { id:7, nombre:'Hielo',      icono:'🧊' },
+];
+
+let PLATOS = [
+    { cod:1,  id:1,  nombre:'Ensalada César',       cat:1, precio:1800, tiempo:10, desc:'Lechuga, croutons, parmesano', activo:true },
+    { cod:2,  id:2,  nombre:'Provoleta',             cat:1, precio:2200, tiempo:8,  desc:'Queso a la plancha',           activo:true },
+    { cod:3,  id:3,  nombre:'Empanadas x6',          cat:1, precio:2800, tiempo:15, desc:'Carne cortada a cuchillo',     activo:true },
+    { cod:4,  id:4,  nombre:'Milanesa Napolitana',   cat:2, precio:5500, tiempo:25, desc:'Con papas fritas',             activo:true },
+    { cod:5,  id:5,  nombre:'Pollo al limón',        cat:2, precio:5200, tiempo:30, desc:'Con guarnición',               activo:true },
+    { cod:6,  id:6,  nombre:'Bife de chorizo',       cat:2, precio:7800, tiempo:35, desc:'300g, término a elección',     activo:true },
+    { cod:7,  id:7,  nombre:'Tallarines al pesto',   cat:3, precio:4200, tiempo:20, desc:'Pasta artesanal',              activo:true },
+    { cod:8,  id:8,  nombre:'Ñoquis 4 quesos',       cat:3, precio:4600, tiempo:20, desc:'Salsa cremosa',                activo:true },
+    { cod:9,  id:9,  nombre:'Agua mineral',          cat:4, precio:800,  tiempo:1,  desc:'500ml',                        activo:true },
+    { cod:10, id:10, nombre:'Gaseosa',               cat:4, precio:1200, tiempo:1,  desc:'A elección',                   activo:true },
+    { cod:11, id:11, nombre:'Vino de la casa',       cat:4, precio:3500, tiempo:2,  desc:'Copa 250ml',                   activo:true },
+    { cod:12, id:12, nombre:'Tiramisú',              cat:5, precio:2400, tiempo:5,  desc:'Casero',                       activo:true },
+    { cod:13, id:13, nombre:'Volcán de chocolate',   cat:5, precio:2800, tiempo:12, desc:'Con helado de vainilla',       activo:true },
+];
+
+let INVENTARIO = [
+    { id:1, nombre:'Carne vacuna',    cat:'Carnes',   stock:8,  min:5,  unidad:'kg' },
+    { id:2, nombre:'Pollo entero',    cat:'Carnes',   stock:3,  min:4,  unidad:'kg' },
+    { id:3, nombre:'Pasta artesanal', cat:'Secos',    stock:2,  min:5,  unidad:'kg' },
+    { id:4, nombre:'Harina 000',      cat:'Secos',    stock:12, min:3,  unidad:'kg' },
+    { id:5, nombre:'Aceite girasol',  cat:'Aceites',  stock:4,  min:2,  unidad:'L'  },
+    { id:6, nombre:'Tomate',          cat:'Verduras', stock:1,  min:3,  unidad:'kg' },
+    { id:7, nombre:'Lechuga',         cat:'Verduras', stock:5,  min:2,  unidad:'un' },
+    { id:8, nombre:'Queso provolone', cat:'Lácteos',  stock:2,  min:2,  unidad:'kg' },
+];
+
+let PEDIDOS = [
+    { id:1, numero:'001', mesa:'Mesa 3',    comanda:'001', tipo:'salon',    estado:'listo',    total:12500, hora:'12:15',
+      items:[{cod:4,nombre:'Milanesa Napolitana',cant:2,precio:5500},{cod:9,nombre:'Agua mineral',cant:2,precio:800}] },
+    { id:2, numero:'002', mesa:'Juan García', comanda:'002', tipo:'delivery', estado:'preparando',total:9600,hora:'12:28',
+      items:[{cod:6,nombre:'Bife de chorizo',cant:1,precio:7800},{cod:10,nombre:'Gaseosa',cant:1,precio:1200}] },
+    { id:3, numero:'003', mesa:'Mesa 7',    comanda:'003', tipo:'salon',    estado:'nuevo',    total:7000, hora:'12:41',
+      items:[{cod:8,nombre:'Ñoquis 4 quesos',cant:1,precio:4600},{cod:11,nombre:'Vino de la casa',cant:1,precio:3500}] },
+    { id:4, numero:'004', mesa:'Ana López', comanda:'004', tipo:'llevar',   estado:'entregado',total:5200, hora:'11:50',
+      items:[{cod:3,nombre:'Empanadas x6',cant:1,precio:2800},{cod:12,nombre:'Tiramisú',cant:1,precio:2400}] },
+];
+
+// ===== ESTADO =====
+let comanda = [];           // items de la comanda activa
+let filtroCocina = 'activos';
+let filtroInv    = 'todo';
+let metodoPago   = 'efectivo';
+let catCartaActiva = 0;
+let chartVentas, editIngId = null;
+
+const ESTADO_LBL  = { nuevo:'Nuevo', preparando:'Preparando', listo:'Listo ✓', entregado:'Entregado' };
+const TIPO_ICON   = { salon:'fa-chair', llevar:'fa-bag-shopping', delivery:'fa-motorcycle' };
+const TIPO_LBL    = { salon:'Salón', llevar:'Para llevar', delivery:'Delivery' };
+const SCREEN_META = {
+    inicio:     { title:'Inicio',        sub:'Resumen del día' },
+    caja:       { title:'Caja',   sub:'Cargá los pedidos de las comandas' },
+    cocina:     { title:'Cocina',        sub:'Pedidos en preparación' },
+    delivery:   { title:'Delivery',      sub:'Pedidos a domicilio' },
+    inventario: { title:'Inventario',    sub:'Control de stock' },
+    menu:       { title:'Carta',         sub:'Platos y categorías' },
+    clientes:   { title:'Clientes',      sub:'CRM y seguimiento' },
+    reservas:   { title:'Reservas',      sub:'Mesas reservadas' },
+    reportes:   { title:'Reportes',      sub:'Ventas y estadísticas' },
+    difusion:   { title:'Difusión WhatsApp', sub:'Enviá mensajes masivos a tus clientes' },
+    bot:        { title:'Bot Simulador IA',  sub:'Así responde tu asistente virtual las 24hs' },
+    config:     { title:'Configuración', sub:'Datos del restaurante' },
+};
+
+// ===== NAVEGACIÓN =====
+function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => {
+        if ((n.getAttribute('onclick')||'').includes("'"+name+"'")) n.classList.add('active');
+    });
+    const m = SCREEN_META[name];
+    document.getElementById('headerTitle').textContent = m.title;
+    document.getElementById('headerSub').textContent   = m.sub;
+
+    if (name === 'inicio')     { cargarPedidosBackend(); cargarReservasBackend(); renderInicio(); }
+    if (name === 'caja')       renderCarta();
+    if (name === 'cocina')     renderCocina();
+    if (name === 'delivery')   { cargarPedidosBackend(); renderCartaDelivery(); }
+    if (name === 'inventario') renderInventario();
+    if (name === 'menu')       renderMenuPlatos();
+    if (name === 'clientes')   { cargarClientesBackend(); renderClientes(); }
+    if (name === 'reservas')   { cargarReservasBackend(); renderReservas(); }
+    if (name === 'reportes')   { setPeriodo(periodo); }
+    if (name === 'config')     renderConfig();
+}
+
+// ===== INICIO =====
+function renderInicio() {
+    const activos    = PEDIDOS.filter(p => ['nuevo','preparando'].includes(p.estado));
+    const entregados = PEDIDOS.filter(p => p.estado === 'entregado');
+    const venta      = entregados.reduce((s,p) => s+p.total, 0);
+
+    el('kpiComandas').textContent  = PEDIDOS.length;
+    el('kpiCocina').textContent    = activos.length;
+    el('kpiEntregados').textContent= entregados.length;
+    el('kpiVenta').textContent     = fmt(venta);
+    el('badgeCocina').textContent  = activos.length;
+    actualizarBadgeCocina();
+
+    // Recientes
+    el('recentComandas').innerHTML = PEDIDOS.slice(0,5).map(p => `
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-xs font-bold text-gray-400">#${p.numero}</div>
+                <div>
+                    <div class="text-white text-sm font-medium">${p.mesa}</div>
+                    <div class="text-gray-500 text-xs">${p.hora} · ${TIPO_LBL[p.tipo]}</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="badge badge-${p.estado}">${ESTADO_LBL[p.estado]}</span>
+                <span class="text-white text-sm font-semibold">${fmt(p.total)}</span>
+            </div>
+        </div>`).join('');
+
+    // Stock bajo
+    const bajo = INVENTARIO.filter(i => i.stock <= i.min);
+    el('alertasStock').innerHTML = bajo.length === 0
+        ? `<div class="text-center py-6"><i class="fas fa-check-circle text-success text-2xl mb-2 block"></i><p class="text-gray-500 text-sm">Todo el stock está bien</p></div>`
+        : bajo.map(i => `
+            <div class="flex justify-between items-center">
+                <div><div class="text-white text-sm font-medium">${i.nombre}</div><div class="text-gray-500 text-xs">${i.cat}</div></div>
+                <div class="text-right">
+                    <div class="text-danger text-sm font-bold">${i.stock} ${i.unidad}</div>
+                    <div class="text-gray-600 text-xs">mín: ${i.min}</div>
+                </div>
+            </div>`).join('');
+
+    // Chart
+    const ctx = el('chartVentas');
+    if (chartVentas) chartVentas.destroy();
+    chartVentas = new Chart(ctx, {
+        type:'bar',
+        data:{
+            labels:['Lun','Mar','Mié','Jue','Vie','Sáb','Hoy'],
+            datasets:[{ data:[42000,38000,51000,47000,63000,72000,venta||34200],
+                backgroundColor:'rgba(99,102,241,0.3)', borderColor:'#6366f1',
+                borderWidth:2, borderRadius:8 }]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:true,
+            plugins:{legend:{display:false}},
+            scales:{
+                x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7280',font:{size:11}}},
+                y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7280',font:{size:11},callback:v=>'$'+(v/1000).toFixed(0)+'k'}}
+            }
+        }
+    });
+}
+
+// ===== CAJA / MOZO =====
+let catCartaFiltro = 0;
+
+function renderCarta() {
+    const q = (el('buscarCarta')?.value||'').toLowerCase();
+
+    // Tabs
+    el('cartaTabs').innerHTML =
+        `<button class="cat-tab ${catCartaFiltro===0?'active':''}" onclick="setCatCarta(0)">Todos</button>` +
+        CATS.map(c => `<button class="cat-tab ${catCartaFiltro===c.id?'active':''}" onclick="setCatCarta(${c.id})">${c.icono} ${c.nombre}</button>`).join('');
+
+    let platos = PLATOS.filter(p => p.activo);
+    if (catCartaFiltro > 0) platos = platos.filter(p => p.cat === catCartaFiltro);
+    if (q) platos = platos.filter(p => p.nombre.toLowerCase().includes(q) || String(p.cod).includes(q));
+
+    renderComandasAbiertas();
+
+    el('cartaPlatos').innerHTML = platos.map(p => `
+        <div class="glass-surface rounded-xl px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:border-primary/40 transition-colors border border-white/5"
+             onclick="agregarPorCodigo(${p.cod}, 1)">
+            <span class="font-mono font-bold text-primary text-lg w-8 flex-shrink-0">${p.cod}</span>
+            <div class="flex-1 min-w-0">
+                <div class="text-white text-sm font-medium truncate">${p.nombre}</div>
+                <div class="text-gray-500 text-xs">${p.tiempo} min · ${(CATS.find(c=>c.id===p.cat)||{}).icono||''}</div>
+            </div>
+            <span class="text-primary font-bold text-sm flex-shrink-0">${fmt(p.precio)}</span>
+        </div>`).join('');
+
+    renderComanda();
+}
+
+function setCatCarta(id) { catCartaFiltro = id; renderCarta(); }
+
+// ══════════════════════════════════════════════
+// DELIVERY
+// ══════════════════════════════════════════════
+let dlvComanda = [];
+let dlvCatFiltro = 0;
+
+function renderCartaDelivery() {
+    const q = (el('dlvBuscarCarta')?.value||'').toLowerCase();
+
+    el('dlvCartaTabs').innerHTML =
+        `<button class="cat-tab ${dlvCatFiltro===0?'active':''}" onclick="setDlvCat(0)">Todos</button>` +
+        CATS.map(c => `<button class="cat-tab ${dlvCatFiltro===c.id?'active':''}" onclick="setDlvCat(${c.id})">${c.icono} ${c.nombre}</button>`).join('');
+
+    let platos = PLATOS.filter(p => p.activo);
+    if (dlvCatFiltro > 0) platos = platos.filter(p => p.cat === dlvCatFiltro);
+    if (q) platos = platos.filter(p => p.nombre.toLowerCase().includes(q) || String(p.cod).includes(q));
+
+    el('dlvCartaPlatos').innerHTML = platos.map(p => `
+        <div class="glass-surface rounded-xl px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:border-primary/40 transition-colors border border-white/5"
+             onclick="dlvAgregarPorCodigo(${p.cod}, 1)">
+            <span class="font-mono font-bold text-primary text-lg w-8 flex-shrink-0">${p.cod}</span>
+            <div class="flex-1 min-w-0">
+                <div class="text-white text-sm font-medium truncate">${p.nombre}</div>
+                <div class="text-gray-500 text-xs">${p.tiempo} min · ${(CATS.find(c=>c.id===p.cat)||{}).icono||''}</div>
+            </div>
+            <span class="text-primary font-bold text-sm flex-shrink-0">${fmt(p.precio)}</span>
+        </div>`).join('');
+
+    renderDlvComanda();
+}
+
+function setDlvCat(id) { dlvCatFiltro = id; renderCartaDelivery(); }
+
+function dlvAgregarPorCodigo(cod, cant) {
+    const plato = PLATOS.find(p => p.cod === cod && p.activo);
+    if (!plato) return;
+    const existing = dlvComanda.find(c => c.cod === cod);
+    if (existing) existing.cant += cant;
+    else dlvComanda.push({ cod: plato.cod, nombre: plato.nombre, precio: plato.precio, cant, tiempo: plato.tiempo||0 });
+    renderDlvComanda();
+}
+
+function procesarCodigoDelivery() {
+    const raw = (el('dlvInputCodigo').value||'').trim();
+    if (!raw) return;
+    const tokens = raw.split(/\s+/);
+    let ok = false;
+    tokens.forEach(t => {
+        const [codStr, cantStr] = t.split(/[xX×]/);
+        const cod  = parseInt(codStr);
+        const cant = parseInt(cantStr||'1') || 1;
+        if (!isNaN(cod)) { dlvAgregarPorCodigo(cod, cant); ok = true; }
+    });
+    el('dlvInputCodigo').value = '';
+    if (!ok) showToast('Código no reconocido', 'warning');
+}
+
+function renderDlvComanda() {
+    const vacio = el('dlvVacio');
+    const total  = dlvComanda.reduce((s,c) => s+c.precio*c.cant, 0);
+    const nItems = dlvComanda.reduce((s,c) => s+c.cant, 0);
+
+    if (dlvComanda.length === 0) {
+        vacio && (vacio.style.display = '');
+        el('dlvSubtotal').textContent = '$0';
+        el('dlvCantItems').textContent = '0';
+        el('dlvTotal').textContent = '$0';
+        // limpiar items (dejar solo el placeholder)
+        const container = el('dlvItems');
+        [...container.children].forEach(c => { if (c.id !== 'dlvVacio') c.remove(); });
+        return;
+    }
+    vacio && (vacio.style.display = 'none');
+
+    const container = el('dlvItems');
+    // Reconstruir filas
+    [...container.children].forEach(c => { if (c.id !== 'dlvVacio') c.remove(); });
+    dlvComanda.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'comanda-row';
+        row.innerHTML = `
+            <span class="font-mono text-primary font-bold text-sm w-7 flex-shrink-0">${item.cod}</span>
+            <span class="text-white text-sm flex-1">${item.nombre}</span>
+            <div class="flex items-center gap-1 flex-shrink-0">
+                <button onclick="dlvCambiarCant(${idx},-1)" class="w-6 h-6 rounded-lg bg-white/5 text-gray-400 hover:text-white text-xs flex items-center justify-center">−</button>
+                <span class="text-white text-sm font-semibold w-5 text-center">${item.cant}</span>
+                <button onclick="dlvCambiarCant(${idx},1)"  class="w-6 h-6 rounded-lg bg-white/5 text-gray-400 hover:text-white text-xs flex items-center justify-center">+</button>
+            </div>
+            <span class="text-primary font-semibold text-sm w-20 text-right flex-shrink-0">${fmt(item.precio*item.cant)}</span>`;
+        container.appendChild(row);
+    });
+
+    el('dlvSubtotal').textContent = fmt(total);
+    el('dlvCantItems').textContent = nItems;
+    el('dlvTotal').textContent = fmt(total);
+}
+
+function dlvCambiarCant(idx, delta) {
+    dlvComanda[idx].cant += delta;
+    if (dlvComanda[idx].cant <= 0) dlvComanda.splice(idx, 1);
+    renderDlvComanda();
+}
+
+function limpiarDelivery() {
+    dlvComanda = [];
+    renderDlvComanda();
+}
+
+function registrarDelivery() {
+    if (dlvComanda.length === 0) { showToast('El pedido está vacío', 'warning'); return; }
+    const nombre = el('dlvNombre').value.trim() || 'Delivery';
+    const tel    = el('dlvTel').value.trim();
+    const dir    = el('dlvDir').value.trim();
+    const notas  = el('dlvNotas').value.trim();
+    const total  = dlvComanda.reduce((s,c) => s+c.precio*c.cant, 0);
+    const hora   = new Date().toTimeString().slice(0,5);
+    const numCmd = String(PEDIDOS.length+1).padStart(3,'0');
+
+    PEDIDOS.unshift({
+        id: Date.now(), numero: String(PEDIDOS.length+1).padStart(3,'0'),
+        mesa: nombre, comanda: numCmd,
+        tipo: 'delivery', estado: 'nuevo',
+        total, hora,
+        tel, dir, notas,
+        items: dlvComanda.map(c=>({...c}))
+    });
+
+    limpiarDelivery();
+    actualizarBadgeCocina();
+    showToast(`Delivery #${numCmd} registrado para ${nombre} ✓`, 'success');
+}
+
+function cobrarDelivery() {
+    if (dlvComanda.length === 0) { showToast('El pedido está vacío', 'warning'); return; }
+    // Primero registra el pedido y luego abre cobro
+    const nombre = el('dlvNombre').value.trim() || 'Delivery';
+    const tel    = el('dlvTel').value.trim();
+    const dir    = el('dlvDir').value.trim();
+    const notas  = el('dlvNotas').value.trim();
+    const total  = dlvComanda.reduce((s,c) => s+c.precio*c.cant, 0);
+    const hora   = new Date().toTimeString().slice(0,5);
+    const numCmd = String(PEDIDOS.length+1).padStart(3,'0');
+
+    el('cobrarResumen').innerHTML = `
+        <div class="text-gray-400 text-xs mb-2 font-semibold uppercase tracking-wider">${nombre} · ${dir||'Sin dirección'} · ${hora}</div>
+        ${dlvComanda.map(c=>`
+        <div class="flex justify-between">
+            <span class="text-gray-400">${c.cod} · ${c.nombre} ×${c.cant}</span>
+            <span class="text-white font-medium">${fmt(c.precio*c.cant)}</span>
+        </div>`).join('')}`;
+    el('cobrarTotal').textContent = fmt(total);
+
+    // Guardar contexto en modal para confirmarCobro
+    const modal = document.getElementById('modalCobrar');
+    modal.dataset.dlvContext = JSON.stringify({ nombre, tel, dir, notas, numCmd, hora, items: dlvComanda.map(c=>({...c})) });
+    modal.dataset.pedidoId = '';
+    selMetodo('efectivo');
+    modal.classList.remove('hidden');
+}
+
+// ── Comandas abiertas (para cajero) ──
+function renderComandasAbiertas() {
+    const q = (el('buscarComanda')?.value||'').toLowerCase();
+
+    // Abiertas = todo lo que NO está entregado ni cancelado
+    let abiertas = PEDIDOS.filter(p => p.estado !== 'entregado' && p.estado !== 'cancelado');
+    if (q) abiertas = abiertas.filter(p =>
+        p.mesa.toLowerCase().includes(q) || p.comanda.includes(q) || p.numero.includes(q));
+
+    el('countComandasAbiertas').textContent = abiertas.length;
+
+    if (abiertas.length === 0) {
+        el('comandasAbiertasGrid').innerHTML = `
+            <div class="glass-surface rounded-xl py-6 text-center text-gray-500 text-sm">
+                <i class="fas fa-check-circle text-success text-xl mb-2 block"></i>
+                ${q ? 'Sin resultados' : 'Sin comandas abiertas'}
+            </div>`;
+        return;
+    }
+
+    const ESTADO_COLOR = {
+        nuevo:      'border-l-primary/70',
+        preparando: 'border-l-warning/70',
+        listo:      'border-l-success/70',
+    };
+
+    el('comandasAbiertasGrid').innerHTML = abiertas.map(p => `
+        <div class="glass-surface rounded-xl p-3 border border-white/5 border-l-2 ${ESTADO_COLOR[p.estado]||'border-l-white/20'}">
+            <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-white font-bold text-sm truncate">${p.mesa}</span>
+                    <span class="badge badge-${p.estado} text-xs">${ESTADO_LBL[p.estado]}</span>
+                </div>
+                <span class="text-white font-bold text-sm flex-shrink-0">${fmt(p.total)}</span>
+            </div>
+            <div class="text-gray-500 text-xs mb-2 truncate">
+                #${p.numero} · ${p.hora} · ${p.items.map(i=>`×${i.cant} ${i.nombre}`).join(', ')}
+            </div>
+            <div class="flex gap-1.5">
+                <button onclick="cargarComandaEnCaja(${p.id})"
+                        class="glass rounded-lg py-1.5 px-2 text-gray-300 text-xs font-medium hover:text-white hover:bg-white/5 transition-colors flex-1">
+                    <i class="fas fa-pen mr-1"></i>Editar
+                </button>
+                <button onclick="cobrarPedidoDirecto(${p.id})"
+                        class="btn-success rounded-lg py-1.5 px-2 text-white text-xs font-semibold flex-1">
+                    <i class="fas fa-circle-check mr-1"></i>Cerrar mesa
+                </button>
+            </div>
+        </div>`).join('');
+}
+
+// Cargar comanda existente en el panel de caja para editarla
+function cargarComandaEnCaja(pedidoId) {
+    const p = PEDIDOS.find(x=>x.id===pedidoId);
+    if (!p) return;
+    comanda = p.items.map(i=>({ cod:i.cod, nombre:i.nombre, precio:i.precio, cant:i.cant, tiempo:i.tiempo||0 }));
+    el('inputMesa').value    = p.mesa;
+    el('inputComanda').value = p.comanda;
+    renderComanda();
+    // Scroll al top — funciona tanto con mainArea como con pos-left
+    const scrollTarget = document.querySelector('#screen-caja .pos-left') || el('mainArea');
+    scrollTarget.scrollTo({ top:0, behavior:'smooth' });
+    showToast(`Comanda ${p.comanda} cargada para editar`,'success');
+}
+
+// Cobrar pedido directamente desde el panel (sin pasar por carrito)
+function cobrarPedidoDirecto(pedidoId) {
+    const p = PEDIDOS.find(x=>x.id===pedidoId);
+    if (!p) return;
+
+    // Advertencia si la comanda no está lista todavía
+    if (p.estado === 'nuevo') {
+        if (!confirm(`⚠️ "${p.mesa}" todavía no fue enviada a cocina.\n¿Querés cobrarla de todas formas?`)) return;
+    } else if (p.estado === 'preparando') {
+        if (!confirm(`⚠️ "${p.mesa}" todavía está siendo preparada en cocina.\n¿Querés cobrarla de todas formas?`)) return;
+    }
+
+    el('cobrarResumen').innerHTML = `
+        <div class="text-gray-400 text-xs mb-2 font-semibold uppercase tracking-wider">${p.mesa} · cmd:${p.comanda} · ${p.hora}</div>
+        ${p.items.map(i=>`
+        <div class="flex justify-between">
+            <span class="text-gray-400">×${i.cant} ${i.nombre}</span>
+            <span class="text-white font-medium">${fmt(i.precio*i.cant)}</span>
+        </div>`).join('')}`;
+    el('cobrarTotal').textContent = fmt(p.total);
+    selMetodo('efectivo');
+    el('modalCobrar').dataset.pedidoId = pedidoId;
+    document.getElementById('modalCobrar').classList.remove('hidden');
+}
+
+// Procesar input tipo "4x2 7x1 9"
+function procesarCodigo() {
+    const raw = el('inputCodigo').value.trim();
+    if (!raw) return;
+    const tokens = raw.split(/[\s,]+/);
+    let agregados = 0;
+    tokens.forEach(tok => {
+        const m = tok.match(/^(\d+)(?:[xX×\*](\d+))?$/);
+        if (!m) return;
+        const cod  = parseInt(m[1]);
+        const cant = parseInt(m[2]||'1');
+        if (agregarPorCodigo(cod, cant)) agregados++;
+    });
+    if (agregados > 0) {
+        el('inputCodigo').value = '';
+        el('inputCodigo').focus();
+    } else {
+        showToast('Código no encontrado', 'warning');
+    }
+}
+
+function agregarPorCodigo(cod, cant, nombreOverride, precioOverride) {
+    const plato = PLATOS.find(p => p.cod === cod && p.activo);
+    if (!plato && !nombreOverride) return false;
+    const nombre = nombreOverride || plato.nombre;
+    const precio = precioOverride !== undefined ? precioOverride : plato.precio;
+    const idx = comanda.findIndex(c => c.cod === cod && c.nombre === nombre);
+    if (idx >= 0) comanda[idx].cant += cant;
+    else comanda.push({ cod, nombre, precio, cant, tiempo: plato?.tiempo||0 });
+    renderComanda();
+    return true;
+}
+
+function quitarItem(cod, nombre) {
+    const idx = comanda.findIndex(c => c.cod === cod && c.nombre === (nombre||c.nombre));
+    if (idx < 0) return;
+    if (comanda[idx].cant > 1) comanda[idx].cant--;
+    else comanda.splice(idx, 1);
+    renderComanda();
+}
+
+function eliminarItemComanda(idx) {
+    comanda.splice(idx, 1);
+    renderComanda();
+}
+
+function editarPrecioComanda(idx, valor) {
+    const precio = parseFloat(valor);
+    if (!isNaN(precio) && precio >= 0) {
+        comanda[idx].precio = precio;
+        renderComanda();
+    }
+}
+
+function renderComanda() {
+    const mesa = el('inputMesa').value.trim() || 'Sin mesa';
+    el('comandaMesaLabel').textContent = mesa;
+
+    const total = comanda.reduce((s,c) => s + c.precio*c.cant, 0);
+    const items = comanda.reduce((s,c) => s + c.cant, 0);
+    el('comandaSubtotal').textContent  = fmt(total);
+    el('comandaTotal').textContent     = fmt(total);
+    el('comandaCantItems').textContent = items + (items===1?' ítem':' ítems');
+
+    if (comanda.length === 0) {
+        el('comandaVacia').classList.remove('hidden');
+        el('comandaItems').innerHTML = '';
+        el('comandaItems').appendChild(el('comandaVacia'));
+        return;
+    }
+    el('comandaVacia').classList.add('hidden');
+
+    el('comandaItems').innerHTML = comanda.map((c,idx) => `
+        <div class="comanda-row flex-wrap gap-y-1">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="font-mono text-primary text-xs w-6 flex-shrink-0 hidden sm:block">${c.cod > 0 ? c.cod : '—'}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-white text-sm truncate font-medium">${c.nombre}</div>
+                    <div class="flex items-center gap-1 mt-0.5">
+                        <span class="text-gray-600 text-xs">$</span>
+                        <input type="number" value="${c.precio}"
+                            onchange="editarPrecioComanda(${idx}, this.value)"
+                            class="bg-transparent border-b border-white/10 focus:border-primary/60 outline-none text-gray-400 text-xs w-16 text-right transition-colors"
+                            title="Editá el precio unitario">
+                        <span class="text-gray-600 text-xs">c/u</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="flex items-center gap-1">
+                    <button onclick="quitarItem(${c.cod},'${c.nombre}')" class="w-6 h-6 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 text-xs transition-colors flex items-center justify-center">−</button>
+                    <span class="text-white font-bold text-sm w-5 text-center">${c.cant}</span>
+                    <button onclick="agregarPorCodigo(${c.cod},1,'${c.nombre}',${c.precio})" class="w-6 h-6 rounded-lg bg-primary/10 hover:bg-primary/25 text-primary text-xs transition-colors flex items-center justify-center">+</button>
+                </div>
+                <span class="text-white text-sm font-semibold w-16 text-right">${fmt(c.precio*c.cant)}</span>
+                <button onclick="eliminarItemComanda(${idx})" class="w-5 h-5 rounded-lg hover:bg-red-500/20 text-gray-600 hover:text-red-400 text-xs transition-colors flex items-center justify-center ml-1">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+        </div>`).join('');
+}
+
+function limpiarComanda() {
+    comanda = [];
+    el('inputCodigo').value = '';
+    renderComanda();
+}
+
+// ── Modo caja: código vs manual ──
+function setCajaMode(mode) {
+    ['codigo','manual'].forEach(m => {
+        el('cmode-'+m)?.classList.toggle('active', m===mode);
+        el('cajaMode'+m.charAt(0).toUpperCase()+m.slice(1))?.classList.toggle('hidden', m!==mode);
+    });
+    if (mode==='manual') el('manualNombre')?.focus();
+}
+
+// ── Autocompletar nombre desde PLATOS ──
+function autocompletarManual() {
+    const q = (el('manualNombre').value||'').toLowerCase().trim();
+    const sug = el('manualSugerencias');
+    if (!q) { sug.classList.add('hidden'); return; }
+
+    const matches = PLATOS.filter(p => p.activo &&
+        (p.nombre.toLowerCase().includes(q) || String(p.cod).includes(q))
+    ).slice(0,6);
+
+    if (!matches.length) { sug.classList.add('hidden'); return; }
+
+    sug.innerHTML = matches.map(p => `
+        <div onclick="seleccionarSugerencia(${p.cod})"
+            class="flex items-center gap-3 px-3 py-2.5 hover:bg-primary/10 cursor-pointer border-b border-white/5 last:border-0 transition-colors">
+            <span class="font-mono text-primary font-bold text-sm w-7 flex-shrink-0">${p.cod}</span>
+            <div class="flex-1 min-w-0">
+                <div class="text-white text-sm truncate">${p.nombre}</div>
+                <div class="text-gray-500 text-xs">${(CATS.find(c=>c.id===p.cat)||{}).icono||''} · ${p.tiempo}min</div>
+            </div>
+            <span class="text-primary text-sm font-semibold flex-shrink-0">${fmt(p.precio)}</span>
+        </div>`).join('');
+    sug.classList.remove('hidden');
+}
+
+function seleccionarSugerencia(cod) {
+    const p = PLATOS.find(x => x.cod===cod);
+    if (!p) return;
+    el('manualNombre').value  = p.nombre;
+    el('manualPrecio').value  = p.precio;
+    el('manualNombre').dataset.cod = p.cod;
+    el('manualSugerencias').classList.add('hidden');
+    el('manualCant').focus();
+}
+
+// ── Agregar producto manual a la comanda ──
+function agregarManual() {
+    const nombre = el('manualNombre').value.trim();
+    const cant   = parseInt(el('manualCant').value)   || 1;
+    const precio = parseFloat(el('manualPrecio').value) || 0;
+    if (!nombre) { showToast('Ingresá el nombre del producto','warning'); return; }
+    if (precio <= 0) { showToast('Ingresá un precio válido','warning'); return; }
+
+    // Usa cod del plato si existe, sino genera uno temporal negativo único
+    const codStr = el('manualNombre').dataset.cod;
+    const cod    = codStr ? parseInt(codStr) : -(Date.now() % 100000);
+
+    const existente = comanda.find(c => c.cod === cod && c.nombre === nombre);
+    if (existente) {
+        existente.cant   += cant;
+        existente.precio  = precio; // actualiza precio si cambió
+    } else {
+        comanda.push({ cod, nombre, precio, cant, tiempo: 0 });
+    }
+
+    // Limpiar formulario
+    el('manualNombre').value = '';
+    el('manualPrecio').value = '';
+    el('manualCant').value   = 1;
+    el('manualNombre').dataset.cod = '';
+    el('manualSugerencias').classList.add('hidden');
+    renderComanda();
+    showToast(`${nombre} ×${cant} agregado`, 'success');
+}
+
+function registrarComanda() {
+    if (comanda.length === 0) { showToast('La comanda está vacía', 'warning'); return; }
+    const mesa   = el('inputMesa').value.trim()    || 'Sin mesa';
+    const numCmd = el('inputComanda').value.trim() || String(PEDIDOS.length+1).padStart(3,'0');
+    const total  = comanda.reduce((s,c) => s+c.precio*c.cant, 0);
+    const ahora  = new Date();
+    const hora   = ahora.getHours().toString().padStart(2,'0')+':'+ahora.getMinutes().toString().padStart(2,'0');
+
+    PEDIDOS.unshift({
+        id: Date.now(), numero: String(PEDIDOS.length+1).padStart(3,'0'),
+        mesa, comanda: numCmd, tipo:'salon', estado:'nuevo',
+        total, hora, items: comanda.map(c=>({...c}))
+    });
+
+    limpiarComanda();
+    el('inputMesa').value    = '';
+    el('inputComanda').value = '';
+    actualizarBadgeCocina();
+    renderComandasAbiertas();
+    guardarLS();
+    showToast(`Comanda #${numCmd} registrada ✓`, 'success');
+    // El mozo se queda en Caja para la próxima comanda
+    // Cocina ve los pedidos en su propia pantalla
+}
+
+function cobrarComanda() {
+    if (comanda.length === 0) { showToast('La comanda está vacía', 'warning'); return; }
+    const total = comanda.reduce((s,c) => s+c.precio*c.cant, 0);
+    el('cobrarResumen').innerHTML = comanda.map(c => `
+        <div class="flex justify-between">
+            <span class="text-gray-400">${c.cod} · ${c.nombre} ×${c.cant}</span>
+            <span class="text-white font-medium">${fmt(c.precio*c.cant)}</span>
+        </div>`).join('');
+    el('cobrarTotal').textContent = fmt(total);
+    selMetodo('efectivo');
+    document.getElementById('modalCobrar').classList.remove('hidden');
+}
+
+function selMetodo(m) {
+    metodoPago = m;
+    const colores = { efectivo:'success', transferencia:'primary' };
+    ['efectivo','transferencia'].forEach(x => {
+        const btn = el('met-'+x);
+        if (!btn) return;
+        const col = colores[x];
+        const sel = x === m;
+        btn.classList.toggle(`border-${col}/60`, sel);
+        btn.classList.toggle(`bg-${col}/8`,      sel);
+        btn.classList.toggle('border-white/10',  !sel);
+        // marca visual con check
+        const check = btn.querySelector('.met-check');
+        if (check) check.classList.toggle('hidden', !sel);
+    });
+}
+
+function confirmarCobro() {
+    const modal     = document.getElementById('modalCobrar');
+    const pedidoId  = parseInt(modal.dataset.pedidoId||'0');
+    const dlvCtxRaw = modal.dataset.dlvContext||'';
+
+    if (pedidoId) {
+        // Cobro de comanda existente (desde panel comandas abiertas)
+        const p = PEDIDOS.find(x=>x.id===pedidoId);
+        if (p) {
+            p.estado = 'entregado';
+            showToast(`${p.mesa} cobrado · ${metodoPago} · ${fmt(p.total)}`, 'success');
+        }
+        modal.dataset.pedidoId = '';
+    } else if (dlvCtxRaw) {
+        // Cobro delivery nuevo
+        const ctx = JSON.parse(dlvCtxRaw);
+        const total = ctx.items.reduce((s,c) => s+c.precio*c.cant, 0);
+        PEDIDOS.unshift({
+            id:Date.now(), numero:String(PEDIDOS.length+1).padStart(3,'0'),
+            mesa: ctx.nombre, comanda: ctx.numCmd,
+            tipo:'delivery', estado:'entregado',
+            total, hora: ctx.hora,
+            tel: ctx.tel, dir: ctx.dir, notas: ctx.notas,
+            items: ctx.items
+        });
+        showToast(`Delivery cobrado · ${metodoPago} · ${fmt(total)}`, 'success');
+        limpiarDelivery();
+        el('dlvNombre').value = '';
+        el('dlvTel').value    = '';
+        el('dlvDir').value    = '';
+        el('dlvNotas').value  = '';
+        modal.dataset.dlvContext = '';
+    } else {
+        // Cobro del carrito activo de Caja
+        const mesa   = el('inputMesa').value.trim()    || 'Sin mesa';
+        const numCmd = el('inputComanda').value.trim() || String(PEDIDOS.length+1).padStart(3,'0');
+        const total  = comanda.reduce((s,c) => s+c.precio*c.cant, 0);
+        const hora   = new Date().toTimeString().slice(0,5);
+        PEDIDOS.unshift({
+            id:Date.now(), numero:String(PEDIDOS.length+1).padStart(3,'0'),
+            mesa, comanda:numCmd, tipo:'salon', estado:'entregado',
+            total, hora, items:comanda.map(c=>({...c}))
+        });
+        showToast(`Cobro registrado · ${metodoPago} · ${fmt(total)}`, 'success');
+        limpiarComanda();
+        el('inputMesa').value    = '';
+        el('inputComanda').value = '';
+    }
+
+    cerrarModal('modalCobrar');
+    actualizarBadgeCocina();
+    renderComandasAbiertas();
+    guardarLS();
+}
+
+function imprimirTicket() {
+    if (comanda.length === 0) { showToast('La comanda está vacía', 'warning'); return; }
+    const mesa  = el('inputMesa').value.trim() || 'Sin mesa';
+    const total = comanda.reduce((s,c) => s+c.precio*c.cant, 0);
+    const hora  = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const fecha = new Date().toLocaleDateString('es-AR');
+
+    el('ticketPrint').innerHTML = `
+        <div style="text-align:center;border-bottom:2px dashed #000;padding-bottom:8px;margin-bottom:8px;">
+            <div style="font-size:1.4rem;font-weight:bold;">RestIA</div>
+            <div style="font-size:0.75rem;">${fecha} · ${hora}</div>
+        </div>
+        <div style="margin-bottom:8px;font-size:0.9rem;"><b>Mesa/Nombre:</b> ${mesa}</div>
+        <div style="border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;">
+            ${comanda.map(c=>`<div style="display:flex;justify-content:space-between;">
+                <span>${c.cant}× ${c.nombre}</span>
+                <span>${fmt(c.precio*c.cant)}</span>
+            </div>`).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:1.1rem;">
+            <span>TOTAL</span><span>${fmt(total)}</span>
+        </div>
+        <div style="text-align:center;margin-top:12px;font-size:0.7rem;">¡Gracias por su visita!</div>`;
+
+    window.print();
+}
+
+// Numpad append
+function appendNumpad(v) {
+    const inp = el('inputCodigo');
+    inp.value += v;
+    inp.focus();
+}
+function borrarNumpad() {
+    const inp = el('inputCodigo');
+    inp.value = inp.value.slice(0,-1);
+    inp.focus();
+}
+
+// ===== COCINA =====
+function renderCocina() {
+    ['activos','nuevo','preparando','listo','entregado'].forEach(f => {
+        el('ctab-'+f)?.classList.toggle('active', f === filtroCocina);
+    });
+
+    let pedidos;
+    if (filtroCocina === 'activos') pedidos = PEDIDOS.filter(p => ['nuevo','preparando','listo'].includes(p.estado));
+    else pedidos = PEDIDOS.filter(p => p.estado === filtroCocina);
+
+    actualizarBadgeCocina();
+
+    if (pedidos.length === 0) {
+        el('cocinaPedidos').innerHTML = `
+            <div class="col-span-full text-center py-16 text-gray-500">
+                <i class="fas fa-fire-burner text-4xl mb-3 block opacity-20"></i>
+                <p>Sin pedidos ${filtroCocina!=='activos'?'en este estado':'activos'}</p>
+            </div>`;
+        return;
+    }
+
+    el('cocinaPedidos').innerHTML = pedidos.map(p => {
+        const btnAccion = {
+            nuevo:      `<button onclick="cambiarEstado(${p.id},'preparando')" class="btn-warning w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-fire mr-1.5"></i>Iniciar preparación</button>`,
+            preparando: `<button onclick="cambiarEstado(${p.id},'listo')"      class="btn-success w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-check mr-1.5"></i>Marcar listo</button>`,
+            listo:      `<button onclick="cambiarEstado(${p.id},'entregado')"  class="btn-primary w-full rounded-xl py-2.5 text-white text-sm font-semibold"><i class="fas fa-paper-plane mr-1.5"></i>Marcar entregado</button>`,
+            entregado:  `<div class="text-center text-success text-sm py-1"><i class="fas fa-check-circle mr-1"></i>Entregado</div>`,
+        };
+        return `
+        <div class="glass-surface rounded-2xl p-5 border border-white/5 ${p.estado==='nuevo'?'pedido-nuevo':''}">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="font-bold text-white">#${p.numero}</span>
+                        <span class="text-gray-500 text-xs font-mono">cmd:${p.comanda}</span>
+                        <span class="badge badge-${p.estado}">${ESTADO_LBL[p.estado]}</span>
+                    </div>
+                    <div class="text-white font-medium">${p.mesa}</div>
+                    <div class="text-gray-500 text-xs mt-0.5"><i class="fas ${TIPO_ICON[p.tipo]} mr-1"></i>${TIPO_LBL[p.tipo]}</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-gray-400 text-xs"><i class="fas fa-clock mr-1"></i>${p.hora}</div>
+                    <div class="text-white font-bold mt-1">${fmt(p.total)}</div>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-3 mb-4 space-y-1">
+                ${p.items.map(it=>`
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-300"><span class="font-mono text-gray-500 text-xs">${it.cod}</span> ×${it.cant} ${it.nombre}</span>
+                        <span class="text-gray-500">${fmt(it.precio*it.cant)}</span>
+                    </div>`).join('')}
+            </div>
+            ${btnAccion[p.estado]||''}
+        </div>`;
+    }).join('');
+}
+
+function filtrarCocina(f) { filtroCocina = f; renderCocina(); }
+
+function cambiarEstado(id, estado) {
+    const p = PEDIDOS.find(p => p.id === id);
+    if (!p) return;
+    p.estado = estado;
+    // Si se entrega, descontar stock automáticamente (demo: solo muestra el toast)
+    if (estado === 'entregado') {
+        showToast(`#${p.numero} entregado · stock actualizado`, 'success');
+    } else {
+        showToast(`#${p.numero} → ${ESTADO_LBL[estado]}`, 'success');
+    }
+    guardarLS();
+    renderCocina();
+}
+
+function actualizarBadgeCocina() {
+    const n = PEDIDOS.filter(p => ['nuevo','preparando'].includes(p.estado)).length;
+    el('badgeCocina').textContent = n;
+    const badge = el('sideCocinaBadge');
+    if (badge) { badge.textContent = n; badge.classList.toggle('hidden', n === 0); }
+}
+
+// ===== INVENTARIO =====
+function renderInventario() {
+    ['todo','bajo','critico'].forEach(f => el('itab-'+f)?.classList.toggle('active', f===filtroInv));
+
+    let items = INVENTARIO;
+    if (filtroInv === 'bajo')    items = items.filter(i => i.stock > 0 && i.stock <= i.min);
+    if (filtroInv === 'critico') items = items.filter(i => i.stock === 0);
+
+    el('invBody').innerHTML = items.map(i => {
+        const pct = i.min > 0 ? Math.min(100, (i.stock/i.min)*100) : 100;
+        let statusClass='text-success', statusIcon='fa-check-circle', statusTxt='OK', barColor='bg-success';
+        if (i.stock === 0)      { statusClass='text-danger';  statusIcon='fa-circle-xmark';      statusTxt='Sin stock'; barColor='bg-danger'; }
+        else if (i.stock<=i.min){ statusClass='text-warning'; statusIcon='fa-triangle-exclamation'; statusTxt='Bajo';  barColor='bg-warning'; }
+
+        return `
+        <tr class="border-b border-white/5 hover:bg-white/2 transition-colors">
+            <td class="px-4 py-3">
+                <div class="text-white text-sm font-medium">${i.nombre}</div>
+                <div class="stock-bar mt-1 w-20"><div class="stock-fill ${barColor}" style="width:${pct}%"></div></div>
+            </td>
+            <td class="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">${i.cat}</td>
+            <td class="px-4 py-3 text-center">
+                <span class="text-white font-semibold">${i.stock}</span>
+                <span class="text-gray-500 text-xs"> ${i.unidad}</span>
+            </td>
+            <td class="px-4 py-3 text-center hidden md:table-cell text-gray-500 text-xs">${i.min} ${i.unidad}</td>
+            <td class="px-4 py-3 text-center">
+                <span class="${statusClass} text-xs font-semibold"><i class="fas ${statusIcon} mr-1"></i>${statusTxt}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+                <button onclick="abrirModalIngrediente(${i.id})" class="text-gray-500 hover:text-primary transition-colors text-sm"><i class="fas fa-pen"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function filtrarInv(f) { filtroInv=f; renderInventario(); }
+
+function abrirModalIngrediente(id) {
+    editIngId = id;
+    if (id) {
+        const i = INVENTARIO.find(x=>x.id===id);
+        el('ingModalTitle').textContent = 'Editar ingrediente';
+        el('ingNombre').value  = i.nombre;
+        el('ingCat').value     = i.cat;
+        el('ingUnidad').value  = i.unidad;
+        el('ingStock').value   = i.stock;
+        el('ingMin').value     = i.min;
+    } else {
+        el('ingModalTitle').textContent = 'Nuevo ingrediente';
+        ['ingNombre','ingCat','ingStock','ingMin'].forEach(x=>el(x).value='');
+        el('ingUnidad').value = 'kg';
+    }
+    document.getElementById('modalIngrediente').classList.remove('hidden');
+}
+
+function guardarIngrediente() {
+    const nombre = el('ingNombre').value.trim();
+    const stock  = parseFloat(el('ingStock').value);
+    const min    = parseFloat(el('ingMin').value);
+    if (!nombre || isNaN(stock) || isNaN(min)) { showToast('Completá los campos obligatorios','warning'); return; }
+
+    if (editIngId) {
+        const idx = INVENTARIO.findIndex(i=>i.id===editIngId);
+        INVENTARIO[idx] = { ...INVENTARIO[idx], nombre, cat:el('ingCat').value, unidad:el('ingUnidad').value, stock, min };
+    } else {
+        INVENTARIO.push({ id:Date.now(), nombre, cat:el('ingCat').value, unidad:el('ingUnidad').value, stock, min });
+    }
+    cerrarModal('modalIngrediente');
+    guardarLS();
+    showToast('Ingrediente guardado','success');
+    renderInventario();
+}
+
+function abrirEntradaMercaderia() {
+    el('entradaIng').innerHTML = INVENTARIO.map(i=>`<option value="${i.id}">${i.nombre} (stock: ${i.stock} ${i.unidad})</option>`).join('');
+    el('entradaCant').value = '';
+    el('entradaProv').value = '';
+    el('entradaNotas').value = '';
+    document.getElementById('modalEntrada').classList.remove('hidden');
+}
+
+function confirmarEntrada() {
+    const ingId = parseInt(el('entradaIng').value);
+    const cant  = parseFloat(el('entradaCant').value);
+    if (!cant || cant <= 0) { showToast('Ingresá una cantidad válida','warning'); return; }
+    const ing = INVENTARIO.find(i=>i.id===ingId);
+    if (!ing) return;
+    ing.stock += cant;
+    cerrarModal('modalEntrada');
+    showToast(`+${cant} ${ing.unidad} de ${ing.nombre} registrado`,'success');
+    renderInventario();
+}
+
+// ===== MENÚ =====
+function renderMenuPlatos() {
+    el('menuPlatosLista').innerHTML = PLATOS.map(p => {
+        const cat = CATS.find(c=>c.id===p.cat)||{};
+        return `
+        <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+            <span class="font-mono font-bold text-primary text-xl w-10 text-center flex-shrink-0">${p.cod}</span>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-white font-semibold text-sm">${p.nombre}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full ${p.activo?'bg-success/10 text-success':'bg-gray-500/10 text-gray-500'}">
+                        ${p.activo?'Disponible':'No disp.'}
+                    </span>
+                </div>
+                <div class="text-gray-500 text-xs mt-0.5">${cat.icono||''} ${cat.nombre||''} · ${p.tiempo} min · ${p.desc}</div>
+            </div>
+            <div class="text-right flex-shrink-0">
+                <div class="text-primary font-bold">${fmt(p.precio)}</div>
+                <button onclick="abrirModalPlato(${p.id})" class="text-gray-500 hover:text-primary text-xs mt-1 transition-colors"><i class="fas fa-pen mr-1"></i>Editar</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function menuTab(tab) {
+    ['platos','cat'].forEach(t => {
+        el('mtab-'+(t==='cat'?'categorias':t))?.classList.toggle('active', t===tab);
+        el('menu'+(t==='cat'?'Cat':'Platos')+'Lista')?.classList.toggle('hidden', t!==tab);
+    });
+    el('btnNuevoPlato')?.classList.toggle('hidden', tab!=='platos');
+    el('btnNuevaCat')?.classList.toggle('hidden', tab!=='cat');
+    if (tab==='platos') renderMenuPlatos();
+    if (tab==='cat') renderMenuCats();
+}
+
+function renderMenuCats() {
+    el('menuCatLista').innerHTML = CATS.map(c=>`
+        <div class="glass-surface rounded-2xl p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl">${c.icono}</div>
+            <div class="flex-1">
+                <div class="text-white font-semibold">${c.nombre}</div>
+                <div class="text-gray-500 text-xs">${PLATOS.filter(p=>p.cat===c.id).length} plato${PLATOS.filter(p=>p.cat===c.id).length!==1?'s':''}</div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="editarCategoria(${c.id})" class="glass rounded-xl px-3 py-1.5 text-gray-400 hover:text-white text-xs transition-colors">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button onclick="eliminarCategoria(${c.id})" class="glass rounded-xl px-3 py-1.5 text-gray-400 hover:text-red-400 text-xs transition-colors">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>`).join('');
+}
+
+function abrirModalCategoria(id) {
+    const c = id ? CATS.find(x=>x.id===id) : null;
+    el('catEditId').value    = id||'';
+    el('catNombre').value    = c?.nombre||'';
+    el('catIcono').value     = c?.icono||'🍴';
+    el('catModalTitle').textContent = c ? 'Editar categoría' : 'Nueva categoría';
+    document.getElementById('modalCategoria').classList.remove('hidden');
+}
+
+function editarCategoria(id) { abrirModalCategoria(id); }
+
+function eliminarCategoria(id) {
+    const c = CATS.find(x=>x.id===id);
+    if (!c) return;
+    const enUso = PLATOS.filter(p=>p.cat===id).length;
+    if (enUso > 0) { showToast(`No se puede eliminar — tiene ${enUso} plato(s) asignado(s)`,'warning'); return; }
+    CATS = CATS.filter(x=>x.id!==id);
+    renderMenuCats();
+    showToast(`Categoría "${c.nombre}" eliminada`,'success');
+}
+
+function guardarCategoria() {
+    const id     = parseInt(el('catEditId').value||'0');
+    const nombre = el('catNombre').value.trim();
+    const icono  = el('catIcono').value.trim() || '🍴';
+    if (!nombre) { showToast('El nombre es obligatorio','warning'); return; }
+    if (id) {
+        const c = CATS.find(x=>x.id===id);
+        if (c) { c.nombre = nombre; c.icono = icono; }
+        showToast(`Categoría "${nombre}" actualizada`,'success');
+    } else {
+        const newId = Math.max(...CATS.map(c=>c.id), 0) + 1;
+        CATS.push({ id:newId, nombre, icono });
+        showToast(`Categoría "${nombre}" creada`,'success');
+    }
+    cerrarModal('modalCategoria');
+    renderMenuCats();
+}
+
+function abrirModalPlato(id) {
+    el('platoEditId').value = id||'';
+    el('platoCat').innerHTML = CATS.map(c=>`<option value="${c.id}">${c.icono} ${c.nombre}</option>`).join('');
+    if (id) {
+        const p = PLATOS.find(x=>x.id===id);
+        el('platoModalTitle').textContent = 'Editar plato';
+        el('platoCod').value    = p.cod;
+        el('platoNom').value    = p.nombre;
+        el('platoPrecio').value = p.precio;
+        el('platoTiempo').value = p.tiempo;
+        el('platoDesc').value   = p.desc||'';
+        el('platoCat').value    = p.cat;
+        el('platoActivo').value = String(p.activo);
+    } else {
+        el('platoModalTitle').textContent = 'Nuevo plato';
+        ['platoCod','platoNom','platoPrecio','platoTiempo','platoDesc'].forEach(x=>el(x).value='');
+        el('platoActivo').value = 'true';
+    }
+    document.getElementById('modalPlato').classList.remove('hidden');
+}
+
+function guardarPlato() {
+    const cod    = parseInt(el('platoCod').value);
+    const nombre = el('platoNom').value.trim();
+    const precio = parseFloat(el('platoPrecio').value);
+    if (!nombre || isNaN(precio) || isNaN(cod)) { showToast('Código, nombre y precio son obligatorios','warning'); return; }
+
+    const editId = parseInt(el('platoEditId').value)||null;
+    if (editId) {
+        const idx = PLATOS.findIndex(p=>p.id===editId);
+        PLATOS[idx] = { ...PLATOS[idx], cod, nombre, precio,
+            tiempo:parseInt(el('platoTiempo').value)||0,
+            desc:el('platoDesc').value, cat:parseInt(el('platoCat').value),
+            activo:el('platoActivo').value==='true' };
+    } else {
+        PLATOS.push({ id:Date.now(), cod, nombre, precio,
+            tiempo:parseInt(el('platoTiempo').value)||0,
+            desc:el('platoDesc').value, cat:parseInt(el('platoCat').value),
+            activo:el('platoActivo').value==='true' });
+    }
+    cerrarModal('modalPlato');
+    guardarLS();
+    showToast('Plato guardado','success');
+    renderMenuPlatos();
+}
+
+// ===== CLIENTES =====
+let CLIENTES = [
+    { id:1, nombre:'Juan García',    tel:'+54911111111', email:'juan@mail.com', canal:'delivery',  cumple:'1990-05-15', notas:'Sin picante', pedidos:3, gasto:23400 },
+    { id:2, nombre:'Ana López',      tel:'+54922222222', email:'ana@mail.com',  canal:'whatsapp',  cumple:'1985-03-22', notas:'Mesa tranquila', pedidos:7, gasto:58200 },
+    { id:3, nombre:'Carlos Ruiz',    tel:'+54933333333', email:'',              canal:'salon',     cumple:'',           notas:'', pedidos:2, gasto:11000 },
+    { id:4, nombre:'María Fernández',tel:'+54944444444', email:'maria@mail.com',canal:'whatsapp',  cumple:'1995-11-08', notas:'Vegetariana', pedidos:5, gasto:34600 },
+    { id:5, nombre:'Pedro Silva',    tel:'+54955555555', email:'pedro@mail.com',canal:'delivery',  cumple:'',           notas:'', pedidos:1, gasto:5200 },
+];
+let filtroCliente = 'todos';
+let chartCanal;
+
+const CANAL_ICON  = { whatsapp:'fab fa-whatsapp text-success', delivery:'fas fa-motorcycle text-warning', salon:'fas fa-chair text-primary', instagram:'fab fa-instagram text-accent', telefono:'fas fa-phone text-gray-400' };
+const CANAL_LABEL = { whatsapp:'WhatsApp', delivery:'Delivery', salon:'Salón', instagram:'Instagram', telefono:'Teléfono' };
+
+function renderClientes() {
+    const q = (el('buscarCliente')?.value||'').toLowerCase();
+    let lista = CLIENTES;
+    if (filtroCliente !== 'todos') lista = lista.filter(c => c.canal === filtroCliente);
+    if (q) lista = lista.filter(c => c.nombre.toLowerCase().includes(q) || c.tel.includes(q));
+
+    ['todos','whatsapp','delivery','salon'].forEach(f =>
+        el('ctab-'+f)?.classList.toggle('active', f === filtroCliente));
+
+    if (lista.length === 0) {
+        el('clientesGrid').innerHTML = `<div class="col-span-full text-center py-12 text-gray-500"><i class="fas fa-users text-3xl mb-2 block opacity-20"></i>Sin clientes</div>`;
+        return;
+    }
+
+    el('clientesGrid').innerHTML = lista.map(c => {
+        const hoy = new Date();
+        const cumpleStr = c.cumple ? (() => {
+            const d = new Date(c.cumple);
+            const esCumple = d.getDate()===hoy.getDate() && d.getMonth()===hoy.getMonth();
+            return esCumple ? '<span class="text-xs text-warning ml-1">🎂 hoy!</span>' : '';
+        })() : '';
+        const iniciales = c.nombre.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+        return `
+        <div class="glass-surface rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors border border-white/5" onclick="verHistorial(${c.id})">
+            <div class="flex items-start gap-3 mb-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold flex-shrink-0">${iniciales}</div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-white font-semibold text-sm truncate">${c.nombre}${cumpleStr}</div>
+                    <div class="text-gray-500 text-xs mt-0.5">${c.tel}</div>
+                </div>
+                <button onclick="event.stopPropagation(); abrirModalCliente(${c.id})" class="text-gray-600 hover:text-primary transition-colors">
+                    <i class="fas fa-pen text-xs"></i>
+                </button>
+            </div>
+            <div class="flex items-center gap-2 mb-3">
+                <i class="${CANAL_ICON[c.canal]||'fas fa-circle text-gray-500'} text-sm"></i>
+                <span class="text-gray-400 text-xs">${CANAL_LABEL[c.canal]||c.canal}</span>
+                ${c.email ? `<i class="fas fa-envelope text-gray-600 text-xs ml-auto"></i>` : ''}
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
+                <div class="text-center">
+                    <div class="text-white font-bold">${c.pedidos}</div>
+                    <div class="text-gray-500 text-xs">pedidos</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-primary font-bold">${fmt(c.gasto)}</div>
+                    <div class="text-gray-500 text-xs">gastado</div>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-3">
+                <a href="https://wa.me/${c.tel.replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()"
+                   class="flex-1 rounded-xl py-2 text-xs font-semibold text-center text-success border border-success/30 hover:bg-success/10 transition-colors">
+                    <i class="fab fa-whatsapp mr-1"></i>WA
+                </a>
+                ${c.email ? `<a href="mailto:${c.email}" onclick="event.stopPropagation()"
+                   class="flex-1 rounded-xl py-2 text-xs font-semibold text-center text-primary border border-primary/30 hover:bg-primary/10 transition-colors">
+                    <i class="fas fa-envelope mr-1"></i>Email
+                </a>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function filtrarClientes(f) { filtroCliente = f; renderClientes(); }
+
+function abrirModalCliente(id) {
+    el('cliEditId').value = id||'';
+    if (id) {
+        const c = CLIENTES.find(x=>x.id===id);
+        el('clienteModalTitle').textContent = 'Editar cliente';
+        el('cliNombre').value = c.nombre; el('cliTel').value = c.tel;
+        el('cliEmail').value  = c.email;  el('cliCumple').value = c.cumple||'';
+        el('cliCanal').value  = c.canal;  el('cliNotas').value  = c.notas||'';
+    } else {
+        el('clienteModalTitle').textContent = 'Nuevo cliente';
+        ['cliNombre','cliTel','cliEmail','cliCumple','cliNotas'].forEach(x=>el(x).value='');
+        el('cliCanal').value = 'whatsapp';
+    }
+    document.getElementById('modalCliente').classList.remove('hidden');
+}
+
+function guardarCliente() {
+    const nombre = el('cliNombre').value.trim();
+    const tel    = el('cliTel').value.trim();
+    if (!nombre || !tel) { showToast('Nombre y teléfono son obligatorios','warning'); return; }
+    const editId = parseInt(el('cliEditId').value)||null;
+    if (editId) {
+        const idx = CLIENTES.findIndex(c=>c.id===editId);
+        CLIENTES[idx] = { ...CLIENTES[idx], nombre, tel, email:el('cliEmail').value, cumple:el('cliCumple').value, canal:el('cliCanal').value, notas:el('cliNotas').value };
+    } else {
+        CLIENTES.push({ id:Date.now(), nombre, tel, email:el('cliEmail').value, cumple:el('cliCumple').value, canal:el('cliCanal').value, notas:el('cliNotas').value, pedidos:0, gasto:0 });
+    }
+    cerrarModal('modalCliente');
+    guardarLS();
+    showToast('Cliente guardado','success');
+    renderClientes();
+}
+
+function verHistorial(id) {
+    const c = CLIENTES.find(x=>x.id===id);
+    if (!c) return;
+    el('historialTitle').textContent = c.nombre;
+    const iniciales = c.nombre.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    el('historialClienteInfo').innerHTML = `
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg font-bold">${iniciales}</div>
+            <div class="flex-1">
+                <div class="text-white font-bold">${c.nombre}</div>
+                <div class="text-gray-400 text-sm">${c.tel}${c.email?' · '+c.email:''}</div>
+                ${c.notas?`<div class="text-gray-500 text-xs mt-1"><i class="fas fa-note-sticky mr-1"></i>${c.notas}</div>`:''}
+            </div>
+            <div class="text-right">
+                <div class="text-primary font-bold">${fmt(c.gasto)}</div>
+                <div class="text-gray-500 text-xs">${c.pedidos} pedidos</div>
+            </div>
+        </div>`;
+
+    // Pedidos del cliente (busca por nombre)
+    const pedidosCli = PEDIDOS.filter(p => p.mesa === c.nombre || p.mesa.includes(c.nombre.split(' ')[0]));
+    el('historialPedidos').innerHTML = pedidosCli.length === 0
+        ? `<p class="text-gray-500 text-sm text-center py-6">Sin pedidos registrados en el sistema</p>`
+        : pedidosCli.map(p=>`
+            <div class="glass-surface rounded-xl p-3 flex items-center justify-between">
+                <div>
+                    <div class="text-white text-sm font-medium">#${p.numero} · ${p.hora}</div>
+                    <div class="text-gray-500 text-xs">${p.items.map(i=>`×${i.cant} ${i.nombre}`).join(', ')}</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-primary font-bold text-sm">${fmt(p.total)}</div>
+                    <span class="badge badge-${p.estado} text-xs">${ESTADO_LBL[p.estado]}</span>
+                </div>
+            </div>`).join('');
+
+    el('btnWaCliente').onclick = () => window.open('https://wa.me/'+c.tel.replace(/\D/g,''));
+    el('btnEmailCliente').onclick = () => { if(c.email) window.open('mailto:'+c.email); else showToast('Sin email registrado','warning'); };
+
+    document.getElementById('modalHistorial').classList.remove('hidden');
+}
+
+// ===== RESERVAS =====
+const hoyStr = new Date().toISOString().slice(0,10);
+let RESERVAS = [
+    { id:1, cliente:'Ana López',       tel:'+54922222222', canal:'whatsapp',  fecha:hoyStr,                  hora:'13:00', personas:2, mesa:'Mesa 4', notas:'Aniversario', estado:'confirmada' },
+    { id:2, cliente:'Roberto Méndez',  tel:'+54966666666', canal:'telefono',  fecha:hoyStr,                  hora:'20:30', personas:4, mesa:'Mesa 8', notas:'',            estado:'confirmada' },
+    { id:3, cliente:'Lucía Torres',    tel:'+54977777777', canal:'instagram', fecha:new Date(Date.now()+86400000).toISOString().slice(0,10), hora:'21:00', personas:6, mesa:'', notas:'Cumpleaños', estado:'pendiente' },
+];
+let filtroReserva = 'hoy';
+const RCANAL_ICON = { whatsapp:'fab fa-whatsapp text-success', telefono:'fas fa-phone text-gray-400', instagram:'fab fa-instagram text-accent', presencial:'fas fa-user text-primary' };
+
+function renderReservas() {
+    ['hoy','proximas','todas'].forEach(f => el('rtab-'+f)?.classList.toggle('active', f===filtroReserva));
+    const mañana = new Date(Date.now()+86400000).toISOString().slice(0,10);
+
+    let lista = RESERVAS;
+    if (filtroReserva === 'hoy')      lista = lista.filter(r => r.fecha === hoyStr);
+    if (filtroReserva === 'proximas') lista = lista.filter(r => r.fecha > hoyStr);
+
+    lista = [...lista].sort((a,b) => (a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+
+    if (lista.length === 0) {
+        el('reservasLista').innerHTML = `<div class="text-center py-12 text-gray-500"><i class="fas fa-calendar-xmark text-3xl mb-2 block opacity-20"></i>Sin reservas</div>`;
+        return;
+    }
+
+    el('reservasLista').innerHTML = lista.map(r => {
+        const esHoy = r.fecha === hoyStr;
+        return `
+        <div class="glass-surface rounded-2xl p-4 border border-white/5 flex items-start gap-4">
+            <div class="text-center flex-shrink-0 w-14">
+                <div class="text-primary font-bold text-lg leading-none">${r.hora.slice(0,5)}</div>
+                <div class="text-gray-500 text-xs mt-1">${esHoy?'Hoy':r.fecha.slice(5).replace('-','/')}</div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-white font-semibold">${r.cliente}</span>
+                    <span class="badge ${r.estado==='confirmada'?'badge-listo':'badge-nuevo'}">${r.estado==='confirmada'?'Confirmada':'Pendiente'}</span>
+                </div>
+                <div class="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                    <span><i class="fas fa-users mr-1"></i>${r.personas} personas</span>
+                    ${r.mesa?`<span><i class="fas fa-chair mr-1"></i>${r.mesa}</span>`:'<span class="text-warning"><i class="fas fa-chair mr-1"></i>Sin mesa</span>'}
+                    <span><i class="${RCANAL_ICON[r.canal]||'fas fa-circle'} mr-1"></i>${r.canal}</span>
+                </div>
+                ${r.notas?`<div class="text-gray-600 text-xs mt-1"><i class="fas fa-note-sticky mr-1"></i>${r.notas}</div>`:''}
+            </div>
+            <div class="flex gap-2 flex-shrink-0">
+                <a href="https://wa.me/${r.tel.replace(/\D/g,'')}" target="_blank"
+                   class="w-8 h-8 rounded-xl bg-success/10 flex items-center justify-center text-success hover:bg-success/20 transition-colors">
+                    <i class="fab fa-whatsapp text-sm"></i>
+                </a>
+                <button onclick="abrirModalReserva(${r.id})"
+                        class="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
+                    <i class="fas fa-pen text-xs"></i>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function filtrarReservas(f) { filtroReserva = f; renderReservas(); }
+
+function abrirModalReserva(id) {
+    el('resEditId').value = id||'';
+    // Llenar select mesas
+    el('resMesa').innerHTML = '<option value="">Sin asignar</option>' +
+        CFG.mesas.map(m=>`<option value="${m}">${m}</option>`).join('');
+    if (id) {
+        const r = RESERVAS.find(x=>x.id===id);
+        el('reservaModalTitle').textContent = 'Editar reserva';
+        el('resCliente').value  = r.cliente; el('resTel').value    = r.tel;
+        el('resFecha').value    = r.fecha;   el('resHora').value   = r.hora;
+        el('resPersonas').value = r.personas; el('resMesa').value  = r.mesa;
+        el('resNotas').value    = r.notas;   el('resCanal').value  = r.canal;
+    } else {
+        el('reservaModalTitle').textContent = 'Nueva reserva';
+        ['resCliente','resTel','resNotas'].forEach(x=>el(x).value='');
+        el('resFecha').value = hoyStr; el('resHora').value = '20:00';
+        el('resPersonas').value = '2'; el('resMesa').value = '';
+        el('resCanal').value = 'whatsapp';
+    }
+    document.getElementById('modalReserva').classList.remove('hidden');
+}
+
+function guardarReserva() {
+    const cliente  = el('resCliente').value.trim();
+    const tel      = el('resTel').value.trim();
+    const fecha    = el('resFecha').value;
+    const hora     = el('resHora').value;
+    if (!cliente||!tel||!fecha||!hora) { showToast('Completá los campos obligatorios','warning'); return; }
+    const editId = parseInt(el('resEditId').value)||null;
+    const datos = { cliente, tel, canal:el('resCanal').value, fecha, hora,
+        personas:parseInt(el('resPersonas').value)||2, mesa:el('resMesa').value,
+        notas:el('resNotas').value, estado:'confirmada' };
+    if (editId) {
+        const idx = RESERVAS.findIndex(r=>r.id===editId);
+        RESERVAS[idx] = { ...RESERVAS[idx], ...datos };
+    } else {
+        RESERVAS.push({ id:Date.now(), ...datos });
+    }
+    cerrarModal('modalReserva');
+    guardarLS();
+    showToast('Reserva guardada','success');
+    renderReservas();
+}
+
+// ===== REPORTES =====
+let periodo = 'hoy';
+
+function setPeriodo(p) {
+    periodo = p;
+    ['hoy','semana','mes'].forEach(x => el('ptab-'+x)?.classList.toggle('active', x===p));
+    renderReportes();
+}
+
+function renderReportes() {
+    const peds     = PEDIDOS;
+    const vendidos = peds.filter(p => p.estado === 'entregado');
+    const venta    = vendidos.reduce((s,p) => s+p.total, 0);
+    const ticket   = vendidos.length ? Math.round(venta/vendidos.length) : 0;
+
+    // --- KPIs fila 1 ---
+    const salon    = peds.filter(p => p.tipo === 'salon');
+    const delivery = peds.filter(p => p.tipo === 'delivery');
+    const wa       = peds.filter(p => p.tipo === 'whatsapp');
+    const salonV   = salon.filter(p=>p.estado==='entregado');
+    const delivV   = delivery.filter(p=>p.estado==='entregado');
+    const waV      = wa.filter(p=>p.estado==='entregado');
+
+    el('rpVenta').textContent        = fmt(venta);
+    el('rpTicket').textContent       = fmt(ticket);
+    el('rpComandas').textContent     = peds.length;
+    el('rpDelivery').textContent     = delivery.length;
+    el('rpDeliveryMonto').textContent= fmt(delivV.reduce((s,p)=>s+p.total,0));
+    el('rpReservas').textContent     = RESERVAS.filter(r=>r.estado==='confirmada').length;
+    el('rpClientes').textContent     = CLIENTES.length;
+    el('rpComandasLabel').textContent= `${peds.length} registros`;
+
+    // --- Fila 2: canales ---
+    el('rpSalonMonto').textContent   = fmt(salonV.reduce((s,p)=>s+p.total,0));
+    el('rpSalonCant').textContent    = `${salon.length} comanda${salon.length!==1?'s':''}`;
+    el('rpDeliveryMonto2').textContent= fmt(delivV.reduce((s,p)=>s+p.total,0));
+    el('rpDeliveryCant').textContent = `${delivery.length} pedido${delivery.length!==1?'s':''}`;
+    el('rpWaMonto').textContent      = fmt(waV.reduce((s,p)=>s+p.total,0));
+    el('rpWaCant').textContent       = `${wa.length} pedido${wa.length!==1?'s':''}`;
+
+    // --- Top platos ---
+    const conteo = {};
+    peds.forEach(p => p.items.forEach(i => {
+        conteo[i.nombre] = (conteo[i.nombre]||0) + i.cant;
+    }));
+    const top    = Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const maxTop = top[0]?.[1]||1;
+    el('rpTopPlatos').innerHTML = top.length ? top.map(([nombre,cant],i)=>`
+        <div class="flex items-center gap-3">
+            <span class="text-gray-500 text-xs font-mono w-4">${i+1}</span>
+            <div class="flex-1">
+                <div class="text-white text-sm truncate">${nombre}</div>
+                <div class="h-1.5 rounded-full bg-white/5 mt-1 overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-primary to-accent" style="width:${Math.round((cant/maxTop)*100)}%"></div>
+                </div>
+            </div>
+            <span class="text-primary text-sm font-bold">×${cant}</span>
+        </div>`).join('') : '<div class="text-gray-600 text-sm text-center py-4">Sin datos</div>';
+
+    // --- Top clientes (por cantidad de pedidos) ---
+    const porCliente = {};
+    peds.forEach(p => {
+        if (p.mesa && p.mesa !== 'Sin mesa') {
+            porCliente[p.mesa] = (porCliente[p.mesa]||{cant:0, gasto:0});
+            porCliente[p.mesa].cant++;
+            if (p.estado === 'entregado') porCliente[p.mesa].gasto += p.total;
+        }
+    });
+    // También busca en CRM
+    CLIENTES.forEach(c => {
+        if (c.pedidos > 0 && !porCliente[c.nombre]) {
+            porCliente[c.nombre] = { cant: c.pedidos, gasto: c.gasto||0 };
+        }
+    });
+    const topC   = Object.entries(porCliente).sort((a,b)=>b[1].cant-a[1].cant).slice(0,5);
+    const maxC   = topC[0]?.[1].cant||1;
+    el('rpTopClientes').innerHTML = topC.length ? topC.map(([nombre,d],i)=>`
+        <div class="flex items-center gap-3">
+            <span class="text-gray-500 text-xs font-mono w-4">${i+1}</span>
+            <div class="flex-1">
+                <div class="text-white text-sm truncate">${nombre}</div>
+                <div class="h-1.5 rounded-full bg-white/5 mt-1 overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-accent to-primary" style="width:${Math.round((d.cant/maxC)*100)}%"></div>
+                </div>
+            </div>
+            <div class="text-right flex-shrink-0">
+                <div class="text-accent text-xs font-bold">${d.cant}x</div>
+                <div class="text-gray-500 text-xs">${fmt(d.gasto)}</div>
+            </div>
+        </div>`).join('') : '<div class="text-gray-600 text-sm text-center py-4">Sin datos</div>';
+
+    // --- Gráfico canal ---
+    const canalData = [salonV.length, delivV.length, waV.length];
+    if (chartCanal) chartCanal.destroy();
+    chartCanal = new Chart(el('chartCanal'), {
+        type:'doughnut',
+        data:{
+            labels:['Salón','Delivery','WhatsApp'],
+            datasets:[{
+                data: canalData,
+                backgroundColor:['rgba(99,102,241,0.75)','rgba(245,158,11,0.75)','rgba(16,185,129,0.75)'],
+                borderColor:['rgba(99,102,241,0.3)','rgba(245,158,11,0.3)','rgba(16,185,129,0.3)'],
+                borderWidth:1
+            }]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:true, cutout:'65%',
+            plugins:{
+                legend:{ position:'bottom', labels:{ color:'#9ca3af', font:{size:11}, padding:12 } }
+            }
+        }
+    });
+
+    // --- Tabla detalle ---
+    const CANAL_ICON = { salon:'<i class="fas fa-chair text-primary text-xs"></i>', delivery:'<i class="fas fa-motorcycle text-warning text-xs"></i>', whatsapp:'<i class="fab fa-whatsapp text-success text-xs"></i>' };
+    el('rpTabla').innerHTML = peds.map(p=>`
+        <tr class="border-b border-white/5 hover:bg-white/[0.02]">
+            <td class="px-4 py-2.5 text-gray-400 font-mono text-xs">#${p.numero}</td>
+            <td class="px-4 py-2.5 text-white text-sm">${p.mesa}</td>
+            <td class="px-4 py-2.5 text-xs hidden md:table-cell">
+                <span class="flex items-center gap-1.5 text-gray-400">${CANAL_ICON[p.tipo]||''} ${TIPO_LBL[p.tipo]||p.tipo}</span>
+            </td>
+            <td class="px-4 py-2.5 text-gray-500 text-xs hidden md:table-cell">${p.hora}</td>
+            <td class="px-4 py-2.5 hidden md:table-cell">
+                <span class="badge badge-${p.estado} text-xs">${ESTADO_LBL[p.estado]||p.estado}</span>
+            </td>
+            <td class="px-4 py-2.5 text-right font-semibold ${p.estado==='entregado'?'text-success':'text-gray-400'}">${fmt(p.total)}</td>
+        </tr>`).join('');
+}
+
+function exportarCSV() {
+    const rows = [['#','Mesa/Cliente','Canal','Hora','Total','Estado']];
+    PEDIDOS.forEach(p => rows.push([p.numero, p.mesa, p.tipo, p.hora, p.total, p.estado]));
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+    a.download = 'restia-reporte.csv';
+    a.click();
+    showToast('CSV exportado','success');
+}
+
+// ===== CONFIG =====
+let CFG = {
+    nombre:'Restaurante Demo', tel:'+54 9 11 0000-0000',
+    dir:'Av. Ejemplo 123, Ciudad', email:'contacto@restia.com',
+    mesas: ['Mesa 1','Mesa 2','Mesa 3','Mesa 4','Mesa 5','Mesa 6','Mesa 7','Mesa 8'],
+    horarios: [
+        { dia:'Lunes - Viernes', apertura:'12:00', cierre:'23:00', activo:true },
+        { dia:'Sábado',          apertura:'12:00', cierre:'00:00', activo:true },
+        { dia:'Domingo',         apertura:'12:00', cierre:'22:00', activo:false },
+    ],
+    resenas: {
+        googlePlaceId: '',
+        facebookUrl: '',
+        tripAdvisorUrl: '',
+    }
+};
+
+function renderConfig() {
+    el('cfgNombre').value = CFG.nombre;
+    el('cfgTel').value    = CFG.tel;
+    el('cfgDir').value    = CFG.dir;
+    el('cfgEmail').value  = CFG.email;
+    el('cfgGooglePlaceId').value  = CFG.resenas.googlePlaceId;
+    el('cfgFacebookUrl').value    = CFG.resenas.facebookUrl;
+    el('cfgTripAdvisorUrl').value = CFG.resenas.tripAdvisorUrl;
+    renderQRResena();
+
+    el('mesasGrid').innerHTML = CFG.mesas.map((m,i)=>`
+        <div class="glass-surface rounded-xl p-2 text-center text-xs text-white font-medium cursor-default">${m}</div>`).join('') +
+        `<button onclick="agregarMesa()" class="glass-surface rounded-xl p-2 text-center text-xs text-gray-500 hover:text-primary transition-colors border border-dashed border-white/10">
+            <i class="fas fa-plus block text-base mb-0.5"></i>Nueva
+        </button>`;
+
+    el('horariosLista').innerHTML = CFG.horarios.map((h,i)=>`
+        <div class="glass-surface rounded-xl p-3 space-y-2" id="horario-row-${i}">
+            <div class="flex items-center gap-2">
+                <input type="text" value="${h.dia}" placeholder="Ej: Lunes - Viernes"
+                    class="input-field rounded-lg px-3 py-1.5 text-sm flex-1 min-w-0"
+                    id="h-dia-${i}">
+                <label class="flex items-center gap-1.5 cursor-pointer flex-shrink-0">
+                    <div class="relative">
+                        <input type="checkbox" id="h-activo-${i}" ${h.activo?'checked':''} class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-700 peer-checked:bg-success rounded-full transition-colors"></div>
+                        <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                    </div>
+                    <span class="text-xs text-gray-400 w-8">${h.activo?'Act.':'Inact.'}</span>
+                </label>
+                <button onclick="eliminarHorario(${i})" class="text-gray-600 hover:text-danger transition-colors flex-shrink-0 p-1">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-gray-500 w-14 flex-shrink-0">Apertura</label>
+                <input type="time" value="${h.apertura}" class="input-field rounded-lg px-3 py-1.5 text-sm flex-1" id="h-apertura-${i}">
+                <label class="text-xs text-gray-500 w-10 flex-shrink-0 text-center">Cierre</label>
+                <input type="time" value="${h.cierre}" class="input-field rounded-lg px-3 py-1.5 text-sm flex-1" id="h-cierre-${i}">
+            </div>
+        </div>`).join('');
+}
+
+function guardarConfig() {
+    CFG.nombre = el('cfgNombre').value;
+    CFG.tel    = el('cfgTel').value;
+    CFG.dir    = el('cfgDir').value;
+    CFG.email  = el('cfgEmail').value;
+    CFG.resenas.googlePlaceId  = el('cfgGooglePlaceId').value.trim();
+    CFG.resenas.facebookUrl    = el('cfgFacebookUrl').value.trim();
+    CFG.resenas.tripAdvisorUrl = el('cfgTripAdvisorUrl').value.trim();
+    el('sideNegocio').textContent = CFG.nombre;
+    renderQRResena();
+    guardarLS();
+    showToast('Configuración guardada','success');
+}
+
+function getResenaUrl(plataforma) {
+    if (plataforma === 'google' && CFG.resenas.googlePlaceId)
+        return CFG.resenas.googlePlaceId;
+    if (plataforma === 'facebook' && CFG.resenas.facebookUrl)
+        return CFG.resenas.facebookUrl;
+    if (plataforma === 'tripadvisor' && CFG.resenas.tripAdvisorUrl)
+        return CFG.resenas.tripAdvisorUrl;
+    return null;
+}
+
+function renderQRResena() {
+    const wrap = el('qrResenaWrap');
+    if (!wrap) return;
+    const url = getResenaUrl('google') || getResenaUrl('facebook') || getResenaUrl('tripadvisor');
+    if (!url) {
+        wrap.innerHTML = `<div class="text-gray-600 text-xs text-center py-4"><i class="fas fa-qrcode text-2xl block mb-2 opacity-20"></i>Configurá al menos una plataforma para generar el QR</div>`;
+        return;
+    }
+    // Usamos QR Server API (gratuita, sin key)
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`;
+    wrap.innerHTML = `
+        <div class="flex flex-col items-center gap-3">
+            <img src="${qrUrl}" alt="QR Reseña" class="rounded-xl border border-white/10 w-40 h-40">
+            <p class="text-gray-500 text-xs text-center">QR principal: ${url.includes('google') ? 'Google Maps' : url.includes('facebook') ? 'Facebook' : 'TripAdvisor'}</p>
+            <a href="${qrUrl}" download="qr-resena.png" class="btn-primary rounded-xl px-4 py-2 text-white text-xs font-semibold">
+                <i class="fas fa-download mr-1.5"></i>Descargar QR
+            </a>
+        </div>`;
+}
+
+function pedirResena(tel) {
+    const plataformas = [
+        { id:'google',      label:'Google Maps',  icon:'fab fa-google',     color:'text-yellow-400', url: getResenaUrl('google') },
+        { id:'facebook',    label:'Facebook',     icon:'fab fa-facebook',   color:'text-blue-400',   url: getResenaUrl('facebook') },
+        { id:'tripadvisor', label:'TripAdvisor',  icon:'fas fa-map-marked-alt', color:'text-green-400', url: getResenaUrl('tripadvisor') },
+    ].filter(p => p.url);
+
+    if (!plataformas.length) {
+        showToast('Configurá las plataformas de reseñas en Config', 'warning');
+        return;
+    }
+
+    el('modalResenaPlataformas').innerHTML = plataformas.map(p => `
+        <button onclick="enviarLinkResena('${tel}','${p.url}')" class="glass rounded-2xl p-4 text-center hover:border-primary/40 transition-all border border-white/10">
+            <i class="${p.icon} ${p.color} text-2xl block mb-2"></i>
+            <span class="text-white text-sm font-semibold">${p.label}</span>
+        </button>`).join('');
+
+    el('modalResena').classList.remove('hidden');
+}
+
+function enviarLinkResena(tel, url) {
+    cerrarModal('modalResena');
+    if (tel) {
+        const num = tel.replace(/\D/g,'');
+        const msg = encodeURIComponent(`¡Gracias por visitarnos! 🙏 Si te gustó la experiencia, nos ayudarías muchísimo dejando una reseña: ${url}`);
+        window.open(`https://wa.me/${num}?text=${msg}`, '_blank');
+    } else {
+        // Sin teléfono: abrir directo el link
+        window.open(url, '_blank');
+    }
+}
+
+function agregarHorario() {
+    CFG.horarios.push({ dia: '', apertura: '09:00', cierre: '22:00', activo: true });
+    renderConfig();
+    // Foco en el nuevo campo día
+    const idx = CFG.horarios.length - 1;
+    setTimeout(() => el(`h-dia-${idx}`)?.focus(), 50);
+}
+
+function eliminarHorario(i) {
+    CFG.horarios.splice(i, 1);
+    renderConfig();
+}
+
+function guardarHorarios() {
+    CFG.horarios = CFG.horarios.map((h, i) => ({
+        dia:      (el(`h-dia-${i}`)?.value     || '').trim(),
+        apertura:  el(`h-apertura-${i}`)?.value || '00:00',
+        cierre:    el(`h-cierre-${i}`)?.value   || '00:00',
+        activo:    el(`h-activo-${i}`)?.checked ?? true,
+    })).filter(h => h.dia); // descartar filas sin nombre
+    guardarLS();
+    renderConfig();
+    showToast('Horarios guardados', 'success');
+}
+
+function agregarMesa() {
+    const n = prompt('Nombre de la mesa:', 'Mesa '+(CFG.mesas.length+1));
+    if (n) { CFG.mesas.push(n.trim()); renderConfig(); }
+}
+
+// ===== UTILS =====
+function el(id) { return document.getElementById(id); }
+function fmt(n) { return '$' + (n||0).toLocaleString('es-AR'); }
+function cerrarModal(id) { el(id).classList.add('hidden'); }
+
+function showToast(msg, tipo='success') {
+    const icons = { success:'fa-check-circle text-success', warning:'fa-triangle-exclamation text-warning', error:'fa-circle-xmark text-danger' };
+    el('toastIcon').className = 'fas ' + (icons[tipo]||icons.success);
+    el('toastMsg').textContent = msg;
+    const t = el('toast');
+    t.classList.remove('hidden');
+    setTimeout(()=>t.classList.add('hidden'), 2800);
+}
+
+function cerrarSesion() { if(confirm('¿Salir?')) location.reload(); }
+
+// ===== PERSISTENCIA LOCAL STORAGE =====
+const LS_KEY = 'restia_v1';
+
+function guardarLS() {
+    try {
+        localStorage.setItem(LS_KEY, JSON.stringify({
+            PEDIDOS, CLIENTES, INVENTARIO, PLATOS, CATS, RESERVAS, CFG
+        }));
+    } catch(e) { console.warn('localStorage lleno', e); }
+}
+
+function cargarLS() {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.PEDIDOS    && data.PEDIDOS.length)    PEDIDOS.splice(0, PEDIDOS.length, ...data.PEDIDOS);
+        if (data.CLIENTES   && data.CLIENTES.length)   CLIENTES.splice(0, CLIENTES.length, ...data.CLIENTES);
+        if (data.INVENTARIO && data.INVENTARIO.length) INVENTARIO.splice(0, INVENTARIO.length, ...data.INVENTARIO);
+        if (data.PLATOS     && data.PLATOS.length)     PLATOS.splice(0, PLATOS.length, ...data.PLATOS);
+        if (data.CATS       && data.CATS.length)       CATS.splice(0, CATS.length, ...data.CATS);
+        if (data.RESERVAS   && data.RESERVAS.length)   RESERVAS.splice(0, RESERVAS.length, ...data.RESERVAS);
+        if (data.CFG) Object.assign(CFG, data.CFG);
+    } catch(e) { console.warn('Error cargando localStorage', e); }
+}
+
+function limpiarDatosDemo() {
+    if (confirm('¿Borrar todos los datos de demo y empezar desde cero?\nEsta acción no se puede deshacer.')) {
+        localStorage.removeItem(LS_KEY);
+        location.reload();
+    }
+}
+
+// ===== API BASE (backend System IA) =====
+const API_BASE_DEFAULT = 'https://agentes.arnaldoayalaestratega.cloud';
+let API_BASE = localStorage.getItem('gastro_api_base') || API_BASE_DEFAULT;
+
+function guardarAPIBase() {
+    API_BASE = el('apiBaseInput').value.trim().replace(/\/$/, '') || API_BASE_DEFAULT;
+    localStorage.setItem('gastro_api_base', API_BASE);
+    el('apiStatus').textContent = '⏳ Conectando...';
+    cargarConfigBackend();
+}
+
+async function cargarConfigBackend() {
+    if (!API_BASE) return;
+    try {
+        const r = await fetch(`${API_BASE}/demos/gastronomico/config`);
+        if (!r.ok) { el('apiStatus').textContent = `❌ Error ${r.status} al conectar`; return; }
+        const data = await r.json();
+        const nombre = data.nombre || 'Café Demo';
+        const emoji  = data.emoji  || '☕';
+        el('sideNegocio').textContent = nombre;
+        if (el('previewNombreLocal')) el('previewNombreLocal').textContent = nombre;
+        el('botNombreLocal').textContent  = `${emoji} ${nombre}`;
+        el('botNombreLocal2').textContent = nombre;
+        const statusTxt =
+            `✅ <strong>${nombre}</strong> &nbsp;|&nbsp; `+
+            `Airtable: ${data.airtable_ok ? '✅' : '❌'} &nbsp;|&nbsp; `+
+            `Cal.com: ${data.cal_ok ? '✅' : '❌'} &nbsp;|&nbsp; `+
+            `WhatsApp: ${data.ycloud_ok ? '✅' : '❌'}`;
+        el('apiStatus').innerHTML = statusTxt;
+        if (el('botApiStatus')) el('botApiStatus').innerHTML = statusTxt;
+        // Rellenar campo en la UI
+        if (el('apiBaseInput')) el('apiBaseInput').value = API_BASE;
+    } catch(e) {
+        el('apiStatus').textContent = '❌ Sin conexión al backend';
+        if (el('botApiStatus')) el('botApiStatus').textContent = '❌ Sin conexión — modo offline';
+        console.warn('[API] config:', e);
+    }
+}
+
+async function cargarReservasBackend() {
+    if (!API_BASE) return;
+    try {
+        const r = await fetch(`${API_BASE}/demos/gastronomico/crm/reservas`);
+        if (!r.ok) return;
+        const data = await r.json();
+        const lista = data.data || [];
+        RESERVAS.splice(0, RESERVAS.length, ...lista.map((d, i) => {
+            // El nombre viene de lookup de Clientes (puede ser array o string)
+            const rawNombre = d['Nombre'] || (Array.isArray(d['Nombre (from Telefono)']) ? d['Nombre (from Telefono)'][0] : '') || '—';
+            // Teléfono viene como lookup también
+            const rawTel = (Array.isArray(d['Telefono']) ? d['Telefono'][0] : d['Telefono']) || '';
+            const fechaHora = d['Fecha y Hora'] || '';
+            return {
+                id:       d._id || (Date.now() + i),
+                cliente:  rawNombre,
+                tel:      rawTel,
+                canal:    'whatsapp',
+                fecha:    fechaHora.slice(0, 10),
+                hora:     fechaHora.slice(11, 16) || '—',
+                personas: Number(d['Cantidad de Personas']) || 1,
+                mesa:     '',
+                notas:    d['Especificaciones'] || d['Notas'] || '',
+                estado:   d['Estado'] || 'pendiente',
+            };
+        }));
+        renderReservas();
+    } catch(e) { console.warn('[API] reservas:', e); }
+}
+
+async function cargarClientesBackend() {
+    if (!API_BASE) return;
+    try {
+        const r = await fetch(`${API_BASE}/demos/gastronomico/crm/clientes`);
+        if (!r.ok) return;
+        const data = await r.json();
+        const lista = data.data || [];
+        CLIENTES.splice(0, CLIENTES.length, ...lista.map((d, i) => ({
+            id:     d._id || (Date.now() + i),
+            nombre: d['Nombre'] || '—',
+            tel:    d['Telefono'] || d['Teléfono'] || '—',
+            email:  d['Email'] || d['email'] || '',
+            pedidos: Number(d['Pedidos'] || d['pedidos'] || 0),
+            gasto:  Number(d['Total gastado'] || 0),
+            canal:  d['Origen'] || 'WhatsApp IA',
+            notas:  d['Notas'] || '',
+        })));
+        renderClientes();
+    } catch(e) { console.warn('[API] clientes:', e); }
+}
+
+async function cargarPedidosBackend() {
+    if (!API_BASE) return;
+    try {
+        const r = await fetch(`${API_BASE}/demos/gastronomico/crm/pedidos`);
+        if (!r.ok) return;
+        const data = await r.json();
+        const lista = data.data || [];
+        // Insertar pedidos del bot en la lista PEDIDOS local para que aparezcan en cocina/delivery
+        const yaIds = new Set(PEDIDOS.map(p => p._atId).filter(Boolean));
+        lista.forEach((d, i) => {
+            if (yaIds.has(d._id)) return;
+            const tipo = (d['tipo'] || 'delivery').replace('delivey','delivery');
+            PEDIDOS.unshift({
+                id:      Date.now() + i,
+                _atId:   d._id,
+                numero:  String(d['ID Pedido'] || ('WA-' + String(i+1).padStart(3,'0'))),
+                mesa:    (Array.isArray(d['Clientes']) ? '' : '') || 'WhatsApp Bot',
+                comanda: '',
+                tipo:    tipo === 'delivery' ? 'delivery' : (tipo === 'encargue' ? 'llevar' : 'salon'),
+                estado:  d['estado_entrega'] || d['Estado Entrega'] || 'nuevo',
+                total:   Number(d['total_ars'] || d['Total ARS'] || 0),
+                hora:    (d['Fecha'] || '').slice(11, 16) || new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),
+                items:   [{ cod: 0, nombre: d['detalle'] || d['Detalle'] || 'Pedido WhatsApp', cant: 1, precio: Number(d['total_ars'] || 0) }],
+                _waBot:  true,
+            });
+        });
+        renderInicio();
+    } catch(e) { console.warn('[API] pedidos:', e); }
+}
+
+// ===== DIFUSIÓN =====
+const DIF_TEMPLATES = {
+    menu:    `¡Hola! 👋 Te compartimos el menú de hoy ☕\n\n🥩 Milanesa napolitana — $4.500\n🍝 Tallarines caseros — $3.800\n☕ Desayuno completo — $2.800\n🍰 Torta del día — $1.500 / porción\n\n✅ Hacemos delivery y reservas de mesa\n📱 Respondé para pedir o reservar\n¡Que lo disfruten! 🍴`,
+    promo:   `¡Hola! 🎉 Promo especial solo hoy:\n\n🌟 2x1 en medialunas hasta las 12hs\n☕ Café + tostado $2.000\n\n📱 Respondé para pedir delivery o reservar mesa.`,
+    evento:  `¡Hola! 📅 Tenemos mesas disponibles este fin de semana:\n\n✅ Viernes noche — desde las 20hs\n✅ Sábado al mediodía — desde las 12hs\n✅ Domingo desayuno — desde las 9hs\n\n📱 Respondé y te reservamos tu lugar. ☕`,
+    libre:   `¡Hola! 👋\n\n[Tu mensaje aquí]\n\n☕ Café Demo`,
+};
+
+function cargarPlantilla() {
+    const t = el('difPlantilla').value;
+    el('difMensaje').value = DIF_TEMPLATES[t] || '';
+    actualizarPreviewDif();
+}
+
+function actualizarPreviewDif() {
+    el('difPreviewBubble').textContent = el('difMensaje').value;
+}
+
+async function enviarDifusion() {
+    const msg = el('difMensaje').value.trim();
+    if (!msg) { showToast('Escribí un mensaje primero', 'warning'); return; }
+    if (!API_BASE) { showToast('Difusión enviada (simulado) ✅', 'success'); return; }
+    try {
+        const r = await fetch(`${API_BASE}/demos/gastronomico/difusion`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ mensaje: msg, telefonos: CLIENTES.map(c => c.tel).filter(Boolean) }),
+        });
+        const data = await r.json();
+        showToast(`Difusión enviada a ${data.enviados || '?'} contactos 📣`, 'success');
+    } catch(e) { showToast('Error enviando difusión', 'error'); }
+}
+
+// ===== BOT SIMULADOR =====
+const BOT_RESPONSES = {
+    'delivery':  '¡Claro que sí! 🛵 Hacemos delivery todos los días.\n\nCosto de envío:\n📍 Zona centro: gratis en pedidos +$3.000\n📍 Otras zonas: $500\n\n¿Qué desearía pedir? Le cuento el menú de hoy 😊',
+    'menú':      '📋 *Menú de hoy*\n\n🥩 Milanesa napolitana — $4.500\n🍝 Tallarines caseros — $3.800\n☕ Desayuno completo — $2.800\n🍰 Torta del día — $1.500\n\n¿Qué desea pedir o reservar? 😊',
+    'reservar':  '📅 ¡Con mucho gusto! Para la reserva necesito:\n\n👤 Nombre completo\n👥 Cantidad de personas\n📅 Fecha\n🕐 Horario preferido\n\n¿Me puede indicar estos datos?',
+    'torta':     '🎂 ¡Qué lindo encargue! Para la torta necesito:\n\n📅 ¿Para qué día?\n👥 ¿Para cuántas personas?\n🍫 ¿Qué sabor? (Chocolate, vainilla, dulce de leche)\n💌 ¿Con dedicatoria?\n\n¿Me confirma los detalles? 😊',
+    'catering':  '🍽️ Para el catering, aquí una cotización estimada:\n\n🥪 *Pack Reunión Premium* (20 personas)\n· Sandwiches variados (4 x persona)\n· Medialunas de manteca\n· Café e infusiones ilimitados\n· Agua mineral (500ml x persona)\n\n💰 *Total estimado: $68.000*\n\n¿Avanzamos con la reserva? 🙌',
+    'salado':    '🥩 Opciones saladas de hoy:\n\n🥩 Milanesa napolitana + guarnición — $4.500\n🍝 Tallarines caseros con tuco — $3.800\n🥪 Pack sándwiches x4 — $2.600\n\n¿Para comer aquí o delivery? 😊',
+    'horario':   `🕐 Nuestro horario:\n\n${CFG.horario || 'Lunes a Sábado 8:00 a 22:00 hs'}\nDomingos 9:00 a 14:00 hs\n\n¿Necesitás hacer una reserva? 😊`,
+};
+
+const BOT_EJEMPLOS = [
+    '¿Hacen delivery?',
+    '¿Cuál es el menú de hoy?',
+    'Quiero reservar una mesa para 4 personas el sábado',
+    'Quiero encargar una torta de cumpleaños',
+    '¿Cuánto sale el catering para 20 personas?',
+    '¿Tienen comida salada?',
+    '¿A qué hora abren?',
+];
+
+function initBotEjemplos() {
+    const cont = el('botEjemplos');
+    if (!cont) return;
+    BOT_EJEMPLOS.forEach(msg => {
+        const btn = document.createElement('button');
+        btn.className = 'glass w-full text-left rounded-xl px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors';
+        btn.innerHTML = `<i class="fas fa-comment text-primary mr-2 text-xs"></i>${msg}`;
+        btn.onclick = () => simularMsg(msg);
+        cont.appendChild(btn);
+    });
+}
+
+async function enviarMsgBot() {
+    const input = el('botInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    simularMsg(msg);
+}
+
+async function simularMsg(msg) {
+    const chat = el('botChat');
+    const now = new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+
+    // Burbuja usuario
+    const userDiv = document.createElement('div');
+    userDiv.className = 'self-start max-w-xs';
+    userDiv.innerHTML = `<div class="rounded-xl rounded-tl-none p-3 text-sm leading-relaxed" style="background:#1a2234;border:1px solid rgba(255,255,255,0.06);color:#e8eaf0;">${msg}</div><div class="text-xs text-gray-600 mt-1">${now}</div>`;
+    chat.appendChild(userDiv);
+
+    // Typing
+    const typDiv = document.createElement('div');
+    typDiv.className = 'self-end max-w-xs';
+    typDiv.innerHTML = `<div class="text-xs mb-1" style="color:#6366f1;">🤖 System IA</div><div class="rounded-xl rounded-tr-none p-3 flex gap-1.5 items-center" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.2);"><span class="td"></span><span class="td"></span><span class="td"></span></div>`;
+    chat.appendChild(typDiv);
+    chat.scrollTop = chat.scrollHeight;
+
+    // ID único de sesión demo (persiste en la pestaña)
+    if (!window._botSesionId) window._botSesionId = '549' + Math.floor(Math.random()*9e9);
+
+    let respuesta = '';
+    if (API_BASE) {
+        try {
+            const r = await fetch(`${API_BASE}/demos/gastronomico/mensaje`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ telefono: window._botSesionId, mensaje: msg, nombre: 'Demo Visitor' }),
+            });
+            const data = await r.json();
+            respuesta = data.respuesta || '';
+            // Refrescar reservas y clientes si hubo acción
+            if (respuesta.includes('Reserva') || respuesta.includes('confirmada') || respuesta.includes('pedido')) {
+                setTimeout(() => { cargarReservasBackend(); cargarClientesBackend(); cargarPedidosBackend(); }, 1500);
+            }
+        } catch(e) { console.warn('[BOT] fetch error:', e); }
+    }
+
+    if (!respuesta) {
+        const lower = msg.toLowerCase();
+        if (lower.includes('delivery') || lower.includes('llevar')) respuesta = BOT_RESPONSES.delivery;
+        else if (lower.includes('menú') || lower.includes('menu') || lower.includes('qué hay')) respuesta = BOT_RESPONSES['menú'];
+        else if (lower.includes('reserv') || lower.includes('mesa')) respuesta = BOT_RESPONSES.reservar;
+        else if (lower.includes('torta') || lower.includes('cumple') || lower.includes('encargue')) respuesta = BOT_RESPONSES.torta;
+        else if (lower.includes('catering') || lower.includes('presupuesto') || lower.includes('cotiza')) respuesta = BOT_RESPONSES.catering;
+        else if (lower.includes('salad') || lower.includes('salado') || lower.includes('almuerz')) respuesta = BOT_RESPONSES.salado;
+        else if (lower.includes('horario') || lower.includes('abren') || lower.includes('hora')) respuesta = BOT_RESPONSES.horario;
+        else respuesta = '¡Hola! 👋 Puedo ayudarte con el menú, delivery, reservas de mesa y encargues. ¿En qué te puedo ayudar?';
+    }
+
+    await new Promise(r => setTimeout(r, 900));
+    chat.removeChild(typDiv);
+
+    const botDiv = document.createElement('div');
+    botDiv.className = 'self-end max-w-xs';
+    botDiv.innerHTML = `<div class="text-xs mb-1" style="color:#6366f1;">🤖 System IA</div><div class="rounded-xl rounded-tr-none p-3 text-sm leading-relaxed whitespace-pre-wrap" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.2);color:#e8eaf0;">${respuesta}</div><div class="text-xs text-gray-600 text-right mt-1">${now} ✓✓</div>`;
+    chat.appendChild(botDiv);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+    cargarLS();
+    el('sideNegocio').textContent = CFG.nombre || 'Restaurante Demo';
+
+    // API backend — conecta al backend de producción automáticamente
+    cargarConfigBackend().then(() => {
+        cargarReservasBackend();
+        cargarClientesBackend();
+        cargarPedidosBackend();
+    });
+
+    // Difusión — cargar plantilla default
+    cargarPlantilla();
+
+    // Bot — init ejemplos
+    initBotEjemplos();
+
+    renderInicio();
+
+    // Enter en mesa → foco a código
+    el('inputMesa').addEventListener('keydown', e => { if(e.key==='Enter') el('inputCodigo').focus(); });
+
+    // Cerrar modales al click en overlay
+    document.querySelectorAll('.modal-overlay').forEach(o => {
+        o.addEventListener('click', e => { if(e.target===o) o.classList.add('hidden'); });
+    });
+
+    // Cerrar sugerencias al click fuera
+    document.addEventListener('click', e => {
+        const sug = el('manualSugerencias');
+        if (sug && !sug.contains(e.target) && e.target !== el('manualNombre')) {
+            sug.classList.add('hidden');
+        }
+    });
+});
+</script>
+</body>
+</html>
