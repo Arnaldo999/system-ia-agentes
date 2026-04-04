@@ -353,8 +353,9 @@ def _build_menu_opciones(sn: str, incluir_nav: bool = True) -> str:
     for i, (texto_op, emoji_op) in enumerate(opciones):
         lineas.append(f"{_NUMEROS[i]} {texto_op} {emoji_op}")
     resultado = "\n".join(lineas)
+    resultado += "\n\n👆 *Respondé con el número de tu opción*"
     if incluir_nav:
-        resultado += "\n\n_(Escribí *0* o *Menú* para ver esto de nuevo | *00* para cambiar negocio)_"
+        resultado += "\n_(Escribí *0* o *Menú* para ver esto de nuevo | *00* para cambiar negocio)_"
     return resultado
 
 
@@ -389,6 +390,8 @@ PERSONALIDAD:
 - Tratá al cliente de "usted" o "tú" (nunca "vos")
 - Emojis con moderación: máximo 1-2 por mensaje
 - Respuestas cortas y directas — máximo 6 líneas salvo que el menú lo requiera
+- SIEMPRE que muestres una lista de opciones, cerrá con: "👆 *Respondé con el número de tu opción*"
+- SIEMPRE que muestres el menú del día, cerrá con: "¿Desea hacer un pedido o tiene alguna consulta?"
 
 ════════════════════════════════════════════════════════
 DATOS DEL LOCAL
@@ -1096,6 +1099,8 @@ PERSONALIDAD:
 - Tratá al cliente de "usted" o "tú" (nunca "vos")
 - Emojis con moderación: máximo 1-2 por mensaje
 - Respuestas cortas y directas — máximo 6 líneas salvo que el menú lo requiera
+- SIEMPRE que muestres una lista de opciones, cerrá con: "👆 *Respondé con el número de tu opción*"
+- SIEMPRE que muestres el menú del día, cerrá con: "¿Desea hacer un pedido o tiene alguna consulta?"
 
 ════════════════════════════════════════════════════════
 DATOS DEL LOCAL
