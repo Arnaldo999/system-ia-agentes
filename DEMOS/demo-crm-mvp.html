@@ -990,10 +990,15 @@ tailwind.config = {
           <div class="font-bold text-sm mb-4 text-txt">🎨 Branding Visual</div>
 
           <div class="mf">
-            <label>URL del Logo</label>
-            <input id="cfg-logo" class="mi" type="url" placeholder="https://tu-logo.com/logo.png" oninput="previewCfgLogo(this.value)">
+            <label>Logo</label>
+            <div class="flex items-center gap-3">
+              <div id="cfg-logo-preview" class="w-[60px] h-[60px] bg-surface-2 border border-brd rounded-[10px] flex items-center justify-center text-[28px] shrink-0 overflow-hidden">🏠</div>
+              <div class="flex flex-col gap-2 flex-1">
+                <button type="button" onclick="uploadLogo()" class="btn btn-primary text-xs">📤 Subir imagen</button>
+                <input id="cfg-logo" class="mi text-xs" type="url" placeholder="o pegar URL del logo..." oninput="previewCfgLogo(this.value)">
+              </div>
+            </div>
           </div>
-          <div id="cfg-logo-preview" class="w-[60px] h-[60px] bg-surface-2 border border-brd rounded-[10px] flex items-center justify-center text-[28px] mb-4">🏠</div>
 
           <div class="mf grid grid-cols-2 gap-3">
             <div>
@@ -2279,6 +2284,42 @@ function previewCfgLogo(url) {
     el.textContent = '🏠';
     prev.textContent = '🏠';
   }
+}
+
+function uploadLogo() {
+  if (!window.cloudinary) {
+    const s = document.createElement('script');
+    s.src = 'https://upload-widget.cloudinary.com/global/all.js';
+    s.onload = () => _openCloudinaryWidget();
+    document.head.appendChild(s);
+  } else {
+    _openCloudinaryWidget();
+  }
+}
+
+function _openCloudinaryWidget() {
+  cloudinary.openUploadWidget({
+    cloudName: 'dmqkqcreo',
+    uploadPreset: 'social_media_posts',
+    sources: ['local', 'url', 'camera'],
+    multiple: false,
+    maxFileSize: 2000000,
+    cropping: true,
+    croppingAspectRatio: 1,
+    croppingShowDimensions: true,
+    resourceType: 'image',
+    folder: 'lovbot/logos',
+    styles: {
+      palette: { window: '#1a1d27', windowBorder: '#2e3347', tabIcon: '#6c63ff', menuIcons: '#8b92a5', textDark: '#e8eaf0', textLight: '#8b92a5', link: '#6c63ff', action: '#00d4aa', inactiveTabIcon: '#555', error: '#ff6b6b', inProgress: '#6c63ff', complete: '#00d4aa', sourceBg: '#0f1117' },
+      fonts: { default: null, "'Inter', sans-serif": { url: null, active: true } }
+    }
+  }, (err, result) => {
+    if (!err && result && result.event === 'success') {
+      const url = result.info.secure_url;
+      document.getElementById('cfg-logo').value = url;
+      previewCfgLogo(url);
+    }
+  });
 }
 
 function syncColor(tipo) {
