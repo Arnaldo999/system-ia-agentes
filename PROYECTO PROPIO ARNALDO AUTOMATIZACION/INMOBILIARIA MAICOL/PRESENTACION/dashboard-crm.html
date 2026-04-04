@@ -462,13 +462,29 @@
           <input type="file" id="perfil-avatar-file" accept="image/*" class="hidden" onchange="onPerfilAvatarChange(this)" />
           <p class="text-xs text-txt-muted">Clic en la imagen para cambiar el avatar</p>
         </div>
-        <div class="form-group">
-          <label>Nombre visible</label>
-          <input type="text" id="perfil-nombre-input" class="form-control" placeholder="Ej: Maicol Back" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre visible</label>
+            <input type="text" id="perfil-nombre-input" class="form-control" placeholder="Ej: Maicol Back" />
+          </div>
+          <div class="form-group">
+            <label>Empresa / Agencia</label>
+            <input type="text" id="perfil-empresa-input" class="form-control" placeholder="Back Urbanizaciones" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="perfil-telefono-input" class="form-control" placeholder="+54 9 376 XXX-XXXX" />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="perfil-email-input" class="form-control" placeholder="correo@ejemplo.com" />
+          </div>
         </div>
         <div class="form-group">
-          <label>Empresa / Agencia</label>
-          <input type="text" id="perfil-empresa-input" class="form-control" placeholder="Back Urbanizaciones" />
+          <label>Dirección / Zona</label>
+          <input type="text" id="perfil-direccion-input" class="form-control" placeholder="San Ignacio, Misiones" />
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="closeModal('modal-perfil')">Cancelar</button>
@@ -1296,6 +1312,9 @@ function openProfileEdit() {
   const saved = JSON.parse(localStorage.getItem(PERFIL_KEY) || '{}');
   document.getElementById('perfil-nombre-input').value = saved.nombre || 'Maicol Back';
   document.getElementById('perfil-empresa-input').value = saved.empresa || 'Back Urbanizaciones';
+  document.getElementById('perfil-telefono-input').value = saved.telefono || '';
+  document.getElementById('perfil-email-input').value = saved.email || '';
+  document.getElementById('perfil-direccion-input').value = saved.direccion || '';
   const avatarSrc = saved.avatarUrl || document.getElementById('profile-avatar-img').src;
   document.getElementById('perfil-preview').src = avatarSrc;
   _perfilAvatarUrl = saved.avatarUrl || null;
@@ -1323,11 +1342,13 @@ function onPerfilAvatarChange(input) {
 }
 
 function guardarPerfil() {
-  const nombre = document.getElementById('perfil-nombre-input').value.trim() || 'Maicol Back';
-  const empresa = document.getElementById('perfil-empresa-input').value.trim() || 'Back Urbanizaciones';
+  const nombre    = document.getElementById('perfil-nombre-input').value.trim() || 'Maicol Back';
+  const empresa   = document.getElementById('perfil-empresa-input').value.trim() || 'Back Urbanizaciones';
+  const telefono  = document.getElementById('perfil-telefono-input').value.trim();
+  const email     = document.getElementById('perfil-email-input').value.trim();
+  const direccion = document.getElementById('perfil-direccion-input').value.trim();
   const avatarUrl = _perfilAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=0A261A&color=fff`;
-  localStorage.setItem(PERFIL_KEY, JSON.stringify({ nombre, empresa, avatarUrl }));
-  // Actualizar UI
+  localStorage.setItem(PERFIL_KEY, JSON.stringify({ nombre, empresa, telefono, email, direccion, avatarUrl }));
   document.getElementById('profile-name-display').textContent = nombre;
   document.getElementById('profile-menu-name').textContent = nombre;
   document.getElementById('profile-avatar-img').src = avatarUrl;
