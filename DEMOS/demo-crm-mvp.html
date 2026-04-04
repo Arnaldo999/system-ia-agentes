@@ -2341,7 +2341,7 @@ async function guardarMarca() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (\!r.ok) throw new Error('Error ' + r.status);
+    if (!r.ok) throw new Error('Error ' + r.status);
     const data = await r.json();
     // Aplicar cambios al CRM en vivo
     if (data.nombre) {
