@@ -125,6 +125,27 @@ _gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else Non
 # ─── SESIONES IN-MEMORY ───────────────────────────────────────────────────────
 # { telefono: [ {"role": "user"|"model", "parts": [{"text": "..."}]}, ... ] }
 SESIONES: dict[str, list] = {}
+# Subniche elegido por sesión (se asigna en el selector inicial)
+# { telefono: "cafeteria"|"pizzeria"|... }
+SESION_SUBNICHE: dict[str, str] = {}
+
+_SELECTOR_SUBNICHOS = (
+    "¡Hola! 👋 Soy el asistente virtual de *System IA Demo*.\n\n"
+    "¿Con qué tipo de negocio podemos ayudarte hoy?\n\n"
+    "1️⃣ ☕ Cafetería\n"
+    "2️⃣ 🍕 Pizzería\n"
+    "3️⃣ 🍗 Rotisería\n"
+    "4️⃣ 🍔 Hamburguesería\n"
+    "5️⃣ 🥩 Parrilla"
+)
+_SELECTOR_MAP = {
+    "1": "cafeteria", "cafeteria": "cafeteria", "cafe": "cafeteria", "cafetería": "cafeteria",
+    "2": "pizzeria",  "pizzeria":  "pizzeria",  "pizza": "pizzeria", "pizzería": "pizzeria",
+    "3": "rotiseria", "rotiseria": "rotiseria", "rotis": "rotiseria", "rotisería": "rotiseria",
+    "4": "hamburgueseria", "hamburgueseria": "hamburgueseria", "burger": "hamburgueseria",
+          "hamburguesa": "hamburgueseria", "hamburguesería": "hamburgueseria",
+    "5": "parrilla",  "parrilla": "parrilla", "asado": "parrilla",
+}
 
 # ─── MENÚ FALLBACK por sub-niche ─────────────────────────────────────────────
 _MENUS_FALLBACK: dict[str, dict] = {
@@ -282,14 +303,13 @@ DATOS DEL LOCAL
 ════════════════════════════════════════════════════════
 - Nombre: {NOMBRE_LOCAL}
 - Horario: {HORARIO}
-- Alias de pago (seña): *{ALIAS_PAGO}*
 - Fecha de hoy: {HOY}
 - Todos los precios incluyen IVA.
 
 ════════════════════════════════════════════════════════
 MENÚ PRINCIPAL (punto de entrada)
 ════════════════════════════════════════════════════════
-CUÁNDO mostrarlo: ante cualquier primer mensaje, saludo, o cuando el cliente escriba "0" o "menu".
+CUÁNDO mostrarlo: cuando el cliente ya eligió su tipo de negocio, ante cualquier saludo, o cuando escriba "0" o "menu".
 
 TEXTO EXACTO:
 *¡Bienvenido a {NOMBRE_LOCAL}!* {_EMOJI_LOCAL}
@@ -318,16 +338,11 @@ Formato:
 ════════════════════════════════════════════════════════
 TAREA 2 — PEDIDO DELIVERY (opción 2)
 ════════════════════════════════════════════════════════
-La seña del 10% es OBLIGATORIA para confirmar el pedido.
-
 ─── TURNO 1 ───
 Pedí solo el nombre: "¡Con gusto! ¿Podría indicarme su nombre?"
-⛔ NO muestres el menú todavía.
 
 ─── TURNO 2 ───
-Recién con el nombre: "Perfecto, [nombre]. Este pedido requiere una *seña del 10%*.
-¿Qué desea pedir? Nuestras categorías:
-[listá las categorías numeradas]"
+Con el nombre: mostrá las categorías del menú numeradas.
 
 ─── TURNOS SIGUIENTES ───
 Cuando elige categoría → mostrá ítems con precio.
@@ -335,19 +350,8 @@ Cuando elige ítem → confirmalo y preguntá "¿Desea agregar algo más?"
 ⛔ NO calcules total hasta que diga que terminó.
 
 ─── TURNO FINAL (cliente dice "listo", "nada más", "eso es todo") ───
-Respondé con EXACTAMENTE este formato:
-"📦 *Su pedido:*
-• [ítem] — $[precio]
-*Total: $[TOTAL] ARS*
-💳 *Seña requerida (10%): $[SEÑA] ARS*
-
-Puede abonar al alias: *{ALIAS_PAGO}*
-📸 *Envíenos la captura del comprobante para confirmar.*"
-
-Luego EN EL MISMO MENSAJE:
-ACCION: {{"tipo": "solicitar_comprobante", "nombre": "[nombre]", "detalle": "[resumen una línea]", "total": [número]}}
-
-⛔ NUNCA digas que el pedido quedó confirmado — el sistema lo confirma tras el comprobante.
+Mostrá el resumen del pedido con total y ejecutá:
+ACCION: {{"tipo": "derivar_asesor", "motivo": "delivery", "nombre": "[nombre]", "detalle": "[resumen del pedido]", "total": [número]}}
 
 ════════════════════════════════════════════════════════
 TAREA 3 — ENCARGUE ESPECIAL (opción 3)
@@ -355,14 +359,12 @@ TAREA 3 — ENCARGUE ESPECIAL (opción 3)
 Casos: tortas, catering, comidas saladas en cantidad, sándwiches para eventos, tapas para reuniones.
 Recopilar en orden:
 1. Nombre del cliente
-2. Qué desea encargar (torta, bandeja de salados, catering, etc.)
-3. Para cuántas personas / sabor / especificaciones
-4. Fecha y horario en que necesita el encargue
+2. Qué desea encargar
+3. Para cuántas personas / especificaciones
+4. Fecha y horario en que lo necesita
 
 Cuando tenés los 4 datos → confirmá y ejecutá:
-ACCION: {{"tipo": "crear_pedido", "nombre": "...", "detalle": "[descripción completa incluyendo fecha]", "total": 0, "tipo_pedido": "encargue"}}
-
-Luego decí: "¡Perfecto! Su encargue fue registrado. Nos comunicaremos para confirmar el precio final y los detalles."
+ACCION: {{"tipo": "derivar_asesor", "motivo": "encargue", "nombre": "...", "detalle": "[descripción completa incluyendo fecha]", "total": 0}}
 
 ════════════════════════════════════════════════════════
 TAREA 4 — RESERVA DE MESA (opción 4)
@@ -382,39 +384,33 @@ ACCION: {{"tipo": "crear_reserva", "nombre": "...", "personas": N, "fecha_iso": 
 ════════════════════════════════════════════════════════
 TAREA 5 — PRESUPUESTO PARA EVENTO (opción 5)
 ════════════════════════════════════════════════════════
-Casos: cumpleaños, reunión de empresa, brunch, catering externo.
 Recopilar:
 1. Nombre / empresa
-2. Tipo de evento
+2. Tipo de evento (cumpleaños, reunión, catering, brunch)
 3. Cantidad de personas
 4. Fecha y horario tentativo
-5. Preferencias (salado, dulce, bebidas, todo incluido)
+5. Preferencias (salado, dulce, bebidas)
 
-Con todos los datos → generá una cotización estimada en el mismo mensaje usando el menú como referencia.
-Luego ejecutá:
-ACCION: {{"tipo": "notificar_dueno", "mensaje": "💬 Presupuesto solicitado por [nombre] — [N] personas — [tipo evento] — [fecha]"}}
+Con todos los datos → generá una cotización estimada usando el menú y ejecutá:
+ACCION: {{"tipo": "derivar_asesor", "motivo": "presupuesto_evento", "nombre": "...", "detalle": "[tipo evento] — [N] personas — [fecha] — [preferencias]", "total": 0}}
 
 ════════════════════════════════════════════════════════
 TAREA 6 — CANCELAR O MODIFICAR RESERVA (opción 6)
 ════════════════════════════════════════════════════════
-Primero preguntá: "¿Desea *cancelar* o *modificar* su reserva?"
+Preguntá: "¿Desea *cancelar* o *modificar* su reserva?"
 
-CANCELAR:
-Recopilar nombre de la reserva.
-Luego ejecutá:
+CANCELAR → recopilá nombre y ejecutá:
 ACCION: {{"tipo": "cancelar_reserva", "nombre": "...", "fecha_legible": "...", "hora": "..."}}
 
-MODIFICAR:
-Recopilar qué desea cambiar (fecha, hora, cantidad de personas).
-Luego ejecutá:
-ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "Modificación solicitada por el cliente"}}
+MODIFICAR → recopilá qué cambia y ejecutá:
+ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "Modificación solicitada"}}
 
 ════════════════════════════════════════════════════════
 TAREA 7 — COMENTARIOS / RESEÑAS (opción 7)
 ════════════════════════════════════════════════════════
-Decí: "¡Nos alegra que nos contactes! ¿Nos dejarías tu comentario?"
+Decí: "¡Nos alegra que nos contactes! ¿Nos dejás tu comentario?"
 Cuando el cliente envíe el comentario → agradecé y ejecutá:
-ACCION: {{"tipo": "registrar_resena", "nombre": "[nombre si lo conocés o 'cliente']", "comentario": "[texto del comentario]", "valoracion": "positiva|negativa|neutra"}}
+ACCION: {{"tipo": "registrar_resena", "nombre": "[nombre si lo conocés]", "comentario": "[texto]", "valoracion": "positiva|negativa|neutra"}}
 
 ════════════════════════════════════════════════════════
 REGLA DE CONTEXTO
@@ -424,13 +420,12 @@ SIEMPRE analizá el historial para saber en qué flujo estás.
 ⛔ NUNCA interpretes un número como opción del menú principal si estás dentro de un flujo activo.
 
 ════════════════════════════════════════════════════════
-ACCIONES DISPONIBLES (al final del mensaje, si corresponde)
+ACCIONES DISPONIBLES
 ════════════════════════════════════════════════════════
 ACCION: {{"tipo": "crear_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
 ACCION: {{"tipo": "cancelar_reserva", "nombre": "...", "fecha_legible": "...", "hora": "..."}}
 ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
-ACCION: {{"tipo": "crear_pedido", "nombre": "...", "detalle": "...", "total": N, "tipo_pedido": "delivery|encargue"}}
-ACCION: {{"tipo": "solicitar_comprobante", "nombre": "...", "detalle": "...", "total": N}}
+ACCION: {{"tipo": "derivar_asesor", "motivo": "delivery|encargue|presupuesto_evento", "nombre": "...", "detalle": "...", "total": N}}
 ACCION: {{"tipo": "notificar_dueno", "mensaje": "..."}}
 ACCION: {{"tipo": "registrar_resena", "nombre": "...", "comentario": "...", "valoracion": "positiva|negativa|neutra"}}
 
@@ -772,15 +767,25 @@ def _ejecutar_accion(accion: dict, tel: str) -> dict:
 
     if tipo == "crear_reserva":
         nombre = accion.get("nombre", "")
-        resultado = _at_crear_reserva({**accion, "telefono": tel})
+        # 1. Airtable (CRM en tiempo real)
+        resultado_at = _at_crear_reserva({**accion, "telefono": tel})
+        # 2. Cal.com (agenda en tiempo real)
+        resultado_cal = _cal_crear_reserva(
+            nombre=nombre,
+            email="",
+            fecha_iso=accion.get("fecha_iso", ""),
+            hora=accion.get("hora", ""),
+        )
+        cal_ok = resultado_cal.get("ok", False)
         nro = "RSV-" + str(uuid.uuid4())[:5].upper()
-        if resultado.get("ok"):
+        if resultado_at.get("ok"):
             _notificar_dueno(
                 f"🆕 *Nueva Reserva* #{nro}\n"
                 f"👤 {nombre}\n"
                 f"👥 {accion.get('personas')} personas\n"
                 f"📅 {accion.get('fecha_legible', accion.get('fecha_iso'))} a las {accion.get('hora')}\n"
-                f"📞 {tel}"
+                f"📞 {tel}\n"
+                + (f"📆 Cal.com: ✅ agendado" if cal_ok else "📆 Cal.com: registrado en CRM")
             )
             return {
                 "ok": True,
@@ -790,7 +795,7 @@ def _ejecutar_accion(accion: dict, tel: str) -> dict:
                     f"👤 {nombre}\n"
                     f"👥 {accion.get('personas')} personas\n"
                     f"📅 {accion.get('fecha_legible', accion.get('fecha_iso'))} a las {accion.get('hora')} hs\n\n"
-                    f"¡Los esperamos en {NOMBRE_LOCAL}! ☕"
+                    f"¡Los esperamos! {_EMOJI_LOCAL} Un asesor le confirmará los detalles."
                 ),
             }
         return {
@@ -821,21 +826,39 @@ def _ejecutar_accion(accion: dict, tel: str) -> dict:
             }
         return {"ok": False, "mensaje_error": "⚠️ No se pudo registrar el pedido. Contáctenos directamente."}
 
-    elif tipo == "solicitar_comprobante":
+    elif tipo == "derivar_asesor":
         nombre  = accion.get("nombre", "")
         detalle = accion.get("detalle", "")
         total   = float(accion.get("total", 0))
+        motivo  = accion.get("motivo", "pedido")
         nro     = "PED-" + str(uuid.uuid4())[:5].upper()
-        _at_crear_pedido({**accion, "telefono": tel, "estado_pago": "pendiente"})
+        # Guardar en Airtable
+        _at_crear_pedido({**accion, "telefono": tel, "estado_pago": "pendiente",
+                          "tipo_pedido": motivo})
+        # Etiqueta legible según motivo
+        etiquetas = {
+            "delivery":          "🛵 Pedido Delivery",
+            "encargue":          "📦 Encargue Especial",
+            "presupuesto_evento": "💬 Presupuesto Evento",
+        }
+        etiqueta = etiquetas.get(motivo, "📋 Pedido")
         _notificar_dueno(
-            f"🛒 *Pedido pendiente de pago* #{nro}\n"
+            f"🔔 *{etiqueta}* #{nro}\n"
             f"👤 {nombre or tel}\n"
             f"📋 {detalle}\n"
-            f"💰 Total: ${total:,.0f} ARS\n"
-            f"💳 Seña: ${total * 0.10:,.0f} ARS\n"
-            f"📞 {tel}"
+            + (f"💰 Total est.: ${total:,.0f} ARS\n" if total else "")
+            + f"📞 {tel}\n\n"
+            f"⚡ El cliente espera que lo contactes para coordinar."
         )
-        return {"ok": True, "mensaje_confirmacion": None}  # Gemini ya envió el texto
+        mensajes = {
+            "delivery":          f"¡Perfecto! Su pedido fue registrado. 🛵\nUn asesor se comunicará con usted a la brevedad para coordinar la entrega y el pago.",
+            "encargue":          f"¡Encargue registrado! 📦\nUn asesor se comunicará con usted para confirmar los detalles y el precio final.",
+            "presupuesto_evento": f"¡Consulta recibida! 💬\nUn asesor le enviará el presupuesto detallado a la brevedad. ¡Gracias por elegirnos!",
+        }
+        return {
+            "ok": True,
+            "mensaje_confirmacion": mensajes.get(motivo, "Un asesor se comunicará con usted en breve. ¡Gracias! 🙌"),
+        }
 
     elif tipo == "cancelar_reserva":
         nombre = accion.get("nombre", "")
@@ -939,14 +962,12 @@ def _build_system_prompt_for(sn: str) -> str:
     d = _SUBNICHE_DEFAULTS[sn]
     nombre  = os.environ.get("GASTRO_DEMO_NOMBRE") or d["nombre"]
     horario = os.environ.get("GASTRO_DEMO_HORARIO") or d["horario"]
-    alias   = os.environ.get("GASTRO_DEMO_ALIAS_PAGO") or d["alias_pago"]
     emoji   = d.get("emoji", "🍴")
     return f"""════════════════════════════════════════════════════════
 ROL
 ════════════════════════════════════════════════════════
 Sos la asistente virtual de *{nombre}* ({sn}).
-Tu trabajo es atender clientes por WhatsApp:
-mostrar el menú, tomar pedidos de delivery, gestionar encargues, reservas de mesa y responder consultas de presupuesto.
+Tu trabajo: encargues, deliverys, presupuestos, reservas y gestión de comentarios por WhatsApp.
 {d['tareas_extra']}
 
 PERSONALIDAD:
@@ -961,16 +982,12 @@ DATOS DEL LOCAL
 ════════════════════════════════════════════════════════
 - Nombre: {nombre}
 - Horario: {horario}
-- Alias de pago (seña): *{alias}*
 - Fecha de hoy: {HOY}
 - Todos los precios incluyen IVA.
 
 ════════════════════════════════════════════════════════
-MENÚ PRINCIPAL (punto de entrada)
+MENÚ PRINCIPAL
 ════════════════════════════════════════════════════════
-CUÁNDO mostrarlo: ante cualquier primer mensaje, saludo, o cuando el cliente escriba "0" o "menu".
-
-TEXTO EXACTO:
 *¡Bienvenido a {nombre}!* {emoji}
 ¿En qué puedo ayudarte?
 
@@ -979,22 +996,15 @@ TEXTO EXACTO:
 3️⃣ Encargue especial 📦
 4️⃣ Reservar una mesa 📅
 5️⃣ Pedir presupuesto para evento 💬
+6️⃣ Cancelar o modificar una reserva ✏️
+7️⃣ Dejar un comentario ⭐
 
-REGLA: Esperá que el cliente elija. No agregues texto extra.
+Para delivery/encargue/presupuesto → al finalizar usar:
+ACCION: {{"tipo": "derivar_asesor", "motivo": "delivery|encargue|presupuesto_evento", "nombre": "...", "detalle": "...", "total": N}}
 
-════════════════════════════════════════════════════════
-TAREA 6 — CANCELAR O MODIFICAR RESERVA (opción 6)
-════════════════════════════════════════════════════════
-Preguntá: "¿Desea cancelar o modificar su reserva?"
-CANCELAR → ACCION: {{"tipo": "cancelar_reserva", "nombre": "...", "fecha_legible": "...", "hora": "..."}}
-MODIFICAR → recopilá cambios y ejecutá: ACCION: {{"tipo": "modificar_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
-
-════════════════════════════════════════════════════════
-TAREA 7 — COMENTARIOS / RESEÑAS (opción 7)
-════════════════════════════════════════════════════════
-Decí: "¡Nos alegra que nos contactes! ¿Nos dejás tu comentario?"
-Cuando el cliente envíe el comentario → agradecé y ejecutá:
-ACCION: {{"tipo": "registrar_resena", "nombre": "[nombre si lo conocés]", "comentario": "[texto]", "valoracion": "positiva|negativa|neutra"}}
+Para reservas → ACCION: {{"tipo": "crear_reserva", "nombre": "...", "personas": N, "fecha_iso": "YYYY-MM-DD", "fecha_legible": "...", "hora": "HH:MM", "nota": "..."}}
+Para cancelar → ACCION: {{"tipo": "cancelar_reserva", "nombre": "...", "fecha_legible": "...", "hora": "..."}}
+Para reseñas  → ACCION: {{"tipo": "registrar_resena", "nombre": "...", "comentario": "...", "valoracion": "positiva|negativa|neutra"}}
 """
 
 
@@ -1035,41 +1045,62 @@ class _MsgIn(BaseModel):
     subniche: str = ""  # opcional — para demo multi-subniche desde el CRM HTML
 
 
-@router.post("/whatsapp")
-async def whatsapp(req: Request):
-    """Endpoint principal — recibe mensaje de WhatsApp (YCloud / n8n)."""
-    body = await req.json()
+def _procesar_mensaje(tel: str, texto: str, subniche_override: str = "") -> str:
+    """Lógica central: selector subniche → Gemini → acciones → respuesta final."""
 
-    # Normalizar payload (YCloud o n8n forward)
-    tel_raw = (body.get("from") or body.get("telefono") or
-               body.get("data", {}).get("from") or "")
-    texto   = (body.get("text", {}).get("body") or body.get("mensaje") or
-               body.get("data", {}).get("text", {}).get("body") or "")
-    nombre  = body.get("contactName") or body.get("nombre") or ""
+    # ── SELECTOR DE SUBNICHE (solo si aún no eligió) ──────────────────────────
+    if tel not in SESION_SUBNICHE:
+        msg_lower = texto.strip().lower().rstrip(".,!?")
+        sn = _SELECTOR_MAP.get(msg_lower)
+        if sn:
+            # Cliente eligió subniche
+            SESION_SUBNICHE[tel] = sn
+            SESIONES[tel] = []  # sesión limpia para el nuevo subniche
+            d = _SUBNICHE_DEFAULTS[sn]
+            bienvenida = (
+                f"*¡Bienvenido a {d['nombre']}!* {d['emoji']}\n"
+                f"¿En qué puedo ayudarte?\n\n"
+                f"1️⃣ {d['menu_label']} 🍽️\n"
+                f"2️⃣ Hacer un pedido / delivery 🛵\n"
+                f"3️⃣ Encargue especial (tortas, catering, salados) 📦\n"
+                f"4️⃣ Reservar una mesa 📅\n"
+                f"5️⃣ Pedir presupuesto para evento 💬\n"
+                f"6️⃣ Cancelar o modificar una reserva ✏️\n"
+                f"7️⃣ Dejar un comentario ⭐"
+            )
+            SESIONES[tel] = [
+                {"role": "user",  "parts": [{"text": texto}]},
+                {"role": "model", "parts": [{"text": bienvenida}]},
+            ]
+            return bienvenida
+        else:
+            # Todavía no eligió — mostrar selector
+            SESIONES.setdefault(tel, [])
+            return _SELECTOR_SUBNICHOS
 
-    if not tel_raw or not texto:
-        return {"status": "ignored", "reason": "sin telefono o texto"}
+    # Resetear subniche si el cliente escribe "00"
+    if texto.strip() == "00":
+        SESION_SUBNICHE.pop(tel, None)
+        SESIONES[tel] = []
+        return _SELECTOR_SUBNICHOS
 
-    tel = _norm_tel(tel_raw)
+    # ── SUBNICHE YA ELEGIDO → GEMINI ──────────────────────────────────────────
+    sn_activo = subniche_override or SESION_SUBNICHE.get(tel, SUBNICHE)
 
-    # Historial
     if tel not in SESIONES:
         SESIONES[tel] = []
     SESIONES[tel].append({"role": "user", "parts": [{"text": texto}]})
-    # Limitar a 20 turnos
     SESIONES[tel] = SESIONES[tel][-20:]
 
-    respuesta_raw = _llamar_gemini(SESIONES[tel])
+    respuesta_raw = _llamar_gemini(SESIONES[tel], subniche_override=sn_activo)
 
-    # Separar ACCION del texto visible
-    accion_match = re.search(r"ACCION:\s*(\{.*\})", respuesta_raw, re.DOTALL)
+    accion_match  = re.search(r"ACCION:\s*(\{.*\})", respuesta_raw, re.DOTALL)
     texto_visible = re.sub(r"ACCION:\s*\{.*\}", "", respuesta_raw, flags=re.DOTALL).strip()
-
     msg_final = texto_visible
 
     if accion_match:
         try:
-            accion = json.loads(accion_match.group(1))
+            accion    = json.loads(accion_match.group(1))
             resultado = _ejecutar_accion(accion, tel)
             if resultado.get("mensaje_confirmacion"):
                 msg_final = resultado["mensaje_confirmacion"]
@@ -1079,38 +1110,36 @@ async def whatsapp(req: Request):
             print(f"[GASTRO] ACCION JSON inválido: {e} — raw: {accion_match.group(1)[:200]}")
 
     SESIONES[tel].append({"role": "model", "parts": [{"text": msg_final}]})
+    return msg_final
 
+
+@router.post("/whatsapp")
+async def whatsapp(req: Request):
+    """Endpoint principal — recibe mensaje de WhatsApp (YCloud / n8n)."""
+    body = await req.json()
+
+    tel_raw = (body.get("from") or body.get("telefono") or
+               body.get("data", {}).get("from") or "")
+    texto   = (body.get("text", {}).get("body") or body.get("mensaje") or
+               body.get("data", {}).get("text", {}).get("body") or "")
+
+    if not tel_raw or not texto:
+        return {"status": "ignored", "reason": "sin telefono o texto"}
+
+    tel = _norm_tel(tel_raw)
+    msg_final = _procesar_mensaje(tel, texto)
     _enviar_texto(tel, msg_final)
     return {"status": "ok", "respuesta": msg_final}
 
 
 @router.post("/mensaje")
 async def mensaje(data: _MsgIn):
-    """Endpoint alternativo tipo POST JSON (para tests / n8n / demo CRM)."""
+    """Endpoint alternativo tipo POST JSON (para tests / CRM simulador)."""
     tel = _norm_tel(data.telefono)
-    if tel not in SESIONES:
-        SESIONES[tel] = []
-    SESIONES[tel].append({"role": "user", "parts": [{"text": data.mensaje}]})
-    SESIONES[tel] = SESIONES[tel][-20:]
-
-    respuesta_raw = _llamar_gemini(SESIONES[tel], subniche_override=data.subniche)
-
-    accion_match  = re.search(r"ACCION:\s*(\{.*\})", respuesta_raw, re.DOTALL)
-    texto_visible = re.sub(r"ACCION:\s*\{.*\}", "", respuesta_raw, flags=re.DOTALL).strip()
-    msg_final = texto_visible
-
-    if accion_match:
-        try:
-            accion = json.loads(accion_match.group(1))
-            resultado = _ejecutar_accion(accion, tel)
-            if resultado.get("mensaje_confirmacion"):
-                msg_final = resultado["mensaje_confirmacion"]
-            elif resultado.get("mensaje_error"):
-                msg_final = resultado["mensaje_error"]
-        except json.JSONDecodeError as e:
-            print(f"[GASTRO] ACCION JSON inválido: {e}")
-
-    SESIONES[tel].append({"role": "model", "parts": [{"text": msg_final}]})
+    # Si viene subniche desde el CRM HTML, forzarlo en la sesión
+    if data.subniche and data.subniche in _SUBNICHE_DEFAULTS:
+        SESION_SUBNICHE[tel] = data.subniche
+    msg_final = _procesar_mensaje(tel, data.mensaje, subniche_override=data.subniche)
     _enviar_texto(tel, msg_final)
     return {"status": "ok", "respuesta": msg_final}
 
