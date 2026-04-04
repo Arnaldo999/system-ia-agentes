@@ -574,6 +574,35 @@ def _at_registrar_resena(nombre: str, comentario: str, valoracion: str, telefono
         return {"ok": False, "error": str(e)}
 
 
+def _at_leer_menu_subniche(sn: str) -> dict | None:
+    """Lee platos filtrados por subniche desde Airtable. Devuelve dict {categoria: [(nombre,precio)]} o None."""
+    if not _at_disponible():
+        return None
+    try:
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/Platos"
+        r = requests.get(url, headers=_at_headers(), params={
+            "filterByFormula": f"{{subniche}}='{sn}'",
+            "maxRecords": 30,
+        }, timeout=8)
+        records = r.json().get("records", [])
+        if not records:
+            return None
+        menu: dict = {}
+        for rec in records:
+            f = rec["fields"]
+            nombre = f.get("Nombre", "")
+            precio = float(f.get("Precio", 0))
+            cats = f.get("Menús (from Categoría)", [f"🍽️ {sn.title()}"])
+            cat = cats[0] if cats else f"🍽️ {sn.title()}"
+            if cat not in menu:
+                menu[cat] = []
+            menu[cat].append((nombre, precio))
+        return menu if menu else None
+    except Exception as e:
+        print(f"[GASTRO-AT] leer_menu_subniche({sn}): {e}")
+        return None
+
+
 def _at_leer_menu_dia() -> dict | None:
     """Lee platos con Menú del Dia=true desde Airtable. Devuelve dict por categoría o None."""
     if not _at_disponible():
@@ -592,7 +621,6 @@ def _at_leer_menu_dia() -> dict | None:
             f = rec["fields"]
             nombre = f.get("Nombre", "")
             precio = float(f.get("Precio", 0))
-            # Categoría es un link — viene como lista de IDs, usamos lookup si existe
             cats = f.get("Menús (from Categoría)", ["🍽️ Menú del día"])
             cat = cats[0] if cats else "🍽️ Menú del día"
             if cat not in menu:
@@ -1012,17 +1040,13 @@ def _llamar_gemini(historial: list, subniche_override: str = "") -> str:
     if not _gemini_client:
         return "⚠️ Sistema no disponible. Contáctenos directamente."
     try:
-        # Intentar leer menú del día desde Airtable, fallback a hardcodeado
-        menu_live = _at_leer_menu_dia()
-        menu_txt  = _menu_texto(menu_live) if menu_live else _menu_texto()
-        # Si viene un subniche del CRM demo, usar su prompt
-        if subniche_override and subniche_override in _SUBNICHE_DEFAULTS:
-            sn_prompt = _build_system_prompt_for(subniche_override)
-            # Menú fallback del subniche correcto
-            sn_menu = _menu_texto(_MENUS_FALLBACK.get(subniche_override, {}))
-            sys_instr = sn_prompt + "\n\n## MENÚ\n" + sn_menu
-        else:
-            sys_instr = SYSTEM_PROMPT + "\n\n## MENÚ\n" + menu_txt
+        # Determinar subniche activo
+        sn = subniche_override if subniche_override in _SUBNICHE_DEFAULTS else SUBNICHE
+        sn_prompt = _build_system_prompt_for(sn)
+        # Leer menú desde Airtable filtrado por subniche, fallback a hardcodeado
+        menu_live = _at_leer_menu_subniche(sn)
+        sn_menu   = _menu_texto(menu_live) if menu_live else _menu_texto(_MENUS_FALLBACK.get(sn, {}))
+        sys_instr = sn_prompt + "\n\n## MENÚ DEL LOCAL\n" + sn_menu
         resp = _gemini_client.models.generate_content(
             model="gemini-2.5-flash-lite",
             contents=historial,
@@ -1066,7 +1090,8 @@ def _procesar_mensaje(tel: str, texto: str, subniche_override: str = "") -> str:
                 f"4️⃣ Reservar una mesa 📅\n"
                 f"5️⃣ Pedir presupuesto para evento 💬\n"
                 f"6️⃣ Cancelar o modificar una reserva ✏️\n"
-                f"7️⃣ Dejar un comentario ⭐"
+                f"7️⃣ Dejar un comentario ⭐\n\n"
+                f"_(Escribí *0* o *Menú* para ver esto de nuevo | *00* para cambiar negocio)_"
             )
             SESIONES[tel] = [
                 {"role": "user",  "parts": [{"text": texto}]},
@@ -1078,11 +1103,29 @@ def _procesar_mensaje(tel: str, texto: str, subniche_override: str = "") -> str:
             SESIONES.setdefault(tel, [])
             return _SELECTOR_SUBNICHOS
 
-    # Resetear subniche si el cliente escribe "00"
+    # "00" → volver al selector de sub-nichos
     if texto.strip() == "00":
         SESION_SUBNICHE.pop(tel, None)
         SESIONES[tel] = []
-        return _SELECTOR_SUBNICHOS
+        return _SELECTOR_SUBNICHOS + "\n\n_(Escribí 00 en cualquier momento para volver aquí)_"
+
+    # "0" o "menu"/"menú" → mostrar menú principal del subniche activo
+    if texto.strip() in ("0", "menu", "menú", "Menu", "Menú", "MENU"):
+        sn = SESION_SUBNICHE.get(tel, SUBNICHE)
+        d  = _SUBNICHE_DEFAULTS[sn]
+        menu_principal = (
+            f"*¡Hola de nuevo!* {d['emoji']}\n"
+            f"¿En qué puedo ayudarte?\n\n"
+            f"1️⃣ {d['menu_label']} 🍽️\n"
+            f"2️⃣ Hacer un pedido / delivery 🛵\n"
+            f"3️⃣ Encargue especial 📦\n"
+            f"4️⃣ Reservar una mesa 📅\n"
+            f"5️⃣ Presupuesto para evento 💬\n"
+            f"6️⃣ Cancelar / modificar reserva ✏️\n"
+            f"7️⃣ Dejar un comentario ⭐\n\n"
+            f"_(Escribí 00 para cambiar de tipo de negocio)_"
+        )
+        return menu_principal
 
     # ── SUBNICHE YA ELEGIDO → GEMINI ──────────────────────────────────────────
     sn_activo = subniche_override or SESION_SUBNICHE.get(tel, SUBNICHE)
