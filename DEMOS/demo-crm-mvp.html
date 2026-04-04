@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi CRM Inmobiliario — Powered by IA</title>
+<title id="page-title">CRM — Powered by System IA</title>
 <style>
   :root {
     --bg:#0f1117; --surface:#1a1d27; --surface2:#222636; --border:#2e3347;
@@ -311,7 +311,7 @@
     <div class="logo-icon" id="topLogoIcon">🏠</div>
     <div>
       <span id="topEmpresa">Tu Inmobiliaria</span>
-      <span class="logo-sub">CRM · Powered by IA</span>
+      <span class="logo-sub">CRM · Powered by LovBot IA</span>
     </div>
   </div>
   <!-- BUSCADOR GLOBAL -->
@@ -329,9 +329,9 @@
     <div class="notif-badge" id="notifBadge">3</div>
   </div>
   <div class="user-chip-wrap">
-    <div class="user-chip" onclick="togglePerfil(event)" title="Editar perfil">
-      <div class="avatar" id="topAvatar">AR</div>
-      Hola, <span id="topUsuario">Arnaldo</span> ▾
+    <div class="user-chip" onclick="irConfiguracion()" title="Ir a Configuración" style="cursor:pointer">
+      <div class="avatar" id="topAvatar">LV</div>
+      <span id="topUsuario">LovBot CRM</span> ▾
     </div>
     <!-- DROPDOWN PERFIL -->
     <div class="perfil-dropdown" id="perfilDropdown">
@@ -396,6 +396,9 @@
     <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
     <div class="nav-item" onclick="nav('formularios',this)">
       <span class="nav-icon">📋</span><span>Formularios</span>
+    </div>
+    <div class="nav-item" onclick="nav('configuracion',this)">
+      <span class="nav-icon">⚙️</span><span>Configuración</span>
     </div>
     <div class="sidebar-footer">
       <div class="plan-chip">
@@ -976,6 +979,136 @@
   </div>
 </div>
 
+    <div class="panel" id="panel-configuracion">
+      <div class="sh">
+        <div>
+          <div class="sh-title">⚙️ Configuración de Marca</div>
+          <div class="sh-sub">Personalizá tu CRM — los cambios se aplican en tiempo real</div>
+        </div>
+        <button class="btn btn-primary" onclick="guardarMarca()" id="btnGuardarMarca">💾 Guardar cambios</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px">
+
+        <!-- Identidad -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:16px;color:var(--text)">🏢 Identidad</div>
+
+          <div class="mf">
+            <label>Nombre de la empresa</label>
+            <input id="cfg-nombre" class="mi" type="text" placeholder="Ej: Back Urbanizaciones">
+          </div>
+          <div class="mf">
+            <label>Ciudad / Zona</label>
+            <input id="cfg-ciudad" class="mi" type="text" placeholder="Ej: San Ignacio, Misiones">
+          </div>
+          <div class="mf">
+            <label>Moneda</label>
+            <select id="cfg-moneda" class="mi">
+              <option value="USD">USD — Dólar</option>
+              <option value="ARS">ARS — Peso Argentino</option>
+              <option value="MXN">MXN — Peso Mexicano</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Branding visual -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:16px;color:var(--text)">🎨 Branding Visual</div>
+
+          <div class="mf">
+            <label>URL del Logo</label>
+            <input id="cfg-logo" class="mi" type="url" placeholder="https://tu-logo.com/logo.png" oninput="previewCfgLogo(this.value)">
+          </div>
+          <div id="cfg-logo-preview" style="width:60px;height:60px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:16px">🏠</div>
+
+          <div class="mf" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label>Color principal</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <input id="cfg-color-primary" type="color" value="#6c63ff" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;background:none">
+                <input id="cfg-color-primary-hex" class="mi" type="text" value="#6c63ff" style="font-size:12px" oninput="syncColor('primary')">
+              </div>
+            </div>
+            <div>
+              <label>Color acento</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <input id="cfg-color-accent" type="color" value="#00d4aa" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;background:none">
+                <input id="cfg-color-accent-hex" class="mi" type="text" value="#00d4aa" style="font-size:12px" oninput="syncColor('accent')">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Preview en vivo -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:20px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:16px;color:var(--text)">👁 Preview en vivo</div>
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface2);border-radius:10px">
+          <div id="cfg-prev-logo" style="width:44px;height:44px;background:linear-gradient(135deg,#6c63ff,#00d4aa);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px">🏠</div>
+          <div>
+            <div id="cfg-prev-nombre" style="font-weight:700;font-size:15px;color:var(--text)">Tu Empresa</div>
+            <div id="cfg-prev-ciudad" style="font-size:12px;color:var(--text2)">Ciudad</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <div id="cfg-prev-btn1" style="background:#6c63ff;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600">Ver leads</div>
+            <div id="cfg-prev-btn2" style="background:#00d4aa22;color:#00d4aa;border:1px solid #00d4aa44;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600">Propiedades</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cfg-feedback" style="margin-top:12px;font-size:13px;min-height:20px"></div>
+    </div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="
+  display:none; position:fixed; inset:0; background:#0f1117;
+  z-index:9999; align-items:center; justify-content:center; flex-direction:column;
+">
+  <div style="
+    background:#1a1d27; border:1px solid #2e3347; border-radius:20px;
+    padding:40px 36px; width:100%; max-width:380px; text-align:center;
+    box-shadow:0 25px 60px rgba(0,0,0,0.5);
+  ">
+    <div id="loginLogo" style="
+      width:64px; height:64px; background:linear-gradient(135deg,#6c63ff,#00d4aa);
+      border-radius:16px; display:flex; align-items:center; justify-content:center;
+      font-size:32px; margin:0 auto 20px;
+    ">🏠</div>
+    <div id="loginEmpresa" style="font-size:1.3rem;font-weight:700;color:#e8eaf0;margin-bottom:6px">CRM</div>
+    <div style="font-size:0.85rem;color:#8b92a5;margin-bottom:32px">Ingresá tu PIN para continuar</div>
+
+    <!-- PIN dots display -->
+    <div style="display:flex;justify-content:center;gap:12px;margin-bottom:28px">
+      <div id="dot0" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot1" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot2" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot3" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+    </div>
+
+    <!-- Teclado numérico -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <script>
+        // Generar botones 1-9 + 0
+        const nums = [1,2,3,4,5,6,7,8,9,'',0,'⌫'];
+        document.write(nums.map(n => `
+          <button onclick="pinKey('${n}')" style="
+            background:#222636; border:1px solid #2e3347; border-radius:12px;
+            color:#e8eaf0; font-size:1.3rem; font-weight:600; padding:18px 0;
+            cursor:pointer; transition:all .15s;
+            ${n===''?'visibility:hidden':''}
+          " onmouseover="this.style.background='#2e3347'" onmouseout="this.style.background='#222636'"
+          >${n}</button>
+        `).join(''));
+      </script>
+    </div>
+
+    <div id="loginError" style="color:#f87171;font-size:0.85rem;min-height:20px;margin-bottom:8px"></div>
+    <div style="font-size:0.75rem;color:#4b5563;margin-top:8px">Powered by System IA</div>
+  </div>
+</div>
+
 <!-- MODAL: FORM PREVIEW -->
 <div class="modal-bg" id="modalForm">
   <div class="modal" style="max-width:440px">
@@ -1084,6 +1217,7 @@ function nav(id, el) {
   if(id==='pipeline') renderKanbanFromLeads();
   if(id==='propiedades') renderProps();
   if(id==='agenda') renderAgenda();
+  if(id==='configuracion') cargarConfiguracion();
 }
 
 // ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
@@ -1405,8 +1539,111 @@ async function guardarEstado(id) {
   }
 }
 
+// ── MULTI-TENANT + LOGIN ─────────────────────────────────────────────────────
+const SAAS_API = 'https://agentes.arnaldoayalaestratega.cloud';
+let API_BASE = `${SAAS_API}/demos/inmobiliaria`; // fallback
+let TENANT_SLUG = 'demo';
+let pinBuffer = '';
+
+// ── PIN keyboard ─────────────────────────────────────────────────────────────
+function pinKey(k) {
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  if (k === '⌫') {
+    pinBuffer = pinBuffer.slice(0, -1);
+  } else if (k !== '' && pinBuffer.length < 4) {
+    pinBuffer += k;
+  }
+  // Actualizar dots
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`dot${i}`);
+    dot.style.background = i < pinBuffer.length ? '#6c63ff' : '#2e3347';
+  }
+  if (pinBuffer.length === 4) {
+    setTimeout(submitPin, 200);
+  }
+}
+
+async function submitPin() {
+  const err = document.getElementById('loginError');
+  try {
+    const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: pinBuffer }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      sessionStorage.setItem(`crm_token_${TENANT_SLUG}`, data.token);
+      // Ocultar login, mostrar app
+      document.getElementById('loginScreen').style.display = 'none';
+      document.querySelector('.layout') && (document.querySelector('.layout').style.display = '');
+      cargarLeads();
+      renderProps();
+      renderAgenda();
+    } else {
+      pinBuffer = '';
+      for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).style.background = '#f87171';
+      setTimeout(() => {
+        for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).style.background = '#2e3347';
+      }, 600);
+      err.textContent = 'PIN incorrecto. Intentá de nuevo.';
+    }
+  } catch(e) {
+    pinBuffer = '';
+    err.textContent = 'Error de conexión. Reintentá.';
+  }
+}
+
+// ── Init tenant + login flow ─────────────────────────────────────────────────
+async function initTenant() {
+  const params = new URLSearchParams(window.location.search);
+  TENANT_SLUG = params.get('tenant') || 'demo';
+  try {
+    const res = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`tenant no encontrado: ${TENANT_SLUG}`);
+    const t = await res.json();
+
+    // Aplicar API_BASE
+    API_BASE = `${SAAS_API}${t.api_prefix}`;
+
+    // Aplicar branding
+    document.getElementById('page-title').textContent = `${t.nombre} — CRM`;
+    const topEmpresa = document.getElementById('topEmpresa');
+    if (topEmpresa) topEmpresa.textContent = t.nombre;
+    // Actualizar chip del topbar con nombre del tenant
+    const topUsuario = document.getElementById('topUsuario');
+    const topAvatar = document.getElementById('topAvatar');
+    if (topUsuario) topUsuario.textContent = t.nombre;
+    if (topAvatar) topAvatar.textContent = t.nombre.substring(0,2).toUpperCase();
+    if (t.logo_url) aplicarLogo(t.logo_url);
+    if (t.color_primario) document.documentElement.style.setProperty('--accent', t.color_primario);
+
+    // Login si requiere PIN
+    if (t.requiere_pin) {
+      const token = sessionStorage.getItem(`crm_token_${TENANT_SLUG}`);
+      if (!token) {
+        // Mostrar pantalla de login
+        const ls = document.getElementById('loginScreen');
+        document.getElementById('loginEmpresa').textContent = t.nombre;
+        if (t.logo_url) {
+          document.getElementById('loginLogo').innerHTML = `<img src="${t.logo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`;
+        }
+        ls.style.display = 'flex';
+        // Ocultar layout principal hasta autenticar
+        const layout = document.querySelector('.layout');
+        if (layout) layout.style.display = 'none';
+        return false; // no continuar cargando datos
+      }
+    }
+  } catch(err) {
+    console.warn('[Tenant] Usando config por defecto:', err.message);
+  }
+  return true; // continuar cargando datos
+}
+
 // ── PROPS — conectado a Airtable via backend ────────────────────────────────
-const API_BASE = 'https://system-ia-agentes.onrender.com/demos/inmobiliaria';
 
 async function renderProps() {
   const g = document.getElementById('propsGrid');
@@ -1950,6 +2187,11 @@ function cerrarPerfil() {
   document.getElementById('perfilDropdown').classList.remove('show');
 }
 
+function irConfiguracion() {
+  const navItem = document.querySelector('.nav-item[onclick*="configuracion"]');
+  nav('configuracion', navItem);
+}
+
 // Cerrar dropdown al hacer click fuera
 document.addEventListener('click', e => {
   const dd = document.getElementById('perfilDropdown');
@@ -1997,11 +2239,131 @@ function guardarPerfil() {
   showNotif('✅ Perfil actualizado', empresa || 'Cambios guardados');
 }
 
+
+// ── CONFIGURACIÓN DE MARCA ──────────────────────────────────────────────────
+function cargarConfiguracion() {
+  // Cargar valores actuales del tenant en los inputs
+  fetch(`${SAAS_API}/tenant/${TENANT_SLUG}`)
+    .then(r => r.json())
+    .then(t => {
+      document.getElementById('cfg-nombre').value = t.nombre || '';
+      document.getElementById('cfg-ciudad').value = t.ciudad || '';
+      document.getElementById('cfg-moneda').value = t.moneda || 'USD';
+      document.getElementById('cfg-logo').value = t.logo_url || '';
+      document.getElementById('cfg-color-primary').value = t.color_primario || '#6c63ff';
+      document.getElementById('cfg-color-primary-hex').value = t.color_primario || '#6c63ff';
+      document.getElementById('cfg-color-accent').value = t.color_acento || '#00d4aa';
+      document.getElementById('cfg-color-accent-hex').value = t.color_acento || '#00d4aa';
+      actualizarPreview();
+      if (t.logo_url) previewCfgLogo(t.logo_url);
+    }).catch(() => {});
+}
+
+function previewCfgLogo(url) {
+  const el = document.getElementById('cfg-logo-preview');
+  const prev = document.getElementById('cfg-prev-logo');
+  if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+    const img = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+    el.innerHTML = img;
+    prev.innerHTML = img;
+  } else {
+    el.textContent = '🏠';
+    prev.textContent = '🏠';
+  }
+}
+
+function syncColor(tipo) {
+  if (tipo === 'primary') {
+    const hex = document.getElementById('cfg-color-primary-hex').value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) document.getElementById('cfg-color-primary').value = hex;
+  } else {
+    const hex = document.getElementById('cfg-color-accent-hex').value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) document.getElementById('cfg-color-accent').value = hex;
+  }
+  actualizarPreview();
+}
+
+function actualizarPreview() {
+  const nombre = document.getElementById('cfg-nombre').value || 'Tu Empresa';
+  const ciudad = document.getElementById('cfg-ciudad').value || 'Ciudad';
+  const c1 = document.getElementById('cfg-color-primary').value;
+  const c2 = document.getElementById('cfg-color-accent').value;
+  document.getElementById('cfg-prev-nombre').textContent = nombre;
+  document.getElementById('cfg-prev-ciudad').textContent = ciudad;
+  document.getElementById('cfg-prev-btn1').style.background = c1;
+  document.getElementById('cfg-prev-btn2').style.color = c2;
+  document.getElementById('cfg-prev-btn2').style.borderColor = c2 + '44';
+  document.getElementById('cfg-prev-btn2').style.background = c2 + '22';
+}
+
+// Live preview al escribir
+['cfg-nombre','cfg-ciudad'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', actualizarPreview);
+});
+['cfg-color-primary','cfg-color-accent'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    const tipo = id.includes('primary') ? 'primary' : 'accent';
+    const hexId = id + '-hex';
+    document.getElementById(hexId).value = el.value;
+    actualizarPreview();
+  });
+});
+
+async function guardarMarca() {
+  const fb = document.getElementById('cfg-feedback');
+  const btn = document.getElementById('btnGuardarMarca');
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+  fb.textContent = '';
+  try {
+    const payload = {
+      nombre:         document.getElementById('cfg-nombre').value.trim() || undefined,
+      logo_url:       document.getElementById('cfg-logo').value.trim() || undefined,
+      color_primario: document.getElementById('cfg-color-primary').value,
+      color_acento:   document.getElementById('cfg-color-accent').value,
+      ciudad:         document.getElementById('cfg-ciudad').value.trim() || undefined,
+      moneda:         document.getElementById('cfg-moneda').value,
+    };
+    // Limpiar undefined
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+    const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/marca`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (\!r.ok) throw new Error('Error ' + r.status);
+    const data = await r.json();
+    // Aplicar cambios al CRM en vivo
+    if (data.nombre) {
+      document.getElementById('topEmpresa').textContent = data.nombre;
+      document.getElementById('page-title').textContent = data.nombre + ' — CRM';
+    }
+    if (data.color_primario) document.documentElement.style.setProperty('--accent', data.color_primario);
+    if (data.logo_url) aplicarLogo(data.logo_url);
+    fb.style.color = 'var(--green)';
+    fb.textContent = '✅ Cambios guardados y aplicados';
+    showNotif('✅ Marca actualizada', data.nombre || 'Cambios guardados');
+  } catch(e) {
+    fb.style.color = 'var(--red)';
+    fb.textContent = '❌ Error al guardar: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Guardar cambios';
+  }
+}
+
 // ── INIT ────────────────────────────────────────────────────────────────────
 cargarPerfil();
-cargarLeads();   // carga leads desde Airtable → renderLeads() + renderKanbanFromLeads()
-renderProps();
-renderAgenda();
+initTenant().then(ok => {
+  if (ok) {
+    cargarLeads();
+    renderProps();
+    renderAgenda();
+  }
+  // Si ok=false → login screen visible, datos se cargan desde submitPin()
+});
 </script>
 </body>
 </html>
