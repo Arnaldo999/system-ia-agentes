@@ -589,6 +589,7 @@
 
 <script>
 const API = 'https://agentes.arnaldoayalaestratega.cloud';
+const CRM = `${API}/clientes/arnaldo/maicol/crm`;
 
 let allProps  = [];
 let allLeads  = [];
@@ -602,7 +603,7 @@ async function fetchProxy(endpoint) {
 }
 
 async function patchProxy(endpoint, body) {
-  const r = await fetch(`${API}${endpoint}`, {
+  const r = await fetch(`${CRM}${endpoint}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -612,7 +613,7 @@ async function patchProxy(endpoint, body) {
 }
 
 async function postProxy(endpoint, body) {
-  const r = await fetch(`${API}${endpoint}`, {
+  const r = await fetch(`${CRM}${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -627,8 +628,8 @@ async function loadAll() {
   document.getElementById('last-update').textContent = 'Actualizando...';
   try {
     const [props, leads] = await Promise.all([
-      fetchProxy('/crm/propiedades?cliente_id=maicol'),
-      fetchProxy('/crm/clientes?cliente_id=maicol'),
+      fetch(`${CRM}/propiedades`).then(r => r.json()).then(d => d.records || []),
+      fetch(`${CRM}/clientes`).then(r => r.json()).then(d => d.records || []),
     ]);
     allProps = props;
     allLeads = leads;
@@ -932,10 +933,10 @@ async function guardarPropiedad() {
 
   try {
     if (recordId) {
-      await patchProxy(`/crm/propiedades/${recordId}`, fields);
+      await patchProxy(`/propiedades/${recordId}`, fields);
       showToast('Propiedad actualizada correctamente');
     } else {
-      await postProxy('/crm/propiedades', fields);
+      await postProxy('/propiedades', fields);
       showToast('Propiedad creada correctamente');
     }
     closeModal('modal-prop');
@@ -1029,7 +1030,7 @@ async function cambiarEstadoLead(recordId, nuevoEstado, event) {
   btn.disabled = true;
   try {
     const ahora = new Date().toISOString();
-    await patchProxy(`/crm/clientes/${recordId}`, { Estado: nuevoEstado });
+    await patchProxy(`/clientes/${recordId}`, { Estado: nuevoEstado });
     const lead = allLeads.find(l => l.id === recordId);
     if (lead) { lead.Estado = nuevoEstado; lead.fecha_ultimo_contacto = ahora; }
     renderLeads();
@@ -1177,9 +1178,9 @@ async function guardarLead() {
 
   try {
     if (recordId) {
-      await patchProxy(`/crm/clientes/${recordId}`, fields);
+      await patchProxy(`/clientes/${recordId}`, fields);
     } else {
-      await postProxy('/crm/clientes', { ...fields, cliente_id: 'maicol' });
+      await postProxy('/clientes', { ...fields, cliente_id: 'maicol' });
     }
     const lead = allLeads.find(l => l.id === recordId);
     if (lead) Object.assign(lead, { Nombre: nombre, Apellido: apellido, Telefono: telefono, Email: email, Zona: zona, Operacion: operacion, Tipo_Propiedad: tipo, Presupuesto: presupuesto, Notas_Bot: notas });
