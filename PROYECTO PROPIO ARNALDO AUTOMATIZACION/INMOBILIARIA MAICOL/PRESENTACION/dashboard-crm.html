@@ -601,12 +601,37 @@
           <button class="btn btn-primary" onclick="openModalNuevoLead()">+ Nuevo Lead</button>
         </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="num text-gray-400" id="s-no-contactados">—</div><div class="lbl">Sin contactar</div></div>
-        <div class="stat-card green"><div class="num" id="s-contactados">—</div><div class="lbl">Contactados</div></div>
-        <div class="stat-card yellow"><div class="num" id="s-en-negociacion">—</div><div class="lbl">En negociación</div></div>
-        <div class="stat-card blue"><div class="num" id="s-cerrados">—</div><div class="lbl">Cerrados</div></div>
-        <div class="stat-card blue"><div class="num" id="s-total-leads">—</div><div class="lbl">Total leads</div></div>
+      <div class="flex gap-3 mb-6 flex-wrap">
+        <div class="kanban-col" style="min-width:150px;width:150px;">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:#6B7280"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#9CA3AF;margin-right:6px;"></span>Sin contactar</span>
+            <span class="kanban-col-count" id="s-no-contactados">—</span>
+          </div>
+        </div>
+        <div class="kanban-col" style="min-width:150px;width:150px;">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:#1E6B47"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16CE87;margin-right:6px;"></span>Contactados</span>
+            <span class="kanban-col-count" id="s-contactados">—</span>
+          </div>
+        </div>
+        <div class="kanban-col" style="min-width:150px;width:150px;">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:#B45309"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#F59E0B;margin-right:6px;"></span>En negociación</span>
+            <span class="kanban-col-count" id="s-en-negociacion">—</span>
+          </div>
+        </div>
+        <div class="kanban-col" style="min-width:130px;width:130px;">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:#1D4ED8"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#60A5FA;margin-right:6px;"></span>Cerrados</span>
+            <span class="kanban-col-count" id="s-cerrados">—</span>
+          </div>
+        </div>
+        <div class="kanban-col" style="min-width:130px;width:130px;">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:#374151"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6B7280;margin-right:6px;"></span>Total leads</span>
+            <span class="kanban-col-count" id="s-total-leads">—</span>
+          </div>
+        </div>
       </div>
       <div class="filters-bar">
         <div class="fc-wrap fc-estado">
