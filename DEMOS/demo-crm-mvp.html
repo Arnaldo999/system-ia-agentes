@@ -992,10 +992,12 @@ tailwind.config = {
           <div class="mf">
             <label>Logo</label>
             <div class="flex items-center gap-3">
-              <div id="cfg-logo-preview" class="w-[60px] h-[60px] bg-surface-2 border border-brd rounded-[10px] flex items-center justify-center text-[28px] shrink-0 overflow-hidden">🏠</div>
+              <div id="cfg-logo-preview" class="w-[60px] h-[60px] bg-surface-2 border border-brd rounded-[10px] flex items-center justify-center text-[28px] shrink-0 overflow-hidden cursor-pointer" onclick="document.getElementById('cfg-logo-file').click()" title="Clic para cambiar logo">🏠</div>
               <div class="flex flex-col gap-2 flex-1">
-                <button type="button" onclick="uploadLogo()" class="btn btn-primary text-xs">📤 Subir imagen</button>
+                <input id="cfg-logo-file" type="file" accept="image/*" class="hidden" onchange="onLogoFileChange(this)">
+                <button type="button" onclick="document.getElementById('cfg-logo-file').click()" class="btn btn-primary text-xs">📤 Subir desde dispositivo</button>
                 <input id="cfg-logo" class="mi text-xs" type="url" placeholder="o pegar URL del logo..." oninput="previewCfgLogo(this.value)">
+                <div id="cfg-logo-uploading" class="hidden text-[11px] text-txt-2">⏳ Subiendo...</div>
               </div>
             </div>
           </div>
@@ -2286,40 +2288,33 @@ function previewCfgLogo(url) {
   }
 }
 
-function uploadLogo() {
-  if (!window.cloudinary) {
-    const s = document.createElement('script');
-    s.src = 'https://upload-widget.cloudinary.com/global/all.js';
-    s.onload = () => _openCloudinaryWidget();
-    document.head.appendChild(s);
-  } else {
-    _openCloudinaryWidget();
+async function onLogoFileChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  // Preview inmediato con FileReader
+  const reader = new FileReader();
+  reader.onload = e => previewCfgLogo(e.target.result);
+  reader.readAsDataURL(file);
+  // Subir a Cloudinary via fetch (unsigned preset)
+  const uploading = document.getElementById('cfg-logo-uploading');
+  uploading.classList.remove('hidden');
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'social_media_posts');
+    fd.append('folder', 'lovbot/logos');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dmqkqcreo/image/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.secure_url) {
+      document.getElementById('cfg-logo').value = data.secure_url;
+      previewCfgLogo(data.secure_url);
+    }
+  } catch(e) {
+    // Si falla Cloudinary, quedamos con el base64 local (no se pierde el preview)
+  } finally {
+    uploading.classList.add('hidden');
+    input.value = '';
   }
-}
-
-function _openCloudinaryWidget() {
-  cloudinary.openUploadWidget({
-    cloudName: 'dmqkqcreo',
-    uploadPreset: 'social_media_posts',
-    sources: ['local', 'url', 'camera'],
-    multiple: false,
-    maxFileSize: 2000000,
-    cropping: true,
-    croppingAspectRatio: 1,
-    croppingShowDimensions: true,
-    resourceType: 'image',
-    folder: 'lovbot/logos',
-    styles: {
-      palette: { window: '#1a1d27', windowBorder: '#2e3347', tabIcon: '#6c63ff', menuIcons: '#8b92a5', textDark: '#e8eaf0', textLight: '#8b92a5', link: '#6c63ff', action: '#00d4aa', inactiveTabIcon: '#555', error: '#ff6b6b', inProgress: '#6c63ff', complete: '#00d4aa', sourceBg: '#0f1117' },
-      fonts: { default: null, "'Inter', sans-serif": { url: null, active: true } }
-    }
-  }, (err, result) => {
-    if (!err && result && result.event === 'success') {
-      const url = result.info.secure_url;
-      document.getElementById('cfg-logo').value = url;
-      previewCfgLogo(url);
-    }
-  });
 }
 
 function syncColor(tipo) {
