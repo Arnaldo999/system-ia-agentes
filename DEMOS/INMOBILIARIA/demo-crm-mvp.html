@@ -1578,7 +1578,7 @@ async function submitPin() {
       sessionStorage.setItem(`crm_token_${TENANT_SLUG}`, data.token);
       // Ocultar login, mostrar app
       document.getElementById('loginScreen').style.display = 'none';
-      document.querySelector('.layout') && (document.querySelector('.layout').style.display = '');
+      document.querySelector('.layout') && (document.querySelector('.layout').style.display = ''); nav('inicio', document.querySelector('.nav-item'));
       cargarLeads();
       renderProps();
       renderAgenda();
