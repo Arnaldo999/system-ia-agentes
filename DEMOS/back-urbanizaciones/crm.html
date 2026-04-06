@@ -269,8 +269,8 @@
       <div class="form-group">
         <label>Operación</label>
         <select class="form-control" id="mp-operacion">
-          <option value="Venta">Venta</option>
-          <option value="Alquiler">Alquiler</option>
+          <option value="venta">Venta</option>
+          <option value="alquiler">Alquiler</option>
         </select>
       </div>
       <div class="form-group">
@@ -1010,7 +1010,7 @@ function openModalEditarProp(recordId) {
   document.getElementById('mp-moneda').value = p.Moneda || 'USD';
   setSelectVal('mp-zona', p.Zona || 'San Ignacio');
   setSelectVal('mp-tipo', p.Tipo || 'Lote residencial');
-  setSelectVal('mp-operacion', (p.Operacion||'').charAt(0).toUpperCase()+(p.Operacion||'').slice(1) || 'Venta');
+  setSelectVal('mp-operacion', (p.Operacion||'').toLowerCase() || 'venta');
   document.getElementById('mp-disponible').value = p.Disponible || '✅ Disponible';
   document.getElementById('mp-dormitorios').value = p.Dormitorios || '';
   document.getElementById('mp-metros').value = p.Metros_Cubiertos || '';
@@ -1041,7 +1041,7 @@ function openModalNuevaPropiedad() {
   document.getElementById('mp-moneda').value = 'USD';
   document.getElementById('mp-zona').value = 'San Ignacio';
   document.getElementById('mp-tipo').value = 'Lote residencial';
-  document.getElementById('mp-operacion').value = 'Venta';
+  document.getElementById('mp-operacion').value = 'venta';
   document.getElementById('mp-disponible').value = '✅ Disponible';
   previewImg();
   document.getElementById('modal-prop').classList.add('open');
