@@ -52,6 +52,11 @@
       .modal-overlay { @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] items-center justify-center p-5 opacity-0 transition-opacity duration-300; display: none; }
       .modal-overlay.open { display: flex; @apply opacity-100; }
       .modal { @apply bg-card rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-2xl; }
+      .modal-card { @apply bg-card rounded-2xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl flex flex-col; }
+      .modal-header { @apply px-8 pt-7 pb-0 relative; }
+      .modal-body { @apply px-8 py-5 overflow-y-auto; }
+      .modal-footer { @apply px-8 pb-7 pt-4 flex gap-3 justify-end border-t border-brd mt-2; }
+      .section-label { @apply col-span-2 text-[11px] font-bold text-primary uppercase tracking-widest mt-3 mb-1 pb-1 border-b border-brd; }
       .modal-close { @apply absolute top-5 right-5 bg-gray-100 border-none w-8 h-8 rounded-full cursor-pointer flex items-center justify-center text-base text-gray-500 hover:bg-gray-200; }
       .modal-title { @apply font-heading text-xl font-extrabold mb-6 text-primary; }
       .form-group { @apply mb-4; }
@@ -766,132 +771,81 @@
 
     <!-- MODAL CLIENTE ACTIVO -->
     <div class="modal-overlay" id="modal-activo">
-      <div class="modal-card" style="max-width:680px;">
+      <div class="modal-card" style="max-width:700px;">
         <div class="modal-header">
           <h3 class="modal-title" id="modal-activo-title">Nuevo Cliente Activo</h3>
           <button class="modal-close" onclick="closeModal('modal-activo')">✕</button>
         </div>
-        <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="modal-body">
           <input type="hidden" id="ma-record-id" />
 
           <!-- Datos personales -->
-          <div class="form-group" style="grid-column:1/-1">
-            <label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Datos Personales</label>
-          </div>
-          <div class="form-group">
-            <label>Nombre *</label>
-            <input class="form-control" id="ma-nombre" placeholder="Nombre" />
-          </div>
-          <div class="form-group">
-            <label>Apellido *</label>
-            <input class="form-control" id="ma-apellido" placeholder="Apellido" />
-          </div>
-          <div class="form-group">
-            <label>DNI / Cédula</label>
-            <input class="form-control" id="ma-dni" placeholder="30123456" />
-          </div>
-          <div class="form-group">
-            <label>Teléfono</label>
-            <input class="form-control" id="ma-telefono" placeholder="+54 9 376..." />
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input class="form-control" type="email" id="ma-email" placeholder="email@ejemplo.com" />
-          </div>
-          <div class="form-group">
-            <label>Ciudad</label>
-            <input class="form-control" id="ma-ciudad" placeholder="San Ignacio" />
+          <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd">👤 Datos Personales</p>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="form-group mb-0"><label>Nombre *</label><input class="form-control" id="ma-nombre" placeholder="Nombre" /></div>
+            <div class="form-group mb-0"><label>Apellido</label><input class="form-control" id="ma-apellido" placeholder="Apellido" /></div>
+            <div class="form-group mb-0"><label>DNI / Cédula</label><input class="form-control" id="ma-dni" placeholder="30123456" /></div>
+            <div class="form-group mb-0"><label>Teléfono</label><input class="form-control" id="ma-telefono" placeholder="+54 9 376..." /></div>
+            <div class="form-group mb-0"><label>Email</label><input class="form-control" type="email" id="ma-email" placeholder="email@ejemplo.com" /></div>
+            <div class="form-group mb-0"><label>Ciudad</label><input class="form-control" id="ma-ciudad" placeholder="San Ignacio" /></div>
           </div>
 
           <!-- Propiedad -->
-          <div class="form-group" style="grid-column:1/-1;margin-top:8px;">
-            <label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Propiedad Adquirida</label>
-          </div>
-          <div class="form-group">
-            <label>Número de Lote</label>
-            <input class="form-control" id="ma-numero-lote" placeholder="Ej: Lote 12, Manzana B" />
-          </div>
-          <div class="form-group">
-            <label>Nombre del Loteo</label>
-            <input class="form-control" id="ma-loteo" placeholder="Ej: Parque Residencial Norte" />
-          </div>
-          <div class="form-group">
-            <label>Superficie (m²)</label>
-            <input class="form-control" type="number" id="ma-superficie" placeholder="300" />
-          </div>
-          <div class="form-group">
-            <label>Precio Total ($)</label>
-            <input class="form-control" type="number" id="ma-precio-total" placeholder="5000000" />
-          </div>
-          <div class="form-group">
-            <label>Fecha de Compra</label>
-            <input class="form-control" type="date" id="ma-fecha-compra" />
+          <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd mt-5">🏠 Propiedad Adquirida</p>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="form-group mb-0"><label>Número de Lote</label><input class="form-control" id="ma-numero-lote" placeholder="Lote 12, Manzana B" /></div>
+            <div class="form-group mb-0"><label>Nombre del Loteo</label><input class="form-control" id="ma-loteo" placeholder="Parque Residencial Norte" /></div>
+            <div class="form-group mb-0"><label>Superficie (m²)</label><input class="form-control" type="number" id="ma-superficie" placeholder="300" /></div>
+            <div class="form-group mb-0"><label>Precio Total ($)</label><input class="form-control" type="number" id="ma-precio-total" placeholder="5000000" /></div>
+            <div class="form-group mb-0 col-span-2"><label>Fecha de Compra</label><input class="form-control" type="date" id="ma-fecha-compra" style="max-width:220px;" /></div>
           </div>
 
           <!-- Cuotas -->
-          <div class="form-group" style="grid-column:1/-1;margin-top:8px;">
-            <label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Plan de Cuotas</label>
-          </div>
-          <div class="form-group">
-            <label>Plan</label>
-            <select class="form-control" id="ma-plan-cuotas">
-              <option value="12 meses">12 meses</option>
-              <option value="18 meses">18 meses</option>
-              <option value="24 meses">24 meses</option>
-              <option value="36 meses">36 meses</option>
-              <option value="48 meses">48 meses</option>
-              <option value="60 meses">60 meses</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Total de Cuotas</label>
-            <input class="form-control" type="number" id="ma-cuotas-total" placeholder="24" />
-          </div>
-          <div class="form-group">
-            <label>Cuotas Pagadas</label>
-            <input class="form-control" type="number" id="ma-cuotas-pagadas" placeholder="0" />
-          </div>
-          <div class="form-group">
-            <label>Monto por Cuota ($)</label>
-            <input class="form-control" type="number" id="ma-monto-cuota" placeholder="50000" />
-          </div>
-          <div class="form-group">
-            <label>Próximo Vencimiento</label>
-            <input class="form-control" type="date" id="ma-proximo-vencimiento" />
-          </div>
-          <div class="form-group">
-            <label>Estado de Pago</label>
-            <select class="form-control" id="ma-estado-pago">
-              <option value="Al día">✅ Al día</option>
-              <option value="Atrasado">🔴 Atrasado</option>
-              <option value="En mora">⛔ En mora</option>
-              <option value="Cancelado">🏁 Cancelado (pagado total)</option>
-            </select>
+          <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd mt-5">💰 Plan de Cuotas</p>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="form-group mb-0">
+              <label>Plan</label>
+              <select class="form-control" id="ma-plan-cuotas">
+                <option value="12 meses">12 meses</option>
+                <option value="18 meses">18 meses</option>
+                <option value="24 meses" selected>24 meses</option>
+                <option value="36 meses">36 meses</option>
+                <option value="48 meses">48 meses</option>
+                <option value="60 meses">60 meses</option>
+              </select>
+            </div>
+            <div class="form-group mb-0"><label>Total de Cuotas</label><input class="form-control" type="number" id="ma-cuotas-total" placeholder="24" /></div>
+            <div class="form-group mb-0"><label>Cuotas Pagadas</label><input class="form-control" type="number" id="ma-cuotas-pagadas" placeholder="0" /></div>
+            <div class="form-group mb-0"><label>Monto por Cuota ($)</label><input class="form-control" type="number" id="ma-monto-cuota" placeholder="50000" /></div>
+            <div class="form-group mb-0"><label>Próximo Vencimiento</label><input class="form-control" type="date" id="ma-proximo-vencimiento" /></div>
+            <div class="form-group mb-0">
+              <label>Estado de Pago</label>
+              <select class="form-control" id="ma-estado-pago">
+                <option value="Al día">✅ Al día</option>
+                <option value="Atrasado">🔴 Atrasado</option>
+                <option value="En mora">⛔ En mora</option>
+                <option value="Cancelado">🏁 Cancelado</option>
+              </select>
+            </div>
           </div>
 
           <!-- Contrato -->
-          <div class="form-group" style="grid-column:1/-1;margin-top:8px;">
-            <label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Contrato</label>
-          </div>
-          <div class="form-group">
-            <label>N° Contrato</label>
-            <input class="form-control" id="ma-numero-contrato" placeholder="BACK-2026-001" />
-          </div>
-          <div class="form-group">
-            <label>Fecha de Contrato</label>
-            <input class="form-control" type="date" id="ma-fecha-contrato" />
-          </div>
-          <div class="form-group">
-            <label>Estado del Contrato</label>
-            <select class="form-control" id="ma-estado-contrato">
-              <option value="Pendiente">📋 Pendiente de firma</option>
-              <option value="Firmado">✅ Firmado</option>
-              <option value="Escriturado">🏠 Escriturado</option>
-            </select>
+          <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd mt-5">📋 Contrato</p>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="form-group mb-0"><label>N° Contrato</label><input class="form-control" id="ma-numero-contrato" placeholder="BACK-2026-001" /></div>
+            <div class="form-group mb-0"><label>Fecha de Contrato</label><input class="form-control" type="date" id="ma-fecha-contrato" /></div>
+            <div class="form-group mb-0 col-span-2">
+              <label>Estado del Contrato</label>
+              <select class="form-control" id="ma-estado-contrato" style="max-width:260px;">
+                <option value="Pendiente">📋 Pendiente de firma</option>
+                <option value="Firmado">✅ Firmado</option>
+                <option value="Escriturado">🏠 Escriturado</option>
+              </select>
+            </div>
           </div>
 
           <!-- Notas -->
-          <div class="form-group" style="grid-column:1/-1;">
+          <div class="form-group mt-2">
             <label>Notas</label>
             <textarea class="form-control" id="ma-notas" rows="2" placeholder="Observaciones, acuerdos especiales..."></textarea>
           </div>
