@@ -21,6 +21,7 @@ AIRTABLE_TOKEN        = os.environ.get("AIRTABLE_TOKEN_MAICOL", "") or os.enviro
 AIRTABLE_BASE_ID      = os.environ.get("AIRTABLE_BASE_ID_MAICOL", "appaDT7uwHnimVZLM")
 AIRTABLE_TABLE        = "tbly67z1oY8EFQoFj"
 AIRTABLE_TABLE_CLIENTES = "tblonoyIMAM5kl2ue"
+AIRTABLE_TABLE_ACTIVOS  = os.environ.get("AIRTABLE_TABLE_ACTIVOS_MAICOL", "CLIENTES_ACTIVOS")
 NUMERO_BOT            = os.environ.get("NUMERO_BOT_MAICOL", "5493764815689")
 NUMERO_ASESOR         = os.environ.get("NUMERO_ASESOR_MAICOL", "+5493765384843")
 
@@ -680,6 +681,66 @@ async def crm_upload_imagen(request: Request):
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=resp.status_code, detail=resp.text[:300])
     return {"url": resp.json().get("secure_url")}
+
+
+# ─── CLIENTES ACTIVOS (compradores con cuotas) ────────────────────────────────
+
+@router.get("/crm/activos")
+def crm_activos():
+    """Lista todos los clientes activos con sus cuotas."""
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
+    records, offset = [], None
+    while True:
+        params = {"pageSize": 100}
+        if offset:
+            params["offset"] = offset
+        r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
+        data = r.json()
+        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
+        offset = data.get("offset")
+        if not offset:
+            break
+    return {"records": records}
+
+
+@router.post("/crm/activos")
+async def crm_crear_activo(request: Request):
+    """Crea un nuevo cliente activo en Airtable."""
+    from fastapi import HTTPException
+    data = await request.json()
+    fields = data.get("fields", data)
+    # Limpiar campos None/vacíos
+    fields = {k: v for k, v in fields.items() if v is not None and v != ""}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+
+@router.patch("/crm/activos/{record_id}")
+async def crm_editar_activo(record_id: str, request: Request):
+    """Actualiza un cliente activo en Airtable."""
+    from fastapi import HTTPException
+    data = await request.json()
+    fields = data.get("fields", data)
+    fields = {k: v for k, v in fields.items() if v is not None and v != ""}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+
+@router.delete("/crm/activos/{record_id}")
+async def crm_eliminar_activo(record_id: str):
+    """Elimina un cliente activo de Airtable."""
+    from fastapi import HTTPException
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
+    r = requests.delete(url, headers=AT_HEADERS, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok"}
 
 
 @router.get("/config")
