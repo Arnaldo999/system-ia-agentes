@@ -1017,7 +1017,12 @@ function openModalEditarProp(recordId) {
   } else if (typeof imgField === 'string') {
     imgUrl = imgField;
   }
-  document.getElementById('mp-imagen-url').value = imgUrl;
+  // Si es URL interna de Airtable, no la ponemos en el input (no se puede re-subir)
+  // La imagen se muestra en el preview usando data-current pero el input queda vacío para nueva imagen
+  const esUrlInterna = imgUrl.includes('airtableusercontent.com');
+  const imgInput = document.getElementById('mp-imagen-url');
+  imgInput.value = esUrlInterna ? '' : imgUrl;
+  imgInput.dataset.currentImg = imgUrl; // guardar para preview
   previewImg();
   document.getElementById('mp-maps-url').value = p.Google_Maps_URL || '';
   document.getElementById('mp-video-url').value = p.Video_URL || '';
@@ -1045,7 +1050,8 @@ function setSelectVal(id, val) {
 }
 
 function previewImg() {
-  const url = document.getElementById('mp-imagen-url').value.trim();
+  const input = document.getElementById('mp-imagen-url');
+  const url = input.value.trim() || input.dataset.currentImg || '';
   const img = document.getElementById('mp-img-preview');
   img.style.display = url ? 'block' : 'none';
   if (url) img.src = url;
