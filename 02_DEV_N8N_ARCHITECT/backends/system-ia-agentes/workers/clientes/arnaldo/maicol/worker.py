@@ -21,7 +21,7 @@ AIRTABLE_TOKEN        = os.environ.get("AIRTABLE_TOKEN_MAICOL", "") or os.enviro
 AIRTABLE_BASE_ID      = os.environ.get("AIRTABLE_BASE_ID_MAICOL", "appaDT7uwHnimVZLM")
 AIRTABLE_TABLE        = "tbly67z1oY8EFQoFj"
 AIRTABLE_TABLE_CLIENTES = "tblonoyIMAM5kl2ue"
-AIRTABLE_TABLE_ACTIVOS  = os.environ.get("AIRTABLE_TABLE_ACTIVOS_MAICOL", "CLIENTES_ACTIVOS")
+AIRTABLE_TABLE_ACTIVOS  = os.environ.get("AIRTABLE_TABLE_ACTIVOS_MAICOL", "tblDgQFXLzvbhNiyX")
 NUMERO_BOT            = os.environ.get("NUMERO_BOT_MAICOL", "5493764815689")
 NUMERO_ASESOR         = os.environ.get("NUMERO_ASESOR_MAICOL", "+5493765384843")
 
@@ -681,6 +681,78 @@ async def crm_upload_imagen(request: Request):
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=resp.status_code, detail=resp.text[:300])
     return {"url": resp.json().get("secure_url")}
+
+
+# ─── EMAIL ALERTAS (llamado por n8n workflow de vencimientos) ─────────────────
+
+@router.post("/send-email-alerta")
+async def send_email_alerta(request: Request):
+    """Envía email de alerta de vencimiento al cliente via SMTP de backurbanizaciones.com."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    from fastapi import HTTPException
+
+    SMTP_HOST     = os.environ.get("SMTP_HOST_MAICOL", "mail.backurbanizaciones.com")
+    SMTP_PORT     = int(os.environ.get("SMTP_PORT_MAICOL", "465"))
+    SMTP_USER     = os.environ.get("SMTP_USER_MAICOL", "info@backurbanizaciones.com")
+    SMTP_PASS     = os.environ.get("SMTP_PASS_MAICOL", "")
+
+    data = await request.json()
+    to      = data.get("to", "")
+    nombre  = data.get("nombre", "Cliente")
+    lote    = data.get("lote", "")
+    venc    = data.get("venc", "")
+    monto   = data.get("monto", "")
+    cuotas  = data.get("cuotas", "")
+    dias    = data.get("dias_restantes", 3)
+
+    if not to:
+        raise HTTPException(status_code=400, detail="Email destino requerido")
+    if not SMTP_PASS:
+        raise HTTPException(status_code=500, detail="SMTP no configurado")
+
+    alerta_txt = "vence HOY" if dias == 0 else (f"venció hace {abs(dias)} día(s)" if dias < 0 else f"vence en {dias} día(s)")
+
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f9fa;padding:24px;border-radius:12px;">
+      <div style="background:#0A261A;padding:20px 24px;border-radius:8px 8px 0 0;text-align:center;">
+        <h2 style="color:#E5B239;margin:0;font-size:1.3rem;">⚠️ Recordatorio de Pago</h2>
+        <p style="color:#A6C2B4;margin:4px 0 0;font-size:0.85rem;">Back Urbanizaciones</p>
+      </div>
+      <div style="background:#fff;padding:28px 24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
+        <p style="color:#374151;font-size:1rem;">Hola <strong>{nombre}</strong>,</p>
+        <p style="color:#374151;">Te recordamos que tu cuota <strong>{cuotas}</strong> de <strong>{monto}</strong> <strong>{alerta_txt}</strong>.</p>
+        <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:16px;margin:20px 0;">
+          <p style="margin:0;color:#92400E;font-size:0.95rem;">
+            📋 <strong>Lote:</strong> {lote}<br/>
+            💰 <strong>Monto:</strong> {monto}<br/>
+            📅 <strong>Fecha de vencimiento:</strong> {venc}
+          </p>
+        </div>
+        <p style="color:#374151;">Para realizar el pago o consultar, comunicate con nosotros:</p>
+        <p style="color:#374151;">📞 WhatsApp: <a href="https://wa.me/5493765384843" style="color:#0A261A;">+54 9 376 538-4843</a></p>
+        <p style="color:#6b7280;font-size:0.8rem;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
+          Back Urbanizaciones — San Ignacio, Misiones<br/>
+          Este es un mensaje automático, por favor no respondas a este correo.
+        </p>
+      </div>
+    </div>
+    """
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"⚠️ Recordatorio: tu cuota {alerta_txt} — Back Urbanizaciones"
+    msg["From"]    = f"Back Urbanizaciones <{SMTP_USER}>"
+    msg["To"]      = to
+    msg.attach(MIMEText(html, "html"))
+
+    try:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+            server.login(SMTP_USER, SMTP_PASS)
+            server.sendmail(SMTP_USER, to, msg.as_string())
+        return {"status": "ok", "to": to}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"SMTP error: {str(e)}")
 
 
 # ─── CLIENTES ACTIVOS (compradores con cuotas) ────────────────────────────────
