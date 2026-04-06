@@ -277,10 +277,52 @@ def _gemini_texto_dinamico(paso: str, contexto: dict) -> str:
     nombre = contexto.get("nombre", "").split()[0] or ""
     nombre_txt = f", {nombre}" if nombre else ""
     prompts = {
-        "pregunta_objetivo": f"Generá una pregunta corta y natural (máx 2 líneas) para preguntarle a {nombre or 'el cliente'} para qué está buscando un lote: ¿para vivir, invertir, construir un negocio? Usá español argentino, tono amigable y cercano, sin ser robótico.",
-        "pregunta_zona": f"Generá una pregunta corta (máx 2 líneas) para preguntarle{nombre_txt} en qué zona de Misiones está buscando (mencionar que tenemos en San Ignacio, Apóstoles, Gdor. Roca, Leandro N. Alem). Español argentino, tono natural.",
-        "pregunta_presupuesto": f"Generá una pregunta corta (máx 2 líneas) para preguntarle{nombre_txt} si tiene en mente un rango de presupuesto. Aclarar que no hace falta que sea exacto. Español argentino, empático y sin presión.",
-        "pregunta_urgencia": f"Generá una pregunta corta (máx 2 líneas) para preguntarle{nombre_txt} en qué tiempo piensa concretar la compra — si es algo que quiere resolver pronto o está explorando. Español argentino, tono liviano.",
+        "pregunta_objetivo": f"""Generá una pregunta para preguntarle a {nombre or 'el cliente'} para qué está buscando un lote.
+Reglas estrictas:
+- Tono formal pero cálido, NUNCA uses "che", "vos" ni lunfardo
+- Mostrá 3 opciones numeradas con emojis, por ejemplo:
+  1️⃣ 🏡 Para vivir con mi familia
+  2️⃣ 📈 Como inversión
+  3️⃣ 🏗️ Para construir un negocio
+- Cerrá con "También podés escribirme libremente 😊"
+- Máx 6 líneas en total
+- Español neutro latinoamericano""",
+
+        "pregunta_zona": f"""Generá una pregunta para preguntarle{nombre_txt} en qué zona de Misiones está buscando.
+Reglas estrictas:
+- Tono formal pero cálido, NUNCA uses "che" ni lunfardo
+- Mostrá las zonas disponibles como opciones numeradas con emojis:
+  1️⃣ 📍 San Ignacio
+  2️⃣ 📍 Gobernador Roca
+  3️⃣ 📍 Apóstoles
+  4️⃣ 📍 Leandro N. Alem
+  5️⃣ 🗺️ Otra zona / Aún no lo sé
+- Cerrá con "También podés escribir el nombre de la zona directamente 😊"
+- Máx 8 líneas en total
+- Español neutro latinoamericano""",
+
+        "pregunta_presupuesto": f"""Generá una pregunta para preguntarle{nombre_txt} si tiene en mente un rango de presupuesto.
+Reglas estrictas:
+- Tono formal pero cálido, NUNCA uses "che" ni lunfardo
+- Mostrá 4 opciones numeradas con emojis, por ejemplo:
+  1️⃣ 💵 Hasta $2.000.000
+  2️⃣ 💵 Entre $2M y $5M
+  3️⃣ 💵 Más de $5.000.000
+  4️⃣ 💬 Prefiero hablarlo con un asesor
+- Aclará que no hace falta que sea exacto, una referencia alcanza
+- Máx 8 líneas en total
+- Español neutro latinoamericano""",
+
+        "pregunta_urgencia": f"""Generá una pregunta para preguntarle{nombre_txt} en qué tiempo piensa concretar la compra.
+Reglas estrictas:
+- Tono formal pero cálido, NUNCA uses "che" ni lunfardo
+- Mostrá 4 opciones numeradas con emojis:
+  1️⃣ 🔥 Lo antes posible (1-3 meses)
+  2️⃣ 📅 En los próximos 6 meses
+  3️⃣ 🗓️ En el próximo año
+  4️⃣ 🔍 Estoy explorando opciones
+- Máx 7 líneas en total
+- Español neutro latinoamericano""",
     }
     try:
         resp = _gemini_client.models.generate_content(
@@ -288,10 +330,36 @@ def _gemini_texto_dinamico(paso: str, contexto: dict) -> str:
         return resp.text.strip()
     except Exception:
         fallbacks = {
-            "pregunta_objetivo": f"¿Para qué estás buscando el lote{nombre_txt}? ¿Para vivir, invertir o un emprendimiento? 🏡",
-            "pregunta_zona": f"¿Tenés alguna zona en mente{nombre_txt}? Tenemos opciones en San Ignacio, Apóstoles, Gdor. Roca y más 📍",
-            "pregunta_presupuesto": f"¿Tenés en mente un rango de presupuesto{nombre_txt}? No hace falta que sea exacto 💰",
-            "pregunta_urgencia": f"¿En qué tiempo estás pensando concretar{nombre_txt}? ¿Es algo que querés resolver pronto o estás explorando? 🗓️",
+            "pregunta_objetivo": (
+                f"¿Para qué está buscando el lote{nombre_txt}? 🏡\n\n"
+                "1️⃣ 🏡 Para vivir con mi familia\n"
+                "2️⃣ 📈 Como inversión\n"
+                "3️⃣ 🏗️ Para construir un negocio\n\n"
+                "También puede escribirme libremente 😊"
+            ),
+            "pregunta_zona": (
+                f"¿En qué zona de Misiones está buscando{nombre_txt}? 📍\n\n"
+                "1️⃣ 📍 San Ignacio\n"
+                "2️⃣ 📍 Gobernador Roca\n"
+                "3️⃣ 📍 Apóstoles\n"
+                "4️⃣ 📍 Leandro N. Alem\n"
+                "5️⃣ 🗺️ Otra zona / Aún no lo sé\n\n"
+                "También puede escribir el nombre directamente 😊"
+            ),
+            "pregunta_presupuesto": (
+                f"¿Tiene en mente un rango de presupuesto{nombre_txt}? No hace falta que sea exacto 💰\n\n"
+                "1️⃣ 💵 Hasta $2.000.000\n"
+                "2️⃣ 💵 Entre $2M y $5M\n"
+                "3️⃣ 💵 Más de $5.000.000\n"
+                "4️⃣ 💬 Prefiero hablarlo con un asesor"
+            ),
+            "pregunta_urgencia": (
+                f"¿En qué tiempo está pensando concretar la compra{nombre_txt}? 🗓️\n\n"
+                "1️⃣ 🔥 Lo antes posible (1-3 meses)\n"
+                "2️⃣ 📅 En los próximos 6 meses\n"
+                "3️⃣ 🗓️ En el próximo año\n"
+                "4️⃣ 🔍 Estoy explorando opciones"
+            ),
         }
         return fallbacks.get(paso, "")
 
