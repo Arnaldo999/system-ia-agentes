@@ -39,6 +39,32 @@ router = APIRouter(prefix="/clientes/arnaldo/maicol", tags=["Maicol — Back Urb
 
 # ─── SESIONES (in-memory) ─────────────────────────────────────────────────────
 SESIONES: dict[str, dict] = {}
+MENSAJES_PROCESADOS: set[str] = set()  # deduplicación de IDs YCloud
+
+# ─── MAPAS de opciones numeradas ─────────────────────────────────────────────
+MAPA_OBJETIVO = {
+    "1": "Para vivir con mi familia",
+    "2": "Como inversión",
+    "3": "Para construir un negocio o emprendimiento",
+}
+MAPA_ZONA = {
+    "1": "San Ignacio",
+    "2": "Gdor. Roca",
+    "3": "Apóstoles",
+    "4": "Leandro N. Alem",
+    "5": "Otra zona / Aún no lo sé",
+}
+MAPA_PRESUPUESTO = {
+    "1": "Hasta $2.000.000",
+    "2": "Entre $2M y $5M",
+    "3": "Más de $5.000.000",
+}
+MAPA_URGENCIA = {
+    "1": "Lo antes posible (1-3 meses)",
+    "2": "En los próximos 6 meses",
+    "3": "En el próximo año",
+    "4": "Estoy explorando opciones",
+}
 
 # ─── AIRTABLE ─────────────────────────────────────────────────────────────────
 AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "application/json"}
@@ -544,33 +570,47 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
 
     # ── PASO 2: objetivo ────────────────────────────────────────────────────
     if step == "objetivo":
-        SESIONES[telefono] = {**sesion, "step": "zona", "resp_objetivo": texto.strip()}
-        _at_registrar_cliente(telefono, nombre, notas=f"Objetivo: {texto.strip()}")
+        # Opción "4" en objetivo = ir directo al asesor
+        if t == "4":
+            _ir_asesor(telefono)
+            return
+        resp_objetivo = MAPA_OBJETIVO.get(t, texto.strip())
+        SESIONES[telefono] = {**sesion, "step": "zona", "resp_objetivo": resp_objetivo}
+        _at_registrar_cliente(telefono, nombre, notas=f"Objetivo: {resp_objetivo}")
         pregunta = _gemini_texto_dinamico("pregunta_zona", {"nombre": nombre_corto})
         _enviar_texto(telefono, pregunta)
         return
 
     # ── PASO 3: zona ────────────────────────────────────────────────────────
     if step == "zona":
-        SESIONES[telefono] = {**sesion, "step": "presupuesto", "resp_zona": texto.strip()}
-        _at_registrar_cliente(telefono, nombre, notas=f"Zona: {texto.strip()}")
+        # Opción "4" en zona = Leandro N. Alem (no ir al asesor — es una zona válida)
+        # "Otra zona" no es zona real, Gemini no va a filtrar por ella
+        resp_zona = MAPA_ZONA.get(t, texto.strip())
+        SESIONES[telefono] = {**sesion, "step": "presupuesto", "resp_zona": resp_zona}
+        _at_registrar_cliente(telefono, nombre, notas=f"Zona: {resp_zona}")
         pregunta = _gemini_texto_dinamico("pregunta_presupuesto", {"nombre": nombre_corto})
         _enviar_texto(telefono, pregunta)
         return
 
     # ── PASO 4: presupuesto ─────────────────────────────────────────────────
     if step == "presupuesto":
-        SESIONES[telefono] = {**sesion, "step": "urgencia", "resp_presupuesto": texto.strip()}
+        # Opción "4" en presupuesto = ir directo al asesor
+        if t == "4":
+            _ir_asesor(telefono)
+            return
+        resp_presupuesto = MAPA_PRESUPUESTO.get(t, texto.strip())
+        SESIONES[telefono] = {**sesion, "step": "urgencia", "resp_presupuesto": resp_presupuesto}
         pregunta = _gemini_texto_dinamico("pregunta_urgencia", {"nombre": nombre_corto})
         _enviar_texto(telefono, pregunta)
         return
 
     # ── PASO 5: urgencia → calificar ────────────────────────────────────────
     if step == "urgencia":
-        sesion_actualizada = {**sesion, "step": "calificando", "resp_urgencia": texto.strip()}
+        resp_urgencia = MAPA_URGENCIA.get(t, texto.strip())
+        sesion_actualizada = {**sesion, "step": "calificando", "resp_urgencia": resp_urgencia}
         SESIONES[telefono] = sesion_actualizada
         _at_registrar_cliente(telefono, nombre,
-            notas=f"Urgencia: {texto.strip()} | Pres: {sesion.get('resp_presupuesto','')}")
+            notas=f"Urgencia: {resp_urgencia} | Pres: {sesion.get('resp_presupuesto','')}")
 
         _enviar_texto(telefono, f"Perfecto, {nombre_corto}. Dame un segundo que busco las mejores opciones para usted... 🔍")
 
@@ -714,6 +754,15 @@ async def procesar_whatsapp(request: Request):
     if not telefono or not texto:
         return {"status": "ignorado", "razon": "sin telefono o texto"}
 
+    # Deduplicación: ignorar mensajes ya procesados (YCloud puede reintentar)
+    msg_id = msg.get("id") or body.get("id") or ""
+    if msg_id and msg_id in MENSAJES_PROCESADOS:
+        return {"status": "ignorado", "razon": "duplicado"}
+    if msg_id:
+        MENSAJES_PROCESADOS.add(msg_id)
+        if len(MENSAJES_PROCESADOS) > 5000:  # evitar crecimiento infinito
+            MENSAJES_PROCESADOS.clear()
+
     # Capturar nombre del cliente desde YCloud
     customer_profile = msg.get("customerProfile") or msg.get("whatsappContact") or body.get("customerProfile") or {}
     raw_name = customer_profile.get("name") or customer_profile.get("displayName") or ""
@@ -723,7 +772,6 @@ async def procesar_whatsapp(request: Request):
         SESIONES[telefono] = sesion
 
     # Mostrar "escribiendo..." antes de procesar
-    msg_id = msg.get("id") or body.get("id") or ""
     _typing(msg_id)
 
     _procesar_mensaje(telefono, texto)
