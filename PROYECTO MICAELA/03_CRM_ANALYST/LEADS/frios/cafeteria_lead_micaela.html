@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Propuesta Cafetería - System IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --surface: #141418;
+            --surface-hover: #1f1f25;
+            --primary: #c77d3a;
+            --primary-dark: #a05e20;
+            --accent: #e8a85c;
+            --green: #00c853;
+            --red: #ff3366;
+            --text-main: #f0f0f5;
+            --text-muted: #9aa0a6;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(199, 125, 58, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(199, 125, 58, 0.05) 0%, transparent 50%);
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .logo {
+            max-width: 160px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+        }
+
+        .text-grad {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            font-weight: 900;
+            margin: 0 0 10px 0;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.25s; }
+        .card:nth-child(3) { animation-delay: 0.4s; }
+        .card:nth-child(4) { animation-delay: 0.55s; }
+        .card:nth-child(5) { animation-delay: 0.7s; }
+
+        h2 {
+            font-size: 1.6rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* ANTES / DESPUÉS */
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .compare-col {
+            border-radius: 14px;
+            padding: 22px;
+        }
+
+        .compare-col.antes {
+            background: rgba(255, 51, 102, 0.06);
+            border: 1px solid rgba(255, 51, 102, 0.15);
+        }
+
+        .compare-col.despues {
+            background: rgba(0, 200, 83, 0.06);
+            border: 1px solid rgba(0, 200, 83, 0.15);
+        }
+
+        .compare-col h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
+        }
+
+        .compare-col.antes h3 { color: var(--red); }
+        .compare-col.despues h3 { color: var(--green); }
+
+        .compare-col ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .compare-col ul li {
+            padding: 8px 0;
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .compare-col ul li:last-child { border-bottom: none; }
+
+        .compare-col ul li .mark {
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        /* CHECKLIST INTERACTIVO */
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .checklist-item:hover {
+            border-color: rgba(199, 125, 58, 0.3);
+            transform: translateX(4px);
+        }
+
+        .checklist-item.checked {
+            border-color: var(--primary);
+            background: rgba(199, 125, 58, 0.05);
+        }
+
+        .check-circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--text-muted);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .checklist-item.checked .check-circle {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .check-text { flex: 1; }
+        .check-text strong { display: block; font-size: 0.95rem; margin-bottom: 2px; }
+        .check-text span { font-size: 0.82rem; color: var(--text-muted); }
+
+        /* SOLUCIONES */
+        .solutions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .solution-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 24px 18px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .solution-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .solution-item:hover {
+            transform: translateY(-4px);
+            border-color: rgba(199, 125, 58, 0.3);
+        }
+
+        .solution-item:hover::before { opacity: 1; }
+
+        .solution-item .ico { font-size: 2.2rem; margin-bottom: 12px; }
+        .solution-item h4 { margin: 0 0 8px 0; color: white; font-size: 0.95rem; }
+        .solution-item p { margin: 0; font-size: 0.82rem; color: var(--text-muted); }
+
+        /* TIMELINE */
+        .timeline { position: relative; padding-left: 30px; border-left: 2px solid var(--primary); }
+
+        .timeline-step {
+            margin-bottom: 22px;
+            position: relative;
+        }
+
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            left: -37px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(199, 125, 58, 0.4);
+        }
+
+        .timeline-step strong { color: var(--accent); }
+        .timeline-step p { margin: 4px 0 0; color: var(--text-muted); font-size: 0.9rem; }
+
+        /* NOTAS EN VIVO */
+        .notas-area {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 15px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            resize: vertical;
+            min-height: 120px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+
+        .notas-area:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* RESUMEN FLOTANTE */
+        .resumen-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(20, 20, 24, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 100;
+            font-size: 0.85rem;
+        }
+
+        .resumen-bar .counter {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .btn-sm {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-sm:hover { transform: scale(1.05); }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .card { padding: 22px 16px; }
+            .compare-grid { grid-template-columns: 1fr; }
+            .container { padding-bottom: 80px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <header>
+            <img src="../../../PROPUESTAS/PROPUESTAS LOCALES/LOGO/LOGOTRANSPARENTE.png" alt="System IA" class="logo">
+            <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); margin-bottom: 8px; font-weight: 800;">
+                Automatización para Cafeterías
+            </div>
+            <h1>Tu cafetería puede<br><span class="text-grad">funcionar sola</span></h1>
+            <p class="subtitle">Estas son las trabas más comunes que vemos en cafeterías y cómo las resolvemos con tecnología simple.</p>
+        </header>
+
+        <!-- ANTES vs DESPUÉS -->
+        <div class="card">
+            <h2>📊 Hoy vs. Con Automatización</h2>
+            <div class="compare-grid">
+                <div class="compare-col antes">
+                    <h3>❌ Hoy (manual)</h3>
+                    <ul>
+                        <li><span class="mark">😩</span> 3hs/día contestando "¿a qué hora abren?"</li>
+                        <li><span class="mark">😩</span> Clientes se van en hora pico por la espera</li>
+                        <li><span class="mark">😩</span> Pedidos con errores → re-trabajo</li>
+                        <li><span class="mark">😩</span> Reseñas en Google: depende de la suerte</li>
+                        <li><span class="mark">😩</span> No sabés quién es cliente frecuente</li>
+                        <li><span class="mark">😩</span> Instagram muerto hace semanas</li>
+                        <li><span class="mark">😩</span> Delivery por chat = caos</li>
+                    </ul>
+                </div>
+                <div class="compare-col despues">
+                    <h3>✅ Con System IA</h3>
+                    <ul>
+                        <li><span class="mark">🚀</span> Bot responde 24/7 al instante</li>
+                        <li><span class="mark">🚀</span> Menú QR: piden sin esperar mozo</li>
+                        <li><span class="mark">🚀</span> Pedidos digitales sin errores</li>
+                        <li><span class="mark">🚀</span> Mensaje automático pidiendo reseña</li>
+                        <li><span class="mark">🚀</span> Sistema de puntos y fidelización</li>
+                        <li><span class="mark">🚀</span> Posts automáticos con IA</li>
+                        <li><span class="mark">🚀</span> Delivery ordenado y automático</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHECKLIST DE DOLORES (interactivo para marcar en vivo) -->
+        <div class="card">
+            <h2>🎯 ¿Cuáles te pasan hoy?</h2>
+            <p style="color: var(--text-muted); margin-bottom: 18px; font-size: 0.9rem;">Tocá los que te suenan familiar:</p>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <div class="check-circle">✓</div>
+                <div class="check-text">
+                    <strong>WhatsApp colapsado</strong>
+                    <span>Preguntas repetitivas todo el día: horarios, menú, ubicación, wifi...</span>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <div class="check-circle">✓</div>
+                <div class="check-text">
+                    <strong>Gente que se va sin pedir</strong>
+                    <span>En hora pico no dan abasto, la gente se cansa de esperar y se va</span>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <div class="check-circle">✓</div>
+                <div class="check-text">
+                    <strong>Pedidos con errores</strong>
+                    <span>"Era descafeinado", "sin azúcar", "con leche vegetal" — errores que cuestan plata</span>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <div class="check-circle">✓</div>
+                <div class="check-text">
+                    <strong>Pocas reseñas en Google</strong>
+                    <span>La competencia tiene más estrellas y aparece primero en Google Maps</span>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <div class="check-circle">✓</div>
+                <div class="check-text">
+                    <strong>No fidelizo clientes</strong>
+                    <span>Viene gente todos los días pero no tengo forma de premiarlos o conocerlos</span>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <div class="check-circle">✓</div>
+                <div class="check-text">
+                    <strong>Redes sociales abandonadas</strong>
+                    <span>No hay tiempo ni ideas para publicar, el Instagram está muerto</span>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <div class="check-circle">✓</div>
+                <div class="check-text">
+                    <strong>Delivery desordenado</strong>
+                    <span>Pedidos por WhatsApp anotados a mano, errores, demoras, sin control</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOLUCIONES -->
+        <div class="card">
+            <h2>🚀 Lo que podemos activar</h2>
+            <div class="solutions-grid">
+                <div class="solution-item">
+                    <div class="ico">🤖</div>
+                    <h4>Bot WhatsApp 24/7</h4>
+                    <p>Responde al instante, toma pedidos, informa horarios y menú. Tu café nunca duerme.</p>
+                </div>
+                <div class="solution-item">
+                    <div class="ico">📱</div>
+                    <h4>Menú QR</h4>
+                    <p>Escanean, ven la carta con fotos, piden directo. Sin esperar al mozo.</p>
+                </div>
+                <div class="solution-item">
+                    <div class="ico">⭐</div>
+                    <h4>Reseñas Automáticas</h4>
+                    <p>Después de cada visita, un mensaje pide reseña en Google. Tu puntaje sube solo.</p>
+                </div>
+                <div class="solution-item">
+                    <div class="ico">🎯</div>
+                    <h4>Fidelización</h4>
+                    <p>"Tu 10° café es gratis" — Puntos digitales por WhatsApp, sin tarjetitas.</p>
+                </div>
+                <div class="solution-item">
+                    <div class="ico">🛵</div>
+                    <h4>Delivery Smart</h4>
+                    <p>Pedidos por bot, cálculo automático, confirmación al cliente, impresión en cocina.</p>
+                </div>
+                <div class="solution-item">
+                    <div class="ico">📸</div>
+                    <h4>Redes con IA</h4>
+                    <p>Posts automáticos para Instagram. Fotos + textos generados por IA. Publicación programada.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CÓMO ARRANCAMOS -->
+        <div class="card">
+            <h2>⚡ Cómo arrancamos</h2>
+            <div class="timeline">
+                <div class="timeline-step">
+                    <strong>Semana 1 — Setup</strong>
+                    <p>Configuramos el bot con tu menú, horarios, precios y preguntas frecuentes.</p>
+                </div>
+                <div class="timeline-step">
+                    <strong>Semana 2 — Pruebas</strong>
+                    <p>Probamos juntos, ajustamos respuestas, activamos en tu número de WhatsApp.</p>
+                </div>
+                <div class="timeline-step">
+                    <strong>Semana 3 — Live</strong>
+                    <p>Tu cafetería ya atiende sola por WhatsApp. Vos controlás todo desde el celular.</p>
+                </div>
+                <div class="timeline-step">
+                    <strong>Mes 2+ — Expansión</strong>
+                    <p>Sumamos reseñas, fidelización, redes, delivery según lo que necesites.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTAS EN VIVO -->
+        <div class="card">
+            <h2>📝 Notas de la reunión</h2>
+            <textarea class="notas-area" id="notasReunion" placeholder="Escribí acá durante la reunión... nombre del local, contacto, dolores confirmados, servicios de interés, próximos pasos..." oninput="guardarNotas()"></textarea>
+        </div>
+
+    </div>
+
+    <!-- BARRA RESUMEN FLOTANTE -->
+    <div class="resumen-bar">
+        <span>Dolores marcados: <span class="counter" id="contadorDolores">0 / 7</span></span>
+        <button class="btn-sm" onclick="copiarResumen()">📋 Copiar resumen</button>
+    </div>
+
+    <script>
+        // Cargar estado guardado
+        window.onload = function () {
+            const saved = localStorage.getItem('cafe_lead_micaela');
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.checks) {
+                    document.querySelectorAll('.checklist-item').forEach((item, i) => {
+                        if (data.checks[i]) {
+                            item.classList.add('checked');
+                        }
+                    });
+                }
+                if (data.notas) {
+                    document.getElementById('notasReunion').value = data.notas;
+                }
+                actualizarContador();
+            }
+        };
+
+        function toggleCheck(el) {
+            el.classList.toggle('checked');
+            actualizarContador();
+            guardar();
+        }
+
+        function actualizarContador() {
+            const total = document.querySelectorAll('.checklist-item').length;
+            const marcados = document.querySelectorAll('.checklist-item.checked').length;
+            document.getElementById('contadorDolores').textContent = marcados + ' / ' + total;
+        }
+
+        function guardarNotas() { guardar(); }
+
+        function guardar() {
+            const checks = [];
+            document.querySelectorAll('.checklist-item').forEach(item => {
+                checks.push(item.classList.contains('checked'));
+            });
+            const data = {
+                checks: checks,
+                notas: document.getElementById('notasReunion').value
+            };
+            localStorage.setItem('cafe_lead_micaela', JSON.stringify(data));
+        }
+
+        function copiarResumen() {
+            let texto = "☕ RESUMEN REUNIÓN — CAFETERÍA (Lead Micaela)\n";
+            texto += "Fecha: " + new Date().toLocaleDateString('es-AR') + "\n";
+            texto += "============================================\n\n";
+            texto += "DOLORES CONFIRMADOS:\n";
+
+            document.querySelectorAll('.checklist-item').forEach(item => {
+                const nombre = item.querySelector('strong').textContent;
+                const estado = item.classList.contains('checked') ? '✅' : '⬜';
+                texto += estado + ' ' + nombre + '\n';
+            });
+
+            const notas = document.getElementById('notasReunion').value;
+            if (notas) {
+                texto += "\nNOTAS:\n" + notas;
+            }
+
+            navigator.clipboard.writeText(texto).then(() => {
+                const btn = document.querySelector('.btn-sm');
+                btn.textContent = '✅ Copiado!';
+                setTimeout(() => { btn.textContent = '📋 Copiar resumen'; }, 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>
