@@ -49,15 +49,21 @@ MAPA_OBJETIVO = {
 }
 MAPA_ZONA = {
     "1": "San Ignacio",
-    "2": "Gdor. Roca",
+    "2": "Gdor Roca",
     "3": "Apóstoles",
     "4": "Leandro N. Alem",
-    "5": "Otra zona / Aún no lo sé",
+    "5": "Otra zona",
 }
 MAPA_PRESUPUESTO = {
-    "1": "Hasta $2.000.000",
-    "2": "Entre $2M y $5M",
-    "3": "Más de $5.000.000",
+    "1": "Hasta $150.000 por mes",
+    "2": "Entre $150.000 y $200.000 por mes",
+    "3": "Más de $200.000 por mes",
+}
+# Rangos de precio por cuota para filtrar en Airtable
+RANGO_PRECIO = {
+    "1": (None, 150000),
+    "2": (150000, 200000),
+    "3": (200000, None),
 }
 MAPA_URGENCIA = {
     "1": "Lo antes posible (1-3 meses)",
@@ -108,14 +114,19 @@ def _at_guardar_email(telefono: str, email: str) -> None:
             json={"fields": {"Email": email}}, timeout=8)
 
 
-def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = None) -> list[dict]:
+def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = None,
+                           precio_min: int = None, precio_max: int = None) -> list[dict]:
     filtros = ["OR({Disponible}='✅ Disponible',{Disponible}='⏳ Reservado')"]
     if tipo:
         filtros.append(f"LOWER({{Tipo}})='{tipo.lower()}'")
     if operacion:
         filtros.append(f"LOWER({{Operacion}})='{operacion.lower()}'")
-    if zona and zona != "Otra Zona":
+    if zona and zona not in ("Otra zona", "Otra Zona"):
         filtros.append(f"{{Zona}}='{zona}'")
+    if precio_min is not None:
+        filtros.append(f"{{Precio}}>={precio_min}")
+    if precio_max is not None:
+        filtros.append(f"{{Precio}}<={precio_max}")
     formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE}"
     params = {"filterByFormula": formula, "maxRecords": 5,
@@ -275,9 +286,11 @@ Analizá las respuestas de este lead y devolvé un JSON con este formato exacto:
   "nota_para_asesor": "texto breve"
 }}
 
+Contexto: los lotes se financian en cuotas mensuales en ARS ($130.000-$200.000/mes). El campo "presupuesto" indica la cuota mensual que puede pagar.
+
 Reglas de scoring:
-- caliente: tiene presupuesto claro + quiere comprar en menos de 6 meses
-- tibio: interesado pero sin urgencia o presupuesto indefinido
+- caliente: tiene cuota mensual definida + quiere comprar en menos de 6 meses
+- tibio: interesado pero sin urgencia o cuota indefinida
 - frio: solo curiosidad, sin presupuesto, o en etapa muy temprana → derivar_sitio_web: true
 
 Reglas especiales de urgencia:
@@ -343,13 +356,15 @@ Reglas estrictas:
 - Máx 8 líneas en total
 - Español neutro latinoamericano""",
 
-        "pregunta_presupuesto": f"""Generá una pregunta para preguntarle{nombre_txt} si tiene en mente un rango de presupuesto.
+        "pregunta_presupuesto": f"""Generá una pregunta para preguntarle{nombre_txt} cuánto puede destinar por mes para la cuota de su lote.
+Contexto: los lotes se financian en cuotas mensuales en pesos argentinos, entre $130.000 y $200.000/mes.
 Reglas estrictas:
 - Tono formal pero cálido, NUNCA uses "che" ni lunfardo
-- Mostrá 4 opciones numeradas con emojis, por ejemplo:
-  1️⃣ 💵 Hasta $2.000.000
-  2️⃣ 💵 Entre $2M y $5M
-  3️⃣ 💵 Más de $5.000.000
+- Explicá brevemente que los lotes se adquieren con cuotas mensuales accesibles
+- Mostrá 4 opciones numeradas con emojis:
+  1️⃣ 💵 Hasta $150.000 por mes
+  2️⃣ 💵 Entre $150.000 y $200.000 por mes
+  3️⃣ 💵 Más de $200.000 por mes
   4️⃣ 💬 Prefiero hablarlo con un asesor
 - Aclará que no hace falta que sea exacto, una referencia alcanza
 - Máx 8 líneas en total
@@ -389,10 +404,10 @@ Reglas estrictas:
                 "También puede escribir el nombre directamente 😊"
             ),
             "pregunta_presupuesto": (
-                f"¿Tiene en mente un rango de presupuesto{nombre_txt}? No hace falta que sea exacto 💰\n\n"
-                "1️⃣ 💵 Hasta $2.000.000\n"
-                "2️⃣ 💵 Entre $2M y $5M\n"
-                "3️⃣ 💵 Más de $5.000.000\n"
+                f"Nuestros lotes se adquieren con cuotas mensuales accesibles. ¿Cuánto podría destinar por mes{nombre_txt}? 💰\n\n"
+                "1️⃣ 💵 Hasta $150.000 por mes\n"
+                "2️⃣ 💵 Entre $150.000 y $200.000 por mes\n"
+                "3️⃣ 💵 Más de $200.000 por mes\n"
                 "4️⃣ 💬 Prefiero hablarlo con un asesor"
             ),
             "pregunta_urgencia": (
@@ -674,17 +689,31 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         if tipo_detectado in (None, "null", ""):
             tipo_detectado = None
 
-        # Detectar zona desde la respuesta libre si Gemini no la extrajo
+        # Detectar zona desde la respuesta directa (ya resuelta por MAPA_ZONA)
         if not zona_detectada:
-            resp_zona = sesion_actualizada.get("resp_zona", "").lower()
-            for z in ["San Ignacio", "Gdor. Roca", "Apóstoles", "Leandro N. Alem"]:
-                if z.lower().replace(".", "") in resp_zona or z.lower().split()[0] in resp_zona:
+            resp_zona = sesion_actualizada.get("resp_zona", "")
+            zonas_validas = ["San Ignacio", "Gdor Roca", "Apóstoles", "Leandro N. Alem"]
+            for z in zonas_validas:
+                if z.lower() in resp_zona.lower():
                     zona_detectada = z
                     break
 
-        props = _at_buscar_propiedades(tipo=tipo_detectado, zona=zona_detectada)
+        # Resolver rango de precio desde la opción elegida
+        resp_pres = sesion_actualizada.get("resp_presupuesto", "")
+        precio_min, precio_max = None, None
+        for k, v in MAPA_PRESUPUESTO.items():
+            if v == resp_pres:
+                precio_min, precio_max = RANGO_PRECIO[k]
+                break
+
+        props = _at_buscar_propiedades(tipo=tipo_detectado, zona=zona_detectada,
+                                       precio_min=precio_min, precio_max=precio_max)
         if not props:
-            props = _at_buscar_propiedades()  # fallback: mostrar todo
+            # Fallback 1: relajar precio manteniendo zona
+            props = _at_buscar_propiedades(zona=zona_detectada)
+        if not props:
+            # Fallback 2: mostrar todo
+            props = _at_buscar_propiedades()
 
         if not props:
             SESIONES[telefono] = {**sesion_actualizada, "step": "sin_stock"}
