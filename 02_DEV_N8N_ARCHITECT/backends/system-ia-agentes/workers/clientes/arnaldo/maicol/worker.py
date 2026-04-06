@@ -203,7 +203,7 @@ Tu asesor humano se llama {INMOBILIARIA['asesor']} ({INMOBILIARIA['whatsapp']}).
 Respondé SOLO consultas sobre propiedades, compra, venta, alquiler o temas inmobiliarios.
 Si la pregunta no es del rubro, decí amablemente que solo podés ayudar con temas inmobiliarios.
 Sé breve, amigable y profesional. Respondé en español argentino.
-Al finalizar, recordá al cliente que puede responder con un número para ver opciones o escribir *menú* para volver al inicio.
+Al finalizar, recordá al cliente que puede escribir *menú* para volver al inicio.
 
 Consulta del cliente: {mensaje}"""
         resp = _gemini_client.models.generate_content(model="gemini-2.5-flash-lite", contents=prompt)
@@ -214,39 +214,96 @@ Consulta del cliente: {mensaje}"""
                 f"{INMOBILIARIA['asesor']} al {INMOBILIARIA['whatsapp']}. 🏠")
 
 
+def _gemini_calificar(sesion: dict) -> dict:
+    """Usa Gemini para calificar el lead según sus respuestas y devolver score + zona + tipo."""
+    if not GEMINI_API_KEY:
+        return {"score": "potencial", "zona": None, "tipo": None, "presupuesto": None}
+    try:
+        respuestas = {
+            "nombre": sesion.get("nombre", ""),
+            "objetivo": sesion.get("resp_objetivo", ""),
+            "zona": sesion.get("resp_zona", ""),
+            "presupuesto": sesion.get("resp_presupuesto", ""),
+            "urgencia": sesion.get("resp_urgencia", ""),
+        }
+        prompt = f"""Sos un analista comercial de Back Urbanizaciones, inmobiliaria de lotes en Misiones, Argentina.
+Analizá las respuestas de este lead y devolvé un JSON con este formato exacto:
+{{
+  "score": "caliente|tibio|frio",
+  "zona": "San Ignacio|Gdor. Roca|Apóstoles|Leandro N. Alem|null",
+  "tipo": "lote|terreno|null",
+  "presupuesto_detectado": "alto|medio|bajo|sin_info",
+  "derivar_sitio_web": true|false,
+  "nota_para_asesor": "texto breve"
+}}
+
+Reglas de scoring:
+- caliente: tiene presupuesto claro + quiere comprar en menos de 6 meses
+- tibio: interesado pero sin urgencia o presupuesto indefinido
+- frio: solo curiosidad, sin presupuesto, o en etapa muy temprana → derivar_sitio_web: true
+
+Respuestas del lead:
+- Objetivo/para qué busca: "{respuestas['objetivo']}"
+- Zona de interés: "{respuestas['zona']}"
+- Presupuesto: "{respuestas['presupuesto']}"
+- Urgencia / cuándo quiere comprar: "{respuestas['urgencia']}"
+
+Devolvé SOLO el JSON, sin texto adicional."""
+        resp = _gemini_client.models.generate_content(model="gemini-2.5-flash-lite", contents=prompt)
+        import json as _json
+        texto = resp.text.strip()
+        # Limpiar markdown si Gemini lo agrega
+        if texto.startswith("```"):
+            texto = texto.split("```")[1]
+            if texto.startswith("json"):
+                texto = texto[4:]
+        return _json.loads(texto.strip())
+    except Exception as e:
+        print(f"[INMO-GEMINI-CALIF] Error: {e}")
+        return {"score": "tibio", "zona": None, "tipo": None, "presupuesto_detectado": "sin_info",
+                "derivar_sitio_web": False, "nota_para_asesor": "Error en calificación automática"}
+
+
+def _gemini_texto_dinamico(paso: str, contexto: dict) -> str:
+    """Genera mensajes conversacionales naturales según el paso del flujo."""
+    if not GEMINI_API_KEY:
+        fallbacks = {
+            "pregunta_objetivo": "¿Para qué estás buscando el lote? ¿Para vivir, invertir o un emprendimiento? 🏡",
+            "pregunta_zona": "¿Tenés alguna zona en mente dentro de Misiones? Por ejemplo San Ignacio, Apóstoles, Gdor. Roca... 📍",
+            "pregunta_presupuesto": "¿Tenés pensado un rango de presupuesto? No hace falta que sea exacto, con una idea aproximada está bien 💰",
+            "pregunta_urgencia": "¿En qué tiempo estás pensando concretar la compra? ¿Es algo urgente o estás explorando opciones? 🗓️",
+        }
+        return fallbacks.get(paso, "")
+    nombre = contexto.get("nombre", "").split()[0] or ""
+    nombre_txt = f", {nombre}" if nombre else ""
+    prompts = {
+        "pregunta_objetivo": f"Generá una pregunta corta y natural (máx 2 líneas) para preguntarle a {nombre or 'el cliente'} para qué está buscando un lote: ¿para vivir, invertir, construir un negocio? Usá español argentino, tono amigable y cercano, sin ser robótico.",
+        "pregunta_zona": f"Generá una pregunta corta (máx 2 líneas) para preguntarle{nombre_txt} en qué zona de Misiones está buscando (mencionar que tenemos en San Ignacio, Apóstoles, Gdor. Roca, Leandro N. Alem). Español argentino, tono natural.",
+        "pregunta_presupuesto": f"Generá una pregunta corta (máx 2 líneas) para preguntarle{nombre_txt} si tiene en mente un rango de presupuesto. Aclarar que no hace falta que sea exacto. Español argentino, empático y sin presión.",
+        "pregunta_urgencia": f"Generá una pregunta corta (máx 2 líneas) para preguntarle{nombre_txt} en qué tiempo piensa concretar la compra — si es algo que quiere resolver pronto o está explorando. Español argentino, tono liviano.",
+    }
+    try:
+        resp = _gemini_client.models.generate_content(
+            model="gemini-2.5-flash-lite", contents=prompts[paso])
+        return resp.text.strip()
+    except Exception:
+        fallbacks = {
+            "pregunta_objetivo": f"¿Para qué estás buscando el lote{nombre_txt}? ¿Para vivir, invertir o un emprendimiento? 🏡",
+            "pregunta_zona": f"¿Tenés alguna zona en mente{nombre_txt}? Tenemos opciones en San Ignacio, Apóstoles, Gdor. Roca y más 📍",
+            "pregunta_presupuesto": f"¿Tenés en mente un rango de presupuesto{nombre_txt}? No hace falta que sea exacto 💰",
+            "pregunta_urgencia": f"¿En qué tiempo estás pensando concretar{nombre_txt}? ¿Es algo que querés resolver pronto o estás explorando? 🗓️",
+        }
+        return fallbacks.get(paso, "")
+
+
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
-MSG_BIENVENIDA = """👋 ¡Hola! Bienvenido a *{nombre}* 🏘️
-Somos tu inmobiliaria de confianza en {ciudad}.
+MSG_BIENVENIDA = """👋 ¡Hola! Soy el asistente virtual de *Back Urbanizaciones* 🏘️
 
-Nos especializamos en *Lotes y Terrenos* en venta en Misiones.
+Nos especializamos en lotes y terrenos en *{ciudad}* y alrededores de Misiones.
 
-¿Qué querés hacer?
+Antes de mostrarte nuestras opciones, me gustaría hacerte unas preguntas rápidas para encontrar exactamente lo que buscás. ¡Son solo 4 preguntas! 😊
 
-1️⃣ Ver *Lotes y Terrenos* disponibles
-2️⃣ Hablar con un asesor
-
-Respondé con el número de tu opción. 😊"""
-
-MSG_ZONA = """📍 ¿En qué zona estás buscando?
-
-1️⃣ *San Ignacio*
-2️⃣ *Gdor. Roca*
-3️⃣ *Apóstoles*
-4️⃣ *Leandro N. Alem*
-5️⃣ Otra zona / No sé
-0️⃣ Volver al inicio
-
-Respondé con el número. 😊"""
-
-MSG_TIPO = """¿Qué tipo de propiedad te interesa?
-
-1️⃣ *Lote*
-2️⃣ *Terreno*
-3️⃣ Ver todos (Lotes y Terrenos)
-4️⃣ Hablar con un asesor
-0️⃣ Volver al inicio
-
-Respondé con el número. 😊"""
+¿Cómo es tu nombre?"""
 
 MSG_ASESOR = (
     "¡Con gusto! 😊 Te ponemos en contacto con nuestro equipo. 👤\n\n"
@@ -254,6 +311,15 @@ MSG_ASESOR = (
     "{whatsapp_link}\n\n"
     "O aguardá que se comunique con vos en breve.\n\n"
     "¡Gracias por confiar en *Back Urbanizaciones*! 🏠"
+)
+
+MSG_SITIO_WEB = (
+    "¡Gracias por tu interés, {nombre}! 🙏\n\n"
+    "Por ahora te recomendamos visitar nuestro sitio web donde vas a encontrar "
+    "todas nuestras propiedades, novedades y financiamiento disponible:\n\n"
+    "🌐 *www.backurbanizaciones.com*\n\n"
+    "Cuando estés listo para dar el paso, escribinos acá y te asesoramos "
+    "personalmente. ¡Siempre es un placer ayudarte! 🏡"
 )
 
 
@@ -345,158 +411,180 @@ def _ir_asesor(telefono: str) -> None:
     )
 
 
+# ─── NOTIFICACIÓN ASESOR CON SCORE ────────────────────────────────────────────
+def _notificar_asesor_lead(telefono: str, sesion: dict, calificacion: dict) -> None:
+    """Notifica a Maicol con el score y datos del lead."""
+    nombre = sesion.get("nombre", telefono)
+    score = calificacion.get("score", "tibio")
+    emoji_score = {"caliente": "🔥", "tibio": "🌡️", "frio": "🧊"}.get(score, "📋")
+    nota = calificacion.get("nota_para_asesor", "")
+    numero_limpio = re.sub(r"[^0-9]", "", NUMERO_ASESOR)
+    msg = (
+        f"{emoji_score} *Nuevo Lead — Back Urbanizaciones*\n\n"
+        f"👤 *Nombre:* {nombre}\n"
+        f"📞 *WhatsApp:* +{telefono}\n"
+        f"📊 *Score:* {score.upper()}\n"
+        f"🎯 *Objetivo:* {sesion.get('resp_objetivo', '—')}\n"
+        f"📍 *Zona:* {sesion.get('resp_zona', '—')}\n"
+        f"💰 *Presupuesto:* {sesion.get('resp_presupuesto', '—')}\n"
+        f"🗓️ *Urgencia:* {sesion.get('resp_urgencia', '—')}\n"
+        f"📝 *Nota:* {nota}"
+    )
+    _enviar_texto(numero_limpio, msg)
+
+
 # ─── PROCESADOR PRINCIPAL ──────────────────────────────────────────────────────
 def _procesar_mensaje(telefono: str, texto: str) -> None:
     t = texto.lower().strip()
-    sesion = SESIONES.get(telefono, {"step": "bienvenida", "props": [], "operacion": ""})
+    sesion = SESIONES.get(telefono, {"step": "bienvenida"})
     step = sesion.get("step", "bienvenida")
-    operacion = sesion.get("operacion", "")
+    nombre = sesion.get("nombre", "")
+    nombre_corto = nombre.split()[0] if nombre else ""
 
-    # ── Lead desde formulario web ────────────────────────────────────────────
-    if "me registré en el formulario" in t or "me registre en el formulario" in t:
-        nombre_match = re.search(r"nombre:\s*(.+)", texto, re.IGNORECASE)
-        nombre = nombre_match.group(1).strip() if nombre_match else sesion.get("nombre", "")
-        nombre_corto = nombre.split()[0] if nombre else ""
-        operacion = "venta" if "comprar" in t else ("alquiler" if "alquil" in t else "")
-        zona = None
-        for z in ["San Ignacio", "Gdor Roca", "Apóstoles", "Otra Zona"]:
-            if z.lower() in t or z.lower().replace("ó", "o") in t:
-                zona = z
-                break
-        tipo_raw = None
-        if re.search(r"\blote\b", t):
-            tipo_raw = ("Lote", "Lotes")
-        elif re.search(r"\bterreno\b", t):
-            tipo_raw = ("Terreno", "Terrenos")
-
-        SESIONES[telefono] = {"step": "lista", "props": [], "operacion": "venta",
-                               "nombre": nombre, "zona": zona}
-        saludo = f"¡Hola {nombre_corto}! " if nombre_corto else "¡Hola! "
-
-        if zona and tipo_raw:
-            intro = (f"{saludo}✅ Recibimos tu consulta de *Back Urbanizaciones*.\n\n"
-                     f"Buscamos {tipo_raw[1].lower()} disponibles en *{zona}*... 🔍")
-            _enviar_texto(telefono, intro)
-            _mostrar_lista(telefono, tipo_raw[0], tipo_raw[1], "venta", zona)
-        elif zona:
-            SESIONES[telefono] = {**SESIONES[telefono], "step": "tipo"}
-            _enviar_texto(telefono,
-                f"{saludo}✅ Recibimos tu consulta de *Back Urbanizaciones*.\n\n"
-                f"Buscás en *{zona}*. ¿Qué te interesa?\n\n{MSG_TIPO}")
-        else:
-            SESIONES[telefono] = {**SESIONES[telefono], "step": "zona"}
-            _enviar_texto(telefono,
-                f"{saludo}✅ Recibimos tu consulta de *Back Urbanizaciones*.\n\n"
-                f"¿En qué zona estás buscando?\n\n{MSG_ZONA}")
-        return
-
-    # ── Lead viene del formulario web — ya tiene datos precargados ──────────
-    if step == "mostrar_props":
-        nombre_corto = sesion.get("nombre", "").split()[0] or "!"
-        zona  = sesion.get("zona", "")
-        tipo  = sesion.get("tipo", "")
-        # Primer mensaje que llega: cualquier texto activa el flujo
-        tipo_busqueda = tipo.split(",")[0].strip() if tipo else None
-        props = _at_buscar_propiedades(tipo=tipo_busqueda, zona=zona if zona != "Otra zona" else None)
-        if not props and tipo_busqueda:
-            props = _at_buscar_propiedades(zona=zona if zona != "Otra zona" else None)
-        SESIONES[telefono] = {**sesion, "step": "lista", "props": props}
-        if props:
-            _mostrar_lista(telefono, tipo_busqueda or "", "propiedades", "venta", zona)
-        else:
-            _enviar_texto(telefono,
-                f"En este momento no tenemos propiedades disponibles con esos criterios. 😔\n\n"
-                f"¿Querés que te avise cuando tengamos? Escribí *asesor* para hablar con {INMOBILIARIA['asesor']}.")
-        return
-
-    # ── 0 o saludo → bienvenida ──────────────────────────────────────────────
-    if t in ("0", "menu", "menú", "inicio", "volver", "hola", "hi", "hey", "start") or \
-       re.search(r"\b(buenos dias|buenas tardes|buenas noches|buen dia)\b", t):
-        nombre = sesion.get("nombre", "")
-        SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": "", "nombre": nombre}
+    # ── Reset / saludo ───────────────────────────────────────────────────────
+    es_saludo = t in ("0", "menu", "menú", "inicio", "volver", "hola", "hi", "hey", "start") or \
+        re.search(r"\b(buenos dias|buenas tardes|buenas noches|buen dia)\b", t)
+    if es_saludo:
+        SESIONES[telefono] = {"step": "pedir_nombre"}
         _at_registrar_cliente(telefono, nombre, notas="Primer contacto por WhatsApp")
         _enviar_texto(telefono, MSG_BIENVENIDA.format(**INMOBILIARIA))
         return
 
-    # ── Palabras de asesor ───────────────────────────────────────────────────
-    if t in ("asesor", "humano", "agente", "vendedor", "maicol", "persona", "quiero hablar"):
+    # ── Pedir asesor en cualquier momento ────────────────────────────────────
+    if t in ("asesor", "humano", "agente", "vendedor", "maicol", "persona", "quiero hablar", "hablar con alguien"):
         _ir_asesor(telefono)
         return
 
-    # ── PASO: bienvenida ─────────────────────────────────────────────────────
-    if step == "bienvenida":
-        nombre = sesion.get("nombre", "")
-        if t in ("1", "ver", "lotes", "terrenos", "terreno", "lote", "comprar", "venta", "quiero comprar"):
-            SESIONES[telefono] = {"step": "zona", "props": [], "operacion": "venta", "nombre": nombre}
-            _at_registrar_cliente(telefono, nombre, notas="Busca lotes/terrenos")
-            _enviar_texto(telefono, MSG_ZONA)
-        elif t == "2":
-            _ir_asesor(telefono)
-        else:
-            _enviar_texto(telefono, _gemini_respuesta(texto))
+    # ── PASO 1: capturar nombre ──────────────────────────────────────────────
+    if step == "bienvenida" or step == "pedir_nombre":
+        if not texto.strip():
+            _enviar_texto(telefono, MSG_BIENVENIDA.format(**INMOBILIARIA))
+            return
+        # Cualquier texto en este paso = nombre
+        nombre = texto.strip().title()
+        nombre_corto = nombre.split()[0]
+        SESIONES[telefono] = {"step": "objetivo", "nombre": nombre}
+        _at_registrar_cliente(telefono, nombre, notas="Primer contacto por WhatsApp")
+        pregunta = _gemini_texto_dinamico("pregunta_objetivo", {"nombre": nombre_corto})
+        _enviar_texto(telefono, f"¡Hola {nombre_corto}! Qué bueno tenerte por acá 😊\n\n{pregunta}")
         return
 
-    # ── PASO: zona ───────────────────────────────────────────────────────────
-    ZONAS = {
-        "1": "San Ignacio", "san ignacio": "San Ignacio",
-        "2": "Gdor Roca", "gdor roca": "Gdor Roca", "gobernador roca": "Gdor Roca", "roca": "Gdor Roca",
-        "3": "Apóstoles", "apostoles": "Apóstoles", "apóstoles": "Apóstoles",
-        "4": "Leandro N. Alem", "leandro": "Leandro N. Alem", "alem": "Leandro N. Alem", "l.n. alem": "Leandro N. Alem",
-        "5": "Otra Zona", "otra": "Otra Zona", "no se": "Otra Zona", "no sé": "Otra Zona",
-    }
+    # ── PASO 2: objetivo ────────────────────────────────────────────────────
+    if step == "objetivo":
+        SESIONES[telefono] = {**sesion, "step": "zona", "resp_objetivo": texto.strip()}
+        _at_registrar_cliente(telefono, nombre, notas=f"Objetivo: {texto.strip()}")
+        pregunta = _gemini_texto_dinamico("pregunta_zona", {"nombre": nombre_corto})
+        _enviar_texto(telefono, pregunta)
+        return
+
+    # ── PASO 3: zona ────────────────────────────────────────────────────────
     if step == "zona":
-        nombre = sesion.get("nombre", "")
-        operacion = sesion.get("operacion", "venta")
-        zona = ZONAS.get(t, "")
-        if zona:
-            SESIONES[telefono] = {**sesion, "step": "tipo", "zona": zona}
-            _at_registrar_cliente(telefono, nombre, notas=f"Zona: {zona}")
-            _enviar_texto(telefono, MSG_TIPO)
-        else:
-            _enviar_texto(telefono, f"Por favor elegí una opción del 1 al 5.\n\n{MSG_ZONA}")
+        SESIONES[telefono] = {**sesion, "step": "presupuesto", "resp_zona": texto.strip()}
+        _at_registrar_cliente(telefono, nombre, notas=f"Zona: {texto.strip()}")
+        pregunta = _gemini_texto_dinamico("pregunta_presupuesto", {"nombre": nombre_corto})
+        _enviar_texto(telefono, pregunta)
         return
 
-    # ── PASO: tipo (lote / terreno / todos) ──────────────────────────────────
-    if step == "tipo":
-        nombre = sesion.get("nombre", "")
-        zona = sesion.get("zona", None)
-        operacion = sesion.get("operacion", "venta")
-        if t in ("1", "terreno", "terrenos", "lote", "lotes"):
-            _at_registrar_cliente(telefono, nombre, notas=f"Busca terreno en {zona or 'zona no especificada'}")
-            _mostrar_lista(telefono, "terreno", "Terrenos", operacion, zona)
-        elif t in ("2", "casa", "casas"):
-            _at_registrar_cliente(telefono, nombre, notas=f"Busca casa en {zona or 'zona no especificada'}")
-            _mostrar_lista(telefono, "casa", "Casas", operacion, zona)
-        elif t in ("3", "todos", "ver todos", "cualquiera", "departamento", "depto"):
-            _at_registrar_cliente(telefono, nombre, notas=f"Busca cualquier tipo en {zona or 'zona no especificada'}")
-            props = _at_buscar_propiedades(zona=zona)
-            zona_label = f" en {zona}" if zona and zona != "Otra Zona" else ""
-            if not props:
-                SESIONES[telefono] = {**SESIONES.get(telefono, {}), "step": "zona", "operacion": operacion}
-                _enviar_texto(telefono,
-                    f"En este momento no tenemos propiedades disponibles{zona_label}. 😔\n\n"
-                    f"¿Querés buscar en otra zona?\n\n{MSG_ZONA}")
-            else:
-                SESIONES[telefono] = {"step": "lista", "props": props, "operacion": operacion, "zona": zona}
-                _enviar_texto(telefono, _lista_titulos(props, f"Propiedades Disponibles{zona_label}"))
-        elif t == "4":
-            _ir_asesor(telefono)
-        else:
-            _enviar_texto(telefono, _gemini_respuesta(texto))
+    # ── PASO 4: presupuesto ─────────────────────────────────────────────────
+    if step == "presupuesto":
+        SESIONES[telefono] = {**sesion, "step": "urgencia", "resp_presupuesto": texto.strip()}
+        pregunta = _gemini_texto_dinamico("pregunta_urgencia", {"nombre": nombre_corto})
+        _enviar_texto(telefono, pregunta)
+        return
+
+    # ── PASO 5: urgencia → calificar ────────────────────────────────────────
+    if step == "urgencia":
+        sesion_actualizada = {**sesion, "step": "calificando", "resp_urgencia": texto.strip()}
+        SESIONES[telefono] = sesion_actualizada
+        _at_registrar_cliente(telefono, nombre,
+            notas=f"Urgencia: {texto.strip()} | Pres: {sesion.get('resp_presupuesto','')}")
+
+        _enviar_texto(telefono, f"Perfecto, {nombre_corto}! Dame un segundo que busco las mejores opciones para vos... 🔍")
+
+        # Calificar con Gemini
+        calificacion = _gemini_calificar(sesion_actualizada)
+        score = calificacion.get("score", "tibio")
+        derivar = calificacion.get("derivar_sitio_web", False)
+
+        # Notificar a Maicol siempre
+        _notificar_asesor_lead(telefono, sesion_actualizada, calificacion)
+
+        # Registrar score en Airtable
+        nota_completa = (
+            f"Score: {score} | Obj: {sesion_actualizada.get('resp_objetivo','')} | "
+            f"Zona: {sesion_actualizada.get('resp_zona','')} | "
+            f"Pres: {sesion_actualizada.get('resp_presupuesto','')} | "
+            f"Urgencia: {sesion_actualizada.get('resp_urgencia','')}"
+        )
+        _at_registrar_cliente(telefono, nombre, notas=nota_completa)
+
+        if derivar or score == "frio":
+            # Lead frío → derivar al sitio web amablemente
+            SESIONES[telefono] = {**sesion_actualizada, "step": "derivado"}
+            _enviar_texto(telefono, MSG_SITIO_WEB.format(nombre=nombre_corto))
+            return
+
+        # Lead caliente o tibio → mostrar propiedades
+        zona_detectada = calificacion.get("zona")
+        tipo_detectado = calificacion.get("tipo")
+
+        # Detectar zona desde la respuesta libre si Gemini no la extrajo
+        if not zona_detectada:
+            resp_zona = sesion_actualizada.get("resp_zona", "").lower()
+            for z in ["San Ignacio", "Gdor. Roca", "Apóstoles", "Leandro N. Alem"]:
+                if z.lower().replace(".", "") in resp_zona or z.lower().split()[0] in resp_zona:
+                    zona_detectada = z
+                    break
+
+        props = _at_buscar_propiedades(tipo=tipo_detectado, zona=zona_detectada)
+        if not props:
+            props = _at_buscar_propiedades()  # fallback: mostrar todo
+
+        if not props:
+            SESIONES[telefono] = {**sesion_actualizada, "step": "sin_stock"}
+            _enviar_texto(telefono,
+                f"En este momento no tenemos stock disponible con esas características, {nombre_corto}. 😔\n\n"
+                f"Pero no te preocupes — le aviso a nuestro asesor para que te contacte personalmente "
+                f"con las opciones que mejor se adapten a vos. ¡Ya te escribimos! 🙌")
+            return
+
+        zona_label = f" en {zona_detectada}" if zona_detectada else ""
+        intro = (
+            f"¡Encontré algunas opciones{zona_label} que pueden interesarte, {nombre_corto}! 🎉\n\n"
+            if score == "caliente"
+            else f"Te muestro algunas opciones disponibles{zona_label}, {nombre_corto} 🏘️\n\n"
+        )
+        SESIONES[telefono] = {**sesion_actualizada, "step": "lista", "props": props,
+                              "operacion": "venta", "zona": zona_detectada}
+        _enviar_texto(telefono, intro + _lista_titulos(props, f"Lotes y Terrenos{zona_label}"))
         return
 
     # ── PASO: lista de propiedades ───────────────────────────────────────────
     if step == "lista":
         props = sesion.get("props", [])
-        if t == "4":
-            _ir_asesor(telefono)
-        elif re.fullmatch(r"\d+", t):
+        if re.fullmatch(r"\d+", t) and t != "0":
             idx = int(t) - 1
             if 0 <= idx < len(props):
                 _enviar_ficha(telefono, props[idx])
+                SESIONES[telefono] = {**sesion, "step": "ficha"}
             else:
-                _enviar_texto(telefono,
-                    f"Elegí un número del 1 al {len(props)}.\n*0* para volver | *4* para hablar con el asesor")
+                _enviar_texto(telefono, f"Elegí un número del 1 al {len(props)} para ver la ficha.")
+        elif t in ("asesor", "hablar", "quiero", "me interesa", "info"):
+            _ir_asesor(telefono)
+        else:
+            _enviar_texto(telefono, _gemini_respuesta(texto))
+        return
+
+    # ── PASO: ficha (después de ver una propiedad) ───────────────────────────
+    if step == "ficha":
+        if t in ("si", "sí", "me interesa", "quiero", "más info", "mas info", "interesa"):
+            _ir_asesor(telefono)
+        elif t == "0" or t in ("volver", "lista", "ver más", "ver mas"):
+            props = sesion.get("props", [])
+            zona = sesion.get("zona")
+            zona_label = f" en {zona}" if zona else ""
+            SESIONES[telefono] = {**sesion, "step": "lista"}
+            _enviar_texto(telefono, _lista_titulos(props, f"Lotes y Terrenos{zona_label}"))
         else:
             _enviar_texto(telefono, _gemini_respuesta(texto))
         return
