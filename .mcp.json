@@ -7,8 +7,8 @@
         "MCP_MODE": "stdio",
         "LOG_LEVEL": "error",
         "DISABLE_CONSOLE_OUTPUT": "true",
-        "N8N_API_URL": "https://n8n.arnaldoayalaestratega.cloud",
-        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmM2VjOTRiYi1kNjlmLTQ1NjYtYWZkMi1hNDI1OWM0ZTllMDAiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiN2ZiODE5NDQtMmU3Mi00ZjM3LTg3ODgtNTQ3MTA0NjVkYjQzIiwiaWF0IjoxNzc0NjEzNDgxfQ.0Sil51HrgVx6C-TmaHZl1bOQnrYwiqA5cas5C_jPexs"
+        "N8N_API_URL": "https://n8n.lovbot.ai",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0YTI4ZjUzNS0wNjhmLTQ4ZTgtYWYyOC04ZDY3MTIzMTE1OTkiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzc1NDY5NjcxfQ.XGWv2X_diwMXtBifThjsttpMsCg6BbX0WP78jvbTt-A"
       }
     }
   }
