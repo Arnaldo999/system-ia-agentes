@@ -1094,8 +1094,8 @@ async function guardarPropiedad() {
     Precio: parseFloat(document.getElementById('mp-precio').value) || undefined,
     Moneda: document.getElementById('mp-moneda').value,
     Zona: document.getElementById('mp-zona').value,
-    Tipo: document.getElementById('mp-tipo').value.toLowerCase(),
-    Operacion: document.getElementById('mp-operacion').value.toLowerCase(),
+    Tipo: document.getElementById('mp-tipo').value,
+    Operacion: document.getElementById('mp-operacion').value,
     Disponible: document.getElementById('mp-disponible').value,
   };
   const dormitorios = parseInt(document.getElementById('mp-dormitorios').value);
@@ -1104,7 +1104,7 @@ async function guardarPropiedad() {
   if (metros) fields.Metros_Cubiertos = metros;
 
   const imgUrl = document.getElementById('mp-imagen-url').value.trim();
-  if (imgUrl) fields.Imagen_URL = imgUrl;
+  if (imgUrl) fields.Imagen_URL = [{ url: imgUrl }];
 
   const mapsUrl = document.getElementById('mp-maps-url').value.trim();
   fields.Google_Maps_URL = mapsUrl || null;
