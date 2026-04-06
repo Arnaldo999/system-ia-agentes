@@ -242,6 +242,10 @@ Reglas de scoring:
 - tibio: interesado pero sin urgencia o presupuesto indefinido
 - frio: solo curiosidad, sin presupuesto, o en etapa muy temprana → derivar_sitio_web: true
 
+Reglas especiales de urgencia:
+- Si la urgencia indica "en el próximo año", "explorando", "3", "4", "no sé", "después", o cualquier señal de que no tiene apuro → derivar_sitio_web: true, score: "frio"
+- Solo caliente/tibio si la urgencia es menos de 6 meses
+
 Respuestas del lead:
 - Objetivo/para qué busca: "{respuestas['objetivo']}"
 - Zona de interés: "{respuestas['zona']}"
@@ -382,12 +386,13 @@ MSG_ASESOR = (
 )
 
 MSG_SITIO_WEB = (
-    "¡Gracias por tu interés, {nombre}! 🙏\n\n"
-    "Por ahora te recomendamos visitar nuestro sitio web donde vas a encontrar "
-    "todas nuestras propiedades, novedades y financiamiento disponible:\n\n"
+    "¡Muchas gracias por su interés, {nombre}! 🙏\n\n"
+    "Entendemos que aún está explorando opciones, y eso está perfecto. "
+    "Le recomendamos visitar nuestro sitio web donde encontrará todas nuestras "
+    "propiedades, precios actualizados y opciones de financiamiento:\n\n"
     "🌐 *www.backurbanizaciones.com*\n\n"
-    "Cuando estés listo para dar el paso, escribinos acá y te asesoramos "
-    "personalmente. ¡Siempre es un placer ayudarte! 🏡"
+    "Cuando esté listo para dar el siguiente paso, escríbanos y con gusto "
+    "lo asesoramos personalmente. ¡Estamos para ayudarle! 🏡"
 )
 
 
@@ -595,6 +600,11 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         # Lead caliente o tibio → mostrar propiedades
         zona_detectada = calificacion.get("zona")
         tipo_detectado = calificacion.get("tipo")
+        # Gemini puede devolver el string "null" en lugar de None
+        if zona_detectada in (None, "null", ""):
+            zona_detectada = None
+        if tipo_detectado in (None, "null", ""):
+            tipo_detectado = None
 
         # Detectar zona desde la respuesta libre si Gemini no la extrajo
         if not zona_detectada:
