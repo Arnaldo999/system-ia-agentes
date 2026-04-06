@@ -1104,7 +1104,11 @@ async function guardarPropiedad() {
   if (metros) fields.Metros_Cubiertos = metros;
 
   const imgUrl = document.getElementById('mp-imagen-url').value.trim();
-  if (imgUrl) fields.Imagen_URL = [{ url: imgUrl }];
+  // Solo enviar Imagen_URL si es una URL externa (Cloudinary, etc.)
+  // Las URLs internas de Airtable (v5.airtableusercontent.com) no se pueden re-subir
+  if (imgUrl && !imgUrl.includes('airtableusercontent.com')) {
+    fields.Imagen_URL = [{ url: imgUrl }];
+  }
 
   const mapsUrl = document.getElementById('mp-maps-url').value.trim();
   fields.Google_Maps_URL = mapsUrl || null;
