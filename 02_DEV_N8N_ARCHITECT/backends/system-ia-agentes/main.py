@@ -1,6 +1,7 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
 # ── Clientes Arnaldo ──────────────────────────────────────────────────────────
 from workers.clientes.arnaldo.maicol.worker import router as maicol_router
@@ -40,6 +41,21 @@ app.include_router(prueba_router)
 app.include_router(demo_inmobiliaria_router)
 app.include_router(demo_gastronomico_router)
 app.include_router(social_router)
+
+
+# ── Meta Webhook — Tech Provider Robert/Lovbot ───────────────────────────────
+_META_VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "")
+
+@app.get("/meta/webhook", tags=["Meta"])
+async def meta_webhook_verify(request: Request):
+    params = dict(request.query_params)
+    if params.get("hub.verify_token") == _META_VERIFY_TOKEN:
+        return PlainTextResponse(params.get("hub.challenge", ""))
+    return PlainTextResponse("Token inválido", status_code=403)
+
+@app.post("/meta/webhook", tags=["Meta"])
+async def meta_webhook_events():
+    return {"status": "received"}
 
 
 # ── Rutas de sistema ──────────────────────────────────────────────────────────
