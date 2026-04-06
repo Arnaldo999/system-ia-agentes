@@ -572,15 +572,12 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         _at_registrar_cliente(telefono, nombre,
             notas=f"Urgencia: {texto.strip()} | Pres: {sesion.get('resp_presupuesto','')}")
 
-        _enviar_texto(telefono, f"Perfecto, {nombre_corto}! Dame un segundo que busco las mejores opciones para vos... 🔍")
+        _enviar_texto(telefono, f"Perfecto, {nombre_corto}. Dame un segundo que busco las mejores opciones para usted... 🔍")
 
         # Calificar con Gemini
         calificacion = _gemini_calificar(sesion_actualizada)
         score = calificacion.get("score", "tibio")
         derivar = calificacion.get("derivar_sitio_web", False)
-
-        # Notificar a Maicol siempre
-        _notificar_asesor_lead(telefono, sesion_actualizada, calificacion)
 
         # Registrar score en Airtable
         nota_completa = (
@@ -595,7 +592,10 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             # Lead frío → derivar al sitio web amablemente
             SESIONES[telefono] = {**sesion_actualizada, "step": "derivado"}
             _enviar_texto(telefono, MSG_SITIO_WEB.format(nombre=nombre_corto))
-            return
+            return  # NO notificar asesor para leads fríos
+
+        # Notificar a Maicol solo para leads tibios o calientes
+        _notificar_asesor_lead(telefono, sesion_actualizada, calificacion)
 
         # Lead caliente o tibio → mostrar propiedades
         zona_detectada = calificacion.get("zona")
@@ -653,9 +653,17 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             _enviar_texto(telefono, _gemini_respuesta(texto))
         return
 
+    # ── PASO: derivado (lead frío ya atendido) ──────────────────────────────
+    if step == "derivado":
+        _enviar_texto(telefono,
+            f"Recuerde que puede explorar nuestro catálogo completo en nuestro sitio web"
+            f"{', ' + nombre_corto if nombre_corto else ''}. "
+            f"¡Estamos a su disposición si necesita algo más! 😊")
+        return
+
     # ── PASO: ficha (después de ver una propiedad) ───────────────────────────
     if step == "ficha":
-        if t in ("si", "sí", "me interesa", "quiero", "más info", "mas info", "interesa"):
+        if t in ("si", "sí", "me interesa", "quiero", "más info", "mas info", "interesa", "4"):
             _ir_asesor(telefono)
         elif t == "0" or t in ("volver", "lista", "ver más", "ver mas"):
             props = sesion.get("props", [])
