@@ -774,12 +774,17 @@ async function fetchProxy(endpoint) {
 
 async function patchProxy(endpoint, body) {
   const payload = body.fields ? body : { fields: body };
+  console.log('[PATCH]', endpoint, JSON.stringify(payload));
   const r = await fetch(`${CRM}${endpoint}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  if (!r.ok) {
+    const errText = await r.text().catch(() => '');
+    console.error('[PATCH ERROR]', r.status, errText);
+    throw new Error(`HTTP ${r.status}: ${errText}`);
+  }
   return r.json();
 }
 
