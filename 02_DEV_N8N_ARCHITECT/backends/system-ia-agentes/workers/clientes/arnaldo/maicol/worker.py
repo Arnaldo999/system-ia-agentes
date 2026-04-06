@@ -52,7 +52,8 @@ MAPA_ZONA = {
     "2": "Gdor Roca",
     "3": "Apóstoles",
     "4": "Leandro N. Alem",
-    "5": "Otra zona",
+    "5": "Lotes Urbanos",
+    "6": "Otra zona",
 }
 MAPA_PRESUPUESTO = {
     "1": "Hasta $150.000 por mes",
@@ -279,7 +280,7 @@ def _gemini_calificar(sesion: dict) -> dict:
 Analizá las respuestas de este lead y devolvé un JSON con este formato exacto:
 {{
   "score": "caliente|tibio|frio",
-  "zona": "San Ignacio|Gdor. Roca|Apóstoles|Leandro N. Alem|null",
+  "zona": "San Ignacio|Gdor Roca|Apóstoles|Leandro N. Alem|Lotes Urbanos|null",
   "tipo": "lote|terreno|null",
   "presupuesto_detectado": "alto|medio|bajo|sin_info",
   "derivar_sitio_web": true|false,
@@ -351,9 +352,10 @@ Reglas estrictas:
   2️⃣ 📍 Gobernador Roca
   3️⃣ 📍 Apóstoles
   4️⃣ 📍 Leandro N. Alem
-  5️⃣ 🗺️ Otra zona / Aún no lo sé
-- Cerrá con "También podés escribir el nombre de la zona directamente 😊"
-- Máx 8 líneas en total
+  5️⃣ 🏙️ Lotes Urbanos
+  6️⃣ 🗺️ Otra zona / Aún no lo sé
+- Cerrá con "También puede escribir el nombre de la zona directamente 😊"
+- Máx 9 líneas en total
 - Español neutro latinoamericano""",
 
         "pregunta_presupuesto": f"""Generá una pregunta para preguntarle{nombre_txt} cuánto puede destinar por mes para la cuota de su lote.
@@ -400,7 +402,8 @@ Reglas estrictas:
                 "2️⃣ 📍 Gobernador Roca\n"
                 "3️⃣ 📍 Apóstoles\n"
                 "4️⃣ 📍 Leandro N. Alem\n"
-                "5️⃣ 🗺️ Otra zona / Aún no lo sé\n\n"
+                "5️⃣ 🏙️ Lotes Urbanos\n"
+                "6️⃣ 🗺️ Otra zona / Aún no lo sé\n\n"
                 "También puede escribir el nombre directamente 😊"
             ),
             "pregunta_presupuesto": (
@@ -692,7 +695,7 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         # Detectar zona desde la respuesta directa (ya resuelta por MAPA_ZONA)
         if not zona_detectada:
             resp_zona = sesion_actualizada.get("resp_zona", "")
-            zonas_validas = ["San Ignacio", "Gdor Roca", "Apóstoles", "Leandro N. Alem"]
+            zonas_validas = ["San Ignacio", "Gdor Roca", "Apóstoles", "Leandro N. Alem", "Lotes Urbanos"]
             for z in zonas_validas:
                 if z.lower() in resp_zona.lower():
                     zona_detectada = z
@@ -1235,7 +1238,7 @@ async def recibir_lead(request: Request):
     presupuesto_at = pres_map.get((presupuesto or "").lower().strip()) or None
 
     # Zona: verificar que sea un valor válido
-    zonas_validas = {"San Ignacio", "Gdor Roca", "Apóstoles", "Leandro N. Alem"}
+    zonas_validas = {"San Ignacio", "Gdor Roca", "Apóstoles", "Leandro N. Alem", "Lotes Urbanos"}
     zona_at = zona if zona in zonas_validas else None
 
     estado_at = "contactado"
