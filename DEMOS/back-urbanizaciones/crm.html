@@ -57,7 +57,7 @@
       .form-group { @apply mb-4; }
       .form-group label { @apply block text-[11px] text-txt-muted mb-1.5 font-semibold uppercase tracking-wide; }
       .form-control { @apply w-full bg-gray-50 border border-brd px-3.5 py-2.5 rounded-xl text-[15px] font-sans outline-none focus:border-primary focus:bg-white; }
-      .form-row { @apply grid grid-cols-2 gap-4; }
+      .form-row { @apply grid grid-cols-1 sm:grid-cols-2 gap-4; }
       .modal-footer { @apply flex gap-3 justify-end mt-6; }
       .img-preview { @apply w-full h-40 object-cover rounded-xl hidden mt-2; }
 
@@ -65,7 +65,10 @@
       .dashboard-layout { @apply flex w-full min-h-screen; }
 
       /* SIDEBAR */
-      .sidebar { @apply w-[280px] bg-sidebar flex flex-col px-5 py-8 shrink-0; }
+      .sidebar { @apply w-[280px] bg-sidebar flex flex-col px-5 py-8 shrink-0 fixed lg:static inset-y-0 left-0 z-[900] -translate-x-full lg:translate-x-0 transition-transform duration-300; }
+      .sidebar.open { @apply translate-x-0; }
+      .sidebar-overlay { @apply fixed inset-0 bg-black/50 z-[899] lg:hidden; display: none; }
+      .sidebar-overlay.open { display: block; }
       .sidebar-logo { @apply mb-10 px-3; }
       .sidebar-nav { @apply flex flex-col gap-1.5 flex-1; }
       .nav-item { @apply flex items-center gap-3.5 px-4 py-3.5 rounded-xl cursor-pointer text-sidebar-text font-medium text-[0.9rem] tracking-[0.03em] transition-all; }
@@ -75,12 +78,15 @@
       .nav-item.active i { @apply opacity-100; }
       .sidebar-footer { @apply pt-5 border-t border-white/5 mt-auto; }
 
+      /* HAMBURGER */
+      .hamburger { @apply lg:hidden fixed top-4 left-4 z-[901] bg-sidebar text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl cursor-pointer shadow-lg border border-white/10; }
+
       /* MAIN */
-      .main-wrapper { @apply flex-1 px-8 md:px-14 py-8 flex flex-col overflow-x-hidden h-screen overflow-y-auto bg-body; }
+      .main-wrapper { @apply flex-1 px-4 sm:px-8 md:px-14 py-8 pt-16 lg:pt-8 flex flex-col overflow-x-hidden h-screen overflow-y-auto bg-body; }
 
       /* TOP HEADER */
-      .top-header { @apply flex justify-between items-center mb-12; }
-      .search-bar { @apply relative w-[380px]; }
+      .top-header { @apply flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 lg:mb-12; }
+      .search-bar { @apply relative w-full sm:w-[380px]; }
       .search-bar::before { content: '🔍'; @apply absolute left-4 top-1/2 -translate-y-1/2 text-[0.9rem] opacity-40; }
       .search-bar input { @apply w-full border border-brd rounded-full py-2.5 pl-12 pr-5 text-[0.9rem] font-sans outline-none bg-white text-txt; }
       .header-tools { @apply flex items-center gap-6; }
@@ -90,9 +96,9 @@
       .user-profile .avatar { @apply w-10 h-10 rounded-full bg-gray-200 overflow-hidden; }
 
       /* SECTION HERO */
-      .section-hero { @apply mb-8 flex justify-between items-end; }
+      .section-hero { @apply mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4; }
       .section-title .subtitle { @apply text-xs text-txt-muted uppercase tracking-[0.15em] font-bold mb-2; }
-      .section-title h1 { @apply font-heading text-[2.2rem] font-extrabold text-txt tracking-tight; }
+      .section-title h1 { @apply font-heading text-2xl sm:text-[2.2rem] font-extrabold text-txt tracking-tight; }
 
       /* BUTTONS */
       .btn { @apply px-5 py-2.5 rounded-xl font-sans text-[0.9rem] font-semibold cursor-pointer border-none transition-all inline-flex items-center justify-center gap-2 no-underline; }
@@ -102,7 +108,7 @@
       .btn.loading { @apply opacity-60 pointer-events-none; }
 
       /* FILTERS */
-      .filters-bar { @apply flex gap-3 mb-10 items-center flex-wrap; }
+      .filters-bar { @apply flex gap-2 sm:gap-3 mb-6 sm:mb-10 items-center flex-wrap; }
       .filter-chip { @apply bg-white border border-brd text-txt px-5 py-2.5 rounded-xl text-[0.9rem] font-medium cursor-pointer outline-none appearance-none font-sans h-[42px] shadow-sm; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 16px; padding-left: 42px; }
       .filter-chip:hover { @apply border-gray-300; }
       .filters-bar .fc-wrap { @apply relative; }
@@ -123,7 +129,7 @@
       .stat-card.red .num { @apply text-red-500; }
 
       /* TABLE */
-      .table-wrap { @apply bg-card rounded-2xl border border-brd overflow-hidden; }
+      .table-wrap { @apply bg-card rounded-2xl border border-brd overflow-x-auto; }
       table { @apply w-full border-collapse; }
       thead { @apply bg-gray-50; }
       th { @apply px-6 py-3.5 text-left text-[0.75rem] uppercase tracking-[0.05em] text-txt-muted font-bold border-b border-brd; }
@@ -144,7 +150,7 @@
       .badge-descartado { @apply bg-red-100 text-red-500; }
 
       /* LEAD CARDS */
-      .leads-grid { @apply grid gap-5; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+      .leads-grid { @apply grid gap-4 sm:gap-5; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
       .lead-card { @apply bg-card rounded-2xl p-6 border border-brd; }
       .lead-name { @apply text-[1.15rem] font-extrabold font-heading mb-1.5; }
       .lead-meta { @apply text-[0.85rem] text-txt-muted flex flex-col gap-1 mb-4; }
@@ -171,7 +177,7 @@
       .kanban-card-tags { @apply flex gap-1.5 mt-2.5 flex-wrap; }
 
       /* GALLERY */
-      .gallery-grid { @apply grid gap-7; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+      .gallery-grid { @apply grid gap-4 sm:gap-7; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
       .gallery-card { @apply bg-card rounded-2xl overflow-hidden border border-brd flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl; }
       .gallery-img-wrap { @apply relative h-[260px] p-3; }
       .gallery-img-wrap > img, .gallery-img { @apply rounded-xl w-full h-full object-cover; }
@@ -402,8 +408,12 @@
 
 <!-- DASHBOARD LAYOUT -->
 <div class="dashboard-layout">
+  <!-- HAMBURGER (mobile) -->
+  <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()">☰</button>
+  <!-- SIDEBAR OVERLAY (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo flex flex-col items-center text-center">
       <div class="bg-white rounded-2xl p-3 mb-3 flex items-center justify-center shadow-md">
         <img src="https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png" alt="Back Urbanizaciones" class="h-[150px] w-auto" />
@@ -763,10 +773,11 @@ async function fetchProxy(endpoint) {
 }
 
 async function patchProxy(endpoint, body) {
+  const payload = body.fields ? body : { fields: body };
   const r = await fetch(`${CRM}${endpoint}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(payload)
   });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
@@ -1442,11 +1453,30 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 });
 
 // ── TABS ──────────────────────────────────────────────────
+// ── SIDEBAR MOBILE ───────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const btn = document.getElementById('hamburger-btn');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('open');
+  btn.textContent = sidebar.classList.contains('open') ? '✕' : '☰';
+}
+
 function switchTab(name, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
+  // Cerrar sidebar en mobile al cambiar tab
+  if (window.innerWidth < 1024) {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const btn = document.getElementById('hamburger-btn');
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    btn.textContent = '☰';
+  }
 }
 
 // ── PERFIL ────────────────────────────────────────────────

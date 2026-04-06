@@ -582,7 +582,7 @@ def crm_propiedades():
 async def crm_crear_propiedad(request: Request):
     """Crea una nueva propiedad en Airtable."""
     data = await request.json()
-    fields = data.get("fields", {})
+    fields = data.get("fields", None) or data
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE}"
     r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
     if r.status_code not in (200, 201):
@@ -595,7 +595,7 @@ async def crm_crear_propiedad(request: Request):
 async def crm_editar_propiedad(record_id: str, request: Request):
     """Actualiza una propiedad existente en Airtable."""
     data = await request.json()
-    fields = data.get("fields", {})
+    fields = data.get("fields", None) or data
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE}/{record_id}"
     r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
     if r.status_code not in (200, 201):
