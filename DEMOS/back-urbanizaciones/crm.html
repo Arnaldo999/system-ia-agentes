@@ -52,10 +52,9 @@
       .modal-overlay { @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] items-center justify-center p-5 opacity-0 transition-opacity duration-300; display: none; }
       .modal-overlay.open { display: flex; @apply opacity-100; }
       .modal { @apply bg-card rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-2xl; }
-      .modal-card { @apply bg-card rounded-2xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl flex flex-col; }
-      .modal-header { @apply px-8 pt-7 pb-0 relative; }
-      .modal-body { @apply px-8 py-5 overflow-y-auto; }
-      .modal-footer { @apply px-8 pb-7 pt-4 flex gap-3 justify-end border-t border-brd mt-2; }
+      .modal-card { @apply bg-white rounded-2xl w-full max-h-[90vh] relative shadow-2xl flex flex-col; }
+      .modal-header { @apply px-8 pt-7 pb-4 relative border-b border-brd shrink-0; }
+      .modal-body { @apply px-8 py-5 overflow-y-auto flex-1; }
       .section-label { @apply col-span-2 text-[11px] font-bold text-primary uppercase tracking-widest mt-3 mb-1 pb-1 border-b border-brd; }
       .modal-close { @apply absolute top-5 right-5 bg-gray-100 border-none w-8 h-8 rounded-full cursor-pointer flex items-center justify-center text-base text-gray-500 hover:bg-gray-200; }
       .modal-title { @apply font-heading text-xl font-extrabold mb-6 text-primary; }
@@ -771,13 +770,10 @@
 
     <!-- MODAL CLIENTE ACTIVO -->
     <div class="modal-overlay" id="modal-activo">
-      <div class="modal-card" style="max-width:700px;">
-        <div class="modal-header">
-          <h3 class="modal-title" id="modal-activo-title">Nuevo Cliente Activo</h3>
-          <button class="modal-close" onclick="closeModal('modal-activo')">✕</button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" id="ma-record-id" />
+      <div class="modal" style="max-width:700px;">
+        <button class="modal-close" onclick="closeModal('modal-activo')">✕</button>
+        <div class="modal-title" id="modal-activo-title">Nuevo Cliente Activo</div>
+        <input type="hidden" id="ma-record-id" />
 
           <!-- Datos personales -->
           <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd">👤 Datos Personales</p>
@@ -849,7 +845,6 @@
             <label>Notas</label>
             <textarea class="form-control" id="ma-notas" rows="2" placeholder="Observaciones, acuerdos especiales..."></textarea>
           </div>
-        </div>
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="closeModal('modal-activo')">Cancelar</button>
           <button class="btn btn-primary" id="btn-guardar-activo" onclick="guardarActivo()">💾 Guardar</button>
