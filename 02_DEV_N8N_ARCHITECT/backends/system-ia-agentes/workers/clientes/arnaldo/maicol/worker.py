@@ -96,6 +96,18 @@ def _at_registrar_cliente(telefono: str, nombre: str, notas: str = "") -> None:
         requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
 
 
+def _at_guardar_email(telefono: str, email: str) -> None:
+    """Guarda el email del cliente en Airtable."""
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
+    buscar = requests.get(url, headers=AT_HEADERS,
+        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+    if records:
+        rec_id = records[0]["id"]
+        requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
+            json={"fields": {"Email": email}}, timeout=8)
+
+
 def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = None) -> list[dict]:
     filtros = ["OR({Disponible}='✅ Disponible',{Disponible}='⏳ Reservado')"]
     if tipo:
@@ -421,6 +433,16 @@ MSG_SITIO_WEB = (
     "lo asesoramos personalmente. ¡Estamos para ayudarle! 🏡"
 )
 
+MSG_EMAIL_CTA = (
+    "📬 *Una última cosa, {nombre}...*\n\n"
+    "En Back Urbanizaciones lanzamos nuevos loteos con frecuencia — "
+    "algunos se reservan en días por sus precios de preventa. 🏷️\n\n"
+    "¿Le gustaría que le avisemos cuando salga el próximo? "
+    "Solo necesito su *correo electrónico* para enviarle información "
+    "exclusiva antes de que salga al público general.\n\n"
+    "_(Es completamente opcional — responda con su email o escriba *\"no\"* si prefiere no recibirlo)_"
+)
+
 
 # ─── FORMATEO ─────────────────────────────────────────────────────────────────
 def _lista_titulos(props: list[dict], label: str) -> str:
@@ -500,8 +522,13 @@ def _mostrar_lista(telefono: str, tipo: str, label: str, operacion: str, zona: s
 
 
 def _ir_asesor(telefono: str) -> None:
-    SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": ""}
+    sesion = SESIONES.get(telefono, {})
+    nombre = sesion.get("nombre", "")
+    nombre_corto = nombre.split()[0] if nombre else ""
     _enviar_texto(telefono, MSG_ASESOR.format(**INMOBILIARIA))
+    # Pedir email como CTA antes de cerrar
+    SESIONES[telefono] = {**sesion, "step": "pedir_email", "props": [], "operacion": ""}
+    _enviar_texto(telefono, MSG_EMAIL_CTA.format(nombre=nombre_corto or ""))
     # Notificar al asesor
     numero_limpio = re.sub(r"[^0-9]", "", NUMERO_ASESOR)
     _enviar_texto(
@@ -629,9 +656,10 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
         _at_registrar_cliente(telefono, nombre, notas=nota_completa)
 
         if derivar or score == "frio":
-            # Lead frío → derivar al sitio web amablemente
-            SESIONES[telefono] = {**sesion_actualizada, "step": "derivado"}
+            # Lead frío → derivar al sitio web + pedir email
+            SESIONES[telefono] = {**sesion_actualizada, "step": "pedir_email"}
             _enviar_texto(telefono, MSG_SITIO_WEB.format(nombre=nombre_corto))
+            _enviar_texto(telefono, MSG_EMAIL_CTA.format(nombre=nombre_corto))
             return  # NO notificar asesor para leads fríos
 
         # Notificar a Maicol solo para leads tibios o calientes
@@ -693,12 +721,38 @@ def _procesar_mensaje(telefono: str, texto: str) -> None:
             _enviar_texto(telefono, _gemini_respuesta(texto))
         return
 
-    # ── PASO: derivado (lead frío ya atendido) ──────────────────────────────
-    if step == "derivado":
+    # ── PASO: pedir_email (CTA al final del flujo) ───────────────────────────
+    if step == "pedir_email":
+        EMAIL_REGEX = re.compile(r"^[\w\.\+\-]+@[\w\-]+\.[a-z]{2,}$", re.IGNORECASE)
+        rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
+        if t in rechazos or t.startswith("no"):
+            SESIONES[telefono] = {**sesion, "step": "fin"}
+            _enviar_texto(telefono,
+                f"¡Sin problema! 😊 Recuerde que puede escribirnos cuando quiera. "
+                f"¡Hasta pronto, {nombre_corto or 'que le vaya muy bien'}! 🏡")
+        elif EMAIL_REGEX.match(t):
+            _at_guardar_email(telefono, t)
+            SESIONES[telefono] = {**sesion, "step": "fin"}
+            _enviar_texto(telefono,
+                f"¡Perfecto! ✅ Anotamos su correo *{t}*.\n\n"
+                f"Será el primero en enterarse cuando lancemos nuevos loteos. "
+                f"¡Muchas gracias, {nombre_corto or ''}! 🙌 Que tenga excelente día.")
+        else:
+            _enviar_texto(telefono,
+                "Por favor ingrese un correo electrónico válido (por ejemplo: nombre@gmail.com) "
+                "o escriba *\"no\"* si prefiere no recibirlo. 😊")
+        return
+
+    # ── PASO: fin (conversación cerrada) ────────────────────────────────────
+    if step == "fin":
         _enviar_texto(telefono,
-            f"Recuerde que puede explorar nuestro catálogo completo en nuestro sitio web"
-            f"{', ' + nombre_corto if nombre_corto else ''}. "
-            f"¡Estamos a su disposición si necesita algo más! 😊")
+            f"Si necesita algo más, estamos a su disposición. Escriba *\"hola\"* para reiniciar. 🏡")
+        return
+
+    # ── PASO: derivado (fallback — normalmente no se llega aquí) ────────────
+    if step == "derivado":
+        SESIONES[telefono] = {**sesion, "step": "pedir_email"}
+        _enviar_texto(telefono, MSG_EMAIL_CTA.format(nombre=nombre_corto or ""))
         return
 
     # ── PASO: ficha (después de ver una propiedad) ───────────────────────────
