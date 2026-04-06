@@ -816,12 +816,10 @@
             <div class="form-group mb-0"><label>Próximo Vencimiento</label><input class="form-control" type="date" id="ma-proximo-vencimiento" /></div>
             <div class="form-group mb-0">
               <label>Estado de Pago</label>
-              <select class="form-control" id="ma-estado-pago">
-                <option value="Al día">✅ Al día</option>
-                <option value="Atrasado">🔴 Atrasado</option>
-                <option value="En mora">⛔ En mora</option>
-                <option value="Cancelado">🏁 Cancelado</option>
-              </select>
+              <div class="form-control bg-gray-100 text-txt-muted text-sm flex items-center gap-2" style="cursor:default;">
+                🤖 Se calcula automáticamente según la fecha de vencimiento
+              </div>
+              <input type="hidden" id="ma-estado-pago" value="Al día" />
             </div>
           </div>
 

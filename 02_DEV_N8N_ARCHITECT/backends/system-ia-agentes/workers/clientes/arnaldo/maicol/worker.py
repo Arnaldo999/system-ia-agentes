@@ -757,9 +757,33 @@ async def send_email_alerta(request: Request):
 
 # ─── CLIENTES ACTIVOS (compradores con cuotas) ────────────────────────────────
 
+def _calcular_estado_pago(fields: dict) -> str:
+    """Calcula el estado de pago automáticamente según la fecha de vencimiento."""
+    from datetime import date, timedelta
+    # Si ya pagó todo → Cancelado
+    total = fields.get("Cuotas_Total")
+    pagadas = fields.get("Cuotas_Pagadas")
+    if total and pagadas is not None and int(pagadas) >= int(total):
+        return "Cancelado"
+    venc_str = fields.get("Proximo_Vencimiento")
+    if not venc_str:
+        return fields.get("Estado_Pago", "Al día")
+    try:
+        venc = date.fromisoformat(venc_str)
+        hoy = date.today()
+        if venc >= hoy:
+            return "Al día"
+        dias_vencido = (hoy - venc).days
+        if dias_vencido <= 90:
+            return "Atrasado"
+        return "En mora"
+    except Exception:
+        return fields.get("Estado_Pago", "Al día")
+
+
 @router.get("/crm/activos")
 def crm_activos():
-    """Lista todos los clientes activos con sus cuotas."""
+    """Lista todos los clientes activos con sus cuotas. Estado_Pago calculado automáticamente."""
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
     records, offset = [], None
     while True:
@@ -768,7 +792,11 @@ def crm_activos():
             params["offset"] = offset
         r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
         data = r.json()
-        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
+        for rec in data.get("records", []):
+            fields = rec["fields"]
+            # Sobreescribir Estado_Pago con el calculado automáticamente
+            fields["Estado_Pago"] = _calcular_estado_pago(fields)
+            records.append({"id": rec["id"], **fields})
         offset = data.get("offset")
         if not offset:
             break
@@ -783,6 +811,8 @@ async def crm_crear_activo(request: Request):
     fields = data.get("fields", data)
     # Limpiar campos None/vacíos
     fields = {k: v for k, v in fields.items() if v is not None and v != ""}
+    # Calcular Estado_Pago automáticamente
+    fields["Estado_Pago"] = _calcular_estado_pago(fields)
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
     r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
     if r.status_code not in (200, 201):
@@ -792,11 +822,13 @@ async def crm_crear_activo(request: Request):
 
 @router.patch("/crm/activos/{record_id}")
 async def crm_editar_activo(record_id: str, request: Request):
-    """Actualiza un cliente activo en Airtable."""
+    """Actualiza un cliente activo en Airtable. Estado_Pago recalculado automáticamente."""
     from fastapi import HTTPException
     data = await request.json()
     fields = data.get("fields", data)
     fields = {k: v for k, v in fields.items() if v is not None and v != ""}
+    # Recalcular Estado_Pago automáticamente — ignorar el que manda el frontend
+    fields["Estado_Pago"] = _calcular_estado_pago(fields)
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
     r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
     if r.status_code not in (200, 201):
