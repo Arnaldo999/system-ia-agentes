@@ -284,17 +284,23 @@ def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, n
         return {"ok": False, "error": str(e)}
 
 
+_DIAS_ES = {
+    "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles",
+    "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo",
+}
+
+
 def _formatear_slots(slots: list[dict]) -> str:
-    """Formatea slots para mostrar en WhatsApp."""
-    from datetime import datetime
+    """Formatea slots para mostrar en WhatsApp (en español)."""
+    from datetime import datetime, timezone, timedelta
     lineas = []
     for i, s in enumerate(slots, 1):
         try:
             dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
-            # Convertir a hora México (UTC-6)
-            from datetime import timezone, timedelta
             mx = dt.astimezone(timezone(timedelta(hours=-6)))
-            lineas.append(f"*{i}️⃣* {mx.strftime('%A %d/%m')} a las *{mx.strftime('%H:%M')}* hs")
+            dia_en = mx.strftime("%A")
+            dia_es = _DIAS_ES.get(dia_en, dia_en)
+            lineas.append(f"*{i}️⃣* {dia_es} {mx.strftime('%d/%m')} a las *{mx.strftime('%H:%M')}* hs")
         except Exception:
             lineas.append(f"*{i}️⃣* {s['time']}")
     return "\n".join(lineas)
@@ -920,7 +926,8 @@ def _procesar(telefono: str, texto: str) -> None:
                     try:
                         dt = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
                         mx = dt.astimezone(timezone(timedelta(hours=-6)))
-                        fecha_str = mx.strftime("%A %d/%m a las %H:%M hs")
+                        dia_es = _DIAS_ES.get(mx.strftime("%A"), mx.strftime("%A"))
+                        fecha_str = f"{dia_es} {mx.strftime('%d/%m a las %H:%M hs')}"
                     except Exception:
                         fecha_str = slot["time"]
                     _enviar_texto(telefono,
