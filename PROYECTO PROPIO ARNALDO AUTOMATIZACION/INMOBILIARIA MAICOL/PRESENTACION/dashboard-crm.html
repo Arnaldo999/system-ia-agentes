@@ -802,7 +802,7 @@
           <div class="form-group"><label>Ciudad</label><input class="form-control" id="ma-ciudad" placeholder="San Ignacio" /></div>
           <div class="form-group" style="grid-column:1/-1;margin-top:8px;"><label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Propiedad Adquirida</label></div>
           <div class="form-group"><label>Número de Lote</label><input class="form-control" id="ma-numero-lote" placeholder="Ej: 12" /></div>
-          <div class="form-group"><label>Nombre del Loteo</label><select class="form-control" id="ma-loteo"><option value="">— Seleccionar loteo —</option><option value="San Ignacio Golf &amp; Resort">San Ignacio Golf &amp; Resort</option><option value="Loteo Altos de Apóstoles">Loteo Altos de Apóstoles</option><option value="Loteo Altos de Alem">Loteo Altos de Alem</option></select></div>
+          <div class="form-group"><label>Nombre del Loteo</label><select class="form-control" id="ma-loteo"><option value="">— Seleccionar loteo —</option></select></div>
           <div class="form-group"><label>Superficie (m²)</label><input class="form-control" type="number" id="ma-superficie" placeholder="300" /></div>
           <div class="form-group"><label>Precio Total ($)</label><input class="form-control" type="number" id="ma-precio-total" placeholder="5000000" /></div>
           <div class="form-group"><label>Fecha de Compra</label><input class="form-control" type="date" id="ma-fecha-compra" /></div>
@@ -2258,9 +2258,16 @@ function renderActivos() {
   }).join('');
 }
 
+function poblarSelectLoteos(valorActual) {
+  const sel = document.getElementById('ma-loteo');
+  sel.innerHTML = '<option value="">— Seleccionar loteo —</option>' +
+    LOTEOS_CONFIG.map(l => `<option value="${l.nombre}"${l.nombre === valorActual ? ' selected' : ''}>${l.nombre}</option>`).join('');
+}
+
 function openModalNuevoActivo() {
   document.getElementById('modal-activo-title').textContent = 'Nuevo Cliente Activo';
-  ['ma-record-id','ma-nombre','ma-apellido','ma-dni','ma-telefono','ma-email','ma-ciudad','ma-numero-lote','ma-loteo','ma-notas','ma-numero-contrato'].forEach(id => { document.getElementById(id).value = ''; });
+  ['ma-record-id','ma-nombre','ma-apellido','ma-dni','ma-telefono','ma-email','ma-ciudad','ma-numero-lote','ma-notas','ma-numero-contrato'].forEach(id => { document.getElementById(id).value = ''; });
+  poblarSelectLoteos('');
   ['ma-superficie','ma-precio-total','ma-cuotas-total','ma-cuotas-pagadas','ma-monto-cuota'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('ma-fecha-compra').value = '';
   document.getElementById('ma-fecha-contrato').value = '';
@@ -2283,7 +2290,7 @@ function editarActivo(recordId) {
   document.getElementById('ma-email').value = a.Email || '';
   document.getElementById('ma-ciudad').value = a.Ciudad || '';
   document.getElementById('ma-numero-lote').value = a.Numero_Lote || '';
-  document.getElementById('ma-loteo').value = a.Loteo || '';
+  poblarSelectLoteos(a.Loteo || '');
   document.getElementById('ma-superficie').value = a.Superficie_m2 || '';
   document.getElementById('ma-precio-total').value = a.Precio_Total || '';
   document.getElementById('ma-fecha-compra').value = a.Fecha_Compra || '';
