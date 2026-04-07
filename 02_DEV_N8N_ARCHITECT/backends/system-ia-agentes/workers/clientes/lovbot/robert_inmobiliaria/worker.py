@@ -143,7 +143,8 @@ def _normalizar_zona(zona: str) -> str:
 
 def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
                        tipo: str = "", zona: str = "", notas: str = "",
-                       presupuesto: str = "") -> None:
+                       presupuesto: str = "", operacion: str = "",
+                       ciudad: str = "") -> None:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
         print("[ROBERT-AT] Sin base/tabla configurada — skip registro lead")
         return
@@ -171,6 +172,10 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
     zona_norm = _normalizar_zona(zona)
     if zona_norm:
         campos["Zona"] = zona_norm
+    if operacion in ("venta", "alquiler"):
+        campos["Operacion"] = operacion
+    if ciudad:
+        campos["Ciudad"] = ciudad
     if notas:
         campos["Notas_Bot"] = notas
     if presupuesto:
@@ -532,7 +537,10 @@ def _procesar(telefono: str, texto: str) -> None:
 
     # ── OBJETIVO (comprar/alquilar + para qué) ────────────────────────────────
     if step == "objetivo":
-        SESIONES[telefono] = {**sesion, "step": "tipo", "resp_objetivo": texto}
+        mapa_op = {"1": "venta", "2": "alquiler", "3": "venta"}
+        operacion = mapa_op.get(texto.strip(), "venta")
+        SESIONES[telefono] = {**sesion, "step": "tipo", "resp_objetivo": texto,
+                              "operacion_at": operacion}
         _enviar_texto(telefono, _pregunta("tipo", nombre_corto))
         return
 
@@ -540,9 +548,9 @@ def _procesar(telefono: str, texto: str) -> None:
     if step == "tipo":
         mapa_tipo = {
             "1": "casa", "2": "departamento", "3": "terreno",
-            "4": "local", "5": "oficina",
+            "4": "otro", "5": "otro",
         }
-        tipo_detectado = mapa_tipo.get(texto, texto.lower())
+        tipo_detectado = mapa_tipo.get(texto.strip(), _normalizar_tipo(texto) or texto.lower())
         SESIONES[telefono] = {**sesion, "step": "zona", "resp_tipo": tipo_detectado}
         _enviar_texto(telefono, _pregunta("zona", nombre_corto))
         return
@@ -593,14 +601,17 @@ def _procesar(telefono: str, texto: str) -> None:
         if zona in (None, "null", ""):
             zona = sesion_act.get("resp_zona", "")
         if operacion in (None, "null", ""):
-            operacion = None
+            operacion = sesion_act.get("operacion_at", None)
 
         presupuesto_at = sesion_act.get("presupuesto_at", "")
+        operacion_at   = sesion_act.get("operacion_at", "")
+        ciudad_at      = CIUDAD
 
         # Registrar lead en Airtable (background)
         threading.Thread(
             target=_at_registrar_lead,
-            args=(telefono, nombre, score, tipo, zona, nota, presupuesto_at), daemon=True
+            args=(telefono, nombre, score, tipo, zona, nota, presupuesto_at,
+                  operacion_at, ciudad_at), daemon=True
         ).start()
 
         # Lead frío → derivar a sitio web
