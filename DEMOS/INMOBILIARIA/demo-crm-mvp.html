@@ -906,17 +906,17 @@ tailwind.config = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
             <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
               <div style="font-size:20px;margin-bottom:3px">📅</div>
-              <div style="font-size:20px;font-weight:700;color:#00d4aa">8</div>
-              <div style="color:var(--text2);font-size:11px">Citas esta semana</div>
+              <div style="font-size:20px;font-weight:700;color:#00d4aa" id="stat-total">-</div>
+              <div style="color:var(--text2);font-size:11px">Citas totales</div>
             </div>
             <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
               <div style="font-size:20px;margin-bottom:3px">✅</div>
-              <div style="font-size:20px;font-weight:700;color:#10b981">6</div>
+              <div style="font-size:20px;font-weight:700;color:#10b981" id="stat-completadas">-</div>
               <div style="color:var(--text2);font-size:11px">Completadas</div>
             </div>
             <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
               <div style="font-size:20px;margin-bottom:3px">⏳</div>
-              <div style="font-size:20px;font-weight:700;color:#ffa94d">2</div>
+              <div style="font-size:20px;font-weight:700;color:#ffa94d" id="stat-pendientes">-</div>
               <div style="color:var(--text2);font-size:11px">Pendientes</div>
             </div>
             <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
@@ -1312,12 +1312,8 @@ const CONV = {
   ],
 };
 
-const CITAS = [
-  {name:"Marcos Vega",dia:"JUE",num:"3",mes:"ABR",hora:"10:00 AM",prop:"Lote #47 Fracc. Norte",color:"#3b82f6"},
-  {name:"Diana Flores",dia:"VIE",num:"4",mes:"ABR",hora:"3:00 PM",prop:"Depto 502 Torre B",color:"#8b5cf6"},
-  {name:"Roberto Alvarado",dia:"LUN",num:"7",mes:"ABR",hora:"11:00 AM",prop:"Lote #12 Fracc. Sur",color:"#10b981"},
-  {name:"Sandra Ruiz",dia:"MAR",num:"8",mes:"ABR",hora:"4:00 PM",prop:"Local Comercial Plaza",color:"#f59e0b"},
-];
+// CITAS se cargan desde Airtable (leads con Fecha_Cita)
+let CITAS = [];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let activeChat = 0;
@@ -1954,9 +1950,57 @@ function verDetallePropDemo(idx) {
 // ── AGENDA ─────────────────────────────────────────────────────────────────
 const CITA_ESTADOS = {}; // id -> estado actual
 
-function renderAgenda() {
+async function renderAgenda() {
   const list=document.getElementById('citasList'); if(!list) return;
+  list.innerHTML='<div style="padding:16px;color:var(--text2)">Cargando citas...</div>';
+
+  // Cargar leads con Fecha_Cita desde Airtable
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes`, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const records = data.records || [];
+
+    const DIAS_ES = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+    const MESES_ES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const COLORES = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ec4899','#06b6d4'];
+
+    CITAS = records
+      .filter(r => r.Fecha_Cita)
+      .map((r, i) => {
+        const dt = new Date(r.Fecha_Cita + 'T10:00:00');
+        const nombre = [r.Nombre||'', r.Apellido||''].join(' ').trim() || r.Telefono || 'Lead';
+        const tipo = r.Tipo_Propiedad || '';
+        const zona = r.Zona || '';
+        const prop = [tipo, zona].filter(Boolean).join(' · ') || 'Consulta general';
+        return {
+          id: r.id,
+          name: nombre,
+          dia: DIAS_ES[dt.getDay()],
+          num: String(dt.getDate()),
+          mes: MESES_ES[dt.getMonth()],
+          hora: dt.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit', hour12:true}).toUpperCase(),
+          prop: prop,
+          color: COLORES[i % COLORES.length],
+          estado_lead: r.Estado || 'contactado',
+          fecha_raw: r.Fecha_Cita,
+        };
+      })
+      .sort((a,b) => a.fecha_raw.localeCompare(b.fecha_raw));
+
+  } catch(e) {
+    console.warn('[AGENDA] Error cargando citas:', e);
+    CITAS = [];
+  }
+
   list.innerHTML='';
+  if (CITAS.length === 0) {
+    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--text2)">No hay citas agendadas aún.<br>El bot las crea automáticamente cuando un lead agenda con Cal.com 📅</div>';
+  }
+
+  const pendientes = CITAS.filter((_,i) => (CITA_ESTADOS[i]||'pendiente')==='pendiente').length;
+  const completadas = CITAS.filter((_,i) => CITA_ESTADOS[i]==='completada').length;
+
   CITAS.forEach((c,i)=>{
     const estado = CITA_ESTADOS[i] || 'pendiente';
     const estadoClass = estado==='completada'?'ep-completada':estado==='cancelada'?'ep-cancelada':'ep-pendiente';
@@ -1979,6 +2023,16 @@ function renderAgenda() {
         </div>
       </div>`;
   });
+
+  // Actualizar estadísticas
+  const statTotal = document.querySelector('#panel-agenda .act-head span');
+  if(statTotal) statTotal.textContent = `📅 ${CITAS.length} cita(s)`;
+  const elTotal = document.getElementById('stat-total');
+  const elComp = document.getElementById('stat-completadas');
+  const elPend = document.getElementById('stat-pendientes');
+  if(elTotal) elTotal.textContent = CITAS.length;
+  if(elComp) elComp.textContent = completadas;
+  if(elPend) elPend.textContent = pendientes;
 }
 
 function cambiarEstadoCita(i, nuevoEstado) {
