@@ -2298,6 +2298,7 @@ async function guardarActivo() {
   if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
   const btn = document.getElementById('btn-guardar-activo');
   btn.disabled = true; btn.textContent = 'Guardando...';
+  const resetBtn = () => { btn.disabled = false; btn.textContent = '💾 Guardar'; };
   const num = v => { const n = parseFloat(v); return isNaN(n) ? undefined : n; };
   const fields = {
     Nombre: nombre,
@@ -2332,12 +2333,14 @@ async function guardarActivo() {
       toast('Cliente creado correctamente', 'success');
     }
     closeModal('modal-activo');
-    allActivos = await fetch(`${CRM}/activos`).then(r => r.json()).then(d => d.records || []);
+    resetBtn();
+    const d = await fetch(`${CRM}/activos`).then(r => r.json());
+    allActivos = d.records || [];
     renderActivos();
   } catch(e) {
     toast('Error al guardar: ' + e.message, 'error');
+    resetBtn();
   }
-  btn.disabled = false; btn.textContent = '💾 Guardar';
 }
 
 async function eliminarActivo(recordId, nombre) {
