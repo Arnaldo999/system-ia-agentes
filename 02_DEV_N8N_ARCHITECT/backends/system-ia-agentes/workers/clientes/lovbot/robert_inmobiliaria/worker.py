@@ -787,18 +787,22 @@ def _procesar(telefono: str, texto: str) -> None:
                                        presupuesto=presupuesto_at)
 
         if not props:
-            _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
-                nombre=nombre_corto or nombre,
-                asesor=NOMBRE_ASESOR,
-                empresa=NOMBRE_EMPRESA,
-            ))
+            # Sin propiedades → pedir email + ofrecer cita igual
+            _enviar_texto(telefono,
+                f"*{nombre_corto or nombre}*, no tenemos propiedades disponibles "
+                f"con esas características en este momento, pero nuestro asesor "
+                f"*{NOMBRE_ASESOR}* puede ayudarle a encontrar opciones personalizadas. 🏡\n\n"
+            )
+            SESIONES[telefono] = {**sesion_act, "step": "pedir_email"}
+            _enviar_texto(telefono, MSG_EMAIL_CTA.format(
+                nombre=nombre_corto or nombre, empresa=NOMBRE_EMPRESA))
             threading.Thread(
                 target=_notificar_asesor,
                 args=(telefono, sesion_act, calificacion), daemon=True
             ).start()
             return
 
-        # Mostrar lista de propiedades + pedir email
+        # Mostrar lista de propiedades → luego pedir email
         SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props,
                               "tipo": tipo, "zona": zona, "operacion": operacion}
         _enviar_texto(telefono,
@@ -807,8 +811,6 @@ def _procesar(telefono: str, texto: str) -> None:
             f"que coinciden con lo que está buscando. Aquí están 👇"
         )
         _enviar_texto(telefono, _lista_titulos(props))
-        _enviar_texto(telefono, MSG_EMAIL_CTA.format(
-            nombre=nombre_corto or nombre, empresa=NOMBRE_EMPRESA))
 
         threading.Thread(
             target=_notificar_asesor,
@@ -822,8 +824,10 @@ def _procesar(telefono: str, texto: str) -> None:
         try:
             idx = int(texto) - 1
             if 0 <= idx < len(props):
-                SESIONES[telefono] = {**sesion, "step": "ficha", "ficha_actual": idx}
+                SESIONES[telefono] = {**sesion, "step": "pedir_email", "ficha_actual": idx}
                 _enviar_ficha(telefono, props[idx])
+                _enviar_texto(telefono, MSG_EMAIL_CTA.format(
+                    nombre=nombre_corto or nombre, empresa=NOMBRE_EMPRESA))
             else:
                 _enviar_texto(telefono,
                     f"Por favor elija un número del 1 al {len(props)}, "
@@ -834,15 +838,17 @@ def _procesar(telefono: str, texto: str) -> None:
                 "*0* para volver o *#* para hablar con el asesor. 😊")
         return
 
-    # ── FICHA → ACCIONES ──────────────────────────────────────────────────────
+    # ── FICHA → ACCIONES (fallback por si acaso) ─────────────────────────────
     if step == "ficha":
         props = sesion.get("props", [])
         if texto == "0":
             SESIONES[telefono] = {**sesion, "step": "lista"}
             _enviar_texto(telefono, _lista_titulos(props))
             return
-        _enviar_texto(telefono,
-            f"*#* Hablar con {NOMBRE_ASESOR} | *0* Ver otras propiedades | *menú* para empezar de nuevo 😊")
+        # Redirigir al email si escriben algo más
+        SESIONES[telefono] = {**sesion, "step": "pedir_email"}
+        _enviar_texto(telefono, MSG_EMAIL_CTA.format(
+            nombre=nombre_corto or nombre, empresa=NOMBRE_EMPRESA))
         return
 
     # ── PEDIR EMAIL ───────────────────────────────────────────────────────────
