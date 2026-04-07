@@ -1639,41 +1639,71 @@ function guardarPerfil() {
 }
 
 // ── LOTEOS ────────────────────────────────────────────────
-let allLotes = [];
+let allActivos = [];   // CLIENTES_ACTIVOS — fuente de verdad del mapa
 
-// Definición estática de los loteos conocidos
 const LOTEOS_CONFIG = [
   {
     id: 'san-ignacio',
     nombre: 'San Ignacio Golf & Resort',
     zona: 'San Ignacio',
     descripcion: 'Club de campo con 163 lotes premium. Golf, naturaleza y exclusividad.',
-    imagen: 'https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png',
     totalLotes: 163,
     mapaKey: 'san_ignacio',
-    imagenFondo: null,
   },
   {
     id: 'apostoles',
     nombre: 'Loteo Altos de Apóstoles',
     zona: 'Apóstoles',
     descripcion: '325 terrenos sobre Av. Las Heras. Financiación hasta 120 cuotas.',
-    imagen: null,
     totalLotes: 325,
     mapaKey: 'apostoles',
-    imagenFondo: null,
   },
   {
     id: 'alem',
     nombre: 'Loteo Altos de Alem',
     zona: 'Leandro N. Alem',
     descripcion: '84 terrenos 12×30m sobre Av. Vélez Sarsfield. Últimos lotes disponibles.',
-    imagen: null,
     totalLotes: 84,
     mapaKey: 'alem',
-    imagenFondo: null,
   },
 ];
+
+// Coordenadas de cada lote sobre el master plan (% del área útil del mapa)
+const LOTES_COORDS = {
+  1:[4.5,13.5],2:[4.5,11.5],3:[4.5,9.5],4:[7.5,9.0],5:[9.5,9.0],
+  6:[10.5,11.0],7:[11.5,13.5],8:[13.0,15.5],9:[15.5,17.5],10:[17.5,17.5],
+  11:[19.5,17.5],12:[21.5,17.5],13:[19.0,8.0],14:[22.0,8.0],15:[25.0,8.0],
+  16:[28.0,8.0],17:[31.0,10.0],18:[37.0,8.0],19:[40.0,8.0],20:[43.0,8.0],
+  21:[46.0,8.0],22:[43.0,13.0],23:[40.0,16.0],24:[40.0,11.5],25:[37.0,19.5],
+  26:[38.5,22.5],27:[40.5,23.5],28:[43.5,22.0],29:[46.0,20.5],30:[44.5,17.0],
+  31:[47.5,13.5],32:[49.5,11.0],33:[55.5,8.0],34:[58.5,8.0],35:[61.5,8.0],
+  36:[64.5,8.0],37:[66.5,10.0],38:[68.0,12.5],39:[69.5,15.0],40:[71.0,17.5],
+  41:[72.5,20.0],42:[74.0,8.0],43:[77.0,8.0],44:[77.0,11.0],45:[77.0,14.0],
+  46:[77.0,17.0],47:[77.0,20.0],48:[77.0,23.0],49:[77.0,26.0],50:[77.0,29.0],
+  51:[77.0,32.0],52:[77.0,35.0],53:[77.0,38.0],54:[77.0,41.0],55:[77.0,44.0],
+  56:[77.0,47.0],57:[77.0,50.0],58:[77.0,53.0],59:[77.0,56.0],60:[77.0,59.0],
+  61:[77.0,62.0],62:[77.0,65.0],63:[77.0,68.0],64:[77.0,71.0],65:[77.0,74.0],
+  66:[74.0,76.5],67:[71.0,76.5],68:[68.0,76.5],69:[65.0,74.5],70:[62.0,72.0],
+  71:[59.5,72.0],72:[57.0,72.0],73:[54.5,72.0],74:[52.0,72.0],75:[49.5,72.0],
+  76:[47.0,72.0],77:[44.5,72.0],78:[42.0,72.0],79:[22.5,77.0],80:[25.5,77.0],
+  81:[28.5,77.0],82:[31.5,77.0],83:[34.5,77.0],84:[37.5,77.0],85:[40.5,77.0],
+  86:[43.5,77.0],87:[46.5,77.0],88:[67.0,39.5],89:[64.0,39.5],90:[61.0,40.5],
+  91:[58.5,40.0],92:[56.0,37.0],93:[57.5,33.5],94:[54.5,32.5],95:[51.5,33.0],
+  96:[37.0,31.5],97:[37.5,28.5],98:[39.5,26.5],99:[34.5,25.0],100:[31.5,30.0],
+  101:[22.0,38.0],102:[24.5,36.5],103:[27.5,35.0],104:[30.0,35.5],105:[29.5,38.5],
+  106:[26.5,40.5],107:[24.5,42.0],108:[22.5,44.5],109:[20.5,47.0],110:[20.5,50.5],
+  111:[20.5,54.0],112:[24.5,57.5],113:[24.5,54.5],114:[24.5,51.5],115:[27.5,47.0],
+  116:[30.0,43.5],117:[31.5,47.0],118:[29.0,51.0],119:[28.5,55.0],120:[27.5,59.0],
+  121:[34.0,62.5],122:[34.5,59.0],123:[35.5,55.5],124:[36.5,50.0],125:[38.5,53.5],
+  126:[39.5,57.0],127:[41.0,60.0],128:[43.5,61.5],129:[45.5,63.5],130:[47.0,67.0],
+  131:[53.5,62.5],132:[52.0,58.5],133:[54.5,56.5],134:[55.5,53.5],135:[51.0,51.5],
+  136:[48.5,46.5],137:[56.0,47.0],138:[59.5,48.0],139:[62.5,48.0],140:[65.0,50.0],
+  141:[67.5,53.0],142:[10.5,73.5],143:[10.5,70.5],144:[10.5,67.5],145:[10.5,64.5],
+  146:[10.5,61.5],147:[10.5,58.5],148:[10.5,55.5],149:[10.5,52.5],150:[10.5,49.5],
+  151:[13.0,47.0],152:[13.0,44.0],153:[15.0,42.0],154:[15.0,39.0],155:[15.0,36.0],
+  156:[13.5,33.0],157:[13.5,30.0],158:[6.5,33.0],159:[6.5,36.0],160:[6.5,39.0],
+  161:[6.5,42.0],162:[6.5,45.0],163:[6.5,48.0],
+};
 
 async function loadLotes() {
   document.getElementById('loteos-loading').style.display = 'block';
@@ -1681,19 +1711,14 @@ async function loadLotes() {
   document.getElementById('loteos-sin-tabla').style.display = 'none';
   document.getElementById('lotes-stats').style.display = 'none';
   try {
-    const r = await fetch(`${CRM}/lotes`);
+    // Fuente de verdad: CLIENTES_ACTIVOS (ya cargados en allLeads → allActivos viene de /crm/activos)
+    const r = await fetch(`${CRM}/activos`);
     const d = await r.json();
-    if (d.error && d.records && d.records.length === 0) {
-      // Tabla no configurada aún — mostrar cards de loteos igual pero sin datos de lotes
-      allLotes = [];
-    } else {
-      allLotes = d.records || [];
-    }
-    renderLoteos();
+    allActivos = d.records || [];
   } catch(e) {
-    allLotes = [];
-    renderLoteos();
+    allActivos = [];
   }
+  renderLoteos();
   document.getElementById('loteos-loading').style.display = 'none';
 }
 
@@ -1701,60 +1726,53 @@ function renderLoteos() {
   const grid = document.getElementById('loteos-grid');
   const statsDiv = document.getElementById('lotes-stats');
 
-  // Stats globales
-  const disp = allLotes.filter(l => (l.Estado_Lote || 'disponible') === 'disponible').length;
-  const res  = allLotes.filter(l => l.Estado_Lote === 'reservado').length;
-  const vend = allLotes.filter(l => l.Estado_Lote === 'vendido').length;
-
-  if (allLotes.length > 0) {
-    document.getElementById('ls-disponibles').textContent = disp;
-    document.getElementById('ls-reservados').textContent  = res;
-    document.getElementById('ls-vendidos').textContent    = vend;
-    document.getElementById('ls-total').textContent       = allLotes.length;
+  // Stats globales desde CLIENTES_ACTIVOS
+  const totalVendidos = allActivos.length;
+  if (totalVendidos > 0) {
+    const totalDisp = LOTEOS_CONFIG.reduce((s, l) => s + l.totalLotes, 0) - totalVendidos;
+    document.getElementById('ls-disponibles').textContent = Math.max(0, totalDisp);
+    document.getElementById('ls-reservados').textContent  = allActivos.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
+    document.getElementById('ls-vendidos').textContent    = allActivos.filter(a => ['Firmado','Escriturado'].includes(a.Estado_Contrato||'')).length;
+    document.getElementById('ls-total').textContent       = LOTEOS_CONFIG.reduce((s, l) => s + l.totalLotes, 0);
     statsDiv.style.display = 'grid';
   }
 
   grid.innerHTML = LOTEOS_CONFIG.map(loteo => {
-    const lotesLoteo = allLotes.filter(l => l.Nombre_Loteo === loteo.nombre);
-    const lDisp = lotesLoteo.filter(l => !l.Estado_Lote || l.Estado_Lote === 'disponible').length;
-    const lRes  = lotesLoteo.filter(l => l.Estado_Lote === 'reservado').length;
-    const lVend = lotesLoteo.filter(l => l.Estado_Lote === 'vendido').length;
-    const totalCargados = lotesLoteo.length;
-    const totalLotes = loteo.totalLotes;
-    const pctVend = totalCargados > 0 ? Math.round((lVend / totalCargados) * 100) : 0;
-
-    const imgHtml = loteo.imagen
-      ? `<img src="${loteo.imagen}" alt="${loteo.nombre}" class="w-full h-full object-contain p-8 bg-primary/5" onerror="this.parentElement.innerHTML='<div class=\\'loteo-card-img-placeholder\\'>🌄</div>'">`
-      : `<div class="loteo-card-img-placeholder">🌄</div>`;
+    // Activos de este loteo
+    const activosLoteo = allActivos.filter(a => (a.Loteo || '') === loteo.nombre);
+    const vendidos  = activosLoteo.filter(a => ['Firmado','Escriturado'].includes(a.Estado_Contrato||'')).length;
+    const reservados = activosLoteo.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
+    const ocupados  = activosLoteo.length;
+    const libres    = loteo.totalLotes - ocupados;
+    const pctOcup   = Math.round((ocupados / loteo.totalLotes) * 100);
 
     return `
     <div class="loteo-card" onclick="abrirMapaLoteo('${loteo.mapaKey}')">
-      <div class="loteo-card-img">${imgHtml}</div>
+      <div class="loteo-card-img" style="background:#0A261A10;">
+        <div style="font-size:4rem;">🌄</div>
+      </div>
       <div class="loteo-card-body">
         <div class="loteo-card-title">${loteo.nombre}</div>
         <div class="loteo-card-zona">📍 ${loteo.zona}</div>
         <p class="text-sm text-txt-muted mb-4 leading-relaxed">${loteo.descripcion}</p>
-        ${totalCargados > 0 ? `
         <div class="mb-3">
           <div class="flex justify-between text-xs text-txt-muted font-semibold mb-1.5">
-            <span>Lotes cargados: ${totalCargados} / ${totalLotes}</span>
-            <span class="text-red-500 font-bold">${pctVend}% vendido</span>
+            <span>${loteo.totalLotes} lotes totales</span>
+            <span class="font-bold" style="color:${pctOcup>70?'#ef4444':pctOcup>40?'#f59e0b':'#16a34a'}">${pctOcup}% ocupado</span>
           </div>
-          <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-            <div class="h-2 rounded-full" style="width:${Math.round((lDisp/totalCargados)*100)}%;background:#16a34a;display:inline-block"></div><div class="h-2 rounded-full" style="width:${Math.round((lRes/totalCargados)*100)}%;background:#f59e0b;display:inline-block"></div><div class="h-2 rounded-full" style="width:${Math.round((lVend/totalCargados)*100)}%;background:#ef4444;display:inline-block"></div>
+          <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden flex">
+            <div style="width:${Math.round((vendidos/loteo.totalLotes)*100)}%;background:#ef4444;height:100%"></div>
+            <div style="width:${Math.round((reservados/loteo.totalLotes)*100)}%;background:#f59e0b;height:100%"></div>
+            <div style="width:${Math.round((libres/loteo.totalLotes)*100)}%;background:#16a34a;height:100%"></div>
           </div>
         </div>
         <div class="loteo-stats-row">
-          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#16a34a">${lDisp}</div><div class="loteo-stat-lbl">Disponibles</div></div>
-          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#f59e0b">${lRes}</div><div class="loteo-stat-lbl">Reservados</div></div>
-          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#ef4444">${lVend}</div><div class="loteo-stat-lbl">Vendidos</div></div>
-        </div>` : `
-        <div class="mt-auto pt-4 border-t border-brd text-center">
-          <span class="text-sm text-txt-muted">Total: <strong>${totalLotes} lotes</strong></span>
-          <div class="mt-2 inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full font-semibold">⏳ Pendiente de cargar lotes</div>
-        </div>`}
-        <div class="mt-4 flex gap-2">
-          <button class="btn btn-primary btn-sm w-full" onclick="event.stopPropagation();abrirMapaLoteo('${loteo.mapaKey}')">🗺️ Ver mapa</button>
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#16a34a">${libres}</div><div class="loteo-stat-lbl">Libres</div></div>
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#f59e0b">${reservados}</div><div class="loteo-stat-lbl">Reservados</div></div>
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#ef4444">${vendidos}</div><div class="loteo-stat-lbl">Vendidos</div></div>
+        </div>
+        <div class="mt-4">
+          <button class="btn btn-primary btn-sm w-full" onclick="event.stopPropagation();abrirMapaLoteo('${loteo.mapaKey}')">🗺️ Abrir mapa del loteo</button>
         </div>
       </div>
     </div>`;
@@ -1764,34 +1782,81 @@ function renderLoteos() {
 }
 
 // ── MAPA SVG ──────────────────────────────────────────────
+const MASTER_PLAN_URL = 'https://res.cloudinary.com/dmqkqcreo/image/upload/v1775578634/lovbot/loteos/san_ignacio_master_plan.png';
+
 function abrirMapaLoteo(mapaKey) {
   const config = LOTEOS_CONFIG.find(l => l.mapaKey === mapaKey);
   if (!config) return;
 
   document.getElementById('mapa-title').textContent = config.nombre;
-  document.getElementById('mapa-subtitle').textContent = `📍 ${config.zona}`;
+  document.getElementById('mapa-subtitle').textContent = `📍 ${config.zona} · ${config.totalLotes} lotes`;
 
-  const lotes = allLotes.filter(l => l.Nombre_Loteo === config.nombre);
+  const activosLoteo = allActivos.filter(a => (a.Loteo || '') === config.nombre);
   const container = document.getElementById('mapa-container');
 
   if (mapaKey === 'san_ignacio') {
-    container.innerHTML = generarMapaSanIgnacio(lotes);
+    container.innerHTML = generarMapaSanIgnacio(activosLoteo);
   } else {
-    container.innerHTML = generarMapaGrilla(lotes, config);
+    container.innerHTML = generarMapaGrilla(activosLoteo, config);
   }
 
   openModal('modal-mapa');
 }
 
-function colorLote(estado) {
-  if (estado === 'vendido')   return '#ef4444';
-  if (estado === 'reservado') return '#f59e0b';
+function colorActivo(activo) {
+  const est = activo.Estado_Contrato || '';
+  if (est === 'Escriturado' || est === 'Firmado') return '#ef4444';
+  if (est === 'Pendiente') return '#f59e0b';
   return '#16a34a';
 }
 
-function generarMapaSanIgnacio(lotes) {
-  // Mapa del PDF: 163 lotes organizados en sectores
-  // Generamos una grilla SVG representativa fiel al master plan
+function generarMapaSanIgnacio(activos) {
+  const activoMap = {};
+  activos.forEach(a => { const n = parseInt(a.Numero_Lote); if (n) activoMap[n] = a; });
+
+  const vendidos   = activos.filter(a => ['Firmado','Escriturado'].includes(a.Estado_Contrato||'')).length;
+  const reservados = activos.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
+  const libres     = 163 - activos.length;
+  const VW = 1000, VH = 790;
+
+  let pins = '';
+  for (let n = 1; n <= 163; n++) {
+    const coord = LOTES_COORDS[n];
+    if (!coord) continue;
+    const cx = ((coord[0] / 100) * VW).toFixed(1);
+    const cy = ((coord[1] / 100) * VH).toFixed(1);
+    const activo = activoMap[n];
+    const color = activo ? colorActivo(activo) : '#16a34a';
+    const nombre = activo ? (activo.Nombre || '').split(' ')[0] : '';
+    const dataAttr = activo
+      ? `data-activo="${encodeURIComponent(JSON.stringify(activo))}"`
+      : `data-num="${n}"`;
+    pins += `<g onclick="handleLoteClick(this)" ${dataAttr} style="cursor:pointer">
+      <circle cx="${cx}" cy="${cy}" r="14" fill="${color}" fill-opacity="0.88" stroke="white" stroke-width="2"/>
+      <text x="${cx}" y="${cy}" dy="${nombre?'-3':'0.35em'}" style="font-size:9px;font-weight:800;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
+      ${nombre?`<text x="${cx}" y="${(parseFloat(cy)+6).toFixed(1)}" style="font-size:6.5px;font-weight:600;fill:white;text-anchor:middle;pointer-events:none;font-family:Inter,sans-serif">${nombre}</text>`:''}
+    </g>`;
+  }
+
+  return `
+    <div class="mb-4 flex items-center gap-5 flex-wrap text-sm font-semibold">
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#16a34a;display:inline-block"></span>Disponibles: <strong>${libres}</strong></span>
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#f59e0b;display:inline-block"></span>Reservados: <strong>${reservados}</strong></span>
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#ef4444;display:inline-block"></span>Vendidos: <strong>${vendidos}</strong></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;min-width:480px;max-width:860px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
+        <defs><clipPath id="mapa-clip"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
+        <image href="${MASTER_PLAN_URL}" x="0" y="0" width="${VW}" height="${VH}" preserveAspectRatio="xMidYMid meet" clip-path="url(#mapa-clip)"/>
+        ${pins}
+      </svg>
+    </div>
+    <p class="text-xs text-txt-muted text-center mt-3">Clic en cualquier lote para ver detalle · Datos actualizados desde Clientes Activos</p>`;
+}
+
+// función loteMap renombrada — ya no se usa
+function generarMapaSanIgnacioLegado(lotes) {
   const loteMap = {};
   lotes.forEach(l => { if (l.Numero_Lote) loteMap[l.Numero_Lote] = l; });
 
@@ -1827,151 +1892,104 @@ function generarMapaSanIgnacio(lotes) {
   let svgLotes = '';
   let numero = 1;
 
-  // Generación simple: grilla de todos los lotes 1-163 ordenados en filas de 12
-  const COLS = 12;
-  const LW = 52, LH = 38, G = 4;
-  const filas = Math.ceil(163 / COLS);
-  const svgW = COLS * (LW + G) + 20;
-  const svgH = filas * (LH + G) + 20;
-
-  for (let n = 1; n <= 163; n++) {
-    const col = (n - 1) % COLS;
-    const fila = Math.floor((n - 1) / COLS);
-    const x = 10 + col * (LW + G);
-    const y = 10 + fila * (LH + G);
-    const lote = loteMap[n] || loteMap[String(n)];
-    const estado = lote ? (lote.Estado_Lote || 'disponible') : 'disponible';
-    const color = colorLote(estado);
-    const clienteNombre = (lote && lote.Estado_Lote === 'vendido' && lote.Cliente_Nombre)
-      ? lote.Cliente_Nombre.split(' ')[0]
-      : '';
-    const onClick = lote
-      ? `abrirDetalleLote(${JSON.stringify(JSON.stringify(lote))})`
-      : `abrirDetalleLoteNumero(${n}, '${estado}')`;
-
-    svgLotes += `
-      <g class="lote-svg-group" onclick="${onClick}" style="cursor:pointer">
-        <rect x="${x}" y="${y}" width="${LW}" height="${LH}" rx="4" ry="4" fill="${color}" stroke="white" stroke-width="1.5"/>
-        <text x="${x + LW/2}" y="${y + (clienteNombre ? LH/3 : LH/2)}" class="lote-svg-text" style="font-size:10px;font-weight:700;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
-        ${clienteNombre ? `<text x="${x + LW/2}" y="${y + LH*0.68}" style="font-size:7px;font-weight:600;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${clienteNombre}</text>` : ''}
-      </g>`;
-  }
-
-  // Leyenda y nota informativa si no hay lotes cargados
-  const sinDatos = lotes.length === 0;
-
-  return `
-    ${sinDatos ? `<div class="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-sm text-amber-700 font-semibold flex items-center gap-2">
-      ⚠️ Aún no hay lotes cargados en Airtable. El mapa muestra los 163 lotes como disponibles. Cargá los lotes para ver el estado real.
-    </div>` : `<div class="mb-4 bg-ok-bg border border-ok/20 rounded-xl px-5 py-3 text-sm text-ok font-semibold flex items-center gap-2">
-      ✅ ${lotes.length} lotes cargados — hacé clic en cualquier lote para ver el detalle.
-    </div>`}
-    <div style="overflow-x:auto;">
-      <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:500px;max-width:800px;display:block;margin:0 auto;border-radius:12px;background:#f8f9fa;">
-        ${svgLotes}
-      </svg>
-    </div>
-    <p class="text-xs text-txt-muted text-center mt-3 font-medium">San Ignacio Golf & Resort — 163 lotes · Hacé clic en un lote para ver detalle o actualizar estado</p>`;
+  // grilla vacía — función legado reemplazada arriba
 }
 
-function generarMapaGrilla(lotes, config) {
-  // Para otros loteos: grilla simple hasta tener su master plan
-  const loteMap = {};
-  lotes.forEach(l => { if (l.Numero_Lote) loteMap[l.Numero_Lote] = l; });
-
+function generarMapaGrilla(activos, config) {
+  const activoMap = {};
+  activos.forEach(a => { const n = parseInt(a.Numero_Lote); if (n) activoMap[n] = a; });
   const total = config.totalLotes;
-  const COLS = 15;
-  const LW = 44, LH = 34, G = 3;
+  const COLS = Math.min(20, Math.ceil(Math.sqrt(total * 1.6)));
+  const LW = 40, LH = 30, G = 3;
   const filas = Math.ceil(total / COLS);
   const svgW = COLS * (LW + G) + 20;
   const svgH = filas * (LH + G) + 20;
-
   let svgLotes = '';
   for (let n = 1; n <= total; n++) {
     const col = (n - 1) % COLS;
     const fila = Math.floor((n - 1) / COLS);
     const x = 10 + col * (LW + G);
     const y = 10 + fila * (LH + G);
-    const lote = loteMap[n] || loteMap[String(n)];
-    const estado = lote ? (lote.Estado_Lote || 'disponible') : 'disponible';
-    const color = colorLote(estado);
-    const onClick = lote
-      ? `abrirDetalleLote(${JSON.stringify(JSON.stringify(lote))})`
-      : `abrirDetalleLoteNumero(${n}, '${estado}')`;
-    svgLotes += `
-      <g class="lote-svg-group" onclick="${onClick}" style="cursor:pointer">
-        <rect x="${x}" y="${y}" width="${LW}" height="${LH}" rx="3" ry="3" fill="${color}" stroke="white" stroke-width="1.5"/>
-        <text x="${x + LW/2}" y="${y + LH/2}" style="font-size:9px;font-weight:700;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
-      </g>`;
+    const activo = activoMap[n];
+    const color = activo ? colorActivo(activo) : '#16a34a';
+    const dataAttr = activo ? `data-activo="${encodeURIComponent(JSON.stringify(activo))}"` : `data-num="${n}"`;
+    svgLotes += `<g onclick="handleLoteClick(this)" ${dataAttr} style="cursor:pointer">
+      <rect x="${x}" y="${y}" width="${LW}" height="${LH}" rx="3" fill="${color}" fill-opacity="0.9" stroke="white" stroke-width="1.5"/>
+      <text x="${x+LW/2}" y="${y+LH/2}" style="font-size:8px;font-weight:700;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
+    </g>`;
   }
-
-  const sinDatos = lotes.length === 0;
+  const vendidos   = activos.filter(a => ['Firmado','Escriturado'].includes(a.Estado_Contrato||'')).length;
+  const reservados = activos.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
+  const libres     = total - activos.length;
   return `
-    ${sinDatos ? `<div class="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-sm text-amber-700 font-semibold">⚠️ Sin lotes cargados aún. Cargá los lotes en Airtable para ver el estado real.</div>` : `<div class="mb-4 bg-ok-bg border border-ok/20 rounded-xl px-5 py-3 text-sm text-ok font-semibold">✅ ${lotes.length} lotes cargados.</div>`}
+    <div class="mb-4 flex items-center gap-5 flex-wrap text-sm font-semibold">
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:3px;background:#16a34a;display:inline-block"></span>Disponibles: <strong>${libres}</strong></span>
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:3px;background:#f59e0b;display:inline-block"></span>Reservados: <strong>${reservados}</strong></span>
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:3px;background:#ef4444;display:inline-block"></span>Vendidos: <strong>${vendidos}</strong></span>
+    </div>
     <div style="overflow-x:auto;">
       <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:400px;display:block;margin:0 auto;border-radius:12px;background:#f8f9fa;">
         ${svgLotes}
       </svg>
     </div>
-    <p class="text-xs text-txt-muted text-center mt-3">${config.nombre} — ${total} lotes</p>`;
+    <p class="text-xs text-txt-muted text-center mt-3">${config.nombre} · Clic en lote para ver detalle</p>`;
 }
 
-function abrirDetalleLote(loteJson) {
-  const lote = JSON.parse(loteJson);
-  const estado = lote.Estado_Lote || 'disponible';
-  const colorMap = { disponible: '#16a34a', reservado: '#f59e0b', vendido: '#ef4444' };
-  const labelMap = { disponible: '✅ Disponible', reservado: '⏳ Reservado', vendido: '🔴 Vendido' };
-  const color = colorMap[estado] || '#16a34a';
+function handleLoteClick(el) {
+  const dataActivo = el.getAttribute('data-activo');
+  const dataNum    = el.getAttribute('data-num');
+  if (dataActivo) {
+    abrirDetalleActivo(JSON.parse(decodeURIComponent(dataActivo)));
+  } else {
+    abrirDetalleLoteLibre(parseInt(dataNum));
+  }
+}
 
+function abrirDetalleActivo(a) {
+  const est = a.Estado_Contrato || 'Pendiente';
+  const colorMap = { Escriturado: '#ef4444', Firmado: '#ef4444', Pendiente: '#f59e0b' };
+  const labelMap = { Escriturado: '🔴 Escriturado', Firmado: '🔴 Firmado', Pendiente: '⏳ Reservado/Pendiente' };
+  const color = colorMap[est] || '#ef4444';
+  const nombre = [a.Nombre, a.Apellido].filter(Boolean).join(' ') || '—';
+  const tel = a.Telefono || '';
   document.getElementById('lote-detalle-content').innerHTML = `
     <div class="flex items-center gap-3 mb-5">
-      <div style="width:48px;height:48px;border-radius:12px;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-heading;font-size:1.2rem;font-weight:800;flex-shrink:0">${lote.Numero_Lote || '—'}</div>
+      <div style="width:52px;height:52px;border-radius:12px;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-size:1.1rem;font-weight:800;flex-shrink:0">${a.Numero_Lote||'?'}</div>
       <div>
-        <div class="font-heading text-xl font-extrabold text-primary">Lote ${lote.Numero_Lote || '—'}</div>
-        <div class="text-sm text-txt-muted">${lote.Nombre_Loteo || '—'}</div>
+        <div class="font-heading text-xl font-extrabold text-primary">Lote ${a.Numero_Lote||'—'}</div>
+        <div class="text-sm text-txt-muted">${a.Loteo||'—'}</div>
       </div>
     </div>
-    <div class="space-y-3 text-sm">
-      <div class="flex justify-between py-2 border-b border-brd">
-        <span class="font-semibold text-txt-muted">Estado</span>
-        <span style="color:${color};font-weight:700">${labelMap[estado] || estado}</span>
-      </div>
-      ${lote.Superficie_m2 ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Superficie</span><span class="font-semibold">${lote.Superficie_m2} m²</span></div>` : ''}
-      ${lote.Precio_Cuota ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Cuota mensual</span><span class="font-semibold">$${Number(lote.Precio_Cuota).toLocaleString('es-AR')} ARS</span></div>` : ''}
-      ${lote.Cliente_Nombre ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Cliente</span><span class="font-semibold">${lote.Cliente_Nombre}</span></div>` : ''}
-      ${lote.Cliente_Telefono ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Teléfono</span><a href="https://wa.me/${lote.Cliente_Telefono.replace(/\D/g,'')}" target="_blank" class="font-semibold text-ok hover:underline">📞 ${lote.Cliente_Telefono}</a></div>` : ''}
-      ${lote.Notas ? `<div class="py-2 border-b border-brd"><span class="font-semibold text-txt-muted block mb-1">Notas</span><p class="text-txt italic">${lote.Notas}</p></div>` : ''}
+    <div class="space-y-0 text-sm divide-y divide-brd">
+      <div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Estado contrato</span><span style="color:${color};font-weight:700">${labelMap[est]||est}</span></div>
+      <div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Cliente</span><span class="font-bold">${nombre}</span></div>
+      ${tel?`<div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Teléfono</span><a href="https://wa.me/${tel.replace(/\D/g,'')}" target="_blank" class="font-semibold text-ok hover:underline">📞 ${tel}</a></div>`:''}
+      ${a.DNI?`<div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">DNI</span><span>${a.DNI}</span></div>`:''}
+      ${a.Superficie_m2?`<div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Superficie</span><span>${a.Superficie_m2} m²</span></div>`:''}
+      ${a.Precio_Total?`<div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Precio total</span><span class="font-bold">$${Number(a.Precio_Total).toLocaleString('es-AR')}</span></div>`:''}
+      ${a.Monto_Cuota?`<div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Cuota mensual</span><span class="font-bold text-ok">$${Number(a.Monto_Cuota).toLocaleString('es-AR')}</span></div>`:''}
+      ${a.Cuotas_Pagadas!=null&&a.Cuotas_Total?`<div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Cuotas</span><span>${a.Cuotas_Pagadas} / ${a.Cuotas_Total} pagadas</span></div>`:''}
+      ${a.Proximo_Vencimiento?`<div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Próximo venc.</span><span class="${a.Estado_Pago==='Atrasado'?'text-red-500 font-bold':''}">${a.Proximo_Vencimiento}</span></div>`:''}
+      ${a.Estado_Pago?`<div class="flex justify-between py-2.5"><span class="text-txt-muted font-semibold">Estado pago</span><span class="font-bold ${a.Estado_Pago==='Al día'?'text-ok':a.Estado_Pago==='Atrasado'?'text-amber-600':'text-red-500'}">${a.Estado_Pago}</span></div>`:''}
+      ${a.Notas?`<div class="py-2.5"><span class="text-txt-muted font-semibold block mb-1">Notas</span><p class="italic text-txt">${a.Notas}</p></div>`:''}
     </div>
-    <div class="modal-footer mt-6">
-      <button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button>
-    </div>`;
+    <div class="modal-footer mt-5"><button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button></div>`;
   openModal('modal-lote');
 }
 
-function abrirDetalleLoteNumero(numero, estado) {
-  const colorMap = { disponible: '#16a34a', reservado: '#f59e0b', vendido: '#ef4444' };
-  const labelMap = { disponible: '✅ Disponible', reservado: '⏳ Reservado', vendido: '🔴 Vendido' };
-  const color = colorMap[estado] || '#16a34a';
+function abrirDetalleLoteLibre(numero) {
   document.getElementById('lote-detalle-content').innerHTML = `
     <div class="flex items-center gap-3 mb-5">
-      <div style="width:48px;height:48px;border-radius:12px;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-size:1.2rem;font-weight:800;flex-shrink:0">${numero}</div>
+      <div style="width:52px;height:52px;border-radius:12px;background:#16a34a;display:flex;align-items:center;justify-content:center;color:white;font-size:1.1rem;font-weight:800;flex-shrink:0">${numero}</div>
       <div>
         <div class="font-heading text-xl font-extrabold text-primary">Lote ${numero}</div>
-        <div class="text-sm text-txt-muted">Sin datos cargados aún</div>
+        <div class="text-sm text-ok font-semibold">✅ Disponible</div>
       </div>
     </div>
-    <div class="space-y-3 text-sm">
-      <div class="flex justify-between py-2 border-b border-brd">
-        <span class="font-semibold text-txt-muted">Estado</span>
-        <span style="color:${color};font-weight:700">${labelMap[estado] || estado}</span>
-      </div>
+    <div class="bg-ok-bg border border-ok/20 rounded-xl p-4 text-sm text-ok font-medium mb-4">
+      Este lote está disponible. Para marcarlo como vendido o reservado, cargalo en <strong>Clientes Activos</strong> con Numero_Lote = <strong>${numero}</strong> y el Loteo correspondiente.
     </div>
-    <div class="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
-      <strong>Para cargar datos de este lote:</strong> agregá una fila en la tabla <em>Lotes</em> de Airtable con <strong>Numero_Lote = ${numero}</strong>.
-    </div>
-    <div class="modal-footer mt-6">
-      <button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button>
-    </div>`;
+    <div class="modal-footer mt-2"><button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button></div>`;
   openModal('modal-lote');
 }
 
