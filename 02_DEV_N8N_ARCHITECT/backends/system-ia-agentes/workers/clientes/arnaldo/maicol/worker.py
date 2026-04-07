@@ -22,6 +22,7 @@ AIRTABLE_BASE_ID      = os.environ.get("AIRTABLE_BASE_ID_MAICOL", "appaDT7uwHnim
 AIRTABLE_TABLE        = "tbly67z1oY8EFQoFj"
 AIRTABLE_TABLE_CLIENTES = "tblonoyIMAM5kl2ue"
 AIRTABLE_TABLE_ACTIVOS  = os.environ.get("AIRTABLE_TABLE_ACTIVOS_MAICOL", "tblDgQFXLzvbhNiyX")
+AIRTABLE_TABLE_LOTES    = os.environ.get("AIRTABLE_TABLE_LOTES_MAICOL", "")
 NUMERO_BOT            = os.environ.get("NUMERO_BOT_MAICOL", "5493764815689")
 NUMERO_ASESOR         = os.environ.get("NUMERO_ASESOR_MAICOL", "+5493765384843")
 
@@ -1153,6 +1154,51 @@ async def crm_eliminar_activo(record_id: str):
     if r.status_code not in (200, 201):
         raise HTTPException(status_code=r.status_code, detail=r.text)
     return {"status": "ok"}
+
+
+@router.get("/crm/lotes")
+def crm_lotes():
+    """Lista todos los lotes desde Airtable tabla Lotes."""
+    if not AIRTABLE_TABLE_LOTES:
+        return {"records": [], "error": "Tabla Lotes no configurada aún"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LOTES}"
+    records = []
+    offset = None
+    while True:
+        params = {"pageSize": 100}
+        if offset:
+            params["offset"] = offset
+        r = requests.get(url, headers=AT_HEADERS, params=params, timeout=15)
+        data = r.json()
+        records.extend([{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])])
+        offset = data.get("offset")
+        if not offset:
+            break
+    return {"records": records}
+
+
+@router.post("/crm/lotes")
+async def crm_crear_lote(request: Request):
+    """Crea un lote nuevo en Airtable."""
+    if not AIRTABLE_TABLE_LOTES:
+        return {"error": "Tabla Lotes no configurada aún"}
+    body = await request.json()
+    fields = body.get("fields", body)
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LOTES}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    return r.json()
+
+
+@router.patch("/crm/lotes/{record_id}")
+async def crm_editar_lote(record_id: str, request: Request):
+    """Edita un lote (estado, cliente vinculado, superficie, precio)."""
+    if not AIRTABLE_TABLE_LOTES:
+        return {"error": "Tabla Lotes no configurada aún"}
+    body = await request.json()
+    fields = body.get("fields", body)
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LOTES}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    return r.json()
 
 
 @router.get("/config")

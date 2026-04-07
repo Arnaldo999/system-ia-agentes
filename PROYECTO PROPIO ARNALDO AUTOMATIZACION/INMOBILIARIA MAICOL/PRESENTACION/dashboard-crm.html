@@ -199,6 +199,25 @@
       .panel { @apply hidden; }
       .panel.active { @apply block animate-fadein; }
 
+      /* LOTEO CARDS */
+      .loteo-card { @apply bg-card rounded-2xl border border-brd overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer; }
+      .loteo-card-img { @apply relative h-[200px] bg-gray-100 overflow-hidden flex items-center justify-center; }
+      .loteo-card-img img { @apply w-full h-full object-cover; }
+      .loteo-card-img-placeholder { @apply text-6xl; }
+      .loteo-card-body { @apply px-6 py-5 flex flex-col flex-1; }
+      .loteo-card-title { @apply font-heading text-lg font-extrabold text-txt mb-1 leading-snug; }
+      .loteo-card-zona { @apply text-sm text-txt-muted mb-4 flex items-center gap-1.5; }
+      .loteo-stats-row { @apply flex gap-3 mt-auto pt-4 border-t border-brd; }
+      .loteo-stat { @apply flex-1 text-center; }
+      .loteo-stat-num { @apply font-heading text-[1.4rem] font-extrabold; }
+      .loteo-stat-lbl { @apply text-[0.7rem] font-bold uppercase tracking-wide text-txt-muted; }
+
+      /* MAPA SVG LOTES */
+      .lote-svg-group { cursor: pointer; transition: opacity .15s; }
+      .lote-svg-group:hover { opacity: .85; }
+      .lote-svg-rect { rx: 4; ry: 4; stroke: white; stroke-width: 1.5; }
+      .lote-svg-text { font-size: 9px; font-weight: 700; fill: white; text-anchor: middle; dominant-baseline: middle; pointer-events: none; font-family: Inter, sans-serif; }
+
       /* MISC */
       .loading-msg, .empty-msg { @apply text-center py-20 text-txt-muted font-medium; }
       .spinner { @apply inline-block w-7 h-7 border-[3px] border-brd border-t-primary rounded-full animate-spin align-middle mr-3; }
@@ -426,6 +445,7 @@
       <div class="nav-item tab" onclick="switchTab('pipeline', this)"><i>📊</i> Pipeline</div>
       <div class="nav-item tab" onclick="switchTab('clientes', this)"><i>👥</i> Leads</div>
       <div class="nav-item tab" onclick="switchTab('galeria', this)"><i>🖼️</i> Galería</div>
+      <div class="nav-item tab" onclick="switchTab('loteos', this)"><i>🗺️</i> Loteos</div>
     </nav>
     <div class="sidebar-footer">
       <div class="nav-item" onclick="loadAll()" id="btn-refresh"><i>↻</i> Sincronizar</div>
@@ -752,6 +772,65 @@
       <div id="galeria-loading" class="loading-msg"><span class="spinner"></span> Cargando galería...</div>
       <div id="galeria-grid" class="gallery-grid"></div>
       <div id="galeria-empty" class="empty-msg" style="display:none">Sin coincidencias. Ajustá los filtros.</div>
+    </div>
+
+    <!-- PANEL LOTEOS -->
+    <div id="panel-loteos" class="panel">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Gestión de Lotes</div>
+          <h1>Loteos <span class="text-txt-muted opacity-60">& Mapas</span></h1>
+        </div>
+        <button class="btn btn-outline" onclick="loadLotes()">↻ Actualizar</button>
+      </div>
+
+      <!-- Stats lotes -->
+      <div class="stats-grid mb-8" id="lotes-stats" style="display:none">
+        <div class="stat-card green"><div class="num" id="ls-disponibles">—</div><div class="lbl">✅ Disponibles</div></div>
+        <div class="stat-card yellow"><div class="num" id="ls-reservados">—</div><div class="lbl">⏳ Reservados</div></div>
+        <div class="stat-card red"><div class="num" id="ls-vendidos">—</div><div class="lbl">🔴 Vendidos</div></div>
+        <div class="stat-card blue"><div class="num" id="ls-total">—</div><div class="lbl">Total lotes</div></div>
+      </div>
+
+      <div id="loteos-loading" class="loading-msg"><span class="spinner"></span> Cargando loteos...</div>
+      <div id="loteos-sin-tabla" class="empty-msg" style="display:none">
+        <div class="text-4xl mb-4">🗺️</div>
+        <p class="font-semibold text-txt mb-2">Tabla de lotes no configurada aún</p>
+        <p class="text-sm text-txt-muted max-w-md mx-auto">Creá la tabla <strong>Lotes</strong> en Airtable con los campos indicados y avisale a tu equipo para configurar el ID.</p>
+      </div>
+      <!-- Cards de loteos -->
+      <div id="loteos-grid" class="grid gap-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); display:none"></div>
+    </div>
+
+    <!-- MODAL MAPA LOTEO -->
+    <div id="modal-mapa" class="modal-overlay">
+      <div class="modal" style="max-width:900px; padding:0; overflow:hidden;">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-brd bg-white sticky top-0 z-10">
+          <div>
+            <div class="text-xs text-txt-muted font-bold uppercase tracking-widest mb-0.5" id="mapa-subtitle">Mapa del loteo</div>
+            <h2 class="font-heading text-xl font-extrabold text-primary" id="mapa-title">—</h2>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-4 text-xs font-semibold">
+              <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#16a34a"></span> Disponible</span>
+              <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b"></span> Reservado</span>
+              <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444"></span> Vendido</span>
+            </div>
+            <button class="modal-close" style="position:relative;top:auto;right:auto;" onclick="closeModal('modal-mapa')">✕</button>
+          </div>
+        </div>
+        <div class="overflow-y-auto" style="max-height:80vh;">
+          <div id="mapa-container" class="p-6"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DETALLE LOTE -->
+    <div id="modal-lote" class="modal-overlay">
+      <div class="modal" style="max-width:480px;">
+        <button class="modal-close" onclick="closeModal('modal-lote')">✕</button>
+        <div id="lote-detalle-content"></div>
+      </div>
     </div>
 
   </main>
@@ -1468,6 +1547,7 @@ function switchTab(name, el) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'loteos' && allLotes.length === 0) loadLotes();
   // Cerrar sidebar en mobile al cambiar tab
   if (window.innerWidth < 1024) {
     const sidebar = document.getElementById('sidebar');
@@ -1556,6 +1636,343 @@ function guardarPerfil() {
   document.getElementById('profile-avatar-img').src = avatarUrl;
   closeModal('modal-perfil');
   showToast('Perfil actualizado ✓', 'success');
+}
+
+// ── LOTEOS ────────────────────────────────────────────────
+let allLotes = [];
+
+// Definición estática de los loteos conocidos
+const LOTEOS_CONFIG = [
+  {
+    id: 'san-ignacio',
+    nombre: 'San Ignacio Golf & Resort',
+    zona: 'San Ignacio',
+    descripcion: 'Club de campo con 163 lotes premium. Golf, naturaleza y exclusividad.',
+    imagen: 'https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png',
+    totalLotes: 163,
+    mapaKey: 'san_ignacio',
+    imagenFondo: null,
+  },
+  {
+    id: 'apostoles',
+    nombre: 'Loteo Altos de Apóstoles',
+    zona: 'Apóstoles',
+    descripcion: '325 terrenos sobre Av. Las Heras. Financiación hasta 120 cuotas.',
+    imagen: null,
+    totalLotes: 325,
+    mapaKey: 'apostoles',
+    imagenFondo: null,
+  },
+  {
+    id: 'alem',
+    nombre: 'Loteo Altos de Alem',
+    zona: 'Leandro N. Alem',
+    descripcion: '84 terrenos 12×30m sobre Av. Vélez Sarsfield. Últimos lotes disponibles.',
+    imagen: null,
+    totalLotes: 84,
+    mapaKey: 'alem',
+    imagenFondo: null,
+  },
+];
+
+async function loadLotes() {
+  document.getElementById('loteos-loading').style.display = 'block';
+  document.getElementById('loteos-grid').style.display = 'none';
+  document.getElementById('loteos-sin-tabla').style.display = 'none';
+  document.getElementById('lotes-stats').style.display = 'none';
+  try {
+    const r = await fetch(`${CRM}/lotes`);
+    const d = await r.json();
+    if (d.error && d.records && d.records.length === 0) {
+      // Tabla no configurada aún — mostrar cards de loteos igual pero sin datos de lotes
+      allLotes = [];
+    } else {
+      allLotes = d.records || [];
+    }
+    renderLoteos();
+  } catch(e) {
+    allLotes = [];
+    renderLoteos();
+  }
+  document.getElementById('loteos-loading').style.display = 'none';
+}
+
+function renderLoteos() {
+  const grid = document.getElementById('loteos-grid');
+  const statsDiv = document.getElementById('lotes-stats');
+
+  // Stats globales
+  const disp = allLotes.filter(l => (l.Estado_Lote || 'disponible') === 'disponible').length;
+  const res  = allLotes.filter(l => l.Estado_Lote === 'reservado').length;
+  const vend = allLotes.filter(l => l.Estado_Lote === 'vendido').length;
+
+  if (allLotes.length > 0) {
+    document.getElementById('ls-disponibles').textContent = disp;
+    document.getElementById('ls-reservados').textContent  = res;
+    document.getElementById('ls-vendidos').textContent    = vend;
+    document.getElementById('ls-total').textContent       = allLotes.length;
+    statsDiv.style.display = 'grid';
+  }
+
+  grid.innerHTML = LOTEOS_CONFIG.map(loteo => {
+    const lotesLoteo = allLotes.filter(l => l.Nombre_Loteo === loteo.nombre);
+    const lDisp = lotesLoteo.filter(l => !l.Estado_Lote || l.Estado_Lote === 'disponible').length;
+    const lRes  = lotesLoteo.filter(l => l.Estado_Lote === 'reservado').length;
+    const lVend = lotesLoteo.filter(l => l.Estado_Lote === 'vendido').length;
+    const totalCargados = lotesLoteo.length;
+    const totalLotes = loteo.totalLotes;
+    const pctVend = totalCargados > 0 ? Math.round((lVend / totalCargados) * 100) : 0;
+
+    const imgHtml = loteo.imagen
+      ? `<img src="${loteo.imagen}" alt="${loteo.nombre}" class="w-full h-full object-contain p-8 bg-primary/5" onerror="this.parentElement.innerHTML='<div class=\\'loteo-card-img-placeholder\\'>🌄</div>'">`
+      : `<div class="loteo-card-img-placeholder">🌄</div>`;
+
+    return `
+    <div class="loteo-card" onclick="abrirMapaLoteo('${loteo.mapaKey}')">
+      <div class="loteo-card-img">${imgHtml}</div>
+      <div class="loteo-card-body">
+        <div class="loteo-card-title">${loteo.nombre}</div>
+        <div class="loteo-card-zona">📍 ${loteo.zona}</div>
+        <p class="text-sm text-txt-muted mb-4 leading-relaxed">${loteo.descripcion}</p>
+        ${totalCargados > 0 ? `
+        <div class="mb-3">
+          <div class="flex justify-between text-xs text-txt-muted font-semibold mb-1.5">
+            <span>Lotes cargados: ${totalCargados} / ${totalLotes}</span>
+            <span class="text-red-500 font-bold">${pctVend}% vendido</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+            <div class="h-2 rounded-full" style="width:${Math.round((lDisp/totalCargados)*100)}%;background:#16a34a;display:inline-block"></div><div class="h-2 rounded-full" style="width:${Math.round((lRes/totalCargados)*100)}%;background:#f59e0b;display:inline-block"></div><div class="h-2 rounded-full" style="width:${Math.round((lVend/totalCargados)*100)}%;background:#ef4444;display:inline-block"></div>
+          </div>
+        </div>
+        <div class="loteo-stats-row">
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#16a34a">${lDisp}</div><div class="loteo-stat-lbl">Disponibles</div></div>
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#f59e0b">${lRes}</div><div class="loteo-stat-lbl">Reservados</div></div>
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#ef4444">${lVend}</div><div class="loteo-stat-lbl">Vendidos</div></div>
+        </div>` : `
+        <div class="mt-auto pt-4 border-t border-brd text-center">
+          <span class="text-sm text-txt-muted">Total: <strong>${totalLotes} lotes</strong></span>
+          <div class="mt-2 inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full font-semibold">⏳ Pendiente de cargar lotes</div>
+        </div>`}
+        <div class="mt-4 flex gap-2">
+          <button class="btn btn-primary btn-sm w-full" onclick="event.stopPropagation();abrirMapaLoteo('${loteo.mapaKey}')">🗺️ Ver mapa</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.style.display = 'grid';
+}
+
+// ── MAPA SVG ──────────────────────────────────────────────
+function abrirMapaLoteo(mapaKey) {
+  const config = LOTEOS_CONFIG.find(l => l.mapaKey === mapaKey);
+  if (!config) return;
+
+  document.getElementById('mapa-title').textContent = config.nombre;
+  document.getElementById('mapa-subtitle').textContent = `📍 ${config.zona}`;
+
+  const lotes = allLotes.filter(l => l.Nombre_Loteo === config.nombre);
+  const container = document.getElementById('mapa-container');
+
+  if (mapaKey === 'san_ignacio') {
+    container.innerHTML = generarMapaSanIgnacio(lotes);
+  } else {
+    container.innerHTML = generarMapaGrilla(lotes, config);
+  }
+
+  openModal('modal-mapa');
+}
+
+function colorLote(estado) {
+  if (estado === 'vendido')   return '#ef4444';
+  if (estado === 'reservado') return '#f59e0b';
+  return '#16a34a';
+}
+
+function generarMapaSanIgnacio(lotes) {
+  // Mapa del PDF: 163 lotes organizados en sectores
+  // Generamos una grilla SVG representativa fiel al master plan
+  const loteMap = {};
+  lotes.forEach(l => { if (l.Numero_Lote) loteMap[l.Numero_Lote] = l; });
+
+  // Sectores del master plan San Ignacio
+  const sectores = [
+    // Fila norte superior (lotes 13-21, 33-36, 42)
+    { inicio: 1,  cant: 5,  x: 10,  y: 10,  cols: 5, dir: 'h', etiqueta: 'Sector A' },
+    { inicio: 13, cant: 4,  x: 185, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 17, cant: 1,  x: 335, y: 10,  cols: 1, dir: 'h', etiqueta: '' },
+    { inicio: 18, cant: 4,  x: 385, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 22, cant: 10, x: 385, y: 55,  cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 33, cant: 4,  x: 620, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 37, cant: 12, x: 710, y: 10,  cols: 1, dir: 'v', etiqueta: '' },
+    // Columna derecha (lotes 42-87)
+    { inicio: 42, cant: 23, x: 760, y: 10,  cols: 1, dir: 'v', etiqueta: 'Sector B' },
+    { inicio: 65, cant: 23, x: 760, y: 420, cols: 1, dir: 'v-up', etiqueta: '' },
+    // Fila sur inferior (lotes 79-87)
+    { inicio: 79, cant: 9,  x: 110, y: 620, cols: 9, dir: 'h', etiqueta: '' },
+    { inicio: 70, cant: 9,  x: 435, y: 575, cols: 9, dir: 'h', etiqueta: '' },
+    // Columna izquierda (lotes 142-163)
+    { inicio: 142, cant: 22, x: 10, y: 440, cols: 1, dir: 'v-up', etiqueta: 'Sector C' },
+    // Sector central-izquierdo (lotes 88-141)
+    { inicio: 88, cant: 4,  x: 625, y: 370, cols: 4, dir: 'h', etiqueta: 'Sector D' },
+    { inicio: 92, cant: 10, x: 385, y: 310, cols: 5, dir: 'h', etiqueta: '' },
+    { inicio: 99, cant: 5,  x: 235, y: 220, cols: 5, dir: 'v', etiqueta: '' },
+    { inicio: 101, cant: 20, x: 160, y: 370, cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 121, cant: 20, x: 335, y: 460, cols: 5, dir: 'h', etiqueta: '' },
+    { inicio: 131, cant: 11, x: 560, y: 460, cols: 4, dir: 'h', etiqueta: '' },
+  ];
+
+  const W = 810, H = 680, LOTE_W = 36, LOTE_H = 30, GAP = 3;
+
+  let svgLotes = '';
+  let numero = 1;
+
+  // Generación simple: grilla de todos los lotes 1-163 ordenados en filas de 12
+  const COLS = 12;
+  const LW = 52, LH = 38, G = 4;
+  const filas = Math.ceil(163 / COLS);
+  const svgW = COLS * (LW + G) + 20;
+  const svgH = filas * (LH + G) + 20;
+
+  for (let n = 1; n <= 163; n++) {
+    const col = (n - 1) % COLS;
+    const fila = Math.floor((n - 1) / COLS);
+    const x = 10 + col * (LW + G);
+    const y = 10 + fila * (LH + G);
+    const lote = loteMap[n] || loteMap[String(n)];
+    const estado = lote ? (lote.Estado_Lote || 'disponible') : 'disponible';
+    const color = colorLote(estado);
+    const clienteNombre = (lote && lote.Estado_Lote === 'vendido' && lote.Cliente_Nombre)
+      ? lote.Cliente_Nombre.split(' ')[0]
+      : '';
+    const onClick = lote
+      ? `abrirDetalleLote(${JSON.stringify(JSON.stringify(lote))})`
+      : `abrirDetalleLoteNumero(${n}, '${estado}')`;
+
+    svgLotes += `
+      <g class="lote-svg-group" onclick="${onClick}" style="cursor:pointer">
+        <rect x="${x}" y="${y}" width="${LW}" height="${LH}" rx="4" ry="4" fill="${color}" stroke="white" stroke-width="1.5"/>
+        <text x="${x + LW/2}" y="${y + (clienteNombre ? LH/3 : LH/2)}" class="lote-svg-text" style="font-size:10px;font-weight:700;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
+        ${clienteNombre ? `<text x="${x + LW/2}" y="${y + LH*0.68}" style="font-size:7px;font-weight:600;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${clienteNombre}</text>` : ''}
+      </g>`;
+  }
+
+  // Leyenda y nota informativa si no hay lotes cargados
+  const sinDatos = lotes.length === 0;
+
+  return `
+    ${sinDatos ? `<div class="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-sm text-amber-700 font-semibold flex items-center gap-2">
+      ⚠️ Aún no hay lotes cargados en Airtable. El mapa muestra los 163 lotes como disponibles. Cargá los lotes para ver el estado real.
+    </div>` : `<div class="mb-4 bg-ok-bg border border-ok/20 rounded-xl px-5 py-3 text-sm text-ok font-semibold flex items-center gap-2">
+      ✅ ${lotes.length} lotes cargados — hacé clic en cualquier lote para ver el detalle.
+    </div>`}
+    <div style="overflow-x:auto;">
+      <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:500px;max-width:800px;display:block;margin:0 auto;border-radius:12px;background:#f8f9fa;">
+        ${svgLotes}
+      </svg>
+    </div>
+    <p class="text-xs text-txt-muted text-center mt-3 font-medium">San Ignacio Golf & Resort — 163 lotes · Hacé clic en un lote para ver detalle o actualizar estado</p>`;
+}
+
+function generarMapaGrilla(lotes, config) {
+  // Para otros loteos: grilla simple hasta tener su master plan
+  const loteMap = {};
+  lotes.forEach(l => { if (l.Numero_Lote) loteMap[l.Numero_Lote] = l; });
+
+  const total = config.totalLotes;
+  const COLS = 15;
+  const LW = 44, LH = 34, G = 3;
+  const filas = Math.ceil(total / COLS);
+  const svgW = COLS * (LW + G) + 20;
+  const svgH = filas * (LH + G) + 20;
+
+  let svgLotes = '';
+  for (let n = 1; n <= total; n++) {
+    const col = (n - 1) % COLS;
+    const fila = Math.floor((n - 1) / COLS);
+    const x = 10 + col * (LW + G);
+    const y = 10 + fila * (LH + G);
+    const lote = loteMap[n] || loteMap[String(n)];
+    const estado = lote ? (lote.Estado_Lote || 'disponible') : 'disponible';
+    const color = colorLote(estado);
+    const onClick = lote
+      ? `abrirDetalleLote(${JSON.stringify(JSON.stringify(lote))})`
+      : `abrirDetalleLoteNumero(${n}, '${estado}')`;
+    svgLotes += `
+      <g class="lote-svg-group" onclick="${onClick}" style="cursor:pointer">
+        <rect x="${x}" y="${y}" width="${LW}" height="${LH}" rx="3" ry="3" fill="${color}" stroke="white" stroke-width="1.5"/>
+        <text x="${x + LW/2}" y="${y + LH/2}" style="font-size:9px;font-weight:700;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
+      </g>`;
+  }
+
+  const sinDatos = lotes.length === 0;
+  return `
+    ${sinDatos ? `<div class="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-sm text-amber-700 font-semibold">⚠️ Sin lotes cargados aún. Cargá los lotes en Airtable para ver el estado real.</div>` : `<div class="mb-4 bg-ok-bg border border-ok/20 rounded-xl px-5 py-3 text-sm text-ok font-semibold">✅ ${lotes.length} lotes cargados.</div>`}
+    <div style="overflow-x:auto;">
+      <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:400px;display:block;margin:0 auto;border-radius:12px;background:#f8f9fa;">
+        ${svgLotes}
+      </svg>
+    </div>
+    <p class="text-xs text-txt-muted text-center mt-3">${config.nombre} — ${total} lotes</p>`;
+}
+
+function abrirDetalleLote(loteJson) {
+  const lote = JSON.parse(loteJson);
+  const estado = lote.Estado_Lote || 'disponible';
+  const colorMap = { disponible: '#16a34a', reservado: '#f59e0b', vendido: '#ef4444' };
+  const labelMap = { disponible: '✅ Disponible', reservado: '⏳ Reservado', vendido: '🔴 Vendido' };
+  const color = colorMap[estado] || '#16a34a';
+
+  document.getElementById('lote-detalle-content').innerHTML = `
+    <div class="flex items-center gap-3 mb-5">
+      <div style="width:48px;height:48px;border-radius:12px;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-heading;font-size:1.2rem;font-weight:800;flex-shrink:0">${lote.Numero_Lote || '—'}</div>
+      <div>
+        <div class="font-heading text-xl font-extrabold text-primary">Lote ${lote.Numero_Lote || '—'}</div>
+        <div class="text-sm text-txt-muted">${lote.Nombre_Loteo || '—'}</div>
+      </div>
+    </div>
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between py-2 border-b border-brd">
+        <span class="font-semibold text-txt-muted">Estado</span>
+        <span style="color:${color};font-weight:700">${labelMap[estado] || estado}</span>
+      </div>
+      ${lote.Superficie_m2 ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Superficie</span><span class="font-semibold">${lote.Superficie_m2} m²</span></div>` : ''}
+      ${lote.Precio_Cuota ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Cuota mensual</span><span class="font-semibold">$${Number(lote.Precio_Cuota).toLocaleString('es-AR')} ARS</span></div>` : ''}
+      ${lote.Cliente_Nombre ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Cliente</span><span class="font-semibold">${lote.Cliente_Nombre}</span></div>` : ''}
+      ${lote.Cliente_Telefono ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Teléfono</span><a href="https://wa.me/${lote.Cliente_Telefono.replace(/\D/g,'')}" target="_blank" class="font-semibold text-ok hover:underline">📞 ${lote.Cliente_Telefono}</a></div>` : ''}
+      ${lote.Notas ? `<div class="py-2 border-b border-brd"><span class="font-semibold text-txt-muted block mb-1">Notas</span><p class="text-txt italic">${lote.Notas}</p></div>` : ''}
+    </div>
+    <div class="modal-footer mt-6">
+      <button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button>
+    </div>`;
+  openModal('modal-lote');
+}
+
+function abrirDetalleLoteNumero(numero, estado) {
+  const colorMap = { disponible: '#16a34a', reservado: '#f59e0b', vendido: '#ef4444' };
+  const labelMap = { disponible: '✅ Disponible', reservado: '⏳ Reservado', vendido: '🔴 Vendido' };
+  const color = colorMap[estado] || '#16a34a';
+  document.getElementById('lote-detalle-content').innerHTML = `
+    <div class="flex items-center gap-3 mb-5">
+      <div style="width:48px;height:48px;border-radius:12px;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-size:1.2rem;font-weight:800;flex-shrink:0">${numero}</div>
+      <div>
+        <div class="font-heading text-xl font-extrabold text-primary">Lote ${numero}</div>
+        <div class="text-sm text-txt-muted">Sin datos cargados aún</div>
+      </div>
+    </div>
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between py-2 border-b border-brd">
+        <span class="font-semibold text-txt-muted">Estado</span>
+        <span style="color:${color};font-weight:700">${labelMap[estado] || estado}</span>
+      </div>
+    </div>
+    <div class="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+      <strong>Para cargar datos de este lote:</strong> agregá una fila en la tabla <em>Lotes</em> de Airtable con <strong>Numero_Lote = ${numero}</strong>.
+    </div>
+    <div class="modal-footer mt-6">
+      <button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button>
+    </div>`;
+  openModal('modal-lote');
 }
 
 // ── INIT ──────────────────────────────────────────────────

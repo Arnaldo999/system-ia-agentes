@@ -52,10 +52,6 @@
       .modal-overlay { @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] items-center justify-center p-5 opacity-0 transition-opacity duration-300; display: none; }
       .modal-overlay.open { display: flex; @apply opacity-100; }
       .modal { @apply bg-card rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-2xl; }
-      .modal-card { @apply bg-white rounded-2xl w-full max-h-[90vh] relative shadow-2xl flex flex-col; }
-      .modal-header { @apply px-8 pt-7 pb-4 relative border-b border-brd shrink-0; }
-      .modal-body { @apply px-8 py-5 overflow-y-auto flex-1; }
-      .section-label { @apply col-span-2 text-[11px] font-bold text-primary uppercase tracking-widest mt-3 mb-1 pb-1 border-b border-brd; }
       .modal-close { @apply absolute top-5 right-5 bg-gray-100 border-none w-8 h-8 rounded-full cursor-pointer flex items-center justify-center text-base text-gray-500 hover:bg-gray-200; }
       .modal-title { @apply font-heading text-xl font-extrabold mb-6 text-primary; }
       .form-group { @apply mb-4; }
@@ -203,6 +199,25 @@
       .panel { @apply hidden; }
       .panel.active { @apply block animate-fadein; }
 
+      /* LOTEO CARDS */
+      .loteo-card { @apply bg-card rounded-2xl border border-brd overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer; }
+      .loteo-card-img { @apply relative h-[200px] bg-gray-100 overflow-hidden flex items-center justify-center; }
+      .loteo-card-img img { @apply w-full h-full object-cover; }
+      .loteo-card-img-placeholder { @apply text-6xl; }
+      .loteo-card-body { @apply px-6 py-5 flex flex-col flex-1; }
+      .loteo-card-title { @apply font-heading text-lg font-extrabold text-txt mb-1 leading-snug; }
+      .loteo-card-zona { @apply text-sm text-txt-muted mb-4 flex items-center gap-1.5; }
+      .loteo-stats-row { @apply flex gap-3 mt-auto pt-4 border-t border-brd; }
+      .loteo-stat { @apply flex-1 text-center; }
+      .loteo-stat-num { @apply font-heading text-[1.4rem] font-extrabold; }
+      .loteo-stat-lbl { @apply text-[0.7rem] font-bold uppercase tracking-wide text-txt-muted; }
+
+      /* MAPA SVG LOTES */
+      .lote-svg-group { cursor: pointer; transition: opacity .15s; }
+      .lote-svg-group:hover { opacity: .85; }
+      .lote-svg-rect { rx: 4; ry: 4; stroke: white; stroke-width: 1.5; }
+      .lote-svg-text { font-size: 9px; font-weight: 700; fill: white; text-anchor: middle; dominant-baseline: middle; pointer-events: none; font-family: Inter, sans-serif; }
+
       /* MISC */
       .loading-msg, .empty-msg { @apply text-center py-20 text-txt-muted font-medium; }
       .spinner { @apply inline-block w-7 h-7 border-[3px] border-brd border-t-primary rounded-full animate-spin align-middle mr-3; }
@@ -252,7 +267,6 @@
           <option value="San Ignacio">San Ignacio</option>
           <option value="Gdor Roca">Gdor Roca</option>
           <option value="Apóstoles">Apóstoles</option>
-          <option value="Lote Urbano">Lote Urbano</option>
           <option value="Posadas">Posadas</option>
           <option value="Oberá">Oberá</option>
           <option value="Leandro N. Alem">Leandro N. Alem</option>
@@ -274,8 +288,8 @@
       <div class="form-group">
         <label>Operación</label>
         <select class="form-control" id="mp-operacion">
-          <option value="venta">Venta</option>
-          <option value="alquiler">Alquiler</option>
+          <option value="Venta">Venta</option>
+          <option value="Alquiler">Alquiler</option>
         </select>
       </div>
       <div class="form-group">
@@ -358,7 +372,7 @@
         <select class="form-control" id="ml-zona">
           <option value="">— Sin especificar —</option>
           <option>San Ignacio</option><option>Gdor Roca</option><option>Apóstoles</option>
-          <option>Lote Urbano</option><option>Posadas</option><option>Oberá</option>
+          <option>Posadas</option><option>Oberá</option>
         </select>
       </div>
       <div class="form-group">
@@ -430,8 +444,8 @@
       <div class="nav-item tab" onclick="switchTab('propiedades', this)"><i>🏠</i> Propiedades</div>
       <div class="nav-item tab" onclick="switchTab('pipeline', this)"><i>📊</i> Pipeline</div>
       <div class="nav-item tab" onclick="switchTab('clientes', this)"><i>👥</i> Leads</div>
-      <div class="nav-item tab" onclick="switchTab('activos', this)"><i>💼</i> Clientes Activos</div>
       <div class="nav-item tab" onclick="switchTab('galeria', this)"><i>🖼️</i> Galería</div>
+      <div class="nav-item tab" onclick="switchTab('loteos', this)"><i>🗺️</i> Loteos</div>
     </nav>
     <div class="sidebar-footer">
       <div class="nav-item" onclick="loadAll()" id="btn-refresh"><i>↻</i> Sincronizar</div>
@@ -590,7 +604,7 @@
           <select class="filter-chip" id="f-zona" onchange="renderProps()">
             <option value="">📍 Todas las zonas</option>
             <option>San Ignacio</option><option>Gdor Roca</option><option>Apóstoles</option>
-            <option>Lote Urbano</option><option>Posadas</option><option>Oberá</option>
+            <option>Posadas</option><option>Oberá</option>
           </select>
         </div>
         <div class="fc-wrap fc-op">
@@ -713,144 +727,6 @@
       <div id="leads-empty" class="empty-msg" style="display:none">No hay leads con esos filtros.</div>
     </div>
 
-    <!-- PANEL CLIENTES ACTIVOS -->
-    <div id="panel-activos" class="panel">
-      <div class="section-hero">
-        <div class="section-title">
-          <div class="subtitle">Administración</div>
-          <h1>Clientes Activos <span class="text-txt-muted opacity-60">& Cuotas</span></h1>
-        </div>
-        <button class="btn btn-primary" onclick="openModalNuevoActivo()">+ Nuevo Cliente</button>
-      </div>
-
-      <!-- KPIs -->
-      <div class="stats-grid mb-8" id="activos-stats">
-        <div class="stat-card green"><div class="num" id="sa-total">—</div><div class="lbl">💼 Total Clientes</div></div>
-        <div class="stat-card blue"><div class="num" id="sa-al-dia">—</div><div class="lbl">✅ Al Día</div></div>
-        <div class="stat-card yellow"><div class="num" id="sa-por-vencer">—</div><div class="lbl">⚠️ Vencen en 3 días</div></div>
-        <div class="stat-card red"><div class="num" id="sa-atrasados">—</div><div class="lbl">🔴 Atrasados</div></div>
-      </div>
-
-      <!-- Filtros -->
-      <div class="filters-bar mb-6">
-        <div class="fc-wrap">
-          <select class="filter-chip" id="fa-estado" onchange="renderActivos()">
-            <option value="">💼 Todos los estados</option>
-            <option value="Al día">✅ Al día</option>
-            <option value="Atrasado">🔴 Atrasado</option>
-            <option value="En mora">⛔ En mora</option>
-            <option value="Cancelado">🏁 Cancelado</option>
-          </select>
-        </div>
-        <div class="fc-wrap" style="flex:1;max-width:320px;">
-          <input type="text" class="filter-chip w-full" id="fa-buscar" placeholder="🔍 Buscar nombre, lote..." oninput="renderActivos()" />
-        </div>
-        <div style="margin-left:auto;font-size:0.82rem;color:var(--txt-muted,#6B7280)" id="fa-count"></div>
-      </div>
-
-      <!-- Tabla -->
-      <div class="overflow-x-auto rounded-2xl border border-brd bg-card shadow-sm">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-brd bg-gray-50 text-txt-muted uppercase text-[0.72rem] tracking-wider">
-              <th class="px-4 py-3 text-left">Cliente</th>
-              <th class="px-4 py-3 text-left">Lote / Loteo</th>
-              <th class="px-4 py-3 text-left">Cuotas</th>
-              <th class="px-4 py-3 text-left">Próx. Vencimiento</th>
-              <th class="px-4 py-3 text-left">Saldo</th>
-              <th class="px-4 py-3 text-left">Estado Pago</th>
-              <th class="px-4 py-3 text-left">Contrato</th>
-              <th class="px-4 py-3 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="activos-tbody"></tbody>
-        </table>
-        <div id="activos-empty" class="text-center py-14 text-txt-muted text-sm hidden">No hay clientes activos todavía.</div>
-      </div>
-    </div>
-
-    <!-- MODAL CLIENTE ACTIVO -->
-    <div class="modal-overlay" id="modal-activo">
-      <div class="modal" style="max-width:700px;">
-        <button class="modal-close" onclick="closeModal('modal-activo')">✕</button>
-        <div class="modal-title" id="modal-activo-title">Nuevo Cliente Activo</div>
-        <input type="hidden" id="ma-record-id" />
-
-          <!-- Datos personales -->
-          <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd">👤 Datos Personales</p>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="form-group mb-0"><label>Nombre *</label><input class="form-control" id="ma-nombre" placeholder="Nombre" /></div>
-            <div class="form-group mb-0"><label>Apellido</label><input class="form-control" id="ma-apellido" placeholder="Apellido" /></div>
-            <div class="form-group mb-0"><label>DNI / Cédula</label><input class="form-control" id="ma-dni" placeholder="30123456" /></div>
-            <div class="form-group mb-0"><label>Teléfono</label><input class="form-control" id="ma-telefono" placeholder="+54 9 376..." /></div>
-            <div class="form-group mb-0"><label>Email</label><input class="form-control" type="email" id="ma-email" placeholder="email@ejemplo.com" /></div>
-            <div class="form-group mb-0"><label>Ciudad</label><input class="form-control" id="ma-ciudad" placeholder="San Ignacio" /></div>
-          </div>
-
-          <!-- Propiedad -->
-          <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd mt-5">🏠 Propiedad Adquirida</p>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="form-group mb-0"><label>Número de Lote</label><input class="form-control" id="ma-numero-lote" placeholder="Lote 12, Manzana B" /></div>
-            <div class="form-group mb-0"><label>Nombre del Loteo</label><input class="form-control" id="ma-loteo" placeholder="Parque Residencial Norte" /></div>
-            <div class="form-group mb-0"><label>Superficie (m²)</label><input class="form-control" type="number" id="ma-superficie" placeholder="300" /></div>
-            <div class="form-group mb-0"><label>Precio Total ($)</label><input class="form-control" type="number" id="ma-precio-total" placeholder="5000000" /></div>
-            <div class="form-group mb-0 col-span-2"><label>Fecha de Compra</label><input class="form-control" type="date" id="ma-fecha-compra" style="max-width:220px;" /></div>
-          </div>
-
-          <!-- Cuotas -->
-          <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd mt-5">💰 Plan de Cuotas</p>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="form-group mb-0">
-              <label>Plan</label>
-              <select class="form-control" id="ma-plan-cuotas">
-                <option value="12 meses">12 meses</option>
-                <option value="18 meses">18 meses</option>
-                <option value="24 meses" selected>24 meses</option>
-                <option value="36 meses">36 meses</option>
-                <option value="48 meses">48 meses</option>
-                <option value="60 meses">60 meses</option>
-              </select>
-            </div>
-            <div class="form-group mb-0"><label>Total de Cuotas</label><input class="form-control" type="number" id="ma-cuotas-total" placeholder="24" /></div>
-            <div class="form-group mb-0"><label>Cuotas Pagadas</label><input class="form-control" type="number" id="ma-cuotas-pagadas" placeholder="0" /></div>
-            <div class="form-group mb-0"><label>Monto por Cuota ($)</label><input class="form-control" type="number" id="ma-monto-cuota" placeholder="50000" /></div>
-            <div class="form-group mb-0"><label>Próximo Vencimiento</label><input class="form-control" type="date" id="ma-proximo-vencimiento" /></div>
-            <div class="form-group mb-0">
-              <label>Estado de Pago</label>
-              <div class="form-control bg-gray-100 text-txt-muted text-sm flex items-center gap-2" style="cursor:default;">
-                🤖 Se calcula automáticamente según la fecha de vencimiento
-              </div>
-              <input type="hidden" id="ma-estado-pago" value="Al día" />
-            </div>
-          </div>
-
-          <!-- Contrato -->
-          <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-3 pb-1 border-b border-brd mt-5">📋 Contrato</p>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="form-group mb-0"><label>N° Contrato</label><input class="form-control" id="ma-numero-contrato" placeholder="BACK-2026-001" /></div>
-            <div class="form-group mb-0"><label>Fecha de Contrato</label><input class="form-control" type="date" id="ma-fecha-contrato" /></div>
-            <div class="form-group mb-0 col-span-2">
-              <label>Estado del Contrato</label>
-              <select class="form-control" id="ma-estado-contrato" style="max-width:260px;">
-                <option value="Pendiente">📋 Pendiente de firma</option>
-                <option value="Firmado">✅ Firmado</option>
-                <option value="Escriturado">🏠 Escriturado</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Notas -->
-          <div class="form-group mt-2">
-            <label>Notas</label>
-            <textarea class="form-control" id="ma-notas" rows="2" placeholder="Observaciones, acuerdos especiales..."></textarea>
-          </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline" onclick="closeModal('modal-activo')">Cancelar</button>
-          <button class="btn btn-primary" id="btn-guardar-activo" onclick="guardarActivo()">💾 Guardar</button>
-        </div>
-      </div>
-    </div>
-
     <!-- PANEL GALERÍA -->
     <div id="panel-galeria" class="panel">
       <div class="section-hero">
@@ -864,7 +740,7 @@
           <select class="filter-chip" id="g-zona" onchange="renderGaleria()">
             <option value="">📍 Todas las zonas</option>
             <option>San Ignacio</option><option>Gdor Roca</option><option>Apóstoles</option>
-            <option>Lote Urbano</option><option>Posadas</option><option>Oberá</option>
+            <option>Posadas</option><option>Oberá</option>
           </select>
         </div>
         <div class="fc-wrap fc-op">
@@ -898,6 +774,65 @@
       <div id="galeria-empty" class="empty-msg" style="display:none">Sin coincidencias. Ajustá los filtros.</div>
     </div>
 
+    <!-- PANEL LOTEOS -->
+    <div id="panel-loteos" class="panel">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Gestión de Lotes</div>
+          <h1>Loteos <span class="text-txt-muted opacity-60">& Mapas</span></h1>
+        </div>
+        <button class="btn btn-outline" onclick="loadLotes()">↻ Actualizar</button>
+      </div>
+
+      <!-- Stats lotes -->
+      <div class="stats-grid mb-8" id="lotes-stats" style="display:none">
+        <div class="stat-card green"><div class="num" id="ls-disponibles">—</div><div class="lbl">✅ Disponibles</div></div>
+        <div class="stat-card yellow"><div class="num" id="ls-reservados">—</div><div class="lbl">⏳ Reservados</div></div>
+        <div class="stat-card red"><div class="num" id="ls-vendidos">—</div><div class="lbl">🔴 Vendidos</div></div>
+        <div class="stat-card blue"><div class="num" id="ls-total">—</div><div class="lbl">Total lotes</div></div>
+      </div>
+
+      <div id="loteos-loading" class="loading-msg"><span class="spinner"></span> Cargando loteos...</div>
+      <div id="loteos-sin-tabla" class="empty-msg" style="display:none">
+        <div class="text-4xl mb-4">🗺️</div>
+        <p class="font-semibold text-txt mb-2">Tabla de lotes no configurada aún</p>
+        <p class="text-sm text-txt-muted max-w-md mx-auto">Creá la tabla <strong>Lotes</strong> en Airtable con los campos indicados y avisale a tu equipo para configurar el ID.</p>
+      </div>
+      <!-- Cards de loteos -->
+      <div id="loteos-grid" class="grid gap-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); display:none"></div>
+    </div>
+
+    <!-- MODAL MAPA LOTEO -->
+    <div id="modal-mapa" class="modal-overlay">
+      <div class="modal" style="max-width:900px; padding:0; overflow:hidden;">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-brd bg-white sticky top-0 z-10">
+          <div>
+            <div class="text-xs text-txt-muted font-bold uppercase tracking-widest mb-0.5" id="mapa-subtitle">Mapa del loteo</div>
+            <h2 class="font-heading text-xl font-extrabold text-primary" id="mapa-title">—</h2>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-4 text-xs font-semibold">
+              <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#16a34a"></span> Disponible</span>
+              <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b"></span> Reservado</span>
+              <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444"></span> Vendido</span>
+            </div>
+            <button class="modal-close" style="position:relative;top:auto;right:auto;" onclick="closeModal('modal-mapa')">✕</button>
+          </div>
+        </div>
+        <div class="overflow-y-auto" style="max-height:80vh;">
+          <div id="mapa-container" class="p-6"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DETALLE LOTE -->
+    <div id="modal-lote" class="modal-overlay">
+      <div class="modal" style="max-width:480px;">
+        <button class="modal-close" onclick="closeModal('modal-lote')">✕</button>
+        <div id="lote-detalle-content"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -905,9 +840,8 @@
 const API = 'https://agentes.arnaldoayalaestratega.cloud';
 const CRM = `${API}/clientes/arnaldo/maicol/crm`;
 
-let allProps   = [];
-let allLeads   = [];
-let allActivos = [];
+let allProps  = [];
+let allLeads  = [];
 
 // ── FETCH ─────────────────────────────────────────────────
 async function fetchProxy(endpoint) {
@@ -919,17 +853,12 @@ async function fetchProxy(endpoint) {
 
 async function patchProxy(endpoint, body) {
   const payload = body.fields ? body : { fields: body };
-  console.log('[PATCH]', endpoint, JSON.stringify(payload));
   const r = await fetch(`${CRM}${endpoint}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-  if (!r.ok) {
-    const errText = await r.text().catch(() => '');
-    console.error('[PATCH ERROR]', r.status, errText);
-    throw new Error(`HTTP ${r.status}: ${errText}`);
-  }
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 
@@ -943,25 +872,17 @@ async function postProxy(endpoint, body) {
   return r.json();
 }
 
-async function deleteProxy(endpoint) {
-  const r = await fetch(`${CRM}${endpoint}`, { method: 'DELETE' });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
 // ── LOAD ──────────────────────────────────────────────────
 async function loadAll() {
   document.getElementById('btn-refresh').classList.add('loading');
   document.getElementById('last-update').textContent = 'Actualizando...';
   try {
-    const [props, leads, activos] = await Promise.all([
+    const [props, leads] = await Promise.all([
       fetch(`${CRM}/propiedades`).then(r => r.json()).then(d => d.records || []),
       fetch(`${CRM}/clientes`).then(r => r.json()).then(d => d.records || []),
-      fetch(`${CRM}/activos`).then(r => r.json()).then(d => d.records || []),
     ]);
     allProps = props;
     allLeads = leads;
-    allActivos = activos;
     document.getElementById('f-estado-lead').value = '';
     document.getElementById('f-buscar-lead').value = '';
     renderStats();
@@ -969,7 +890,6 @@ async function loadAll() {
     renderLeads();
     renderKanban();
     renderGaleria();
-    renderActivos();
     const now = new Date().toLocaleString('es-AR');
     document.getElementById('last-update').textContent = `Última actualización: ${now}`;
   } catch(e) {
@@ -1164,7 +1084,7 @@ function openModalEditarProp(recordId) {
   document.getElementById('mp-moneda').value = p.Moneda || 'USD';
   setSelectVal('mp-zona', p.Zona || 'San Ignacio');
   setSelectVal('mp-tipo', p.Tipo || 'Lote residencial');
-  setSelectVal('mp-operacion', (p.Operacion||'').toLowerCase() || 'venta');
+  setSelectVal('mp-operacion', (p.Operacion||'').charAt(0).toUpperCase()+(p.Operacion||'').slice(1) || 'Venta');
   document.getElementById('mp-disponible').value = p.Disponible || '✅ Disponible';
   document.getElementById('mp-dormitorios').value = p.Dormitorios || '';
   document.getElementById('mp-metros').value = p.Metros_Cubiertos || '';
@@ -1176,12 +1096,7 @@ function openModalEditarProp(recordId) {
   } else if (typeof imgField === 'string') {
     imgUrl = imgField;
   }
-  // Si es URL interna de Airtable, no la ponemos en el input (no se puede re-subir)
-  // La imagen se muestra en el preview usando data-current pero el input queda vacío para nueva imagen
-  const esUrlInterna = imgUrl.includes('airtableusercontent.com');
-  const imgInput = document.getElementById('mp-imagen-url');
-  imgInput.value = esUrlInterna ? '' : imgUrl;
-  imgInput.dataset.currentImg = imgUrl; // guardar para preview
+  document.getElementById('mp-imagen-url').value = imgUrl;
   previewImg();
   document.getElementById('mp-maps-url').value = p.Google_Maps_URL || '';
   document.getElementById('mp-video-url').value = p.Video_URL || '';
@@ -1195,7 +1110,7 @@ function openModalNuevaPropiedad() {
   document.getElementById('mp-moneda').value = 'USD';
   document.getElementById('mp-zona').value = 'San Ignacio';
   document.getElementById('mp-tipo').value = 'Lote residencial';
-  document.getElementById('mp-operacion').value = 'venta';
+  document.getElementById('mp-operacion').value = 'Venta';
   document.getElementById('mp-disponible').value = '✅ Disponible';
   previewImg();
   document.getElementById('modal-prop').classList.add('open');
@@ -1209,8 +1124,7 @@ function setSelectVal(id, val) {
 }
 
 function previewImg() {
-  const input = document.getElementById('mp-imagen-url');
-  const url = input.value.trim() || input.dataset.currentImg || '';
+  const url = document.getElementById('mp-imagen-url').value.trim();
   const img = document.getElementById('mp-img-preview');
   img.style.display = url ? 'block' : 'none';
   if (url) img.src = url;
@@ -1269,11 +1183,7 @@ async function guardarPropiedad() {
   if (metros) fields.Metros_Cubiertos = metros;
 
   const imgUrl = document.getElementById('mp-imagen-url').value.trim();
-  // Solo enviar Imagen_URL si es una URL externa (Cloudinary, etc.)
-  // Las URLs internas de Airtable (v5.airtableusercontent.com) no se pueden re-subir
-  if (imgUrl && !imgUrl.includes('airtableusercontent.com')) {
-    fields.Imagen_URL = [{ url: imgUrl }];
-  }
+  if (imgUrl) fields.Imagen_URL = [{ url: imgUrl }];
 
   const mapsUrl = document.getElementById('mp-maps-url').value.trim();
   fields.Google_Maps_URL = mapsUrl || null;
@@ -1621,209 +1531,6 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   });
 });
 
-// ── CLIENTES ACTIVOS ──────────────────────────────────────
-function renderActivos() {
-  const tbody = document.getElementById('activos-tbody');
-  const empty = document.getElementById('activos-empty');
-  const estFiltro = document.getElementById('fa-estado').value;
-  const busqueda  = (document.getElementById('fa-buscar').value || '').toLowerCase();
-  const hoy = new Date(); hoy.setHours(0,0,0,0);
-  const en3dias = new Date(hoy); en3dias.setDate(hoy.getDate() + 3);
-
-  let lista = allActivos.filter(a => {
-    if (estFiltro && a.Estado_Pago !== estFiltro) return false;
-    if (busqueda) {
-      const haystack = `${a.Nombre||''} ${a.Apellido||''} ${a.Numero_Lote||''} ${a.Loteo||''} ${a.DNI||''}`.toLowerCase();
-      if (!haystack.includes(busqueda)) return false;
-    }
-    return true;
-  });
-
-  document.getElementById('fa-count').textContent = `${lista.length} cliente${lista.length !== 1 ? 's' : ''}`;
-
-  // KPIs
-  const total = allActivos.length;
-  const alDia = allActivos.filter(a => a.Estado_Pago === 'Al día').length;
-  const atrasados = allActivos.filter(a => ['Atrasado','En mora'].includes(a.Estado_Pago)).length;
-  const porVencer = allActivos.filter(a => {
-    if (!a.Proximo_Vencimiento) return false;
-    const fv = new Date(a.Proximo_Vencimiento + 'T00:00:00');
-    return fv >= hoy && fv <= en3dias && a.Estado_Pago === 'Al día';
-  }).length;
-  document.getElementById('sa-total').textContent = total;
-  document.getElementById('sa-al-dia').textContent = alDia;
-  document.getElementById('sa-por-vencer').textContent = porVencer;
-  document.getElementById('sa-atrasados').textContent = atrasados;
-
-  if (!lista.length) {
-    tbody.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
-  empty.classList.add('hidden');
-
-  const estadoBadge = {
-    'Al día':    '<span class="badge badge-ok">✅ Al día</span>',
-    'Atrasado':  '<span class="badge" style="background:#FEF3C7;color:#B45309;border:1px solid #FCD34D">🔴 Atrasado</span>',
-    'En mora':   '<span class="badge" style="background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5">⛔ En mora</span>',
-    'Cancelado': '<span class="badge" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD">🏁 Cancelado</span>',
-  };
-  const contratoBadge = {
-    'Pendiente':   '<span class="badge" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D">📋 Pendiente</span>',
-    'Firmado':     '<span class="badge badge-ok">✅ Firmado</span>',
-    'Escriturado': '<span class="badge" style="background:#DBEAFE;color:#1D4ED8;border:1px solid #93C5FD">🏠 Escriturado</span>',
-  };
-
-  tbody.innerHTML = lista.map(a => {
-    const nombre = `${a.Nombre||''} ${a.Apellido||''}`.trim() || '—';
-    const lote = [a.Numero_Lote, a.Loteo].filter(Boolean).join(' — ') || '—';
-    const cuotas = (a.Cuotas_Total && a.Cuotas_Pagadas !== undefined)
-      ? `${a.Cuotas_Pagadas}/${a.Cuotas_Total}`
-      : (a.Cuotas_Total ? `0/${a.Cuotas_Total}` : '—');
-    const saldo = a.Saldo_Pendiente != null
-      ? `$${Number(a.Saldo_Pendiente).toLocaleString('es-AR')}`
-      : (a.Cuotas_Total && a.Monto_Cuota && a.Cuotas_Pagadas != null
-          ? `$${((a.Cuotas_Total - a.Cuotas_Pagadas) * a.Monto_Cuota).toLocaleString('es-AR')}`
-          : '—');
-    const venc = a.Proximo_Vencimiento
-      ? new Date(a.Proximo_Vencimiento + 'T00:00:00').toLocaleDateString('es-AR')
-      : '—';
-    const fv = a.Proximo_Vencimiento ? new Date(a.Proximo_Vencimiento + 'T00:00:00') : null;
-    const alertaVenc = fv && fv >= hoy && fv <= en3dias ? ' style="background:#FFFBEB"' : (fv && fv < hoy ? ' style="background:#FFF1F2"' : '');
-    const estadoPago = estadoBadge[a.Estado_Pago] || `<span class="badge">${a.Estado_Pago||'—'}</span>`;
-    const contrato = contratoBadge[a.Estado_Contrato] || '—';
-    return `<tr class="border-b border-brd hover:bg-gray-50 transition-colors"${alertaVenc}>
-      <td class="px-4 py-3">
-        <div class="font-medium text-txt">${nombre}</div>
-        <div class="text-xs text-txt-muted">${a.Telefono||''} ${a.Email ? '· '+a.Email : ''}</div>
-      </td>
-      <td class="px-4 py-3 text-txt-muted">${lote}</td>
-      <td class="px-4 py-3 text-center font-mono">${cuotas}</td>
-      <td class="px-4 py-3 text-txt-muted">${venc}</td>
-      <td class="px-4 py-3 font-medium">${saldo}</td>
-      <td class="px-4 py-3">${estadoPago}</td>
-      <td class="px-4 py-3">${contrato}</td>
-      <td class="px-4 py-3 text-right">
-        <button class="btn btn-outline text-xs px-3 py-1.5 mr-1" onclick="editarActivo('${a.id}')">✏️ Editar</button>
-        <button class="btn text-xs px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" onclick="eliminarActivo('${a.id}', '${nombre.replace(/'/g,"\\'")}')">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function openModalNuevoActivo() {
-  document.getElementById('modal-activo-title').textContent = 'Nuevo Cliente Activo';
-  ['ma-record-id','ma-nombre','ma-apellido','ma-dni','ma-telefono','ma-email','ma-ciudad',
-   'ma-numero-lote','ma-loteo','ma-notas','ma-numero-contrato'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  ['ma-superficie','ma-precio-total','ma-cuotas-total','ma-cuotas-pagadas','ma-monto-cuota'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('ma-fecha-compra').value = '';
-  document.getElementById('ma-fecha-contrato').value = '';
-  document.getElementById('ma-proximo-vencimiento').value = '';
-  document.getElementById('ma-plan-cuotas').value = '24 meses';
-  document.getElementById('ma-estado-pago').value = 'Al día';
-  document.getElementById('ma-estado-contrato').value = 'Pendiente';
-  document.getElementById('modal-activo').classList.add('open');
-}
-
-function editarActivo(recordId) {
-  const a = allActivos.find(x => x.id === recordId);
-  if (!a) return;
-  document.getElementById('modal-activo-title').textContent = 'Editar Cliente Activo';
-  document.getElementById('ma-record-id').value = recordId;
-  document.getElementById('ma-nombre').value = a.Nombre || '';
-  document.getElementById('ma-apellido').value = a.Apellido || '';
-  document.getElementById('ma-dni').value = a.DNI || '';
-  document.getElementById('ma-telefono').value = a.Telefono || '';
-  document.getElementById('ma-email').value = a.Email || '';
-  document.getElementById('ma-ciudad').value = a.Ciudad || '';
-  document.getElementById('ma-numero-lote').value = a.Numero_Lote || '';
-  document.getElementById('ma-loteo').value = a.Loteo || '';
-  document.getElementById('ma-superficie').value = a.Superficie_m2 || '';
-  document.getElementById('ma-precio-total').value = a.Precio_Total || '';
-  document.getElementById('ma-fecha-compra').value = a.Fecha_Compra || '';
-  document.getElementById('ma-plan-cuotas').value = a.Plan_Cuotas || '24 meses';
-  document.getElementById('ma-cuotas-total').value = a.Cuotas_Total || '';
-  document.getElementById('ma-cuotas-pagadas').value = a.Cuotas_Pagadas ?? '';
-  document.getElementById('ma-monto-cuota').value = a.Monto_Cuota || '';
-  document.getElementById('ma-proximo-vencimiento').value = a.Proximo_Vencimiento || '';
-  document.getElementById('ma-estado-pago').value = a.Estado_Pago || 'Al día';
-  document.getElementById('ma-numero-contrato').value = a.Numero_Contrato || '';
-  document.getElementById('ma-fecha-contrato').value = a.Fecha_Contrato || '';
-  document.getElementById('ma-estado-contrato').value = a.Estado_Contrato || 'Pendiente';
-  document.getElementById('ma-notas').value = a.Notas || '';
-  document.getElementById('modal-activo').classList.add('open');
-}
-
-async function guardarActivo() {
-  const recordId = document.getElementById('ma-record-id').value;
-  const nombre = document.getElementById('ma-nombre').value.trim();
-  if (!nombre) { showToast('El nombre es obligatorio', 'error'); return; }
-
-  const btn = document.getElementById('btn-guardar-activo');
-  btn.classList.add('loading');
-  btn.textContent = 'Guardando...';
-
-  const num = v => { const n = parseFloat(v); return isNaN(n) ? undefined : n; };
-  const fields = {
-    Nombre:               nombre,
-    Apellido:             document.getElementById('ma-apellido').value.trim() || undefined,
-    DNI:                  document.getElementById('ma-dni').value.trim() || undefined,
-    Telefono:             document.getElementById('ma-telefono').value.trim() || undefined,
-    Email:                document.getElementById('ma-email').value.trim() || undefined,
-    Ciudad:               document.getElementById('ma-ciudad').value.trim() || undefined,
-    Numero_Lote:          document.getElementById('ma-numero-lote').value.trim() || undefined,
-    Loteo:                document.getElementById('ma-loteo').value.trim() || undefined,
-    Superficie_m2:        num(document.getElementById('ma-superficie').value),
-    Precio_Total:         num(document.getElementById('ma-precio-total').value),
-    Fecha_Compra:         document.getElementById('ma-fecha-compra').value || undefined,
-    Plan_Cuotas:          document.getElementById('ma-plan-cuotas').value,
-    Cuotas_Total:         num(document.getElementById('ma-cuotas-total').value),
-    Cuotas_Pagadas:       num(document.getElementById('ma-cuotas-pagadas').value),
-    Monto_Cuota:          num(document.getElementById('ma-monto-cuota').value),
-    Proximo_Vencimiento:  document.getElementById('ma-proximo-vencimiento').value || undefined,
-    Estado_Pago:          document.getElementById('ma-estado-pago').value,
-    Numero_Contrato:      document.getElementById('ma-numero-contrato').value.trim() || undefined,
-    Fecha_Contrato:       document.getElementById('ma-fecha-contrato').value || undefined,
-    Estado_Contrato:      document.getElementById('ma-estado-contrato').value,
-    Notas:                document.getElementById('ma-notas').value.trim() || undefined,
-    Alerta_3dias_enviada: false,
-  };
-  Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
-
-  try {
-    if (recordId) {
-      await patchProxy(`/activos/${recordId}`, fields);
-      showToast('Cliente actualizado correctamente');
-    } else {
-      await postProxy('/activos', { fields });
-      showToast('Cliente creado correctamente');
-    }
-    closeModal('modal-activo');
-    allActivos = await fetch(`${CRM}/activos`).then(r => r.json()).then(d => d.records || []);
-    renderActivos();
-  } catch(e) {
-    showToast('Error al guardar: ' + e.message, 'error');
-  }
-  btn.classList.remove('loading');
-  btn.textContent = '💾 Guardar';
-}
-
-async function eliminarActivo(recordId, nombre) {
-  if (!confirm(`¿Eliminar al cliente "${nombre}"? Esta acción no se puede deshacer.`)) return;
-  try {
-    await deleteProxy(`/activos/${recordId}`);
-    showToast('Cliente eliminado');
-    allActivos = allActivos.filter(a => a.id !== recordId);
-    renderActivos();
-  } catch(e) {
-    showToast('Error al eliminar: ' + e.message, 'error');
-  }
-}
-
 // ── TABS ──────────────────────────────────────────────────
 // ── SIDEBAR MOBILE ───────────────────────────────────────
 function toggleSidebar() {
@@ -1840,6 +1547,7 @@ function switchTab(name, el) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'loteos' && allLotes.length === 0) loadLotes();
   // Cerrar sidebar en mobile al cambiar tab
   if (window.innerWidth < 1024) {
     const sidebar = document.getElementById('sidebar');
@@ -1928,6 +1636,343 @@ function guardarPerfil() {
   document.getElementById('profile-avatar-img').src = avatarUrl;
   closeModal('modal-perfil');
   showToast('Perfil actualizado ✓', 'success');
+}
+
+// ── LOTEOS ────────────────────────────────────────────────
+let allLotes = [];
+
+// Definición estática de los loteos conocidos
+const LOTEOS_CONFIG = [
+  {
+    id: 'san-ignacio',
+    nombre: 'San Ignacio Golf & Resort',
+    zona: 'San Ignacio',
+    descripcion: 'Club de campo con 163 lotes premium. Golf, naturaleza y exclusividad.',
+    imagen: 'https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png',
+    totalLotes: 163,
+    mapaKey: 'san_ignacio',
+    imagenFondo: null,
+  },
+  {
+    id: 'apostoles',
+    nombre: 'Loteo Altos de Apóstoles',
+    zona: 'Apóstoles',
+    descripcion: '325 terrenos sobre Av. Las Heras. Financiación hasta 120 cuotas.',
+    imagen: null,
+    totalLotes: 325,
+    mapaKey: 'apostoles',
+    imagenFondo: null,
+  },
+  {
+    id: 'alem',
+    nombre: 'Loteo Altos de Alem',
+    zona: 'Leandro N. Alem',
+    descripcion: '84 terrenos 12×30m sobre Av. Vélez Sarsfield. Últimos lotes disponibles.',
+    imagen: null,
+    totalLotes: 84,
+    mapaKey: 'alem',
+    imagenFondo: null,
+  },
+];
+
+async function loadLotes() {
+  document.getElementById('loteos-loading').style.display = 'block';
+  document.getElementById('loteos-grid').style.display = 'none';
+  document.getElementById('loteos-sin-tabla').style.display = 'none';
+  document.getElementById('lotes-stats').style.display = 'none';
+  try {
+    const r = await fetch(`${CRM}/lotes`);
+    const d = await r.json();
+    if (d.error && d.records && d.records.length === 0) {
+      // Tabla no configurada aún — mostrar cards de loteos igual pero sin datos de lotes
+      allLotes = [];
+    } else {
+      allLotes = d.records || [];
+    }
+    renderLoteos();
+  } catch(e) {
+    allLotes = [];
+    renderLoteos();
+  }
+  document.getElementById('loteos-loading').style.display = 'none';
+}
+
+function renderLoteos() {
+  const grid = document.getElementById('loteos-grid');
+  const statsDiv = document.getElementById('lotes-stats');
+
+  // Stats globales
+  const disp = allLotes.filter(l => (l.Estado_Lote || 'disponible') === 'disponible').length;
+  const res  = allLotes.filter(l => l.Estado_Lote === 'reservado').length;
+  const vend = allLotes.filter(l => l.Estado_Lote === 'vendido').length;
+
+  if (allLotes.length > 0) {
+    document.getElementById('ls-disponibles').textContent = disp;
+    document.getElementById('ls-reservados').textContent  = res;
+    document.getElementById('ls-vendidos').textContent    = vend;
+    document.getElementById('ls-total').textContent       = allLotes.length;
+    statsDiv.style.display = 'grid';
+  }
+
+  grid.innerHTML = LOTEOS_CONFIG.map(loteo => {
+    const lotesLoteo = allLotes.filter(l => l.Nombre_Loteo === loteo.nombre);
+    const lDisp = lotesLoteo.filter(l => !l.Estado_Lote || l.Estado_Lote === 'disponible').length;
+    const lRes  = lotesLoteo.filter(l => l.Estado_Lote === 'reservado').length;
+    const lVend = lotesLoteo.filter(l => l.Estado_Lote === 'vendido').length;
+    const totalCargados = lotesLoteo.length;
+    const totalLotes = loteo.totalLotes;
+    const pctVend = totalCargados > 0 ? Math.round((lVend / totalCargados) * 100) : 0;
+
+    const imgHtml = loteo.imagen
+      ? `<img src="${loteo.imagen}" alt="${loteo.nombre}" class="w-full h-full object-contain p-8 bg-primary/5" onerror="this.parentElement.innerHTML='<div class=\\'loteo-card-img-placeholder\\'>🌄</div>'">`
+      : `<div class="loteo-card-img-placeholder">🌄</div>`;
+
+    return `
+    <div class="loteo-card" onclick="abrirMapaLoteo('${loteo.mapaKey}')">
+      <div class="loteo-card-img">${imgHtml}</div>
+      <div class="loteo-card-body">
+        <div class="loteo-card-title">${loteo.nombre}</div>
+        <div class="loteo-card-zona">📍 ${loteo.zona}</div>
+        <p class="text-sm text-txt-muted mb-4 leading-relaxed">${loteo.descripcion}</p>
+        ${totalCargados > 0 ? `
+        <div class="mb-3">
+          <div class="flex justify-between text-xs text-txt-muted font-semibold mb-1.5">
+            <span>Lotes cargados: ${totalCargados} / ${totalLotes}</span>
+            <span class="text-red-500 font-bold">${pctVend}% vendido</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+            <div class="h-2 rounded-full" style="width:${Math.round((lDisp/totalCargados)*100)}%;background:#16a34a;display:inline-block"></div><div class="h-2 rounded-full" style="width:${Math.round((lRes/totalCargados)*100)}%;background:#f59e0b;display:inline-block"></div><div class="h-2 rounded-full" style="width:${Math.round((lVend/totalCargados)*100)}%;background:#ef4444;display:inline-block"></div>
+          </div>
+        </div>
+        <div class="loteo-stats-row">
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#16a34a">${lDisp}</div><div class="loteo-stat-lbl">Disponibles</div></div>
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#f59e0b">${lRes}</div><div class="loteo-stat-lbl">Reservados</div></div>
+          <div class="loteo-stat"><div class="loteo-stat-num" style="color:#ef4444">${lVend}</div><div class="loteo-stat-lbl">Vendidos</div></div>
+        </div>` : `
+        <div class="mt-auto pt-4 border-t border-brd text-center">
+          <span class="text-sm text-txt-muted">Total: <strong>${totalLotes} lotes</strong></span>
+          <div class="mt-2 inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full font-semibold">⏳ Pendiente de cargar lotes</div>
+        </div>`}
+        <div class="mt-4 flex gap-2">
+          <button class="btn btn-primary btn-sm w-full" onclick="event.stopPropagation();abrirMapaLoteo('${loteo.mapaKey}')">🗺️ Ver mapa</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.style.display = 'grid';
+}
+
+// ── MAPA SVG ──────────────────────────────────────────────
+function abrirMapaLoteo(mapaKey) {
+  const config = LOTEOS_CONFIG.find(l => l.mapaKey === mapaKey);
+  if (!config) return;
+
+  document.getElementById('mapa-title').textContent = config.nombre;
+  document.getElementById('mapa-subtitle').textContent = `📍 ${config.zona}`;
+
+  const lotes = allLotes.filter(l => l.Nombre_Loteo === config.nombre);
+  const container = document.getElementById('mapa-container');
+
+  if (mapaKey === 'san_ignacio') {
+    container.innerHTML = generarMapaSanIgnacio(lotes);
+  } else {
+    container.innerHTML = generarMapaGrilla(lotes, config);
+  }
+
+  openModal('modal-mapa');
+}
+
+function colorLote(estado) {
+  if (estado === 'vendido')   return '#ef4444';
+  if (estado === 'reservado') return '#f59e0b';
+  return '#16a34a';
+}
+
+function generarMapaSanIgnacio(lotes) {
+  // Mapa del PDF: 163 lotes organizados en sectores
+  // Generamos una grilla SVG representativa fiel al master plan
+  const loteMap = {};
+  lotes.forEach(l => { if (l.Numero_Lote) loteMap[l.Numero_Lote] = l; });
+
+  // Sectores del master plan San Ignacio
+  const sectores = [
+    // Fila norte superior (lotes 13-21, 33-36, 42)
+    { inicio: 1,  cant: 5,  x: 10,  y: 10,  cols: 5, dir: 'h', etiqueta: 'Sector A' },
+    { inicio: 13, cant: 4,  x: 185, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 17, cant: 1,  x: 335, y: 10,  cols: 1, dir: 'h', etiqueta: '' },
+    { inicio: 18, cant: 4,  x: 385, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 22, cant: 10, x: 385, y: 55,  cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 33, cant: 4,  x: 620, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 37, cant: 12, x: 710, y: 10,  cols: 1, dir: 'v', etiqueta: '' },
+    // Columna derecha (lotes 42-87)
+    { inicio: 42, cant: 23, x: 760, y: 10,  cols: 1, dir: 'v', etiqueta: 'Sector B' },
+    { inicio: 65, cant: 23, x: 760, y: 420, cols: 1, dir: 'v-up', etiqueta: '' },
+    // Fila sur inferior (lotes 79-87)
+    { inicio: 79, cant: 9,  x: 110, y: 620, cols: 9, dir: 'h', etiqueta: '' },
+    { inicio: 70, cant: 9,  x: 435, y: 575, cols: 9, dir: 'h', etiqueta: '' },
+    // Columna izquierda (lotes 142-163)
+    { inicio: 142, cant: 22, x: 10, y: 440, cols: 1, dir: 'v-up', etiqueta: 'Sector C' },
+    // Sector central-izquierdo (lotes 88-141)
+    { inicio: 88, cant: 4,  x: 625, y: 370, cols: 4, dir: 'h', etiqueta: 'Sector D' },
+    { inicio: 92, cant: 10, x: 385, y: 310, cols: 5, dir: 'h', etiqueta: '' },
+    { inicio: 99, cant: 5,  x: 235, y: 220, cols: 5, dir: 'v', etiqueta: '' },
+    { inicio: 101, cant: 20, x: 160, y: 370, cols: 4, dir: 'h', etiqueta: '' },
+    { inicio: 121, cant: 20, x: 335, y: 460, cols: 5, dir: 'h', etiqueta: '' },
+    { inicio: 131, cant: 11, x: 560, y: 460, cols: 4, dir: 'h', etiqueta: '' },
+  ];
+
+  const W = 810, H = 680, LOTE_W = 36, LOTE_H = 30, GAP = 3;
+
+  let svgLotes = '';
+  let numero = 1;
+
+  // Generación simple: grilla de todos los lotes 1-163 ordenados en filas de 12
+  const COLS = 12;
+  const LW = 52, LH = 38, G = 4;
+  const filas = Math.ceil(163 / COLS);
+  const svgW = COLS * (LW + G) + 20;
+  const svgH = filas * (LH + G) + 20;
+
+  for (let n = 1; n <= 163; n++) {
+    const col = (n - 1) % COLS;
+    const fila = Math.floor((n - 1) / COLS);
+    const x = 10 + col * (LW + G);
+    const y = 10 + fila * (LH + G);
+    const lote = loteMap[n] || loteMap[String(n)];
+    const estado = lote ? (lote.Estado_Lote || 'disponible') : 'disponible';
+    const color = colorLote(estado);
+    const clienteNombre = (lote && lote.Estado_Lote === 'vendido' && lote.Cliente_Nombre)
+      ? lote.Cliente_Nombre.split(' ')[0]
+      : '';
+    const onClick = lote
+      ? `abrirDetalleLote(${JSON.stringify(JSON.stringify(lote))})`
+      : `abrirDetalleLoteNumero(${n}, '${estado}')`;
+
+    svgLotes += `
+      <g class="lote-svg-group" onclick="${onClick}" style="cursor:pointer">
+        <rect x="${x}" y="${y}" width="${LW}" height="${LH}" rx="4" ry="4" fill="${color}" stroke="white" stroke-width="1.5"/>
+        <text x="${x + LW/2}" y="${y + (clienteNombre ? LH/3 : LH/2)}" class="lote-svg-text" style="font-size:10px;font-weight:700;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
+        ${clienteNombre ? `<text x="${x + LW/2}" y="${y + LH*0.68}" style="font-size:7px;font-weight:600;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${clienteNombre}</text>` : ''}
+      </g>`;
+  }
+
+  // Leyenda y nota informativa si no hay lotes cargados
+  const sinDatos = lotes.length === 0;
+
+  return `
+    ${sinDatos ? `<div class="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-sm text-amber-700 font-semibold flex items-center gap-2">
+      ⚠️ Aún no hay lotes cargados en Airtable. El mapa muestra los 163 lotes como disponibles. Cargá los lotes para ver el estado real.
+    </div>` : `<div class="mb-4 bg-ok-bg border border-ok/20 rounded-xl px-5 py-3 text-sm text-ok font-semibold flex items-center gap-2">
+      ✅ ${lotes.length} lotes cargados — hacé clic en cualquier lote para ver el detalle.
+    </div>`}
+    <div style="overflow-x:auto;">
+      <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:500px;max-width:800px;display:block;margin:0 auto;border-radius:12px;background:#f8f9fa;">
+        ${svgLotes}
+      </svg>
+    </div>
+    <p class="text-xs text-txt-muted text-center mt-3 font-medium">San Ignacio Golf & Resort — 163 lotes · Hacé clic en un lote para ver detalle o actualizar estado</p>`;
+}
+
+function generarMapaGrilla(lotes, config) {
+  // Para otros loteos: grilla simple hasta tener su master plan
+  const loteMap = {};
+  lotes.forEach(l => { if (l.Numero_Lote) loteMap[l.Numero_Lote] = l; });
+
+  const total = config.totalLotes;
+  const COLS = 15;
+  const LW = 44, LH = 34, G = 3;
+  const filas = Math.ceil(total / COLS);
+  const svgW = COLS * (LW + G) + 20;
+  const svgH = filas * (LH + G) + 20;
+
+  let svgLotes = '';
+  for (let n = 1; n <= total; n++) {
+    const col = (n - 1) % COLS;
+    const fila = Math.floor((n - 1) / COLS);
+    const x = 10 + col * (LW + G);
+    const y = 10 + fila * (LH + G);
+    const lote = loteMap[n] || loteMap[String(n)];
+    const estado = lote ? (lote.Estado_Lote || 'disponible') : 'disponible';
+    const color = colorLote(estado);
+    const onClick = lote
+      ? `abrirDetalleLote(${JSON.stringify(JSON.stringify(lote))})`
+      : `abrirDetalleLoteNumero(${n}, '${estado}')`;
+    svgLotes += `
+      <g class="lote-svg-group" onclick="${onClick}" style="cursor:pointer">
+        <rect x="${x}" y="${y}" width="${LW}" height="${LH}" rx="3" ry="3" fill="${color}" stroke="white" stroke-width="1.5"/>
+        <text x="${x + LW/2}" y="${y + LH/2}" style="font-size:9px;font-weight:700;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
+      </g>`;
+  }
+
+  const sinDatos = lotes.length === 0;
+  return `
+    ${sinDatos ? `<div class="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-sm text-amber-700 font-semibold">⚠️ Sin lotes cargados aún. Cargá los lotes en Airtable para ver el estado real.</div>` : `<div class="mb-4 bg-ok-bg border border-ok/20 rounded-xl px-5 py-3 text-sm text-ok font-semibold">✅ ${lotes.length} lotes cargados.</div>`}
+    <div style="overflow-x:auto;">
+      <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:400px;display:block;margin:0 auto;border-radius:12px;background:#f8f9fa;">
+        ${svgLotes}
+      </svg>
+    </div>
+    <p class="text-xs text-txt-muted text-center mt-3">${config.nombre} — ${total} lotes</p>`;
+}
+
+function abrirDetalleLote(loteJson) {
+  const lote = JSON.parse(loteJson);
+  const estado = lote.Estado_Lote || 'disponible';
+  const colorMap = { disponible: '#16a34a', reservado: '#f59e0b', vendido: '#ef4444' };
+  const labelMap = { disponible: '✅ Disponible', reservado: '⏳ Reservado', vendido: '🔴 Vendido' };
+  const color = colorMap[estado] || '#16a34a';
+
+  document.getElementById('lote-detalle-content').innerHTML = `
+    <div class="flex items-center gap-3 mb-5">
+      <div style="width:48px;height:48px;border-radius:12px;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-heading;font-size:1.2rem;font-weight:800;flex-shrink:0">${lote.Numero_Lote || '—'}</div>
+      <div>
+        <div class="font-heading text-xl font-extrabold text-primary">Lote ${lote.Numero_Lote || '—'}</div>
+        <div class="text-sm text-txt-muted">${lote.Nombre_Loteo || '—'}</div>
+      </div>
+    </div>
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between py-2 border-b border-brd">
+        <span class="font-semibold text-txt-muted">Estado</span>
+        <span style="color:${color};font-weight:700">${labelMap[estado] || estado}</span>
+      </div>
+      ${lote.Superficie_m2 ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Superficie</span><span class="font-semibold">${lote.Superficie_m2} m²</span></div>` : ''}
+      ${lote.Precio_Cuota ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Cuota mensual</span><span class="font-semibold">$${Number(lote.Precio_Cuota).toLocaleString('es-AR')} ARS</span></div>` : ''}
+      ${lote.Cliente_Nombre ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Cliente</span><span class="font-semibold">${lote.Cliente_Nombre}</span></div>` : ''}
+      ${lote.Cliente_Telefono ? `<div class="flex justify-between py-2 border-b border-brd"><span class="font-semibold text-txt-muted">Teléfono</span><a href="https://wa.me/${lote.Cliente_Telefono.replace(/\D/g,'')}" target="_blank" class="font-semibold text-ok hover:underline">📞 ${lote.Cliente_Telefono}</a></div>` : ''}
+      ${lote.Notas ? `<div class="py-2 border-b border-brd"><span class="font-semibold text-txt-muted block mb-1">Notas</span><p class="text-txt italic">${lote.Notas}</p></div>` : ''}
+    </div>
+    <div class="modal-footer mt-6">
+      <button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button>
+    </div>`;
+  openModal('modal-lote');
+}
+
+function abrirDetalleLoteNumero(numero, estado) {
+  const colorMap = { disponible: '#16a34a', reservado: '#f59e0b', vendido: '#ef4444' };
+  const labelMap = { disponible: '✅ Disponible', reservado: '⏳ Reservado', vendido: '🔴 Vendido' };
+  const color = colorMap[estado] || '#16a34a';
+  document.getElementById('lote-detalle-content').innerHTML = `
+    <div class="flex items-center gap-3 mb-5">
+      <div style="width:48px;height:48px;border-radius:12px;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-size:1.2rem;font-weight:800;flex-shrink:0">${numero}</div>
+      <div>
+        <div class="font-heading text-xl font-extrabold text-primary">Lote ${numero}</div>
+        <div class="text-sm text-txt-muted">Sin datos cargados aún</div>
+      </div>
+    </div>
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between py-2 border-b border-brd">
+        <span class="font-semibold text-txt-muted">Estado</span>
+        <span style="color:${color};font-weight:700">${labelMap[estado] || estado}</span>
+      </div>
+    </div>
+    <div class="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+      <strong>Para cargar datos de este lote:</strong> agregá una fila en la tabla <em>Lotes</em> de Airtable con <strong>Numero_Lote = ${numero}</strong>.
+    </div>
+    <div class="modal-footer mt-6">
+      <button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button>
+    </div>`;
+  openModal('modal-lote');
 }
 
 // ── INIT ──────────────────────────────────────────────────
