@@ -1676,40 +1676,75 @@ const LOTEOS_CONFIG = [
 ];
 
 // Coordenadas de cada lote sobre el master plan (% del área útil del mapa)
+// Coordenadas absolutas [x, y] en pixels de la imagen PNG (1241×1754)
+// Mapeadas visualmente sobre el master plan San Ignacio Golf & Resort
+// El viewBox recorta a la zona del mapa [30,25 → 1210,1580]
+// Así cx = px_x - 30, cy = px_y - 25
 const LOTES_COORDS = {
-  1:[4.5,13.5],2:[4.5,11.5],3:[4.5,9.5],4:[7.5,9.0],5:[9.5,9.0],
-  6:[10.5,11.0],7:[11.5,13.5],8:[13.0,15.5],9:[15.5,17.5],10:[17.5,17.5],
-  11:[19.5,17.5],12:[21.5,17.5],13:[19.0,8.0],14:[22.0,8.0],15:[25.0,8.0],
-  16:[28.0,8.0],17:[31.0,10.0],18:[37.0,8.0],19:[40.0,8.0],20:[43.0,8.0],
-  21:[46.0,8.0],22:[43.0,13.0],23:[40.0,16.0],24:[40.0,11.5],25:[37.0,19.5],
-  26:[38.5,22.5],27:[40.5,23.5],28:[43.5,22.0],29:[46.0,20.5],30:[44.5,17.0],
-  31:[47.5,13.5],32:[49.5,11.0],33:[55.5,8.0],34:[58.5,8.0],35:[61.5,8.0],
-  36:[64.5,8.0],37:[66.5,10.0],38:[68.0,12.5],39:[69.5,15.0],40:[71.0,17.5],
-  41:[72.5,20.0],42:[74.0,8.0],43:[77.0,8.0],44:[77.0,11.0],45:[77.0,14.0],
-  46:[77.0,17.0],47:[77.0,20.0],48:[77.0,23.0],49:[77.0,26.0],50:[77.0,29.0],
-  51:[77.0,32.0],52:[77.0,35.0],53:[77.0,38.0],54:[77.0,41.0],55:[77.0,44.0],
-  56:[77.0,47.0],57:[77.0,50.0],58:[77.0,53.0],59:[77.0,56.0],60:[77.0,59.0],
-  61:[77.0,62.0],62:[77.0,65.0],63:[77.0,68.0],64:[77.0,71.0],65:[77.0,74.0],
-  66:[74.0,76.5],67:[71.0,76.5],68:[68.0,76.5],69:[65.0,74.5],70:[62.0,72.0],
-  71:[59.5,72.0],72:[57.0,72.0],73:[54.5,72.0],74:[52.0,72.0],75:[49.5,72.0],
-  76:[47.0,72.0],77:[44.5,72.0],78:[42.0,72.0],79:[22.5,77.0],80:[25.5,77.0],
-  81:[28.5,77.0],82:[31.5,77.0],83:[34.5,77.0],84:[37.5,77.0],85:[40.5,77.0],
-  86:[43.5,77.0],87:[46.5,77.0],88:[67.0,39.5],89:[64.0,39.5],90:[61.0,40.5],
-  91:[58.5,40.0],92:[56.0,37.0],93:[57.5,33.5],94:[54.5,32.5],95:[51.5,33.0],
-  96:[37.0,31.5],97:[37.5,28.5],98:[39.5,26.5],99:[34.5,25.0],100:[31.5,30.0],
-  101:[22.0,38.0],102:[24.5,36.5],103:[27.5,35.0],104:[30.0,35.5],105:[29.5,38.5],
-  106:[26.5,40.5],107:[24.5,42.0],108:[22.5,44.5],109:[20.5,47.0],110:[20.5,50.5],
-  111:[20.5,54.0],112:[24.5,57.5],113:[24.5,54.5],114:[24.5,51.5],115:[27.5,47.0],
-  116:[30.0,43.5],117:[31.5,47.0],118:[29.0,51.0],119:[28.5,55.0],120:[27.5,59.0],
-  121:[34.0,62.5],122:[34.5,59.0],123:[35.5,55.5],124:[36.5,50.0],125:[38.5,53.5],
-  126:[39.5,57.0],127:[41.0,60.0],128:[43.5,61.5],129:[45.5,63.5],130:[47.0,67.0],
-  131:[53.5,62.5],132:[52.0,58.5],133:[54.5,56.5],134:[55.5,53.5],135:[51.0,51.5],
-  136:[48.5,46.5],137:[56.0,47.0],138:[59.5,48.0],139:[62.5,48.0],140:[65.0,50.0],
-  141:[67.5,53.0],142:[10.5,73.5],143:[10.5,70.5],144:[10.5,67.5],145:[10.5,64.5],
-  146:[10.5,61.5],147:[10.5,58.5],148:[10.5,55.5],149:[10.5,52.5],150:[10.5,49.5],
-  151:[13.0,47.0],152:[13.0,44.0],153:[15.0,42.0],154:[15.0,39.0],155:[15.0,36.0],
-  156:[13.5,33.0],157:[13.5,30.0],158:[6.5,33.0],159:[6.5,36.0],160:[6.5,39.0],
-  161:[6.5,42.0],162:[6.5,45.0],163:[6.5,48.0],
+  // ── Fila superior izquierda: lotes 1-5 (columna vertical, borde izq) ──
+  1:[68,205], 2:[68,172], 3:[68,130], 4:[105,120], 5:[143,113],
+  // ── Lotes 6-12 (diagonal desde 6 hacia abajo-derecha) ──
+  6:[170,150], 7:[195,200], 8:[222,245], 9:[255,275], 10:[290,278],
+  11:[325,277], 12:[360,277],
+  // ── Lotes 13-17 (fila superior, bloque central-izq) ──
+  13:[305,108], 14:[340,108], 15:[382,108], 16:[420,108], 17:[462,138],
+  // ── Lotes 18-21 (fila superior, bloque central) ──
+  18:[555,108], 19:[590,108], 20:[630,108], 21:[670,108],
+  // ── Lotes 22-32 (zona del semicírculo/cul-de-sac central) ──
+  22:[618,190], 23:[586,232], 24:[586,155], 25:[555,268], 26:[568,315],
+  27:[598,350], 28:[632,320], 29:[655,280], 30:[648,222], 31:[688,180],
+  32:[725,150],
+  // ── Lotes 33-36 (fila superior derecha) ──
+  33:[790,108], 34:[830,108], 35:[870,108], 36:[920,108],
+  // ── Lotes 37-41 (diagonal bajando por la derecha) ──
+  37:[960,150], 38:[988,195], 39:[1010,240], 40:[1028,290], 41:[1048,340],
+  // ── Lotes 42-65 (columna vertical borde derecho) ──
+  42:[1090,108], 43:[1140,108],
+  44:[1140,148], 45:[1140,188], 46:[1140,228], 47:[1140,268],
+  48:[1140,308], 49:[1140,348], 50:[1140,388], 51:[1140,428],
+  52:[1140,468], 53:[1140,508], 54:[1140,548], 55:[1098,588],
+  56:[1140,628], 57:[1140,668], 58:[1140,708], 59:[1140,748],
+  60:[1140,788], 61:[1140,828], 62:[1140,868], 63:[1140,908],
+  64:[1140,948], 65:[1140,992],
+  // ── Lotes 66-69 (esquina inferior derecha) ──
+  66:[1095,1020], 67:[1048,1020], 68:[1000,1020], 69:[952,1000],
+  // ── Lotes 70-78 (fila inferior, zona derecha-central) ──
+  70:[905,960], 71:[862,960], 72:[818,960], 73:[775,960],
+  74:[730,960], 75:[688,960], 76:[648,960], 77:[608,960], 78:[568,960],
+  // ── Lotes 79-87 (fila inferior, zona central-izq) ──
+  79:[330,1025], 80:[370,1025], 81:[410,1025], 82:[452,1025],
+  83:[495,1025], 84:[538,1025], 85:[578,1025], 86:[618,1025], 87:[660,1025],
+  // ── Lotes 88-95 (interior central-derecha, cerca lagos) ──
+  88:[988,545], 89:[952,545], 90:[905,568], 91:[862,555],
+  92:[818,510], 93:[840,452], 94:[795,430], 95:[752,448],
+  // ── Lotes 96-100 (interior centro) ──
+  96:[538,440], 97:[548,390], 98:[572,350], 99:[502,338], 100:[472,410],
+  // ── Lotes 101-111 (interior izq, zona del campo de golf) ──
+  101:[330,520], 102:[365,498], 103:[405,480], 104:[445,492],
+  105:[435,540], 106:[390,560], 107:[362,590], 108:[332,630],
+  109:[302,670], 110:[302,725], 111:[302,785],
+  // ── Lotes 112-120 (interior izq-centro, bajando) ──
+  112:[355,830], 113:[355,790], 114:[355,740], 115:[398,665],
+  116:[440,608], 117:[465,665], 118:[420,720], 119:[415,765],
+  120:[398,825],
+  // ── Lotes 121-130 (interior centro-sur) ──
+  121:[490,855], 122:[502,810], 123:[515,760], 124:[528,690],
+  125:[565,740], 126:[578,800], 127:[600,840], 128:[645,860],
+  129:[685,890], 130:[705,935],
+  // ── Lotes 131-141 (interior derecha-sur) ──
+  131:[795,865], 132:[770,815], 133:[802,780], 134:[822,730],
+  135:[770,710], 136:[720,645], 137:[842,650], 138:[898,668],
+  139:[945,672], 140:[985,712], 141:[1028,758],
+  // ── Lotes 142-150 (borde izquierdo, columna inferior) ──
+  142:[152,1010], 143:[152,970], 144:[152,928], 145:[152,888],
+  146:[152,848], 147:[152,808], 148:[152,768], 149:[152,725],
+  150:[152,685],
+  // ── Lotes 151-157 (borde izq, zona media subiendo) ──
+  151:[188,655], 152:[188,615], 153:[218,585], 154:[218,545],
+  155:[218,505], 156:[200,460], 157:[200,415],
+  // ── Lotes 158-163 (borde izq, columna pequeña) ──
+  158:[100,440], 159:[100,480], 160:[100,520], 161:[100,560],
+  162:[100,600], 163:[100,642],
 };
 
 async function loadLotes() {
@@ -1824,16 +1859,18 @@ function generarMapaSanIgnacio(activos) {
   const vendidos   = activos.filter(a => ['Firmado','Escriturado'].includes(a.Estado_Contrato||'')).length;
   const reservados = activos.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
   const libres     = 163 - activos.length;
-  // ViewBox = área útil del mapa (sin footer logos)
-  // imagen 1241x1754, mapa ocupa x=[40,1200] y=[30,1230]
-  const MAP_X = 40, MAP_Y = 30, MAP_W = 1160, MAP_H = 1200;
+  // Coordenadas absolutas en pixels de la imagen PNG (1241×1754).
+  // Recortamos la zona del mapa: desde (30,25) con ancho 1180 y alto 1050.
+  // Esto excluye el footer de logos.
+  const VX = 30, VY = 25, VW = 1180, VH = 1050;
 
   let pins = '';
   for (let n = 1; n <= 163; n++) {
     const coord = LOTES_COORDS[n];
     if (!coord) continue;
-    const cx = ((coord[0] / 100) * MAP_W).toFixed(1);
-    const cy = ((coord[1] / 100) * MAP_H).toFixed(1);
+    // coord ya está en px absolutos de la imagen → restar offset del viewBox
+    const cx = (coord[0] - VX).toFixed(0);
+    const cy = (coord[1] - VY).toFixed(0);
     const activo = activoMap[n];
     const color = activo ? colorActivo(activo) : '#16a34a';
     const nombre = activo ? (activo.Nombre || '').split(' ')[0] : '';
@@ -1841,9 +1878,9 @@ function generarMapaSanIgnacio(activos) {
       ? `data-activo="${encodeURIComponent(JSON.stringify(activo))}"`
       : `data-num="${n}"`;
     pins += `<g onclick="handleLoteClick(this)" ${dataAttr} style="cursor:pointer">
-      <circle cx="${cx}" cy="${cy}" r="14" fill="${color}" fill-opacity="0.88" stroke="white" stroke-width="2"/>
-      <text x="${cx}" y="${cy}" dy="${nombre?'-3':'0.35em'}" style="font-size:9px;font-weight:800;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
-      ${nombre?`<text x="${cx}" y="${(parseFloat(cy)+6).toFixed(1)}" style="font-size:6.5px;font-weight:600;fill:white;text-anchor:middle;pointer-events:none;font-family:Inter,sans-serif">${nombre}</text>`:''}
+      <circle cx="${cx}" cy="${cy}" r="16" fill="${color}" fill-opacity="0.9" stroke="white" stroke-width="2.5"/>
+      <text x="${cx}" y="${cy}" dy="${nombre?'-4':'0.35em'}" style="font-size:11px;font-weight:800;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
+      ${nombre?`<text x="${cx}" y="${(parseFloat(cy)+7).toFixed(0)}" style="font-size:8px;font-weight:600;fill:white;text-anchor:middle;pointer-events:none;font-family:Inter,sans-serif">${nombre}</text>`:''}
     </g>`;
   }
 
@@ -1854,11 +1891,11 @@ function generarMapaSanIgnacio(activos) {
       <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#ef4444;display:inline-block"></span>Vendidos: <strong>${vendidos}</strong></span>
     </div>
     <div style="overflow-x:auto;">
-      <svg viewBox="0 0 ${MAP_W} ${MAP_H}" xmlns="http://www.w3.org/2000/svg"
-           style="width:100%;min-width:480px;max-width:860px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
-        <defs><clipPath id="mapa-clip"><rect x="0" y="0" width="${MAP_W}" height="${MAP_H}" rx="12"/></clipPath></defs>
-        <!-- imagen desplazada para mostrar solo el área del mapa, sin footer de logos -->
-        <image href="${MASTER_PLAN_URL}" x="-${MAP_X}" y="-${MAP_Y}" width="1241" height="1754" clip-path="url(#mapa-clip)"/>
+      <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;min-width:520px;max-width:960px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
+        <defs><clipPath id="mapa-clip"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
+        <!-- Imagen a tamaño real, desplazada -VX,-VY para que el viewBox 0,0 sea el borde del mapa -->
+        <image href="${MASTER_PLAN_URL}" x="-${VX}" y="-${VY}" width="1241" height="1754" clip-path="url(#mapa-clip)"/>
         ${pins}
       </svg>
     </div>
