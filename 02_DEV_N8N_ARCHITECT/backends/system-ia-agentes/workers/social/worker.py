@@ -1662,13 +1662,14 @@ def _get_supa_credenciales_by_cliente_id(cliente_id: str) -> dict:
         return {}
 
 
-def _get_cliente_por_page_id(page_id: str, airtable_base_id: str = "") -> dict:
+def _get_cliente_por_page_id(page_id: str, airtable_base_id: str = "", airtable_table_id: str = "") -> dict:
     """Busca el cliente en su propia base de Airtable."""
     base = airtable_base_id or AIRTABLE_BASE_ID
-    if not base or not AIRTABLE_TOKEN:
+    table = airtable_table_id or AIRTABLE_TABLE_ID
+    if not base or not table or not AIRTABLE_TOKEN:
         return {}
     try:
-        url = f"https://api.airtable.com/v0/{base}/{AIRTABLE_TABLE_ID}"
+        url = f"https://api.airtable.com/v0/{base}/{table}"
         formula = f"OR({{IG Business Account ID}}='{page_id}',{{Facebook Page ID}}='{page_id}')"
         resp = req.get(
             url,
@@ -1767,9 +1768,10 @@ async def meta_webhook_eventos(request: Request):
         supa_creds = _get_supa_credenciales_by_page(page_id)
         token_cliente = supa_creds.get("meta_access_token", "")
         base_airtable = supa_creds.get("airtable_base_id", "")
+        table_airtable = supa_creds.get("airtable_table_id", "") or AIRTABLE_TABLE_ID
 
         # ── 2. Cargar Brandbook desde su Airtable aislado ──
-        cliente = _get_cliente_por_page_id(page_id, base_airtable) if page_id else {}
+        cliente = _get_cliente_por_page_id(page_id, base_airtable, table_airtable) if page_id else {}
 
         # IDs propios para evitar responder a nuestros propios comentarios (anti-loop)
         own_ids = set()
