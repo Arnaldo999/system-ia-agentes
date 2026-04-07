@@ -146,7 +146,7 @@ def _normalizar_zona(zona: str) -> str:
 def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
                        tipo: str = "", zona: str = "", notas: str = "",
                        presupuesto: str = "", operacion: str = "",
-                       ciudad: str = "") -> None:
+                       ciudad: str = "", subniche: str = "") -> None:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
         print("[ROBERT-AT] Sin base/tabla configurada — skip registro lead")
         return
@@ -182,6 +182,8 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
         campos["Notas_Bot"] = notas
     if presupuesto:
         campos["Presupuesto"] = presupuesto
+    if subniche:
+        campos["Sub_nicho"] = subniche
 
     if records:
         rec_id = records[0]["id"]
@@ -554,6 +556,16 @@ def _notificar_asesor(telefono: str, sesion: dict, calificacion: dict) -> None:
 
 
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
+MSG_SUBNICHO = (
+    "¡Hola! 👋 Bienvenido/a a *{empresa}* — la plataforma de automatización "
+    "inmobiliaria con WhatsApp + IA 🤖🏡\n\n"
+    "Para mostrarte cómo funciona el bot según tu perfil, dime:\n\n"
+    "*1️⃣* 🏢 Soy *Agencia Inmobiliaria* (equipo de asesores)\n"
+    "*2️⃣* 🧑‍💼 Soy *Agente Independiente* (trabajo solo)\n"
+    "*3️⃣* 🏗️ Soy *Desarrolladora / Constructora*\n\n"
+    "_(Elige una opción para ver la demo de tu subniche)_"
+)
+
 MSG_BIENVENIDA = (
     "¡Hola! 👋 Bienvenido/a a *{empresa}*.\n\n"
     "Soy su asistente virtual y estoy aquí para ayudarle a encontrar "
@@ -562,6 +574,28 @@ MSG_BIENVENIDA = (
     "que se ajusten exactamente a lo que busca. ¡Son menos de 2 minutos! ⚡\n\n"
     "Para empezar — ¿me podría decir su nombre, por favor? 😊"
 )
+
+# Contexto por subniche (adapta nombre empresa, copy y asesor)
+_SUBNICHO_CONFIG = {
+    "1": {
+        "subniche": "agencia_inmobiliaria",
+        "label": "Agencia Inmobiliaria",
+        "empresa": "Lovbot — Agencia Inmobiliaria",
+        "intro": "💼 *Agencia Inmobiliaria*\n\nEsta demo muestra cómo el bot filtra leads y los distribuye entre tu equipo de asesores automáticamente.",
+    },
+    "2": {
+        "subniche": "agente_independiente",
+        "label": "Agente Independiente",
+        "empresa": "Lovbot — Agente Inteligente",
+        "intro": "🧑‍💼 *Agente Independiente*\n\nEsta demo muestra cómo el bot trabaja 24/7 por vos, califica leads y agenda citas mientras te enfocás en cerrar ventas.",
+    },
+    "3": {
+        "subniche": "desarrolladora",
+        "label": "Desarrolladora / Constructora",
+        "empresa": "Lovbot — Desarrolladora",
+        "intro": "🏗️ *Desarrolladora / Constructora*\n\nEsta demo muestra cómo el bot gestiona consultas de proyectos en preventa, filtra compradores serios y notifica a tu asesor comercial.",
+    },
+}
 
 MSG_SITIO_WEB = (
     "¡Muchas gracias por su tiempo, *{nombre}*! 🙏\n\n"
@@ -612,16 +646,41 @@ def _procesar(telefono: str, texto: str) -> None:
         _ir_asesor(telefono, sesion)
         return
 
-    # ── INICIO ────────────────────────────────────────────────────────────────
+    # ── INICIO → MENÚ SUBNICHO ────────────────────────────────────────────────
     if step == "inicio":
-        SESIONES[telefono] = {"step": "nombre"}
-        _enviar_texto(telefono, MSG_BIENVENIDA.format(
-            empresa=NOMBRE_EMPRESA, ciudad=CIUDAD))
+        SESIONES[telefono] = {"step": "subnicho"}
+        _enviar_texto(telefono, MSG_SUBNICHO.format(empresa=NOMBRE_EMPRESA))
+        return
+
+    # ── SUBNICHO ──────────────────────────────────────────────────────────────
+    if step == "subnicho":
+        cfg = _SUBNICHO_CONFIG.get(texto.strip())
+        if not cfg:
+            _enviar_texto(telefono,
+                "Por favor elige una opción:\n\n"
+                "*1️⃣* Agencia Inmobiliaria\n"
+                "*2️⃣* Agente Independiente\n"
+                "*3️⃣* Desarrolladora / Constructora"
+            )
+            return
+        SESIONES[telefono] = {
+            "step": "nombre",
+            "subniche": cfg["subniche"],
+            "empresa_demo": cfg["empresa"],
+        }
+        _enviar_texto(telefono, cfg["intro"])
+        empresa_show = cfg["empresa"]
+        _enviar_texto(telefono,
+            f"Perfecto 🎯\n\n"
+            f"Ahora simulás ser un *cliente real* que escribe a *{empresa_show}*.\n\n"
+            f"¡Empecemos! Para iniciar la demo — ¿cuál es tu nombre? 😊"
+        )
         return
 
     # ── NOMBRE ────────────────────────────────────────────────────────────────
     if step == "nombre":
         nombre = texto.title()
+        empresa_show = sesion.get("empresa_demo", NOMBRE_EMPRESA)
         SESIONES[telefono] = {**sesion, "step": "objetivo", "nombre": nombre}
         n = nombre.split()[0]
         _enviar_texto(telefono,
@@ -702,12 +761,13 @@ def _procesar(telefono: str, texto: str) -> None:
         presupuesto_at = sesion_act.get("presupuesto_at", "")
         operacion_at   = sesion_act.get("operacion_at", "")
         ciudad_at      = CIUDAD
+        subniche_at    = sesion_act.get("subniche", "")
 
         # Registrar lead en Airtable (background)
         threading.Thread(
             target=_at_registrar_lead,
             args=(telefono, nombre, score, tipo, zona, nota, presupuesto_at,
-                  operacion_at, ciudad_at), daemon=True
+                  operacion_at, ciudad_at, subniche_at), daemon=True
         ).start()
 
         # Lead frío → derivar a sitio web
