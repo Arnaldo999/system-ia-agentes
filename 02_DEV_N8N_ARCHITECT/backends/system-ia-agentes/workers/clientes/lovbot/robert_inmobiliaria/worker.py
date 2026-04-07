@@ -238,88 +238,80 @@ Devolvé SOLO el JSON."""
                 "nota_para_asesor": "Error en calificación"}
 
 
-def _pregunta_dinamica(paso: str, nombre: str = "") -> str:
-    nombre_corto = nombre.split()[0] if nombre else ""
-    nombre_txt = f", {nombre_corto}" if nombre_corto else ""
-    zonas_opciones = "\n".join(f"{i+1}️⃣ {z}" for i, z in enumerate(ZONAS_LIST))
+def _pregunta(paso: str, nombre: str = "") -> str:
+    """Preguntas fijas de alta calidad — sin llamadas a Gemini para máxima velocidad."""
+    n = nombre.split()[0] if nombre else ""
+    nt = f", {n}" if n else ""
+    zonas_ops = "\n".join(f"{i+1}️⃣ {z}" for i, z in enumerate(ZONAS_LIST))
+    ultimo_num = len(ZONAS_LIST) + 1
 
-    prompts = {
+    msgs = {
         "objetivo": (
-            f"Generá una pregunta cálida y breve para preguntarle{nombre_txt} qué está buscando: "
-            f"¿quiere comprar o alquilar? y para qué lo necesita (vivir, invertir, negocio). "
-            f"Español neutro. Máx 4 líneas."
+            f"Perfecto{nt}, con gusto le ayudo 😊\n\n"
+            f"Para mostrarle las mejores opciones, ¿qué está buscando?\n\n"
+            f"*1️⃣* 🏠 Comprar una propiedad\n"
+            f"*2️⃣* 🔑 Alquilar una propiedad\n"
+            f"*3️⃣* 📈 Invertir en bienes raíces\n\n"
+            f"_(También puede escribirme libremente)_"
         ),
         "tipo": (
-            f"Generá una pregunta para preguntarle{nombre_txt} qué tipo de propiedad busca. "
-            f"Opciones numeradas: 1. Casa, 2. Departamento, 3. Terreno, 4. Local comercial, 5. Oficina. "
-            f"Español neutro. Máx 5 líneas."
+            f"¡Excelente elección{nt}! 🌟\n\n"
+            f"¿Qué tipo de propiedad está buscando?\n\n"
+            f"*1️⃣* 🏡 Casa\n"
+            f"*2️⃣* 🏢 Departamento / Apartamento\n"
+            f"*3️⃣* 🌿 Terreno\n"
+            f"*4️⃣* 🏪 Local comercial\n"
+            f"*5️⃣* 💼 Oficina\n\n"
+            f"_(También puede describirme lo que busca)_"
         ),
         "zona": (
-            f"Generá una pregunta para preguntarle{nombre_txt} en qué zona de {CIUDAD} busca. "
-            f"Mostrá las opciones numeradas: {', '.join(f'{i+1}. {z}' for i,z in enumerate(ZONAS_LIST))}. "
-            f"Agregá opción extra al final: 'Otra zona / No lo sé aún'. Español neutro. Máx 7 líneas."
+            f"Entendido{nt} 📍\n\n"
+            f"¿En qué zona de *{CIUDAD}* le interesa buscar?\n\n"
+            f"{zonas_ops}\n"
+            f"{ultimo_num}️⃣ 🗺️ Otra zona / Aún no lo sé\n\n"
+            f"_(Puede escribir el nombre de la zona directamente)_"
         ),
         "presupuesto": (
-            f"Generá una pregunta amable para preguntarle{nombre_txt} su rango de presupuesto en {MONEDA}. "
-            f"Opciones: 1. Menos de 50K, 2. 50K-100K, 3. 100K-200K, 4. Más de 200K, 5. Prefiero hablarlo. "
-            f"Español neutro. Máx 6 líneas."
+            f"Perfecto{nt} 💰\n\n"
+            f"¿Con qué rango de presupuesto cuenta aproximadamente?\n\n"
+            f"*1️⃣* Menos de 50,000 {MONEDA}\n"
+            f"*2️⃣* 50,000 — 100,000 {MONEDA}\n"
+            f"*3️⃣* 100,000 — 200,000 {MONEDA}\n"
+            f"*4️⃣* Más de 200,000 {MONEDA}\n"
+            f"*5️⃣* 💬 Prefiero hablarlo con el asesor\n\n"
+            f"_(No hace falta que sea exacto, una referencia es suficiente)_"
         ),
         "urgencia": (
-            f"Generá una pregunta para preguntarle{nombre_txt} cuándo planea concretar. "
-            f"Opciones: 1. Lo antes posible (1-3 meses), 2. En los próximos 6 meses, "
-            f"3. En el próximo año, 4. Estoy explorando opciones. Español neutro. Máx 5 líneas."
+            f"¡Casi terminamos{nt}! 🙌\n\n"
+            f"¿En qué tiempo está pensando concretar?\n\n"
+            f"*1️⃣* 🔥 Lo antes posible — 1 a 3 meses\n"
+            f"*2️⃣* 📅 En los próximos 6 meses\n"
+            f"*3️⃣* 🗓️ Durante el próximo año\n"
+            f"*4️⃣* 🔍 Estoy explorando opciones por ahora"
         ),
     }
-    respuesta = _gemini(prompts[paso])
-    if respuesta:
-        return respuesta
-
-    fallbacks = {
-        "objetivo": (
-            f"¿Qué está buscando{nombre_txt}? 🏠\n\n"
-            "¿Desea *comprar* o *alquilar* una propiedad?\n"
-            "También puede contarme para qué la necesita (vivir, invertir, negocio...) 😊"
-        ),
-        "tipo": (
-            f"¿Qué tipo de propiedad busca{nombre_txt}? 🏡\n\n"
-            "1️⃣ Casa\n2️⃣ Departamento\n3️⃣ Terreno\n4️⃣ Local comercial\n5️⃣ Oficina\n\n"
-            "También puede escribirlo libremente."
-        ),
-        "zona": (
-            f"¿En qué zona de {CIUDAD} busca{nombre_txt}? 📍\n\n"
-            + zonas_opciones +
-            f"\n{len(ZONAS_LIST) + 1}️⃣ Otra zona / No lo sé aún"
-        ),
-        "presupuesto": (
-            f"¿Con qué presupuesto cuenta{nombre_txt}? 💰\n\n"
-            f"1️⃣ Menos de 50K {MONEDA}\n2️⃣ 50K-100K\n3️⃣ 100K-200K\n"
-            f"4️⃣ Más de 200K\n5️⃣ Prefiero hablarlo con el asesor"
-        ),
-        "urgencia": (
-            f"¿En qué tiempo piensa concretar{nombre_txt}? 🗓️\n\n"
-            "1️⃣ 🔥 Lo antes posible (1-3 meses)\n"
-            "2️⃣ 📅 En los próximos 6 meses\n"
-            "3️⃣ 🗓️ En el próximo año\n"
-            "4️⃣ 🔍 Estoy explorando opciones"
-        ),
-    }
-    return fallbacks[paso]
+    return msgs[paso]
 
 
 # ─── FORMATEO PROPIEDADES ─────────────────────────────────────────────────────
 def _lista_titulos(props: list[dict]) -> str:
-    lineas = ["✨ *PROPIEDADES DISPONIBLES*\n"]
+    lineas = ["🏘️ *PROPIEDADES DISPONIBLES PARA USTED*\n"]
     for i, p in enumerate(props, 1):
         precio = p.get("Precio", 0)
         moneda = p.get("Moneda", MONEDA)
         precio_str = f"${precio:,.0f} {moneda}" if precio else "Consultar precio"
         estado = p.get("Disponible", "")
-        tag = " ⏳ _Reservado_" if "Reservado" in str(estado) else ""
+        tag = " ⏳ _Reservada_" if "Reservado" in str(estado) else " ✅"
         tipo = p.get("Tipo", "")
-        tipo_tag = f" · {tipo}" if tipo else ""
-        lineas.append(f"*{i}.* {p.get('Titulo', 'Propiedad')}{tipo_tag} — {precio_str}{tag}")
-    lineas.append("\nRespondé con el *número* para ver la ficha completa.")
-    lineas.append("*0* Volver al inicio | *#* Hablar con el asesor")
+        zona = p.get("Zona", "")
+        tipo_zona = f" · {tipo}" if tipo else ""
+        if zona:
+            tipo_zona += f" · {zona}"
+        lineas.append(f"*{i}.* 🏠 {p.get('Titulo', 'Propiedad')}{tipo_zona}\n    💰 {precio_str}{tag}")
+    lineas.append(
+        "\n📲 Responda con el *número* de la propiedad para ver todos los detalles y fotos.\n\n"
+        "*0* 🔄 Ver otras opciones  |  *#* 👤 Hablar con el asesor"
+    )
     return "\n".join(lineas)
 
 
@@ -363,7 +355,10 @@ def _ficha_propiedad(p: dict) -> str:
     maps = p.get("Google_Maps_URL", "")
     if maps:
         lineas.append(f"\n🗺 *Ver en Maps:* {maps}")
-    lineas.append(f"\n¿Le interesa esta propiedad?\n*#* Hablar con {NOMBRE_ASESOR} | *0* Ver otras propiedades")
+    lineas.append(
+        f"\n¿Le interesa esta propiedad? 😊\n\n"
+        f"*#* 👤 Hablar con {NOMBRE_ASESOR}  |  *0* 🔄 Ver otras propiedades"
+    )
     return "\n".join(lineas)
 
 
@@ -407,25 +402,29 @@ def _notificar_asesor(telefono: str, sesion: dict, calificacion: dict) -> None:
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
 MSG_BIENVENIDA = (
     "¡Hola! 👋 Bienvenido/a a *{empresa}*.\n\n"
-    "Estoy aquí para ayudarle a encontrar la propiedad ideal en {ciudad}. "
-    "Le haré solo *5 preguntas rápidas* para mostrarle exactamente lo que busca. 😊\n\n"
-    "¿Me podría decir su nombre?"
+    "Soy su asistente virtual y estoy aquí para ayudarle a encontrar "
+    "la propiedad ideal en *{ciudad}* 🏙️\n\n"
+    "Le haré solo *5 preguntas rápidas* para mostrarle opciones "
+    "que se ajusten exactamente a lo que busca. ¡Son menos de 2 minutos! ⚡\n\n"
+    "Para empezar — ¿me podría decir su nombre, por favor? 😊"
 )
 
 MSG_SITIO_WEB = (
-    "¡Muchas gracias por su interés, {nombre}! 🙏\n\n"
-    "Entendemos que aún está explorando opciones — eso está perfecto. "
-    "Le invitamos a conocer todo nuestro portafolio de propiedades disponibles.\n\n"
+    "¡Muchas gracias por su tiempo, {nombre}! 🙏\n\n"
+    "Entendemos que aún está explorando sus opciones, y eso está perfectamente bien. "
+    "Tómese el tiempo que necesite. 😊\n\n"
     "{web_line}"
-    "Cuando esté listo para dar el siguiente paso, escríbanos y con gusto "
-    "lo asesoramos personalmente. ¡Estamos para ayudarle! 🏡"
+    "Cuando esté listo para dar el siguiente paso, escríbanos aquí mismo y "
+    "con mucho gusto le asesoramos personalmente. ¡Estamos para servirle! 🏡"
 )
 
 MSG_ASESOR_CONTACTO = (
-    "¡Excelente, {nombre}! 🎉\n\n"
-    "Nuestro asesor *{asesor}* se pondrá en contacto con usted a la brevedad "
-    "para mostrarle las mejores opciones disponibles.\n\n"
-    "¡Gracias por confiar en *{empresa}*! 🏠"
+    "¡Muchas gracias, {nombre}! 🎉\n\n"
+    "Con la información que nos compartió, nuestro asesor *{asesor}* "
+    "se pondrá en contacto con usted a la brevedad para presentarle "
+    "las mejores opciones disponibles. 🏠\n\n"
+    "Mientras tanto, si tiene alguna pregunta adicional, estoy aquí para ayudarle.\n\n"
+    "¡Gracias por confiar en *{empresa}*! 🌟"
 )
 
 
@@ -458,13 +457,18 @@ def _procesar(telefono: str, texto: str) -> None:
     if step == "nombre":
         nombre = texto.title()
         SESIONES[telefono] = {**sesion, "step": "objetivo", "nombre": nombre}
-        _enviar_texto(telefono, _pregunta_dinamica("objetivo", nombre))
+        n = nombre.split()[0]
+        _enviar_texto(telefono,
+            f"¡Mucho gusto, *{n}*! 😊\n\n"
+            f"Es un placer atenderle. Empecemos con la primera pregunta 👇"
+        )
+        _enviar_texto(telefono, _pregunta("objetivo", nombre))
         return
 
     # ── OBJETIVO (comprar/alquilar + para qué) ────────────────────────────────
     if step == "objetivo":
         SESIONES[telefono] = {**sesion, "step": "tipo", "resp_objetivo": texto}
-        _enviar_texto(telefono, _pregunta_dinamica("tipo", nombre_corto))
+        _enviar_texto(telefono, _pregunta("tipo", nombre_corto))
         return
 
     # ── TIPO DE PROPIEDAD ─────────────────────────────────────────────────────
@@ -475,7 +479,7 @@ def _procesar(telefono: str, texto: str) -> None:
         }
         tipo_detectado = mapa_tipo.get(texto, texto.lower())
         SESIONES[telefono] = {**sesion, "step": "zona", "resp_tipo": tipo_detectado}
-        _enviar_texto(telefono, _pregunta_dinamica("zona", nombre_corto))
+        _enviar_texto(telefono, _pregunta("zona", nombre_corto))
         return
 
     # ── ZONA ──────────────────────────────────────────────────────────────────
@@ -490,13 +494,13 @@ def _procesar(telefono: str, texto: str) -> None:
         except ValueError:
             pass
         SESIONES[telefono] = {**sesion, "step": "presupuesto", "resp_zona": zona_detectada}
-        _enviar_texto(telefono, _pregunta_dinamica("presupuesto", nombre_corto))
+        _enviar_texto(telefono, _pregunta("presupuesto", nombre_corto))
         return
 
     # ── PRESUPUESTO ───────────────────────────────────────────────────────────
     if step == "presupuesto":
         SESIONES[telefono] = {**sesion, "step": "urgencia", "resp_presupuesto": texto}
-        _enviar_texto(telefono, _pregunta_dinamica("urgencia", nombre_corto))
+        _enviar_texto(telefono, _pregunta("urgencia", nombre_corto))
         return
 
     # ── URGENCIA → CALIFICAR → BUSCAR PROPIEDADES ─────────────────────────────
@@ -556,8 +560,10 @@ def _procesar(telefono: str, texto: str) -> None:
         SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props,
                               "tipo": tipo, "zona": zona, "operacion": operacion}
         _enviar_texto(telefono,
-            f"¡Perfecto, {nombre_corto or nombre}! 🎉 Encontré *{len(props)} propiedad(es)* "
-            f"que coinciden con lo que busca:\n")
+            f"¡Excelente, *{nombre_corto or nombre}*! 🎉\n\n"
+            f"Revisé nuestro portafolio y encontré *{len(props)} propiedad(es)* "
+            f"que coinciden con lo que está buscando. Aquí están 👇"
+        )
         _enviar_texto(telefono, _lista_titulos(props))
 
         threading.Thread(
@@ -598,8 +604,10 @@ def _procesar(telefono: str, texto: str) -> None:
     # ── FALLBACK ──────────────────────────────────────────────────────────────
     _enviar_texto(telefono,
         "Disculpe, no entendí su mensaje. 😊\n\n"
-        "Escriba *hola* para comenzar una nueva consulta\n"
-        "o *#* para hablar directamente con el asesor.")
+        "Puede usar estas opciones:\n\n"
+        "▪️ Escriba *hola* para iniciar una nueva consulta\n"
+        "▪️ Escriba *#* para hablar directamente con el asesor\n"
+        "▪️ Escriba *0* para volver al menú anterior")
     SESIONES.pop(telefono, None)
 
 
