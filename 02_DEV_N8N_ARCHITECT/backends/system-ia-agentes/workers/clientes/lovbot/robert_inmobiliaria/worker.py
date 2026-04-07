@@ -463,12 +463,14 @@ MSG_BIENVENIDA = (
 )
 
 MSG_SITIO_WEB = (
-    "¡Muchas gracias por su tiempo, {nombre}! 🙏\n\n"
-    "Entendemos que aún está explorando sus opciones, y eso está perfectamente bien. "
-    "Tómese el tiempo que necesite. 😊\n\n"
+    "¡Muchas gracias por su tiempo, *{nombre}*! 🙏\n\n"
+    "Entendemos perfectamente — tomarse el tiempo para explorar es lo más inteligente "
+    "al momento de invertir en una propiedad. 😊\n\n"
+    "Mientras tanto, le invitamos a conocer nuestro portafolio completo con propiedades, "
+    "precios y disponibilidad actualizada:\n\n"
     "{web_line}"
-    "Cuando esté listo para dar el siguiente paso, escríbanos aquí mismo y "
-    "con mucho gusto le asesoramos personalmente. ¡Estamos para servirle! 🏡"
+    "Cuando esté listo para dar el siguiente paso, escríbanos *hola* aquí mismo y "
+    "nuestro asesor *{asesor}* le ayudará personalmente. ¡Estamos para servirle! 🏡"
 )
 
 MSG_ASESOR_CONTACTO = (
@@ -605,7 +607,8 @@ def _procesar(telefono: str, texto: str) -> None:
         if derivar or score == "frio":
             web_line = f"🌐 *{SITIO_WEB}*\n\n" if SITIO_WEB else ""
             _enviar_texto(telefono, MSG_SITIO_WEB.format(
-                nombre=nombre_corto or nombre, web_line=web_line))
+                nombre=nombre_corto or nombre, web_line=web_line,
+                asesor=NOMBRE_ASESOR))
             threading.Thread(
                 target=_notificar_asesor,
                 args=(telefono, sesion_act, calificacion), daemon=True
