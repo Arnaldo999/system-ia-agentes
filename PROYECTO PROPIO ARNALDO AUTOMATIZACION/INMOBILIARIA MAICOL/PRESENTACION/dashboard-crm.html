@@ -1651,7 +1651,7 @@ function switchTab(name, el) {
   el.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'loteos' && allActivos.length === 0) loadLotes();
-  if (name === 'activos') renderActivos();
+  if (name === 'activos') recargarActivos();
   // Cerrar sidebar en mobile al cambiar tab
   if (window.innerWidth < 1024) {
     const sidebar = document.getElementById('sidebar');
@@ -2177,6 +2177,14 @@ function abrirDetalleLoteLibre(numero) {
 }
 
 // ── CLIENTES ACTIVOS ──────────────────────────────────────
+async function recargarActivos() {
+  try {
+    const d = await fetch(`${CRM}/activos`).then(r => r.json());
+    allActivos = d.records || [];
+  } catch(e) { /* usa los que ya hay */ }
+  renderActivos();
+}
+
 function renderActivos() {
   const tbody = document.getElementById('activos-tbody');
   const empty = document.getElementById('activos-empty');
