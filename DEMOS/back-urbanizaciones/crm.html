@@ -212,6 +212,12 @@
       .loteo-stat-num { @apply font-heading text-[1.4rem] font-extrabold; }
       .loteo-stat-lbl { @apply text-[0.7rem] font-bold uppercase tracking-wide text-txt-muted; }
 
+      /* MAPA FULLSCREEN */
+      #modal-mapa.fullscreen { @apply fixed inset-0 z-[1100] bg-black/95 p-0 items-stretch; }
+      #modal-mapa.fullscreen .modal { max-width:100vw; width:100vw; height:100vh; max-height:100vh; border-radius:0; display:flex; flex-direction:column; }
+      #modal-mapa.fullscreen .modal > div:last-child { flex:1; overflow-y:auto; }
+      #modal-mapa.fullscreen svg { max-width:100% !important; height:calc(100vh - 80px); }
+
       /* MAPA SVG LOTES */
       .lote-svg-group { cursor: pointer; transition: opacity .15s; }
       .lote-svg-group:hover { opacity: .85; }
@@ -816,6 +822,7 @@
               <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b"></span> Reservado</span>
               <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444"></span> Vendido</span>
             </div>
+            <button onclick="toggleMapaFullscreen()" class="btn btn-outline btn-sm" title="Pantalla completa">⛶</button>
             <button class="modal-close" style="position:relative;top:auto;right:auto;" onclick="closeModal('modal-mapa')">✕</button>
           </div>
         </div>
@@ -1818,8 +1825,8 @@ function generarMapaSanIgnacio(activos) {
   const reservados = activos.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
   const libres     = 163 - activos.length;
   // ViewBox = área útil del mapa (sin footer logos)
-  // imagen 1241x1754, mapa ocupa x=[40,1200] y=[55,1285]
-  const MAP_X = 40, MAP_Y = 55, MAP_W = 1160, MAP_H = 1230;
+  // imagen 1241x1754, mapa ocupa x=[40,1200] y=[30,1230]
+  const MAP_X = 40, MAP_Y = 30, MAP_W = 1160, MAP_H = 1200;
 
   let pins = '';
   for (let n = 1; n <= 163; n++) {
@@ -1897,6 +1904,30 @@ function generarMapaGrilla(activos, config) {
     </div>
     <p class="text-xs text-txt-muted text-center mt-3">${config.nombre} · Clic en lote para ver detalle</p>`;
 }
+
+function toggleMapaFullscreen() {
+  const modal = document.getElementById('modal-mapa');
+  const btn = modal.querySelector('button[onclick="toggleMapaFullscreen()"]');
+  if (modal.classList.toggle('fullscreen')) {
+    btn.textContent = '⊠';
+    btn.title = 'Salir de pantalla completa';
+    // Intentar Fullscreen API nativa también
+    if (modal.requestFullscreen) modal.requestFullscreen();
+  } else {
+    btn.textContent = '⛶';
+    btn.title = 'Pantalla completa';
+    if (document.exitFullscreen) document.exitFullscreen();
+  }
+}
+
+// Salir de fullscreen con Escape
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    document.getElementById('modal-mapa').classList.remove('fullscreen');
+    const btn = document.querySelector('#modal-mapa button[onclick="toggleMapaFullscreen()"]');
+    if (btn) { btn.textContent = '⛶'; btn.title = 'Pantalla completa'; }
+  }
+});
 
 function handleLoteClick(el) {
   const dataActivo = el.getAttribute('data-activo');
