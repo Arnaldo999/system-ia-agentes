@@ -52,6 +52,8 @@ NOMBRE_ASESOR  = os.environ.get("INMO_DEMO_ASESOR",  "Roberto")
 NUMERO_ASESOR  = os.environ.get("INMO_DEMO_NUMERO_ASESOR", "")
 MONEDA         = os.environ.get("INMO_DEMO_MONEDA",  "USD")
 SITIO_WEB      = os.environ.get("INMO_DEMO_SITIO_WEB", "")
+CAL_API_KEY    = os.environ.get("INMO_DEMO_CAL_API_KEY", "")
+CAL_EVENT_ID   = os.environ.get("INMO_DEMO_CAL_EVENT_ID", "")
 
 _zonas_raw = os.environ.get("INMO_DEMO_ZONAS", "Zona Norte,Zona Sur,Zona Centro")
 ZONAS_LIST = [z.strip() for z in _zonas_raw.split(",") if z.strip()]
@@ -215,6 +217,100 @@ def _at_guardar_email(telefono: str, email: str) -> None:
         requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
                        json={"fields": {"Email": email}}, timeout=8)
         print(f"[ROBERT-AT] Email guardado tel={telefono}")
+
+
+# ─── CAL.COM ──────────────────────────────────────────────────────────────────
+def _cal_disponible() -> bool:
+    return bool(CAL_API_KEY and CAL_EVENT_ID)
+
+
+def _cal_obtener_slots(dias: int = 7) -> list[dict]:
+    """Retorna hasta 6 slots disponibles en los próximos N días."""
+    if not _cal_disponible():
+        return []
+    from datetime import datetime, timedelta
+    start = datetime.utcnow().strftime("%Y-%m-%d")
+    end   = (datetime.utcnow() + timedelta(days=dias)).strftime("%Y-%m-%d")
+    try:
+        r = requests.get(
+            "https://api.cal.com/v1/slots",
+            params={"apiKey": CAL_API_KEY, "eventTypeId": CAL_EVENT_ID,
+                    "startTime": start, "endTime": end},
+            timeout=10,
+        )
+        if r.status_code == 200:
+            slots_raw = r.json().get("slots", {})
+            slots = []
+            for fecha, lista in slots_raw.items():
+                for slot in lista[:2]:
+                    if slot.get("time"):
+                        slots.append({"fecha": fecha, "time": slot["time"]})
+            return slots[:6]
+    except Exception as e:
+        print(f"[ROBERT-CAL] Error slots: {e}")
+    return []
+
+
+def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, notas: str = "") -> dict:
+    """Crea una reserva en Cal.com."""
+    if not _cal_disponible():
+        return {"ok": False, "error": "Cal.com no configurado"}
+    try:
+        r = requests.post(
+            "https://api.cal.com/v1/bookings",
+            params={"apiKey": CAL_API_KEY},
+            json={
+                "eventTypeId": int(CAL_EVENT_ID),
+                "start": slot_time,
+                "responses": {
+                    "name": nombre,
+                    "email": email or (re.sub(r'\D', '', telefono) + "@lovbot.ai"),
+                    "phone": telefono,
+                },
+                "metadata": {"fuente": "WhatsApp Bot Lovbot", "notas": notas},
+                "timeZone": "America/Mexico_City",
+                "language": "es",
+            },
+            timeout=10,
+        )
+        if r.status_code in (200, 201):
+            data = r.json()
+            return {"ok": True, "uid": data.get("uid", ""), "start": data.get("startTime", slot_time)}
+        print(f"[ROBERT-CAL] Error {r.status_code}: {r.text[:300]}")
+        return {"ok": False, "error": r.text[:200]}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def _formatear_slots(slots: list[dict]) -> str:
+    """Formatea slots para mostrar en WhatsApp."""
+    from datetime import datetime
+    lineas = []
+    for i, s in enumerate(slots, 1):
+        try:
+            dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
+            # Convertir a hora México (UTC-6)
+            from datetime import timezone, timedelta
+            mx = dt.astimezone(timezone(timedelta(hours=-6)))
+            lineas.append(f"*{i}️⃣* {mx.strftime('%A %d/%m')} a las *{mx.strftime('%H:%M')}* hs")
+        except Exception:
+            lineas.append(f"*{i}️⃣* {s['time']}")
+    return "\n".join(lineas)
+
+
+def _at_guardar_cita(telefono: str, fecha_cita: str) -> None:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    buscar = requests.get(url, headers=AT_HEADERS,
+        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+    if records:
+        rec_id = records[0]["id"]
+        requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
+                       json={"fields": {"Fecha_Cita": fecha_cita[:10], "Estado": "en_negociacion"}},
+                       timeout=8)
+        print(f"[ROBERT-AT] Cita guardada tel={telefono}")
 
 
 def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
@@ -694,6 +790,18 @@ def _procesar(telefono: str, texto: str) -> None:
         rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
         nombre_corto2 = nombre.split()[0] if nombre else ""
         if texto_lower in rechazos:
+            # Sin email — ofrecer cita si Cal.com disponible
+            if _cal_disponible():
+                slots = _cal_obtener_slots()
+                if slots:
+                    SESIONES[telefono] = {**sesion, "step": "agendar_slots", "slots": slots}
+                    _enviar_texto(telefono,
+                        f"Sin problema 😊 ¿Le gustaría agendar una cita con nuestro asesor *{NOMBRE_ASESOR}*?\n\n"
+                        f"Estos son los horarios disponibles:\n\n"
+                        f"{_formatear_slots(slots)}\n\n"
+                        f"Responda con el *número* del horario que prefiere, o escriba *0* para omitir."
+                    )
+                    return
             _enviar_texto(telefono,
                 f"¡Perfecto, {nombre_corto2}! Sin problema 😊\n\n"
                 f"Nuestro asesor *{NOMBRE_ASESOR}* estará en contacto con usted.\n"
@@ -701,14 +809,26 @@ def _procesar(telefono: str, texto: str) -> None:
             )
             SESIONES.pop(telefono, None)
         elif "@" in texto and "." in texto:
-            threading.Thread(
-                target=_at_guardar_email,
-                args=(telefono, texto.strip()), daemon=True
-            ).start()
+            email = texto.strip()
+            threading.Thread(target=_at_guardar_email, args=(telefono, email), daemon=True).start()
+            SESIONES[telefono] = {**sesion, "step": "agendar_slots", "email": email}
+            # Ofrecer cita con Cal.com
+            if _cal_disponible():
+                slots = _cal_obtener_slots()
+                if slots:
+                    SESIONES[telefono] = {**sesion, "step": "agendar_slots",
+                                          "slots": slots, "email": email}
+                    _enviar_texto(telefono,
+                        f"¡Perfecto, {nombre_corto2}! 📬 Email registrado.\n\n"
+                        f"¿Le gustaría agendar una cita con nuestro asesor *{NOMBRE_ASESOR}*?\n\n"
+                        f"{_formatear_slots(slots)}\n\n"
+                        f"Responda con el *número* del horario que prefiere, o escriba *0* para omitir."
+                    )
+                    return
             _enviar_texto(telefono,
                 f"¡Perfecto, {nombre_corto2}! 📬 Email registrado.\n\n"
-                f"Le avisaremos en cuanto tengamos nuevas propiedades que coincidan "
-                f"con lo que busca. Nuestro asesor *{NOMBRE_ASESOR}* también estará en contacto.\n\n"
+                f"Le avisaremos en cuanto tengamos nuevas propiedades. "
+                f"Nuestro asesor *{NOMBRE_ASESOR}* también estará en contacto.\n\n"
                 f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
             )
             SESIONES.pop(telefono, None)
@@ -717,6 +837,106 @@ def _procesar(telefono: str, texto: str) -> None:
                 f"Por favor ingrese un email válido (ej: nombre@gmail.com) "
                 f"o escriba *\"no\"* para omitir. 😊"
             )
+        return
+
+    # ── PEDIR EMAIL PARA CITA (viene de _ir_asesor sin email) ────────────────
+    if step == "pedir_email_cita":
+        rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
+        slots = sesion.get("slots", [])
+        nombre_corto2 = nombre.split()[0] if nombre else ""
+        if texto_lower in rechazos:
+            # Sin email — mostrar slots de todas formas
+            if slots:
+                SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
+                _enviar_texto(telefono,
+                    f"Sin problema 😊 Aquí los horarios disponibles con *{NOMBRE_ASESOR}*:\n\n"
+                    f"{_formatear_slots(slots)}\n\n"
+                    f"Responda con el *número* del horario que prefiere, o *0* para que lo contacten."
+                )
+            else:
+                _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+                    nombre=nombre_corto2 or nombre,
+                    asesor=NOMBRE_ASESOR,
+                    empresa=NOMBRE_EMPRESA,
+                ))
+                SESIONES.pop(telefono, None)
+        elif "@" in texto and "." in texto:
+            email = texto.strip()
+            threading.Thread(target=_at_guardar_email, args=(telefono, email), daemon=True).start()
+            if slots:
+                SESIONES[telefono] = {**sesion, "step": "agendar_slots", "email": email}
+                _enviar_texto(telefono,
+                    f"¡Perfecto, {nombre_corto2}! 📬\n\n"
+                    f"Estos son los horarios disponibles con *{NOMBRE_ASESOR}*:\n\n"
+                    f"{_formatear_slots(slots)}\n\n"
+                    f"Responda con el *número* del horario que prefiere, o *0* para omitir."
+                )
+            else:
+                _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+                    nombre=nombre_corto2 or nombre,
+                    asesor=NOMBRE_ASESOR,
+                    empresa=NOMBRE_EMPRESA,
+                ))
+                SESIONES.pop(telefono, None)
+        else:
+            _enviar_texto(telefono,
+                f"Por favor ingrese un email válido (ej: nombre@gmail.com) "
+                f"o escriba *\"no\"* para omitir. 😊"
+            )
+        return
+
+    # ── AGENDAMIENTO — SELECCIÓN DE SLOT ─────────────────────────────────────
+    if step == "agendar_slots":
+        slots = sesion.get("slots", [])
+        email = sesion.get("email", "")
+        nombre_corto2 = nombre.split()[0] if nombre else ""
+        if texto.strip() == "0":
+            _enviar_texto(telefono,
+                f"¡De acuerdo, {nombre_corto2}! Nuestro asesor *{NOMBRE_ASESOR}* "
+                f"estará en contacto con usted a la brevedad. 🏡\n\n"
+                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
+            )
+            SESIONES.pop(telefono, None)
+            return
+        try:
+            idx = int(texto.strip()) - 1
+            if 0 <= idx < len(slots):
+                slot = slots[idx]
+                notas = (f"Busca: {sesion.get('resp_tipo','')} en {sesion.get('resp_zona','')} "
+                         f"— Presupuesto: {sesion.get('resp_presupuesto','')}")
+                resultado = _cal_crear_reserva(nombre, email, telefono, slot["time"], notas)
+                if resultado["ok"]:
+                    threading.Thread(
+                        target=_at_guardar_cita,
+                        args=(telefono, slot["time"]), daemon=True
+                    ).start()
+                    from datetime import datetime, timezone, timedelta
+                    try:
+                        dt = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
+                        mx = dt.astimezone(timezone(timedelta(hours=-6)))
+                        fecha_str = mx.strftime("%A %d/%m a las %H:%M hs")
+                    except Exception:
+                        fecha_str = slot["time"]
+                    _enviar_texto(telefono,
+                        f"✅ *¡Cita confirmada, {nombre_corto2}!*\n\n"
+                        f"📅 *Fecha:* {fecha_str}\n"
+                        f"👤 *Asesor:* {NOMBRE_ASESOR}\n\n"
+                        f"Recibirá una confirmación por email. "
+                        f"Si necesita reagendar, escríbanos aquí. 😊\n\n"
+                        f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
+                    )
+                    SESIONES.pop(telefono, None)
+                else:
+                    _enviar_texto(telefono,
+                        f"Lo sentimos, ese horario ya no está disponible. 😔\n\n"
+                        f"Por favor elija otro horario o escriba *0* para que el asesor lo contacte."
+                    )
+            else:
+                _enviar_texto(telefono,
+                    f"Por favor elija un número del 1 al {len(slots)}, o *0* para omitir. 😊")
+        except ValueError:
+            _enviar_texto(telefono,
+                f"Responda con el *número* del horario (1-{len(slots)}) o *0* para omitir. 😊")
         return
 
     # ── FALLBACK ──────────────────────────────────────────────────────────────
@@ -732,19 +952,49 @@ def _procesar(telefono: str, texto: str) -> None:
 def _ir_asesor(telefono: str, sesion: dict) -> None:
     nombre = sesion.get("nombre", "")
     nombre_corto = nombre.split()[0] if nombre else ""
+    email = sesion.get("email", "")
+
+    # Notificar al asesor
+    if NUMERO_ASESOR:
+        numero_limpio = re.sub(r"[^0-9]", "", NUMERO_ASESOR)
+        tipo  = sesion.get("resp_tipo", "")
+        zona  = sesion.get("resp_zona", "")
+        _enviar_texto(numero_limpio,
+            f"🔔 *{NOMBRE_EMPRESA}*\n\n"
+            f"Un cliente solicita hablar con vos:\n"
+            f"👤 *{nombre or 'Sin nombre'}*\n"
+            f"📱 +{re.sub(r'[^0-9]', '', telefono)}\n"
+            + (f"🏡 Busca: {tipo}" if tipo else "")
+            + (f" en {zona}" if zona else "")
+        )
+
+    # Ofrecer cita con Cal.com
+    if _cal_disponible():
+        slots = _cal_obtener_slots()
+        if slots:
+            SESIONES[telefono] = {**sesion, "step": "agendar_slots",
+                                  "slots": slots, "email": email}
+            # Pedir email si no lo tenemos
+            if not email:
+                _enviar_texto(telefono,
+                    f"¡Con gusto le conecto con *{NOMBRE_ASESOR}*, {nombre_corto}! 😊\n\n"
+                    f"Para confirmar la cita, ¿me puede compartir su *correo electrónico*?\n"
+                    f"_(Escriba su email o *\"no\"* para omitir)_"
+                )
+                SESIONES[telefono] = {**sesion, "step": "pedir_email_cita", "slots": slots}
+            else:
+                _enviar_texto(telefono,
+                    f"¡Con gusto! Estos son los horarios disponibles con *{NOMBRE_ASESOR}*:\n\n"
+                    f"{_formatear_slots(slots)}\n\n"
+                    f"Responda con el *número* del horario que prefiere, o *0* para que lo contacten."
+                )
+            return
+
     _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
         nombre=nombre_corto or nombre,
         asesor=NOMBRE_ASESOR,
         empresa=NOMBRE_EMPRESA,
     ))
-    if NUMERO_ASESOR:
-        numero_limpio = re.sub(r"[^0-9]", "", NUMERO_ASESOR)
-        _enviar_texto(numero_limpio,
-            f"🔔 *{NOMBRE_EMPRESA}*\n\n"
-            f"Un cliente solicita hablar con vos:\n"
-            f"👤 *{nombre or 'Sin nombre'}*\n"
-            f"📱 +{re.sub(r'[^0-9]', '', telefono)}"
-        )
     SESIONES[telefono] = {**sesion, "step": "calificado"}
 
 
