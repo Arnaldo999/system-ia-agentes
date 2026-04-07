@@ -40,10 +40,11 @@ GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
 META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "")
 META_PHONE_ID     = os.environ.get("META_PHONE_NUMBER_ID", "")
 
-AIRTABLE_TOKEN        = os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
-AIRTABLE_BASE_ID      = os.environ.get("ROBERT_AIRTABLE_BASE", "")
-AIRTABLE_TABLE_PROPS  = os.environ.get("ROBERT_TABLE_PROPS", "")
-AIRTABLE_TABLE_LEADS  = os.environ.get("ROBERT_TABLE_CLIENTES", "")
+AIRTABLE_TOKEN         = os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
+AIRTABLE_BASE_ID       = os.environ.get("ROBERT_AIRTABLE_BASE", "")
+AIRTABLE_TABLE_PROPS   = os.environ.get("ROBERT_TABLE_PROPS", "")
+AIRTABLE_TABLE_LEADS   = os.environ.get("ROBERT_TABLE_CLIENTES", "")
+AIRTABLE_TABLE_ACTIVOS = os.environ.get("ROBERT_TABLE_ACTIVOS", "tblpfSE6qkGCV6e99")
 
 NOMBRE_EMPRESA = os.environ.get("INMO_DEMO_NOMBRE",  "Lovbot — Inmobiliaria")
 CIUDAD         = os.environ.get("INMO_DEMO_CIUDAD",  "México")
@@ -749,3 +750,62 @@ def crm_propiedades():
         if not offset:
             break
     return {"total": len(records), "records": records}
+
+
+@router.get("/crm/activos")
+def crm_activos():
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        return {"records": [], "error": "Airtable no configurado"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
+    records, offset = [], None
+    while True:
+        params = {"pageSize": 100}
+        if offset:
+            params["offset"] = offset
+        r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
+        data = r.json()
+        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
+        offset = data.get("offset")
+        if not offset:
+            break
+    return {"total": len(records), "records": records}
+
+
+@router.post("/crm/activos")
+async def crm_crear_activo(request: Request):
+    from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
+    data = await request.json()
+    fields = data.get("fields", data)
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "record": r.json()}
+
+
+@router.patch("/crm/activos/{record_id}")
+async def crm_actualizar_activo(record_id: str, request: Request):
+    from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
+    data = await request.json()
+    fields = data.get("fields", data)
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=8)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "record": r.json()}
+
+
+@router.delete("/crm/activos/{record_id}")
+def crm_eliminar_activo(record_id: str):
+    from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
+    r = requests.delete(url, headers=AT_HEADERS, timeout=8)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "deleted": record_id}
