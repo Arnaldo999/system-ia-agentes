@@ -1846,7 +1846,7 @@ function generarMapaSanIgnacio(activos) {
   // Coordenadas absolutas en pixels de la imagen PNG (1241×1754).
   // Recortamos la zona del mapa: desde (30,25) con ancho 1180 y alto 1050.
   // Esto excluye el footer de logos.
-  const VX = 30, VY = 25, VW = 1185, VH = 1100;
+  const VX = 30, VY = 25, VW = 1185, VH = 1120;
 
   let pins = '';
   for (let n = 1; n <= 163; n++) {
@@ -1876,7 +1876,7 @@ function generarMapaSanIgnacio(activos) {
     </div>
     <div style="overflow-x:auto;">
       <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
-           style="width:100%;min-width:520px;max-width:960px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
+           style="width:100%;min-width:520px;min-height:800px;max-width:960px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
         <defs><clipPath id="mapa-clip"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
         <!-- Imagen a tamaño real, desplazada -VX,-VY para que el viewBox 0,0 sea el borde del mapa -->
         <image href="${MASTER_PLAN_URL}" x="-${VX}" y="-${VY}" width="1241" height="1754" clip-path="url(#mapa-clip)"/>
