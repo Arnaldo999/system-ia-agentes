@@ -1855,46 +1855,6 @@ function generarMapaSanIgnacio(activos) {
     <p class="text-xs text-txt-muted text-center mt-3">Clic en cualquier lote para ver detalle · Datos actualizados desde Clientes Activos</p>`;
 }
 
-// función loteMap renombrada — ya no se usa
-function generarMapaSanIgnacioLegado(lotes) {
-  const loteMap = {};
-  lotes.forEach(l => { if (l.Numero_Lote) loteMap[l.Numero_Lote] = l; });
-
-  // Sectores del master plan San Ignacio
-  const sectores = [
-    // Fila norte superior (lotes 13-21, 33-36, 42)
-    { inicio: 1,  cant: 5,  x: 10,  y: 10,  cols: 5, dir: 'h', etiqueta: 'Sector A' },
-    { inicio: 13, cant: 4,  x: 185, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
-    { inicio: 17, cant: 1,  x: 335, y: 10,  cols: 1, dir: 'h', etiqueta: '' },
-    { inicio: 18, cant: 4,  x: 385, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
-    { inicio: 22, cant: 10, x: 385, y: 55,  cols: 4, dir: 'h', etiqueta: '' },
-    { inicio: 33, cant: 4,  x: 620, y: 10,  cols: 4, dir: 'h', etiqueta: '' },
-    { inicio: 37, cant: 12, x: 710, y: 10,  cols: 1, dir: 'v', etiqueta: '' },
-    // Columna derecha (lotes 42-87)
-    { inicio: 42, cant: 23, x: 760, y: 10,  cols: 1, dir: 'v', etiqueta: 'Sector B' },
-    { inicio: 65, cant: 23, x: 760, y: 420, cols: 1, dir: 'v-up', etiqueta: '' },
-    // Fila sur inferior (lotes 79-87)
-    { inicio: 79, cant: 9,  x: 110, y: 620, cols: 9, dir: 'h', etiqueta: '' },
-    { inicio: 70, cant: 9,  x: 435, y: 575, cols: 9, dir: 'h', etiqueta: '' },
-    // Columna izquierda (lotes 142-163)
-    { inicio: 142, cant: 22, x: 10, y: 440, cols: 1, dir: 'v-up', etiqueta: 'Sector C' },
-    // Sector central-izquierdo (lotes 88-141)
-    { inicio: 88, cant: 4,  x: 625, y: 370, cols: 4, dir: 'h', etiqueta: 'Sector D' },
-    { inicio: 92, cant: 10, x: 385, y: 310, cols: 5, dir: 'h', etiqueta: '' },
-    { inicio: 99, cant: 5,  x: 235, y: 220, cols: 5, dir: 'v', etiqueta: '' },
-    { inicio: 101, cant: 20, x: 160, y: 370, cols: 4, dir: 'h', etiqueta: '' },
-    { inicio: 121, cant: 20, x: 335, y: 460, cols: 5, dir: 'h', etiqueta: '' },
-    { inicio: 131, cant: 11, x: 560, y: 460, cols: 4, dir: 'h', etiqueta: '' },
-  ];
-
-  const W = 810, H = 680, LOTE_W = 36, LOTE_H = 30, GAP = 3;
-
-  let svgLotes = '';
-  let numero = 1;
-
-  // grilla vacía — función legado reemplazada arriba
-}
-
 function generarMapaGrilla(activos, config) {
   const activoMap = {};
   activos.forEach(a => { const n = parseInt(a.Numero_Lote); if (n) activoMap[n] = a; });
