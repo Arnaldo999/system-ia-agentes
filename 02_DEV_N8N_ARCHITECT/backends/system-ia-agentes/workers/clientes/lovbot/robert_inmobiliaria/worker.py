@@ -119,7 +119,8 @@ def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
 
 # ─── AIRTABLE ─────────────────────────────────────────────────────────────────
 def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
-                       tipo: str = "", zona: str = "", notas: str = "") -> None:
+                       tipo: str = "", zona: str = "", notas: str = "",
+                       presupuesto: str = "") -> None:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
         print("[ROBERT-AT] Sin base/tabla configurada — skip registro lead")
         return
@@ -147,6 +148,8 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
         campos["Zona"] = zona
     if notas:
         campos["Notas_Bot"] = notas
+    if presupuesto:
+        campos["Presupuesto"] = presupuesto
 
     if records:
         rec_id = records[0]["id"]
@@ -161,8 +164,17 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
         print(f"[ROBERT-AT] POST tel={telefono} status={r.status_code}")
 
 
+# Mapa respuesta usuario → valor singleSelect Airtable
+_PRESUPUESTO_MAP = {
+    "1": "hata_50k",
+    "2": "50k_100k",
+    "3": "100k_200k",
+    "4": "mas_200k",
+}
+
+
 def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
-                           zona: str = None) -> list[dict]:
+                           zona: str = None, presupuesto: str = None) -> list[dict]:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
         return []
     filtros = ["OR({Disponible}='✅ Disponible',{Disponible}='⏳ Reservado')"]
@@ -172,6 +184,8 @@ def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
         filtros.append(f"LOWER({{Operacion}})='{operacion.lower()}'")
     if zona and zona.lower() not in ("otra zona", "otra", "no sé", "no se"):
         filtros.append(f"{{Zona}}='{zona}'")
+    if presupuesto and presupuesto in ("hata_50k", "50k_100k", "100k_200k", "mas_200k"):
+        filtros.append(f"{{Presupuesto}}='{presupuesto}'")
     formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
     try:
@@ -499,7 +513,13 @@ def _procesar(telefono: str, texto: str) -> None:
 
     # ── PRESUPUESTO ───────────────────────────────────────────────────────────
     if step == "presupuesto":
-        SESIONES[telefono] = {**sesion, "step": "urgencia", "resp_presupuesto": texto}
+        # Opción 5 = hablar con asesor directo
+        if texto.strip() == "5":
+            _ir_asesor(telefono, sesion)
+            return
+        presupuesto_at = _PRESUPUESTO_MAP.get(texto.strip(), "")
+        SESIONES[telefono] = {**sesion, "step": "urgencia",
+                              "resp_presupuesto": texto, "presupuesto_at": presupuesto_at}
         _enviar_texto(telefono, _pregunta("urgencia", nombre_corto))
         return
 
@@ -524,10 +544,12 @@ def _procesar(telefono: str, texto: str) -> None:
         if operacion in (None, "null", ""):
             operacion = None
 
+        presupuesto_at = sesion_act.get("presupuesto_at", "")
+
         # Registrar lead en Airtable (background)
         threading.Thread(
             target=_at_registrar_lead,
-            args=(telefono, nombre, score, tipo, zona, nota), daemon=True
+            args=(telefono, nombre, score, tipo, zona, nota, presupuesto_at), daemon=True
         ).start()
 
         # Lead frío → derivar a sitio web
@@ -542,7 +564,8 @@ def _procesar(telefono: str, texto: str) -> None:
             return
 
         # Lead caliente/tibio → buscar propiedades en Airtable
-        props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona)
+        props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona,
+                                       presupuesto=presupuesto_at)
 
         if not props:
             _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
