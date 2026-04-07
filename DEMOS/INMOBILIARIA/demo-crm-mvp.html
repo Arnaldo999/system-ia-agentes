@@ -392,6 +392,10 @@ tailwind.config = {
     <div class="nav-item" onclick="nav('propiedades',this)">
       <span class="nav-icon">🏘️</span><span>Propiedades</span>
     </div>
+    <div class="nav-item" onclick="nav('activos',this)">
+      <span class="nav-icon">🤝</span><span>Clientes Activos</span>
+      <span class="nav-badge green" id="activosBadge">0</span>
+    </div>
     <div class="nav-item" onclick="nav('agenda',this)">
       <span class="nav-icon">📅</span><span>Mi Agenda</span>
     </div>
@@ -786,6 +790,100 @@ tailwind.config = {
         <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
           <div style="font-size:32px;margin-bottom:8px">⏳</div>
           Cargando propiedades desde Airtable...
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ CLIENTES ACTIVOS ══════════ -->
+    <div class="panel" id="panel-activos">
+      <div class="sh">
+        <div>
+          <div class="sh-title">🤝 Clientes Activos</div>
+          <div class="sh-sub">Compradores con cuotas — seguimiento de pagos y vencimientos</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div id="activosStatus" style="font-size:12px;color:var(--text2)"></div>
+          <button class="btn" onclick="cargarActivos()">↺ Actualizar</button>
+          <button class="btn btn-primary" onclick="abrirModalActivo()">+ Nuevo cliente activo</button>
+        </div>
+      </div>
+
+      <!-- KPIs Activos -->
+      <div class="kpis" id="activosKpis" style="margin-bottom:16px">
+        <div class="kpi" style="--c:#00d4aa">
+          <div class="kpi-icon">🤝</div>
+          <div class="kpi-val" id="kpi-activos-total">—</div>
+          <div class="kpi-label">Total activos</div>
+        </div>
+        <div class="kpi" style="--c:#00d4aa">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-val" id="kpi-activos-aldia">—</div>
+          <div class="kpi-label">Al día</div>
+        </div>
+        <div class="kpi" style="--c:#ffa94d">
+          <div class="kpi-icon">⏰</div>
+          <div class="kpi-val" id="kpi-activos-atrasado">—</div>
+          <div class="kpi-label">Atrasados</div>
+        </div>
+        <div class="kpi" style="--c:#ff6b6b">
+          <div class="kpi-icon">🚨</div>
+          <div class="kpi-val" id="kpi-activos-mora">—</div>
+          <div class="kpi-label">En mora</div>
+        </div>
+        <div class="kpi" style="--c:#6c63ff">
+          <div class="kpi-icon">🎉</div>
+          <div class="kpi-val" id="kpi-activos-cancelado">—</div>
+          <div class="kpi-label">Cancelados</div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="leads-wrap">
+        <table class="leads-tbl" style="min-width:700px">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Propiedad</th>
+              <th>Cuotas</th>
+              <th>Próx. Vencimiento</th>
+              <th>Estado Pago</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="activosTbody">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text2)">
+              <div style="font-size:28px;margin-bottom:8px">⏳</div>
+              Cargando clientes activos...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Nuevo/Editar Cliente Activo -->
+    <div id="modalActivo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;margin:16px;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-weight:700;font-size:15px" id="modalActivoTitle">➕ Nuevo Cliente Activo</div>
+          <button onclick="cerrarModalActivo()" style="background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer">✕</button>
+        </div>
+        <input type="hidden" id="activoId">
+        <div style="display:grid;gap:14px">
+          <div class="mf"><label>Nombre completo *</label><input id="ac-nombre" class="mi" placeholder="Ej: Juan Pérez"></div>
+          <div class="mf"><label>Teléfono</label><input id="ac-tel" class="mi" placeholder="+52 55 1234-5678"></div>
+          <div class="mf"><label>Email</label><input id="ac-email" class="mi" type="email" placeholder="juan@email.com"></div>
+          <div class="mf"><label>Propiedad</label><input id="ac-prop" class="mi" placeholder="Ej: Lote 12 - Fracc. Norte"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="mf"><label>Cuotas totales</label><input id="ac-total" class="mi" type="number" min="1" placeholder="24"></div>
+            <div class="mf"><label>Cuotas pagadas</label><input id="ac-pagadas" class="mi" type="number" min="0" placeholder="3"></div>
+          </div>
+          <div class="mf"><label>Próximo vencimiento</label><input id="ac-venc" class="mi" type="date"></div>
+          <div class="mf"><label>Monto cuota (<span id="ac-moneda-lbl">USD</span>)</label><input id="ac-monto" class="mi" type="number" placeholder="500"></div>
+          <div class="mf"><label>Notas</label><textarea id="ac-notas" class="mi" rows="2" placeholder="Observaciones..."></textarea></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end">
+          <button class="btn" onclick="cerrarModalActivo()">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarActivo()" id="btnGuardarActivo">💾 Guardar</button>
         </div>
       </div>
     </div>
@@ -1235,6 +1333,7 @@ function nav(id, el) {
   if(id==='leads') renderLeads();
   if(id==='pipeline') renderKanbanFromLeads();
   if(id==='propiedades') renderProps();
+  if(id==='activos') cargarActivos();
   if(id==='agenda') renderAgenda();
   if(id==='configuracion') cargarConfiguracion();
 }
@@ -1600,6 +1699,7 @@ async function submitPin() {
       document.querySelector('.layout') && (document.querySelector('.layout').style.display = ''); nav('inicio', document.querySelector('.nav-item'));
       cargarLeads();
       renderProps();
+      cargarActivos();
       renderAgenda();
     } else {
       pinBuffer = '';
@@ -2475,12 +2575,206 @@ async function guardarMarca() {
   }
 }
 
+// ── CLIENTES ACTIVOS ─────────────────────────────────────────────────────────
+let _activosData = [];
+
+function _estadoPagoStyle(estado) {
+  const map = {
+    'Al día':    { bg:'#064e3b', color:'#00d4aa', border:'#1a5c33' },
+    'Atrasado':  { bg:'#451a03', color:'#fbbf24', border:'#92400e' },
+    'En mora':   { bg:'#3d0d0d', color:'#f87171', border:'#7a1a1a' },
+    'Cancelado': { bg:'#1e2a4a', color:'#818cf8', border:'#3730a3' },
+  };
+  return map[estado] || { bg:'#1a1d27', color:'#8b92a5', border:'#2e3347' };
+}
+
+async function cargarActivos() {
+  const tbody = document.getElementById('activosTbody');
+  const statusEl = document.getElementById('activosStatus');
+  if(statusEl) statusEl.innerHTML = '<span style="color:var(--yellow)">⏳ Cargando...</span>';
+
+  try {
+    const res = await fetch(`${API_BASE}/crm/activos`, { signal: AbortSignal.timeout(12000) });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    _activosData = data.records || [];
+    _renderTablaActivos(_activosData);
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ ${_activosData.length} registros</span>`;
+  } catch(err) {
+    console.warn('[Activos] Backend no disponible:', err.message);
+    _activosData = [];
+    _renderTablaActivos([]);
+    if(statusEl) statusEl.innerHTML = '<span style="color:var(--text2)">⚠ Sin conexión al backend</span>';
+  }
+}
+
+function _renderTablaActivos(records) {
+  const tbody = document.getElementById('activosTbody');
+  if(!tbody) return;
+
+  // KPIs
+  const total     = records.length;
+  const aldia     = records.filter(r => r.Estado_Pago === 'Al día').length;
+  const atrasado  = records.filter(r => r.Estado_Pago === 'Atrasado').length;
+  const mora      = records.filter(r => r.Estado_Pago === 'En mora').length;
+  const cancelado = records.filter(r => r.Estado_Pago === 'Cancelado').length;
+
+  const setKpi = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  setKpi('kpi-activos-total', total);
+  setKpi('kpi-activos-aldia', aldia);
+  setKpi('kpi-activos-atrasado', atrasado);
+  setKpi('kpi-activos-mora', mora);
+  setKpi('kpi-activos-cancelado', cancelado);
+  const badge = document.getElementById('activosBadge');
+  if(badge) badge.textContent = total;
+
+  if(records.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text2)">
+      <div style="font-size:28px;margin-bottom:8px">🤝</div>
+      No hay clientes activos registrados aún.<br>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="abrirModalActivo()">+ Agregar el primero</button>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = records.map(r => {
+    const nombre   = r.Nombre || r.nombre || '—';
+    const telefono = r.Telefono || r.telefono || '';
+    const propiedad = r.Propiedad || r.propiedad || r.Tipo_Propiedad || '—';
+    const cuotasTotal   = r.Cuotas_Total   ?? '—';
+    const cuotasPagadas = r.Cuotas_Pagadas ?? 0;
+    const progPct = (cuotasTotal && cuotasTotal !== '—')
+      ? Math.min(100, Math.round((cuotasPagadas / cuotasTotal) * 100)) : 0;
+    const venc = r.Proximo_Vencimiento
+      ? new Date(r.Proximo_Vencimiento).toLocaleDateString('es', {day:'2-digit',month:'short',year:'numeric'})
+      : '—';
+    const estado = r.Estado_Pago || 'Al día';
+    const st = _estadoPagoStyle(estado);
+    const progColor = estado === 'Al día' ? '#00d4aa' : estado === 'Atrasado' ? '#ffa94d' : estado === 'En mora' ? '#ff6b6b' : '#818cf8';
+    const monto = r.Monto_Cuota ? ` · $${Number(r.Monto_Cuota).toLocaleString('es')}` : '';
+
+    return `<tr>
+      <td>
+        <div style="font-weight:600;font-size:13px">${nombre}</div>
+        ${telefono ? `<div style="font-size:11px;color:var(--text2)">${telefono}</div>` : ''}
+      </td>
+      <td style="font-size:12px;color:var(--text2)">${propiedad}${monto}</td>
+      <td>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${cuotasPagadas} / ${cuotasTotal} cuotas</div>
+        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;width:80px">
+          <div style="background:${progColor};height:100%;width:${progPct}%;transition:width .6s ease;border-radius:4px"></div>
+        </div>
+      </td>
+      <td style="font-size:12px">${venc}</td>
+      <td>
+        <span style="background:${st.bg};color:${st.color};border:1px solid ${st.border};
+          padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500">${estado}</span>
+      </td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn" style="font-size:11px;padding:3px 8px"
+            onclick="abrirModalActivo('${r.id}')">✏️ Editar</button>
+          <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red)"
+            onclick="eliminarActivo('${r.id}','${nombre}')">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirModalActivo(id) {
+  const modal = document.getElementById('modalActivo');
+  const monedaLbl = document.getElementById('ac-moneda-lbl');
+  if(monedaLbl) monedaLbl.textContent = (window._cfg && window._cfg.moneda) || 'USD';
+
+  if(id) {
+    const r = _activosData.find(x => x.id === id);
+    if(!r) return;
+    document.getElementById('modalActivoTitle').textContent = '✏️ Editar Cliente Activo';
+    document.getElementById('activoId').value = id;
+    document.getElementById('ac-nombre').value  = r.Nombre || '';
+    document.getElementById('ac-tel').value     = r.Telefono || '';
+    document.getElementById('ac-email').value   = r.Email || '';
+    document.getElementById('ac-prop').value    = r.Propiedad || r.Tipo_Propiedad || '';
+    document.getElementById('ac-total').value   = r.Cuotas_Total ?? '';
+    document.getElementById('ac-pagadas').value = r.Cuotas_Pagadas ?? '';
+    document.getElementById('ac-venc').value    = r.Proximo_Vencimiento || '';
+    document.getElementById('ac-monto').value   = r.Monto_Cuota || '';
+    document.getElementById('ac-notas').value   = r.Notas || '';
+  } else {
+    document.getElementById('modalActivoTitle').textContent = '➕ Nuevo Cliente Activo';
+    document.getElementById('activoId').value = '';
+    ['ac-nombre','ac-tel','ac-email','ac-prop','ac-total','ac-pagadas','ac-venc','ac-monto','ac-notas']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  }
+  modal.style.display = 'flex';
+}
+
+function cerrarModalActivo() {
+  document.getElementById('modalActivo').style.display = 'none';
+}
+
+async function guardarActivo() {
+  const btn = document.getElementById('btnGuardarActivo');
+  const id = document.getElementById('activoId').value;
+  const nombre = document.getElementById('ac-nombre').value.trim();
+  if(!nombre) { alert('El nombre es obligatorio'); return; }
+
+  const fields = {
+    Nombre:              nombre,
+    Telefono:            document.getElementById('ac-tel').value.trim() || null,
+    Email:               document.getElementById('ac-email').value.trim() || null,
+    Propiedad:           document.getElementById('ac-prop').value.trim() || null,
+    Cuotas_Total:        parseInt(document.getElementById('ac-total').value) || null,
+    Cuotas_Pagadas:      parseInt(document.getElementById('ac-pagadas').value) || 0,
+    Proximo_Vencimiento: document.getElementById('ac-venc').value || null,
+    Monto_Cuota:         parseFloat(document.getElementById('ac-monto').value) || null,
+    Notas:               document.getElementById('ac-notas').value.trim() || null,
+  };
+  // Limpiar nulls
+  Object.keys(fields).forEach(k => fields[k] === null && delete fields[k]);
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+  try {
+    const url = id ? `${API_BASE}/crm/activos/${id}` : `${API_BASE}/crm/activos`;
+    const method = id ? 'PATCH' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ fields }),
+    });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    cerrarModalActivo();
+    await cargarActivos();
+    showNotif('✅ Cliente activo guardado', nombre);
+  } catch(e) {
+    alert('Error al guardar: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Guardar';
+  }
+}
+
+async function eliminarActivo(id, nombre) {
+  if(!confirm(`¿Eliminar a ${nombre}?`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/crm/activos/${id}`, { method: 'DELETE' });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    await cargarActivos();
+    showNotif('🗑 Cliente eliminado', nombre);
+  } catch(e) {
+    alert('Error al eliminar: ' + e.message);
+  }
+}
+
 // ── INIT ────────────────────────────────────────────────────────────────────
 cargarPerfil();
 initTenant().then(ok => {
   if (ok) {
     cargarLeads();
     renderProps();
+    cargarActivos();
     renderAgenda();
   }
   // Si ok=false → login screen visible, datos se cargan desde submitPin()

@@ -60,6 +60,7 @@ MONEDA          = os.environ.get("INMO_DEMO_MONEDA",        "USD")
 AIRTABLE_BASE_ID        = os.environ.get("INMO_DEMO_AIRTABLE_BASE",   "")
 AIRTABLE_TABLE_PROPS    = os.environ.get("INMO_DEMO_TABLE_PROPS",      "")
 AIRTABLE_TABLE_CLIENTES = os.environ.get("INMO_DEMO_TABLE_CLIENTES",   "")
+AIRTABLE_TABLE_ACTIVOS  = os.environ.get("INMO_DEMO_TABLE_ACTIVOS",    "")
 
 CAL_API_KEY   = os.environ.get("INMO_DEMO_CAL_API_KEY",  "")
 CAL_EVENT_ID  = os.environ.get("INMO_DEMO_CAL_EVENT_ID", "")
@@ -1343,6 +1344,88 @@ async def crm_upload_imagen(request: Request):
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=resp.status_code, detail=resp.text[:300])
     return {"url": resp.json().get("secure_url")}
+
+
+# ─── CLIENTES ACTIVOS ─────────────────────────────────────────────────────────
+def _calcular_estado_pago(fields: dict) -> str:
+    from datetime import date
+    total   = fields.get("Cuotas_Total")
+    pagadas = fields.get("Cuotas_Pagadas")
+    if total and pagadas is not None and int(pagadas) >= int(total):
+        return "Cancelado"
+    venc_str = fields.get("Proximo_Vencimiento")
+    if not venc_str:
+        return fields.get("Estado_Pago", "Al día")
+    try:
+        venc = date.fromisoformat(venc_str)
+        hoy  = date.today()
+        if venc >= hoy:
+            return "Al día"
+        dias = (hoy - venc).days
+        return "Atrasado" if dias <= 90 else "En mora"
+    except Exception:
+        return fields.get("Estado_Pago", "Al día")
+
+
+@router.get("/crm/activos")
+def crm_activos():
+    """Lista todos los clientes activos con estado de pago calculado."""
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        return {"records": []}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
+    records, offset = [], None
+    while True:
+        params = {"pageSize": 100}
+        if offset:
+            params["offset"] = offset
+        r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
+        data = r.json()
+        for rec in data.get("records", []):
+            fields = rec["fields"]
+            fields["Estado_Pago"] = _calcular_estado_pago(fields)
+            records.append({"id": rec["id"], **fields})
+        offset = data.get("offset")
+        if not offset:
+            break
+    return {"records": records}
+
+
+@router.post("/crm/activos")
+async def crm_crear_activo(request: Request):
+    from fastapi import HTTPException
+    data = await request.json()
+    fields = data.get("fields", data)
+    fields = {k: v for k, v in fields.items() if v is not None and v != ""}
+    fields["Estado_Pago"] = _calcular_estado_pago(fields)
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+
+@router.patch("/crm/activos/{record_id}")
+async def crm_editar_activo(record_id: str, request: Request):
+    from fastapi import HTTPException
+    data = await request.json()
+    fields = data.get("fields", data)
+    fields = {k: v for k, v in fields.items() if v is not None and v != ""}
+    fields["Estado_Pago"] = _calcular_estado_pago(fields)
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+
+@router.delete("/crm/activos/{record_id}")
+async def crm_eliminar_activo(record_id: str):
+    from fastapi import HTTPException
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
+    r = requests.delete(url, headers=AT_HEADERS, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok"}
 
 
 @router.get("/config")
