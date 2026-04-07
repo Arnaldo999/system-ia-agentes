@@ -450,6 +450,7 @@
       <div class="nav-item tab" onclick="switchTab('propiedades', this)"><i>🏠</i> Propiedades</div>
       <div class="nav-item tab" onclick="switchTab('pipeline', this)"><i>📊</i> Pipeline</div>
       <div class="nav-item tab" onclick="switchTab('clientes', this)"><i>👥</i> Leads</div>
+      <div class="nav-item tab" onclick="switchTab('activos', this)"><i>💼</i> Clientes Activos</div>
       <div class="nav-item tab" onclick="switchTab('galeria', this)"><i>🖼️</i> Galería</div>
       <div class="nav-item tab" onclick="switchTab('loteos', this)"><i>🗺️</i> Loteos</div>
     </nav>
@@ -731,6 +732,98 @@
       <div id="leads-loading" class="loading-msg"><span class="spinner"></span> Cargando leads...</div>
       <div class="leads-grid" id="leads-grid"></div>
       <div id="leads-empty" class="empty-msg" style="display:none">No hay leads con esos filtros.</div>
+    </div>
+
+    <!-- PANEL CLIENTES ACTIVOS -->
+    <div id="panel-activos" class="panel">
+      <div class="section-hero">
+        <div class="section-title">
+          <div class="subtitle">Administración</div>
+          <h1>Clientes Activos <span class="text-txt-muted opacity-60">& Cuotas</span></h1>
+        </div>
+        <button class="btn btn-primary" onclick="openModalNuevoActivo()">+ Nuevo Cliente</button>
+      </div>
+      <div class="stats-grid mb-8" id="activos-stats">
+        <div class="stat-card green"><div class="num" id="sa-total">—</div><div class="lbl">💼 Total Clientes</div></div>
+        <div class="stat-card blue"><div class="num" id="sa-al-dia">—</div><div class="lbl">✅ Al Día</div></div>
+        <div class="stat-card yellow"><div class="num" id="sa-por-vencer">—</div><div class="lbl">⚠️ Vencen en 3 días</div></div>
+        <div class="stat-card red"><div class="num" id="sa-atrasados">—</div><div class="lbl">🔴 Atrasados</div></div>
+      </div>
+      <div class="filters-bar mb-6">
+        <div class="fc-wrap">
+          <select class="filter-chip" id="fa-estado" onchange="renderActivos()">
+            <option value="">💼 Todos los estados</option>
+            <option value="Al día">✅ Al día</option>
+            <option value="Atrasado">🔴 Atrasado</option>
+            <option value="En mora">⛔ En mora</option>
+            <option value="Cancelado">🏁 Cancelado</option>
+          </select>
+        </div>
+        <div class="fc-wrap" style="flex:1;max-width:320px;">
+          <input type="text" class="filter-chip w-full" id="fa-buscar" placeholder="🔍 Buscar nombre, lote..." oninput="renderActivos()" />
+        </div>
+        <div style="margin-left:auto;font-size:0.82rem;color:var(--txt-muted,#6B7280)" id="fa-count"></div>
+      </div>
+      <div class="overflow-x-auto rounded-2xl border border-brd bg-card shadow-sm">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-brd bg-gray-50 text-txt-muted uppercase text-[0.72rem] tracking-wider">
+              <th class="px-4 py-3 text-left">Cliente</th>
+              <th class="px-4 py-3 text-left">Lote / Loteo</th>
+              <th class="px-4 py-3 text-left">Cuotas</th>
+              <th class="px-4 py-3 text-left">Próx. Vencimiento</th>
+              <th class="px-4 py-3 text-left">Saldo</th>
+              <th class="px-4 py-3 text-left">Estado Pago</th>
+              <th class="px-4 py-3 text-left">Contrato</th>
+              <th class="px-4 py-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="activos-tbody"></tbody>
+        </table>
+        <div id="activos-empty" class="text-center py-14 text-txt-muted text-sm hidden">No hay clientes activos todavía.</div>
+      </div>
+    </div>
+
+    <!-- MODAL CLIENTE ACTIVO -->
+    <div class="modal-overlay" id="modal-activo">
+      <div class="modal" style="max-width:680px;">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modal-activo-title">Nuevo Cliente Activo</h3>
+          <button class="modal-close" onclick="closeModal('modal-activo')">✕</button>
+        </div>
+        <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <input type="hidden" id="ma-record-id" />
+          <div class="form-group" style="grid-column:1/-1"><label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Datos Personales</label></div>
+          <div class="form-group"><label>Nombre *</label><input class="form-control" id="ma-nombre" placeholder="Nombre" /></div>
+          <div class="form-group"><label>Apellido *</label><input class="form-control" id="ma-apellido" placeholder="Apellido" /></div>
+          <div class="form-group"><label>DNI / Cédula</label><input class="form-control" id="ma-dni" placeholder="30123456" /></div>
+          <div class="form-group"><label>Teléfono</label><input class="form-control" id="ma-telefono" placeholder="+54 9 376..." /></div>
+          <div class="form-group"><label>Email</label><input class="form-control" type="email" id="ma-email" placeholder="email@ejemplo.com" /></div>
+          <div class="form-group"><label>Ciudad</label><input class="form-control" id="ma-ciudad" placeholder="San Ignacio" /></div>
+          <div class="form-group" style="grid-column:1/-1;margin-top:8px;"><label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Propiedad Adquirida</label></div>
+          <div class="form-group"><label>Número de Lote</label><input class="form-control" id="ma-numero-lote" placeholder="Ej: 12" /></div>
+          <div class="form-group"><label>Nombre del Loteo</label><input class="form-control" id="ma-loteo" placeholder="San Ignacio Golf & Resort" /></div>
+          <div class="form-group"><label>Superficie (m²)</label><input class="form-control" type="number" id="ma-superficie" placeholder="300" /></div>
+          <div class="form-group"><label>Precio Total ($)</label><input class="form-control" type="number" id="ma-precio-total" placeholder="5000000" /></div>
+          <div class="form-group"><label>Fecha de Compra</label><input class="form-control" type="date" id="ma-fecha-compra" /></div>
+          <div class="form-group" style="grid-column:1/-1;margin-top:8px;"><label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Plan de Cuotas</label></div>
+          <div class="form-group"><label>Plan</label><select class="form-control" id="ma-plan-cuotas"><option value="12 meses">12 meses</option><option value="18 meses">18 meses</option><option value="24 meses">24 meses</option><option value="36 meses">36 meses</option><option value="48 meses">48 meses</option><option value="60 meses">60 meses</option></select></div>
+          <div class="form-group"><label>Total de Cuotas</label><input class="form-control" type="number" id="ma-cuotas-total" placeholder="24" /></div>
+          <div class="form-group"><label>Cuotas Pagadas</label><input class="form-control" type="number" id="ma-cuotas-pagadas" placeholder="0" /></div>
+          <div class="form-group"><label>Monto por Cuota ($)</label><input class="form-control" type="number" id="ma-monto-cuota" placeholder="50000" /></div>
+          <div class="form-group"><label>Próximo Vencimiento</label><input class="form-control" type="date" id="ma-proximo-vencimiento" /></div>
+          <div class="form-group"><label>Estado de Pago</label><select class="form-control" id="ma-estado-pago"><option value="Al día">✅ Al día</option><option value="Atrasado">🔴 Atrasado</option><option value="En mora">⛔ En mora</option><option value="Cancelado">🏁 Cancelado</option></select></div>
+          <div class="form-group" style="grid-column:1/-1;margin-top:8px;"><label style="font-weight:700;color:#0A261A;font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;">Contrato</label></div>
+          <div class="form-group"><label>N° Contrato</label><input class="form-control" id="ma-numero-contrato" placeholder="BACK-2026-001" /></div>
+          <div class="form-group"><label>Fecha de Contrato</label><input class="form-control" type="date" id="ma-fecha-contrato" /></div>
+          <div class="form-group"><label>Estado del Contrato</label><select class="form-control" id="ma-estado-contrato"><option value="Pendiente">📋 Pendiente de firma</option><option value="Firmado">✅ Firmado</option><option value="Escriturado">🏠 Escriturado</option></select></div>
+          <div class="form-group" style="grid-column:1/-1;"><label>Notas</label><textarea class="form-control" id="ma-notas" rows="2" placeholder="Observaciones..."></textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-activo')">Cancelar</button>
+          <button class="btn btn-primary" id="btn-guardar-activo" onclick="guardarActivo()">💾 Guardar</button>
+        </div>
+      </div>
     </div>
 
     <!-- PANEL GALERÍA -->
@@ -1558,6 +1651,7 @@ function switchTab(name, el) {
   el.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'loteos' && allActivos.length === 0) loadLotes();
+  if (name === 'activos') renderActivos();
   // Cerrar sidebar en mobile al cambiar tab
   if (window.innerWidth < 1024) {
     const sidebar = document.getElementById('sidebar');
@@ -2080,6 +2174,182 @@ function abrirDetalleLoteLibre(numero) {
     </div>
     <div class="modal-footer mt-2"><button class="btn btn-outline" onclick="closeModal('modal-lote')">Cerrar</button></div>`;
   openModal('modal-lote');
+}
+
+// ── CLIENTES ACTIVOS ──────────────────────────────────────
+function renderActivos() {
+  const tbody = document.getElementById('activos-tbody');
+  const empty = document.getElementById('activos-empty');
+  const estFiltro = document.getElementById('fa-estado').value;
+  const busqueda  = (document.getElementById('fa-buscar').value || '').toLowerCase();
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const en3dias = new Date(hoy); en3dias.setDate(hoy.getDate() + 3);
+
+  let lista = allActivos.filter(a => {
+    if (estFiltro && a.Estado_Pago !== estFiltro) return false;
+    if (busqueda) {
+      const haystack = `${a.Nombre||''} ${a.Apellido||''} ${a.Numero_Lote||''} ${a.Loteo||''} ${a.DNI||''}`.toLowerCase();
+      if (!haystack.includes(busqueda)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('fa-count').textContent = `${lista.length} cliente${lista.length !== 1 ? 's' : ''}`;
+
+  const total = allActivos.length;
+  const alDia = allActivos.filter(a => a.Estado_Pago === 'Al día').length;
+  const atrasados = allActivos.filter(a => ['Atrasado','En mora'].includes(a.Estado_Pago)).length;
+  const porVencer = allActivos.filter(a => {
+    if (!a.Proximo_Vencimiento) return false;
+    const fv = new Date(a.Proximo_Vencimiento + 'T00:00:00');
+    return fv >= hoy && fv <= en3dias && a.Estado_Pago === 'Al día';
+  }).length;
+  document.getElementById('sa-total').textContent = total;
+  document.getElementById('sa-al-dia').textContent = alDia;
+  document.getElementById('sa-por-vencer').textContent = porVencer;
+  document.getElementById('sa-atrasados').textContent = atrasados;
+
+  if (!lista.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  const estadoBadge = {
+    'Al día':    '<span class="badge badge-ok">✅ Al día</span>',
+    'Atrasado':  '<span class="badge" style="background:#FEF3C7;color:#B45309;border:1px solid #FCD34D">🔴 Atrasado</span>',
+    'En mora':   '<span class="badge" style="background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5">⛔ En mora</span>',
+    'Cancelado': '<span class="badge" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD">🏁 Cancelado</span>',
+  };
+  const contratoBadge = {
+    'Pendiente':   '<span class="badge" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D">📋 Pendiente</span>',
+    'Firmado':     '<span class="badge badge-ok">✅ Firmado</span>',
+    'Escriturado': '<span class="badge" style="background:#DBEAFE;color:#1D4ED8;border:1px solid #93C5FD">🏠 Escriturado</span>',
+  };
+
+  tbody.innerHTML = lista.map(a => {
+    const nombre = `${a.Nombre||''} ${a.Apellido||''}`.trim() || '—';
+    const lote = [a.Numero_Lote, a.Loteo].filter(Boolean).join(' — ') || '—';
+    const cuotas = (a.Cuotas_Total && a.Cuotas_Pagadas !== undefined) ? `${a.Cuotas_Pagadas}/${a.Cuotas_Total}` : (a.Cuotas_Total ? `0/${a.Cuotas_Total}` : '—');
+    const saldo = a.Saldo_Pendiente != null ? `$${Number(a.Saldo_Pendiente).toLocaleString('es-AR')}` : (a.Cuotas_Total && a.Monto_Cuota && a.Cuotas_Pagadas != null ? `$${((a.Cuotas_Total - a.Cuotas_Pagadas) * a.Monto_Cuota).toLocaleString('es-AR')}` : '—');
+    const venc = a.Proximo_Vencimiento ? new Date(a.Proximo_Vencimiento + 'T00:00:00').toLocaleDateString('es-AR') : '—';
+    const fv = a.Proximo_Vencimiento ? new Date(a.Proximo_Vencimiento + 'T00:00:00') : null;
+    const alertaVenc = fv && fv >= hoy && fv <= en3dias ? ' style="background:#FFFBEB"' : (fv && fv < hoy ? ' style="background:#FFF1F2"' : '');
+    const estadoPago = estadoBadge[a.Estado_Pago] || `<span class="badge">${a.Estado_Pago||'—'}</span>`;
+    const contrato = contratoBadge[a.Estado_Contrato] || '—';
+    return `<tr class="border-b border-brd hover:bg-gray-50 transition-colors"${alertaVenc}>
+      <td class="px-4 py-3"><div class="font-medium text-txt">${nombre}</div><div class="text-xs text-txt-muted">${a.Telefono||''} ${a.Email ? '· '+a.Email : ''}</div></td>
+      <td class="px-4 py-3 text-txt-muted">${lote}</td>
+      <td class="px-4 py-3 text-center font-mono">${cuotas}</td>
+      <td class="px-4 py-3 text-txt-muted">${venc}</td>
+      <td class="px-4 py-3 font-medium">${saldo}</td>
+      <td class="px-4 py-3">${estadoPago}</td>
+      <td class="px-4 py-3">${contrato}</td>
+      <td class="px-4 py-3 text-right">
+        <button class="btn btn-outline text-xs px-3 py-1.5 mr-1" onclick="editarActivo('${a.id}')">✏️ Editar</button>
+        <button class="btn text-xs px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" onclick="eliminarActivo('${a.id}', '${nombre.replace(/'/g,"\\'")}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openModalNuevoActivo() {
+  document.getElementById('modal-activo-title').textContent = 'Nuevo Cliente Activo';
+  ['ma-record-id','ma-nombre','ma-apellido','ma-dni','ma-telefono','ma-email','ma-ciudad','ma-numero-lote','ma-loteo','ma-notas','ma-numero-contrato'].forEach(id => { document.getElementById(id).value = ''; });
+  ['ma-superficie','ma-precio-total','ma-cuotas-total','ma-cuotas-pagadas','ma-monto-cuota'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('ma-fecha-compra').value = '';
+  document.getElementById('ma-fecha-contrato').value = '';
+  document.getElementById('ma-proximo-vencimiento').value = '';
+  document.getElementById('ma-plan-cuotas').value = '24 meses';
+  document.getElementById('ma-estado-pago').value = 'Al día';
+  document.getElementById('ma-estado-contrato').value = 'Pendiente';
+  openModal('modal-activo');
+}
+
+function editarActivo(recordId) {
+  const a = allActivos.find(x => x.id === recordId);
+  if (!a) return;
+  document.getElementById('modal-activo-title').textContent = 'Editar Cliente Activo';
+  document.getElementById('ma-record-id').value = recordId;
+  document.getElementById('ma-nombre').value = a.Nombre || '';
+  document.getElementById('ma-apellido').value = a.Apellido || '';
+  document.getElementById('ma-dni').value = a.DNI || '';
+  document.getElementById('ma-telefono').value = a.Telefono || '';
+  document.getElementById('ma-email').value = a.Email || '';
+  document.getElementById('ma-ciudad').value = a.Ciudad || '';
+  document.getElementById('ma-numero-lote').value = a.Numero_Lote || '';
+  document.getElementById('ma-loteo').value = a.Loteo || '';
+  document.getElementById('ma-superficie').value = a.Superficie_m2 || '';
+  document.getElementById('ma-precio-total').value = a.Precio_Total || '';
+  document.getElementById('ma-fecha-compra').value = a.Fecha_Compra || '';
+  document.getElementById('ma-plan-cuotas').value = a.Plan_Cuotas || '24 meses';
+  document.getElementById('ma-cuotas-total').value = a.Cuotas_Total || '';
+  document.getElementById('ma-cuotas-pagadas').value = a.Cuotas_Pagadas ?? '';
+  document.getElementById('ma-monto-cuota').value = a.Monto_Cuota || '';
+  document.getElementById('ma-proximo-vencimiento').value = a.Proximo_Vencimiento || '';
+  document.getElementById('ma-estado-pago').value = a.Estado_Pago || 'Al día';
+  document.getElementById('ma-numero-contrato').value = a.Numero_Contrato || '';
+  document.getElementById('ma-fecha-contrato').value = a.Fecha_Contrato || '';
+  document.getElementById('ma-estado-contrato').value = a.Estado_Contrato || 'Pendiente';
+  document.getElementById('ma-notas').value = a.Notas || '';
+  openModal('modal-activo');
+}
+
+async function guardarActivo() {
+  const recordId = document.getElementById('ma-record-id').value;
+  const nombre = document.getElementById('ma-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
+  const btn = document.getElementById('btn-guardar-activo');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const num = v => { const n = parseFloat(v); return isNaN(n) ? undefined : n; };
+  const fields = {
+    Nombre: nombre,
+    Apellido: document.getElementById('ma-apellido').value.trim() || undefined,
+    DNI: document.getElementById('ma-dni').value.trim() || undefined,
+    Telefono: document.getElementById('ma-telefono').value.trim() || undefined,
+    Email: document.getElementById('ma-email').value.trim() || undefined,
+    Ciudad: document.getElementById('ma-ciudad').value.trim() || undefined,
+    Numero_Lote: document.getElementById('ma-numero-lote').value.trim() || undefined,
+    Loteo: document.getElementById('ma-loteo').value.trim() || undefined,
+    Superficie_m2: num(document.getElementById('ma-superficie').value),
+    Precio_Total: num(document.getElementById('ma-precio-total').value),
+    Fecha_Compra: document.getElementById('ma-fecha-compra').value || undefined,
+    Plan_Cuotas: document.getElementById('ma-plan-cuotas').value,
+    Cuotas_Total: num(document.getElementById('ma-cuotas-total').value),
+    Cuotas_Pagadas: num(document.getElementById('ma-cuotas-pagadas').value),
+    Monto_Cuota: num(document.getElementById('ma-monto-cuota').value),
+    Proximo_Vencimiento: document.getElementById('ma-proximo-vencimiento').value || undefined,
+    Estado_Pago: document.getElementById('ma-estado-pago').value,
+    Numero_Contrato: document.getElementById('ma-numero-contrato').value.trim() || undefined,
+    Fecha_Contrato: document.getElementById('ma-fecha-contrato').value || undefined,
+    Estado_Contrato: document.getElementById('ma-estado-contrato').value,
+    Notas: document.getElementById('ma-notas').value.trim() || undefined,
+  };
+  Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
+  try {
+    if (recordId) {
+      await fetch(`${CRM}/activos/${recordId}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
+      toast('Cliente actualizado correctamente', 'success');
+    } else {
+      await fetch(`${CRM}/activos`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
+      toast('Cliente creado correctamente', 'success');
+    }
+    closeModal('modal-activo');
+    allActivos = await fetch(`${CRM}/activos`).then(r => r.json()).then(d => d.records || []);
+    renderActivos();
+  } catch(e) {
+    toast('Error al guardar: ' + e.message, 'error');
+  }
+  btn.disabled = false; btn.textContent = '💾 Guardar';
+}
+
+async function eliminarActivo(recordId, nombre) {
+  if (!confirm(`¿Eliminar al cliente "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await fetch(`${CRM}/activos/${recordId}`, { method:'DELETE' });
+    toast('Cliente eliminado', 'success');
+    allActivos = allActivos.filter(a => a.id !== recordId);
+    renderActivos();
+  } catch(e) {
+    toast('Error al eliminar: ' + e.message, 'error');
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────
