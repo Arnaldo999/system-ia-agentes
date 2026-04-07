@@ -1817,14 +1817,16 @@ function generarMapaSanIgnacio(activos) {
   const vendidos   = activos.filter(a => ['Firmado','Escriturado'].includes(a.Estado_Contrato||'')).length;
   const reservados = activos.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
   const libres     = 163 - activos.length;
-  const VW = 1000, VH = 790;
+  // ViewBox = área útil del mapa (sin footer logos)
+  // imagen 1241x1754, mapa ocupa x=[40,1200] y=[55,1285]
+  const MAP_X = 40, MAP_Y = 55, MAP_W = 1160, MAP_H = 1230;
 
   let pins = '';
   for (let n = 1; n <= 163; n++) {
     const coord = LOTES_COORDS[n];
     if (!coord) continue;
-    const cx = ((coord[0] / 100) * VW).toFixed(1);
-    const cy = ((coord[1] / 100) * VH).toFixed(1);
+    const cx = ((coord[0] / 100) * MAP_W).toFixed(1);
+    const cy = ((coord[1] / 100) * MAP_H).toFixed(1);
     const activo = activoMap[n];
     const color = activo ? colorActivo(activo) : '#16a34a';
     const nombre = activo ? (activo.Nombre || '').split(' ')[0] : '';
@@ -1845,10 +1847,11 @@ function generarMapaSanIgnacio(activos) {
       <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#ef4444;display:inline-block"></span>Vendidos: <strong>${vendidos}</strong></span>
     </div>
     <div style="overflow-x:auto;">
-      <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+      <svg viewBox="0 0 ${MAP_W} ${MAP_H}" xmlns="http://www.w3.org/2000/svg"
            style="width:100%;min-width:480px;max-width:860px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
-        <defs><clipPath id="mapa-clip"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
-        <image href="${MASTER_PLAN_URL}" x="0" y="0" width="${VW}" height="${VH}" preserveAspectRatio="xMidYMid meet" clip-path="url(#mapa-clip)"/>
+        <defs><clipPath id="mapa-clip"><rect x="0" y="0" width="${MAP_W}" height="${MAP_H}" rx="12"/></clipPath></defs>
+        <!-- imagen desplazada para mostrar solo el área del mapa, sin footer de logos -->
+        <image href="${MASTER_PLAN_URL}" x="-${MAP_X}" y="-${MAP_Y}" width="1241" height="1754" clip-path="url(#mapa-clip)"/>
         ${pins}
       </svg>
     </div>
