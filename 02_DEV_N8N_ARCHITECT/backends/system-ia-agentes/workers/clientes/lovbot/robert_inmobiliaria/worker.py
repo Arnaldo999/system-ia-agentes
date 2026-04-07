@@ -119,6 +119,28 @@ def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
 
 
 # ─── AIRTABLE ─────────────────────────────────────────────────────────────────
+_TIPO_MAP = {
+    "casa": "casa", "casas": "casa",
+    "departamento": "departamento", "depto": "departamento", "apartamento": "departamento",
+    "terreno": "terreno", "lote": "terreno",
+    "local": "otro", "oficina": "otro",
+}
+_ZONA_MAP = {
+    "apostoles": "Apóstoles", "apóstoles": "Apóstoles",
+    "gdor roca": "Gdor Roca", "gobernador roca": "Gdor Roca", "gdorroca": "Gdor Roca",
+    "san ignacio": "San Ignacio", "sanignacio": "San Ignacio",
+    "otra zona": "Otra Zona", "otra": "Otra Zona", "no sé": "Otra Zona", "no se": "Otra Zona",
+}
+
+
+def _normalizar_tipo(tipo: str) -> str:
+    return _TIPO_MAP.get(tipo.lower().strip(), "") if tipo else ""
+
+
+def _normalizar_zona(zona: str) -> str:
+    return _ZONA_MAP.get(zona.lower().strip(), "") if zona else ""
+
+
 def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
                        tipo: str = "", zona: str = "", notas: str = "",
                        presupuesto: str = "") -> None:
@@ -131,7 +153,7 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
         params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
     records = buscar.json().get("records", []) if buscar.status_code == 200 else []
 
-    campos = {"Telefono": telefono, "Llego_WhatsApp": True}
+    campos = {"Telefono": telefono, "Llego_WhatsApp": True, "Fuente": "whatsapp_directo"}
     if nombre:
         partes = nombre.strip().split(" ", 1)
         campos["Nombre"] = partes[0]
@@ -143,10 +165,12 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
         campos["Estado"] = "contactado"
     elif score:
         campos["Estado"] = "no_contactado"
-    if tipo:
-        campos["Tipo_Propiedad"] = tipo
-    if zona:
-        campos["Zona"] = zona
+    tipo_norm = _normalizar_tipo(tipo)
+    if tipo_norm:
+        campos["Tipo_Propiedad"] = tipo_norm
+    zona_norm = _normalizar_zona(zona)
+    if zona_norm:
+        campos["Zona"] = zona_norm
     if notas:
         campos["Notas_Bot"] = notas
     if presupuesto:
