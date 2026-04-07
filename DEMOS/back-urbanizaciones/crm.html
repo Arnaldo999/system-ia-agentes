@@ -1845,7 +1845,7 @@ function generarMapaSanIgnacio(activos) {
   // Coordenadas absolutas en pixels de la imagen PNG (1241×1754).
   // Recortamos la zona del mapa: desde (30,25) con ancho 1180 y alto 1050.
   // Esto excluye el footer de logos.
-  const VX = 30, VY = 25, VW = 1180, VH = 1210;
+  const VX = 30, VY = 25, VW = 1185, VH = 1250;
 
   let pins = '';
   for (let n = 1; n <= 163; n++) {
@@ -1990,16 +1990,20 @@ function exportarCoordenadas() {
     const cy = Math.round(parseFloat(circle.getAttribute('cy')) + VY);
     coords[n] = [cx, cy];
   });
-  // Generar texto JS
-  let lines = 'const LOTES_COORDS = {\n';
+  // Generar texto compacto (una línea por grupo de 5) para que no se corte al pegar
+  let parts = [];
   for (let i = 1; i <= 163; i++) {
-    if (coords[i]) lines += `  ${i}:[${coords[i][0]},${coords[i][1]}],\n`;
+    if (coords[i]) parts.push(`${i}:[${coords[i][0]},${coords[i][1]}]`);
+  }
+  // Agrupar de a 5 por línea
+  let lines = 'const LOTES_COORDS = {\n';
+  for (let i = 0; i < parts.length; i += 5) {
+    lines += '  ' + parts.slice(i, i + 5).join(', ') + ',\n';
   }
   lines += '};';
   navigator.clipboard.writeText(lines).then(() => {
-    toast('Coordenadas copiadas al clipboard — pegá en el código', 'success');
+    toast('Coordenadas copiadas al clipboard — pegá en el chat', 'success');
   }).catch(() => {
-    // Fallback: mostrar en prompt
     prompt('Copiá estas coordenadas:', lines);
   });
 }
