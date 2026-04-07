@@ -1765,6 +1765,7 @@ async def meta_webhook_eventos(request: Request):
     """Recibe eventos de comentarios de Instagram y Facebook."""
     try:
         body = await request.json()
+        print(f"[WEBHOOK] BODY_RAW={json.dumps(body)[:500]}", flush=True)
         entry = (body.get("entry") or [{}])[0]
         page_id = entry.get("id", "")
 
