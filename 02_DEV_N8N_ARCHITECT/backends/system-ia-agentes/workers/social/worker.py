@@ -92,9 +92,57 @@ _ROTACION_TEMAS = {
 }
 
 
-def _get_tema_del_dia() -> dict:
-    """Retorna el dict de tema/ángulo/idea_central según el día de la semana (0=Lunes)."""
+_ROTACION_TEMAS_INMOBILIARIA = {
+    0: {  # Lunes
+        "tema": "Cómo elegir el lote ideal en Misiones",
+        "angulo": "Los 3 factores que nadie te cuenta antes de comprar",
+        "idea_central": "Ubicación, servicios y documentación legal son los pilares para elegir bien. Un lote con mensura, agua y luz ya instalados vale más y te ahorra problemas futuros.",
+        "prompt_imagen": "aerial view of green land lots in Misiones Argentina, urban planning, marked terrain parcels, lush vegetation, professional real estate photo, no text in image",
+    },
+    1: {  # Martes
+        "tema": "Invertir en terrenos: por qué el suelo siempre sube",
+        "angulo": "La tierra no se deprecia — y en Misiones menos",
+        "idea_central": "Mientras los ahorros pierden valor frente a la inflación, la tierra en zonas de crecimiento como Misiones históricamente se revaloriza. Un lote hoy puede valer el doble en 5 años.",
+        "prompt_imagen": "land value growth concept, green terrain in Misiones Argentina, investment arrow going up, professional flat design illustration, no text in image",
+    },
+    2: {  # Miércoles
+        "tema": "Financiar tu lote en cuotas: todo lo que necesitás saber",
+        "angulo": "Ya no hace falta tener todo el dinero junto",
+        "idea_central": "Con planes de hasta 120 cuotas mensuales accesibles, hoy es posible comprar tu terreno pagando menos que un alquiler. Sin banco, sin garante, directo con la desarrolladora.",
+        "prompt_imagen": "family signing land purchase agreement, happy couple with keys, modern real estate office, Misiones Argentina landscape background, flat design colorful, no text in image",
+    },
+    3: {  # Jueves
+        "tema": "Qué documentación revisar antes de comprar un lote",
+        "angulo": "Evitá sorpresas legales que pueden costarte caro",
+        "idea_central": "Mensura aprobada, escritura libre de deudas y habilitación municipal son los documentos clave. Un lote sin estos papeles puede convertirse en un dolor de cabeza legal.",
+        "prompt_imagen": "legal documents for land purchase, notary signing papers, terrain map and title deed, professional clean illustration, no text in image",
+    },
+    4: {  # Viernes
+        "tema": "Zonas de mayor crecimiento en Misiones para invertir",
+        "angulo": "San Ignacio, Apóstoles, Gdor. Roca: ¿cuál es mejor?",
+        "idea_central": "Cada zona tiene su perfil de inversión. San Ignacio crece por turismo, Apóstoles por comercio, Gdor. Roca por expansión urbana. Elegir bien la zona puede duplicar tu inversión.",
+        "prompt_imagen": "map of Misiones Argentina highlighting growth zones, urban expansion aerial view, green landscape with new housing developments, professional illustration, no text in image",
+    },
+    5: {  # Sábado
+        "tema": "Construir o guardar: qué hacer con tu lote",
+        "angulo": "Dos estrategias válidas según tu objetivo",
+        "idea_central": "Si comprás para vivir, planificá la construcción por etapas. Si comprás para invertir, simplemente mantenerlo algunos años puede multiplicar tu capital sin hacer nada.",
+        "prompt_imagen": "split view of empty land lot vs modern house built on similar lot, investment concept, Misiones Argentina green landscape, flat design illustration, no text in image",
+    },
+    6: {  # Domingo
+        "tema": "El sueño de la casa propia empieza por el terreno",
+        "angulo": "Antes de construir, primero necesitás el suelo",
+        "idea_central": "La mayoría posterga comprar el terreno esperando tener todo el dinero. Pero con financiamiento en cuotas, el primer paso es más accesible de lo que pensás.",
+        "prompt_imagen": "happy family standing on their empty land lot, Misiones Argentina nature background, sunset warm light, dream home concept, flat design colorful, no text in image",
+    },
+}
+
+
+def _get_tema_del_dia(industria: str = "") -> dict:
+    """Retorna el dict de tema/ángulo/idea_central según el día y la industria del cliente."""
     dia = datetime.now().weekday()  # 0=Lunes … 6=Domingo
+    if "inmobiliaria" in industria.lower() or "lote" in industria.lower() or "terreno" in industria.lower():
+        return _ROTACION_TEMAS_INMOBILIARIA.get(dia, _ROTACION_TEMAS_INMOBILIARIA[0])
     return _ROTACION_TEMAS.get(dia, _ROTACION_TEMAS[0])
 
 
@@ -638,6 +686,134 @@ def _crear_slide_carrusel(
         return base64_img  # fallback sin diseño
 
 
+def _overlay_texto_marca(
+    base64_img: str,
+    titulo: str,
+    subtitulo: str,
+    colores_str: str = "",
+    logo_url: str = "",
+) -> str:
+    """
+    Superpone título + subtítulo en overlay oscuro en la zona inferior de la imagen.
+    Logo en esquina superior derecha sobre el overlay.
+    Retorna base64 PNG.
+    """
+    try:
+        from PIL import ImageDraw, ImageFont
+
+        # Parsear color de fondo del overlay desde marca
+        hexes = re.findall(r"#[0-9A-Fa-f]{6}", colores_str or "")
+
+        def lum(h):
+            h = h.lstrip("#")
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return 0.299 * r + 0.587 * g + 0.114 * b
+
+        # Color más oscuro como fondo overlay, más claro como acento
+        if hexes:
+            ordered = sorted(hexes, key=lum)
+            overlay_color = ordered[0]   # más oscuro
+            acento_color  = ordered[-1] if len(ordered) > 1 else "#FFFFFF"
+        else:
+            overlay_color = "#1a4a2e"
+            acento_color  = "#c9a84c"
+
+        def hex_rgb(h, alpha=255):
+            h = h.lstrip("#")
+            return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), alpha)
+
+        img = Image.open(BytesIO(base64.b64decode(base64_img))).convert("RGBA")
+        W, H = img.size
+
+        # ── Overlay oscuro en franja inferior (35% de la imagen) ─────────────
+        overlay_h = int(H * 0.35)
+        overlay_y = H - overlay_h
+        overlay = Image.new("RGBA", (W, overlay_h), hex_rgb(overlay_color, 210))
+
+        # Gradiente vertical: más transparente arriba, más sólido abajo
+        for y in range(overlay_h):
+            alpha = int(80 + (210 - 80) * (y / overlay_h))
+            draw_o = ImageDraw.Draw(overlay)
+            draw_o.line([(0, y), (W, y)], fill=hex_rgb(overlay_color, alpha))
+
+        img.paste(overlay, (0, overlay_y), overlay)
+        draw = ImageDraw.Draw(img)
+
+        # ── Línea de acento (4px) arriba del overlay ─────────────────────────
+        acc = hex_rgb(acento_color, 255)[:3]
+        draw.rectangle([(0, overlay_y), (W, overlay_y + 4)], fill=acc)
+
+        PAD = int(W * 0.05)
+
+        # ── Título (bold, ~5% de W) ───────────────────────────────────────────
+        titulo = _limpiar_markdown(titulo)[:80]
+        subtitulo = _limpiar_markdown(subtitulo)[:120]
+
+        font_titulo = _get_font(int(W * 0.052))
+        font_sub    = _get_font_regular(int(W * 0.034))
+
+        # Wrap título
+        words = titulo.split()
+        lines, line = [], ""
+        for w in words:
+            test = (line + " " + w).strip()
+            if draw.textlength(test, font=font_titulo) <= W - PAD * 2:
+                line = test
+            else:
+                if line:
+                    lines.append(line)
+                line = w
+        if line:
+            lines.append(line)
+        lines = lines[:2]  # máx 2 líneas
+
+        # altura ocupada por título (usado para posicionar subtítulo)
+        y_titulo = overlay_y + int(overlay_h * 0.18)
+        for l in lines:
+            draw.text((PAD, y_titulo), l, font=font_titulo, fill=(255, 255, 255, 255))
+            y_titulo += int(W * 0.052) + 6
+
+        # ── Subtítulo ─────────────────────────────────────────────────────────
+        y_sub = y_titulo + 8
+        # Wrap subtítulo
+        words_s = subtitulo.split()
+        lines_s, line_s = [], ""
+        for w in words_s:
+            test = (line_s + " " + w).strip()
+            if draw.textlength(test, font=font_sub) <= W - PAD * 2:
+                line_s = test
+            else:
+                if line_s:
+                    lines_s.append(line_s)
+                line_s = w
+        if line_s:
+            lines_s.append(line_s)
+        for l in lines_s[:2]:
+            draw.text((PAD, y_sub), l, font=font_sub, fill=(*hex_rgb(acento_color)[:3], 230))
+            y_sub += int(W * 0.034) + 4
+
+        # ── Logo esquina superior derecha del overlay ─────────────────────────
+        if logo_url:
+            try:
+                logo_resp = req.get(logo_url, timeout=15)
+                logo_resp.raise_for_status()
+                logo = Image.open(BytesIO(logo_resp.content)).convert("RGBA")
+                logo_w = min(int(W * 0.14), 150)
+                logo_h_r = int(logo.height * (logo_w / logo.width))
+                logo = logo.resize((logo_w, logo_h_r), Image.LANCZOS)
+                lx = W - logo_w - PAD
+                ly = overlay_y + int((overlay_h - logo_h_r) * 0.35)
+                img.paste(logo, (lx, ly), logo)
+            except Exception:
+                pass
+
+        output = BytesIO()
+        img.convert("RGB").save(output, format="PNG")
+        return base64.b64encode(output.getvalue()).decode()
+    except Exception:
+        return base64_img
+
+
 def _overlay_logo(base64_img: str, logo_url: str) -> str:
     """Descarga logo y lo superpone en esquina inferior derecha. Retorna base64 PNG."""
     try:
@@ -964,7 +1140,7 @@ async def publicar_completo(entrada: DatosPublicarCompleto):
     errores = []
 
     # ── Tema del día: rotación automática por día de semana ──────────────────
-    rotacion = _get_tema_del_dia()
+    rotacion = _get_tema_del_dia(industria=marca.get("Industria", ""))
     tema = rotacion["tema"]
     angulo = rotacion["angulo"]
     idea_central = rotacion["idea_central"]
@@ -1029,8 +1205,17 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
             if isinstance(logo_field, list) and logo_field
             else ""
         )
-        if logo_url:
-            b64 = _overlay_logo(b64, logo_url)
+        # Extraer título y subtítulo desde el tema del día
+        titulo_img = tema  # ej: "Consejos para comprar lotes en Misiones"
+        subtitulo_img = angulo  # ej: "Lo que nadie te cuenta antes de firmar"
+        colores_marca = marca.get("Colores de Marca", "") or marca.get("Colores de marca", "")
+        b64 = _overlay_texto_marca(
+            b64,
+            titulo=titulo_img,
+            subtitulo=subtitulo_img,
+            colores_str=colores_marca,
+            logo_url=logo_url,
+        )
         imagen_url = _subir_cloudinary(b64, "image/png")
     except Exception as e:
         imagen_error = str(e)
