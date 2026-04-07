@@ -4,127 +4,154 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 1. Rol Activo — Leer Primero
 
-**Al iniciar cualquier sesión, lee `ai.context.json` para saber qué agente debes encarnar:**
+**Al iniciar cualquier sesión, lee `ai.context.json` para saber qué agente encarnar:**
 
-| `agente_activo` | Rol | AGENT.md a leer |
-|-----------------|-----|-----------------|
-| `orquestador` | Gerente / coordinador de misión | `.agents/01-orquestador/AGENT.md` |
-| `ventas` | Experto en cierre y propuestas | `.agents/02-ventas/AGENT.md` o `01_VENTAS_CONSULTIVO/AGENT.md` |
-| `dev` | Ingeniero n8n + FastAPI | `.agents/03-dev/AGENT.md` o `02_DEV_N8N_ARCHITECT/AGENT.md` |
-| `crm` | Analista de memoria y calidad | `.agents/04-crm/AGENT.md` o `03_CRM_ANALYST/AGENT.md` |
+| `agente_activo` | Rol | AGENT.md |
+|-----------------|-----|----------|
+| `orquestador` | Gerente / coordinador | `.agents/01-orquestador/AGENT.md` |
+| `ventas` | Cierre y propuestas | `.agents/02-ventas/AGENT.md` |
+| `dev` | Ingeniero n8n + FastAPI | `.agents/03-dev/AGENT.md` |
+| `crm` | Memoria y calidad de datos | `.agents/04-crm/AGENT.md` |
 
-Actualiza `ai.context.json` al completar cada hito importante.
+Actualiza `ai.context.json` al completar cada hito.
 
-**Triggers especiales** — leer el archivo indicado ANTES de responder:
+**Triggers de skill — activar ANTES de responder:**
 
-| Si el pedido menciona... | Leer primero |
-|--------------------------|-------------|
-| `nuevo cliente`, `redes sociales`, `instagram`, `facebook`, `comentarios` | `memory/nuevo-cliente-redes-sociales.md` |
-| `deploy`, `render`, `push`, `dockerfile`, `backend`, `fastapi`, `worker` | `memory/infraestructura.md` + `02_DEV_N8N_ARCHITECT/AGENT.md` |
-| `debug`, `error`, `falla`, `falló`, `no funciona` | `memory/debug-log.md` |
-| `n8n`, `workflow`, `flujo` | `memory/infraestructura.md` (sección n8n Producción) |
+| Pedido menciona... | Skill |
+|--------------------|-------|
+| `nuevo cliente`, `onboarding` | `/nuevo-cliente-onboarding` |
+| `worker`, `bot`, `fastapi`, `endpoint` | `/fastapi-worker` |
+| `debug`, `error`, `falla`, `no funciona` | `/debug-worker` |
+| `n8n`, `workflow`, `flujo` | `/dev-n8n-architect` |
+| `html`, `tailwind`, `crm`, `panel`, `landing` | `/tailwind-builder` |
+| `airtable`, `tabla`, `campo`, `filtro` | `/airtable-expert` |
+| `inmobiliaria`, `lote`, `terreno` | `/nicho-inmobiliaria` |
+| `restaurante`, `cafetería`, `delivery` | `/nicho-gastronomia` |
+| `wordpress`, `elementor`, `astra` | `/wordpress-elementor` |
+| `copy`, `landing copy`, `propuesta` | `/copywriting` |
+| `redes sociales`, `contenido`, `post` | `/social-content` |
+| `pdf`, `excel`, `presentación` | `/pdf` `/xlsx` `/pptx` |
 
 ---
 
-## 2. Arquitectura del Proyecto
+## 2. Arquitectura
 
-Este proyecto es Mission Control de **Agencia System IA** (automatizaciones para clientes). Combina:
+Mission Control de **Agencia System IA** — automatizaciones para clientes en LATAM.
 
-| Componente | Tech | Ubicación |
-|------------|------|-----------|
-| Respuesta automática a comentarios IG/FB | FastAPI | `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/workers/social/worker.py` |
-| Publicación automática de posts | n8n | Workflow "Publicar en Redes (Easypanel)" |
-| Webhook Meta | FastAPI | `GET/POST /social/meta-webhook` |
-| Frontend demo | Vite + React | `02_DEV_N8N_ARCHITECT/` (carpeta `electronica-web`) |
-| Sandbox CrewAI | Python | `02_DEV_N8N_ARCHITECT/ai-sandbox/pruebas_crewai/` |
+**Repo backend**: `github.com/Arnaldo999/system-ia-agentes` — push siempre `master:main`
 
-**Regla crítica**: La respuesta a comentarios de IG/FB es **FastAPI**, no n8n. No duplicar en workflows.
+### Workers monorepo
 
-**Producción**: Easypanel — proyecto `sytem_ia_pruebas` (typo intencional), servicio `agente`
-**Repo backend**: `github.com/Arnaldo999/system-ia-agentes`
+```
+workers/
+  clientes/
+    arnaldo/maicol/worker.py    ← bot inmobiliario LIVE (YCloud + Airtable + Gemini)
+    arnaldo/prueba/worker.py    ← bot prueba Arnaldo
+    lovbot/                     ← clientes Robert (Meta Graph API)
+    system-ia/                  ← clientes Mica (Evolution API)
+  demos/
+    inmobiliaria/worker.py      ← NUNCA editar, copiar para cliente nuevo
+    gastronomia/worker.py       ← idem
+  social/worker.py              ← comentarios IG/FB + publicación Pillow overlay
+```
 
-### Protocolo de Handoff entre Agentes
+**Regla**: comentarios IG/FB → FastAPI, NO n8n. Nunca compartir workers entre proyectos.
 
-El archivo `ai.context.json` es el tablero de estado compartido. El flujo de handoff:
-1. Orquestador escribe `ai.context.json` con `agente_activo` + contexto de la tarea
-2. El agente activo lee el JSON, ejecuta su tarea, escribe su output en el JSON
-3. Cambia `agente_activo` al siguiente agente antes de terminar
-4. CRM documenta el resultado final en `memory/`
+### Infraestructura
 
-Los handoffs activos se registran en `handoff/` (ejemplo: `handoff/brief-agencia-automotriz-vip.md`).
+| Proyecto | Backend | n8n |
+|----------|---------|-----|
+| Arnaldo | Coolify Hostinger → `agentes.arnaldoayalaestratega.cloud` | `n8n.arnaldoayalaestratega.cloud` |
+| Robert/lovbot | Coolify Hetzner → `agentes.lovbot.ai` | `n8n.lovbot.ai` |
+| Backup | Render → `system-ia-agentes.onrender.com` | — |
+| Demos | Vercel → `lovbot-demos.vercel.app` | — |
+
+**Regla crítica**: confirmar "¿Arnaldo / Robert / Mica?" antes de cualquier operación MCP, Coolify o Airtable.
+
+### Handoff entre agentes
+
+`ai.context.json` es el tablero compartido:
+1. Orquestador escribe `agente_activo` + contexto
+2. Agente ejecuta y escribe output en el JSON
+3. Cambia `agente_activo` al siguiente
+4. CRM documenta en `memory/`
+
+Handoffs activos en `handoff/brief-[cliente].md`.
 
 ---
 
 ## 3. Comandos
 
-### Backend FastAPI (sistema principal)
 ```bash
+# Backend FastAPI
 source .venv/bin/activate
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # desde system-ia-agentes/
-python -m py_compile main.py                           # validación rápida
-pytest tests/path/test_file.py::test_case_name -q     # test único
-docker build -t system-ia-agentes . && docker run --rm -p 8000:8000 --env-file .env system-ia-agentes
-```
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+python -m py_compile main.py
 
-### Frontend (electronica-web)
-```bash
+# Frontend
 npm install && npm run dev
-npm run build && npm run preview
-```
 
-### Sandbox CrewAI
-```bash
-cd 02_DEV_N8N_ARCHITECT/ai-sandbox/pruebas_crewai/
-source venv/bin/activate
-python test_basico.py           # validación rápida
-python demo_pro_restaurante.py  # demo completo
-```
+# CrewAI sandbox
+cd 02_DEV_N8N_ARCHITECT/ai-sandbox/pruebas_crewai/ && source venv/bin/activate
 
-### Disparar agente en modo no-interactivo
-```bash
+# Agente no-interactivo
 claude -p "Lee ai.context.json. Tu rol es [agente]. Tarea: [descripción]."
+
+# Instalar nueva skill desde skills.sh
+npx skills add <owner/repo> -y
 ```
 
 ---
 
-## 4. Flujo n8n (Agente Dev)
+## 4. Memoria Operativa
 
-```
-search_nodes → get_node → n8n_create_workflow → validate_node → fix → validate_workflow → activateWorkflow
-```
+`memory/` — no reinventar, seguir lo documentado.
 
-Validar siempre con `profile: "runtime"` antes de deployar. 2-3 iteraciones de validate→fix son normales.
-
-### Patrones de código n8n
-
-**JS estándar:**
-```javascript
-const items = $input.all();
-return items.map(item => ({ json: { ...item.json, processed: true } }));
-```
-
-**Webhook data**: siempre bajo `$json.body`, nunca `$json` directamente.
-
-**Code nodes**: JavaScript por defecto. Python solo si necesitás módulos de stdlib específicos.
+- `memory/infraestructura.md` — URLs, UUIDs Coolify, IDs Airtable
+- `memory/nuevo-cliente-redes-sociales.md` — onboarding cliente social
+- `memory/debug-log.md` — bugs conocidos y sus fixes
 
 ---
 
-## 5. Convenciones de Código (FastAPI/Python)
+## 5. Skills del Proyecto
 
-- `snake_case` para funciones/variables, `UPPER_SNAKE_CASE` para constantes, `Datos...` para DTOs Pydantic
-- Retornar JSON estructurado con `status`: `success` | `error` | `partial`
-- Imports: stdlib → third-party → local
-- Helpers internos con `_` prefijo (ej: `_call_gemini_text`)
-- Config solo desde env vars. Nunca hardcodear tokens/IDs.
+### Propias (`.claude/skills/`) — conocimiento de System IA
 
----
+| Skill | Cuándo |
+|-------|--------|
+| `/tailwind-builder` | HTML + Tailwind, CRM, dashboards, demos |
+| `/fastapi-worker` | Workers Python, bots WhatsApp, endpoints |
+| `/airtable-expert` | CRUD, filtros, schemas, bugs API |
+| `/nuevo-cliente-onboarding` | Cliente nuevo, brief de Ventas recibido |
+| `/debug-worker` | Errores, fallas, diagnóstico |
+| `/nicho-inmobiliaria` | Lotes, terrenos, inmobiliarias (LATAM) |
+| `/nicho-gastronomia` | Restaurantes, cafeterías, delivery (LATAM) |
+| `/wordpress-elementor` | WordPress + Elementor + Astra |
+| `/dev-n8n-architect` | n8n + FastAPI, implementación técnica |
+| `/orquestador-mission-control` | Coordinación, handoffs |
+| `/ventas-consultivo` | Discovery, propuestas, cierre |
+| `/crm-analyst` | Documentar, memoria, reportes |
+| `/deploy` | Deploy en Coolify |
 
-## 6. Memoria Operativa
+### Instaladas desde skills.sh (`.agents/skills/`) — symlink a Claude Code
 
-`memory/` contiene casos de uso documentados y ya probados. **No reinventar — seguir el proceso documentado.**
+**Anthropics (18):** `frontend-design`, `brand-guidelines`, `canvas-design`, `theme-factory`,
+`pdf`, `xlsx`, `pptx`, `docx`, `doc-coauthoring`, `mcp-builder`, `webapp-testing`,
+`web-artifacts-builder`, `skill-creator`, `claude-api`, `internal-comms`,
+`slack-gif-creator`, `algorithmic-art`, `template-skill`
 
-Archivos clave:
-- `memory/nuevo-cliente-redes-sociales.md` — proceso completo onboarding cliente social
-- `memory/infraestructura.md` — estado de la infraestructura
-- `memory/guia-ventas-micaela.md` — guía comercial
-- `ai/core/` — reglas compartidas para todos los modelos LLM
+**Marketing/Vercel (34+):** `copywriting`, `social-content`, `seo-audit`, `marketing-psychology`,
+`content-strategy`, `find-skills`, `frontend-design`, `web-design-guidelines`,
+`cold-email`, `email-sequence`, `paid-ads`, `ad-creative`, `lead-magnets`,
+`launch-strategy`, `pricing-strategy`, `ab-test-setup`, `competitor-alternatives`,
+`customer-research`, `revops`, `sales-enablement`, y más CRO/SEO
+
+**Supabase (2):** `supabase`, `supabase-postgres-best-practices`
+
+**n8n especializadas (8):** `n8n-mcp-tools-expert`, `n8n-code-javascript`, `n8n-code-python`,
+`n8n-expression-syntax`, `n8n-node-configuration`, `n8n-validation-expert`,
+`n8n-workflow-patterns`, `n8n-debugging`
+
+> **Principio**: solo nombre+descripción de cada skill vive en contexto siempre.
+> El cuerpo completo se carga únicamente cuando la skill se activa.
+> Usar `/find-skills [descripción]` para buscar skills adicionales en skills.sh.
