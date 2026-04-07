@@ -400,13 +400,63 @@ Devolvé SOLO el JSON."""
                 "nota_para_asesor": "Error en calificación"}
 
 
-def _pregunta(paso: str, nombre: str = "") -> str:
-    """Preguntas fijas de alta calidad — sin llamadas a Gemini para máxima velocidad."""
+def _pregunta(paso: str, nombre: str = "", subniche: str = "") -> str:
+    """Preguntas adaptadas por subniche — sin llamadas a Gemini."""
     n = nombre.split()[0] if nombre else ""
     nt = f", {n}" if n else ""
     zonas_ops = "\n".join(f"{i+1}️⃣ {z}" for i, z in enumerate(ZONAS_LIST))
     ultimo_num = len(ZONAS_LIST) + 1
 
+    # ── Desarrolladora: el cliente compra unidades de proyecto ────────────
+    if subniche == "desarrolladora":
+        msgs = {
+            "objetivo": (
+                f"Perfecto{nt}, con gusto le ayudo 😊\n\n"
+                f"¿Qué le interesa de nuestros proyectos?\n\n"
+                f"*1️⃣* 🏠 Comprar una unidad en preventa\n"
+                f"*2️⃣* 🌿 Adquirir un lote / terreno\n"
+                f"*3️⃣* 📈 Invertir en un proyecto inmobiliario\n\n"
+                f"_(También puede escribirme libremente)_"
+            ),
+            "tipo": (
+                f"¡Excelente{nt}! 🌟\n\n"
+                f"¿Qué tipo de unidad le interesa?\n\n"
+                f"*1️⃣* 🏡 Casa en proyecto residencial\n"
+                f"*2️⃣* 🏢 Departamento / Apartamento\n"
+                f"*3️⃣* 🌿 Lote / Terreno urbanizado\n"
+                f"*4️⃣* 🏪 Local comercial en desarrollo\n"
+                f"*5️⃣* 💼 Oficina en edificio nuevo\n\n"
+                f"_(También puede describirme lo que busca)_"
+            ),
+            "zona": (
+                f"Entendido{nt} 📍\n\n"
+                f"¿En qué zona de *{CIUDAD}* le interesa nuestro proyecto?\n\n"
+                f"{zonas_ops}\n"
+                f"{ultimo_num}️⃣ 🗺️ Otra zona / Me es indiferente\n\n"
+                f"_(Puede escribir la zona directamente)_"
+            ),
+            "presupuesto": (
+                f"Perfecto{nt} 💰\n\n"
+                f"¿Con qué rango de inversión cuenta?\n\n"
+                f"*1️⃣* Menos de 50,000 {MONEDA}\n"
+                f"*2️⃣* 50,000 — 100,000 {MONEDA}\n"
+                f"*3️⃣* 100,000 — 200,000 {MONEDA}\n"
+                f"*4️⃣* Más de 200,000 {MONEDA}\n"
+                f"*5️⃣* 💬 Prefiero hablarlo con el asesor comercial\n\n"
+                f"_(Una referencia es suficiente para orientarlo mejor)_"
+            ),
+            "urgencia": (
+                f"¡Casi terminamos{nt}! 🙌\n\n"
+                f"¿En qué etapa de compra se encuentra?\n\n"
+                f"*1️⃣* 🔥 Listo para reservar — quiero asegurar precio de preventa\n"
+                f"*2️⃣* 📅 Decidiendo en los próximos 6 meses\n"
+                f"*3️⃣* 🗓️ Planifico para el próximo año\n"
+                f"*4️⃣* 🔍 Estoy explorando proyectos y comparando"
+            ),
+        }
+        return msgs[paso]
+
+    # ── Agencia / Agente Independiente (flujo estándar) ──────────────────
     msgs = {
         "objetivo": (
             f"Perfecto{nt}, con gusto le ayudo 😊\n\n"
@@ -598,8 +648,8 @@ _SUBNICHO_CONFIG = {
     "3": {
         "subniche": "desarrolladora",
         "label": "Desarrolladora / Constructora",
-        "empresa": "Lovbot — Desarrolladora",
-        "intro": "🏗️ *Desarrolladora / Constructora*\n\nEsta demo muestra cómo el bot gestiona consultas de proyectos en preventa, filtra compradores serios y notifica a tu asesor comercial.",
+        "empresa": "Lovbot — Desarrollos Inmobiliarios",
+        "intro": "🏗️ *Desarrolladora / Constructora*\n\nEste bot atiende a compradores interesados en tus proyectos: preventa, lotes urbanizados, unidades en construcción. Filtra inversores serios, califica por presupuesto y agenda reuniones con tu equipo comercial.",
     },
 }
 
@@ -642,6 +692,7 @@ def _procesar(telefono: str, texto: str) -> None:
     step = sesion.get("step", "inicio")
     nombre = sesion.get("nombre", "")
     nombre_corto = nombre.split()[0] if nombre else ""
+    subniche = sesion.get("subniche", "")
 
     # Comandos globales
     if texto_lower in ("0", "menú", "menu", "inicio", "hola", "hi", "buenas"):
@@ -721,7 +772,7 @@ def _procesar(telefono: str, texto: str) -> None:
         ciudad_resp = texto.strip().title()
         SESIONES[telefono] = {**sesion, "step": "objetivo", "ciudad_resp": ciudad_resp}
         _enviar_texto(telefono,
-            f"¡Gracias! 📍 *{ciudad_resp}*\n\n" + _pregunta("objetivo", nombre)
+            f"¡Gracias! 📍 *{ciudad_resp}*\n\n" + _pregunta("objetivo", nombre, subniche)
         )
         return
 
@@ -731,7 +782,7 @@ def _procesar(telefono: str, texto: str) -> None:
         operacion = mapa_op.get(texto.strip(), "venta")
         SESIONES[telefono] = {**sesion, "step": "tipo", "resp_objetivo": texto,
                               "operacion_at": operacion}
-        _enviar_texto(telefono, _pregunta("tipo", nombre_corto))
+        _enviar_texto(telefono, _pregunta("tipo", nombre_corto, subniche))
         return
 
     # ── TIPO DE PROPIEDAD ─────────────────────────────────────────────────────
@@ -742,7 +793,7 @@ def _procesar(telefono: str, texto: str) -> None:
         }
         tipo_detectado = mapa_tipo.get(texto.strip(), _normalizar_tipo(texto) or texto.lower())
         SESIONES[telefono] = {**sesion, "step": "zona", "resp_tipo": tipo_detectado}
-        _enviar_texto(telefono, _pregunta("zona", nombre_corto))
+        _enviar_texto(telefono, _pregunta("zona", nombre_corto, subniche))
         return
 
     # ── ZONA ──────────────────────────────────────────────────────────────────
@@ -757,7 +808,7 @@ def _procesar(telefono: str, texto: str) -> None:
         except ValueError:
             pass
         SESIONES[telefono] = {**sesion, "step": "presupuesto", "resp_zona": zona_detectada}
-        _enviar_texto(telefono, _pregunta("presupuesto", nombre_corto))
+        _enviar_texto(telefono, _pregunta("presupuesto", nombre_corto, subniche))
         return
 
     # ── PRESUPUESTO ───────────────────────────────────────────────────────────
@@ -769,7 +820,7 @@ def _procesar(telefono: str, texto: str) -> None:
         presupuesto_at = _PRESUPUESTO_MAP.get(texto.strip(), "")
         SESIONES[telefono] = {**sesion, "step": "urgencia",
                               "resp_presupuesto": texto, "presupuesto_at": presupuesto_at}
-        _enviar_texto(telefono, _pregunta("urgencia", nombre_corto))
+        _enviar_texto(telefono, _pregunta("urgencia", nombre_corto, subniche))
         return
 
     # ── URGENCIA → CALIFICAR → BUSCAR PROPIEDADES ─────────────────────────────
