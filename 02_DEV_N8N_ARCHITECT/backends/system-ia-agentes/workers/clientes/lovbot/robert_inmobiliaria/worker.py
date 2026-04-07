@@ -664,3 +664,88 @@ async def webhook_whatsapp(request: Request):
         return {"status": "ignored"}
     threading.Thread(target=_procesar, args=(telefono, texto), daemon=True).start()
     return {"status": "processing"}
+
+
+# ─── CRM ENDPOINTS ────────────────────────────────────────────────────────────
+@router.get("/crm/clientes")
+def crm_clientes():
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return {"records": [], "error": "Airtable no configurado"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    records, offset = [], None
+    while True:
+        params = {"pageSize": 100}
+        if offset:
+            params["offset"] = offset
+        r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
+        data = r.json()
+        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
+        offset = data.get("offset")
+        if not offset:
+            break
+    return {"total": len(records), "records": records}
+
+
+@router.patch("/crm/clientes/{record_id}")
+async def crm_actualizar_cliente(record_id: str, request: Request):
+    from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return {"status": "error", "detalle": "Airtable no configurado"}
+    body = await request.json()
+    CAMPOS_VALIDOS = {
+        "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
+        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Fuente", "Llego_WhatsApp",
+    }
+    ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
+    fields = body.get("fields", body)
+    campos = {k: v for k, v in fields.items() if k in CAMPOS_VALIDOS and v is not None}
+    if "Estado" in campos and campos["Estado"] not in ESTADOS_VALIDOS:
+        raise HTTPException(status_code=422, detail=f"Estado inválido. Valores: {sorted(ESTADOS_VALIDOS)}")
+    if not campos:
+        return {"status": "error", "detalle": "Nada que actualizar"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+    if r.status_code in (200, 201):
+        return {"status": "ok", "record_id": record_id, "campos": campos}
+    raise HTTPException(status_code=r.status_code, detail=r.text[:200])
+
+
+@router.post("/crm/clientes")
+async def crm_crear_cliente(request: Request):
+    from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
+    data = await request.json()
+    CAMPOS_VALIDOS = {
+        "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
+        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Fuente", "Llego_WhatsApp",
+    }
+    campos = {k: v for k, v in data.items() if k in CAMPOS_VALIDOS and v is not None}
+    campos.setdefault("Estado", "no_contactado")
+    ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
+    if campos["Estado"] not in ESTADOS_VALIDOS:
+        raise HTTPException(status_code=422, detail=f"Estado inválido: {campos['Estado']}")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "record": r.json()}
+
+
+@router.get("/crm/propiedades")
+def crm_propiedades():
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        return {"records": [], "error": "Airtable no configurado"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
+    records, offset = [], None
+    while True:
+        params = {"pageSize": 100}
+        if offset:
+            params["offset"] = offset
+        r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
+        data = r.json()
+        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
+        offset = data.get("offset")
+        if not offset:
+            break
+    return {"total": len(records), "records": records}
