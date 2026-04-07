@@ -174,6 +174,20 @@ _PRESUPUESTO_MAP = {
 }
 
 
+def _at_guardar_email(telefono: str, email: str) -> None:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    buscar = requests.get(url, headers=AT_HEADERS,
+        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+    if records:
+        rec_id = records[0]["id"]
+        requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
+                       json={"fields": {"Email": email}}, timeout=8)
+        print(f"[ROBERT-AT] Email guardado tel={telefono}")
+
+
 def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
                            zona: str = None, presupuesto: str = None) -> list[dict]:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
@@ -442,6 +456,16 @@ MSG_ASESOR_CONTACTO = (
     "¡Gracias por confiar en *{empresa}*! 🌟"
 )
 
+MSG_EMAIL_CTA = (
+    "📬 *Una última cosa, {nombre}...*\n\n"
+    "En *{empresa}* publicamos nuevas propiedades con frecuencia — "
+    "algunas se reservan en días por sus precios de lanzamiento. 🏷️\n\n"
+    "¿Le gustaría que le avisemos cuando salga algo que coincida con lo que busca? "
+    "Solo necesito su *correo electrónico* para enviarle información "
+    "exclusiva antes de que salga al público.\n\n"
+    "_(Opcional — responda con su email o escriba *\"no\"* si prefiere no recibirlo)_"
+)
+
 
 # ─── FLUJO PRINCIPAL ──────────────────────────────────────────────────────────
 def _procesar(telefono: str, texto: str) -> None:
@@ -580,7 +604,7 @@ def _procesar(telefono: str, texto: str) -> None:
             ).start()
             return
 
-        # Mostrar lista de propiedades
+        # Mostrar lista de propiedades + pedir email
         SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props,
                               "tipo": tipo, "zona": zona, "operacion": operacion}
         _enviar_texto(telefono,
@@ -589,6 +613,8 @@ def _procesar(telefono: str, texto: str) -> None:
             f"que coinciden con lo que está buscando. Aquí están 👇"
         )
         _enviar_texto(telefono, _lista_titulos(props))
+        _enviar_texto(telefono, MSG_EMAIL_CTA.format(
+            nombre=nombre_corto or nombre, empresa=NOMBRE_EMPRESA))
 
         threading.Thread(
             target=_notificar_asesor,
@@ -623,6 +649,36 @@ def _procesar(telefono: str, texto: str) -> None:
             return
         _enviar_texto(telefono,
             f"*#* Hablar con {NOMBRE_ASESOR} | *0* Ver otras propiedades | *menú* para empezar de nuevo 😊")
+        return
+
+    # ── PEDIR EMAIL ───────────────────────────────────────────────────────────
+    if step == "pedir_email":
+        rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
+        nombre_corto2 = nombre.split()[0] if nombre else ""
+        if texto_lower in rechazos:
+            _enviar_texto(telefono,
+                f"¡Perfecto, {nombre_corto2}! Sin problema 😊\n\n"
+                f"Nuestro asesor *{NOMBRE_ASESOR}* estará en contacto con usted.\n"
+                f"Escriba *hola* cuando quiera buscar más opciones. 🏡"
+            )
+            SESIONES.pop(telefono, None)
+        elif "@" in texto and "." in texto:
+            threading.Thread(
+                target=_at_guardar_email,
+                args=(telefono, texto.strip()), daemon=True
+            ).start()
+            _enviar_texto(telefono,
+                f"¡Perfecto, {nombre_corto2}! 📬 Email registrado.\n\n"
+                f"Le avisaremos en cuanto tengamos nuevas propiedades que coincidan "
+                f"con lo que busca. Nuestro asesor *{NOMBRE_ASESOR}* también estará en contacto.\n\n"
+                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
+            )
+            SESIONES.pop(telefono, None)
+        else:
+            _enviar_texto(telefono,
+                f"Por favor ingrese un email válido (ej: nombre@gmail.com) "
+                f"o escriba *\"no\"* para omitir. 😊"
+            )
         return
 
     # ── FALLBACK ──────────────────────────────────────────────────────────────
