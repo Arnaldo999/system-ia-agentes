@@ -50,6 +50,7 @@ app.include_router(social_router)
 
 # ── Meta Webhook — Tech Provider Robert/Lovbot ───────────────────────────────
 _META_VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "")
+_META_MSG_IDS_PROCESADOS: set[str] = set()  # deduplicación de reintentos Meta
 
 @app.get("/meta/webhook", tags=["Meta"])
 async def meta_webhook_verify(request: Request):
@@ -76,6 +77,16 @@ async def meta_webhook_events(request: Request):
             for msg in value.get("messages", []):
                 if msg.get("type") != "text":
                     continue
+                msg_id = msg.get("id", "")
+                if msg_id and msg_id in _META_MSG_IDS_PROCESADOS:
+                    print(f"[META-WEBHOOK] Duplicado ignorado: {msg_id}")
+                    continue
+                if msg_id:
+                    _META_MSG_IDS_PROCESADOS.add(msg_id)
+                    # Mantener el set acotado a 500 entradas
+                    if len(_META_MSG_IDS_PROCESADOS) > 500:
+                        _META_MSG_IDS_PROCESADOS.clear()
+
                 telefono = msg.get("from", "")
                 texto = msg.get("text", {}).get("body", "")
                 if not telefono or not texto:
