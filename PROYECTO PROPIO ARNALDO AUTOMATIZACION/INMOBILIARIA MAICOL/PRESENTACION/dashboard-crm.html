@@ -822,7 +822,8 @@
               <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b"></span> Reservado</span>
               <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444"></span> Vendido</span>
             </div>
-            <button id="btn-exportar-coords" onclick="exportarCoordenadas()" class="btn btn-sm bg-green-500 text-white font-bold" style="display:none" title="Copiar coordenadas al clipboard">📋 Exportar</button>
+            <button id="btn-exportar-coords" onclick="exportarCoordenadas(1,82)" class="btn btn-sm bg-green-500 text-white font-bold" style="display:none" title="Copiar lotes 1-82">📋 Export 1-82</button>
+            <button id="btn-exportar-coords2" onclick="exportarCoordenadas(83,163)" class="btn btn-sm bg-blue-500 text-white font-bold" style="display:none" title="Copiar lotes 83-163">📋 Export 83-163</button>
             <button id="btn-calibrar" onclick="toggleCalibracion()" class="btn btn-outline btn-sm bg-gray-100" title="Modo calibración: arrastrá los pins">🔧 Calibrar pins</button>
             <button onclick="toggleMapaFullscreen()" class="btn btn-outline btn-sm" title="Pantalla completa">⛶</button>
             <button class="modal-close" style="position:relative;top:auto;right:auto;" onclick="closeModal('modal-mapa')">✕</button>
@@ -1700,12 +1701,12 @@ const LOTES_COORDS = {
   52:[1179,628], 53:[1183,673], 54:[1184,720], 55:[1088,721],
   56:[1183,790], 57:[1183,839], 58:[1184,882], 59:[1181,937],
   60:[1186,983], 61:[1186,1028], 62:[1186,1072], 63:[1186,1115],
-  64:[1150,1155], 65:[1150,1195],
-  66:[1105,1195], 67:[1058,1195], 68:[1010,1195], 69:[962,1170],
-  70:[918,1130], 71:[875,1130], 72:[832,1130], 73:[788,1130],
-  74:[742,1130], 75:[698,1130], 76:[655,1130], 77:[615,1130], 78:[575,1130],
-  79:[338,1195], 80:[382,1195], 81:[425,1195], 82:[468,1195],
-  83:[510,1195], 84:[552,1195], 85:[595,1195], 86:[638,1195], 87:[678,1195],
+  64:[1184,1175], 65:[1193,1261],
+  66:[1141,1262], 67:[1058,1262], 68:[1010,1262], 69:[962,1238],
+  70:[918,1198], 71:[875,1198], 72:[832,1198], 73:[788,1198],
+  74:[742,1198], 75:[698,1198], 76:[655,1198], 77:[615,1198], 78:[575,1198],
+  79:[338,1262], 80:[382,1262], 81:[425,1262], 82:[468,1262],
+  83:[510,1262], 84:[552,1262], 85:[595,1262], 86:[638,1262], 87:[678,1262],
   88:[1000,570], 89:[962,570], 90:[918,592], 91:[878,578],
   92:[835,532], 93:[855,472], 94:[808,448], 95:[762,468],
   96:[548,458], 97:[558,408], 98:[582,365], 99:[508,348], 100:[478,425],
@@ -1845,7 +1846,7 @@ function generarMapaSanIgnacio(activos) {
   // Coordenadas absolutas en pixels de la imagen PNG (1241×1754).
   // Recortamos la zona del mapa: desde (30,25) con ancho 1180 y alto 1050.
   // Esto excluye el footer de logos.
-  const VX = 30, VY = 25, VW = 1185, VH = 1250;
+  const VX = 30, VY = 25, VW = 1185, VH = 1310;
 
   let pins = '';
   for (let n = 1; n <= 163; n++) {
@@ -1962,17 +1963,19 @@ function toggleCalibracion() {
     btn.classList.add('bg-amber-500','text-white');
     btn.classList.remove('bg-gray-100');
     expBtn.style.display = 'inline-flex';
+    document.getElementById('btn-exportar-coords2').style.display = 'inline-flex';
     toast('Modo calibración ON — arrastrá cada pin a su posición exacta', 'success');
   } else {
     btn.textContent = '🔧 Calibrar pins';
     btn.classList.remove('bg-amber-500','text-white');
     btn.classList.add('bg-gray-100');
     expBtn.style.display = 'none';
+    document.getElementById('btn-exportar-coords2').style.display = 'none';
     toast('Pins bloqueados', 'success');
   }
 }
 
-function exportarCoordenadas() {
+function exportarCoordenadas(desde, hasta) {
   const svg = document.querySelector('#mapa-container svg');
   if (!svg) return;
   const VX = 30, VY = 25;
@@ -1990,21 +1993,18 @@ function exportarCoordenadas() {
     const cy = Math.round(parseFloat(circle.getAttribute('cy')) + VY);
     coords[n] = [cx, cy];
   });
-  // Generar texto compacto (una línea por grupo de 5) para que no se corte al pegar
   let parts = [];
-  for (let i = 1; i <= 163; i++) {
+  for (let i = desde; i <= hasta; i++) {
     if (coords[i]) parts.push(`${i}:[${coords[i][0]},${coords[i][1]}]`);
   }
-  // Agrupar de a 5 por línea
-  let lines = 'const LOTES_COORDS = {\n';
-  for (let i = 0; i < parts.length; i += 5) {
-    lines += '  ' + parts.slice(i, i + 5).join(', ') + ',\n';
+  let lines = `// LOTES ${desde}-${hasta}\n`;
+  for (let i = 0; i < parts.length; i += 8) {
+    lines += parts.slice(i, i + 8).join(', ') + ',\n';
   }
-  lines += '};';
   navigator.clipboard.writeText(lines).then(() => {
-    toast('Coordenadas copiadas al clipboard — pegá en el chat', 'success');
+    toast(`Lotes ${desde}-${hasta} copiados al clipboard`, 'success');
   }).catch(() => {
-    prompt('Copiá estas coordenadas:', lines);
+    prompt(`Lotes ${desde}-${hasta}:`, lines);
   });
 }
 
