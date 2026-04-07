@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s 'https://graph.facebook.com/v21.0/735319949657644?fields=id,display_phone_number,verified_name&access_token=EAAKBLnUGUgsBRGxjkrATjTcr7LgqVOM3viMcdkHMlC7uAYBupofveikEQN3rR10wG1B2xGBAyPB6RXZB6OwcxqOEXfoRTmWSYVaOzOrf9naJz7d1xyG5ahHwIrgMQI6hGSNzlPQYV67SMrpoqvI6TMwo1Beox7rtliJ9BZAaAjgoSP0rfm9b8x4wyMBNjfgAZDZD')",
+      "Bash(curl -s 'https://graph.facebook.com/v21.0/735319949657644?fields=id,display_phone_number,verified_name&access_token=__TRACKED_VAR__')",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(wc -l \"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/memory\"/*.md)",
+      "WebFetch(domain:skills.sh)",
+      "Bash(npx skills:*)",
+      "Bash(curl -s http://5.161.235.99:8000/api/v1/applications/ywg48w0gswwk0skokow48o8k/envs -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8')",
+      "Bash(curl -s -X PATCH http://5.161.235.99:8000/api/v1/envs/yg88s4w0cs4wgkswo4oo84ww -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8' -H 'Content-Type: application/json' -d '{\"value\": \"EAAKBLnUGUgsBRB8XeGAs0ZBIDhRkOi2h0lu84hCUJQd9QugAVB3SXKHxZB8q2FdssYqQ98PBH2jIEAlsQaOYIbXRjyK2ZBYpvZAL1IDFj4GdZA27xOyJ0qKLbcgI3tu8LKrwg0YSZCbCERToTYsynjKptpKSqigkF3pMAnvHlPHbAMHyZBA9wvTRZA7Ks6AdoCIC9QZDZD\"}')",
+      "Bash(curl -s -X PATCH http://5.161.235.99:8000/api/v1/applications/ywg48w0gswwk0skokow48o8k/envs -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8' -H 'Content-Type: application/json' -d '{\"key\": \"META_ACCESS_TOKEN\", \"value\": \"EAAKBLnUGUgsBRB8XeGAs0ZBIDhRkOi2h0lu84hCUJQd9QugAVB3SXKHxZB8q2FdssYqQ98PBH2jIEAlsQaOYIbXRjyK2ZBYpvZAL1IDFj4GdZA27xOyJ0qKLbcgI3tu8LKrwg0YSZCbCERToTYsynjKptpKSqigkF3pMAnvHlPHbAMHyZBA9wvTRZA7Ks6AdoCIC9QZDZD\", \"is_preview\": false}')",
+      "Bash(curl -s -X POST http://5.161.235.99:8000/api/v1/applications/ywg48w0gswwk0skokow48o8k/restart -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8')",
+      "Bash(curl -s http://5.161.235.99:8000/api/v1/deployments/z8cc04o4wcws8gs8c8oss8g8 -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8')",
+      "Bash(curl -s \"http://5.161.235.99/health\")",
+      "Bash(curl -s -X POST https://graph.facebook.com/v21.0/735319949657644/messages -H 'Authorization: Bearer EAAKBLnUGUgsBRM9XTNm9wBfuuNu9qLNTVsH6TmZBDLcRKGVJ1KnPLXzn1ZAtTv9wE4aNUUST2PPJK0ZBd1XxBoCzt3sNwOIm6ZASisAzkFISp0EABVRnBlIy9hEKPpJPyyGWwsfzpYbcyU8KCZB3AZAIkkYiXsZACGAFlpNbFZB7zNMgKerZAriXpjzbxkWZBoh9g2IyDBhVkkR1Y8Qmxl7gmqheZBvfpfJYMXSNBCZBLP8iTiJ24MEhtHcWlmpvcqHfMD6aE87pfDw2puGeUPLj6jOZAsJBk' -H 'Content-Type: application/json' -d '{:*)",
+      "Bash(curl -s -X PATCH http://5.161.235.99:8000/api/v1/applications/ywg48w0gswwk0skokow48o8k/envs -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8' -H 'Content-Type: application/json' -d '{\"key\": \"META_ACCESS_TOKEN\", \"value\": \"EAAKBLnUGUgsBRM9XTNm9wBfuuNu9qLNTVsH6TmZBDLcRKGVJ1KnPLXzn1ZAtTv9wE4aNUUST2PPJK0ZBd1XxBoCzt3sNwOIm6ZASisAzkFISp0EABVRnBlIy9hEKPpJPyyGWwsfzpYbcyU8KCZB3AZAIkkYiXsZACGAFlpNbFZB7zNMgKerZAriXpjzbxkWZBoh9g2IyDBhVkkR1Y8Qmxl7gmqheZBvfpfJYMXSNBCZBLP8iTiJ24MEhtHcWlmpvcqHfMD6aE87pfDw2puGeUPLj6jOZAsJBk\", \"is_preview\": false}')",
+      "Bash(curl -s \"https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=704986485248523&client_secret=c080858344e74854135422d32f8a8c57&fb_exchange_token=EAAKBLnUGUgsBRM9XTNm9wBfuuNu9qLNTVsH6TmZBDLcRKGVJ1KnPLXzn1ZAtTv9wE4aNUUST2PPJK0ZBd1XxBoCzt3sNwOIm6ZASisAzkFISp0EABVRnBlIy9hEKPpJPyyGWwsfzpYbcyU8KCZB3AZAIkkYiXsZACGAFlpNbFZB7zNMgKerZAriXpjzbxkWZBoh9g2IyDBhVkkR1Y8Qmxl7gmqheZBvfpfJYMXSNBCZBLP8iTiJ24MEhtHcWlmpvcqHfMD6aE87pfDw2puGeUPLj6jOZAsJBk\")",
+      "Bash(curl -s -X PATCH http://5.161.235.99:8000/api/v1/applications/ywg48w0gswwk0skokow48o8k/envs -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8' -H 'Content-Type: application/json' -d '{\"key\": \"META_ACCESS_TOKEN\", \"value\": \"EAAKBLnUGUgsBRDl7iETVlZBixE6kmNgWjiSp5ZCIWpb156VM5hZAzKEYQ9OhGL1ZCVVLiU8MjDL9rIJbo0Y0IgmkTCNaJ5wqf45jOZC7SU1FkXgIMaB3GcnqV73Y4ZAvzFArAMADtTQbSKe1f9ZBtT4lAhPgRvln5JrvzV1uGeND9lmp3q85mZCodzdRw2e0\", \"is_preview\": false}')",
+      "Bash(curl -s http://5.161.235.99:8000/api/v1/applications/ywg48w0gswwk0skokow48o8k -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8')",
+      "Bash(curl -s -X POST http://5.161.235.99:8000/api/v1/applications/ywg48w0gswwk0skokow48o8k/deploy -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8')",
+      "Bash(curl -s 'https://api.airtable.com/v0/appOUtGnMYHrbLaMa/tblgFvYebZcJaYM07?maxRecords=1' -H 'Authorization: Bearer patL8VOuELCGbJGlSAnXhDDXwaMBevH8RMLTLfMcbDkXXoK2hAjf3aFIq7d8XY1n')",
+      "Bash(curl -s 'https://pczrezpmdugdsjrxspjh.supabase.co/rest/v1/tenants?select=slug,nombre,api_prefix,activo' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjenJlenBtZHVnZHNqcnhzcGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzAzNjg5NCwiZXhwIjoyMDgyNjEyODk0fQ.DoRhW9e10ACffio4erVzDwy1Uxa47VxUNXffLVdC49k' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjenJlenBtZHVnZHNqcnhzcGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzAzNjg5NCwiZXhwIjoyMDgyNjEyODk0fQ.DoRhW9e10ACffio4erVzDwy1Uxa47VxUNXffLVdC49k')",
+      "Bash(curl -s -X POST https://pczrezpmdugdsjrxspjh.supabase.co/rest/v1/tenants -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjenJlenBtZHVnZHNqcnhzcGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzAzNjg5NCwiZXhwIjoyMDgyNjEyODk0fQ.DoRhW9e10ACffio4erVzDwy1Uxa47VxUNXffLVdC49k' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjenJlenBtZHVnZHNqcnhzcGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzAzNjg5NCwiZXhwIjoyMDgyNjEyODk0fQ.DoRhW9e10ACffio4erVzDwy1Uxa47VxUNXffLVdC49k' -H 'Content-Type: application/json' -H 'Prefer: return=representation' -d '{:*)",
+      "Bash(curl -s \"https://agentes.arnaldoayalaestratega.cloud/clientes/lovbot/inmobiliaria/crm/clientes?limit=3\")",
+      "Bash(curl -s -X POST https://agentes.arnaldoayalaestratega.cloud/social/publicar-completo -H 'Content-Type: application/json' -d '{:*)",
+      "Bash(curl -s \"https://agentes.arnaldoayalaestratega.cloud/clientes/lovbot/inmobiliaria/crm/clientes?limit=50\")",
+      "Bash(curl -s -X POST https://coolify.arnaldoayalaestratega.cloud/api/v1/applications/ygjvl9byac1x99laqj4ky1b5/restart -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615')",
+      "mcp__n8n__n8n_delete_workflow"
+    ]
+  }
+}
