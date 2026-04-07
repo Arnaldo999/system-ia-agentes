@@ -22,7 +22,7 @@ AIRTABLE_BASE_ID      = os.environ.get("AIRTABLE_BASE_ID_MAICOL", "appaDT7uwHnim
 AIRTABLE_TABLE        = "tbly67z1oY8EFQoFj"
 AIRTABLE_TABLE_CLIENTES = "tblonoyIMAM5kl2ue"
 AIRTABLE_TABLE_ACTIVOS  = os.environ.get("AIRTABLE_TABLE_ACTIVOS_MAICOL", "tblDgQFXLzvbhNiyX")
-AIRTABLE_TABLE_LOTES    = os.environ.get("AIRTABLE_TABLE_LOTES_MAICOL", "")
+AIRTABLE_TABLE_LOTES    = os.environ.get("AIRTABLE_TABLE_LOTES_MAICOL", "tblwO6b4rNA6FlHQt")
 NUMERO_BOT            = os.environ.get("NUMERO_BOT_MAICOL", "5493764815689")
 NUMERO_ASESOR         = os.environ.get("NUMERO_ASESOR_MAICOL", "+5493765384843")
 
@@ -534,7 +534,14 @@ def _mostrar_lista(telefono: str, tipo: str, label: str, operacion: str, zona: s
                               "operacion": operacion}
         _enviar_texto(telefono,
             f"En este momento no tenemos {label.lower()} disponibles{zona_label}. 😔\n\n"
-            f"¿Querés buscar en otra zona?\n\n{MSG_ZONA}")
+            "¿Querés buscar en otra zona? 📍\n\n"
+            "1️⃣ 📍 San Ignacio\n"
+            "2️⃣ 📍 Gobernador Roca\n"
+            "3️⃣ 📍 Apóstoles\n"
+            "4️⃣ 📍 Leandro N. Alem\n"
+            "5️⃣ 🏙️ Lote Urbano\n"
+            "6️⃣ 🗺️ Otra zona / Aún no lo sé\n\n"
+            "También puede escribir el nombre directamente 😊")
         return
     SESIONES[telefono] = {"step": "lista", "props": props, "operacion": operacion, "tipo": tipo, "zona": zona}
     _enviar_texto(telefono, _lista_titulos(props, f"{label} en Venta{zona_label}"))
