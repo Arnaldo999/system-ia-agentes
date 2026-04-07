@@ -679,11 +679,43 @@ def _procesar(telefono: str, texto: str) -> None:
     # ── NOMBRE ────────────────────────────────────────────────────────────────
     if step == "nombre":
         nombre = texto.title()
-        SESIONES[telefono] = {**sesion, "step": "objetivo", "nombre": nombre}
+        SESIONES[telefono] = {**sesion, "step": "email", "nombre": nombre}
         n = nombre.split()[0]
         _enviar_texto(telefono,
             f"¡Mucho gusto, *{n}*! 😊 Es un placer atenderle.\n\n"
-            + _pregunta("objetivo", nombre)
+            f"¿Me comparte su *correo electrónico*? 📬\n"
+            f"_(Lo usamos para enviarle fichas de propiedades y novedades)_\n\n"
+            f"_(Si prefiere no compartirlo, escriba *no*)_"
+        )
+        return
+
+    # ── EMAIL ─────────────────────────────────────────────────────────────────
+    if step == "email":
+        rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
+        if texto_lower in rechazos:
+            SESIONES[telefono] = {**sesion, "step": "ciudad", "email": ""}
+            _enviar_texto(telefono,
+                f"Sin problema 😊\n\n¿Desde qué *ciudad* nos escribe? 📍"
+            )
+        elif "@" in texto and "." in texto:
+            email = texto.strip()
+            threading.Thread(target=_at_guardar_email, args=(telefono, email), daemon=True).start()
+            SESIONES[telefono] = {**sesion, "step": "ciudad", "email": email}
+            _enviar_texto(telefono,
+                f"¡Perfecto! 📬 Email registrado.\n\n¿Desde qué *ciudad* nos escribe? 📍"
+            )
+        else:
+            _enviar_texto(telefono,
+                f"Por favor ingrese un email válido (ej: nombre@gmail.com) o escriba *no* para omitir. 😊"
+            )
+        return
+
+    # ── CIUDAD ────────────────────────────────────────────────────────────────
+    if step == "ciudad":
+        ciudad_resp = texto.strip().title()
+        SESIONES[telefono] = {**sesion, "step": "objetivo", "ciudad_resp": ciudad_resp}
+        _enviar_texto(telefono,
+            f"¡Gracias! 📍 *{ciudad_resp}*\n\n" + _pregunta("objetivo", nombre)
         )
         return
 
@@ -757,8 +789,9 @@ def _procesar(telefono: str, texto: str) -> None:
 
         presupuesto_at = sesion_act.get("presupuesto_at", "")
         operacion_at   = sesion_act.get("operacion_at", "")
-        ciudad_at      = CIUDAD
+        ciudad_at      = sesion_act.get("ciudad_resp", CIUDAD)
         subniche_at    = sesion_act.get("subniche", "")
+        email          = sesion_act.get("email", "")
 
         # Registrar lead en Airtable (background)
         threading.Thread(
@@ -777,42 +810,56 @@ def _procesar(telefono: str, texto: str) -> None:
                 target=_notificar_asesor,
                 args=(telefono, sesion_act, calificacion), daemon=True
             ).start()
+            SESIONES.pop(telefono, None)
             return
 
         # Lead caliente/tibio → buscar propiedades en Airtable
         props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona,
                                        presupuesto=presupuesto_at)
 
-        if not props:
-            # Sin propiedades → pedir email + ofrecer cita igual
-            _enviar_texto(telefono,
-                f"*{nombre_corto or nombre}*, no tenemos propiedades disponibles "
-                f"con esas características en este momento, pero nuestro asesor "
-                f"*{NOMBRE_ASESOR}* puede ayudarle a encontrar opciones personalizadas. 🏡\n\n"
-            )
-            SESIONES[telefono] = {**sesion_act, "step": "pedir_email"}
-            _enviar_texto(telefono, MSG_EMAIL_CTA.format(
-                nombre=nombre_corto or nombre, empresa=NOMBRE_EMPRESA))
-            threading.Thread(
-                target=_notificar_asesor,
-                args=(telefono, sesion_act, calificacion), daemon=True
-            ).start()
-            return
-
-        # Mostrar lista de propiedades → luego pedir email
-        SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props,
-                              "tipo": tipo, "zona": zona, "operacion": operacion}
-        _enviar_texto(telefono,
-            f"¡Excelente, *{nombre_corto or nombre}*! 🎉\n\n"
-            f"Revisé nuestro portafolio y encontré *{len(props)} propiedad(es)* "
-            f"que coinciden con lo que está buscando. Aquí están 👇"
-        )
-        _enviar_texto(telefono, _lista_titulos(props))
-
         threading.Thread(
             target=_notificar_asesor,
             args=(telefono, sesion_act, calificacion), daemon=True
         ).start()
+
+        if not props:
+            _enviar_texto(telefono,
+                f"*{nombre_corto or nombre}*, no tenemos propiedades disponibles "
+                f"con esas características en este momento, pero nuestro asesor "
+                f"*{NOMBRE_ASESOR}* puede ayudarle a encontrar opciones personalizadas. 🏡"
+            )
+        else:
+            # Mostrar lista de propiedades
+            SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props,
+                                  "tipo": tipo, "zona": zona, "operacion": operacion}
+            _enviar_texto(telefono,
+                f"¡Excelente, *{nombre_corto or nombre}*! 🎉\n\n"
+                f"Revisé nuestro portafolio y encontré *{len(props)} propiedad(es)* "
+                f"que coinciden con lo que está buscando. Aquí están 👇"
+            )
+            _enviar_texto(telefono, _lista_titulos(props))
+            return  # queda en step lista para que elija ficha
+
+        # Ofrecer cita con Cal.com (ya tiene email y datos)
+        if _cal_disponible():
+            slots = _cal_obtener_slots()
+            if slots:
+                SESIONES[telefono] = {**sesion_act, "step": "agendar_slots",
+                                      "slots": slots, "email": email}
+                _enviar_texto(telefono,
+                    f"¿Le gustaría agendar una cita con nuestro asesor *{NOMBRE_ASESOR}*? 📅\n\n"
+                    f"{_formatear_slots(slots)}\n\n"
+                    f"Responda con el *número* del horario que prefiere, o *0* para omitir."
+                )
+                return
+
+        # Sin Cal.com → despedida
+        _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+            nombre=nombre_corto or nombre,
+            asesor=NOMBRE_ASESOR,
+            empresa=NOMBRE_EMPRESA,
+        ))
+        SESIONES.pop(telefono, None)
         return
 
     # ── LISTA → FICHA ─────────────────────────────────────────────────────────
@@ -821,10 +868,8 @@ def _procesar(telefono: str, texto: str) -> None:
         try:
             idx = int(texto) - 1
             if 0 <= idx < len(props):
-                SESIONES[telefono] = {**sesion, "step": "pedir_email", "ficha_actual": idx}
+                SESIONES[telefono] = {**sesion, "step": "ficha", "ficha_actual": idx}
                 _enviar_ficha(telefono, props[idx])
-                _enviar_texto(telefono, MSG_EMAIL_CTA.format(
-                    nombre=nombre_corto or nombre, empresa=NOMBRE_EMPRESA))
             else:
                 _enviar_texto(telefono,
                     f"Por favor elija un número del 1 al {len(props)}, "
@@ -835,117 +880,15 @@ def _procesar(telefono: str, texto: str) -> None:
                 "*0* para volver o *#* para hablar con el asesor. 😊")
         return
 
-    # ── FICHA → ACCIONES (fallback por si acaso) ─────────────────────────────
+    # ── FICHA → ACCIONES ─────────────────────────────────────────────────────
     if step == "ficha":
         props = sesion.get("props", [])
         if texto == "0":
             SESIONES[telefono] = {**sesion, "step": "lista"}
             _enviar_texto(telefono, _lista_titulos(props))
             return
-        # Redirigir al email si escriben algo más
-        SESIONES[telefono] = {**sesion, "step": "pedir_email"}
-        _enviar_texto(telefono, MSG_EMAIL_CTA.format(
-            nombre=nombre_corto or nombre, empresa=NOMBRE_EMPRESA))
-        return
-
-    # ── PEDIR EMAIL ───────────────────────────────────────────────────────────
-    if step == "pedir_email":
-        rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
-        nombre_corto2 = nombre.split()[0] if nombre else ""
-        if texto_lower in rechazos:
-            # Sin email — ofrecer cita si Cal.com disponible
-            if _cal_disponible():
-                slots = _cal_obtener_slots()
-                if slots:
-                    SESIONES[telefono] = {**sesion, "step": "agendar_slots", "slots": slots}
-                    _enviar_texto(telefono,
-                        f"Sin problema 😊 ¿Le gustaría agendar una cita con nuestro asesor *{NOMBRE_ASESOR}*?\n\n"
-                        f"Estos son los horarios disponibles:\n\n"
-                        f"{_formatear_slots(slots)}\n\n"
-                        f"Responda con el *número* del horario que prefiere, o escriba *0* para omitir."
-                    )
-                    return
-            _enviar_texto(telefono,
-                f"¡Perfecto, {nombre_corto2}! Sin problema 😊\n\n"
-                f"Nuestro asesor *{NOMBRE_ASESOR}* estará en contacto con usted.\n"
-                f"Escriba *hola* cuando quiera buscar más opciones. 🏡"
-            )
-            SESIONES.pop(telefono, None)
-        elif "@" in texto and "." in texto:
-            email = texto.strip()
-            threading.Thread(target=_at_guardar_email, args=(telefono, email), daemon=True).start()
-            SESIONES[telefono] = {**sesion, "step": "agendar_slots", "email": email}
-            # Ofrecer cita con Cal.com
-            if _cal_disponible():
-                slots = _cal_obtener_slots()
-                if slots:
-                    SESIONES[telefono] = {**sesion, "step": "agendar_slots",
-                                          "slots": slots, "email": email}
-                    _enviar_texto(telefono,
-                        f"¡Perfecto, {nombre_corto2}! 📬 Email registrado.\n\n"
-                        f"¿Le gustaría agendar una cita con nuestro asesor *{NOMBRE_ASESOR}*?\n\n"
-                        f"{_formatear_slots(slots)}\n\n"
-                        f"Responda con el *número* del horario que prefiere, o escriba *0* para omitir."
-                    )
-                    return
-            _enviar_texto(telefono,
-                f"¡Perfecto, {nombre_corto2}! 📬 Email registrado.\n\n"
-                f"Le avisaremos en cuanto tengamos nuevas propiedades. "
-                f"Nuestro asesor *{NOMBRE_ASESOR}* también estará en contacto.\n\n"
-                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
-            )
-            SESIONES.pop(telefono, None)
-        else:
-            _enviar_texto(telefono,
-                f"Por favor ingrese un email válido (ej: nombre@gmail.com) "
-                f"o escriba *\"no\"* para omitir. 😊"
-            )
-        return
-
-    # ── PEDIR EMAIL PARA CITA (viene de _ir_asesor sin email) ────────────────
-    if step == "pedir_email_cita":
-        rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
-        slots = sesion.get("slots", [])
-        nombre_corto2 = nombre.split()[0] if nombre else ""
-        if texto_lower in rechazos:
-            # Sin email — mostrar slots de todas formas
-            if slots:
-                SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
-                _enviar_texto(telefono,
-                    f"Sin problema 😊 Aquí los horarios disponibles con *{NOMBRE_ASESOR}*:\n\n"
-                    f"{_formatear_slots(slots)}\n\n"
-                    f"Responda con el *número* del horario que prefiere, o *0* para que lo contacten."
-                )
-            else:
-                _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
-                    nombre=nombre_corto2 or nombre,
-                    asesor=NOMBRE_ASESOR,
-                    empresa=NOMBRE_EMPRESA,
-                ))
-                SESIONES.pop(telefono, None)
-        elif "@" in texto and "." in texto:
-            email = texto.strip()
-            threading.Thread(target=_at_guardar_email, args=(telefono, email), daemon=True).start()
-            if slots:
-                SESIONES[telefono] = {**sesion, "step": "agendar_slots", "email": email}
-                _enviar_texto(telefono,
-                    f"¡Perfecto, {nombre_corto2}! 📬\n\n"
-                    f"Estos son los horarios disponibles con *{NOMBRE_ASESOR}*:\n\n"
-                    f"{_formatear_slots(slots)}\n\n"
-                    f"Responda con el *número* del horario que prefiere, o *0* para omitir."
-                )
-            else:
-                _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
-                    nombre=nombre_corto2 or nombre,
-                    asesor=NOMBRE_ASESOR,
-                    empresa=NOMBRE_EMPRESA,
-                ))
-                SESIONES.pop(telefono, None)
-        else:
-            _enviar_texto(telefono,
-                f"Por favor ingrese un email válido (ej: nombre@gmail.com) "
-                f"o escriba *\"no\"* para omitir. 😊"
-            )
+        # Cualquier otra respuesta → ofrecer cita
+        _ir_asesor(telefono, sesion)
         return
 
     # ── AGENDAMIENTO — SELECCIÓN DE SLOT ─────────────────────────────────────
@@ -1031,26 +974,17 @@ def _ir_asesor(telefono: str, sesion: dict) -> None:
             + (f" en {zona}" if zona else "")
         )
 
-    # Ofrecer cita con Cal.com
+    # Ofrecer cita con Cal.com (ya tiene email desde el inicio)
     if _cal_disponible():
         slots = _cal_obtener_slots()
         if slots:
             SESIONES[telefono] = {**sesion, "step": "agendar_slots",
                                   "slots": slots, "email": email}
-            # Pedir email si no lo tenemos
-            if not email:
-                _enviar_texto(telefono,
-                    f"¡Con gusto le conecto con *{NOMBRE_ASESOR}*, {nombre_corto}! 😊\n\n"
-                    f"Para confirmar la cita, ¿me puede compartir su *correo electrónico*?\n"
-                    f"_(Escriba su email o *\"no\"* para omitir)_"
-                )
-                SESIONES[telefono] = {**sesion, "step": "pedir_email_cita", "slots": slots}
-            else:
-                _enviar_texto(telefono,
-                    f"¡Con gusto! Estos son los horarios disponibles con *{NOMBRE_ASESOR}*:\n\n"
-                    f"{_formatear_slots(slots)}\n\n"
-                    f"Responda con el *número* del horario que prefiere, o *0* para que lo contacten."
-                )
+            _enviar_texto(telefono,
+                f"¡Con gusto, {nombre_corto}! Estos son los horarios disponibles con *{NOMBRE_ASESOR}*: 📅\n\n"
+                f"{_formatear_slots(slots)}\n\n"
+                f"Responda con el *número* del horario que prefiere, o *0* para que lo contacten."
+            )
             return
 
     _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
@@ -1058,7 +992,7 @@ def _ir_asesor(telefono: str, sesion: dict) -> None:
         asesor=NOMBRE_ASESOR,
         empresa=NOMBRE_EMPRESA,
     ))
-    SESIONES[telefono] = {**sesion, "step": "calificado"}
+    SESIONES.pop(telefono, None)
 
 
 # ─── ENDPOINT WEBHOOK ─────────────────────────────────────────────────────────
