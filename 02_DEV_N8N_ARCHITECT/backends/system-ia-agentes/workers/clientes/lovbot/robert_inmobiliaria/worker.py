@@ -668,26 +668,23 @@ def _procesar(telefono: str, texto: str) -> None:
             "subniche": cfg["subniche"],
             "empresa_demo": cfg["empresa"],
         }
-        _enviar_texto(telefono, cfg["intro"])
         empresa_show = cfg["empresa"]
         _enviar_texto(telefono,
-            f"Perfecto 🎯\n\n"
-            f"Ahora simulás ser un *cliente real* que escribe a *{empresa_show}*.\n\n"
-            f"¡Empecemos! Para iniciar la demo — ¿cuál es tu nombre? 😊"
+            cfg["intro"] + f"\n\n"
+            f"Perfecto 🎯 Ahora simulás ser un *cliente real* que escribe a *{empresa_show}*.\n\n"
+            f"¡Empecemos! — ¿cuál es tu nombre? 😊"
         )
         return
 
     # ── NOMBRE ────────────────────────────────────────────────────────────────
     if step == "nombre":
         nombre = texto.title()
-        empresa_show = sesion.get("empresa_demo", NOMBRE_EMPRESA)
         SESIONES[telefono] = {**sesion, "step": "objetivo", "nombre": nombre}
         n = nombre.split()[0]
         _enviar_texto(telefono,
-            f"¡Mucho gusto, *{n}*! 😊\n\n"
-            f"Es un placer atenderle. Empecemos con la primera pregunta 👇"
+            f"¡Mucho gusto, *{n}*! 😊 Es un placer atenderle.\n\n"
+            + _pregunta("objetivo", nombre)
         )
-        _enviar_texto(telefono, _pregunta("objetivo", nombre))
         return
 
     # ── OBJETIVO (comprar/alquilar + para qué) ────────────────────────────────
