@@ -822,6 +822,8 @@
               <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b"></span> Reservado</span>
               <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444"></span> Vendido</span>
             </div>
+            <button id="btn-exportar-coords" onclick="exportarCoordenadas()" class="btn btn-sm bg-green-500 text-white font-bold" style="display:none" title="Copiar coordenadas al clipboard">📋 Exportar</button>
+            <button id="btn-calibrar" onclick="toggleCalibracion()" class="btn btn-outline btn-sm bg-gray-100" title="Modo calibración: arrastrá los pins">🔧 Calibrar pins</button>
             <button onclick="toggleMapaFullscreen()" class="btn btn-outline btn-sm" title="Pantalla completa">⛶</button>
             <button class="modal-close" style="position:relative;top:auto;right:auto;" onclick="closeModal('modal-mapa')">✕</button>
           </div>
@@ -1965,7 +1967,105 @@ document.addEventListener('fullscreenchange', () => {
   }
 });
 
+// ── MODO CALIBRACIÓN (drag & drop pins) ──────────────────
+let calibracionActiva = false;
+let dragTarget = null, dragOffset = {x:0,y:0};
+
+function toggleCalibracion() {
+  calibracionActiva = !calibracionActiva;
+  const btn = document.getElementById('btn-calibrar');
+  const expBtn = document.getElementById('btn-exportar-coords');
+  if (calibracionActiva) {
+    btn.textContent = '🔒 Bloquear pins';
+    btn.classList.add('bg-amber-500','text-white');
+    btn.classList.remove('bg-gray-100');
+    expBtn.style.display = 'inline-flex';
+    toast('Modo calibración ON — arrastrá cada pin a su posición exacta', 'success');
+  } else {
+    btn.textContent = '🔧 Calibrar pins';
+    btn.classList.remove('bg-amber-500','text-white');
+    btn.classList.add('bg-gray-100');
+    expBtn.style.display = 'none';
+    toast('Pins bloqueados', 'success');
+  }
+}
+
+function exportarCoordenadas() {
+  const svg = document.querySelector('#mapa-container svg');
+  if (!svg) return;
+  const VX = 30, VY = 25;
+  const groups = svg.querySelectorAll('g[data-num], g[data-activo]');
+  const coords = {};
+  groups.forEach(g => {
+    const circle = g.querySelector('circle');
+    const num = g.getAttribute('data-num') || (() => {
+      try { return JSON.parse(decodeURIComponent(g.getAttribute('data-activo'))).Numero_Lote; } catch(e) { return null; }
+    })();
+    const text = g.querySelector('text');
+    const n = parseInt(text ? text.textContent : num);
+    if (!n || !circle) return;
+    const cx = Math.round(parseFloat(circle.getAttribute('cx')) + VX);
+    const cy = Math.round(parseFloat(circle.getAttribute('cy')) + VY);
+    coords[n] = [cx, cy];
+  });
+  // Generar texto JS
+  let lines = 'const LOTES_COORDS = {\n';
+  for (let i = 1; i <= 163; i++) {
+    if (coords[i]) lines += `  ${i}:[${coords[i][0]},${coords[i][1]}],\n`;
+  }
+  lines += '};';
+  navigator.clipboard.writeText(lines).then(() => {
+    toast('Coordenadas copiadas al clipboard — pegá en el código', 'success');
+  }).catch(() => {
+    // Fallback: mostrar en prompt
+    prompt('Copiá estas coordenadas:', lines);
+  });
+}
+
+// SVG drag handlers
+function initSvgDrag(svg) {
+  let pt = svg.createSVGPoint();
+  function getMousePos(evt) {
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  svg.addEventListener('mousedown', e => {
+    if (!calibracionActiva) return;
+    const g = e.target.closest('g[data-num], g[data-activo]');
+    if (!g) return;
+    e.preventDefault();
+    dragTarget = g;
+    const circle = g.querySelector('circle');
+    const pos = getMousePos(e);
+    dragOffset.x = pos.x - parseFloat(circle.getAttribute('cx'));
+    dragOffset.y = pos.y - parseFloat(circle.getAttribute('cy'));
+  });
+  svg.addEventListener('mousemove', e => {
+    if (!dragTarget) return;
+    e.preventDefault();
+    const pos = getMousePos(e);
+    const nx = pos.x - dragOffset.x;
+    const ny = pos.y - dragOffset.y;
+    const circle = dragTarget.querySelector('circle');
+    circle.setAttribute('cx', nx);
+    circle.setAttribute('cy', ny);
+    const texts = dragTarget.querySelectorAll('text');
+    if (texts[0]) { texts[0].setAttribute('x', nx); texts[0].setAttribute('y', ny); }
+    if (texts[1]) { texts[1].setAttribute('x', nx); texts[1].setAttribute('y', parseFloat(ny) + 7); }
+  });
+  svg.addEventListener('mouseup', () => { dragTarget = null; });
+  svg.addEventListener('mouseleave', () => { dragTarget = null; });
+}
+
+// Observar cuando se crea el SVG del mapa para attachear drag
+const mapaObserver = new MutationObserver(() => {
+  const svg = document.querySelector('#mapa-container svg');
+  if (svg && !svg._dragInit) { svg._dragInit = true; initSvgDrag(svg); }
+});
+mapaObserver.observe(document.getElementById('mapa-container'), { childList: true, subtree: true });
+
 function handleLoteClick(el) {
+  if (calibracionActiva) return; // no abrir modal en modo calibración
   const dataActivo = el.getAttribute('data-activo');
   const dataNum    = el.getAttribute('data-num');
   if (dataActivo) {
