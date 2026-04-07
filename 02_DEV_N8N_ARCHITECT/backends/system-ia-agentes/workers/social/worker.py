@@ -1690,7 +1690,9 @@ def _responder_comentario(
     """Genera respuesta con Gemini y la publica como reply al comentario."""
     nombre = cliente.get("Nombre Comercial", "la agencia")
     tono = cliente.get("Tono de Voz", "cercano y profesional")
-    servicio = cliente.get("Servicio Principal", "automatización con IA")
+    servicio = cliente.get("Industria", cliente.get("Servicio Principal", "automatización con IA"))
+    reglas = cliente.get("Reglas Estrictas (Lo que NO debe hacer)", "")
+    cta = cliente.get("CTA", "escribinos un DM")
     if not token:
         token_map = _build_page_token_map()
         token = token_map.get(page_id, META_ACCESS_TOKEN)
@@ -1703,14 +1705,16 @@ def _responder_comentario(
     texto_safe = sanitize_for_llm(texto, context="comentario_usuario")
 
     prompt = (
-        f"Sos el community manager de {nombre}. "
-        f"Alguien dejó el siguiente comentario en tu post:\n\n"
-        f"{texto_safe}\n\n"
-        f"Escribí UNA respuesta (máximo 3 líneas) en tono {tono} que:\n"
-        f"1. Agradezca brevemente\n"
-        f"2. Dé UN tip accionable relacionado al negocio ({servicio})\n"
-        f"3. Invite a escribir un DM para más info\n\n"
-        f"USA emojis naturales. NO uses asteriscos ni markdown. Solo texto plano."
+        f"Sos el community manager de {nombre}.\n"
+        f"TONO: {tono}\n"
+        f"NEGOCIO: {servicio}\n"
+        f"RESTRICCIONES: {reglas}\n\n"
+        f"Alguien dejó este comentario en tu post:\n{texto_safe}\n\n"
+        f"Escribí UNA respuesta (máximo 3 líneas) que:\n"
+        f"1. Agradezca de forma genuina y específica al comentario\n"
+        f"2. Dé UN consejo o insight concreto relacionado al negocio\n"
+        f"3. Cierre con: {cta}\n\n"
+        f"USA emojis naturales (máximo 2). NO uses asteriscos ni markdown. Solo texto plano."
     )
 
     try:
