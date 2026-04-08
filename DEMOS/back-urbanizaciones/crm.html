@@ -2229,7 +2229,7 @@ function toggleCalibracion() {
 }
 
 function exportarActivosCSV() {
-  if (!allActivos || !allActivos.length) { toast('No hay clientes activos para exportar', 'error'); return; }
+  if (!allActivos || !allActivos.length) { toast('No hay datos cargados — esperá que termine de cargar la tabla', 'error'); return; }
   const campos = ['Nombre','Apellido','DNI','Telefono','Email','Loteo','Numero_Lote','Estado_Contrato',
     'Estado_Pago','Monto_Cuota','Cuotas_Pagadas','Cuotas_Total','Proximo_Vencimiento'];
   const encabezado = campos.join(',');
