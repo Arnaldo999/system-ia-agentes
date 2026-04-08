@@ -1891,23 +1891,28 @@ function renderLoteos() {
 // ── MAPA SVG ──────────────────────────────────────────────
 const MASTER_PLAN_URL = 'https://res.cloudinary.com/dmqkqcreo/image/upload/v1775578634/lovbot/loteos/san_ignacio_master_plan.png';
 
-function abrirMapaLoteo(mapaKey) {
+async function abrirMapaLoteo(mapaKey) {
   const config = LOTEOS_CONFIG.find(l => l.mapaKey === mapaKey);
   if (!config) return;
 
   document.getElementById('mapa-title').textContent = config.nombre;
   document.getElementById('mapa-subtitle').textContent = `📍 ${config.zona} · ${config.totalLotes} lotes`;
+  const container = document.getElementById('mapa-container');
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:#666">Cargando mapa...</div>';
+  openModal('modal-mapa');
+
+  try {
+    const d = await fetch(`${CRM}/activos`).then(r => r.json());
+    allActivos = d.records || [];
+  } catch(e) { /* usa los que ya hay */ }
 
   const activosLoteo = allActivos.filter(a => (a.Loteo || '') === config.nombre);
-  const container = document.getElementById('mapa-container');
 
   if (mapaKey === 'san_ignacio') {
     container.innerHTML = generarMapaSanIgnacio(activosLoteo);
   } else {
     container.innerHTML = generarMapaGrilla(activosLoteo, config);
   }
-
-  openModal('modal-mapa');
 }
 
 function colorActivo(activo) {
