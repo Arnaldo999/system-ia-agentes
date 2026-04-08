@@ -1842,17 +1842,11 @@ const LOTES_COORDS = {
 // Mz 13: 219-246 | Mz 14: 247-274 | Mz 15: 275-302 | Mz 16: 303-330
 const APOSTOLES_PLAN_URL = 'https://res.cloudinary.com/dmqkqcreo/image/upload/v1775655835/back-urbanizaciones/mapas/apostoles-plano-v3.png';
 // Apóstoles: coordenadas [x,y] px sobre imagen 2000×1959. Calibrar con drag&drop.
-// 1-4 = EV (Mz1,Mz2,Mz3,Mz4) | 5-26 = Mz 8 (22 lotes) | 27-47 = Mz 7 (21 lotes)
-// 48-75 = Mz 6 (28 lotes, pendiente calibrar)
-const APOSTOLES_MANZANAS = [
-  {nombre:'EV', desde:1, hasta:4},
-  {nombre:'Mz8', desde:5, hasta:26},
-  {nombre:'Mz7', desde:27, hasta:47},
-  {nombre:'Mz6', desde:48, hasta:75},
-];
+// 1-4 = EV (Mz1,Mz2,Mz3,Mz4) | 5-26 = Mz8 (22) | 27-47 = Mz7 (21) | 48-75 = Mz6 (28)
+// 76-103 = Mz5 (28, pendiente)
 const APOSTOLES_COORDS = {
-  // EV: Mz1=1, Mz2=2, Mz3=3, Mz4=4
-  1:[1785,275], 2:[100,100], 3:[140,100], 4:[180,100],
+  // EV: Mz1=1, Mz2=2, Mz3=3, Mz4=4 (estimadas fila superior)
+  1:[370,310], 2:[620,310], 3:[890,310], 4:[1130,310],
   // Mz 8: lotes 1-22 (calibrado 2026-04-08)
   5:[381,442], 6:[414,442], 7:[447,442], 8:[624,430], 9:[652,486], 10:[652,517], 11:[652,547], 12:[652,578],
   13:[665,670], 14:[633,670], 15:[600,670], 16:[568,670], 17:[536,670], 18:[503,670], 19:[471,670], 20:[439,670],
@@ -1861,11 +1855,16 @@ const APOSTOLES_COORDS = {
   27:[786,435], 28:[942,435], 29:[1042,428], 30:[1037,481], 31:[1037,513], 32:[1037,545], 33:[1037,577],
   34:[1051,670], 35:[1019,670], 36:[986,670], 37:[954,670], 38:[921,670], 39:[889,670], 40:[856,670],
   41:[824,670], 42:[791,670], 43:[759,670], 44:[803,582], 45:[803,550], 46:[803,517], 47:[803,485],
-  // Mz 6: lotes 1-28 (pendiente calibrar)
-  48:[100,200], 49:[140,200], 50:[180,200], 51:[220,200], 52:[260,200], 53:[300,200], 54:[340,200], 55:[380,200],
-  56:[420,200], 57:[460,200], 58:[100,240], 59:[140,240], 60:[180,240], 61:[220,240], 62:[260,240], 63:[300,240],
-  64:[340,240], 65:[380,240], 66:[420,240], 67:[460,240], 68:[100,280], 69:[140,280], 70:[180,280], 71:[220,280],
-  72:[260,280], 73:[300,280], 74:[340,280], 75:[380,280],
+  // Mz 6: lotes 1-28 (calibrado 2026-04-08)
+  48:[1438,442], 49:[1422,485], 50:[1422,516], 51:[1422,548], 52:[1422,579], 53:[1443,668], 54:[1410,668],
+  55:[1377,668], 56:[1344,668], 57:[1311,668], 58:[1279,668], 59:[1246,668], 60:[1213,668], 61:[1180,668],
+  62:[1147,668], 63:[1189,578], 64:[1189,546], 65:[1189,515], 66:[1189,483], 67:[1143,442], 68:[1176,442],
+  69:[1209,442], 70:[1241,442], 71:[1274,442], 72:[1307,442], 73:[1340,442], 74:[1372,442], 75:[1405,442],
+  // Mz 5: lotes 1-28 (pendiente calibrar)
+  76:[100,200], 77:[140,200], 78:[180,200], 79:[220,200], 80:[260,200], 81:[300,200], 82:[340,200], 83:[380,200],
+  84:[420,200], 85:[460,200], 86:[100,240], 87:[140,240], 88:[180,240], 89:[220,240], 90:[260,240], 91:[300,240],
+  92:[340,240], 93:[380,240], 94:[420,240], 95:[460,240], 96:[100,280], 97:[140,280], 98:[180,280], 99:[220,280],
+  100:[260,280], 101:[300,280], 102:[340,280], 103:[380,280],
 };
 
 async function loadLotes() {
@@ -2042,7 +2041,8 @@ function generarMapaApostoles(activos) {
   const VX = 30, VY = 10, VW = 1900, VH = 1900;
   // Labels por rango de pin
   const evPins = {1:'Mz1', 2:'Mz2', 3:'Mz3', 4:'Mz4'};
-  // Mz8: pins 5-26 (lote = n-4), Mz7: pins 27-47 (lote = n-26), Mz6: pins 48-75 (lote = n-47)
+  // Mz8: 5-26, Mz7: 27-47, Mz6: 48-75, Mz5: 76-103
+  const mzRanges = [{s:5,e:26,off:4},{s:27,e:47,off:26},{s:48,e:75,off:47},{s:76,e:103,off:75}];
 
   let pins = '';
   const totalPins = Object.keys(APOSTOLES_COORDS).length;
@@ -2052,10 +2052,10 @@ function generarMapaApostoles(activos) {
     const cy = (coord[1] - VY).toFixed(0);
     const activo = activoMap[n];
     const isEV = n <= 4;
-    const label = isEV ? '1' : (n <= 26 ? n - 4 : n <= 47 ? n - 26 : n - 47);
-    const isMz7 = n >= 27 && n <= 47;
-    const isMz6 = n >= 48 && n <= 75;
-    const color = activo ? colorActivo(activo) : (isEV ? '#3b82f6' : isMz7 ? '#f59e0b' : isMz6 ? '#8b5cf6' : '#16a34a');
+    const mzR = mzRanges.find(r => n >= r.s && n <= r.e);
+    const label = isEV ? '1' : (mzR ? n - mzR.off : n);
+    const isMz5 = n >= 76 && n <= 103;
+    const color = activo ? colorActivo(activo) : (isEV ? '#3b82f6' : isMz5 ? '#ec4899' : '#16a34a');
     const nombre = isEV ? evPins[n] : (activo ? (activo.Nombre || '').split(' ')[0] : '');
     const dataAttr = activo
       ? `data-activo="${encodeURIComponent(JSON.stringify(activo))}"`
