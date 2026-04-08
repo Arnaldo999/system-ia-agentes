@@ -915,8 +915,7 @@
               <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b"></span> Reservado</span>
               <span class="flex items-center gap-1.5"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444"></span> Vendido</span>
             </div>
-            <button id="btn-exportar-coords" onclick="exportarCoordenadas(1,82)" class="btn btn-sm bg-green-500 text-white font-bold" style="display:none" title="Copiar lotes 1-82">📋 Export 1-82</button>
-            <button id="btn-exportar-coords2" onclick="exportarCoordenadas(83,163)" class="btn btn-sm bg-blue-500 text-white font-bold" style="display:none" title="Copiar lotes 83-163">📋 Export 83-163</button>
+            <span id="export-btns-container" style="display:none"></span>
             <button id="btn-calibrar" onclick="toggleCalibracion()" class="btn btn-outline btn-sm bg-gray-100" title="Modo calibración: arrastrá los pins">🔧 Calibrar pins</button>
             <button onclick="toggleMapaFullscreen()" class="btn btn-outline btn-sm" title="Pantalla completa">⛶</button>
             <button class="modal-close" style="position:relative;top:auto;right:auto;" onclick="closeModal('modal-mapa')">✕</button>
@@ -1772,8 +1771,8 @@ const LOTEOS_CONFIG = [
     id: 'apostoles',
     nombre: 'Loteo Altos de Apóstoles',
     zona: 'Apóstoles',
-    descripcion: '325 terrenos sobre Av. Las Heras. Financiación hasta 120 cuotas.',
-    totalLotes: 325,
+    descripcion: '330 lotes en 12 manzanas. Financiación hasta 120 cuotas.',
+    totalLotes: 330,
     mapaKey: 'apostoles',
   },
   {
@@ -1834,6 +1833,63 @@ const LOTES_COORDS = {
   142:[118,1087], 143:[99,1040], 144:[87,991], 145:[76,944], 146:[77,893], 147:[77,846], 148:[88,798], 149:[99,748],
   150:[124,698], 151:[143,659], 152:[160,603], 153:[173,559], 154:[180,512], 155:[186,459], 156:[191,410], 157:[178,360],
   158:[82,402], 159:[81,444], 160:[74,495], 161:[64,541], 162:[59,599], 163:[52,651],
+};
+
+// Coordenadas [x,y] px imagen PNG 2000×2218 — Apóstoles, estimadas, calibrar con drag&drop
+// 12 manzanas vendibles (Mz 5-16), 330 lotes. Mz 1,2,3,4,17 = EV/RF
+// Mz 8: lotes 1-22 | Mz 7: 23-50 | Mz 6: 51-78 | Mz 5: 79-106
+// Mz 9: 107-134 | Mz 10: 135-162 | Mz 11: 163-190 | Mz 12: 191-218
+// Mz 13: 219-246 | Mz 14: 247-274 | Mz 15: 275-302 | Mz 16: 303-330
+const APOSTOLES_PLAN_URL = 'https://res.cloudinary.com/dmqkqcreo/image/upload/v1775654566/back-urbanizaciones/mapas/apostoles-plano-v2.png';
+const APOSTOLES_COORDS = {
+  1:[275,420], 2:[310,420], 3:[345,420], 4:[420,450], 5:[490,500], 6:[490,548], 7:[490,596], 8:[490,644],
+  9:[488,640], 10:[464,640], 11:[440,640], 12:[416,640], 13:[392,640], 14:[368,640], 15:[344,640], 16:[320,640],
+  17:[296,640], 18:[272,640], 19:[270,585], 20:[270,537], 21:[270,489], 22:[270,441],
+  23:[592,420], 24:[616,420], 25:[640,420], 26:[664,420], 27:[688,420], 28:[712,420], 29:[736,420], 30:[760,420],
+  31:[784,420], 32:[808,420], 33:[810,475], 34:[810,523], 35:[810,571], 36:[810,619], 37:[808,640], 38:[784,640],
+  39:[760,640], 40:[736,640], 41:[712,640], 42:[688,640], 43:[664,640], 44:[640,640], 45:[616,640], 46:[592,640],
+  47:[590,585], 48:[590,537], 49:[590,489], 50:[590,441],
+  51:[922,420], 52:[946,420], 53:[970,420], 54:[994,420], 55:[1018,420], 56:[1042,420], 57:[1066,420], 58:[1090,420],
+  59:[1114,420], 60:[1138,420], 61:[1140,475], 62:[1140,523], 63:[1140,571], 64:[1140,619], 65:[1138,640],
+  66:[1114,640], 67:[1090,640], 68:[1066,640], 69:[1042,640], 70:[1018,640], 71:[994,640], 72:[970,640],
+  73:[946,640], 74:[922,640], 75:[920,585], 76:[920,537], 77:[920,489], 78:[920,441],
+  79:[1292,420], 80:[1316,420], 81:[1340,420], 82:[1364,420], 83:[1388,420], 84:[1412,420], 85:[1436,420],
+  86:[1460,420], 87:[1484,420], 88:[1508,420], 89:[1510,475], 90:[1510,523], 91:[1510,571], 92:[1510,619],
+  93:[1508,640], 94:[1484,640], 95:[1460,640], 96:[1436,640], 97:[1412,640], 98:[1388,640], 99:[1364,640],
+  100:[1340,640], 101:[1316,640], 102:[1292,640], 103:[1290,585], 104:[1290,537], 105:[1290,489], 106:[1290,441],
+  107:[272,720], 108:[296,720], 109:[320,720], 110:[344,720], 111:[368,720], 112:[392,720], 113:[416,720],
+  114:[440,720], 115:[464,720], 116:[488,720], 117:[490,775], 118:[490,823], 119:[490,871], 120:[490,919],
+  121:[488,940], 122:[464,940], 123:[440,940], 124:[416,940], 125:[392,940], 126:[368,940], 127:[344,940],
+  128:[320,940], 129:[296,940], 130:[272,940], 131:[270,885], 132:[270,837], 133:[270,789], 134:[270,741],
+  135:[592,720], 136:[616,720], 137:[640,720], 138:[664,720], 139:[688,720], 140:[712,720], 141:[736,720],
+  142:[760,720], 143:[784,720], 144:[808,720], 145:[810,775], 146:[810,823], 147:[810,871], 148:[810,919],
+  149:[808,940], 150:[784,940], 151:[760,940], 152:[736,940], 153:[712,940], 154:[688,940], 155:[664,940],
+  156:[640,940], 157:[616,940], 158:[592,940], 159:[590,885], 160:[590,837], 161:[590,789], 162:[590,741],
+  163:[922,720], 164:[946,720], 165:[970,720], 166:[994,720], 167:[1018,720], 168:[1042,720], 169:[1066,720],
+  170:[1090,720], 171:[1114,720], 172:[1138,720], 173:[1140,775], 174:[1140,823], 175:[1140,871], 176:[1140,919],
+  177:[1138,940], 178:[1114,940], 179:[1090,940], 180:[1066,940], 181:[1042,940], 182:[1018,940], 183:[994,940],
+  184:[970,940], 185:[946,940], 186:[922,940], 187:[920,885], 188:[920,837], 189:[920,789], 190:[920,741],
+  191:[1292,720], 192:[1316,720], 193:[1340,720], 194:[1364,720], 195:[1388,720], 196:[1412,720], 197:[1436,720],
+  198:[1460,720], 199:[1484,720], 200:[1508,720], 201:[1510,775], 202:[1510,823], 203:[1510,871], 204:[1510,919],
+  205:[1508,940], 206:[1484,940], 207:[1460,940], 208:[1436,940], 209:[1412,940], 210:[1388,940], 211:[1364,940],
+  212:[1340,940], 213:[1316,940], 214:[1292,940], 215:[1290,885], 216:[1290,837], 217:[1290,789], 218:[1290,741],
+  219:[272,1010], 220:[296,1010], 221:[320,1010], 222:[344,1010], 223:[368,1010], 224:[392,1010], 225:[416,1010],
+  226:[440,1010], 227:[464,1010], 228:[488,1010], 229:[490,1065], 230:[490,1113], 231:[490,1161], 232:[490,1209],
+  233:[488,1230], 234:[464,1230], 235:[440,1230], 236:[416,1230], 237:[392,1230], 238:[368,1230], 239:[344,1230],
+  240:[320,1230], 241:[296,1230], 242:[272,1230], 243:[270,1175], 244:[270,1127], 245:[270,1079], 246:[270,1031],
+  247:[592,1010], 248:[616,1010], 249:[640,1010], 250:[664,1010], 251:[688,1010], 252:[712,1010], 253:[736,1010],
+  254:[760,1010], 255:[784,1010], 256:[808,1010], 257:[810,1065], 258:[810,1113], 259:[810,1161], 260:[810,1209],
+  261:[808,1230], 262:[784,1230], 263:[760,1230], 264:[736,1230], 265:[712,1230], 266:[688,1230], 267:[664,1230],
+  268:[640,1230], 269:[616,1230], 270:[592,1230], 271:[590,1175], 272:[590,1127], 273:[590,1079], 274:[590,1031],
+  275:[922,1010], 276:[946,1010], 277:[970,1010], 278:[994,1010], 279:[1018,1010], 280:[1042,1010], 281:[1066,1010],
+  282:[1090,1010], 283:[1114,1010], 284:[1138,1010], 285:[1140,1065], 286:[1140,1113], 287:[1140,1161],
+  288:[1140,1209], 289:[1138,1230], 290:[1114,1230], 291:[1090,1230], 292:[1066,1230], 293:[1042,1230],
+  294:[1018,1230], 295:[994,1230], 296:[970,1230], 297:[946,1230], 298:[922,1230], 299:[920,1175], 300:[920,1127],
+  301:[920,1079], 302:[920,1031], 303:[1292,1010], 304:[1316,1010], 305:[1340,1010], 306:[1364,1010],
+  307:[1388,1010], 308:[1412,1010], 309:[1436,1010], 310:[1460,1010], 311:[1484,1010], 312:[1508,1010],
+  313:[1510,1065], 314:[1510,1113], 315:[1510,1161], 316:[1510,1209], 317:[1508,1230], 318:[1484,1230],
+  319:[1460,1230], 320:[1436,1230], 321:[1412,1230], 322:[1388,1230], 323:[1364,1230], 324:[1340,1230],
+  325:[1316,1230], 326:[1292,1230], 327:[1290,1175], 328:[1290,1127], 329:[1290,1079], 330:[1290,1031],
 };
 
 async function loadLotes() {
@@ -1934,6 +1990,8 @@ async function abrirMapaLoteo(mapaKey) {
 
   if (mapaKey === 'san_ignacio') {
     container.innerHTML = generarMapaSanIgnacio(activosLoteo);
+  } else if (mapaKey === 'apostoles') {
+    container.innerHTML = generarMapaApostoles(activosLoteo);
   } else {
     container.innerHTML = generarMapaGrilla(activosLoteo, config);
   }
@@ -1990,6 +2048,54 @@ function generarMapaSanIgnacio(activos) {
         <defs><clipPath id="mapa-clip"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
         <!-- Imagen a tamaño real, desplazada -VX,-VY para que el viewBox 0,0 sea el borde del mapa -->
         <image href="${MASTER_PLAN_URL}" x="-${VX}" y="-${VY}" width="1241" height="1754" clip-path="url(#mapa-clip)"/>
+        ${pins}
+      </svg>
+    </div>
+    <p class="text-xs text-txt-muted text-center mt-3">Clic en cualquier lote para ver detalle · Datos actualizados desde Clientes Activos</p>`;
+}
+
+function generarMapaApostoles(activos) {
+  const activoMap = {};
+  activos.forEach(a => { const n = parseInt(a.Numero_Lote); if (n) activoMap[n] = a; });
+
+  const vendidos   = activos.filter(a => ['Firmado','Escriturado'].includes(a.Estado_Contrato||'')).length;
+  const reservados = activos.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
+  const totalLotes = 330;
+  const libres     = totalLotes - activos.length;
+
+  const VX = 50, VY = 100, VW = 1750, VH = 1400;
+  const PIN_R = 12;
+
+  let pins = '';
+  for (let n = 1; n <= totalLotes; n++) {
+    const coord = APOSTOLES_COORDS[n];
+    if (!coord) continue;
+    const cx = (coord[0] - VX).toFixed(0);
+    const cy = (coord[1] - VY).toFixed(0);
+    const activo = activoMap[n];
+    const color = activo ? colorActivo(activo) : '#16a34a';
+    const nombre = activo ? (activo.Nombre || '').split(' ')[0] : '';
+    const dataAttr = activo
+      ? `data-activo="${encodeURIComponent(JSON.stringify(activo))}"`
+      : `data-num="${n}"`;
+    pins += `<g onclick="handleLoteClick(this)" ${dataAttr} style="cursor:pointer">
+      <circle cx="${cx}" cy="${cy}" r="${PIN_R}" fill="${color}" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+      <text x="${cx}" y="${cy}" dy="${nombre?'-3':'0.35em'}" style="font-size:8px;font-weight:800;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
+      ${nombre?`<text x="${cx}" y="${(parseFloat(cy)+5).toFixed(0)}" style="font-size:6px;font-weight:600;fill:white;text-anchor:middle;pointer-events:none;font-family:Inter,sans-serif">${nombre}</text>`:''}
+    </g>`;
+  }
+
+  return `
+    <div class="mb-4 flex items-center gap-5 flex-wrap text-sm font-semibold">
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#16a34a;display:inline-block"></span>Disponibles: <strong>${libres}</strong></span>
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#f59e0b;display:inline-block"></span>Reservados: <strong>${reservados}</strong></span>
+      <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#ef4444;display:inline-block"></span>Vendidos: <strong>${vendidos}</strong></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;min-width:600px;min-height:600px;max-width:1100px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
+        <defs><clipPath id="mapa-clip-ap"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
+        <image href="${APOSTOLES_PLAN_URL}" x="-${VX}" y="-${VY}" width="2000" height="2218" clip-path="url(#mapa-clip-ap)"/>
         ${pins}
       </svg>
     </div>
@@ -2067,20 +2173,30 @@ let dragTarget = null, dragOffset = {x:0,y:0};
 function toggleCalibracion() {
   calibracionActiva = !calibracionActiva;
   const btn = document.getElementById('btn-calibrar');
-  const expBtn = document.getElementById('btn-exportar-coords');
+  const container = document.getElementById('export-btns-container');
   if (calibracionActiva) {
     btn.textContent = '🔒 Bloquear pins';
     btn.classList.add('bg-amber-500','text-white');
     btn.classList.remove('bg-gray-100');
-    expBtn.style.display = 'inline-flex';
-    document.getElementById('btn-exportar-coords2').style.display = 'inline-flex';
+    const isApostoles = document.querySelector('#mapa-container svg image')?.getAttribute('href')?.includes('apostoles');
+    const total = isApostoles ? 330 : 163;
+    const chunk = isApostoles ? 66 : 82;
+    let btns = '';
+    for (let i = 1; i <= total; i += chunk) {
+      const end = Math.min(i + chunk - 1, total);
+      const color = ['bg-green-500','bg-blue-500','bg-purple-500','bg-orange-500','bg-pink-500'][(Math.floor((i-1)/chunk)) % 5];
+      btns += `<button onclick="exportarCoordenadas(${i},${end})" class="btn btn-sm ${color} text-white font-bold">📋 ${i}-${end}</button> `;
+    }
+    container.innerHTML = btns;
+    container.style.display = 'inline-flex';
+    container.style.gap = '4px';
     toast('Modo calibración ON — arrastrá cada pin a su posición exacta', 'success');
   } else {
     btn.textContent = '🔧 Calibrar pins';
     btn.classList.remove('bg-amber-500','text-white');
     btn.classList.add('bg-gray-100');
-    expBtn.style.display = 'none';
-    document.getElementById('btn-exportar-coords2').style.display = 'none';
+    container.style.display = 'none';
+    container.innerHTML = '';
     toast('Pins bloqueados', 'success');
   }
 }
@@ -2088,7 +2204,9 @@ function toggleCalibracion() {
 function exportarCoordenadas(desde, hasta) {
   const svg = document.querySelector('#mapa-container svg');
   if (!svg) return;
-  const VX = 30, VY = 25;
+  const isApostoles = svg.querySelector('image')?.getAttribute('href')?.includes('apostoles');
+  const VX = isApostoles ? 50 : 30;
+  const VY = isApostoles ? 100 : 25;
   const groups = svg.querySelectorAll('g[data-num], g[data-activo]');
   const coords = {};
   groups.forEach(g => {
