@@ -118,6 +118,30 @@ def tenant_auth(slug: str, body: AuthRequest):
     }
 
 
+class CambiarPinRequest(BaseModel):
+    pin_actual: str
+    pin_nuevo: str
+
+@router.patch("/{slug}/pin")
+def tenant_cambiar_pin(slug: str, body: CambiarPinRequest):
+    """Cambia el PIN del tenant. Requiere PIN actual para validar."""
+    t = _get_tenant(slug)
+    pin_hash = t.get("pin_hash")
+    if pin_hash:
+        ingresado = hashlib.sha256(body.pin_actual.encode()).hexdigest()
+        if ingresado != pin_hash:
+            raise HTTPException(status_code=401, detail="PIN actual incorrecto")
+    if len(body.pin_nuevo) != 4 or not body.pin_nuevo.isdigit():
+        raise HTTPException(status_code=422, detail="El PIN debe ser de 4 dígitos")
+    nuevo_hash = hashlib.sha256(body.pin_nuevo.encode()).hexdigest()
+    sb = _get_sb()
+    sb.table("tenants").update({
+        "pin_hash": nuevo_hash,
+        "updated_at": "now()",
+    }).eq("slug", slug).execute()
+    return {"status": "ok", "mensaje": "PIN actualizado correctamente"}
+
+
 @router.patch("/{slug}/marca")
 def tenant_update_marca(slug: str, body: MarcaUpdate):
     """Actualiza branding del tenant: nombre, logo, colores, ciudad, moneda."""
