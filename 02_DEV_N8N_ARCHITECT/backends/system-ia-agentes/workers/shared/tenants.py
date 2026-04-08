@@ -13,6 +13,20 @@ from supabase import create_client
 
 router = APIRouter(prefix="/tenant", tags=["SaaS Tenants"])
 
+# ── Versión CRM (el frontend consulta esto para mostrar alerta de actualización)
+_CRM_VERSION = {
+    "version": "1.0.0",
+    "changelog": "Agenda sincronizada con bot + Cal.com, subnichos, confirmación de citas",
+}
+
+# Endpoint fuera del prefix /tenant para que sea /crm/version
+from fastapi import APIRouter as _R
+crm_router = _R(tags=["CRM"])
+
+@crm_router.get("/crm/version")
+def crm_version():
+    return _CRM_VERSION
+
 # ── Supabase client ────────────────────────────────────────────────────────────
 _sb = None
 

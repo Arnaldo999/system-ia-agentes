@@ -1653,45 +1653,6 @@ async function guardarEstado(id) {
   }
 }
 
-// ── VERSIONADO ──────────────────────────────────────────────────────────────
-const CRM_VERSION = '1.0.0';
-const CRM_VERSION_KEY = 'crm_version_dismissed';
-
-async function checkVersion() {
-  try {
-    const res = await fetch(`${SAAS_API}/crm/version`, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.version && data.version !== CRM_VERSION) {
-      const dismissed = localStorage.getItem(CRM_VERSION_KEY);
-      if (dismissed === data.version) return;
-      showUpdateBanner(data.version, data.changelog || '');
-    }
-  } catch(e) { /* silencioso */ }
-}
-
-function showUpdateBanner(newVersion, changelog) {
-  const existing = document.getElementById('updateBanner');
-  if (existing) existing.remove();
-  const banner = document.createElement('div');
-  banner.id = 'updateBanner';
-  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#6c63ff,#00d4aa);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,sans-serif;font-size:13px;color:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.3)';
-  const changelogText = changelog ? ` — ${changelog}` : '';
-  banner.innerHTML = `
-    <div>🔔 <strong>Nueva versión disponible (v${newVersion})</strong>${changelogText}</div>
-    <div style="display:flex;gap:8px">
-      <button onclick="location.reload(true)" style="background:#fff;color:#1a1d27;border:none;padding:5px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">🔄 Actualizar</button>
-      <button onclick="dismissUpdate('${newVersion}')" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ahora no</button>
-    </div>`;
-  document.body.prepend(banner);
-}
-
-function dismissUpdate(version) {
-  localStorage.setItem(CRM_VERSION_KEY, version);
-  const banner = document.getElementById('updateBanner');
-  if (banner) banner.remove();
-}
-
 // ── MULTI-TENANT + LOGIN ─────────────────────────────────────────────────────
 const SAAS_API = 'https://agentes.arnaldoayalaestratega.cloud';
 let API_BASE = `${SAAS_API}/demos/inmobiliaria`; // fallback
@@ -2871,7 +2832,6 @@ initTenant().then(ok => {
     renderAgenda();
   }
   // Si ok=false → login screen visible, datos se cargan desde submitPin()
-  checkVersion();
 });
 </script>
 </body>
