@@ -1207,9 +1207,9 @@ tailwind.config = {
       <button onclick="pinKey('7')" class="pin-btn">7</button>
       <button onclick="pinKey('8')" class="pin-btn">8</button>
       <button onclick="pinKey('9')" class="pin-btn">9</button>
-      <button style="visibility:hidden" class="pin-btn"></button>
-      <button onclick="pinKey('0')" class="pin-btn">0</button>
       <button onclick="pinKey('⌫')" class="pin-btn">⌫</button>
+      <button onclick="pinKey('0')" class="pin-btn">0</button>
+      <button onclick="submitPin()" class="pin-btn" style="background:#6c63ff;color:#fff;font-size:13px;font-weight:600">Ingresar</button>
     </div>
 
     <div id="loginError" style="color:#f87171;font-size:0.85rem;min-height:20px;margin-bottom:8px"></div>
@@ -1719,6 +1719,10 @@ function pinKey(k) {
 
 async function submitPin() {
   const err = document.getElementById('loginError');
+  if (pinBuffer.length < 4) {
+    err.textContent = 'Ingresá los 4 dígitos del PIN';
+    return;
+  }
   try {
     const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/auth`, {
       method: 'POST',
