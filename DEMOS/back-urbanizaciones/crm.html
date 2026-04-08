@@ -954,9 +954,23 @@ async function fetchProxy(endpoint) {
   return d.records || [];
 }
 
+async function fetchWithTimeout(url, options, ms = 20000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { ...options, signal: ctrl.signal });
+    clearTimeout(timer);
+    return r;
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('Timeout — el servidor tardó demasiado');
+    throw e;
+  }
+}
+
 async function patchProxy(endpoint, body) {
   const payload = body.fields ? body : { fields: body };
-  const r = await fetch(`${CRM}${endpoint}`, {
+  const r = await fetchWithTimeout(`${CRM}${endpoint}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -966,7 +980,7 @@ async function patchProxy(endpoint, body) {
 }
 
 async function postProxy(endpoint, body) {
-  const r = await fetch(`${CRM}${endpoint}`, {
+  const r = await fetchWithTimeout(`${CRM}${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -2342,16 +2356,13 @@ async function guardarActivo() {
   try {
     if (recordId) {
       await patchProxy(`/activos/${recordId}`, fields);
-      toast('Cliente actualizado correctamente', 'success');
     } else {
       await postProxy('/activos', { fields });
-      toast('Cliente creado correctamente', 'success');
     }
-    closeModal('modal-activo');
     resetBtn();
-    const d = await fetch(`${CRM}/activos`).then(r => r.json());
-    allActivos = d.records || [];
-    renderActivos();
+    closeModal('modal-activo');
+    toast(recordId ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente', 'success');
+    await recargarActivos();
   } catch(e) {
     toast('Error al guardar: ' + e.message, 'error');
     resetBtn();
