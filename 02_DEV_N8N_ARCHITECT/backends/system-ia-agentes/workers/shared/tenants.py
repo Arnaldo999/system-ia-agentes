@@ -7,7 +7,7 @@ PATCH /tenant/{slug}/marca  → actualiza branding (nombre, logo, colores, ciuda
 import os
 import hashlib
 import secrets
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from supabase import create_client
 
@@ -139,3 +139,170 @@ def tenant_update_marca(slug: str, body: MarcaUpdate):
         "ciudad":         t.get("ciudad"),
         "moneda":         t.get("moneda"),
     }
+
+
+# ── ADMIN ENDPOINTS ──────────────────────────────────────────────────────────
+ADMIN_TOKEN = os.environ.get("LOVBOT_ADMIN_TOKEN", "lovbot-admin-2026")
+
+admin_router = APIRouter(prefix="/admin", tags=["Admin Lovbot"])
+
+
+@admin_router.get("/tenants")
+def admin_list_tenants(request: Request):
+    """Lista todos los tenants con datos de pago."""
+    auth = request.headers.get("authorization", "")
+    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+
+    sb = _get_sb()
+    res = sb.table("tenants").select("*").order("created_at", desc=False).execute()
+    from datetime import date
+    tenants = []
+    for t in (res.data or []):
+        estado = t.get("estado_pago", "trial")
+        fecha_vence = t.get("fecha_vence")
+        if estado not in ("suspendido",) and fecha_vence:
+            try:
+                if date.fromisoformat(str(fecha_vence)[:10]) < date.today():
+                    estado = "vencido"
+            except (ValueError, TypeError):
+                pass
+        tenants.append({
+            "id":              t["id"],
+            "slug":            t["slug"],
+            "nombre":          t["nombre"],
+            "subniche":        t.get("subniche"),
+            "plan":            t.get("plan", "trial"),
+            "estado_pago":     estado,
+            "fecha_alta":      t.get("fecha_alta"),
+            "fecha_vence":     fecha_vence,
+            "email_admin":     t.get("email_admin"),
+            "telefono_admin":  t.get("telefono_admin"),
+            "monto_mensual":   t.get("monto_mensual", 0),
+            "moneda_pago":     t.get("moneda_pago", "USD"),
+            "ciudad":          t.get("ciudad"),
+            "activo":          t.get("activo", True),
+            "notas":           t.get("notas"),
+            "logo_url":        t.get("logo_url"),
+        })
+    return {"total": len(tenants), "tenants": tenants}
+
+
+class RenovarRequest(BaseModel):
+    dias: int = 30
+
+@admin_router.patch("/tenants/{slug}/renovar")
+def admin_renovar(slug: str, body: RenovarRequest, request: Request):
+    """Renueva suscripción: suma N días a fecha_vence."""
+    auth = request.headers.get("authorization", "")
+    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+
+    t = _get_tenant(slug)
+    from datetime import date, timedelta
+    fecha_actual = t.get("fecha_vence")
+    if fecha_actual:
+        try:
+            base = date.fromisoformat(str(fecha_actual)[:10])
+            if base < date.today():
+                base = date.today()
+        except (ValueError, TypeError):
+            base = date.today()
+    else:
+        base = date.today()
+
+    nueva_fecha = base + timedelta(days=body.dias)
+    sb = _get_sb()
+    sb.table("tenants").update({
+        "fecha_vence": nueva_fecha.isoformat(),
+        "estado_pago": "al_dia",
+        "updated_at": "now()",
+    }).eq("slug", slug).execute()
+
+    return {"status": "ok", "slug": slug, "fecha_vence": nueva_fecha.isoformat(),
+            "estado_pago": "al_dia", "dias": body.dias}
+
+
+@admin_router.patch("/tenants/{slug}/suspender")
+def admin_suspender(slug: str, request: Request):
+    """Suspende un tenant (override manual)."""
+    auth = request.headers.get("authorization", "")
+    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+
+    _get_tenant(slug)
+    sb = _get_sb()
+    sb.table("tenants").update({
+        "estado_pago": "suspendido",
+        "updated_at": "now()",
+    }).eq("slug", slug).execute()
+    return {"status": "ok", "slug": slug, "estado_pago": "suspendido"}
+
+
+@admin_router.patch("/tenants/{slug}/reactivar")
+def admin_reactivar(slug: str, request: Request):
+    """Reactiva un tenant suspendido."""
+    auth = request.headers.get("authorization", "")
+    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+
+    _get_tenant(slug)
+    sb = _get_sb()
+    sb.table("tenants").update({
+        "estado_pago": "al_dia",
+        "updated_at": "now()",
+    }).eq("slug", slug).execute()
+    return {"status": "ok", "slug": slug, "estado_pago": "al_dia"}
+
+
+class NuevoTenantRequest(BaseModel):
+    slug:           str
+    nombre:         str
+    pin:            str = "0000"
+    subniche:       str = "inmobiliaria"
+    plan:           str = "starter"
+    ciudad:         str = ""
+    moneda:         str = "USD"
+    email_admin:    str = ""
+    telefono_admin: str = ""
+    monto_mensual:  float = 0
+    moneda_pago:    str = "USD"
+    dias:           int = 30
+    notas:          str = ""
+
+@admin_router.post("/tenants")
+def admin_crear_tenant(body: NuevoTenantRequest, request: Request):
+    """Crea un nuevo tenant/cliente del CRM."""
+    auth = request.headers.get("authorization", "")
+    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+
+    sb = _get_sb()
+    # Verificar que no exista
+    existing = sb.table("tenants").select("id").eq("slug", body.slug).execute()
+    if existing.data:
+        raise HTTPException(status_code=409, detail=f"Tenant '{body.slug}' ya existe")
+
+    from datetime import date, timedelta
+    pin_hash = hashlib.sha256(body.pin.encode()).hexdigest()
+    nuevo = {
+        "slug":           body.slug,
+        "nombre":         body.nombre,
+        "subniche":       body.subniche,
+        "api_prefix":     "/demos/inmobiliaria",
+        "pin_hash":       pin_hash,
+        "plan":           body.plan,
+        "estado_pago":    "al_dia",
+        "fecha_alta":     date.today().isoformat(),
+        "fecha_vence":    (date.today() + timedelta(days=body.dias)).isoformat(),
+        "email_admin":    body.email_admin,
+        "telefono_admin": body.telefono_admin,
+        "monto_mensual":  body.monto_mensual,
+        "moneda_pago":    body.moneda_pago,
+        "ciudad":         body.ciudad,
+        "moneda":         body.moneda,
+        "notas":          body.notas,
+        "activo":         True,
+    }
+    res = sb.table("tenants").insert(nuevo).execute()
+    return {"status": "ok", "tenant": res.data[0] if res.data else nuevo}

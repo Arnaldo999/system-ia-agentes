@@ -5,6 +5,8 @@
     { "source": "/(.*)", "has": [{"type":"host","value":"crm.lovbot.ai"}],             "destination": "/DEMOS/INMOBILIARIA/demo-crm-mvp.html" },
     { "source": "/crm",                       "destination": "/DEMOS/INMOBILIARIA/demo-crm-mvp.html" },
     { "source": "/dev/crm",                   "destination": "/DEMOS/INMOBILIARIA/dev/crm.html" },
+    { "source": "/dev/admin",                 "destination": "/DEMOS/INMOBILIARIA/dev/admin.html" },
+    { "source": "/(.*)", "has": [{"type":"host","value":"admin.lovbot.ai"}],            "destination": "/DEMOS/INMOBILIARIA/dev/admin.html" },
     { "source": "/informe",                   "destination": "/DEMOS/INMOBILIARIA/informe-mercado-inmobiliario.html" },
     { "source": "/formulario-desarrolladora", "destination": "/DEMOS/INMOBILIARIA/formulario-desarrolladora.html" },
     { "source": "/formulario-agencia",        "destination": "/DEMOS/INMOBILIARIA/formulario-agencia.html" },

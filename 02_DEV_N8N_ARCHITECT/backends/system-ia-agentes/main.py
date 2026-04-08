@@ -16,7 +16,7 @@ from workers.demos.inmobiliaria.worker  import router as demo_inmobiliaria_route
 from workers.demos.gastronomico.worker  import router as demo_gastronomico_router
 
 # ── SaaS ──────────────────────────────────────────────────────────────────────
-from workers.shared.tenants import router as tenants_router, crm_router
+from workers.shared.tenants import router as tenants_router, crm_router, admin_router
 
 # ── System IA ─────────────────────────────────────────────────────────────────
 from workers.social.worker import router as social_router
@@ -41,6 +41,7 @@ app.add_middleware(
 # ── Registrar routers ─────────────────────────────────────────────────────────
 app.include_router(tenants_router)
 app.include_router(crm_router)
+app.include_router(admin_router)
 app.include_router(maicol_router)
 app.include_router(prueba_router)
 app.include_router(robert_inmo_router)
