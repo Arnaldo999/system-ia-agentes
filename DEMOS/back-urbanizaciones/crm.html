@@ -1842,13 +1842,13 @@ const LOTES_COORDS = {
 // Mz 13: 219-246 | Mz 14: 247-274 | Mz 15: 275-302 | Mz 16: 303-330
 const APOSTOLES_PLAN_URL = 'https://res.cloudinary.com/dmqkqcreo/image/upload/v1775655835/back-urbanizaciones/mapas/apostoles-plano-v3.png';
 // Apóstoles: coordenadas [x,y] px sobre imagen 2000×1959. Calibrar con drag&drop.
-// Ronda 1: pins 1-25 para Mz 8 + pins 26-29 para EV (Mz1,Mz2,Mz3,Mz4)
-// Posiciones iniciales en fila para arrastrar
+// Mz 8: lotes 1-22 (calibrado por usuario 2026-04-08)
+// Pins 23-26 = EV Mz1,Mz2,Mz3,Mz4 (pendientes posicionar)
 const APOSTOLES_COORDS = {
-  1:[100,100], 2:[140,100], 3:[180,100], 4:[220,100], 5:[260,100], 6:[300,100], 7:[340,100], 8:[380,100],
-  9:[420,100], 10:[460,100], 11:[500,100], 12:[540,100], 13:[580,100], 14:[100,140], 15:[140,140], 16:[180,140],
-  17:[220,140], 18:[260,140], 19:[300,140], 20:[340,140], 21:[380,140], 22:[420,140], 23:[460,140], 24:[500,140],
-  25:[540,140], 26:[100,180], 27:[140,180], 28:[180,180], 29:[220,180],
+  1:[381,442], 2:[414,442], 3:[447,442], 4:[624,430], 5:[652,486], 6:[652,517], 7:[652,547], 8:[652,578],
+  9:[665,670], 10:[633,670], 11:[600,670], 12:[568,670], 13:[536,670], 14:[503,670], 15:[471,670], 16:[439,670],
+  17:[406,670], 18:[374,670], 19:[419,580], 20:[419,546], 21:[419,513], 22:[419,479],
+  23:[100,100], 24:[140,100], 25:[180,100], 26:[220,100],
 };
 
 async function loadLotes() {
@@ -2023,8 +2023,8 @@ function generarMapaApostoles(activos) {
 
   // Imagen 2000×1959. ViewBox recorta solo la zona de manzanas.
   const VX = 30, VY = 10, VW = 1900, VH = 1900;
-  // Labels: 1-25 muestran su número, 26-29 muestran "1" (EV)
-  const evPins = {26:'Mz1', 27:'Mz2', 28:'Mz3', 29:'Mz4'};
+  // Pins 1-22 = Mz8, 23-26 = EV (Mz1,Mz2,Mz3,Mz4)
+  const evPins = {23:'Mz1', 24:'Mz2', 25:'Mz3', 26:'Mz4'};
 
   let pins = '';
   const totalPins = Object.keys(APOSTOLES_COORDS).length;
@@ -2033,7 +2033,7 @@ function generarMapaApostoles(activos) {
     const cx = (coord[0] - VX).toFixed(0);
     const cy = (coord[1] - VY).toFixed(0);
     const activo = activoMap[n];
-    const isEV = n >= 26;
+    const isEV = n >= 23;
     const label = isEV ? '1' : n;
     const color = activo ? colorActivo(activo) : (isEV ? '#3b82f6' : '#16a34a');
     const nombre = isEV ? evPins[n] : (activo ? (activo.Nombre || '').split(' ')[0] : '');
