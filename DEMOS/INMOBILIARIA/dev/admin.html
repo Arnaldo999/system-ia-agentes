@@ -36,6 +36,10 @@
   .stat-card { text-align:center; padding:16px; }
   .stat-num { font-size:28px; font-weight:700; }
   .stat-label { font-size:11px; color:#8b92a5; margin-top:4px; }
+  .nav-item:hover { background:#222636 !important; color:#e8eaf0 !important; }
+  .nav-item.active { background:#222636 !important; color:#e8eaf0 !important; }
+  .admin-panel { display:none; }
+  .admin-panel.active { display:block; }
 </style>
 </head>
 <body>
@@ -54,73 +58,130 @@
 
 <!-- APP -->
 <div id="app" style="display:none">
-  <!-- HEADER -->
-  <div style="background:#1a1d27;border-bottom:1px solid #2e3347;padding:12px 24px;display:flex;align-items:center;justify-content:space-between">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="font-size:24px">❤️</div>
-      <div>
-        <div style="font-weight:700;font-size:15px">Lovbot Admin</div>
-        <div style="font-size:11px;color:#8b92a5">Gestión de clientes CRM</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <span id="totalClientes" class="badge badge-ok">0 clientes</span>
-      <button class="btn btn-primary" onclick="abrirNuevo()">+ Nuevo cliente</button>
-      <button class="btn" onclick="logout()" style="font-size:11px">Cerrar sesión</button>
-    </div>
-  </div>
+  <div style="display:flex;min-height:100vh">
 
-  <!-- STATS -->
-  <div style="padding:20px 24px 0">
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
-      <div class="card stat-card">
-        <div class="stat-num" style="color:#6c63ff" id="st-total">-</div>
-        <div class="stat-label">Total clientes</div>
+    <!-- SIDEBAR -->
+    <div style="width:220px;background:#1a1d27;border-right:1px solid #2e3347;display:flex;flex-direction:column;flex-shrink:0">
+      <!-- Logo -->
+      <div style="padding:20px 16px 12px;border-bottom:1px solid #2e3347">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:22px">❤️</div>
+          <div>
+            <div style="font-weight:700;font-size:14px">Lovbot Admin</div>
+            <div style="font-size:10px;color:#8b92a5">Panel de gestión</div>
+          </div>
+        </div>
       </div>
-      <div class="card stat-card">
-        <div class="stat-num" style="color:#34d399" id="st-ok">-</div>
-        <div class="stat-label">Al día</div>
+      <!-- Nav -->
+      <div style="padding:12px 8px;flex:1">
+        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px">Principal</div>
+        <div class="nav-item active" onclick="navAdmin('dashboard',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;background:#222636;color:#e8eaf0">
+          📊 Dashboard
+        </div>
+        <div class="nav-item" onclick="navAdmin('clientes-crm',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;color:#8b92a5">
+          🏢 Clientes CRM
+        </div>
+        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Próximamente</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
+          🤖 Automatizaciones
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
+          📱 Redes Sociales
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
+          💰 Facturación
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
+          ⚙️ Configuración
+        </div>
       </div>
-      <div class="card stat-card">
-        <div class="stat-num" style="color:#fbbf24" id="st-vencido">-</div>
-        <div class="stat-label">Vencidos</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-num" style="color:#f87171" id="st-suspendido">-</div>
-        <div class="stat-label">Suspendidos</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-num" style="color:#a5b4fc" id="st-trial">-</div>
-        <div class="stat-label">Trial</div>
+      <!-- Footer sidebar -->
+      <div style="padding:12px 16px;border-top:1px solid #2e3347">
+        <span id="totalClientes" style="font-size:11px;color:#8b92a5">0 clientes</span>
+        <button onclick="logout()" style="display:block;margin-top:8px;background:none;border:none;color:#4b5563;font-size:11px;cursor:pointer">🚪 Cerrar sesión</button>
       </div>
     </div>
-  </div>
 
-  <!-- TABLA -->
-  <div style="padding:0 24px 24px">
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="padding:16px 20px;border-bottom:1px solid #2e3347;display:flex;align-items:center;justify-content:space-between">
-        <div style="font-weight:600;font-size:15px">Clientes CRM</div>
-        <input type="text" id="buscar" placeholder="Buscar cliente..." style="width:250px" oninput="filtrar()">
+    <!-- MAIN CONTENT -->
+    <div style="flex:1;overflow-y:auto">
+      <!-- TOP BAR -->
+      <div style="background:#1a1d27;border-bottom:1px solid #2e3347;padding:12px 24px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-weight:600;font-size:15px" id="panelTitle">Dashboard</div>
+        <button class="btn btn-primary" onclick="abrirNuevo()">+ Nuevo cliente</button>
       </div>
-      <div style="overflow-x:auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Plan</th>
-              <th>Estado</th>
-              <th>Vence</th>
-              <th>Monto</th>
-              <th>Contacto</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tablaBody">
-            <tr><td colspan="7" style="text-align:center;padding:40px;color:#8b92a5">Cargando...</td></tr>
-          </tbody>
-        </table>
+
+      <!-- PANEL: DASHBOARD -->
+      <div class="admin-panel active" id="panel-dashboard">
+        <div style="padding:20px 24px 0">
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+            <div class="card stat-card">
+              <div class="stat-num" style="color:#6c63ff" id="st-total">-</div>
+              <div class="stat-label">Total clientes</div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-num" style="color:#34d399" id="st-ok">-</div>
+              <div class="stat-label">Al día</div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-num" style="color:#fbbf24" id="st-vencido">-</div>
+              <div class="stat-label">Vencidos</div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-num" style="color:#f87171" id="st-suspendido">-</div>
+              <div class="stat-label">Suspendidos</div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-num" style="color:#a5b4fc" id="st-trial">-</div>
+              <div class="stat-label">Trial</div>
+            </div>
+          </div>
+        </div>
+        <!-- Resumen rápido en dashboard -->
+        <div style="padding:0 24px 24px">
+          <div class="card" style="padding:0;overflow:hidden">
+            <div style="padding:16px 20px;border-bottom:1px solid #2e3347;font-weight:600;font-size:14px">Resumen de clientes</div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead>
+                  <tr><th>Cliente</th><th>Estado</th><th>Vence</th><th>Monto</th><th>Acciones</th></tr>
+                </thead>
+                <tbody id="tablaDashboard"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- PANEL: CLIENTES CRM -->
+      <div class="admin-panel" id="panel-clientes-crm" style="display:none">
+        <div style="padding:20px 24px">
+          <div class="card" style="padding:0;overflow:hidden">
+            <div style="padding:16px 20px;border-bottom:1px solid #2e3347;display:flex;align-items:center;justify-content:space-between">
+              <div style="font-weight:600;font-size:15px">Clientes CRM</div>
+              <input type="text" id="buscar" placeholder="Buscar cliente..." style="width:250px" oninput="filtrar()">
+            </div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Plan</th>
+                    <th>Estado</th>
+                    <th>Vence</th>
+                    <th>Monto</th>
+                    <th>Contacto</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaBody">
+                  <tr><td colspan="7" style="text-align:center;padding:40px;color:#8b92a5">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -168,6 +229,16 @@
 const API = 'https://agentes.arnaldoayalaestratega.cloud';
 let TOKEN = '';
 let TENANTS = [];
+
+function navAdmin(panelId, el) {
+  document.querySelectorAll('.admin-panel').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const panel = document.getElementById('panel-' + panelId);
+  if (panel) { panel.style.display = 'block'; panel.classList.add('active'); }
+  if (el) el.classList.add('active');
+  const titles = { 'dashboard': 'Dashboard', 'clientes-crm': 'Clientes CRM' };
+  document.getElementById('panelTitle').textContent = titles[panelId] || panelId;
+}
 
 function loginAdmin() {
   TOKEN = document.getElementById('adminToken').value.trim();
@@ -223,6 +294,21 @@ function renderTabla() {
   document.getElementById('st-suspendido').textContent = suspendido;
   document.getElementById('st-trial').textContent = trial;
   document.getElementById('totalClientes').textContent = `${total} clientes`;
+
+  // Dashboard resumen
+  const dash = document.getElementById('tablaDashboard');
+  if (dash) {
+    dash.innerHTML = TENANTS.map(t => {
+      const bc = t.estado_pago === 'al_dia' ? 'badge-ok' : t.estado_pago === 'vencido' ? 'badge-warn' : t.estado_pago === 'suspendido' ? 'badge-danger' : 'badge-trial';
+      const el = t.estado_pago === 'al_dia' ? '✅ Al día' : t.estado_pago === 'vencido' ? '⚠️ Vencido' : t.estado_pago === 'suspendido' ? '🔒 Suspendido' : '🆓 Trial';
+      const monto = t.monto_mensual ? `$${Number(t.monto_mensual).toLocaleString()} ${t.moneda_pago}` : '—';
+      let acc = '';
+      if (t.estado_pago === 'vencido') acc = `<button class="btn btn-green" onclick="renovar('${t.slug}')" style="font-size:11px">🔄 Renovar</button>`;
+      else if (t.estado_pago === 'al_dia') acc = `<button class="btn btn-green" onclick="renovar('${t.slug}')" style="font-size:11px">+30d</button>`;
+      else if (t.estado_pago === 'suspendido') acc = `<button class="btn btn-green" onclick="reactivar('${t.slug}')" style="font-size:11px">Reactivar</button>`;
+      return `<tr><td style="font-weight:600;font-size:13px">${t.nombre}<div style="font-size:10px;color:#8b92a5">${t.slug}</div></td><td><span class="badge ${bc}">${el}</span></td><td style="font-size:12px">${t.fecha_vence||'—'}</td><td style="font-size:12px">${monto}</td><td>${acc}</td></tr>`;
+    }).join('');
+  }
 
   if (filtered.length === 0) {
     body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8b92a5">No hay clientes</td></tr>';
