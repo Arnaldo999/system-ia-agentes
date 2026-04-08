@@ -2161,20 +2161,8 @@ function toggleCalibracion() {
     btn.classList.add('bg-amber-500','text-white');
     btn.classList.remove('bg-gray-100');
     const isApostoles = (document.querySelector('#mapa-container svg image')?.getAttribute('href')||'').includes('apostoles');
-    let btns = '';
-    if (isApostoles && typeof APOSTOLES_MANZANAS !== 'undefined') {
-      const colors = ['bg-blue-500','bg-green-500','bg-yellow-500','bg-purple-500','bg-pink-500','bg-red-500','bg-indigo-500','bg-teal-500'];
-      APOSTOLES_MANZANAS.forEach((mz, i) => {
-        btns += `<button onclick="exportarCoordenadas(${mz.desde},${mz.hasta})" class="btn btn-sm ${colors[i%colors.length]} text-white font-bold">📋 ${mz.nombre}</button> `;
-      });
-    } else {
-      const total = 163, chunk = 82;
-      for (let i = 1; i <= total; i += chunk) {
-        const end = Math.min(i + chunk - 1, total);
-        const color = ['bg-green-500','bg-blue-500'][(Math.floor((i-1)/chunk)) % 2];
-        btns += `<button onclick="exportarCoordenadas(${i},${end})" class="btn btn-sm ${color} text-white font-bold">📋 ${i}-${end}</button> `;
-      }
-    }
+    const total = isApostoles ? Object.keys(APOSTOLES_COORDS).length : 163;
+    const btns = `<button onclick="exportarCoordenadas(1,${total})" class="btn btn-sm bg-green-500 text-white font-bold">📋 Exportar todo (1-${total})</button>`;
     container.innerHTML = btns;
     container.style.display = 'inline-flex';
     container.style.gap = '4px';
