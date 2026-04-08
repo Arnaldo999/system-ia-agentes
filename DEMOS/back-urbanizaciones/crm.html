@@ -2064,10 +2064,12 @@ function generarMapaApostoles(activos) {
   const totalLotes = 323;
   const libres     = totalLotes - activos.length;
 
-  const SVG_W = 1200, SVG_H = 1050;
-  const MZ_W = 220, MZ_H = 150, STREET_H = 36, STREET_V = 40;
-  const PAD_LEFT = 70, PAD_TOP = 80;
-  const LOT_DEPTH = 30, LOT_W_SIDE = 30;
+  const SVG_W = 1200, SVG_H = 1100;
+  const MZ_W = 220, MZ_H = 170, STREET_H = 30, STREET_V = 36;
+  const PAD_LEFT = 70, PAD_TOP = 75;
+  // Real plano: top/bottom lots = 10m wide × 30m deep, side lots = 50m wide × 10m tall
+  // Manzana = 100m × 100m. Proportion: side lots take 50% of manzana width
+  const LOT_DEPTH = 55, LOT_W_SIDE = 18;
 
   const mzGlobalStart = {8:1,7:23,6:44,5:72,9:100,10:128,11:156,12:184,13:212,14:240,15:268,16:296};
   const mzLotCount = {8:22,7:21,6:28,5:28,9:28,10:28,11:28,12:28,13:28,14:28,15:28,16:28};
@@ -2108,14 +2110,15 @@ function generarMapaApostoles(activos) {
 
   function mz7Lots(mx, my) {
     const lots = [];
-    lots.push({local:1, x:mx, y:my, w:LOT_W_SIDE+30, h:LOT_DEPTH+10, label:'RF'});
-    lots.push({local:2, x:mx+LOT_W_SIDE+30, y:my, w:MZ_W-2*(LOT_W_SIDE+30)+30, h:LOT_DEPTH+10, label:'EV'});
-    lots.push({local:3, x:mx+MZ_W-LOT_W_SIDE-30, y:my, w:LOT_W_SIDE+30, h:LOT_DEPTH});
-    const rh = (MZ_H - LOT_DEPTH - LOT_DEPTH)/4;
-    for (let i=0;i<4;i++) lots.push({local:4+i, x:mx+MZ_W-LOT_W_SIDE, y:my+LOT_DEPTH+i*rh, w:LOT_W_SIDE, h:rh});
+    const topH = MZ_H * 0.35; // RF and EV take top 35%
+    lots.push({local:1, x:mx, y:my, w:50, h:topH, label:'RF'});
+    lots.push({local:2, x:mx+50, y:my, w:MZ_W-50-40, h:topH, label:'EV'});
+    lots.push({local:3, x:mx+MZ_W-40, y:my, w:40, h:topH});
+    const rh = (MZ_H - topH - LOT_DEPTH)/4;
+    for (let i=0;i<4;i++) lots.push({local:4+i, x:mx+MZ_W-LOT_W_SIDE, y:my+topH+i*rh, w:LOT_W_SIDE, h:rh});
     const bw = (MZ_W - 2*LOT_W_SIDE)/10;
     for (let i=0;i<10;i++) lots.push({local:8+i, x:mx+MZ_W-LOT_W_SIDE-(i+1)*bw, y:my+MZ_H-LOT_DEPTH, w:bw, h:LOT_DEPTH});
-    const lh = (MZ_H - LOT_DEPTH - LOT_DEPTH - 10)/4;
+    const lh = (MZ_H - topH - LOT_DEPTH)/4;
     for (let i=0;i<4;i++) lots.push({local:18+i, x:mx, y:my+MZ_H-LOT_DEPTH-(i+1)*lh, w:LOT_W_SIDE, h:lh});
     return lots;
   }
