@@ -1,13 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inmobiliaria Maicol — Lotes y Terrenos en Misiones</title>
-  <meta name="description" content="Encontrá tu lote o terreno ideal en San Ignacio, Misiones. Inmobiliaria Maicol, especialistas en loteos en la región." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <style>
+<!-- Back Urbanizaciones — Página Inicio
+     Pegar en: Elementor > HTML Widget (página Inicio)
+     Header y Footer vienen del plugin Header & Footer -->
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
     /* ── RESET & VARIABLES ─────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -417,8 +412,6 @@
       .hero-stats { gap: 24px; }
     }
   </style>
-</head>
-<body>
 
 <!-- NAVBAR eliminado — el header real es back-header.html (UAE Header & Footer) -->
 
@@ -450,7 +443,7 @@
         <div class="section-label">Quiénes Somos</div>
         <h2 class="section-title">Tu tierra, nuestra pasión</h2>
         <p class="section-sub">
-          Inmobiliaria Maicol nació en San Ignacio, Misiones, con una misión clara:
+          Back Urbanizaciones nació en San Ignacio, Misiones, con una misión clara:
           ayudar a las familias a encontrar el lugar donde construir sus sueños.
           Más de una década de experiencia en el mercado inmobiliario misionero nos
           respalda, con un equipo comprometido en cada paso del proceso.
@@ -887,7 +880,7 @@
         💬 Consultar por WhatsApp
       </button>
       ${mapaId ? `<a href="https://crm.backurbanizaciones.com/mapa-publico.html?loteo=${mapaId}" target="_blank" class="modal-btn modal-btn-secondary">🗺 Ver Lotes Disponibles</a>` : ''}
-      ${p.Google_Maps_URL ? `<a href="${p.Google_Maps_URL}" target="_blank" class="modal-btn modal-btn-secondary">📍 Ver en Maps</a>` : ''}
+      <a href="${p.Google_Maps_URL || '#'}" target="_blank" class="modal-btn modal-btn-secondary" ${!p.Google_Maps_URL ? 'onclick="event.preventDefault();alert(\'Ubicación en Maps próximamente\')"' : ''}>📍 Ver en Maps</a>
     `;
 
     document.getElementById('modalOverlay').classList.add('open');
@@ -959,5 +952,3 @@
   // ── Init ─────────────────────────────────────────────────────
   cargarPropiedades();
 </script>
-</body>
-</html>
