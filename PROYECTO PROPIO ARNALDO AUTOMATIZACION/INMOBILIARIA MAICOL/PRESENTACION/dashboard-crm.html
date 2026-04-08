@@ -1910,6 +1910,8 @@ const APOSTOLES_COORDS = {
   308:[1859,1413], 309:[1860,1446], 310:[1771,1394], 311:[1736,1397], 312:[1703,1397], 313:[1665,1397], 314:[1630,1399], 315:[1586,1452],
   316:[1587,1416], 317:[1590,1383], 318:[1583,1347], 319:[1586,1316], 320:[1594,1284], 321:[1584,1254], 322:[1587,1220], 323:[1585,1190],
   324:[1588,1157], 325:[1633,1173], 326:[1667,1171], 327:[1704,1173],
+  // Mz 17: lote 31 EV (cerca de Mz16 — calibrar)
+  332:[1740,1560],
 };
 
 async function loadLotes() {
@@ -2085,7 +2087,7 @@ function generarMapaApostoles(activos) {
   // Imagen 2000×1959. ViewBox recorta solo la zona de manzanas.
   const VX = 30, VY = 10, VW = 1900, VH = 1900;
   // Labels por rango de pin
-  const evPins = {1:'Mz1', 2:'Mz2', 3:'Mz3', 4:'Mz4'};
+  const evPins = {1:'Mz1', 2:'Mz2', 3:'Mz3', 4:'Mz4', 332:'Mz17'};
   // Mz8:5-26, Mz7:27-47, Mz6:48-75, Mz5:76-103, Mz9:104-131, Mz10:132-159, Mz11:160-187
   // Mz12:188-215+328-329(L29-30), Mz13:216-243+330-331(L29-30), Mz14:244-271, Mz15:272-299, Mz16:300-327
   const mzRanges = [{s:5,e:26,off:4},{s:27,e:47,off:26},{s:48,e:75,off:47},{s:76,e:103,off:75},
@@ -2100,7 +2102,7 @@ function generarMapaApostoles(activos) {
     const cx = (coord[0] - VX).toFixed(0);
     const cy = (coord[1] - VY).toFixed(0);
     const activo = activoMap[n];
-    const isEV = n <= 4;
+    const isEV = n <= 4 || n === 332;
     const mzR = mzRanges.find(r => n >= r.s && n <= r.e);
     const label = isEV ? '1' : (mzR ? n - mzR.off : n);
     const color = activo ? colorActivo(activo) : (isEV ? '#3b82f6' : '#16a34a');
