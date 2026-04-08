@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/(.*)", "has": [{"type":"host","value":"form.backurbanizaciones.com"}], "destination": "/DEMOS/back-urbanizaciones/formulario.html" },
     { "source": "/(.*)", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}],  "destination": "/DEMOS/back-urbanizaciones/crm.html" },
+    { "source": "/(.*)", "has": [{"type":"host","value":"crm.lovbot.ai"}],             "destination": "/DEMOS/INMOBILIARIA/demo-crm-mvp.html" },
     { "source": "/crm",                       "destination": "/DEMOS/INMOBILIARIA/demo-crm-mvp.html" },
     { "source": "/dev/crm",                   "destination": "/DEMOS/INMOBILIARIA/dev/crm.html" },
     { "source": "/informe",                   "destination": "/DEMOS/INMOBILIARIA/informe-mercado-inmobiliario.html" },
