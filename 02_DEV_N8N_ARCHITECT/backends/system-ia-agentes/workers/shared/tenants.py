@@ -65,6 +65,18 @@ class MarcaUpdate(BaseModel):
 def tenant_config(slug: str):
     """Devuelve configuración pública del tenant (sin datos sensibles)."""
     t = _get_tenant(slug)
+    # Calcular estado_pago real según fecha_vence
+    estado = t.get("estado_pago", "trial")
+    fecha_vence = t.get("fecha_vence")
+    if estado not in ("suspendido",) and fecha_vence:
+        from datetime import date
+        try:
+            vence = date.fromisoformat(str(fecha_vence)[:10])
+            if vence < date.today():
+                estado = "vencido"
+        except (ValueError, TypeError):
+            pass
+
     return {
         "slug":           t["slug"],
         "nombre":         t["nombre"],
@@ -76,9 +88,9 @@ def tenant_config(slug: str):
         "ciudad":         t.get("ciudad"),
         "moneda":         t.get("moneda", "USD"),
         "requiere_pin":   bool(t.get("pin_hash")),
-        "estado_pago":    t.get("estado_pago", "trial"),
+        "estado_pago":    estado,
         "plan":           t.get("plan", "trial"),
-        "fecha_vence":    t.get("fecha_vence"),
+        "fecha_vence":    fecha_vence,
     }
 
 
