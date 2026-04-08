@@ -1774,6 +1774,34 @@ async function initTenant() {
     if (t.logo_url) aplicarLogo(t.logo_url);
     if (t.color_primario) document.documentElement.style.setProperty('--accent', t.color_primario);
 
+    // Verificar estado de pago
+    const estadoPago = t.estado_pago || 'trial';
+    if (estadoPago === 'suspendido') {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f1117;font-family:Inter,sans-serif;color:#e8eaf0;text-align:center;padding:20px">
+          <div>
+            <div style="font-size:48px;margin-bottom:16px">🔒</div>
+            <h1 style="font-size:1.5rem;margin-bottom:8px">Cuenta suspendida</h1>
+            <p style="color:#8b92a5;max-width:400px">Tu suscripción fue suspendida. Contactá a soporte para reactivar tu cuenta.</p>
+            <a href="https://wa.me/5219987434234?text=Hola, necesito reactivar mi CRM (${TENANT_SLUG})" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#6c63ff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">📱 Contactar soporte</a>
+          </div>
+        </div>`;
+      return false;
+    }
+    if (estadoPago === 'vencido') {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f1117;font-family:Inter,sans-serif;color:#e8eaf0;text-align:center;padding:20px">
+          <div>
+            <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+            <h1 style="font-size:1.5rem;margin-bottom:8px">Suscripción vencida</h1>
+            <p style="color:#8b92a5;max-width:400px">Tu período de suscripción venció${t.fecha_vence ? ' el ' + t.fecha_vence : ''}. Renová para seguir usando el CRM.</p>
+            <a href="https://wa.me/5219987434234?text=Hola, quiero renovar mi CRM (${TENANT_SLUG})" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#38a169;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">💳 Renovar suscripción</a>
+            <br><a href="https://wa.me/5219987434234?text=Tengo dudas sobre mi cuenta (${TENANT_SLUG})" style="display:inline-block;margin-top:10px;color:#8b92a5;font-size:13px;text-decoration:underline">Contactar soporte</a>
+          </div>
+        </div>`;
+      return false;
+    }
+
     // Login si requiere PIN
     if (t.requiere_pin) {
       const token = sessionStorage.getItem(`crm_token_${TENANT_SLUG}`);

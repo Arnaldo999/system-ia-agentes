@@ -76,6 +76,9 @@ def tenant_config(slug: str):
         "ciudad":         t.get("ciudad"),
         "moneda":         t.get("moneda", "USD"),
         "requiere_pin":   bool(t.get("pin_hash")),
+        "estado_pago":    t.get("estado_pago", "trial"),
+        "plan":           t.get("plan", "trial"),
+        "fecha_vence":    t.get("fecha_vence"),
     }
 
 
