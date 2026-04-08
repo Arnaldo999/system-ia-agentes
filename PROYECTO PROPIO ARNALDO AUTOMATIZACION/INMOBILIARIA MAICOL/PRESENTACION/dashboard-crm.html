@@ -1771,8 +1771,8 @@ const LOTEOS_CONFIG = [
     id: 'apostoles',
     nombre: 'Loteo Altos de Apóstoles',
     zona: 'Apóstoles',
-    descripcion: '330 lotes en 12 manzanas. Financiación hasta 120 cuotas.',
-    totalLotes: 330,
+    descripcion: '323 lotes en 12 manzanas. Financiación hasta 120 cuotas.',
+    totalLotes: 323,
     mapaKey: 'apostoles',
   },
   {
@@ -2059,33 +2059,133 @@ function generarMapaSanIgnacio(activos) {
 function generarMapaApostoles(activos) {
   const activoMap = {};
   activos.forEach(a => { const n = parseInt(a.Numero_Lote); if (n) activoMap[n] = a; });
-
   const vendidos   = activos.filter(a => ['Firmado','Escriturado'].includes(a.Estado_Contrato||'')).length;
   const reservados = activos.filter(a => (a.Estado_Contrato||'') === 'Pendiente').length;
-  const totalLotes = 330;
+  const totalLotes = 323;
   const libres     = totalLotes - activos.length;
 
-  // Imagen 2000×1959 — ViewBox recorta margen izq/arriba
-  const VX = 100, VY = 50, VW = 1800, VH = 1850;
+  const SVG_W = 1200, SVG_H = 1050;
+  const MZ_W = 220, MZ_H = 150, STREET_H = 36, STREET_V = 40;
+  const PAD_LEFT = 70, PAD_TOP = 80;
+  const LOT_DEPTH = 30, LOT_W_SIDE = 30;
 
-  let pins = '';
-  for (let n = 1; n <= totalLotes; n++) {
-    const coord = APOSTOLES_COORDS[n];
-    if (!coord) continue;
-    const cx = (coord[0] - VX).toFixed(0);
-    const cy = (coord[1] - VY).toFixed(0);
-    const activo = activoMap[n];
-    const color = activo ? colorActivo(activo) : '#16a34a';
-    const nombre = activo ? (activo.Nombre || '').split(' ')[0] : '';
-    const dataAttr = activo
-      ? `data-activo="${encodeURIComponent(JSON.stringify(activo))}"`
-      : `data-num="${n}"`;
-    pins += `<g onclick="handleLoteClick(this)" ${dataAttr} style="cursor:pointer">
-      <circle cx="${cx}" cy="${cy}" r="16" fill="${color}" fill-opacity="0.9" stroke="white" stroke-width="2.5"/>
-      <text x="${cx}" y="${cy}" dy="${nombre?'-4':'0.35em'}" style="font-size:11px;font-weight:800;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${n}</text>
-      ${nombre?`<text x="${cx}" y="${(parseFloat(cy)+7).toFixed(0)}" style="font-size:8px;font-weight:600;fill:white;text-anchor:middle;pointer-events:none;font-family:Inter,sans-serif">${nombre}</text>`:''}
-    </g>`;
+  const mzGlobalStart = {8:1,7:23,6:44,5:72,9:100,10:128,11:156,12:184,13:212,14:240,15:268,16:296};
+  const mzLotCount = {8:22,7:21,6:28,5:28,9:28,10:28,11:28,12:28,13:28,14:28,15:28,16:28};
+
+  const colX = i => PAD_LEFT + i * (MZ_W + STREET_V);
+  const rowY = r => PAD_TOP + r * (MZ_H + STREET_H);
+
+  const mzPos = {
+    1:{col:0,row:0,ev:true},2:{col:1,row:0,ev:true},3:{col:2,row:0,ev:true},4:{col:3,row:0,ev:true},
+    8:{col:0,row:1},7:{col:1,row:1},6:{col:2,row:1},5:{col:3,row:1},
+    9:{col:0,row:2},10:{col:1,row:2},11:{col:2,row:2},12:{col:3,row:2},
+    13:{col:0,row:3},14:{col:1,row:3},15:{col:2,row:3},16:{col:3,row:3},
+    17:{col:0,row:4,ev:true}
+  };
+
+  function stdLots28(mx, my) {
+    const lots = [], tw = (MZ_W - 2*LOT_W_SIDE)/10, rh = (MZ_H - 2*LOT_DEPTH)/4;
+    for (let i=0;i<10;i++) lots.push({local:i+1, x:mx+LOT_W_SIDE+i*tw, y:my, w:tw, h:LOT_DEPTH});
+    for (let i=0;i<4;i++) lots.push({local:11+i, x:mx+MZ_W-LOT_W_SIDE, y:my+LOT_DEPTH+i*rh, w:LOT_W_SIDE, h:rh});
+    for (let i=0;i<10;i++) lots.push({local:15+i, x:mx+MZ_W-LOT_W_SIDE-(i+1)*tw, y:my+MZ_H-LOT_DEPTH, w:tw, h:LOT_DEPTH});
+    const lh = (MZ_H - 2*LOT_DEPTH)/4;
+    for (let i=0;i<4;i++) lots.push({local:25+i, x:mx, y:my+MZ_H-LOT_DEPTH-(i+1)*lh, w:LOT_W_SIDE, h:lh});
+    return lots;
   }
+
+  function mz8Lots(mx, my) {
+    const lots = [], topW = (MZ_W - LOT_W_SIDE)/3;
+    for (let i=0;i<3;i++) lots.push({local:i+1, x:mx+i*topW, y:my, w:topW, h:LOT_DEPTH});
+    lots.push({local:4, x:mx+MZ_W-LOT_W_SIDE, y:my, w:LOT_W_SIDE, h:LOT_DEPTH, label:'RF'});
+    const rh = (MZ_H - 2*LOT_DEPTH)/4;
+    for (let i=0;i<4;i++) lots.push({local:5+i, x:mx+MZ_W-LOT_W_SIDE, y:my+LOT_DEPTH+i*rh, w:LOT_W_SIDE, h:rh});
+    const bw = (MZ_W - 2*LOT_W_SIDE)/10;
+    for (let i=0;i<10;i++) lots.push({local:9+i, x:mx+MZ_W-LOT_W_SIDE-(i+1)*bw, y:my+MZ_H-LOT_DEPTH, w:bw, h:LOT_DEPTH});
+    const lh = (MZ_H - 2*LOT_DEPTH)/4;
+    for (let i=0;i<4;i++) lots.push({local:19+i, x:mx, y:my+MZ_H-LOT_DEPTH-(i+1)*lh, w:LOT_W_SIDE, h:lh});
+    return lots;
+  }
+
+  function mz7Lots(mx, my) {
+    const lots = [];
+    lots.push({local:1, x:mx, y:my, w:LOT_W_SIDE+30, h:LOT_DEPTH+10, label:'RF'});
+    lots.push({local:2, x:mx+LOT_W_SIDE+30, y:my, w:MZ_W-2*(LOT_W_SIDE+30)+30, h:LOT_DEPTH+10, label:'EV'});
+    lots.push({local:3, x:mx+MZ_W-LOT_W_SIDE-30, y:my, w:LOT_W_SIDE+30, h:LOT_DEPTH});
+    const rh = (MZ_H - LOT_DEPTH - LOT_DEPTH)/4;
+    for (let i=0;i<4;i++) lots.push({local:4+i, x:mx+MZ_W-LOT_W_SIDE, y:my+LOT_DEPTH+i*rh, w:LOT_W_SIDE, h:rh});
+    const bw = (MZ_W - 2*LOT_W_SIDE)/10;
+    for (let i=0;i<10;i++) lots.push({local:8+i, x:mx+MZ_W-LOT_W_SIDE-(i+1)*bw, y:my+MZ_H-LOT_DEPTH, w:bw, h:LOT_DEPTH});
+    const lh = (MZ_H - LOT_DEPTH - LOT_DEPTH - 10)/4;
+    for (let i=0;i<4;i++) lots.push({local:18+i, x:mx, y:my+MZ_H-LOT_DEPTH-(i+1)*lh, w:LOT_W_SIDE, h:lh});
+    return lots;
+  }
+
+  let svg = '';
+  svg += `<rect x="0" y="0" width="${SVG_W}" height="${SVG_H}" fill="#f8fafc" rx="12"/>`;
+  svg += `<text x="${SVG_W/2}" y="28" style="font-size:16px;font-weight:700;fill:#1e293b;text-anchor:middle;font-family:Inter,sans-serif">LOTEO ALTOS DE AP\u00d3STOLES</text>`;
+  svg += `<text x="${SVG_W/2}" y="48" style="font-size:10px;fill:#64748b;text-anchor:middle;font-family:Inter,sans-serif">Plano de manzanas y lotes — ${totalLotes} lotes</text>`;
+
+  // Horizontal streets
+  for (let r = 0; r < 4; r++) {
+    const sy = rowY(r) + MZ_H;
+    svg += `<rect x="${PAD_LEFT-10}" y="${sy}" width="${4*(MZ_W+STREET_V)}" height="${STREET_H}" fill="#e2e8f0" rx="2"/>`;
+    svg += `<text x="${SVG_W/2}" y="${sy+STREET_H/2+3}" style="font-size:7px;fill:#94a3b8;text-anchor:middle;font-family:Inter,sans-serif">Calle s/n (tierra)</text>`;
+  }
+  const bsY = rowY(4) + MZ_H;
+  svg += `<rect x="${PAD_LEFT-10}" y="${bsY}" width="${4*(MZ_W+STREET_V)}" height="${STREET_H}" fill="#e2e8f0" rx="2"/>`;
+  svg += `<text x="${SVG_W/2}" y="${bsY+STREET_H/2+3}" style="font-size:7px;fill:#94a3b8;text-anchor:middle;font-family:Inter,sans-serif">Calle San Luis (tierra)</text>`;
+
+  // Vertical streets
+  for (let c = 0; c < 3; c++) {
+    const sx = colX(c) + MZ_W;
+    svg += `<rect x="${sx}" y="${PAD_TOP-5}" width="${STREET_V}" height="${5*(MZ_H+STREET_H)}" fill="#e2e8f0" rx="2"/>`;
+  }
+  svg += `<rect x="${PAD_LEFT-STREET_V}" y="${PAD_TOP-5}" width="${STREET_V-5}" height="${5*(MZ_H+STREET_H)}" fill="#e2e8f0" rx="2"/>`;
+  svg += `<rect x="${colX(3)+MZ_W+1}" y="${PAD_TOP-5}" width="${STREET_V-5}" height="${5*(MZ_H+STREET_H)}" fill="#e2e8f0" rx="2"/>`;
+
+  const vNames = ['C. Int. Gelabert','C. Independencia','C. Alvear','C. Pública','C. A. Oviedo'];
+  const vX = [PAD_LEFT-STREET_V/2, colX(0)+MZ_W+STREET_V/2, colX(1)+MZ_W+STREET_V/2, colX(2)+MZ_W+STREET_V/2, colX(3)+MZ_W+18];
+  for (let c=0;c<5;c++) {
+    const lx=vX[c], ly=rowY(2)+MZ_H/2;
+    svg += `<text x="${lx}" y="${ly}" transform="rotate(-90,${lx},${ly})" style="font-size:7px;fill:#94a3b8;text-anchor:middle;font-family:Inter,sans-serif">${vNames[c]}</text>`;
+  }
+
+  // EV manzanas
+  [1,2,3,4,17].forEach(mz => {
+    const p = mzPos[mz], mx = colX(p.col), my = rowY(p.row);
+    svg += `<rect x="${mx}" y="${my}" width="${MZ_W}" height="${MZ_H}" rx="6" fill="#bbf7d0" stroke="#86efac" stroke-width="1.5"/>`;
+    svg += `<text x="${mx+MZ_W/2}" y="${my+MZ_H/2-5}" style="font-size:12px;font-weight:700;fill:#166534;text-anchor:middle;font-family:Inter,sans-serif">Mz ${mz}</text>`;
+    svg += `<text x="${mx+MZ_W/2}" y="${my+MZ_H/2+10}" style="font-size:9px;fill:#166534;text-anchor:middle;font-family:Inter,sans-serif">(Espacio Verde)</text>`;
+  });
+
+  // Lote A2
+  const a2x = colX(1), a2y = rowY(4);
+  svg += `<rect x="${a2x}" y="${a2y}" width="${MZ_W}" height="${MZ_H}" rx="6" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/>`;
+  svg += `<text x="${a2x+MZ_W/2}" y="${a2y+MZ_H/2}" style="font-size:12px;font-weight:700;fill:#92400e;text-anchor:middle;font-family:Inter,sans-serif">Lote A2</text>`;
+
+  // Lot manzanas
+  let allLots = '', pinEls = '';
+  [8,7,6,5,9,10,11,12,13,14,15,16].forEach(mz => {
+    const p = mzPos[mz], mx = colX(p.col), my = rowY(p.row), gs = mzGlobalStart[mz];
+    svg += `<rect x="${mx}" y="${my}" width="${MZ_W}" height="${MZ_H}" rx="4" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>`;
+    svg += `<text x="${mx+MZ_W/2}" y="${my+MZ_H/2+3}" style="font-size:10px;font-weight:600;fill:#e2e8f0;text-anchor:middle;font-family:Inter,sans-serif">Mz ${mz}</text>`;
+    const lots = mz===8 ? mz8Lots(mx,my) : mz===7 ? mz7Lots(mx,my) : stdLots28(mx,my);
+    lots.forEach(lot => {
+      const gn = gs + lot.local - 1, activo = activoMap[gn];
+      const fill = activo ? (colorActivo(activo)+'22') : '#f1f5f9';
+      const stroke = activo ? colorActivo(activo) : '#cbd5e1';
+      const tc = activo ? colorActivo(activo) : '#64748b';
+      const da = activo ? `data-activo="${encodeURIComponent(JSON.stringify(activo))}"` : `data-num="${gn}"`;
+      const lb = lot.label || lot.local;
+      const fs = Math.min(8, Math.min(lot.w*0.45, lot.h*0.45));
+      allLots += `<g onclick="handleLoteClick(this)" ${da} style="cursor:pointer"><rect x="${lot.x.toFixed(1)}" y="${lot.y.toFixed(1)}" width="${lot.w.toFixed(1)}" height="${lot.h.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="0.6" rx="1"/><text x="${(lot.x+lot.w/2).toFixed(1)}" y="${(lot.y+lot.h/2).toFixed(1)}" style="font-size:${fs.toFixed(1)}px;font-weight:600;fill:${tc};text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${lb}</text></g>`;
+      if (activo) {
+        const ccx=(lot.x+lot.w/2).toFixed(1), ccy=(lot.y+lot.h/2).toFixed(1), col=colorActivo(activo), nm=(activo.Nombre||'').split(' ')[0], pr=Math.min(lot.w,lot.h)*0.35;
+        pinEls += `<g onclick="handleLoteClick(this)" ${da} style="cursor:pointer"><circle cx="${ccx}" cy="${ccy}" r="${pr.toFixed(1)}" fill="${col}" fill-opacity="0.92" stroke="white" stroke-width="1.5"/><text x="${ccx}" y="${ccy}" dy="${nm?'-2':'0.35em'}" style="font-size:${(fs*0.8).toFixed(1)}px;font-weight:800;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${gn}</text>${nm?`<text x="${ccx}" y="${(parseFloat(ccy)+pr*0.45).toFixed(1)}" style="font-size:${(fs*0.6).toFixed(1)}px;font-weight:600;fill:white;text-anchor:middle;pointer-events:none;font-family:Inter,sans-serif">${nm}</text>`:''}</g>`;
+      }
+    });
+  });
+  svg += allLots + pinEls;
 
   return `
     <div class="mb-4 flex items-center gap-5 flex-wrap text-sm font-semibold">
@@ -2094,11 +2194,9 @@ function generarMapaApostoles(activos) {
       <span class="flex items-center gap-2"><span style="width:14px;height:14px;border-radius:50%;background:#ef4444;display:inline-block"></span>Vendidos: <strong>${vendidos}</strong></span>
     </div>
     <div style="overflow-x:auto;">
-      <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+      <svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg"
            style="width:100%;min-width:520px;min-height:800px;max-width:960px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
-        <defs><clipPath id="mapa-clip-ap"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
-        <image href="${APOSTOLES_PLAN_URL}" x="-${VX}" y="-${VY}" width="2000" height="1959" clip-path="url(#mapa-clip-ap)"/>
-        ${pins}
+        ${svg}
       </svg>
     </div>
     <p class="text-xs text-txt-muted text-center mt-3">Clic en cualquier lote para ver detalle · Datos actualizados desde Clientes Activos</p>`;
