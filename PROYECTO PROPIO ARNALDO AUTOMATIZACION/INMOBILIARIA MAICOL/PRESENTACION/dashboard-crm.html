@@ -2063,7 +2063,7 @@ function generarMapaApostoles(activos) {
   const totalLotes = 330;
   const libres     = totalLotes - activos.length;
 
-  const VX = 50, VY = 100, VW = 1750, VH = 1400;
+  const VX = 200, VY = 310, VW = 1550, VH = 1050;
   const PIN_R = 12;
 
   let pins = '';
@@ -2093,7 +2093,7 @@ function generarMapaApostoles(activos) {
     </div>
     <div style="overflow-x:auto;">
       <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
-           style="width:100%;min-width:600px;min-height:600px;max-width:1100px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
+           style="width:100%;min-height:600px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
         <defs><clipPath id="mapa-clip-ap"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
         <image href="${APOSTOLES_PLAN_URL}" x="-${VX}" y="-${VY}" width="2000" height="2218" clip-path="url(#mapa-clip-ap)"/>
         ${pins}
@@ -2205,8 +2205,8 @@ function exportarCoordenadas(desde, hasta) {
   const svg = document.querySelector('#mapa-container svg');
   if (!svg) return;
   const isApostoles = svg.querySelector('image')?.getAttribute('href')?.includes('apostoles');
-  const VX = isApostoles ? 50 : 30;
-  const VY = isApostoles ? 100 : 25;
+  const VX = isApostoles ? 200 : 30;
+  const VY = isApostoles ? 310 : 25;
   const groups = svg.querySelectorAll('g[data-num], g[data-activo]');
   const coords = {};
   groups.forEach(g => {
