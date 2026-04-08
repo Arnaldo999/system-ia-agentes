@@ -1842,13 +1842,15 @@ const LOTES_COORDS = {
 // Mz 13: 219-246 | Mz 14: 247-274 | Mz 15: 275-302 | Mz 16: 303-330
 const APOSTOLES_PLAN_URL = 'https://res.cloudinary.com/dmqkqcreo/image/upload/v1775655835/back-urbanizaciones/mapas/apostoles-plano-v3.png';
 // Apóstoles: coordenadas [x,y] px sobre imagen 2000×1959. Calibrar con drag&drop.
-// Mz 8: lotes 1-22 (calibrado por usuario 2026-04-08)
-// Pins 23-26 = EV Mz1,Mz2,Mz3,Mz4 (pendientes posicionar)
+// 1-4 = EV (Mz1,Mz2,Mz3,Mz4) | 5-26 = Mz 8 (22 lotes) | 27-47 = Mz 7 (21 lotes, pendiente)
 const APOSTOLES_COORDS = {
-  1:[381,442], 2:[414,442], 3:[447,442], 4:[624,430], 5:[652,486], 6:[652,517], 7:[652,547], 8:[652,578],
-  9:[665,670], 10:[633,670], 11:[600,670], 12:[568,670], 13:[536,670], 14:[503,670], 15:[471,670], 16:[439,670],
-  17:[406,670], 18:[374,670], 19:[419,580], 20:[419,546], 21:[419,513], 22:[419,479],
-  23:[100,100], 24:[140,100], 25:[180,100], 26:[220,100],
+  1:[1785,275], 2:[100,100], 3:[140,100], 4:[180,100],
+  5:[381,442], 6:[414,442], 7:[447,442], 8:[624,430], 9:[652,486], 10:[652,517], 11:[652,547], 12:[652,578],
+  13:[665,670], 14:[633,670], 15:[600,670], 16:[568,670], 17:[536,670], 18:[503,670], 19:[471,670], 20:[439,670],
+  21:[406,670], 22:[374,670], 23:[419,580], 24:[419,546], 25:[419,513], 26:[419,479],
+  27:[100,200], 28:[140,200], 29:[180,200], 30:[220,200], 31:[260,200], 32:[300,200], 33:[340,200],
+  34:[100,240], 35:[140,240], 36:[180,240], 37:[220,240], 38:[260,240], 39:[300,240], 40:[340,240],
+  41:[100,280], 42:[140,280], 43:[180,280], 44:[220,280], 45:[260,280], 46:[300,280], 47:[340,280],
 };
 
 async function loadLotes() {
@@ -2023,8 +2025,8 @@ function generarMapaApostoles(activos) {
 
   // Imagen 2000×1959. ViewBox recorta solo la zona de manzanas.
   const VX = 30, VY = 10, VW = 1900, VH = 1900;
-  // Pins 1-22 = Mz8, 23-26 = EV (Mz1,Mz2,Mz3,Mz4)
-  const evPins = {23:'Mz1', 24:'Mz2', 25:'Mz3', 26:'Mz4'};
+  // 1-4 = EV (Mz1-4), 5-26 = Mz8, 27-47 = Mz7 (pendiente calibrar)
+  const evPins = {1:'Mz1', 2:'Mz2', 3:'Mz3', 4:'Mz4'};
 
   let pins = '';
   const totalPins = Object.keys(APOSTOLES_COORDS).length;
@@ -2033,9 +2035,10 @@ function generarMapaApostoles(activos) {
     const cx = (coord[0] - VX).toFixed(0);
     const cy = (coord[1] - VY).toFixed(0);
     const activo = activoMap[n];
-    const isEV = n >= 23;
-    const label = isEV ? '1' : n;
-    const color = activo ? colorActivo(activo) : (isEV ? '#3b82f6' : '#16a34a');
+    const isEV = n <= 4;
+    const label = isEV ? '1' : (n <= 26 ? n - 4 : n - 26);
+    const isMz7 = n >= 27 && n <= 47;
+    const color = activo ? colorActivo(activo) : (isEV ? '#3b82f6' : isMz7 ? '#f59e0b' : '#16a34a');
     const nombre = isEV ? evPins[n] : (activo ? (activo.Nombre || '').split(' ')[0] : '');
     const dataAttr = activo
       ? `data-activo="${encodeURIComponent(JSON.stringify(activo))}"`
