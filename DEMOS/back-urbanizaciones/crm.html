@@ -741,6 +741,7 @@
           <div class="subtitle">Administración</div>
           <h1>Clientes Activos <span class="text-txt-muted opacity-60">& Cuotas</span></h1>
         </div>
+        <button class="btn btn-sm bg-gray-100 text-gray-700 font-semibold" onclick="exportarActivosCSV()" style="margin-right:8px">📥 Exportar CSV</button>
         <button class="btn btn-primary" onclick="openModalNuevoActivo()">+ Nuevo Cliente</button>
       </div>
       <div class="stats-grid mb-8" id="activos-stats">
@@ -2225,6 +2226,26 @@ function toggleCalibracion() {
     container.innerHTML = '';
     toast('Pins bloqueados', 'success');
   }
+}
+
+function exportarActivosCSV() {
+  if (!allActivos || !allActivos.length) { toast('No hay clientes activos para exportar', 'error'); return; }
+  const campos = ['Nombre','Apellido','DNI','Telefono','Email','Loteo','Numero_Lote','Estado_Contrato',
+    'Estado_Pago','Monto_Cuota','Cuotas_Pagadas','Cuotas_Total','Proximo_Vencimiento'];
+  const encabezado = campos.join(',');
+  const filas = allActivos.map(a =>
+    campos.map(c => {
+      const v = a[c] != null ? String(a[c]) : '';
+      return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g,'""')}"` : v;
+    }).join(',')
+  );
+  const csv = [encabezado, ...filas].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `clientes-activos-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast(`${allActivos.length} clientes exportados`, 'success');
 }
 
 function exportarCoordenadas(desde, hasta) {
