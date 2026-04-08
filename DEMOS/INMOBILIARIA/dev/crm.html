@@ -1229,9 +1229,9 @@ tailwind.config = {
       <button onclick="pinKey('7')" class="pin-btn">7</button>
       <button onclick="pinKey('8')" class="pin-btn">8</button>
       <button onclick="pinKey('9')" class="pin-btn">9</button>
-      <button style="visibility:hidden" class="pin-btn"></button>
-      <button onclick="pinKey('0')" class="pin-btn">0</button>
       <button onclick="pinKey('⌫')" class="pin-btn">⌫</button>
+      <button onclick="pinKey('0')" class="pin-btn">0</button>
+      <button onclick="submitPin()" class="pin-btn" style="background:#6c63ff;color:#fff;font-size:13px;font-weight:600">Ingresar</button>
     </div>
 
     <div id="loginError" style="color:#f87171;font-size:0.85rem;min-height:20px;margin-bottom:8px"></div>
@@ -1675,6 +1675,45 @@ async function guardarEstado(id) {
   }
 }
 
+// ── VERSIONADO ──────────────────────────────────────────────────────────────
+const CRM_VERSION = '1.0.0';
+const CRM_VERSION_KEY = 'crm_version_dismissed';
+
+async function checkVersion() {
+  try {
+    const res = await fetch(`${SAAS_API}/crm/version`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.version && data.version !== CRM_VERSION) {
+      const dismissed = localStorage.getItem(CRM_VERSION_KEY);
+      if (dismissed === data.version) return;
+      showUpdateBanner(data.version, data.changelog || '');
+    }
+  } catch(e) { /* silencioso */ }
+}
+
+function showUpdateBanner(newVersion, changelog) {
+  const existing = document.getElementById('updateBanner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'updateBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#6c63ff,#00d4aa);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,sans-serif;font-size:13px;color:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.3)';
+  const changelogText = changelog ? ` — ${changelog}` : '';
+  banner.innerHTML = `
+    <div>🔔 <strong>Nueva versión disponible (v${newVersion})</strong>${changelogText}</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="location.reload(true)" style="background:#fff;color:#1a1d27;border:none;padding:5px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">🔄 Actualizar</button>
+      <button onclick="dismissUpdate('${newVersion}')" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ahora no</button>
+    </div>`;
+  document.body.prepend(banner);
+}
+
+function dismissUpdate(version) {
+  localStorage.setItem(CRM_VERSION_KEY, version);
+  const banner = document.getElementById('updateBanner');
+  if (banner) banner.remove();
+}
+
 // ── MULTI-TENANT + LOGIN ─────────────────────────────────────────────────────
 const SAAS_API = 'https://agentes.arnaldoayalaestratega.cloud';
 let API_BASE = `${SAAS_API}/demos/inmobiliaria`; // fallback
@@ -1702,6 +1741,10 @@ function pinKey(k) {
 
 async function submitPin() {
   const err = document.getElementById('loginError');
+  if (pinBuffer.length < 4) {
+    err.textContent = 'Ingresá los 4 dígitos del PIN';
+    return;
+  }
   try {
     const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/auth`, {
       method: 'POST',
@@ -1756,6 +1799,34 @@ async function initTenant() {
     if (topAvatar) topAvatar.textContent = t.nombre.substring(0,2).toUpperCase();
     if (t.logo_url) aplicarLogo(t.logo_url);
     if (t.color_primario) document.documentElement.style.setProperty('--accent', t.color_primario);
+
+    // Verificar estado de pago
+    const estadoPago = t.estado_pago || 'trial';
+    if (estadoPago === 'suspendido') {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f1117;font-family:Inter,sans-serif;color:#e8eaf0;text-align:center;padding:20px">
+          <div>
+            <div style="font-size:48px;margin-bottom:16px">🔒</div>
+            <h1 style="font-size:1.5rem;margin-bottom:8px">Cuenta suspendida</h1>
+            <p style="color:#8b92a5;max-width:400px">Tu suscripción fue suspendida. Contactá a soporte para reactivar tu cuenta.</p>
+            <a href="https://wa.me/5219987434234?text=Hola, necesito reactivar mi CRM (${TENANT_SLUG})" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#6c63ff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">📱 Contactar soporte</a>
+          </div>
+        </div>`;
+      return false;
+    }
+    if (estadoPago === 'vencido') {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f1117;font-family:Inter,sans-serif;color:#e8eaf0;text-align:center;padding:20px">
+          <div>
+            <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+            <h1 style="font-size:1.5rem;margin-bottom:8px">Suscripción vencida</h1>
+            <p style="color:#8b92a5;max-width:400px">Tu período de suscripción venció${t.fecha_vence ? ' el ' + t.fecha_vence : ''}. Renová para seguir usando el CRM.</p>
+            <a href="https://wa.me/5219987434234?text=Hola, quiero renovar mi CRM (${TENANT_SLUG})" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#38a169;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">💳 Renovar suscripción</a>
+            <br><a href="https://wa.me/5219987434234?text=Tengo dudas sobre mi cuenta (${TENANT_SLUG})" style="display:inline-block;margin-top:10px;color:#8b92a5;font-size:13px;text-decoration:underline">Contactar soporte</a>
+          </div>
+        </div>`;
+      return false;
+    }
 
     // Login si requiere PIN
     if (t.requiere_pin) {
@@ -2912,6 +2983,7 @@ initTenant().then(ok => {
     renderAgenda();
   }
   // Si ok=false → login screen visible, datos se cargan desde submitPin()
+  checkVersion();
 });
 </script>
 </body>
