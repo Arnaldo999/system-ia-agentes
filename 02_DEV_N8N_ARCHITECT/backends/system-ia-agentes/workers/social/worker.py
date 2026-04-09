@@ -3,7 +3,10 @@ import re
 import json
 import time
 import base64
+import logging
 import requests as req
+
+logger = logging.getLogger(__name__)
 from io import BytesIO
 from datetime import datetime
 from PIL import Image
@@ -164,20 +167,38 @@ class DatosSeleccionarTema(BaseModel):
     objetivo_mes: Optional[str] = None
 
 
-def _call_gemini_text(prompt: str, timeout: int = 60, json_mode: bool = False) -> str:
-    """Llamada centralizada a Gemini para texto. Lanza excepción si falla."""
+def _call_gemini_text(prompt: str, timeout: int = 60, json_mode: bool = False, max_reintentos: int = 3) -> str:
+    """Llamada centralizada a Gemini para texto. Reintenta hasta 3 veces en errores 503/429."""
+    import time
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     if json_mode:
         payload["generationConfig"] = {"responseMimeType": "application/json"}
 
-    resp = req.post(
-        GEMINI_TEXT_URL,
-        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
-        json=payload,
-        timeout=timeout,
-    )
-    resp.raise_for_status()
-    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+    ultimo_error = None
+    for intento in range(max_reintentos):
+        try:
+            resp = req.post(
+                GEMINI_TEXT_URL,
+                headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+                json=payload,
+                timeout=timeout,
+            )
+            if resp.status_code in (503, 429) and intento < max_reintentos - 1:
+                espera = 5 * (intento + 1)  # 5s, 10s, 15s
+                logger.warning(f"Gemini {resp.status_code} — reintento {intento + 1}/{max_reintentos} en {espera}s")
+                time.sleep(espera)
+                continue
+            resp.raise_for_status()
+            return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:
+            ultimo_error = e
+            if intento < max_reintentos - 1:
+                espera = 5 * (intento + 1)
+                logger.warning(f"Gemini error ({type(e).__name__}) — reintento {intento + 1}/{max_reintentos} en {espera}s")
+                time.sleep(espera)
+            else:
+                raise
+    raise ultimo_error
 
 
 # ---------------------------------------------------------------------------
