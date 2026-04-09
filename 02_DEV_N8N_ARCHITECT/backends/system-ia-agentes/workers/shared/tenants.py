@@ -166,20 +166,31 @@ def tenant_update_marca(slug: str, body: MarcaUpdate):
 
 
 # ── ADMIN ENDPOINTS ──────────────────────────────────────────────────────────
-ADMIN_TOKEN = os.environ.get("LOVBOT_ADMIN_TOKEN", "lovbot-admin-2026")
+# Mapa token → agencia. Cada agencia ve solo sus propios tenants.
+_ADMIN_TOKENS: dict[str, str] = {
+    os.environ.get("LOVBOT_ADMIN_TOKEN",    "lovbot-admin-2026"):    "lovbot",
+    os.environ.get("SYSTEM_IA_ADMIN_TOKEN", "system-ia-admin-2026"): "system-ia",
+}
 
-admin_router = APIRouter(prefix="/admin", tags=["Admin Lovbot"])
+admin_router = APIRouter(prefix="/admin", tags=["Admin"])
+
+
+def _get_agencia(request: Request) -> str:
+    """Valida el token y devuelve la agencia correspondiente. 403 si inválido."""
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    agencia = _ADMIN_TOKENS.get(token)
+    if not agencia:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    return agencia
 
 
 @admin_router.get("/tenants")
 def admin_list_tenants(request: Request):
-    """Lista todos los tenants con datos de pago."""
-    auth = request.headers.get("authorization", "")
-    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    """Lista todos los tenants de la agencia autenticada."""
+    agencia = _get_agencia(request)
 
     sb = _get_sb()
-    res = sb.table("tenants").select("*").order("created_at", desc=False).execute()
+    res = sb.table("tenants").select("*").eq("agencia", agencia).order("created_at", desc=False).execute()
     from datetime import date
     tenants = []
     for t in (res.data or []):
@@ -218,9 +229,7 @@ class RenovarRequest(BaseModel):
 @admin_router.patch("/tenants/{slug}/renovar")
 def admin_renovar(slug: str, body: RenovarRequest, request: Request):
     """Renueva suscripción: suma N días a fecha_vence."""
-    auth = request.headers.get("authorization", "")
-    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    _get_agencia(request)
 
     t = _get_tenant(slug)
     from datetime import date, timedelta
@@ -250,9 +259,7 @@ def admin_renovar(slug: str, body: RenovarRequest, request: Request):
 @admin_router.patch("/tenants/{slug}/suspender")
 def admin_suspender(slug: str, request: Request):
     """Suspende un tenant (override manual)."""
-    auth = request.headers.get("authorization", "")
-    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    _get_agencia(request)
 
     _get_tenant(slug)
     sb = _get_sb()
@@ -266,9 +273,7 @@ def admin_suspender(slug: str, request: Request):
 @admin_router.patch("/tenants/{slug}/reactivar")
 def admin_reactivar(slug: str, request: Request):
     """Reactiva un tenant suspendido."""
-    auth = request.headers.get("authorization", "")
-    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    _get_agencia(request)
 
     _get_tenant(slug)
     sb = _get_sb()
@@ -296,13 +301,10 @@ class NuevoTenantRequest(BaseModel):
 
 @admin_router.post("/tenants")
 def admin_crear_tenant(body: NuevoTenantRequest, request: Request):
-    """Crea un nuevo tenant/cliente del CRM."""
-    auth = request.headers.get("authorization", "")
-    if auth.replace("Bearer ", "") != ADMIN_TOKEN:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    """Crea un nuevo tenant/cliente del CRM. Lo asigna a la agencia del token."""
+    agencia = _get_agencia(request)
 
     sb = _get_sb()
-    # Verificar que no exista
     existing = sb.table("tenants").select("id").eq("slug", body.slug).execute()
     if existing.data:
         raise HTTPException(status_code=409, detail=f"Tenant '{body.slug}' ya existe")
@@ -326,6 +328,7 @@ def admin_crear_tenant(body: NuevoTenantRequest, request: Request):
         "ciudad":         body.ciudad,
         "moneda":         body.moneda,
         "notas":          body.notas,
+        "agencia":        agencia,
         "activo":         True,
     }
     res = sb.table("tenants").insert(nuevo).execute()
