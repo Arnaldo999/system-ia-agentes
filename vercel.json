@@ -14,6 +14,8 @@
     { "source": "/formulario-agente",         "destination": "/DEMOS/INMOBILIARIA/formulario-agente.html" },
     { "source": "/back-urbanizaciones/crm",        "destination": "/DEMOS/back-urbanizaciones/crm.html" },
     { "source": "/back-urbanizaciones/formulario", "destination": "/DEMOS/back-urbanizaciones/formulario.html" },
-    { "source": "/gastronomia",                    "destination": "/DEMOS/GASTRONOMIA/gastronomia.html" }
+    { "source": "/gastronomia",                    "destination": "/DEMOS/GASTRONOMIA/gastronomia.html" },
+    { "source": "/system-ia/admin",                "destination": "/DEMOS/SYSTEM-IA/admin.html" },
+    { "source": "/system-ia/crm",                  "destination": "/DEMOS/SYSTEM-IA/crm.html" }
   ]
 }
