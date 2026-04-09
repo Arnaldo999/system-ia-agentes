@@ -324,8 +324,34 @@ Respondé SOLO con el nombre, sin comillas ni explicación."""
 #  LÓGICA PRINCIPAL
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+def _procesar_y_guardar(telefono: str, descripcion: str, imagen_bytes: bytes) -> str:
+    """Sube a Cloudinary y guarda en Airtable. Retorna mensaje de resultado."""
+    categoria = _detectar_categoria(descripcion)
+    nombre = _sugerir_nombre(descripcion)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    nombre_archivo = f"{categoria.lower().replace('/', '_')}_{ts}"
+
+    url_cloudinary = _subir_cloudinary(imagen_bytes, nombre_archivo)
+    if not url_cloudinary:
+        _enviar_texto(telefono, MSG_ADMIN_ERROR)
+        return MSG_ADMIN_ERROR
+
+    ok = _guardar_producto(nombre, descripcion, categoria, url_cloudinary)
+    if not ok:
+        _enviar_texto(telefono, MSG_ADMIN_ERROR)
+        return MSG_ADMIN_ERROR
+
+    msg = MSG_ADMIN_GUARDADO.format(categoria=categoria, nombre=nombre)
+    _enviar_texto(telefono, msg)
+    return msg
+
+
 def _procesar_admin(telefono: str, texto: str, imagen_bytes: bytes | None, nombre_push: str) -> str:
-    """Modo admin: Lau carga productos con foto + descripción."""
+    """Modo admin: Lau carga productos.
+    Soporta dos flujos:
+      A) Foto + caption en el mismo mensaje
+      B) Primero foto sola → bot pide descripción → Lau manda el texto
+    """
     sesion = SESIONES.get(telefono, {})
 
     # Salida del modo admin
@@ -334,39 +360,29 @@ def _procesar_admin(telefono: str, texto: str, imagen_bytes: bytes | None, nombr
         _enviar_texto(telefono, MSG_ADMIN_SALIDA)
         return MSG_ADMIN_SALIDA
 
-    # Esperando foto + descripción
-    if imagen_bytes and texto:
-        descripcion = texto.strip()
-        categoria = _detectar_categoria(descripcion)
-        nombre = _sugerir_nombre(descripcion)
+    # Flujo A: foto + caption juntos
+    if imagen_bytes and texto.strip():
+        # Limpiar foto pendiente si había una
+        sesion.pop("foto_pendiente", None)
+        SESIONES[telefono] = {**sesion, "modo": "admin"}
+        return _procesar_y_guardar(telefono, texto.strip(), imagen_bytes)
 
-        # Nombre de archivo único
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        nombre_archivo = f"{categoria.lower().replace('/', '_')}_{ts}"
-
-        url_cloudinary = _subir_cloudinary(imagen_bytes, nombre_archivo)
-        if not url_cloudinary:
-            _enviar_texto(telefono, MSG_ADMIN_ERROR)
-            return MSG_ADMIN_ERROR
-
-        ok = _guardar_producto(nombre, descripcion, categoria, url_cloudinary)
-        if not ok:
-            _enviar_texto(telefono, MSG_ADMIN_ERROR)
-            return MSG_ADMIN_ERROR
-
-        msg = MSG_ADMIN_GUARDADO.format(categoria=categoria, nombre=nombre)
+    # Flujo B paso 1: llegó solo la foto sin texto → guardar foto y pedir descripción
+    if imagen_bytes and not texto.strip():
+        SESIONES[telefono] = {**sesion, "modo": "admin", "foto_pendiente": imagen_bytes}
+        msg = "📝 ¿Cómo se llama o qué es este trabajo? Describilo brevemente."
         _enviar_texto(telefono, msg)
         return msg
 
-    # Solo texto sin foto
-    if not imagen_bytes and texto:
-        msg = "📸 Mandame la foto junto con la descripción en el mismo mensaje."
-        _enviar_texto(telefono, msg)
-        return msg
+    # Flujo B paso 2: llegó el texto después de la foto
+    if not imagen_bytes and texto.strip() and sesion.get("foto_pendiente"):
+        foto = sesion.pop("foto_pendiente")
+        SESIONES[telefono] = {**sesion, "modo": "admin"}
+        return _procesar_y_guardar(telefono, texto.strip(), foto)
 
-    # Solo foto sin texto
-    if imagen_bytes and not texto:
-        msg = "📝 Falta la descripción. Mandá de nuevo la foto con el texto que describe el trabajo."
+    # Solo texto sin foto y sin foto pendiente
+    if not imagen_bytes and texto.strip():
+        msg = "📸 Mandame la foto del trabajo (con o sin descripción)."
         _enviar_texto(telefono, msg)
         return msg
 
