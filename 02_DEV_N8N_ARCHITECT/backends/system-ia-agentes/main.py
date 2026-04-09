@@ -1,7 +1,35 @@
 import os
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+
+# ── Logging estructurado ──────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger("system-ia")
+
+# Registro global de errores en memoria (últimos 100)
+_error_log: list[dict] = []
+
+def registrar_error(endpoint: str, error: Exception, contexto: dict = {}):
+    """Registra un error en el log interno y en stdout para Coolify/Render."""
+    import traceback, datetime
+    entry = {
+        "timestamp": datetime.datetime.now().isoformat(),
+        "endpoint": endpoint,
+        "error": str(error),
+        "tipo": type(error).__name__,
+        "traceback": traceback.format_exc(),
+        **contexto
+    }
+    _error_log.append(entry)
+    if len(_error_log) > 100:
+        _error_log.pop(0)
+    logger.error(f"[{endpoint}] {type(error).__name__}: {error}")
 
 # ── Clientes Arnaldo ──────────────────────────────────────────────────────────
 from workers.clientes.arnaldo.maicol.worker import router as maicol_router
@@ -37,6 +65,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def middleware_deteccion_errores(request: Request, call_next):
+    """Captura cualquier excepción no manejada y la registra."""
+    import time
+    start = time.time()
+    try:
+        response = await call_next(request)
+        elapsed = round((time.time() - start) * 1000)
+        if response.status_code >= 500:
+            logger.warning(f"[{request.method}] {request.url.path} → {response.status_code} ({elapsed}ms)")
+        return response
+    except Exception as e:
+        registrar_error(request.url.path, e, {"method": request.method})
+        return PlainTextResponse(f"Error interno: {type(e).__name__}", status_code=500)
 
 # ── Registrar routers ─────────────────────────────────────────────────────────
 app.include_router(tenants_router)
@@ -145,6 +188,17 @@ def root():
                 "POST /social/meta-webhook",
             ],
         },
+    }
+
+
+@app.get("/debug/errors", tags=["Sistema"])
+def debug_errors(limit: int = 20):
+    """Últimos errores capturados por el middleware. Útil para monitoreo."""
+    ultimos = _error_log[-limit:] if _error_log else []
+    return {
+        "total_errores": len(_error_log),
+        "mostrando": len(ultimos),
+        "errores": list(reversed(ultimos))  # más reciente primero
     }
 
 
