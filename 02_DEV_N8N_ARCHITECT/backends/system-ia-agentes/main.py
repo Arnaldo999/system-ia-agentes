@@ -46,6 +46,9 @@ from workers.demos.gastronomico.worker  import router as demo_gastronomico_route
 # ── SaaS ──────────────────────────────────────────────────────────────────────
 from workers.shared.tenants import router as tenants_router, crm_router, admin_router
 
+# ── System IA — Clientes ──────────────────────────────────────────────────────
+from workers.clientes.system_ia.lau.worker import router as lau_router
+
 # ── System IA ─────────────────────────────────────────────────────────────────
 from workers.social.worker import router as social_router
 
@@ -90,6 +93,7 @@ app.include_router(prueba_router)
 app.include_router(robert_inmo_router)
 app.include_router(demo_inmobiliaria_router)
 app.include_router(demo_gastronomico_router)
+app.include_router(lau_router)
 app.include_router(social_router)
 
 
