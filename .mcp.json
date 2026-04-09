@@ -21,6 +21,17 @@
         "N8N_API_URL": "https://n8n.lovbot.ai",
         "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0YTI4ZjUzNS0wNjhmLTQ4ZTgtYWYyOC04ZDY3MTIzMTE1OTkiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzc1NDY5NjcxfQ.XGWv2X_diwMXtBifThjsttpMsCg6BbX0WP78jvbTt-A"
       }
+    },
+    "n8n-mica": {
+      "command": "npx",
+      "args": ["n8n-mcp"],
+      "env": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmI5ZDg4Ny0zMTgzLTQ2YjEtOWRiNC1jMzhiNTRlZjJjYjYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMjNlZGY4NzQtNDRlZi00OTBiLWFmNDUtMjNiNTQ1NzE3NGJhIiwiaWF0IjoxNzc1NTY0ODAyfQ.l0DPYPUouH_Klwv5oOPRK-tvvmGBKBUjIVXCfCMZcQI"
+      }
     }
   }
 }
