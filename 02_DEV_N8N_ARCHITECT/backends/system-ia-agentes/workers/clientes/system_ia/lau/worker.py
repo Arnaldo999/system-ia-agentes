@@ -492,7 +492,7 @@ def _procesar_mensaje(
     sesion = SESIONES.get(telefono, {})
 
     # Activar modo admin: solo desde el nro de Lau + palabra clave + PIN
-    if txt.upper().startswith("CARGAR ") and _es_numero_lau(telefono):
+    if txt.upper().startswith("CARGAR ") and _es_numero_lau(telefono) and not sesion.get("modo") == "admin":
         pin_ingresado = txt[7:].strip()
         if pin_ingresado == ADMIN_PIN:
             SESIONES[telefono] = {"modo": "admin"}
