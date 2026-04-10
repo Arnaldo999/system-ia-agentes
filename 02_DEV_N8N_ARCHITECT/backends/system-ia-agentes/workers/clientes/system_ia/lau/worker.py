@@ -442,6 +442,13 @@ def _procesar_cliente(telefono: str, texto: str, nombre_push: str) -> str:
     return msg
 
 
+def _es_numero_lau(telefono: str) -> bool:
+    """Verifica si el mensaje viene del número personal de Lau."""
+    numero_limpio = re.sub(r'\D', '', telefono)
+    numero_lau = re.sub(r'\D', '', NUMERO_LAU)
+    return numero_limpio.endswith(numero_lau[-10:])
+
+
 def _procesar_mensaje(
     telefono: str,
     texto: str,
@@ -449,9 +456,10 @@ def _procesar_mensaje(
     imagen_bytes: bytes | None = None,
 ) -> str:
     txt = texto.strip()
+    sesion = SESIONES.get(telefono, {})
 
-    # Activar modo admin con palabra clave + PIN
-    if txt.upper().startswith("CARGAR "):
+    # Activar modo admin: solo desde el nro de Lau + palabra clave + PIN
+    if txt.upper().startswith("CARGAR ") and _es_numero_lau(telefono):
         pin_ingresado = txt[7:].strip()
         if pin_ingresado == ADMIN_PIN:
             SESIONES[telefono] = {"modo": "admin"}
@@ -462,12 +470,11 @@ def _procesar_mensaje(
             _enviar_texto(telefono, msg)
             return msg
 
-    # Si está en modo admin
-    sesion = SESIONES.get(telefono, {})
-    if sesion.get("modo") == "admin":
+    # Si está en modo admin (solo Lau puede estar en este modo)
+    if sesion.get("modo") == "admin" and _es_numero_lau(telefono):
         return _procesar_admin(telefono, txt, imagen_bytes, nombre_push)
 
-    # Modo cliente
+    # Modo cliente (cualquier otro número, o Lau sin modo admin activo)
     return _procesar_cliente(telefono, txt, nombre_push)
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
