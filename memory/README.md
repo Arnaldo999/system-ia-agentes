@@ -12,5 +12,5 @@ Indice por temas
 - RAG con Google Embeddings 2.0 + Pinecone: memory/rag-sistema-google-embeddings.md
 - MembresIA (App membresías/suscripciones): memory/membresia-app.md
 - Robert Bazán (alianza estratégica México): memory/robert-bazan.md
-- Inmobiliaria Maicol (bot WhatsApp YCloud): ver /home/arna/PROYECTO AGENCIA ROBERT-ARNALDO AYALA/inmobiliaria-leads/
+- Inmobiliaria Maicol (bot WhatsApp YCloud): ver 01_PROYECTOS/01_ARNALDO_AGENCIA/clientes/maicol/
 - WordPress + Elementor (sitios web clientes): memory/wordpress-elementor-sitios-web.md

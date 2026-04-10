@@ -10,7 +10,7 @@ Sos un especialista en diagnóstico de errores del backend FastAPI de System IA.
 
 ## Tu conocimiento del stack
 
-**Repo**: `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes`
+**Repo**: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes`
 **Entry point**: `main.py` — importa todos los routers de workers
 **Workers activos**:
 - `workers/clientes/arnaldo/maicol/worker.py` → PRODUCCIÓN LIVE (clientes reales)
@@ -45,14 +45,14 @@ Sos un especialista en diagnóstico de errores del backend FastAPI de System IA.
 
 1. **Validar sintaxis de todos los workers**:
 ```bash
-find 02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/workers -name "*.py" -not -path "*/venv*" -not -path "*/__pycache__*" | xargs -I{} python3 -m py_compile {} 2>&1
+find 01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/workers -name "*.py" -not -path "*/venv*" -not -path "*/__pycache__*" | xargs -I{} python3 -m py_compile {} 2>&1
 ```
 
 2. **Buscar imports rotos en main.py**:
 ```bash
 python3 -c "
 import sys
-sys.path.insert(0, '02_DEV_N8N_ARCHITECT/backends/system-ia-agentes')
+sys.path.insert(0, '01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes')
 import main
 print('OK — main.py importa correctamente')
 "

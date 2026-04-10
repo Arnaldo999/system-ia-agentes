@@ -23,8 +23,8 @@
 **Mínimo aceptable:** 55% setup para Arnaldo
 
 ## Archivos Clave
-- `/home/arna/PROYECTO AGENCIA ROBERT-ARNALDO AYALA/presentacion-robert-bazan.html` — presentación ejecutiva (4 tabs: Propuesta, Portafolio, Alianza, Próximos Pasos)
-- `/home/arna/PROYECTO AGENCIA ROBERT-ARNALDO AYALA/brief-robert-bazan-reunion-24marzo.md` — brief completo con estrategia, preguntas clave, red flags
+- `01_PROYECTOS/03_LOVBOT_ROBERT/clientes/presentacion-robert-bazan.html` — presentación ejecutiva (4 tabs: Propuesta, Portafolio, Alianza, Próximos Pasos)
+- `01_PROYECTOS/03_LOVBOT_ROBERT/clientes/brief-robert-bazan-reunion-24marzo.md` — brief completo con estrategia, preguntas clave, red flags
 
 ## Estrategia de Reunión
 1. Escuchar 15 min primero, LUEGO mostrar presentación

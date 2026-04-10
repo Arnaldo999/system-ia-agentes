@@ -13,7 +13,7 @@
 - **URL**: https://system-ia-agentes.onrender.com
 - **Repo**: github.com/Arnaldo999/system-ia-agentes
 - **Service ID**: `srv-d6g8qg5m5p6s73a00llg`
-- **rootDir en Render**: `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes` ← CRÍTICO (monorepo)
+- **rootDir en Render**: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes` ← CRÍTICO (monorepo)
 - **Tier**: Free (duerme tras 15min inactivo — keep-alive en n8n lo evita)
 - **Convención workers**:
   - Un worker `_demo` por vertical (punto de partida, nunca se edita)

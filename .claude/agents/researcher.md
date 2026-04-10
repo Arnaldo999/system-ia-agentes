@@ -19,9 +19,9 @@ Sos un especialista en investigación y análisis. Tu único trabajo es leer, bu
 - `python3 -m py_compile` — validar sintaxis sin ejecutar
 
 ## Stack del proyecto
-- Repo backend: `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes`
+- Repo backend: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes`
 - Workers: `workers/clientes/arnaldo/maicol/`, `workers/clientes/lovbot/`, `workers/social/`
-- Frontend: `DEMOS/back-urbanizaciones/`, `DEMOS/INMOBILIARIA/`
+- Frontend: `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/`, `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/`
 - Memoria: `memory/`, `ai.context.json`
 
 ## Cómo responder

@@ -68,6 +68,27 @@ workers/
 
 **Regla crítica**: confirmar "¿Arnaldo / Robert / Mica?" antes de cualquier operación MCP, Coolify o Airtable.
 
+### Estructura de carpetas (post-reorganización 2026-04-10)
+
+```
+00_GOBERNANZA_GLOBAL/    ← políticas, skills, hooks, agentes, memoria global
+01_PROYECTOS/
+  01_ARNALDO_AGENCIA/    ← backends, workflows, demos, clientes, memory
+  02_SYSTEM_IA_MICAELA/  ← idem para Mica
+  03_LOVBOT_ROBERT/      ← idem para Robert
+02_OPERACION_COMPARTIDA/ ← scripts, tools, tests, execution, handoff, logs
+99_ARCHIVO/              ← archive legacy
+```
+
+**Rutas actualizadas:**
+- backends monorepo → `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/` (era `02_DEV_N8N_ARCHITECT/backends/`)
+- demos → `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/` (era `DEMOS/`)
+- execution → `02_OPERACION_COMPARTIDA/execution/` (era `execution/`)
+- handoff → `02_OPERACION_COMPARTIDA/handoff/` (era `handoff/`)
+- scripts → `02_OPERACION_COMPARTIDA/scripts/` (era `scripts/`)
+- directives/ — **permanece en raíz** (sin cambios)
+- memory/ — **permanece en raíz** (sin cambios)
+
 ### Handoff entre agentes
 
 `ai.context.json` es el tablero compartido:
@@ -76,7 +97,7 @@ workers/
 3. Cambia `agente_activo` al siguiente
 4. CRM documenta en `memory/`
 
-Handoffs activos en `handoff/brief-[cliente].md`.
+Handoffs activos en `02_OPERACION_COMPARTIDA/handoff/brief-[cliente].md`.
 
 ---
 
@@ -92,7 +113,7 @@ python -m py_compile main.py
 npm install && npm run dev
 
 # CrewAI sandbox
-cd 02_DEV_N8N_ARCHITECT/ai-sandbox/pruebas_crewai/ && source venv/bin/activate
+cd 01_PROYECTOS/01_ARNALDO_AGENCIA/workflows/ai-sandbox/pruebas_crewai/ && source venv/bin/activate
 
 # Agente no-interactivo
 claude -p "Lee ai.context.json. Tu rol es [agente]. Tarea: [descripción]."
@@ -103,7 +124,32 @@ npx skills add <owner/repo> -y
 
 ---
 
-## 4. Memoria Operativa
+## 4. Directivas & Ejecución (Arquitectura 3 Capas)
+
+**Antes de hacer algo manual, revisar si existe un script en `02_OPERACION_COMPARTIDA/execution/`.**
+
+### Directivas (`directives/`) — SOPs formales — permanecen en raíz
+
+| Directiva | Cuándo usar |
+|-----------|-------------|
+| `directives/deploy_worker.md` | Deploy a Coolify/Render |
+| `directives/debug_worker.md` | Error, falla, comportamiento inesperado |
+| `directives/onboard_client.md` | Cliente nuevo, implementación completa |
+
+### Scripts (`02_OPERACION_COMPARTIDA/execution/`) — ejecución determinista
+
+| Script | Propósito | Uso |
+|--------|-----------|-----|
+| `02_OPERACION_COMPARTIDA/execution/deploy_service.py` | Deploy completo GitHub + Coolify | `--name --workdir --vps` |
+| `02_OPERACION_COMPARTIDA/execution/coolify_manager.py` | API Coolify (trigger, env vars, status) | importar como clase |
+| `02_OPERACION_COMPARTIDA/execution/github_manager.py` | Crear repo, push, GitHub App | importar como módulo |
+| `02_OPERACION_COMPARTIDA/execution/create_tenant.py` | Crear tenant CRM SaaS en Supabase | `--slug --nombre --proyecto` |
+
+**Ciclo auto-reparación**: error → fix script → test → actualizar directiva → `memory/debug-log.md`.
+
+---
+
+## 5. Memoria Operativa
 
 `memory/` — no reinventar, seguir lo documentado.
 

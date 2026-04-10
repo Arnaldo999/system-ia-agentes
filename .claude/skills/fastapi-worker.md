@@ -8,7 +8,7 @@ description: Especialista en crear y modificar workers FastAPI para System IA. A
 ## Estructura del monorepo (CRÍTICO — leer antes de tocar cualquier archivo)
 
 ```
-02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/
+01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/
 ├── main.py                          ← entry point, rutas principales
 ├── workers/
 │   ├── clientes/

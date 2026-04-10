@@ -14,7 +14,7 @@
     -d '{"rootDir": "ruta/al/subdirectorio"}'
   ```
 - Service ID Maicol: `srv-d6g8qg5m5p6s73a00llg`
-- rootDir correcto: `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes`
+- rootDir correcto: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes`
 
 ## Render — Bot muestra versión vieja del código
 - Causa: Render despliega branch `main` pero los commits iban a `master`.

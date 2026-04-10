@@ -95,7 +95,7 @@
     "robert": {
       "nombre": "Agencia Arnaldo + Robert Bazán",
       "tipo": "alianza — Arnaldo + Robert (sin Micaela)",
-      "carpeta": "/home/arna/PROYECTO AGENCIA ROBERT-ARNALDO AYALA/",
+      "carpeta": "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/01_PROYECTOS/03_LOVBOT_ROBERT/clientes/",
       "estado": "en-construccion",
       "entorno": "robert",
       "proximo_paso": "Esperar acceso VPS Robert. Preparar workflows exportables basados en Maicol."
@@ -111,8 +111,8 @@
     ],
     "hito_actual": "Verificar y completar alta Tech Provider Meta para WhatsApp Coexistence",
     "archivos_clave": [
-      "PROYECTO AGENCIA ROBERT-ARNALDO AYALA/guia-tech-provider-meta-robert.html",
-      "PROYECTO AGENCIA ROBERT-ARNALDO AYALA/guia-tech-provider-meta-robert.md"
+      "01_PROYECTOS/03_LOVBOT_ROBERT/clientes/guia-tech-provider-meta-robert.html",
+      "01_PROYECTOS/03_LOVBOT_ROBERT/clientes/guia-tech-provider-meta-robert.md"
     ],
     "workflows_n8n_creados": {
       "etiqueta": "[TECH-PROVIDER-META]",
@@ -136,8 +136,8 @@
   },
   "subagentes": {
     "orquestador": { "status": "standby", "path": ".agents/01-orquestador/AGENT.md" },
-    "ventas": { "status": "espera", "path": "01_VENTAS_CONSULTIVO/AGENT.md" },
-    "dev": { "status": "activo", "path": "02_DEV_N8N_ARCHITECT/AGENT.md" },
+    "ventas": { "status": "espera", "path": "01_PROYECTOS/01_ARNALDO_AGENCIA/clientes/ventas-consultivo/AGENT.md" },
+    "dev": { "status": "activo", "path": ".agents/03-dev/AGENT.md" },
     "crm": { "status": "espera", "path": "03_CRM_ANALYST/AGENT.md" }
   },
   "alertas_urgentes": [

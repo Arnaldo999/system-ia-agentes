@@ -24,12 +24,12 @@ Si faltan argumentos, preguntar antes de continuar.
 | social | `workers/social/worker.py` | `ygjvl9byac1x99laqj4ky1b5` | — |
 | lovbot-robert | `workers/clientes/lovbot/robert_inmobiliaria/worker.py` | — | `ywg48w0gswwk0skokow48o8k` |
 
-Base path del repo: `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes`
+Base path del repo: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes`
 
 ## Paso 3 — Validar sintaxis Python
 
 ```bash
-python -m py_compile "02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/[worker_path]"
+python -m py_compile "01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/[worker_path]"
 ```
 
 Si hay error de sintaxis → **DETENER**. Mostrar error y pedir que se corrija antes de continuar.
@@ -37,7 +37,7 @@ Si hay error de sintaxis → **DETENER**. Mostrar error y pedir que se corrija a
 ## Paso 4 — Git push (si hay cambios)
 
 ```bash
-cd "02_DEV_N8N_ARCHITECT/backends/system-ia-agentes"
+cd "01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes"
 git status
 git add -A
 git commit -m "deploy: [proyecto] [fecha]"
@@ -109,4 +109,4 @@ Si algo falla en cualquier paso → mostrar error claro y detener. No hacer depl
 - NUNCA compartir tokens en el output
 - Si el proyecto es `maicol` → advertir que es PRODUCCIÓN LIVE con clientes reales
 - Si el entorno es `render` → el deploy es automático por push, no hay API call adicional
-- Leer tokens desde `.env` en `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/.env`
+- Leer tokens desde `.env` en `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/.env`

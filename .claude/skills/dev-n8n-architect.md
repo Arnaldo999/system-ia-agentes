@@ -43,7 +43,7 @@ WhatsApp → Evolution API → n8n (Router) → FastAPI (Render) → Gemini
                                                     ↓
                                          Evolution API (respuesta al cliente)
 ```
-Worker base: `02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/workers/gastronomico/worker.py`
+Worker base: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/workers/demos/gastronomia/worker.py`
 
 ### Redes Sociales (comentarios IG/FB)
 ```

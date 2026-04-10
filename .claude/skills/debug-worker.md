@@ -105,7 +105,7 @@ const phone = $json.body.phone;
 docker logs [nombre-contenedor] --tail 100 -f
 
 # Test local del worker
-cd 02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/
+cd 01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/
 source .venv/bin/activate
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 

@@ -56,8 +56,8 @@ Decir exactamente: qué agente tiene la tarea, qué debe hacer ese agente, y si 
 
 ```
 Orquestador (tú, Mission Control)
-├── Agente Ventas  → 01_VENTAS_CONSULTIVO/  → skill: ventas-consultivo
-├── Agente Dev     → 02_DEV_N8N_ARCHITECT/  → skill: dev-n8n-architect
+├── Agente Ventas  → 01_PROYECTOS/01_ARNALDO_AGENCIA/clientes/ventas-consultivo/  → skill: ventas-consultivo
+├── Agente Dev     → 01_PROYECTOS/01_ARNALDO_AGENCIA/backends/  → skill: dev-n8n-architect
 └── Agente CRM     → 03_CRM_ANALYST/        → skill: crm-analyst
 ```
 
