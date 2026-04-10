@@ -68,7 +68,7 @@ CATEGORIAS = {
     "1": "Escolar",
     "2": "Fiestas y Eventos",
     "3": "Papeleria Creativa",
-    "4": "Cameo/Diseños",
+    "4": "Diseños e Impresiones",
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -84,9 +84,20 @@ Hacemos manualidades y decoraciones para que tus momentos sean únicos 💫
 1️⃣ Manualidades escolares (carpetas, maquetas, láminas)
 2️⃣ Fiestas y eventos (decoración con telas y globos, souvenirs, centros de mesa, cajas sorpresa)
 3️⃣ Papelería creativa (invitaciones, tarjetería, cuadernos, stickers)
-4️⃣ Diseños Cameo e impresiones
+4️⃣ Diseños e Impresiones
 
 Respondé con el número de tu opción 😊"""
+
+MSG_ADMIN_ELEGIR_CATEGORIA = """✅ *Modo carga activado*
+
+¿A qué categoría pertenece el trabajo?
+
+1️⃣ Escolar
+2️⃣ Fiestas y Eventos
+3️⃣ Papelería Creativa
+4️⃣ Diseños e Impresiones
+
+Respondé con el número 👆"""
 
 MSG_SIN_PRODUCTOS = """Todavía no hay trabajos cargados en esa categoría.
 ¡Pero podemos hacerlo a medida para vos! 🎨
@@ -324,12 +335,11 @@ Respondé SOLO con el nombre, sin comillas ni explicación."""
 #  LÓGICA PRINCIPAL
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-def _procesar_y_guardar(telefono: str, descripcion: str, imagen_bytes: bytes) -> str:
-    """Sube a Cloudinary y guarda en Airtable. Retorna mensaje de resultado."""
-    categoria = _detectar_categoria(descripcion)
+def _procesar_y_guardar_con_categoria(telefono: str, descripcion: str, imagen_bytes: bytes, categoria: str) -> str:
+    """Sube a Cloudinary y guarda en Airtable usando la categoría elegida por Lau."""
     nombre = _sugerir_nombre(descripcion)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    nombre_archivo = f"{categoria.lower().replace('/', '_')}_{ts}"
+    nombre_archivo = f"{categoria.lower().replace('/', '_').replace(' ', '_')}_{ts}"
 
     url_cloudinary = _subir_cloudinary(imagen_bytes, nombre_archivo)
     if not url_cloudinary:
@@ -346,48 +356,73 @@ def _procesar_y_guardar(telefono: str, descripcion: str, imagen_bytes: bytes) ->
     return msg
 
 
+CATEGORIAS_ADMIN = {
+    "1": "Escolar",
+    "2": "Fiestas y Eventos",
+    "3": "Papeleria Creativa",
+    "4": "Diseños e Impresiones",
+}
+
+
 def _procesar_admin(telefono: str, texto: str, imagen_bytes: bytes | None, nombre_push: str) -> str:
     """Modo admin: Lau carga productos.
-    Soporta dos flujos:
-      A) Foto + caption en el mismo mensaje
-      B) Primero foto sola → bot pide descripción → Lau manda el texto
+    Pasos:
+      1) Elegir categoría (1-4)
+      2) Mandar foto (con o sin descripción)
+      3) Si foto sin descripción → bot pide descripción
+      4) Guarda en Cloudinary + Airtable
     """
     sesion = SESIONES.get(telefono, {})
+    txt = texto.strip()
 
     # Salida del modo admin
-    if texto.strip().upper() == "LISTO":
+    if txt.upper() == "LISTO":
         SESIONES.pop(telefono, None)
         _enviar_texto(telefono, MSG_ADMIN_SALIDA)
         return MSG_ADMIN_SALIDA
 
-    # Flujo A: foto + caption juntos
-    if imagen_bytes and texto.strip():
-        # Limpiar foto pendiente si había una
-        sesion.pop("foto_pendiente", None)
-        SESIONES[telefono] = {**sesion, "modo": "admin"}
-        return _procesar_y_guardar(telefono, texto.strip(), imagen_bytes)
+    # Paso 1: Lau aún no eligió categoría
+    if not sesion.get("categoria_admin"):
+        if txt in CATEGORIAS_ADMIN:
+            categoria = CATEGORIAS_ADMIN[txt]
+            SESIONES[telefono] = {**sesion, "modo": "admin", "categoria_admin": categoria}
+            msg = f"✅ Categoría: *{categoria}*\n\n📸 Ahora mandame la foto del trabajo (podés escribir la descripción en el mismo mensaje o después)."
+            _enviar_texto(telefono, msg)
+            return msg
+        else:
+            _enviar_texto(telefono, MSG_ADMIN_ELEGIR_CATEGORIA)
+            return MSG_ADMIN_ELEGIR_CATEGORIA
 
-    # Flujo B paso 1: llegó solo la foto sin texto → guardar foto y pedir descripción
-    if imagen_bytes and not texto.strip():
-        SESIONES[telefono] = {**sesion, "modo": "admin", "foto_pendiente": imagen_bytes}
+    # Categoría ya elegida — procesar foto
+    categoria = sesion["categoria_admin"]
+
+    # Foto + descripción juntos
+    if imagen_bytes and txt:
+        SESIONES[telefono] = {**sesion, "modo": "admin", "categoria_admin": categoria}
+        return _procesar_y_guardar_con_categoria(telefono, txt, imagen_bytes, categoria)
+
+    # Solo foto sin descripción → pedir descripción
+    if imagen_bytes and not txt:
+        SESIONES[telefono] = {**sesion, "modo": "admin", "categoria_admin": categoria, "foto_pendiente": imagen_bytes}
         msg = "📝 ¿Cómo se llama o qué es este trabajo? Describilo brevemente."
         _enviar_texto(telefono, msg)
         return msg
 
-    # Flujo B paso 2: llegó el texto después de la foto
-    if not imagen_bytes and texto.strip() and sesion.get("foto_pendiente"):
-        foto = sesion.pop("foto_pendiente")
-        SESIONES[telefono] = {**sesion, "modo": "admin"}
-        return _procesar_y_guardar(telefono, texto.strip(), foto)
+    # Texto después de la foto
+    if not imagen_bytes and txt and sesion.get("foto_pendiente"):
+        foto = sesion["foto_pendiente"]
+        SESIONES[telefono] = {**sesion, "modo": "admin", "categoria_admin": categoria}
+        del SESIONES[telefono]["foto_pendiente"]
+        return _procesar_y_guardar_con_categoria(telefono, txt, foto, categoria)
 
-    # Solo texto sin foto y sin foto pendiente
-    if not imagen_bytes and texto.strip():
-        msg = "📸 Mandame la foto del trabajo (con o sin descripción)."
+    # Solo texto sin foto
+    if not imagen_bytes and txt:
+        msg = "📸 Mandame la foto del trabajo."
         _enviar_texto(telefono, msg)
         return msg
 
-    _enviar_texto(telefono, MSG_ADMIN_BIENVENIDA)
-    return MSG_ADMIN_BIENVENIDA
+    _enviar_texto(telefono, MSG_ADMIN_ELEGIR_CATEGORIA)
+    return MSG_ADMIN_ELEGIR_CATEGORIA
 
 
 def _procesar_cliente(telefono: str, texto: str, nombre_push: str) -> str:
