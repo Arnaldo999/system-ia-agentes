@@ -216,8 +216,9 @@ def _descargar_media_evolution(message_id: str) -> bytes | None:
 
             logger.info("[Lau] Media endpoint %s → status %s", ep["url"].split("/")[-2], r.status_code)
 
-            if r.status_code == 200:
+            if r.status_code in (200, 201):
                 data = r.json()
+                logger.info("[Lau] Media response keys: %s", list(data.keys()) if isinstance(data, dict) else type(data))
                 # Buscar base64 en distintas claves según versión
                 b64 = (
                     data.get("base64")
@@ -230,6 +231,8 @@ def _descargar_media_evolution(message_id: str) -> bytes | None:
                     if "," in b64:
                         b64 = b64.split(",", 1)[1]
                     return base64.b64decode(b64)
+                else:
+                    logger.warning("[Lau] Response %s pero sin base64. Data: %s", r.status_code, str(data)[:300])
         except Exception as e:
             logger.warning("[Lau] Error endpoint %s: %s", ep["url"], e)
 
