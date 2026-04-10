@@ -18,7 +18,7 @@ Proyecto de Mica (Micaela) bajo la marca System IA. CRM SaaS multi-tenant live e
 - Workers Mica: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/workers/clientes/system-ia/`
 
 ## Últimos cambios
-- Monitor vencimiento token LinkedIn creado en n8n Mica (`jUBWVBMR6t3iPF7l`) — inactivo, pendiente activar toggle
+- Monitor vencimiento token LinkedIn ACTIVO en n8n Mica (`jUBWVBMR6t3iPF7l`) — testeado ✅ 60 días restantes al 2026-06-09
 - Worker Lau creado en `workers/clientes/system-ia/lau/worker.py` — pendiente deploy
 - Workflow redes sociales Mica activo en n8n Easypanel (`aOiZFbmvMoPSE0vB`) ✅
 - CRM System IA live: admin + tenants en Supabase
@@ -34,14 +34,12 @@ Proyecto de Mica (Micaela) bajo la marca System IA. CRM SaaS multi-tenant live e
 - Workflow redes `aOiZFbmvMoPSE0vB` en n8n Mica — activo y publicando
 
 ## Pendientes
-- Activar toggle workflow Monitor LinkedIn (`jUBWVBMR6t3iPF7l`) en n8n Mica UI
-- Cuando renueve token LinkedIn: actualizar `FECHA_VENCIMIENTO` en nodo `🧮 Calcular días restantes`
+- Cuando renueve token LinkedIn: actualizar `FECHA_VENCIMIENTO` en nodo `🧮 Calcular días restantes` (workflow `jUBWVBMR6t3iPF7l`)
 - Deploy worker Lau — confirmar detalles del negocio con Mica
 - n8n Mica: actualizar a 2.47.5 desde Easypanel (verificar N8N_ENCRYPTION_KEY antes)
 
 ## Riesgos
-- Monitor LinkedIn INACTIVO — no alertará hasta activación manual
-- Token LinkedIn Mica vence ~2026-06-09 — sin cobertura hasta activar workflow
+- Token LinkedIn Mica vence ~2026-06-09 — monitor activo, alertará según severidad (30/14/7/3 días)
 - Worker Lau creado pero sin deploy — cliente sin bot aún
 - n8n Mica en versión 2.35.6 — usar typeVersion 4.1 en httpRequest, formato antiguo en IF
 

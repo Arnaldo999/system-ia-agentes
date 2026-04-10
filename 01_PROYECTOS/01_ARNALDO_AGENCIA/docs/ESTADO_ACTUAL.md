@@ -20,7 +20,7 @@ Agencia de automatización de Arnaldo. Bot WhatsApp inmobiliario de Maicol en pr
 ## Últimos cambios
 - `base_directory` Coolify corregido: ruta legacy → `/01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes` ✅
 - Fix nodo Telegram workflow redes (`aJILcfjRoKDFvGWY`): `specifyBody keypair → json` — alertas ahora funcionan ✅
-- Workflow Monitor YCloud Maicol creado (`5nWay88239sreaj7`) — inactivo, pendiente credencial + activación
+- Workflow Monitor YCloud Maicol ACTIVO (`5nWay88239sreaj7`) — credencial cargada por Arnaldo, testeado ✅ quality:GREEN
 - Reorganización workspace: backend movido de `02_DEV_N8N_ARCHITECT/backends/` a ruta actual
 - Bot Maicol reconectado tras desconexión YCloud (migración número al celular de Maicol)
 
@@ -39,12 +39,10 @@ Agencia de automatización de Arnaldo. Bot WhatsApp inmobiliario de Maicol en pr
 - `crm.backurbanizaciones.com` — CRM con datos reales de clientes Maicol
 
 ## Pendientes
-- Activar monitor YCloud Maicol: crear credencial `YCloud API Key — Maicol` en n8n UI (Header `X-API-Key`), asignar al nodo `📡 GET YCloud phoneNumbers`, activar toggle workflow `5nWay88239sreaj7`
 - DNS: agregar A record `agentes → 187.77.254.33` en Hostinger panel
 
 ## Riesgos
-- Monitor YCloud INACTIVO — no alertará hasta que Arnaldo cargue credencial y active toggle
-- YCloud puede desconectarse si Maicol cambia de celular sin avisar
+- YCloud puede desconectarse si Maicol cambia de celular sin avisar (monitor activo alertará en 30min)
 
 ## Próxima acción recomendada
-Cargar credencial YCloud en n8n UI y activar el workflow Monitor YCloud (`5nWay88239sreaj7`).
+Diseñar Fase 2 del sistema de auditoría (infraestructura, workflows, integraciones, CRM/tenants, reporte).
