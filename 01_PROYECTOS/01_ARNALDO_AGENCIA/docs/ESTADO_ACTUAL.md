@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO
 
 Proyecto: Arnaldo Agencia
-Fecha: 2026-04-10 13:00
+Fecha: 2026-04-10 18:30
 Responsable: Claude Sonnet 4.6 / Arnaldo
 
 ## Estado
@@ -18,10 +18,11 @@ Agencia de automatización de Arnaldo. Bot WhatsApp inmobiliario de Maicol en pr
 - CRM Maicol: `https://crm.backurbanizaciones.com`
 
 ## Últimos cambios
+- `base_directory` Coolify corregido: ruta legacy → `/01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes` ✅
+- Fix nodo Telegram workflow redes (`aJILcfjRoKDFvGWY`): `specifyBody keypair → json` — alertas ahora funcionan ✅
+- Workflow Monitor YCloud Maicol creado (`5nWay88239sreaj7`) — inactivo, pendiente credencial + activación
 - Reorganización workspace: backend movido de `02_DEV_N8N_ARCHITECT/backends/` a ruta actual
 - Bot Maicol reconectado tras desconexión YCloud (migración número al celular de Maicol)
-- Firewall n/a (Hostinger, no Hetzner)
-- Password n8n reseteada vía Terminal Coolify
 
 ## Rutas clave
 - `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/main.py`
@@ -38,16 +39,12 @@ Agencia de automatización de Arnaldo. Bot WhatsApp inmobiliario de Maicol en pr
 - `crm.backurbanizaciones.com` — CRM con datos reales de clientes Maicol
 
 ## Pendientes
-- Verificar base_directory en Coolify apunta a nueva ruta post-reorganización
-- Activar toggle workflow redes `aJILcfjRoKDFvGWY` en n8n UI
+- Activar monitor YCloud Maicol: crear credencial `YCloud API Key — Maicol` en n8n UI (Header `X-API-Key`), asignar al nodo `📡 GET YCloud phoneNumbers`, activar toggle workflow `5nWay88239sreaj7`
 - DNS: agregar A record `agentes → 187.77.254.33` en Hostinger panel
-- Crear monitor proactivo YCloud (ping bot + alerta Telegram si no responde)
-- Migrar webhooks YCloud de Render a Coolify si aún hay alguno apuntando a Render
 
 ## Riesgos
-- base_directory Coolify puede seguir en ruta legacy — verificar antes del próximo deploy
-- YCloud puede desconectarse si Maicol cambia de celular sin avisar — sin alerta automática
-- Monitor Telegram no cubre desconexión YCloud, solo errores del backend
+- Monitor YCloud INACTIVO — no alertará hasta que Arnaldo cargue credencial y active toggle
+- YCloud puede desconectarse si Maicol cambia de celular sin avisar
 
 ## Próxima acción recomendada
-Entrar a Coolify → servicio backend → verificar base_directory apunta a `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes`. Luego crear workflow n8n "Monitor YCloud Maicol" (Schedule 30min → ping → alerta Telegram si falla).
+Cargar credencial YCloud en n8n UI y activar el workflow Monitor YCloud (`5nWay88239sreaj7`).
