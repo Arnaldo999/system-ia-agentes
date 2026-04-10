@@ -49,5 +49,24 @@ Producción de Maicol intacta — sin redeploy ni cambios en runtime.
 - `d7aa14a` — fix(gobernanza): actualizar rutas hooks + limpiar settings.json legacy
 - `b88bf15` — refactor(workspace): eliminar carpetas legacy + normalizar rutas en docs
 
+## Fase 2 — Auditoría (en curso, Capa 1+2 construidas)
+
+### Guardia Crítica (script — Capa A)
+- Script: `02_OPERACION_COMPARTIDA/scripts/guardia_critica.py`
+- Setup: `guardia_critica_setup.md`
+- Checks: FastAPI Arnaldo, n8n Arnaldo, Coolify app status
+- Frecuencia: cada 5min via cron | Retry 1x | Cooldown 30min
+- **Pendiente: configurar cron en VPS Arnaldo**
+
+### Auditoría Diaria (workflow n8n — Capa B)
+- Workflow: `🔍 Auditoría Diaria — Ecosistema Agencia (Fase 2)` (ID: `IuHJLy2hQhOIDlYK`)
+- Checks: n8n Mica + Lovbot health, 7 workflows críticos activos, últimas ejecuciones con error
+- Frecuencia: diaria 8am ARG | Alerta Telegram solo si hay alertas
+- **Pendiente: cargar env vars N8N_MICA_KEY, N8N_LOVBOT_KEY, N8N_ARNALDO_KEY en n8n Arnaldo y activar**
+
 ## Próximo paso recomendado
-Diseñar Fase 2: sistema formal de auditoría del ecosistema (infraestructura, workflows, workers, integraciones, CRM/tenants, reporte consolidado)
+1. Configurar cron guardia_critica en VPS Arnaldo
+2. Cargar variables de entorno del workflow auditoría en n8n UI
+3. Activar workflow `IuHJLy2hQhOIDlYK`
+4. Validar con ejecución manual antes de dejar corriendo
+5. Cuando Capa 1+2 estables → diseñar Capa 3+4 (tokens + CRM)
