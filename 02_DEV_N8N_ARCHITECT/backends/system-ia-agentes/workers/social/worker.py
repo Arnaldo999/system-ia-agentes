@@ -1008,6 +1008,65 @@ def _publicar_facebook(texto: str, imagen_url: str, page_id: str, token: str) ->
         return {"success": False, "error": str(e)}
 
 
+def _publicar_linkedin_company(
+    texto: str, imagen_url: str, li_token: str, company_id: str
+) -> dict:
+    """Publica en página de empresa LinkedIn. Usa Share API v2."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {li_token}",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Content-Type": "application/json",
+        }
+        org_urn = f"urn:li:organization:{company_id}"
+        body = {
+            "author": org_urn,
+            "lifecycleState": "PUBLISHED",
+            "specificContent": {
+                "com.linkedin.ugc.ShareContent": {
+                    "shareCommentary": {"text": texto},
+                    "shareMediaCategory": "ARTICLE" if not imagen_url else "IMAGE",
+                }
+            },
+            "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"},
+        }
+        if imagen_url:
+            # Registrar imagen para la org
+            r1 = req.post(
+                "https://api.linkedin.com/v2/assets?action=registerUpload",
+                headers=headers,
+                json={
+                    "registerUploadRequest": {
+                        "owner": org_urn,
+                        "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
+                        "serviceRelationships": [
+                            {"identifier": "urn:li:userGeneratedContent", "relationshipType": "OWNER"}
+                        ],
+                    }
+                },
+                timeout=30,
+            )
+            if r1.ok:
+                upload_url = r1.json()["value"]["uploadMechanism"][
+                    "com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"
+                ]["uploadUrl"]
+                asset_urn = r1.json()["value"]["asset"]
+                img_bytes = req.get(imagen_url, timeout=30).content
+                req.put(upload_url, headers={"Authorization": f"Bearer {li_token}"}, data=img_bytes, timeout=60)
+                body["specificContent"]["com.linkedin.ugc.ShareContent"]["media"] = [
+                    {"status": "READY", "media": asset_urn}
+                ]
+            else:
+                body["specificContent"]["com.linkedin.ugc.ShareContent"]["shareMediaCategory"] = "NONE"
+
+        r = req.post("https://api.linkedin.com/v2/ugcPosts", headers=headers, json=body, timeout=30)
+        if not r.ok:
+            return {"success": False, "error": f"{r.status_code}: {r.text[:300]}"}
+        return {"success": True, "post_id": r.json().get("id", "ugc-company")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 def _publicar_linkedin_texto(
     texto: str, li_token: str = None, li_person: str = None
 ) -> dict:
@@ -1135,6 +1194,7 @@ class CredencialesCliente(BaseModel):
     ig_account_id: str = ""
     linkedin_access_token: str = ""
     linkedin_person_id: str = ""
+    linkedin_company_id: str = ""
     whatsapp_numero_notificacion: str = ""
     evolution_api_url: str = ""
     evolution_instance_name: str = ""
@@ -1252,6 +1312,7 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         token = entrada.credenciales.meta_access_token
         token_li = entrada.credenciales.linkedin_access_token
         person_li = entrada.credenciales.linkedin_person_id
+        company_li = entrada.credenciales.linkedin_company_id
         wa_num = entrada.credenciales.whatsapp_numero_notificacion
         evo_url = entrada.credenciales.evolution_api_url
         evo_instance = entrada.credenciales.evolution_instance_name
@@ -1262,6 +1323,7 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         token = supa_creds.get("meta_access_token", "")
         token_li = supa_creds.get("linkedin_access_token", "")
         person_li = supa_creds.get("linkedin_person_id", "")
+        company_li = supa_creds.get("linkedin_company_id", "")
         wa_num = supa_creds.get("whatsapp_numero_notificacion", "") or supa_creds.get(
             "whatsapp_numero", ""
         )
@@ -1275,6 +1337,7 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         token = _build_page_token_map().get(page_id) or META_ACCESS_TOKEN
         token_li = None
         person_li = None
+        company_li = None
         wa_num = None
         evo_url = None
         evo_instance = None
@@ -1291,19 +1354,31 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         res_li = _publicar_linkedin_texto(texto_li, token_li, person_li)
         res_fb = _publicar_facebook_texto(texto_fb, page_id, token)
 
-    for red, res in [("Instagram", res_ig), ("LinkedIn", res_li), ("Facebook", res_fb)]:
+    # ── 4b. Publicar en página de empresa LinkedIn (si está configurada) ──────
+    res_li_company = None
+    if company_li and token_li:
+        if imagen_url:
+            res_li_company = _publicar_linkedin_company(texto_li, imagen_url, token_li, company_li)
+        else:
+            res_li_company = _publicar_linkedin_company(texto_li, None, token_li, company_li)
+
+    for red, res in [("Instagram", res_ig), ("LinkedIn perfil", res_li), ("Facebook", res_fb)]:
         if not res.get("success"):
             errores.append(f"{red}: {res.get('error', 'error desconocido')}")
+    if res_li_company and not res_li_company.get("success"):
+        errores.append(f"LinkedIn página: {res_li_company.get('error', 'error desconocido')}")
 
     # ── 5. Notificación WhatsApp ─────────────────────────────────────────────
-    redes_ok = [
-        r
-        for r, v in [("IG ✅", res_ig), ("LI ✅", res_li), ("FB ✅", res_fb)]
-        if v.get("success")
-    ]
+    _redes_check = [("IG ✅", res_ig), ("LI perfil ✅", res_li), ("FB ✅", res_fb)]
+    if res_li_company:
+        _redes_check.append(("LI página ✅", res_li_company))
+    redes_ok = [r for r, v in _redes_check if v.get("success")]
+    _redes_fail_check = [("IG ❌", res_ig), ("LI perfil ❌", res_li), ("FB ❌", res_fb)]
+    if res_li_company:
+        _redes_fail_check.append(("LI página ❌", res_li_company))
     redes_fail = [
         r
-        for r, v in [("IG ❌", res_ig), ("LI ❌", res_li), ("FB ❌", res_fb)]
+        for r, v in _redes_fail_check
         if not v.get("success")
     ]
 
@@ -1330,11 +1405,15 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         evo_token=evo_token,
     )
 
+    pubs = {"instagram": res_ig, "linkedin_perfil": res_li, "facebook": res_fb}
+    if res_li_company:
+        pubs["linkedin_pagina"] = res_li_company
+
     return {
         "status": "success" if not errores else "partial",
         "tema_del_dia": {"tema": tema, "angulo": angulo},
         "imagen_url": imagen_url,
-        "publicaciones": {"instagram": res_ig, "linkedin": res_li, "facebook": res_fb},
+        "publicaciones": pubs,
         "textos": {
             "instagram": texto_ig[:200],
             "linkedin": texto_li[:200],
