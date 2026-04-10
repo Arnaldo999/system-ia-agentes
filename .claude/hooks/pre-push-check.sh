@@ -18,7 +18,7 @@ if [[ "$COMMAND" != *"git push"* ]]; then
   exit 0
 fi
 
-WORKERS_DIR="/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/02_DEV_N8N_ARCHITECT/backends/system-ia-agentes/workers"
+WORKERS_DIR="/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/workers"
 
 if [[ ! -d "$WORKERS_DIR" ]]; then
   exit 0
