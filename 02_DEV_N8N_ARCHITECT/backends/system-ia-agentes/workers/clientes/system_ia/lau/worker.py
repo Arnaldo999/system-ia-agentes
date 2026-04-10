@@ -69,6 +69,7 @@ CATEGORIAS = {
     "2": "Fiestas y Eventos",
     "3": "Papeleria Creativa",
     "4": "Diseños e Impresiones",
+    "5": "Invitaciones y Videos Digitales",
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -85,6 +86,7 @@ Hacemos manualidades y decoraciones para que tus momentos sean únicos 💫
 2️⃣ Fiestas y eventos (decoración con telas y globos, souvenirs, centros de mesa, cajas sorpresa)
 3️⃣ Papelería creativa (invitaciones, tarjetería, cuadernos, stickers)
 4️⃣ Diseños e Impresiones
+5️⃣ Invitaciones digitales y videos de momentos especiales (15 años, bautismo, casamiento, egresados)
 
 Respondé con el número de tu opción 😊"""
 
@@ -96,6 +98,7 @@ MSG_ADMIN_ELEGIR_CATEGORIA = """✅ *Modo carga activado*
 2️⃣ Fiestas y Eventos
 3️⃣ Papelería Creativa
 4️⃣ Diseños e Impresiones
+5️⃣ Invitaciones y Videos Digitales
 
 Respondé con el número 👆"""
 
