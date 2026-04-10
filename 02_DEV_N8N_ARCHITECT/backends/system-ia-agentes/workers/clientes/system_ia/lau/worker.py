@@ -183,21 +183,57 @@ def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
 
 
 def _descargar_media_evolution(message_id: str) -> bytes | None:
-    """Descarga el binario de una imagen recibida en Evolution API."""
-    try:
-        r = requests.post(
-            f"{EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/{EVOLUTION_INSTANCE}",
-            headers=_evo_headers(),
-            json={"message": {"key": {"id": message_id}}},
-            timeout=15,
-        )
-        if r.status_code == 200:
-            import base64
-            b64 = r.json().get("base64", "")
-            if b64:
-                return base64.b64decode(b64)
-    except Exception as e:
-        logger.warning("[Lau] Error descargar_media: %s", e)
+    """Descarga el binario de una imagen recibida en Evolution API.
+    Intenta múltiples endpoints según versión de Evolution API.
+    """
+    import base64
+
+    # Endpoint v2 (Evolution API 2.x)
+    endpoints = [
+        {
+            "method": "POST",
+            "url": f"{EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/{EVOLUTION_INSTANCE}",
+            "json": {"message": {"key": {"id": message_id}}},
+        },
+        {
+            "method": "POST",
+            "url": f"{EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/{EVOLUTION_INSTANCE}",
+            "json": {"key": {"id": message_id}},
+        },
+        {
+            "method": "GET",
+            "url": f"{EVOLUTION_API_URL}/chat/getMediaMessage/{EVOLUTION_INSTANCE}/{message_id}",
+            "json": None,
+        },
+    ]
+
+    for ep in endpoints:
+        try:
+            if ep["method"] == "POST":
+                r = requests.post(ep["url"], headers=_evo_headers(), json=ep["json"], timeout=20)
+            else:
+                r = requests.get(ep["url"], headers=_evo_headers(), timeout=20)
+
+            logger.info("[Lau] Media endpoint %s → status %s", ep["url"].split("/")[-2], r.status_code)
+
+            if r.status_code == 200:
+                data = r.json()
+                # Buscar base64 en distintas claves según versión
+                b64 = (
+                    data.get("base64")
+                    or data.get("mediaBase64")
+                    or data.get("data", {}).get("base64", "")
+                    if isinstance(data, dict) else ""
+                )
+                if b64:
+                    # Quitar prefijo data:image/...;base64, si viene
+                    if "," in b64:
+                        b64 = b64.split(",", 1)[1]
+                    return base64.b64decode(b64)
+        except Exception as e:
+            logger.warning("[Lau] Error endpoint %s: %s", ep["url"], e)
+
+    logger.warning("[Lau] Todos los endpoints de media fallaron para message_id=%s", message_id)
     return None
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
