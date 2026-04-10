@@ -66,10 +66,9 @@ SESIONES: dict[str, dict] = {}
 
 CATEGORIAS = {
     "1": "Escolar",
-    "2": "Decoracion Fiestas",
-    "3": "Telas y Globos",
-    "4": "Papeleria Creativa",
-    "5": "Cameo/Diseños",
+    "2": "Fiestas y Eventos",
+    "3": "Papeleria Creativa",
+    "4": "Cameo/Diseños",
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -83,10 +82,9 @@ Hacemos manualidades y decoraciones para que tus momentos sean únicos 💫
 ¿Qué te interesa ver?
 
 1️⃣ Manualidades escolares (carpetas, maquetas, láminas)
-2️⃣ Decoración de fiestas (souvenirs, centros de mesa, cajas sorpresa)
-3️⃣ Decoración con telas y globos para eventos y cumpleaños
-4️⃣ Papelería creativa (invitaciones, tarjetería, cuadernos, stickers)
-5️⃣ Diseños Cameo e impresiones
+2️⃣ Fiestas y eventos (decoración con telas y globos, souvenirs, centros de mesa, cajas sorpresa)
+3️⃣ Papelería creativa (invitaciones, tarjetería, cuadernos, stickers)
+4️⃣ Diseños Cameo e impresiones
 
 Respondé con el número de tu opción 😊"""
 
