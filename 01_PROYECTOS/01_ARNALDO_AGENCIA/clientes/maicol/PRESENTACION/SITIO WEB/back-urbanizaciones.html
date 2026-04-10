@@ -1,0 +1,379 @@
+<!--
+══════════════════════════════════════════════════════════════
+  BACK URBANIZACIONES — Menú móvil premium
+
+  INSTRUCCIONES:
+  1. En WPCode → agregar el bloque <style> al snippet existente
+     (reemplazar las clases .back-burger y .back-mobile que ya tenés)
+  2. En Elementor → reemplazar el bloque HTML completo con el de abajo
+══════════════════════════════════════════════════════════════
+-->
+
+
+<!-- ════════════════════════════════════════════════════════
+  PASO 1 — WPCode: reemplazar SOLO las clases del burger y mobile
+  (buscar desde ".back-burger {" hasta el @media de 768px y reemplazar)
+════════════════════════════════════════════════════════════ -->
+<style>
+/* ── BURGER ─────────────────────────────────────────── */
+.back-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 42px; height: 42px;
+  border: none; background: none; cursor: pointer;
+  border-radius: 10px;
+  transition: background .2s;
+  padding: 0;
+  z-index: 10001;
+  position: relative;
+}
+.back-burger:hover { background: rgba(45,106,79,0.08); }
+.back-burger span {
+  width: 22px; height: 2px;
+  background: #2d6a4f; border-radius: 2px;
+  display: block;
+  transition: transform .35s cubic-bezier(.4,0,.2,1), opacity .25s, width .25s;
+  transform-origin: center;
+}
+.back-burger span:nth-child(1) { margin-bottom: 5px; }
+.back-burger span:nth-child(2) { margin-bottom: 5px; }
+.back-burger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.back-burger.active span:nth-child(2) { opacity: 0; width: 0; }
+.back-burger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── MENÚ MOBILE FULLSCREEN ─────────────────────────── */
+.back-mobile {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+
+  /* Glass morphism sobre crema */
+  background: rgba(245,240,232,0.98);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+
+  display: flex;
+  flex-direction: column;
+
+  /* Estado CERRADO */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px) scale(0.985);
+  transition:
+    opacity .32s cubic-bezier(.4,0,.2,1),
+    transform .32s cubic-bezier(.4,0,.2,1),
+    visibility 0s linear .32s;
+}
+.back-mobile.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity .32s cubic-bezier(.4,0,.2,1),
+    transform .32s cubic-bezier(.4,0,.2,1),
+    visibility 0s;
+}
+
+/* Línea de color arriba */
+.back-mobile::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #2d6a4f 0%, #52b788 50%, #2d6a4f 100%);
+  background-size: 200% 100%;
+  animation: gradShift 3s linear infinite;
+}
+@keyframes gradShift {
+  from { background-position: 0% 0%; }
+  to   { background-position: 200% 0%; }
+}
+
+/* Interior con padding */
+.back-mobile-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 24px 36px;
+  overflow-y: auto;
+}
+
+/* Cabecera: logo + X */
+.back-mobile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 80px;
+  flex-shrink: 0;
+}
+.back-mobile-brand {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
+}
+.back-mobile-brand img { height: 46px; width: auto; }
+.back-mobile-brand strong {
+  display: block;
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.9rem; font-weight: 700; color: #2d6a4f;
+}
+.back-mobile-brand em {
+  display: block;
+  font-style: normal;
+  font-size: 0.53rem; color: #9ca3af;
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+.back-mobile-x {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #ede8de;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1rem; color: #9ca3af;
+  transition: background .2s, color .2s, transform .25s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  flex-shrink: 0;
+}
+.back-mobile-x:hover { background: #2d6a4f; color: #fff; transform: rotate(90deg); }
+
+/* Línea separadora */
+.back-mobile-sep {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e5e0d8 20%, #e5e0d8 80%, transparent);
+  margin-bottom: 28px;
+  flex-shrink: 0;
+}
+
+/* Items de navegación */
+.back-mobile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.back-mobile-nav a {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c2c2c;
+  transition: background .2s, color .2s, transform .15s;
+
+  /* Stagger de entrada */
+  opacity: 0;
+  transform: translateX(-16px);
+}
+.back-mobile.active .back-mobile-nav a {
+  opacity: 1; transform: translateX(0);
+}
+.back-mobile.active .back-mobile-nav a:nth-child(1) { transition: opacity .3s .10s, transform .3s .10s, background .2s, color .2s; }
+.back-mobile.active .back-mobile-nav a:nth-child(2) { transition: opacity .3s .16s, transform .3s .16s, background .2s, color .2s; }
+.back-mobile.active .back-mobile-nav a:nth-child(3) { transition: opacity .3s .22s, transform .3s .22s, background .2s, color .2s; }
+.back-mobile.active .back-mobile-nav a:nth-child(4) { transition: opacity .3s .28s, transform .3s .28s, background .2s, color .2s; }
+.back-mobile.active .back-mobile-nav a:nth-child(5) { transition: opacity .3s .34s, transform .3s .34s, background .2s, color .2s; }
+
+.back-mobile-nav a:hover { background: rgba(45,106,79,0.07); color: #2d6a4f; transform: translateX(4px); }
+
+.mnav-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: #f0ece4;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+  border: 1px solid #e8e3db;
+  transition: background .2s;
+}
+.back-mobile-nav a:hover .mnav-icon { background: #d8f3dc; border-color: #52b788; }
+
+.mnav-arrow {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #d1ccc4;
+  transition: transform .2s, color .2s;
+}
+.back-mobile-nav a:hover .mnav-arrow { transform: translateX(3px); color: #2d6a4f; }
+
+/* Footer del panel */
+.back-mobile-foot {
+  margin-top: 24px;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: translateY(10px);
+}
+.back-mobile.active .back-mobile-foot {
+  opacity: 1; transform: translateY(0);
+  transition: opacity .3s .40s, transform .3s .40s;
+}
+
+.btn-m-wa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #25D366 0%, #1db954 100%);
+  color: #fff;
+  font-size: 0.95rem; font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 6px 20px rgba(37,211,102,0.32);
+  transition: transform .2s, box-shadow .2s;
+  margin-bottom: 10px;
+}
+.btn-m-wa:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(37,211,102,0.42); }
+
+.btn-m-contacto {
+  display: block; width: 100%;
+  padding: 13px 20px;
+  border-radius: 14px;
+  background: #2d6a4f; color: #fff;
+  font-size: 0.9rem; font-weight: 600;
+  text-align: center; text-decoration: none;
+  transition: background .2s, transform .2s;
+}
+.btn-m-contacto:hover { background: #1e4d37; transform: translateY(-1px); }
+
+.back-mobile-tag {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 0.68rem; color: #b0aaa0;
+  letter-spacing: 0.5px;
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .back-nav    { display: none !important; }
+  .back-burger { display: flex !important; }
+  .back-logo img      { height: 55px !important; }
+  .back-container     { height: 80px !important; }
+}
+body.menu-open { overflow: hidden; }
+</style>
+
+
+<!-- ════════════════════════════════════════════════════════
+  PASO 2 — Elementor: reemplazar TODO el bloque HTML
+  (el <header> queda igual, solo cambia el <nav class="back-mobile"> y el <script>)
+════════════════════════════════════════════════════════════ -->
+
+<header class="back-header">
+  <div class="back-container">
+    <a href="/" class="back-logo">
+      <img src="https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png" alt="Back Urbanizaciones">
+      <div class="back-logo-text">
+        <strong>Back Urbanizaciones</strong>
+        <span>Lotes &amp; Terrenos</span>
+      </div>
+    </a>
+    <nav class="back-nav">
+      <a href="/#inicio">Inicio</a>
+      <a href="/#quienes">Quiénes Somos</a>
+      <a href="/#loteos">Loteos</a>
+      <a href="/blog">Blog</a>
+      <a href="/#testimonios">Testimonios</a>
+      <a href="/#contacto" class="btn-contacto">Contacto</a>
+    </nav>
+    <button class="back-burger" aria-label="Abrir menú">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- MENÚ MOBILE PREMIUM -->
+<div class="back-mobile" id="backMobile" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+  <div class="back-mobile-inner">
+
+    <!-- Cabecera del panel -->
+    <div class="back-mobile-head">
+      <a href="/" class="back-mobile-brand" id="mBrand">
+        <img src="https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png" alt="Back Urbanizaciones">
+        <div>
+          <strong>Back Urbanizaciones</strong>
+          <em>Lotes &amp; Terrenos</em>
+        </div>
+      </a>
+      <button class="back-mobile-x" id="mClose" aria-label="Cerrar menú">✕</button>
+    </div>
+
+    <div class="back-mobile-sep"></div>
+
+    <!-- Links -->
+    <nav class="back-mobile-nav">
+      <a href="/#inicio">
+        <span class="mnav-icon">🏠</span> Inicio <span class="mnav-arrow">›</span>
+      </a>
+      <a href="/#quienes">
+        <span class="mnav-icon">👥</span> Quiénes Somos <span class="mnav-arrow">›</span>
+      </a>
+      <a href="/#loteos">
+        <span class="mnav-icon">📍</span> Loteos <span class="mnav-arrow">›</span>
+      </a>
+      <a href="/blog">
+        <span class="mnav-icon">📝</span> Blog <span class="mnav-arrow">›</span>
+      </a>
+      <a href="/#testimonios">
+        <span class="mnav-icon">⭐</span> Testimonios <span class="mnav-arrow">›</span>
+      </a>
+    </nav>
+
+    <!-- CTAs -->
+    <div class="back-mobile-foot">
+      <a href="https://wa.me/5493764000000?text=Hola%2C%20quiero%20consultar%20sobre%20un%20lote"
+         class="btn-m-wa" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+        Consultar por WhatsApp
+      </a>
+      <a href="/#contacto" class="btn-m-contacto" id="mContacto">Ver formulario de contacto</a>
+      <p class="back-mobile-tag">San Ignacio, Misiones · Argentina</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  var menu, burger;
+
+  function open() {
+    menu.classList.add('active');
+    burger.classList.add('active');
+    document.body.classList.add('menu-open');
+  }
+  function close() {
+    menu.classList.remove('active');
+    burger.classList.remove('active');
+    document.body.classList.remove('menu-open');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    menu   = document.getElementById('backMobile');
+    burger = document.querySelector('.back-burger');
+    if (!menu || !burger) return;
+
+    burger.addEventListener('click', function() {
+      menu.classList.contains('active') ? close() : open();
+    });
+
+    // Botón X interior
+    document.getElementById('mClose').addEventListener('click', close);
+
+    // Click en link → cerrar
+    menu.querySelectorAll('a').forEach(function(a) {
+      a.addEventListener('click', close);
+    });
+
+    // ESC
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') close();
+    });
+  });
+})();
+</script>

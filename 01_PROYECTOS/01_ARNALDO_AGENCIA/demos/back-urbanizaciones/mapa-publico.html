@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Lotes Disponibles — Back Urbanizaciones</title>
+  <link rel="icon" href="https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f8f7f4; }
+    .pin-tooltip { position:fixed; background:#1f2937; color:white; padding:8px 14px; border-radius:8px; font-size:13px; pointer-events:none; z-index:9999; display:none; white-space:nowrap; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shadow-sm">
+    <img src="https://backurbanizaciones.com/wp-content/uploads/2026/03/LOGO_BACK_TRANSPARENTE-removebg-.png" alt="Back Urbanizaciones" class="h-10 w-auto"/>
+    <div>
+      <div class="font-bold text-gray-800 text-sm leading-tight">Back Urbanizaciones</div>
+      <div class="text-xs text-gray-500">Lotes &amp; Terrenos — Misiones</div>
+    </div>
+    <a href="https://backurbanizaciones.com" target="_blank" class="ml-auto text-xs text-gray-400 hover:text-green-700 transition-colors">← Volver al sitio</a>
+  </header>
+
+  <!-- Selector de loteo -->
+  <div class="max-w-5xl mx-auto px-4 pt-6 pb-2">
+    <div id="selector-loteos" class="flex flex-wrap gap-3 mb-6">
+      <!-- se renderizan dinámicamente -->
+    </div>
+    <div id="mapa-header" class="mb-4 hidden">
+      <h1 id="mapa-titulo" class="text-2xl font-extrabold text-gray-800"></h1>
+      <p id="mapa-zona" class="text-sm text-gray-500 mt-1"></p>
+    </div>
+    <!-- Leyenda + stats -->
+    <div id="mapa-stats" class="hidden flex flex-wrap items-center gap-5 text-sm font-semibold mb-4">
+      <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded-full bg-green-600 inline-block"></span>Disponibles: <strong id="stat-libres">—</strong></span>
+      <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded-full bg-amber-400 inline-block"></span>Reservados: <strong id="stat-reservados">—</strong></span>
+      <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded-full bg-red-500 inline-block"></span>Vendidos: <strong id="stat-vendidos">—</strong></span>
+    </div>
+    <!-- Mapa -->
+    <div id="mapa-container" class="overflow-x-auto rounded-2xl">
+      <div class="text-center py-16 text-gray-400 text-sm">Seleccioná un loteo para ver el mapa</div>
+    </div>
+    <p class="text-xs text-gray-400 text-center mt-3">Los colores se actualizan en tiempo real · Clic en un lote disponible para consultar</p>
+  </div>
+
+  <!-- Modal consulta -->
+  <div id="modal-consulta" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <h2 class="text-xl font-extrabold text-gray-800 mb-1">Lote <span id="modal-lote-num"></span></h2>
+      <p id="modal-loteo-nombre" class="text-sm text-gray-500 mb-4"></p>
+      <div id="modal-estado-badge" class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-4"></div>
+      <div id="modal-disponible-content">
+        <p class="text-sm text-gray-600 mb-5">¿Te interesa este lote? Consultanos por WhatsApp y un asesor te responde enseguida.</p>
+        <a id="modal-wa-btn" href="#" target="_blank"
+           class="block w-full text-center bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition-colors text-sm">
+          💬 Consultar por WhatsApp
+        </a>
+      </div>
+      <div id="modal-no-disponible-content" class="hidden">
+        <p class="text-sm text-gray-500">Este lote ya no está disponible. ¡Pero tenemos otros! Escribinos para ver opciones.</p>
+        <a id="modal-wa-btn-2" href="#" target="_blank"
+           class="block w-full text-center bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition-colors text-sm mt-4">
+          💬 Ver otras opciones
+        </a>
+      </div>
+      <button onclick="cerrarModal()" class="block w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-3">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="pin-tooltip" id="pin-tooltip"></div>
+
+<script>
+const CRM = 'https://agentes.arnaldoayalaestratega.cloud';
+const WA_NUM = '5493764815689';
+
+// ── LOTEOS DISPONIBLES ────────────────────────────────────
+const LOTEOS = [
+  { id: 'san-ignacio', nombre: 'San Ignacio Golf & Resort', zona: 'San Ignacio · Misiones', totalLotes: 163, mapaKey: 'san_ignacio' },
+  { id: 'apostoles',   nombre: 'Loteo Altos de Apóstoles',  zona: 'Apóstoles · Misiones',  totalLotes: 332, mapaKey: 'apostoles'  },
+];
+
+// ── COORDENADAS SAN IGNACIO ───────────────────────────────
+const LOTES_COORDS = {
+  1:[85,246], 2:[80,195], 3:[80,146], 4:[140,148], 5:[192,154], 6:[237,184], 7:[284,205], 8:[333,234],
+  9:[380,247], 10:[426,258], 11:[476,255], 12:[528,250], 13:[314,144], 14:[366,143], 15:[411,143], 16:[462,141],
+  17:[506,171], 18:[583,150], 19:[633,149], 20:[682,152], 21:[735,150], 22:[695,218], 23:[699,272], 24:[621,217],
+  25:[612,305], 26:[659,340], 27:[708,359], 28:[761,335], 29:[784,292], 30:[781,241], 31:[801,197], 32:[835,158],
+  33:[885,149], 34:[949,147], 35:[1017,149], 36:[1083,149], 37:[1100,216], 38:[1097,266], 39:[1105,319], 40:[1105,368],
+  41:[1111,413], 42:[1189,147], 43:[1186,199], 44:[1189,251], 45:[1187,293], 46:[1187,338], 47:[1179,388], 48:[1183,435],
+  49:[1176,482], 50:[1184,539], 51:[1186,582], 52:[1179,628], 53:[1183,673], 54:[1184,720], 55:[1088,721], 56:[1183,790],
+  57:[1183,839], 58:[1184,882], 59:[1181,937], 60:[1186,983], 61:[1186,1028], 62:[1186,1072], 63:[1186,1118], 64:[1186,1176],
+  65:[1192,1267], 66:[1144,1260], 67:[1096,1270], 68:[1049,1267], 69:[995,1230], 70:[952,1177], 71:[901,1167], 72:[855,1168],
+  73:[804,1164], 74:[760,1151], 75:[711,1139], 76:[664,1129], 77:[617,1130], 78:[566,1136], 79:[535,1266], 80:[580,1263],
+  81:[633,1267], 82:[679,1269], 83:[732,1269], 84:[776,1269], 85:[828,1266], 86:[873,1267], 87:[931,1267],
+  88:[945,630], 89:[895,633], 90:[851,647], 91:[807,628], 92:[780,589], 93:[726,552], 94:[678,545], 95:[625,562],
+  96:[521,604], 97:[478,586], 98:[445,551], 99:[407,523], 100:[397,624],
+  101:[370,720], 102:[418,697], 103:[534,670], 104:[577,701], 105:[511,728], 106:[398,582], 107:[431,795], 108:[397,818],
+  109:[369,858], 110:[336,901], 111:[302,932], 112:[471,968], 113:[474,924], 114:[471,868], 115:[501,819], 116:[578,773],
+  117:[557,823], 118:[556,872], 119:[557,916], 120:[553,965], 121:[691,913], 122:[650,884], 123:[641,823], 124:[650,728],
+  125:[684,778], 126:[712,817], 127:[747,851], 128:[792,877], 129:[826,904], 130:[862,950],
+  131:[950,867], 132:[920,834], 133:[885,794], 134:[838,776], 135:[765,748], 136:[711,686], 137:[809,717], 138:[891,734],
+  139:[947,738], 140:[981,775], 141:[997,816],
+  142:[118,1087], 143:[99,1040], 144:[87,991], 145:[76,944], 146:[77,893], 147:[77,846], 148:[88,798], 149:[99,748],
+  150:[124,698], 151:[143,659], 152:[160,603], 153:[173,559], 154:[180,512], 155:[186,459], 156:[191,410], 157:[178,360],
+  158:[82,402], 159:[81,444], 160:[74,495], 161:[64,541], 162:[59,599], 163:[52,651],
+};
+const MASTER_PLAN_URL = 'https://res.cloudinary.com/dmqkqcreo/image/upload/v1775578634/lovbot/loteos/san_ignacio_master_plan.png';
+
+// ── COORDENADAS APÓSTOLES ─────────────────────────────────
+const APOSTOLES_PLAN_URL = 'https://res.cloudinary.com/dmqkqcreo/image/upload/v1775655835/back-urbanizaciones/mapas/apostoles-plano-v3.png';
+const APOSTOLES_COORDS = {
+  1:[597,270], 2:[981,274], 3:[1364,276], 4:[1788,274],
+  5:[381,442], 6:[414,442], 7:[447,442], 8:[624,430], 9:[652,486], 10:[652,517], 11:[652,547], 12:[652,578],
+  13:[665,670], 14:[633,670], 15:[600,670], 16:[568,670], 17:[536,670], 18:[503,670], 19:[471,670], 20:[439,670],
+  21:[406,670], 22:[374,670], 23:[419,580], 24:[419,546], 25:[419,513], 26:[419,479],
+  27:[786,435], 28:[942,435], 29:[1042,428], 30:[1037,481], 31:[1037,513], 32:[1037,545], 33:[1037,577],
+  34:[1051,670], 35:[1019,670], 36:[986,670], 37:[954,670], 38:[921,670], 39:[889,670], 40:[856,670],
+  41:[824,670], 42:[791,670], 43:[759,670], 44:[803,582], 45:[803,550], 46:[803,517], 47:[803,485],
+  48:[1438,442], 49:[1422,485], 50:[1422,516], 51:[1422,548], 52:[1422,579], 53:[1443,668], 54:[1410,668],
+  55:[1377,668], 56:[1344,668], 57:[1311,668], 58:[1279,668], 59:[1246,668], 60:[1213,668], 61:[1180,668],
+  62:[1147,668], 63:[1189,578], 64:[1189,546], 65:[1189,515], 66:[1189,483], 67:[1143,442], 68:[1176,442],
+  69:[1209,442], 70:[1241,442], 71:[1274,442], 72:[1307,442], 73:[1340,442], 74:[1372,442], 75:[1405,442],
+  76:[1869,443], 77:[1831,481], 78:[1831,514], 79:[1831,546], 80:[1831,579], 81:[1867,668], 82:[1830,668],
+  83:[1793,668], 84:[1757,668], 85:[1720,668], 86:[1683,668], 87:[1646,668], 88:[1610,668], 89:[1573,668],
+  90:[1536,668], 91:[1556,582], 92:[1556,549], 93:[1556,517], 94:[1556,484], 95:[1534,443], 96:[1571,443],
+  97:[1608,443], 98:[1646,443], 99:[1683,443], 100:[1720,443], 101:[1757,443], 102:[1795,443], 103:[1832,443],
+  104:[376,783], 105:[407,781], 106:[441,781], 107:[474,781], 108:[505,778], 109:[539,783], 110:[570,783],
+  111:[601,781], 112:[632,781], 113:[666,783], 114:[647,870], 115:[650,900], 116:[648,933], 117:[646,966],
+  118:[666,1055], 119:[633,1052], 120:[601,1052], 121:[568,1052], 122:[538,1052], 123:[506,1049], 124:[475,1053],
+  125:[440,1047], 126:[407,1053], 127:[375,1053], 128:[420,964], 129:[420,934], 130:[418,898], 131:[419,868],
+  132:[761,781], 133:[792,781], 134:[823,781], 135:[854,781], 136:[885,781], 137:[916,781], 138:[947,781],
+  139:[978,781], 140:[1009,781], 141:[1040,781], 142:[1026,870], 143:[1026,900], 144:[1026,933], 145:[1026,966],
+  146:[1040,1055], 147:[1009,1052], 148:[978,1052], 149:[947,1052], 150:[916,1052], 151:[885,1049], 152:[854,1053],
+  153:[823,1047], 154:[792,1053], 155:[761,1056], 156:[805,964], 157:[809,934], 158:[810,901], 159:[805,865],
+  160:[1144,783], 161:[1178,786], 162:[1212,783], 163:[1243,781], 164:[1274,783], 165:[1302,781], 166:[1336,786],
+  167:[1370,781], 168:[1401,781], 169:[1440,781], 170:[1426,870], 171:[1427,900], 172:[1422,933], 173:[1420,969],
+  174:[1440,1055], 175:[1405,1058], 176:[1372,1052], 177:[1340,1049], 178:[1310,1052], 179:[1275,1058], 180:[1244,1056],
+  181:[1211,1050], 182:[1182,1053], 183:[1146,1053], 184:[1194,967], 185:[1189,934], 186:[1190,901], 187:[1190,868],
+  188:[1868,764], 189:[1864,806], 190:[1864,838], 191:[1864,870], 192:[1864,901], 193:[1864,933], 194:[1864,965],
+  195:[1864,996], 196:[1864,1028], 197:[1864,1060], 198:[1768,1010], 199:[1734,1010], 200:[1699,1010],
+  201:[1664,1010], 202:[1630,1010], 203:[1586,1060], 204:[1588,1030], 205:[1588,997], 206:[1588,964],
+  207:[1588,932], 208:[1588,899], 209:[1588,866], 210:[1588,834], 211:[1588,801], 212:[1588,768],
+  213:[1633,783], 214:[1668,783], 215:[1704,783],
+  328:[1740,787], 329:[1772,787],
+  216:[376,1169], 217:[407,1167], 218:[441,1169], 219:[474,1167], 220:[503,1169], 221:[536,1169], 222:[570,1167], 223:[599,1169],
+  224:[635,1169], 225:[666,1164], 226:[652,1247], 227:[650,1289], 228:[648,1319], 229:[646,1350], 230:[666,1444], 231:[636,1438],
+  232:[603,1435], 233:[568,1438], 234:[536,1441], 235:[506,1438], 236:[472,1442], 237:[440,1439], 238:[410,1442], 239:[375,1442],
+  240:[417,1350], 241:[418,1317], 242:[418,1287], 243:[419,1256],
+  330:[1738,1175], 331:[1774,1172],
+  244:[761,1169], 245:[792,1167], 246:[826,1158], 247:[857,1172], 248:[888,1167], 249:[919,1167], 250:[953,1169], 251:[987,1167],
+  252:[1015,1164], 253:[1049,1167], 254:[1029,1258], 255:[1033,1289], 256:[1028,1319], 257:[1034,1352], 258:[1051,1441], 259:[1019,1438],
+  260:[989,1441], 261:[948,1441], 262:[924,1441], 263:[889,1441], 264:[855,1442], 265:[826,1442], 266:[793,1442], 267:[763,1439],
+  268:[805,1348], 269:[801,1317], 270:[804,1284], 271:[802,1254],
+  272:[1147,1169], 273:[1181,1167], 274:[1215,1167], 275:[1246,1169], 276:[1277,1169], 277:[1308,1169], 278:[1342,1167], 279:[1373,1167],
+  280:[1407,1169], 281:[1438,1164], 282:[1423,1253], 283:[1424,1286], 284:[1419,1316], 285:[1420,1350], 286:[1440,1441], 287:[1405,1441],
+  288:[1375,1441], 289:[1342,1438], 290:[1310,1441], 291:[1277,1444], 292:[1244,1442], 293:[1211,1439], 294:[1179,1436], 295:[1143,1436],
+  296:[1191,1353], 297:[1189,1317], 298:[1187,1287], 299:[1188,1254],
+  300:[1859,1156], 301:[1866,1189], 302:[1863,1222], 303:[1861,1250], 304:[1859,1285], 305:[1863,1319], 306:[1858,1349], 307:[1861,1388],
+  308:[1859,1413], 309:[1860,1446], 310:[1771,1394], 311:[1736,1397], 312:[1703,1397], 313:[1665,1397], 314:[1630,1399], 315:[1586,1452],
+  316:[1587,1416], 317:[1590,1383], 318:[1583,1347], 319:[1586,1316], 320:[1594,1284], 321:[1584,1254], 322:[1587,1220], 323:[1585,1190],
+  324:[1588,1157], 325:[1633,1173], 326:[1667,1171], 327:[1704,1173],
+  332:[550,1706],
+};
+
+// ── ESTADO ────────────────────────────────────────────────
+let loteoActivo = null;
+let estadosLotes = {}; // num → estado
+
+// ── INIT ──────────────────────────────────────────────────
+function init() {
+  // Selector de loteos
+  const cont = document.getElementById('selector-loteos');
+  cont.innerHTML = LOTEOS.map(l => `
+    <button onclick="seleccionarLoteo('${l.id}')"
+      class="loteo-btn px-5 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all
+             border-gray-200 bg-white text-gray-600 hover:border-green-600 hover:text-green-700"
+      id="btn-${l.id}">
+      🗺 ${l.nombre}
+    </button>`).join('');
+
+  // Leer parámetro URL
+  const params = new URLSearchParams(window.location.search);
+  const loteoParam = params.get('loteo');
+  if (loteoParam) {
+    const match = LOTEOS.find(l => l.id === loteoParam);
+    if (match) seleccionarLoteo(match.id);
+  }
+}
+
+async function seleccionarLoteo(id) {
+  loteoActivo = LOTEOS.find(l => l.id === id);
+  if (!loteoActivo) return;
+
+  // Highlight botón
+  LOTEOS.forEach(l => {
+    const btn = document.getElementById('btn-' + l.id);
+    if (btn) btn.className = btn.className.replace('border-green-600 text-green-700 bg-green-50','border-gray-200 bg-white text-gray-600');
+  });
+  const btn = document.getElementById('btn-' + id);
+  if (btn) btn.className = btn.className.replace('border-gray-200 bg-white text-gray-600','border-green-600 text-green-700 bg-green-50');
+
+  // Header
+  document.getElementById('mapa-titulo').textContent = loteoActivo.nombre;
+  document.getElementById('mapa-zona').textContent = '📍 ' + loteoActivo.zona;
+  document.getElementById('mapa-header').classList.remove('hidden');
+
+  // Loading
+  document.getElementById('mapa-container').innerHTML = '<div class="text-center py-16 text-gray-400 text-sm">⏳ Cargando estados...</div>';
+  document.getElementById('mapa-stats').classList.add('hidden');
+
+  // Fetch estados desde backend
+  try {
+    const d = await fetch(`${CRM}/activos`).then(r => r.json());
+    const activos = (d.records || []).filter(a => (a.Loteo||'') === loteoActivo.nombre);
+    estadosLotes = {};
+    activos.forEach(a => {
+      const n = parseInt(a.Numero_Lote);
+      if (n) estadosLotes[n] = a.Estado_Contrato || 'Pendiente';
+    });
+  } catch(e) {
+    estadosLotes = {};
+  }
+
+  renderMapa();
+}
+
+function colorEstado(n) {
+  const est = estadosLotes[n];
+  if (!est) return '#16a34a'; // disponible
+  if (est === 'Firmado' || est === 'Escriturado') return '#ef4444';
+  return '#f59e0b'; // Pendiente = reservado
+}
+
+function renderMapa() {
+  if (!loteoActivo) return;
+  if (loteoActivo.mapaKey === 'san_ignacio') renderSanIgnacio();
+  else if (loteoActivo.mapaKey === 'apostoles') renderApostoles();
+}
+
+function renderSanIgnacio() {
+  const VX=30, VY=25, VW=1185, VH=1350;
+  let pins = '';
+  for (let n = 1; n <= 163; n++) {
+    const coord = LOTES_COORDS[n];
+    if (!coord) continue;
+    const cx = (coord[0]-VX).toFixed(0);
+    const cy = (coord[1]-VY).toFixed(0);
+    const color = colorEstado(n);
+    pins += pinSVG(n, cx, cy, color, `${n}`);
+  }
+  actualizarStats(163);
+  document.getElementById('mapa-container').innerHTML = `
+    <div style="overflow-x:auto">
+      <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;min-width:520px;min-height:800px;max-width:960px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
+        <defs><clipPath id="clip-si"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
+        <image href="${MASTER_PLAN_URL}" x="-${VX}" y="-${VY}" width="1241" height="1754" clip-path="url(#clip-si)"/>
+        ${pins}
+      </svg>
+    </div>`;
+}
+
+function renderApostoles() {
+  const VX=30, VY=10, VW=1900, VH=1900;
+  const evPins = {1:'Mz1',2:'Mz2',3:'Mz3',4:'Mz4',332:'Mz17'};
+  const mzRanges = [
+    {s:5,e:26,off:4},{s:27,e:47,off:26},{s:48,e:75,off:47},{s:76,e:103,off:75},
+    {s:104,e:131,off:103},{s:132,e:159,off:131},{s:160,e:187,off:159},{s:188,e:215,off:187},
+    {s:216,e:243,off:215},{s:244,e:271,off:243},{s:272,e:299,off:271},{s:300,e:327,off:299},
+    {s:328,e:329,off:299},{s:330,e:331,off:301}
+  ];
+  let pins = '';
+  for (const [key, coord] of Object.entries(APOSTOLES_COORDS)) {
+    const n = parseInt(key);
+    const cx = (coord[0]-VX).toFixed(0);
+    const cy = (coord[1]-VY).toFixed(0);
+    const isEV = n <= 4 || n === 332;
+    const mzR = mzRanges.find(r => n >= r.s && n <= r.e);
+    const label = isEV ? '1' : (mzR ? n - mzR.off : n);
+    const nombre = isEV ? evPins[n] : '';
+    const color = isEV ? '#3b82f6' : colorEstado(n);
+    pins += pinSVG(n, cx, cy, color, label, nombre, isEV);
+  }
+  actualizarStats(331);
+  document.getElementById('mapa-container').innerHTML = `
+    <div style="overflow-x:auto">
+      <svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;min-width:520px;min-height:800px;max-width:960px;display:block;margin:0 auto;border-radius:12px;border:1px solid #E5E7EB;">
+        <defs><clipPath id="clip-ap"><rect x="0" y="0" width="${VW}" height="${VH}" rx="12"/></clipPath></defs>
+        <image href="${APOSTOLES_PLAN_URL}" x="-${VX}" y="-${VY}" width="2000" height="1959" clip-path="url(#clip-ap)"/>
+        ${pins}
+      </svg>
+    </div>`;
+}
+
+function pinSVG(n, cx, cy, color, label, nombre='', isEV=false) {
+  const cursor = isEV ? 'default' : 'pointer';
+  const onclick = isEV ? '' : `onclick="abrirConsulta(${n})"`;
+  return `<g ${onclick} style="cursor:${cursor}">
+    <circle cx="${cx}" cy="${cy}" r="16" fill="${color}" fill-opacity="0.9" stroke="white" stroke-width="2.5"/>
+    <text x="${cx}" y="${cy}" dy="${nombre?'-4':'0.35em'}" style="font-size:11px;font-weight:800;fill:white;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:Inter,sans-serif">${label}</text>
+    ${nombre?`<text x="${cx}" y="${(parseFloat(cy)+7).toFixed(0)}" style="font-size:7px;font-weight:600;fill:white;text-anchor:middle;pointer-events:none;font-family:Inter,sans-serif">${nombre}</text>`:''}
+  </g>`;
+}
+
+function actualizarStats(total) {
+  const ocupados = Object.keys(estadosLotes).length;
+  const vendidos = Object.values(estadosLotes).filter(e => ['Firmado','Escriturado'].includes(e)).length;
+  const reservados = Object.values(estadosLotes).filter(e => e === 'Pendiente').length;
+  const libres = total - ocupados;
+  document.getElementById('stat-libres').textContent = libres;
+  document.getElementById('stat-reservados').textContent = reservados;
+  document.getElementById('stat-vendidos').textContent = vendidos;
+  document.getElementById('mapa-stats').classList.remove('hidden');
+}
+
+function abrirConsulta(n) {
+  const est = estadosLotes[n];
+  const disponible = !est;
+  const badge = document.getElementById('modal-estado-badge');
+  document.getElementById('modal-lote-num').textContent = n;
+  document.getElementById('modal-loteo-nombre').textContent = loteoActivo.nombre + ' · ' + loteoActivo.zona;
+  if (disponible) {
+    badge.textContent = '✅ Disponible';
+    badge.className = 'inline-block px-3 py-1 rounded-full text-xs font-bold mb-4 bg-green-100 text-green-700';
+    document.getElementById('modal-disponible-content').classList.remove('hidden');
+    document.getElementById('modal-no-disponible-content').classList.add('hidden');
+    const msg = encodeURIComponent(`Hola! Me interesa el Lote ${n} del *${loteoActivo.nombre}*. ¿Podría recibir más información?`);
+    document.getElementById('modal-wa-btn').href = `https://wa.me/${WA_NUM}?text=${msg}`;
+  } else {
+    const label = est === 'Pendiente' ? '🟡 Reservado' : '🔴 Vendido';
+    badge.textContent = label;
+    badge.className = 'inline-block px-3 py-1 rounded-full text-xs font-bold mb-4 ' + (est === 'Pendiente' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700');
+    document.getElementById('modal-disponible-content').classList.add('hidden');
+    document.getElementById('modal-no-disponible-content').classList.remove('hidden');
+    const msg = encodeURIComponent(`Hola! Estoy buscando un lote en *${loteoActivo.nombre}*. ¿Tienen disponibles?`);
+    document.getElementById('modal-wa-btn-2').href = `https://wa.me/${WA_NUM}?text=${msg}`;
+  }
+  document.getElementById('modal-consulta').classList.remove('hidden');
+}
+
+function cerrarModal() {
+  document.getElementById('modal-consulta').classList.add('hidden');
+}
+
+document.getElementById('modal-consulta').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModal();
+});
+
+init();
+</script>
+</body>
+</html>

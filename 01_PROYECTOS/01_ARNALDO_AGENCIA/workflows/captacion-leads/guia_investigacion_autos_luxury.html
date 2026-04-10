@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía Estratégica VIP - Sector Automotriz High-End</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Playfair+Display:wght@700&display=swap');
+
+        :root {
+            --gold: #C5A059;
+            --dark-bg: #0F0F0F;
+            --card-bg: #1A1A1A;
+            --text-light: #E0E0E0;
+            --accent: #D4AF37;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 1px solid var(--gold);
+            padding-bottom: 40px;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: var(--gold);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            letter-spacing: 5px;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--gold);
+            border-left: 5px solid var(--gold);
+            padding-left: 20px;
+            margin: 60px 0 30px 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            transition: transform 0.3s ease;
+        }
+
+        .card h3 {
+            color: var(--accent);
+            margin-top: 0;
+            font-size: 1.3rem;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            color: #CCC;
+        }
+
+        .solution-tag {
+            background-color: var(--gold);
+            color: black;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .investigator-box {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 2px solid var(--gold);
+            padding: 40px;
+            border-radius: 15px;
+            margin: 40px 0;
+        }
+
+        .question-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .question-list li {
+            background: rgba(197, 160, 89, 0.1);
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px dashed var(--gold);
+        }
+
+        .question-list li strong {
+            color: var(--gold);
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 80px;
+            padding: 40px;
+            border-top: 1px solid #333;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .no-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--gold);
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { background-color: white; color: black; }
+            .card, .investigator-box, .question-list li { border: 1px solid #999; background: white; color: black; }
+            .section-title, h1, .subtitle, .card h3, .question-list li strong { color: black; }
+            .container { margin: 0; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="no-print" onclick="window.print()">🖨️ IMPRIMIR GUÍA PARA MICAELA</button>
+
+    <div class="container">
+        <header>
+            <div class="subtitle">ESTRATEGIA EXCLUSIVA</div>
+            <h1>Automotive Intelligence</h1>
+            <p>Guía de Infiltración & Relevamiento de Dolores en Concesionarias Luxury</p>
+        </header>
+
+        <section>
+            <div class="investigator-box">
+                <h2 style="margin-top:0; color:var(--gold);">🔎 MISIÓN DE HOY: El Modo "Investigador"</h2>
+                <p>Micaela, hoy <strong>NO vendemos</strong>. Hoy somos consultores expertos detectando fallas de dinero. Las agencias de autos de lujo tienen vendedores estrella, pero procesos digitales pobres. Tu objetivo es encontrar dónde el cliente VIP se siente "uno más" o ignorado.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title">🛑 Problemas Críticos vs ✅ Nuestra Solución</h2>
+            
+            <div class="grid">
+                <!-- Problema 1 -->
+                <div class="card">
+                    <div class="solution-tag">PROBLEMA: EL VACÍO DEL CIERRE</div>
+                    <h3>Abandono del Lead VIP</h3>
+                    <p>Un cliente pregunta por un auto de $100k a las 11 PM. El vendedor responde recién a las 10 AM. En ese tiempo, el cliente ya consultó en otra agencia.</p>
+                    <p><strong>Impacto:</strong> Pérdida de ventas calientes y mala imagen de marca.</p>
+                    <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+                    <h4 style="color:var(--gold); margin-bottom:5px;">Nuestra Automatización:</h4>
+                    <p>IA Concierge que responde ficha técnica, disponibilidad y equipamiento en 3 segundos, las 24 horas.</p>
+                </div>
+
+                <!-- Problema 2 -->
+                <div class="card">
+                    <div class="solution-tag">PROBLEMA: CRIBADO MANUAL</div>
+                    <h3>Vendedores "Cargando" Curiosos</h3>
+                    <p>Los vendedores pierden 4 horas al día contestando "precio" a gente que no tiene el dinero o que solo quiere la foto.</p>
+                    <p><strong>Impacto:</strong> Agotamiento del equipo y descuido de clientes reales en el salón.</p>
+                    <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+                    <h4 style="color:var(--gold); margin-bottom:5px;">Nuestra Automatización:</h4>
+                    <p>Calificación Inteligente. La IA pregunta por presupuesto, forma de pago y datos de permuta ANTES de pasar el lead al vendedor.</p>
+                </div>
+
+                <!-- Problema 3 -->
+                <div class="card">
+                    <div class="solution-tag">PROBLEMA: CAOS DE RESERVAS</div>
+                    <h3>Agendamiento Artesanal</h3>
+                    <p>Pedir un Test Drive es un "llamame mañana", "dejame ver que consulto". El cliente siente que le están haciendo un favor.</p>
+                    <p><strong>Impacto:</strong> Tasa de conversión de test-drive a venta bajísima por falta de seguimiento.</p>
+                    <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+                    <h4 style="color:var(--gold); margin-bottom:5px;">Nuestra Automatización:</h4>
+                    <p>Agenda Digital Sincronizada. El cliente reserva su prueba de manejo solo, recibe recordatorios y confirmación instantánea.</p>
+                </div>
+
+                <!-- Problema 4 -->
+                <div class="card">
+                    <div class="solution-tag">PROBLEMA: DATOS MUERTOS</div>
+                    <h3>Falta de Seguimiento Especializado</h3>
+                    <p>El cliente vino, vio el auto, se fue. El vendedor se olvidó de llamarlo porque tiene otros 50 mensajes nuevos.</p>
+                    <p><strong>Impacto:</strong> El dinero se "escurre" entre los dedos por falta de CRM activo.</p>
+                    <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+                    <h4 style="color:var(--gold); margin-bottom:5px;">Nuestra Automatización:</h4>
+                    <p>CRM en Airtable. La IA detecta que el cliente no cerró y le manda una propuesta de financiación personalizada a los 3 días.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title">🗣️ Cómo entrar y qué preguntar</h2>
+            <p>Mica, usá estas preguntas para que ellos mismos te digan que están sobrepasados:</p>
+            <ul class="question-list">
+                <li>
+                    <strong>Pregunta 1: El Origen</strong>
+                    "¿Tienen detectado de qué red social vienen los clientes que cierran ventas? ¿Llegan más por los comentarios de IG o por el botoncito de la web?"
+                </li>
+                <li>
+                    <strong>Pregunta 2: El Filtro</strong>
+                    "Cuando el vendedor estrella está ocupado con un cliente en el salón, ¿quién atiende a los 20 que escribieron por WhatsApp en esa hora? ¿Esos clientes esperan o se van?"
+                </li>
+                <li>
+                    <strong>Pregunta 3: El Conocimiento</strong>
+                    "¿Les pasa que les preguntan detalles técnicos muy específicos por mensaje y el que atiende no tiene la info a mano y tiene que ir a buscar la carpeta?"
+                </li>
+                <li>
+                    <strong>Pregunta 4: La Permuta</strong>
+                    "¿Cómo hacen hoy para tazar un auto que un cliente quiere entregar? ¿Les mandan fotos por WhatsApp que quedan perdidas en la galería del celular del vendedor?"
+                </li>
+            </ul>
+        </section>
+
+        <section>
+            <div class="card" style="border: 2px solid var(--gold); background: black;">
+                <h3 style="text-align:center;">💡 CONSEJO DE ORO</h3>
+                <p style="text-align:center;">Si el dueño te dice: <strong>"Ya tenemos un bot"</strong>, vos respondé: <br>
+                <em>"Claro, pero los bots de botones alejan al cliente de lujo. Nosotros hacemos <strong>IA Generativa</strong> que habla como un experto de la marca y empatiza con el cliente. No es un menú, es un empleado digital."</em></p>
+            </div>
+        </section>
+
+        <div class="footer">
+            <p>Diseñado para AGENCIA SYSTEM IA - Propiedad de Arnaldo & Micaela</p>
+            <p>&copy; 2026 - Estrategia de Crecimiento Exponencial</p>
+        </div>
+    </div>
+
+</body>
+</html>

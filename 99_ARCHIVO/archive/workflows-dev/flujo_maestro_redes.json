@@ -1,0 +1,175 @@
+{
+    "name": "🚀 Creador Maestro de Posts (Multi-Tenant)",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "cronExpression",
+                            "expression": "0 10 * * 1-5"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                0,
+                0
+            ],
+            "id": "schedule-trigger",
+            "name": "Schedule Trigger"
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "table": "clientes",
+                "limit": 50
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                220,
+                0
+            ],
+            "id": "supabase-get-clients",
+            "name": "Supabase - Clientes"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                440,
+                0
+            ],
+            "id": "loop-clients",
+            "name": "Loop (Split In Batches)"
+        },
+        {
+            "parameters": {
+                "operation": "search",
+                "baseId": "={{ $json.airtable_base_id }}",
+                "tableId": "Branding-Marca",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.airtable",
+            "typeVersion": 2.1,
+            "position": [
+                680,
+                0
+            ],
+            "id": "airtable-branding",
+            "name": "Airtable - Brandbook"
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combineBy": "position"
+            },
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3,
+            "position": [
+                900,
+                0
+            ],
+            "id": "merge-data",
+            "name": "Merge"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://system-ia-agentes.onrender.com/social/publicar-completo",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"cliente_id\": \"{{ $('Loop (Split In Batches)').item.json.cliente_id }}\",\n  \"credenciales\": {\n    \"META_ACCESS_TOKEN\": \"{{ $('Loop (Split In Batches)').item.json.meta_access_token }}\",\n    \"IG_BUSINESS_ACCOUNT_ID\": \"{{ $('Loop (Split In Batches)').item.json.ig_account_id }}\",\n    \"FACEBOOK_PAGE_ID\": \"{{ $('Loop (Split In Batches)').item.json.fb_page_id }}\"\n  },\n  \"datos_marca\": {{ JSON.stringify($json) }}\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1120,
+                0
+            ],
+            "id": "http-render",
+            "name": "HTTP Request Render"
+        }
+    ],
+    "connections": {
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Supabase - Clientes",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Supabase - Clientes": {
+            "main": [
+                [
+                    {
+                        "node": "Loop (Split In Batches)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop (Split In Batches)": {
+            "main": [
+                [
+                    {
+                        "node": "Airtable - Brandbook",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Merge",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Airtable - Brandbook": {
+            "main": [
+                [
+                    {
+                        "node": "Merge",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Merge": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request Render",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request Render": {
+            "main": [
+                [
+                    {
+                        "node": "Loop (Split In Batches)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {}
+}

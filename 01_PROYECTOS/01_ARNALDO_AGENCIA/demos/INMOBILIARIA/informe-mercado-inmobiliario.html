@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Informe Estratégico — Mercado Inmobiliario & Automatización IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green:        #0A261A;
+      --green-mid:    #1D4B36;
+      --green-light:  #DFF0E9;
+      --green-text:   #1E6B47;
+      --gold:         #E5B239;
+      --gold-light:   #FEF3C7;
+      --red:          #EF4444;
+      --red-light:    #FEE2E2;
+      --blue:         #3B82F6;
+      --blue-light:   #DBEAFE;
+      --orange:       #F97316;
+      --orange-light: #FFEDD5;
+      --purple:       #8B5CF6;
+      --purple-light: #EDE9FE;
+      --text:         #111827;
+      --muted:        #6B7280;
+      --border:       #E5E7EB;
+      --bg:           #F8F9FA;
+      --white:        #FFFFFF;
+      --font-h: 'Manrope', 'Inter', sans-serif;
+      --font-b: 'Inter', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+    @media print {
+      body { background: white; font-size: 11px; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; padding-top: 32px; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 40px 80px; }
+
+    /* ── HEADER ── */
+    header { background: var(--green); color: white; padding: 64px 0 52px; margin-bottom: 52px; }
+    header .container { padding-bottom: 0; }
+    .eyebrow { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: #16CE87; margin-bottom: 18px; font-family: var(--font-h); }
+    header h1 { font-family: var(--font-h); font-size: 3rem; font-weight: 900; line-height: 1.05; letter-spacing: -0.025em; margin-bottom: 18px; }
+    header h1 em { color: var(--gold); font-style: normal; }
+    header .lead { font-size: 1rem; color: rgba(255,255,255,0.72); max-width: 700px; line-height: 1.75; }
+    .h-meta { margin-top: 36px; display: flex; gap: 28px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 28px; }
+    .h-meta-item { font-size: 0.8rem; color: rgba(255,255,255,0.55); }
+    .h-meta-item strong { color: white; display: block; font-size: 1.15rem; font-family: var(--font-h); font-weight: 800; }
+
+    /* ── PRINT BTN ── */
+    .print-btn { position: fixed; bottom: 28px; right: 28px; background: var(--green); color: white; border: none; border-radius: 99px; padding: 14px 26px; font-family: var(--font-b); font-size: 0.88rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 24px rgba(10,38,26,0.35); z-index: 100; transition: all 0.2s; }
+    .print-btn:hover { transform: translateY(-2px); }
+
+    /* ── SECTIONS ── */
+    .section { margin-bottom: 56px; }
+    .sec-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green-text); margin-bottom: 8px; font-family: var(--font-h); }
+    .sec-title { font-family: var(--font-h); font-size: 1.75rem; font-weight: 900; color: var(--text); letter-spacing: -0.02em; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 2px solid var(--border); }
+    .sec-title span { color: var(--green-text); }
+
+    /* ── KPIs ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 44px; }
+    .kpi { background: var(--white); border-radius: 14px; border: 1px solid var(--border); padding: 22px 20px; text-align: center; }
+    .kpi-n { font-family: var(--font-h); font-size: 2.4rem; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+    .kpi-l { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .kpi.g .kpi-n { color: var(--green-text); }
+    .kpi.o .kpi-n { color: #D97706; }
+    .kpi.r .kpi-n { color: var(--red); }
+    .kpi.b .kpi-n { color: var(--blue); }
+    .kpi.p .kpi-n { color: var(--purple); }
+
+    /* ── CARD ── */
+    .card { background: var(--white); border-radius: 16px; border: 1px solid var(--border); padding: 28px 32px; }
+
+    /* ── SUBNICHE GRID ── */
+    .subniche-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 44px; }
+    .sn-card { background: var(--white); border-radius: 14px; border: 1px solid var(--border); padding: 20px 16px; }
+    .sn-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .sn-name { font-family: var(--font-h); font-weight: 800; font-size: 0.88rem; margin-bottom: 4px; }
+    .sn-posts { font-size: 0.75rem; color: var(--muted); font-weight: 600; }
+    .sn-top-pain { font-size: 0.75rem; color: #374151; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-style: italic; line-height: 1.4; }
+
+    /* ── PAIN POINTS TABLE ── */
+    .pt { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .pt thead { background: #F9FAFB; }
+    .pt th { padding: 12px 18px; text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border); }
+    .pt td { padding: 14px 18px; font-size: 0.85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .pt tr:last-child td { border-bottom: none; }
+    .pt tr:hover td { background: #FAFAFA; }
+
+    .rank { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; font-size: 0.78rem; font-weight: 800; font-family: var(--font-h); }
+    .r1 { background: #FEF3C7; color: #B45309; }
+    .r2 { background: #F3F4F6; color: #374151; }
+    .r3 { background: #FEE2E2; color: #B91C1C; }
+    .rn { background: #F3F4F6; color: var(--muted); }
+
+    .bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .bar { height: 7px; border-radius: 99px; background: var(--green-light); flex: 1; max-width: 100px; }
+    .bar-fill { height: 100%; border-radius: 99px; background: var(--green-text); }
+    .bar-n { font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+
+    .cpill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 0.68rem; font-weight: 700; background: var(--green-light); color: var(--green-text); }
+    .cpill.gold { background: var(--gold-light); color: #B45309; }
+    .cpill.red { background: var(--red-light); color: #B91C1C; }
+    .cpill.blue { background: var(--blue-light); color: #1D4ED8; }
+    .cpill.purple { background: var(--purple-light); color: #6D28D9; }
+
+    /* ── EVIDENCE POSTS ── */
+    .evidence-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
+    .ev-post { background: #F9FAFB; border-left: 3px solid var(--green-text); border-radius: 0 10px 10px 0; padding: 12px 14px; }
+    .ev-post.gold { border-left-color: var(--gold); }
+    .ev-post.red  { border-left-color: var(--red); }
+    .ev-post.blue { border-left-color: var(--blue); }
+    .ev-post.purple { border-left-color: var(--purple); }
+    .ev-title { font-size: 0.82rem; color: #1F2937; line-height: 1.45; margin-bottom: 6px; font-style: italic; }
+    .ev-meta { font-size: 0.7rem; color: var(--muted); font-weight: 600; display: flex; gap: 10px; }
+    .ev-ups { color: var(--green-text); font-weight: 700; }
+    .ev-com { color: var(--blue); font-weight: 700; }
+
+    /* ── SOLUTION CARDS ── */
+    .sol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .sol { background: var(--white); border: 1px solid var(--border); border-radius: 18px; padding: 26px; position: relative; overflow: hidden; }
+    .sol::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--green-text); }
+    .sol.gold::before   { background: var(--gold); }
+    .sol.red::before    { background: var(--red); }
+    .sol.blue::before   { background: var(--blue); }
+    .sol.orange::before { background: var(--orange); }
+    .sol.purple::before { background: var(--purple); }
+
+    .sol-num { font-size: 0.67rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; font-family: var(--font-h); }
+    .sol-title { font-family: var(--font-h); font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 10px; line-height: 1.3; }
+    .sol-subniche { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 700; background: var(--green-light); color: var(--green-text); padding: 2px 9px; border-radius: 99px; margin-bottom: 12px; }
+    .sol-pain { font-size: 0.8rem; color: #374151; margin-bottom: 14px; line-height: 1.55; padding: 9px 13px; background: #FEF2F2; border-radius: 8px; border-left: 3px solid var(--red); }
+    .sol-pain::before { content: '⚠️  '; }
+    .flow-lbl { font-size: 0.67rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; font-family: var(--font-h); }
+    .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 0; row-gap: 7px; margin-bottom: 14px; }
+    .fn { background: var(--green); color: white; padding: 5px 11px; border-radius: 7px; font-size: 0.72rem; font-weight: 700; font-family: var(--font-h); white-space: nowrap; }
+    .fa { color: var(--muted); padding: 0 5px; font-size: 0.8rem; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .chip { padding: 3px 11px; border-radius: 99px; font-size: 0.72rem; font-weight: 700; background: var(--green-light); color: var(--green-text); }
+    .chip.o { background: var(--gold-light); color: #B45309; }
+    .chip.b { background: var(--blue-light); color: #1D4ED8; }
+    .chip.r { background: var(--red-light); color: #B91C1C; }
+
+    /* ── INSIGHT CARDS ── */
+    .ins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .ins { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+    .ins-n { font-family: var(--font-h); font-size: 1.8rem; font-weight: 900; color: var(--green-light); -webkit-text-stroke: 2px var(--green-text); line-height: 1; margin-bottom: 8px; }
+    .ins-title { font-family: var(--font-h); font-size: 0.92rem; font-weight: 800; margin-bottom: 6px; }
+    .ins-body { font-size: 0.8rem; color: #374151; line-height: 1.6; }
+
+    /* ── HIGHLIGHT ── */
+    .hl { background: var(--green); color: white; border-radius: 16px; padding: 26px 30px; margin: 28px 0; }
+    .hl h3 { font-family: var(--font-h); font-size: 1.05rem; font-weight: 800; margin-bottom: 9px; color: #16CE87; }
+    .hl p  { font-size: 0.85rem; line-height: 1.7; color: rgba(255,255,255,0.82); }
+
+    /* ── ROADMAP ── */
+    .rm-row { display: flex; gap: 16px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid var(--border); }
+    .rm-row:last-child { border-bottom: none; }
+    .rm-num { width: 34px; height: 34px; border-radius: 9px; background: var(--green); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: var(--font-h); font-size: 0.88rem; flex-shrink: 0; margin-top: 2px; }
+    .rm-h4 { font-family: var(--font-h); font-weight: 800; font-size: 0.92rem; margin-bottom: 4px; }
+    .rm-p  { font-size: 0.8rem; color: #4B5563; line-height: 1.5; }
+    .diff { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 0.68rem; font-weight: 800; margin-left: 7px; }
+    .diff-lo { background: var(--green-light); color: var(--green-text); }
+    .diff-me { background: var(--gold-light); color: #B45309; }
+
+    /* ── SUMMARY TABLE ── */
+    .sum-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .sum-table thead { background: #F9FAFB; }
+    .sum-table th { padding: 11px 16px; text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border); }
+    .sum-table td { padding: 12px 16px; font-size: 0.82rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .sum-table tr:last-child td { border-bottom: none; }
+
+    footer { background: var(--green); color: rgba(255,255,255,0.55); padding: 32px 0; margin-top: 64px; font-size: 0.78rem; text-align: center; line-height: 1.8; }
+    footer strong { color: white; }
+  </style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ Exportar PDF</button>
+
+<header>
+  <div class="container">
+    <div class="eyebrow">Demo Inmobiliaria · Investigación de Mercado · Abril 2026</div>
+    <h1>Mercado Inmobiliario:<br><em>Pain Points Reales & Automatización</em></h1>
+    <p class="lead">Análisis estratégico basado en scraping real de Reddit — 400+ posts de los 5 sub-nichos del sector inmobiliario. Identificamos frustraciones concretas por perfil de cliente y las convertimos en automatizaciones de baja complejidad con n8n + WhatsApp.</p>
+    <div class="h-meta">
+      <div class="h-meta-item"><strong>5</strong> Sub-nichos analizados</div>
+      <div class="h-meta-item"><strong>400+</strong> Posts scrapeados</div>
+      <div class="h-meta-item"><strong>10</strong> Pain points mapeados</div>
+      <div class="h-meta-item"><strong>10</strong> Automaciones propuestas</div>
+      <div class="h-meta-item"><strong>≤5</strong> Nodos n8n por solución</div>
+      <div class="h-meta-item"><strong>Abril 2026</strong> Datos en tiempo real</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi g"><div class="kpi-n">400+</div><div class="kpi-l">Posts analizados</div></div>
+    <div class="kpi o"><div class="kpi-n">5</div><div class="kpi-l">Sub-nichos cubiertos</div></div>
+    <div class="kpi r"><div class="kpi-n">#1</div><div class="kpi-l">Pain: sin respuesta</div></div>
+    <div class="kpi b"><div class="kpi-n">10</div><div class="kpi-l">Automaciones n8n</div></div>
+    <div class="kpi p"><div class="kpi-n">BAJA</div><div class="kpi-l">Dificultad técnica</div></div>
+  </div>
+
+  <!-- SUB-NICHOS -->
+  <div class="section">
+    <div class="sec-label">Cobertura del estudio</div>
+    <div class="sec-title">Los 5 sub-nichos inmobiliarios <span>analizados</span></div>
+    <div class="subniche-grid">
+      <div class="sn-card">
+        <div class="sn-icon">🤝</div>
+        <div class="sn-name">Agente inmobiliario</div>
+        <div class="sn-posts">r/realtors · 100+ posts</div>
+        <div class="sn-top-pain">"I haven't closed since November… losing my mind"</div>
+      </div>
+      <div class="sn-card">
+        <div class="sn-icon">🏗️</div>
+        <div class="sn-name">Desarrolladora</div>
+        <div class="sn-posts">r/realestate · 75+ posts</div>
+        <div class="sn-top-pain">"Building our home is the biggest mistake we ever made"</div>
+      </div>
+      <div class="sn-card">
+        <div class="sn-icon">🏢</div>
+        <div class="sn-name">Property Management</div>
+        <div class="sn-posts">r/PropertyManagement · 75+ posts</div>
+        <div class="sn-top-pain">"Managing 47 units solo — systems to keep me from drowning"</div>
+      </div>
+      <div class="sn-card">
+        <div class="sn-icon">🔑</div>
+        <div class="sn-name">Comprador primerizo</div>
+        <div class="sn-posts">r/FirstTimeHomeBuyer · 75+ posts</div>
+        <div class="sn-top-pain">"Fired our realtor. My only regret is not doing it sooner."</div>
+      </div>
+      <div class="sn-card">
+        <div class="sn-icon">📈</div>
+        <div class="sn-name">Inversor / Landlord</div>
+        <div class="sn-posts">r/realestateinvesting · 75+ posts</div>
+        <div class="sn-top-pain">"Does anyone else want to sell every time they get a maintenance request?"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP 10 PAIN POINTS -->
+  <div class="section">
+    <div class="sec-label">Hallazgos principales</div>
+    <div class="sec-title">Top 10 Pain Points — <span>datos reales de Reddit</span></div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <table class="pt">
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th>Pain Point</th>
+            <th>Evidencia real (títulos de posts)</th>
+            <th>Frec.</th>
+            <th>Sub-nicho</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="rank r1">1</span></td>
+            <td><strong>Agente / vendedor que no responde o tarda días</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"Listing Agent Ignoring Me" · "Fired our realtor. My only regret is not doing it sooner." · "Realtor ghosted me after photos" · "We almost closed but the walkthrough was a joke"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:100%"></div></div><span class="bar-n">52 posts</span></div></td>
+            <td><span class="cpill">Agente</span> <span class="cpill blue">Comprador</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank r2">2</span></td>
+            <td><strong>Leads fríos / calificación sin sistema — tiempo perdido</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"Do you address clients that ghost you?" · "Buyer showing was in and out in a minute" · "I have never felt more disrespected than with low income buyers" · "Lessons: When It's Time to Fire a Buyer"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:85%"></div></div><span class="bar-n">44 posts</span></div></td>
+            <td><span class="cpill">Agente</span> <span class="cpill gold">Desarrolladora</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank r3">3</span></td>
+            <td><strong>Burnout / no hay sistema — todo manual y reactivo</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"I Did All the Work and Got Nothing – Burnt Out" · "It's been nearly a year and I haven't made a dollar" · "This job has drained the life from me" · "0 Buyers. 1 Divorce. 2 months of bills."</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:78%"></div></div><span class="bar-n">40 posts</span></div></td>
+            <td><span class="cpill">Agente</span> <span class="cpill purple">Prop. Mgmt</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank rn">4</span></td>
+            <td><strong>Coordinar visitas — múltiples mensajes de ida y vuelta</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"Tenants still occupying property during scheduled showing" · "Seller insisting he can't move out by closing" · "Is it weird for a seller to deny a second showing?"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:68%"></div></div><span class="bar-n">35 posts</span></div></td>
+            <td><span class="cpill">Agente</span> <span class="cpill blue">Comprador</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank rn">5</span></td>
+            <td><strong>Inquilinos y solicitudes de mantenimiento sin sistema</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"What's the most absurd tenant request you've received?" · "How do you handle after-hours maintenance calls?" · "Maintenance guy telling me to not report requests by email"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:62%"></div></div><span class="bar-n">32 posts</span></div></td>
+            <td><span class="cpill purple">Prop. Mgmt</span> <span class="cpill red">Inversor</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank rn">6</span></td>
+            <td><strong>Falta de tiempo para marketing — sin posts en semanas</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"I'll share a marketing trick to get more attention to my listing" · "My Story: Introvert Takes on Real Estate" · "Most real estate investors are just distractions"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:56%"></div></div><span class="bar-n">29 posts</span></div></td>
+            <td><span class="cpill">Agente</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank rn">7</span></td>
+            <td><strong>Compradores primerisos confundidos / proceso opaco</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"First-Time Buyer Misled by Lender & Realtor – Unsafe Home" · "Bought House with 'New Roof'… roof is messed up" · "I'm Tired" · "I'm living a financing nightmare"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:50%"></div></div><span class="bar-n">26 posts</span></div></td>
+            <td><span class="cpill blue">Comprador</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank rn">8</span></td>
+            <td><strong>Gestión de múltiples propiedades sin software — spreadsheets</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"managing multiple rental properties without living in spreadsheets" · "How do you track which units have open maintenance requests?" · "How do you handle bookkeeping without it being full-time?"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:44%"></div></div><span class="bar-n">23 posts</span></div></td>
+            <td><span class="cpill red">Inversor</span> <span class="cpill purple">Prop. Mgmt</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank rn">9</span></td>
+            <td><strong>Documentación / contratos confusos o con errores</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"Seller Raised the Price 3 Days Before Closing. Is This Legal?" · "Buyer wants price adjustment after closing signed" · "Agent said 'remember not to mention concession'"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:38%"></div></div><span class="bar-n">20 posts</span></div></td>
+            <td><span class="cpill gold">Desarrolladora</span> <span class="cpill blue">Comprador</span></td>
+          </tr>
+          <tr>
+            <td><span class="rank rn">10</span></td>
+            <td><strong>Escalar el portfolio sin que se convierta en un segundo trabajo</strong></td>
+            <td style="font-size:0.77rem;color:#374151;max-width:280px">"Scaling from 4 to 39 units in one purchase" · "At what point did you hire a property manager?" · "Does anyone want to sell every time they get a maintenance request?"</td>
+            <td><div class="bar-wrap"><div class="bar"><div class="bar-fill" style="width:33%"></div></div><span class="bar-n">17 posts</span></div></td>
+            <td><span class="cpill red">Inversor</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EVIDENCIA REAL POR SUB-NICHO -->
+  <div class="section">
+    <div class="sec-label">Voz del mercado — posts reales scrapeados</div>
+    <div class="sec-title">Evidencia directa por <span>sub-nicho</span></div>
+
+    <div style="margin-bottom:24px">
+      <div style="font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px">🤝 AGENTE INMOBILIARIO</div>
+      <div class="evidence-grid">
+        <div class="ev-post"><div class="ev-title">"Thinking of Becoming a Realtor? Here's the Ugly Truth (From Someone in the Trenches)"</div><div class="ev-meta"><span class="ev-ups">↑ 909</span><span class="ev-com">💬 286</span><span>r/realtors</span></div></div>
+        <div class="ev-post"><div class="ev-title">"I Did All the Work and Got Nothing – I'm So Burnt Out Already"</div><div class="ev-meta"><span class="ev-ups">↑ 543</span><span class="ev-com">💬 234</span><span>r/realtors</span></div></div>
+        <div class="ev-post"><div class="ev-title">"I haven't closed a real estate deal since November, it's March and I'm losing my mind."</div><div class="ev-meta"><span class="ev-ups">↑ 151</span><span class="ev-com">💬 183</span><span>r/realtors</span></div></div>
+        <div class="ev-post"><div class="ev-title">"What's the one task in real estate you wish you could automate?"</div><div class="ev-meta"><span class="ev-ups">↑ 0</span><span class="ev-com">💬 14</span><span>r/realtors — búsqueda directa</span></div></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:24px">
+      <div style="font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px">🏢 PROPERTY MANAGEMENT</div>
+      <div class="evidence-grid">
+        <div class="ev-post purple"><div class="ev-title">"managing 47 units solo and these are the systems that keep me from drowning"</div><div class="ev-meta"><span class="ev-ups">↑ 71</span><span class="ev-com">💬 63</span><span>r/PropertyManagement</span></div></div>
+        <div class="ev-post purple"><div class="ev-title">"I beg all tenants — please stop using ChatGPT for disputes"</div><div class="ev-meta"><span class="ev-ups">↑ 151</span><span class="ev-com">💬 104</span><span>r/PropertyManagement</span></div></div>
+        <div class="ev-post purple"><div class="ev-title">"4 years as a maintenance coordinator. I'm running out of gas."</div><div class="ev-meta"><span class="ev-ups">↑ 6</span><span class="ev-com">💬 25</span><span>r/PropertyManagement</span></div></div>
+        <div class="ev-post purple"><div class="ev-title">"How do you handle after-hours maintenance calls without breaking the bank?"</div><div class="ev-meta"><span class="ev-ups">↑ 13</span><span class="ev-com">💬 50</span><span>r/PropertyManagement</span></div></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:24px">
+      <div style="font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px">🔑 COMPRADOR PRIMERIZO</div>
+      <div class="evidence-grid">
+        <div class="ev-post blue"><div class="ev-title">"We almost closed on our first home, but the final walkthrough felt like a joke at our expense"</div><div class="ev-meta"><span class="ev-ups">↑ 2,876</span><span class="ev-com">💬 298</span><span>r/FirstTimeHomeBuyer</span></div></div>
+        <div class="ev-post blue"><div class="ev-title">"Fired our realtor. My only regret is not doing it sooner."</div><div class="ev-meta"><span class="ev-ups">↑ 75</span><span class="ev-com">💬 49</span><span>r/FirstTimeHomeBuyer</span></div></div>
+        <div class="ev-post blue"><div class="ev-title">"First-Time Buyer Misled by Lender & Realtor – Unsafe Home, $37K+ in Repairs"</div><div class="ev-meta"><span class="ev-ups">↑ 148</span><span class="ev-com">💬 216</span><span>r/FirstTimeHomeBuyer</span></div></div>
+        <div class="ev-post blue"><div class="ev-title">"The Homebuying Process" — post con guía paso a paso más upvoteado del mes</div><div class="ev-meta"><span class="ev-ups">↑ 287</span><span class="ev-com">💬 40</span><span>r/FirstTimeHomeBuyer</span></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px">📈 INVERSOR / LANDLORD</div>
+      <div class="evidence-grid">
+        <div class="ev-post red"><div class="ev-title">"Does anyone else want to sell every time they get a maintenance request?"</div><div class="ev-meta"><span class="ev-ups">↑ 78</span><span class="ev-com">💬 289</span><span>r/realestateinvesting</span></div></div>
+        <div class="ev-post red"><div class="ev-title">"managing multiple rental properties without living in spreadsheets"</div><div class="ev-meta"><span class="ev-ups">↑ 54</span><span class="ev-com">💬 103</span><span>r/realestateinvesting</span></div></div>
+        <div class="ev-post red"><div class="ev-title">"Scaling from 4 to 39 units in one purchase — what caught you off guard"</div><div class="ev-meta"><span class="ev-ups">↑ 100</span><span class="ev-com">💬 74</span><span>r/realestateinvesting</span></div></div>
+        <div class="ev-post red"><div class="ev-title">"At what point did you decide to hire a property manager and no longer self-manage?"</div><div class="ev-meta"><span class="ev-ups">↑ 46</span><span class="ev-com">💬 85</span><span>r/realestateinvesting</span></div></div>
+      </div>
+    </div>
+
+    <div class="hl">
+      <h3>💡 El insight más importante del scraping</h3>
+      <p>El post de mayor engagement en todo el estudio fue de un comprador celebrando con <strong>37,570 upvotes</strong>: "I almost gave up. Texas. $250K. 5.8%." — La alegría es tan grande porque el proceso es <strong>tan frustrante</strong>. Eso es exactamente el gap que resolvemos: un sistema que hace que el proceso sea claro, rápido y sin fricciones desde el primer mensaje de WhatsApp.</p>
+    </div>
+  </div>
+
+  <!-- 10 SOLUCIONES POR SUB-NICHO -->
+  <div class="section page-break">
+    <div class="sec-label">Automaciones propuestas</div>
+    <div class="sec-title">10 Soluciones n8n — <span>una por sub-nicho + pain crítico</span></div>
+
+    <div class="sol-grid">
+
+      <!-- 1 -->
+      <div class="sol">
+        <div class="sol-num">01 · Agente inmobiliario</div>
+        <div class="sol-title">🔁 Secuencia de Follow-Up Automático 24/48/72hs</div>
+        <div class="sol-subniche">🤝 Agente</div>
+        <div class="sol-pain">Agente recibe lead y lo olvida. En 48hs el lead se enfría. "I haven't closed since November" — no es el mercado, es la falta de seguimiento sistemático.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">Webhook lead</span><span class="fa">→</span>
+          <span class="fn">Wait 24h</span><span class="fa">→</span>
+          <span class="fn">IF sin respuesta</span><span class="fa">→</span>
+          <span class="fn">WA personalizado</span><span class="fa">→</span>
+          <span class="fn">Airtable update</span>
+        </div>
+        <div class="chips">
+          <span class="chip">↩ Recupera 25-35% leads perdidos</span>
+          <span class="chip o">⏱ 45 min/día devueltos</span>
+          <span class="chip b">5 nodos</span>
+        </div>
+      </div>
+
+      <!-- 2 -->
+      <div class="sol gold">
+        <div class="sol-num">02 · Agente inmobiliario</div>
+        <div class="sol-title">🎯 Lead Scoring Automático desde Formulario Web</div>
+        <div class="sol-subniche">🤝 Agente · 🏗️ Desarrolladora</div>
+        <div class="sol-pain">"Do you check your clients when they first approach you?" — 44 posts sobre tiempo perdido con leads no calificados. El agente necesita saber en 30s si vale la pena llamar.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">Webhook form</span><span class="fa">→</span>
+          <span class="fn">Code: scoring</span><span class="fa">→</span>
+          <span class="fn">IF score ≥7</span><span class="fa">→</span>
+          <span class="fn">Airtable tag 🔥</span><span class="fa">→</span>
+          <span class="fn">Notif. asesor WA</span>
+        </div>
+        <div class="chips">
+          <span class="chip">↓ 60% tiempo en leads fríos</span>
+          <span class="chip o">Solo atiende score alto primero</span>
+          <span class="chip b">5 nodos</span>
+        </div>
+      </div>
+
+      <!-- 3 -->
+      <div class="sol">
+        <div class="sol-num">03 · Agente + Comprador</div>
+        <div class="sol-title">📅 Agendador de Visitas Self-Service con Cal.com</div>
+        <div class="sol-subniche">🤝 Agente · 🔑 Comprador</div>
+        <div class="sol-pain">"Tenants still occupying property during scheduled showing" — el 30% de las visitas se caen en el proceso de coordinación por mensajes. 5-10 mensajes por visita es la norma.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">WA: "quiero visitar"</span><span class="fa">→</span>
+          <span class="fn">Cal.com slots</span><span class="fa">→</span>
+          <span class="fn">WA confirma</span><span class="fa">→</span>
+          <span class="fn">Airtable visita</span>
+        </div>
+        <div class="chips">
+          <span class="chip">→ 0 mensajes manuales</span>
+          <span class="chip o">3x más visitas/semana</span>
+          <span class="chip b">4 nodos</span>
+        </div>
+      </div>
+
+      <!-- 4 -->
+      <div class="sol red">
+        <div class="sol-num">04 · Agente inmobiliario</div>
+        <div class="sol-title">📣 Publicador Multi-Canal de Propiedades</div>
+        <div class="sol-subniche">🤝 Agente · 🏗️ Desarrolladora</div>
+        <div class="sol-pain">"Stop doing this with listing photos" — 2,745 upvotes. El agente publica mal o tarde porque hacerlo bien en todos los canales lleva 45-60 min por propiedad.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">AT trigger prop</span><span class="fa">→</span>
+          <span class="fn">Template texto</span><span class="fa">→</span>
+          <span class="fn">Split: WA+IG+FB</span><span class="fa">→</span>
+          <span class="fn">AT mark publicada</span>
+        </div>
+        <div class="chips">
+          <span class="chip">⚡ 45 min → 2 min/prop</span>
+          <span class="chip o">Consistencia total canales</span>
+          <span class="chip b">4 nodos</span>
+        </div>
+      </div>
+
+      <!-- 5 -->
+      <div class="sol purple">
+        <div class="sol-num">05 · Property Management</div>
+        <div class="sol-title">🔧 Sistema de Tickets de Mantenimiento</div>
+        <div class="sol-subniche">🏢 Prop. Mgmt · 📈 Inversor</div>
+        <div class="sol-pain">"4 years as maintenance coordinator. I'm running out of gas." — Sin sistema de tickets, todo llega por WhatsApp a cualquier hora. Nada queda registrado, nada se prioriza.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">WA inquilino</span><span class="fa">→</span>
+          <span class="fn">Code: parsear</span><span class="fa">→</span>
+          <span class="fn">AT crear ticket</span><span class="fa">→</span>
+          <span class="fn">WA: nro ticket</span>
+        </div>
+        <div class="chips">
+          <span class="chip">✅ 100% solicitudes registradas</span>
+          <span class="chip o">0 llamadas a deshora</span>
+          <span class="chip b">4 nodos</span>
+        </div>
+      </div>
+
+      <!-- 6 -->
+      <div class="sol purple">
+        <div class="sol-num">06 · Property Management</div>
+        <div class="sol-title">📊 Reporte Semanal Automático de Unidades</div>
+        <div class="sol-subniche">🏢 Prop. Mgmt · 📈 Inversor</div>
+        <div class="sol-pain">"How do you organize multiple rental properties? Software recommendations?" — 10 posts diferentes buscando lo mismo. Nadie tiene visibilidad del estado de su portfolio sin dedicarle horas.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">Schedule lunes</span><span class="fa">→</span>
+          <span class="fn">AT: estado unidades</span><span class="fa">→</span>
+          <span class="fn">Code: resumen</span><span class="fa">→</span>
+          <span class="fn">Email/WA dueño</span>
+        </div>
+        <div class="chips">
+          <span class="chip">📋 Visibilidad completa</span>
+          <span class="chip o">0 tiempo manual</span>
+          <span class="chip b">4 nodos</span>
+        </div>
+      </div>
+
+      <!-- 7 -->
+      <div class="sol blue">
+        <div class="sol-num">07 · Comprador primerizo</div>
+        <div class="sol-title">🗺️ Bot de Onboarding para Compradores</div>
+        <div class="sol-subniche">🔑 Comprador · 🤝 Agente</div>
+        <div class="sol-pain">"The Homebuying Process" — el post con más busqueda muestra que compradores no saben qué esperar en cada etapa. El agente responde las mismas 15 preguntas cada semana.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">AT: etapa cambia</span><span class="fa">→</span>
+          <span class="fn">Switch etapa</span><span class="fa">→</span>
+          <span class="fn">WA: qué viene ahora</span><span class="fa">→</span>
+          <span class="fn">AT: log envío</span>
+        </div>
+        <div class="chips">
+          <span class="chip">📄 Cliente siempre informado</span>
+          <span class="chip o">↓ 70% consultas repetitivas</span>
+          <span class="chip b">4 nodos</span>
+        </div>
+      </div>
+
+      <!-- 8 -->
+      <div class="sol gold">
+        <div class="sol-num">08 · Desarrolladora</div>
+        <div class="sol-title">🏗️ Bot de Pre-Venta para Proyectos Nuevos</div>
+        <div class="sol-subniche">🏗️ Desarrolladora</div>
+        <div class="sol-pain">"Building our home is the biggest mistake we ever made" (1,540 upvotes) — compradores de proyectos nuevos hacen las mismas preguntas sobre planos, precios, disponibilidad y avance de obra.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">WA: consulta</span><span class="fa">→</span>
+          <span class="fn">OpenAI classify</span><span class="fa">→</span>
+          <span class="fn">Switch intent</span><span class="fa">→</span>
+          <span class="fn">WA: respuesta</span><span class="fa">→</span>
+          <span class="fn">AT: log lead</span>
+        </div>
+        <div class="chips">
+          <span class="chip">⚡ Respuesta inmediata 24/7</span>
+          <span class="chip o">Califica antes de mandar al vendedor</span>
+          <span class="chip b">5 nodos</span>
+        </div>
+      </div>
+
+      <!-- 9 -->
+      <div class="sol">
+        <div class="sol-num">09 · Inversor / Landlord</div>
+        <div class="sol-title">💰 Tracker de Gastos e Ingresos por Propiedad</div>
+        <div class="sol-subniche">📈 Inversor</div>
+        <div class="sol-pain">"managing multiple rentals without living in spreadsheets" (54 upvotes, 103 comentarios). Inversores con 3-10 propiedades no tienen visibilidad financiera en tiempo real.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">WA: "gasté X en Y"</span><span class="fa">→</span>
+          <span class="fn">Code: parsear</span><span class="fa">→</span>
+          <span class="fn">AT: registrar gasto</span><span class="fa">→</span>
+          <span class="fn">WA: saldo actualizado</span>
+        </div>
+        <div class="chips">
+          <span class="chip">📊 Visibilidad financiera real-time</span>
+          <span class="chip o">Sin planillas manuales</span>
+          <span class="chip b">4 nodos</span>
+        </div>
+      </div>
+
+      <!-- 10 -->
+      <div class="sol">
+        <div class="sol-num">10 · Todos los sub-nichos</div>
+        <div class="sol-title">📱 Generador de Contenido Semanal con IA</div>
+        <div class="sol-subniche">🤝 Agente · 🏗️ Desarrolladora · 📈 Inversor</div>
+        <div class="sol-pain">"My competitor posts every single day — they must have a team." La inconsistencia en redes mata el alcance orgánico. El agente o desarrolladora no tiene tiempo para crear contenido.</div>
+        <div class="flow-lbl">Flujo n8n</div>
+        <div class="flow">
+          <span class="fn">Schedule lunes</span><span class="fa">→</span>
+          <span class="fn">AT: props destacadas</span><span class="fa">→</span>
+          <span class="fn">OpenAI caption</span><span class="fa">→</span>
+          <span class="fn">IG/FB post</span><span class="fa">→</span>
+          <span class="fn">AT: marcada</span>
+        </div>
+        <div class="chips">
+          <span class="chip">📆 12 posts/mes automáticos</span>
+          <span class="chip o">~$0.05 por caption</span>
+          <span class="chip b">5 nodos</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INSIGHTS ESTRATÉGICOS -->
+  <div class="section page-break">
+    <div class="sec-label">Conclusiones estratégicas</div>
+    <div class="sec-title">6 Insights para <span>potenciar la Demo</span></div>
+    <div class="ins-grid">
+      <div class="ins">
+        <div class="ins-n">01</div>
+        <div class="ins-title">El pitch ganador no es "IA" — es "60 segundos"</div>
+        <div class="ins-body">El pain #1 en todos los sub-nichos es velocidad de respuesta. Nadie pide tecnología sofisticada. El argumento que cierra es: <strong>"Tu lead recibe respuesta en menos de 60 segundos, a las 2am, aunque vos estés durmiendo."</strong> Eso convierte.</div>
+      </div>
+      <div class="ins">
+        <div class="ins-n">02</div>
+        <div class="ins-title">Property Management: nicho con más urgencia</div>
+        <div class="ins-body">r/PropertyManagement tiene los posts más angustiados del estudio. "This job drained the life from me." Administradores de 10+ unidades tienen presupuesto y dolor constante. Son más fáciles de cerrar que agentes individuales.</div>
+      </div>
+      <div class="ins">
+        <div class="ins-n">03</div>
+        <div class="ins-title">La demo killer: Calificación → Agenda en vivo</div>
+        <div class="ins-body">El flujo que más impacta en demos presenciales: (1) lead llega por WhatsApp, (2) bot califica en 30s, (3) si califica → agenda en Cal.com solo, (4) CRM actualizado. Ese demo de 5 minutos cierra contratos.</div>
+      </div>
+      <div class="ins">
+        <div class="ins-n">04</div>
+        <div class="ins-title">ROI cuantificable — el argumento financiero</div>
+        <div class="ins-body">Reddit da los números: agentes pierden 2-3h/día en seguimientos manuales. A $30-50/h de valor de tiempo → $60-150/día perdidos. Pitch: <strong>"Esta automatización te devuelve 2 horas al día por menos de $200/mes."</strong></div>
+      </div>
+      <div class="ins">
+        <div class="ins-n">05</div>
+        <div class="ins-title">Para Robert (MX): el nicho de pre-venta es virgen</div>
+        <div class="ins-body">Desarrolladoras en pre-venta tienen cientos de leads haciendo las mismas preguntas sobre planos, precios y disponibilidad. Un bot que responde 24/7, califica y agenda visita es exactamente lo que nadie ofrece en MX a precio accesible.</div>
+      </div>
+      <div class="ins">
+        <div class="ins-n">06</div>
+        <div class="ins-title">WhatsApp en LATAM = canal único que importa</div>
+        <div class="ins-body">En USA los posts hablan de email y llamadas. En LATAM el 90%+ de la comunicación inmobiliaria ya pasa por WhatsApp. Nuestra integración YCloud tiene ventaja directa sobre cualquier solución gringa que no contemple este canal.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROADMAP DEMO -->
+  <div class="section">
+    <div class="sec-label">Próximos pasos</div>
+    <div class="sec-title">Roadmap para potenciar la Demo — <span>prioridad por impacto</span></div>
+    <div class="card">
+      <div class="rm-row">
+        <div class="rm-num">1</div>
+        <div>
+          <div class="rm-h4">Agregar "termómetro de scoring" visual en el formulario <span class="diff diff-lo">BAJA</span></div>
+          <div class="rm-p">El formulario ya captura urgencia y presupuesto. Mostrar un indicador visual post-submit (🔥 Lead Caliente / 🌡️ Tibio / ❄️ Frío). El prospecto ve en tiempo real cómo lo clasifica el sistema. Impacto en demo: altísimo.</div>
+        </div>
+      </div>
+      <div class="rm-row">
+        <div class="rm-num">2</div>
+        <div>
+          <div class="rm-h4">Feed de "Actividad en tiempo real" en el Dashboard CRM <span class="diff diff-lo">BAJA</span></div>
+          <div class="rm-p">"Lead recibido hace 2 min · Score 8/10 🔥 · Visita agendada automáticamente ✅" — hace tangible el ciclo completo sin necesidad de explicarlo. El prospecto lo ve y lo entiende solo.</div>
+        </div>
+      </div>
+      <div class="rm-row">
+        <div class="rm-num">3</div>
+        <div>
+          <div class="rm-h4">Formulario específico para Property Management <span class="diff diff-lo">BAJA</span></div>
+          <div class="rm-p">Crear versión del formulario orientada a administradores de propiedades: solicitud de mantenimiento → ticket automático → notificación al admin. El nicho más receptivo según Reddit. Demo separada de la de agentes.</div>
+        </div>
+      </div>
+      <div class="rm-row">
+        <div class="rm-num">4</div>
+        <div>
+          <div class="rm-h4">Versión del bot para pre-venta (Desarrolladora) <span class="diff diff-me">MEDIA</span></div>
+          <div class="rm-p">Adaptar el worker demo para el flujo de desarrolladora: responde sobre planos/precios/disponibilidad, califica interés, agenda visita al proyecto. Directo para el nicho de Robert en MX.</div>
+        </div>
+      </div>
+      <div class="rm-row">
+        <div class="rm-num">5</div>
+        <div>
+          <div class="rm-h4">Deploy completo en Vercel con subdominio propio <span class="diff diff-lo">BAJA</span></div>
+          <div class="rm-p">Subir formulario + dashboard a demo-inmo.arnaldoayalaestratega.com. Con dominio propio el demo se ve profesional y se puede compartir por WhatsApp antes de cualquier reunión.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA RESUMEN FINAL -->
+  <div class="section">
+    <div class="sec-label">Resumen ejecutivo</div>
+    <div class="sec-title">Tabla completa — <span>las 10 automaciones</span></div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <table class="sum-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Automación</th><th>Sub-nicho</th><th>Pain resuelto</th><th>Posts Reddit</th><th>Nodos</th><th>Impacto</th><th>Dificultad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>01</td><td><strong>Follow-Up 24/48/72hs</strong></td><td><span class="cpill">Agente</span></td><td>Leads olvidados</td><td>52</td><td>5</td><td>+25-35% cierre</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>02</td><td><strong>Lead Scoring automático</strong></td><td><span class="cpill">Agente</span></td><td>Leads fríos sin filtro</td><td>44</td><td>5</td><td>↓60% tiempo perdido</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>03</td><td><strong>Agendador self-service</strong></td><td><span class="cpill">Agente</span> <span class="cpill blue">Comprador</span></td><td>10 mensajes por visita</td><td>35</td><td>4</td><td>3x visitas/semana</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>04</td><td><strong>Publicador multi-canal</strong></td><td><span class="cpill">Agente</span></td><td>Publicación manual repetitiva</td><td>29</td><td>4</td><td>45 min → 2 min</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>05</td><td><strong>Tickets de mantenimiento</strong></td><td><span class="cpill purple">Prop.Mgmt</span></td><td>Solicitudes sin registro</td><td>32</td><td>4</td><td>100% registrado</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>06</td><td><strong>Reporte semanal de unidades</strong></td><td><span class="cpill purple">Prop.Mgmt</span></td><td>Sin visibilidad portfolio</td><td>23</td><td>4</td><td>0 tiempo manual</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>07</td><td><strong>Bot onboarding compradores</strong></td><td><span class="cpill blue">Comprador</span></td><td>Proceso opaco / confuso</td><td>26</td><td>4</td><td>↓70% consultas</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>08</td><td><strong>Bot pre-venta desarrolladora</strong></td><td><span class="cpill gold">Desarrolladora</span></td><td>Mismas preguntas x100</td><td>20</td><td>5</td><td>Califica + agenda</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>09</td><td><strong>Tracker gastos por propiedad</strong></td><td><span class="cpill red">Inversor</span></td><td>Spreadsheets sin control</td><td>23</td><td>4</td><td>Visibilidad real-time</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+          <tr><td>10</td><td><strong>Generador contenido IA</strong></td><td><span class="cpill">Agente</span> <span class="cpill gold">Desarrolladora</span></td><td>Sin tiempo para RRSS</td><td>29</td><td>5</td><td>12 posts/mes auto</td><td><span class="diff diff-lo">BAJA</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <strong>Demo Inmobiliaria</strong> — Informe Estratégico Mercado Inmobiliario · Abril 2026<br>
+  Datos scrapeados en tiempo real · r/realestate · r/realtors · r/PropertyManagement · r/FirstTimeHomeBuyer · r/realestateinvesting<br>
+  <span style="opacity:0.5">Arnaldo Ayala · arnaldoayalaestratega.cloud · Sistema de Automatización Inmobiliaria con IA</span>
+</footer>
+
+</body>
+</html>

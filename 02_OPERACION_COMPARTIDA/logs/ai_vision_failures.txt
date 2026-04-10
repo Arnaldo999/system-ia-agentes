@@ -1,0 +1,1 @@
+System IA logs: Intentos fallidos con Gemini para corregir texto secuencial.

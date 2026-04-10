@@ -1,0 +1,2910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">CRM — Powered by LovBot IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: {
+        bg: '#0f1117',
+        surface: { DEFAULT: '#1a1d27', 2: '#222636' },
+        brd: '#2e3347',
+        accent: { DEFAULT: '#6c63ff', 2: '#00d4aa', hover: '#5a52d5' },
+        txt: { DEFAULT: '#e8eaf0', 2: '#8b92a5' },
+        ok: '#00d4aa', danger: '#ff6b6b', warn: '#ffa94d', info: '#4d9fff',
+        s1: '#3b82f6', s2: '#f59e0b', s3: '#8b5cf6', s4: '#10b981', s5: '#ef4444',
+      },
+    },
+  },
+}
+</script>
+<style type="text/tailwindcss">
+  @layer base {
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #222636;
+      --border: #2e3347; --accent: #6c63ff; --accent2: #00d4aa;
+      --text: #e8eaf0; --text2: #8b92a5;
+      --green: #00d4aa; --red: #ff6b6b; --yellow: #ffa94d; --blue: #4d9fff;
+      --s1: #3b82f6; --s2: #f59e0b; --s3: #8b5cf6; --s4: #10b981; --s5: #ef4444;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { @apply bg-bg text-txt font-sans text-sm min-h-screen; }
+    ::-webkit-scrollbar { width:4px; height:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { @apply bg-brd rounded-sm; }
+  }
+
+  @layer components {
+    /* ── TOPBAR ── */
+    .topbar { @apply bg-surface border-b border-brd flex items-center gap-3.5 px-5 h-14 sticky top-0 z-[100]; }
+    .logo { @apply flex items-center gap-2.5 font-bold text-[15px]; }
+    .logo-icon { @apply w-[34px] h-[34px] rounded-lg flex items-center justify-center text-lg; background:linear-gradient(135deg,#6c63ff,#00d4aa); }
+    .logo-sub { @apply text-txt-2 text-[10px] font-normal block; }
+    .topbar-flex { @apply flex-1; }
+    .live-badge { @apply flex items-center gap-1.5 bg-[#0d2e1a] border border-[#1a5c33] px-3 py-1 rounded-full text-[11px] text-ok; }
+    .live-dot { @apply w-[7px] h-[7px] bg-ok rounded-full animate-pulse; }
+    .notif-btn { @apply relative cursor-pointer; }
+    .notif-icon-wrap { @apply w-9 h-9 bg-surface-2 border border-brd rounded-lg flex items-center justify-center text-base; }
+    .notif-badge { @apply absolute -top-1 -right-1 bg-danger w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center; }
+    .user-chip { @apply flex items-center gap-2 bg-surface-2 border border-brd py-1 px-3 pl-1.5 rounded-full text-[13px] cursor-pointer; }
+    .avatar { @apply w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold; background:linear-gradient(135deg,#6c63ff,#a78bfa); }
+
+    /* ── LAYOUT ── */
+    .layout { @apply flex h-[calc(100vh-56px)]; }
+    .sidebar { @apply w-[200px] max-md:w-12 bg-surface border-r border-brd py-3 shrink-0 flex flex-col; }
+    .sidebar-section { @apply px-4 py-2 pb-1 text-txt-2 text-[10px] font-semibold uppercase tracking-wider max-md:hidden; }
+    .nav-item { @apply flex items-center gap-2.5 py-2.5 px-4 text-txt-2 cursor-pointer text-[13px] transition-all border-l-[3px] border-transparent my-px hover:text-txt hover:bg-surface-2; }
+    .nav-item.active { @apply text-txt bg-surface-2 !border-l-accent; }
+    .nav-icon { @apply text-[15px] w-5 text-center; }
+    .nav-badge { @apply ml-auto bg-accent text-white text-[10px] px-1.5 py-px rounded-[10px] max-md:hidden; }
+    .nav-badge.green { @apply bg-[#064e3b] text-ok; }
+    .sidebar-footer { @apply mt-auto px-4 py-3 border-t border-brd; }
+    .plan-chip { @apply rounded-lg px-2.5 py-2 text-[11px] font-semibold text-center; background:linear-gradient(135deg,#6c63ff,#00d4aa); }
+    .plan-chip small { @apply block font-normal opacity-80 mt-0.5 max-md:hidden; }
+    .main { @apply flex-1 overflow-y-auto p-5 md:px-6; }
+
+    /* ── PANELS ── */
+    .panel { @apply hidden; }
+    .panel.active { @apply block; }
+
+    /* ── KPIs ── */
+    .kpis { @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-5; }
+    .kpi { @apply bg-surface border border-brd rounded-xl p-3.5 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(0,0,0,.3)]; }
+    .kpi::before { content:''; @apply absolute top-0 left-0 right-0 h-[3px]; background:var(--c,#6c63ff); }
+    .kpi-icon { @apply text-[22px] mb-1.5; }
+    .kpi-val { @apply text-[26px] font-bold leading-none; }
+    .kpi-label { @apply text-txt-2 text-xs mt-1; }
+    .kpi-delta { @apply text-[11px] mt-1 text-ok; }
+    .kpi-delta.neg { @apply text-warn; }
+
+    /* ── SECTION HEADER ── */
+    .sh { @apply flex items-start justify-between mb-4 flex-wrap gap-2.5; }
+    .sh-title { @apply text-[17px] font-bold; }
+    .sh-sub { @apply text-txt-2 text-xs mt-1; }
+    .btn { @apply px-3.5 py-[7px] rounded-lg border border-brd bg-surface-2 text-txt cursor-pointer text-xs transition-all whitespace-nowrap hover:border-accent hover:text-accent; }
+    .btn-primary { @apply bg-accent !border-accent text-white hover:bg-accent-hover hover:!border-accent-hover hover:text-white; }
+    .btn-green { @apply bg-[#064e3b] !border-[#1a5c33] text-ok; }
+
+    /* ── CHARTS ── */
+    .charts-row { @apply grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-5; }
+    .chart-card { @apply bg-surface border border-brd rounded-xl p-4; }
+    .chart-title { @apply text-xs font-semibold text-txt-2 mb-3.5 uppercase tracking-wider; }
+    .bar-chart { @apply flex flex-col gap-2.5; }
+    .bar-row { @apply flex items-center gap-2; }
+    .bar-label { @apply w-[88px] text-xs text-txt-2 text-right shrink-0; }
+    .bar-track { @apply flex-1 h-[22px] bg-surface-2 rounded overflow-hidden; }
+    .bar-fill { @apply h-full rounded flex items-center justify-end pr-1.5 text-[11px] font-semibold transition-all duration-[1.2s] ease-out; }
+    .bar-num { @apply w-7 text-xs font-semibold text-right text-txt-2; }
+
+    /* ── KANBAN ── */
+    .kanban { @apply flex gap-3 overflow-x-auto pb-2; }
+    .kanban-col { @apply min-w-[205px] bg-surface-2 rounded-xl border border-brd shrink-0; }
+    .kanban-head { @apply px-3 py-2.5 border-b border-brd flex items-center justify-between; }
+    .kanban-head-left { @apply flex items-center gap-[7px] text-[13px] font-semibold; }
+    .stage-dot { @apply w-2 h-2 rounded-full; }
+    .kanban-cnt { @apply bg-surface border border-brd rounded-[10px] px-2 py-px text-[11px] text-txt-2; }
+    .kanban-body { @apply p-2.5 flex flex-col gap-[7px] min-h-[80px]; }
+
+    /* ── LEAD CARD ── */
+    .lcard { @apply bg-surface border border-brd rounded-[9px] p-[11px] cursor-pointer transition-all hover:border-accent hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(108,99,255,.18)]; }
+    .lcard.fresh { @apply animate-[slideIn_.45s_ease] border-ok; }
+    .lcard-name { @apply font-semibold text-[13px] mb-1; }
+    .lcard-meta { @apply text-txt-2 text-[11px] leading-relaxed; }
+    .lcard-badges { @apply flex gap-1 flex-wrap mt-[7px]; }
+    .badge { @apply text-[10px] px-[7px] py-0.5 rounded-[10px] font-medium; }
+    .b-wa { @apply bg-[#0d3d21] text-[#25d366] border border-[#1a5c33]; }
+    .b-web { @apply bg-[#0d1e3d] text-[#60a5fa] border border-[#1a3a7a]; }
+    .b-ref { @apply bg-[#3d1a0d] text-[#fb923c] border border-[#7a3a1a]; }
+    .b-cita { @apply bg-[#0d2e1a] text-[#34d399] border border-[#1a5c33]; }
+    .b-hot { @apply bg-[#3d0d0d] text-[#f87171] border border-[#7a1a1a]; }
+    .lcard-actions { @apply flex gap-[5px] mt-2 border-t border-brd pt-2; }
+
+    /* ── LEADS TABLE ── */
+    .leads-wrap { @apply bg-surface border border-brd rounded-xl overflow-hidden; }
+    .leads-tbl { @apply w-full border-collapse; }
+    .leads-tbl th { @apply text-txt-2 font-medium text-[11px] text-left px-3 py-2 border-b border-brd uppercase tracking-wider; }
+    .leads-tbl td { @apply px-3 py-2.5 border-b border-brd text-[13px]; }
+    .leads-tbl tr:last-child td { @apply border-b-0; }
+    .leads-tbl tr:hover td { @apply bg-surface-2; }
+    .spill { @apply px-2.5 py-[3px] rounded-[10px] text-[11px] font-medium; }
+    .s-nuevo { @apply bg-[#1e3a5f] text-[#60a5fa]; }
+    .s-contactado { @apply bg-[#3d2800] text-[#fbbf24]; }
+    .s-calificado { @apply bg-[#2d1f5e] text-[#a78bfa]; }
+    .s-cita { @apply bg-[#064e3b] text-[#34d399]; }
+    .s-perdido { @apply bg-[#3d0d0d] text-[#f87171]; }
+
+    /* ── SEARCH ── */
+    .search-wrap { @apply relative flex-1 max-w-xs max-md:max-w-[160px]; }
+    .search-input { @apply w-full bg-surface-2 border border-brd rounded-lg py-1.5 px-3 pl-[34px] text-txt text-[13px] outline-none transition-colors placeholder:text-txt-2 focus:border-accent; }
+    .search-icon { @apply absolute left-2.5 top-1/2 -translate-y-1/2 text-sm pointer-events-none; }
+    .search-results { @apply absolute top-[calc(100%+6px)] left-0 right-0 bg-surface border border-brd rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,.4)] z-[999] max-h-[280px] overflow-y-auto hidden; }
+    .search-results.show { @apply block; }
+    .sr-item { @apply px-3.5 py-2.5 cursor-pointer flex items-center gap-2.5 border-b border-brd transition-colors hover:bg-surface-2 last:border-b-0; }
+    .sr-av { @apply w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0; background:linear-gradient(135deg,#6c63ff,#a78bfa); }
+    .sr-name { @apply text-[13px] font-semibold; }
+    .sr-meta { @apply text-[11px] text-txt-2; }
+    .sr-empty { @apply p-3.5 text-center text-txt-2 text-[13px]; }
+
+    /* ── CHAT ── */
+    .chat-layout { @apply flex gap-3.5 h-[calc(100vh-190px)] min-h-[480px]; }
+    .chat-list-panel { @apply w-[250px] bg-surface border border-brd rounded-xl overflow-y-auto shrink-0 max-md:hidden; }
+    .clp-head { @apply px-3.5 py-3 border-b border-brd font-semibold text-[13px]; }
+    .cli { @apply px-3.5 py-[11px] border-b border-brd cursor-pointer flex gap-2.5 items-start transition-colors hover:bg-surface-2; }
+    .cli.active { @apply bg-surface-2; }
+    .chat-av { @apply w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0; }
+    .cli-info { @apply flex-1 min-w-0; }
+    .cli-name { @apply font-semibold text-xs flex justify-between; }
+    .cli-msg { @apply text-txt-2 text-[11px] whitespace-nowrap overflow-hidden text-ellipsis mt-0.5; }
+    .cli-time { @apply text-txt-2 text-[10px]; }
+    .cli-unread { @apply bg-ok text-black rounded-full w-[15px] h-[15px] text-[9px] flex items-center justify-center font-bold mt-0.5; }
+    .chat-win { @apply flex-1 bg-surface border border-brd rounded-xl flex flex-col; }
+    .cw-head { @apply px-4 py-3 border-b border-brd flex items-center gap-3; }
+    .cw-info { @apply flex-1; }
+    .cw-name { @apply font-semibold text-sm; }
+    .cw-status { @apply text-ok text-[11px] mt-px; }
+    .ia-chip { @apply text-[10px] bg-[#0d1e3d] text-[#60a5fa] border border-[#1a3a7a] px-2.5 py-[3px] rounded-[10px]; }
+    .cw-msgs { @apply flex-1 overflow-y-auto p-3.5 flex flex-col gap-2.5; }
+    .msg { @apply max-w-[78%]; }
+    .msg-bot { @apply self-start; }
+    .msg-user { @apply self-end; }
+    .msg-bubble { @apply px-3 py-2.5 rounded-xl text-[13px] leading-relaxed; }
+    .msg-bot .msg-bubble { @apply bg-surface-2 border border-brd rounded-tl-[4px]; }
+    .msg-user .msg-bubble { @apply bg-accent text-white rounded-br-[4px]; }
+    .bot-tag { @apply text-[10px] text-accent-2 font-semibold mb-[3px] flex items-center gap-[3px]; }
+    .msg-time { @apply text-txt-2 text-[10px] mt-[3px]; }
+    .msg-user .msg-time { @apply text-right; }
+    .typing-ind { @apply flex gap-1 items-center px-3 py-2.5 bg-surface-2 rounded-tl-[4px] rounded-xl w-fit border border-brd; }
+    .td { @apply w-1.5 h-1.5 bg-txt-2 rounded-full; animation:ty .8s infinite; }
+    .cw-input { @apply px-3.5 py-[11px] border-t border-brd flex gap-2; }
+    .cw-input input { @apply flex-1 bg-surface-2 border border-brd rounded-lg px-3 py-2 text-txt text-[13px] outline-none focus:border-accent; }
+    .send-btn { @apply bg-accent border-none text-white w-[34px] h-[34px] rounded-lg cursor-pointer text-base; }
+
+    /* ── PROPIEDADES ── */
+    .props-grid { @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5; }
+    .pcard { @apply bg-surface border border-brd rounded-xl overflow-hidden transition-all cursor-pointer hover:-translate-y-[3px] hover:border-accent; }
+    .pcard-img { @apply h-[130px] flex items-center justify-center text-[46px] relative; background:linear-gradient(135deg,#1a2a4a,#2a1a4a); }
+    .pcard-status { @apply absolute top-2 right-2 text-[11px] px-2.5 py-[3px] rounded-lg font-semibold; }
+    .ps-disp { @apply bg-[#064e3b] text-[#34d399]; }
+    .ps-res { @apply bg-[#451a03] text-[#fbbf24]; }
+    .ps-vend { @apply bg-[#3d0d0d] text-[#f87171]; }
+    .pcard-body { @apply p-3; }
+    .pcard-title { @apply font-semibold text-[13px] mb-[3px]; }
+    .pcard-loc { @apply text-txt-2 text-xs mb-[7px]; }
+    .pcard-price { @apply text-[17px] font-bold text-accent-2 mb-[7px]; }
+    .pcard-specs { @apply flex gap-2.5 text-txt-2 text-xs; }
+    .pcard-foot { @apply px-3 py-2.5 border-t border-brd flex justify-between items-center; }
+
+    /* ── FORMULARIOS ── */
+    .forms-grid { @apply grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5 mb-6; }
+    .form-card { @apply bg-surface border border-brd rounded-xl overflow-hidden transition-all hover:-translate-y-0.5 hover:border-accent; }
+    .form-card-head { @apply p-4 border-b border-brd flex gap-3 items-center; }
+    .form-icon { @apply w-[42px] h-[42px] rounded-[10px] flex items-center justify-center text-xl shrink-0; }
+    .form-card-body { @apply p-3.5; }
+    .form-feature { @apply flex items-start gap-2 text-xs text-txt-2 mb-2 leading-snug before:content-['✓'] before:text-ok before:font-bold before:shrink-0 before:mt-px; }
+    .form-card-foot { @apply px-3.5 py-2.5 border-t border-brd flex gap-2; }
+    .info-banner { @apply bg-surface border border-brd rounded-xl px-5 py-4 mb-5 flex gap-3.5 items-start; }
+    .info-banner-icon { @apply text-2xl shrink-0 mt-0.5; }
+    .info-banner strong { @apply text-sm block mb-1; }
+    .info-banner p { @apply text-txt-2 text-[13px] leading-relaxed; }
+
+    /* ── AGENDA ── */
+    .cita-item { @apply px-4 py-3 border-b border-brd flex gap-3 items-start last:border-b-0; }
+    .cita-date-box { @apply w-11 h-11 rounded-[9px] flex flex-col items-center justify-center shrink-0; }
+    .cita-date-day { @apply text-[9px] font-bold uppercase; }
+    .cita-date-num { @apply text-lg font-bold leading-none; }
+    .cita-body { @apply flex-1 min-w-0; }
+    .cita-actions { @apply flex gap-[5px] mt-[7px] flex-wrap; }
+
+    /* ── RESUMEN CARD ── */
+    .rcard { @apply bg-surface border border-brd rounded-xl overflow-hidden; }
+    .rcard-head { @apply px-4 py-3 border-b border-brd flex gap-3 items-center; }
+    .rcard-av { @apply w-[38px] h-[38px] rounded-full flex items-center justify-center text-[13px] font-bold shrink-0; }
+    .rcard-info { @apply flex-1; }
+    .rcard-name { @apply font-semibold text-sm; }
+    .rcard-sub { @apply text-txt-2 text-xs mt-0.5; }
+    .rcard-body { @apply px-4 py-3 grid grid-cols-2 gap-2.5; }
+    .rcard-field { @apply bg-surface-2 rounded-lg p-2.5; }
+    .rcard-field-label { @apply text-txt-2 text-[10px] uppercase tracking-wider mb-1; }
+    .rcard-field-val { @apply text-[13px] font-medium leading-snug; }
+    .rcard-summary { @apply px-4 pb-3 col-span-full; }
+    .rcard-foot { @apply px-4 py-2.5 border-t border-brd flex gap-2 items-center; }
+    .stars { @apply text-yellow-400 text-sm tracking-wider; }
+
+    /* ── ESTADO PILLS ── */
+    .estado-pill { @apply !px-2.5 !py-[3px] !rounded !text-[11px] font-semibold !cursor-default !border-none !border-l-[3px] !border-solid tracking-wide inline-block; }
+    .ep-pendiente { @apply !bg-[#0f1f35] !text-blue-300 !border-blue-500; }
+    .ep-completada { @apply !bg-[#052e1c] !text-emerald-300 !border-emerald-500; }
+    .ep-cancelada { @apply !bg-[#2a0a0a] !text-red-300 !border-red-500; }
+
+    /* ── ACTIVITY ── */
+    .act-feed { @apply bg-surface border border-brd rounded-xl overflow-hidden; }
+    .act-head { @apply px-4 py-3 border-b border-brd font-semibold text-[13px] flex justify-between items-center; }
+    .act-item { @apply px-4 py-2.5 border-b border-brd flex gap-2.5 items-start last:border-b-0; }
+    .act-dot { @apply w-2 h-2 rounded-full mt-1 shrink-0; }
+    .act-text { @apply flex-1 text-xs leading-relaxed text-txt-2; }
+    .act-text strong { @apply text-txt; }
+    .act-time { @apply text-txt-2 text-[11px] shrink-0; }
+
+    /* ── NOTIF POPUP ── */
+    .notif-popup { @apply fixed top-[68px] right-[18px] z-[300] bg-surface border border-brd rounded-xl px-4 py-3 min-w-[270px] max-w-[310px] shadow-[0_8px_32px_rgba(0,0,0,.45)] hidden gap-2.5 items-start; }
+    .notif-popup.show { @apply flex animate-[notifIn_.3s_ease]; }
+    .np-icon { @apply text-[22px] shrink-0; }
+    .np-body strong { @apply text-[13px] block mb-0.5; }
+    .np-body span { @apply text-txt-2 text-xs; }
+    .np-close { @apply ml-auto cursor-pointer text-txt-2 text-[15px] self-start; }
+
+    /* ── MODAL ── */
+    .modal-bg { @apply fixed inset-0 bg-black/65 z-[400] hidden items-center justify-center; }
+    .modal-bg.show { @apply flex; }
+    .modal { @apply bg-surface border border-brd rounded-[14px] p-5 min-w-[360px] max-w-[480px] w-[92%] relative max-h-[90vh] overflow-y-auto; }
+    .mc { @apply absolute top-3.5 right-3.5 cursor-pointer text-txt-2 text-[19px] bg-transparent border-none; }
+    .modal h3 { @apply text-[15px] mb-3.5; }
+    .mf { @apply mb-3; }
+    .mf label { @apply block text-txt-2 text-[11px] mb-1 uppercase tracking-wider; }
+    .mf input, .mf select, .mf textarea { @apply w-full bg-surface-2 border border-brd rounded-lg px-3 py-2 text-txt text-[13px] outline-none focus:border-accent; }
+    .ma { @apply flex justify-end gap-2 mt-3.5; }
+    .timeline { @apply flex flex-col; }
+    .tl-item { @apply flex gap-3 pb-3.5 relative; }
+    .tl-item:not(:last-child)::before { content:''; @apply absolute left-[6px] top-3.5 bottom-0 w-0.5 bg-brd; }
+    .tl-dot { @apply w-3.5 h-3.5 rounded-full shrink-0 mt-0.5; }
+    .tl-title { @apply text-[13px] font-medium; }
+    .tl-time { @apply text-txt-2 text-[11px] mt-px; }
+
+    /* ── PERFIL DROPDOWN ── */
+    .pin-btn { @apply bg-surface-2 border border-brd rounded-xl text-txt text-xl font-semibold py-[18px] cursor-pointer transition-colors hover:bg-brd; }
+    .perfil-dropdown { @apply absolute top-[calc(100%+8px)] right-0 w-[300px] bg-surface border border-brd rounded-xl shadow-[0_8px_32px_rgba(0,0,0,.5)] z-[2000] hidden p-4; }
+    .perfil-dropdown.show { @apply block; }
+    .perfil-title { @apply text-sm font-bold mb-3.5 flex justify-between items-center; }
+    .perfil-logo-row { @apply flex items-center gap-3 mb-3.5; }
+    .perfil-logo-preview { @apply w-12 h-12 rounded-[10px] flex items-center justify-center text-2xl overflow-hidden shrink-0; background:linear-gradient(135deg,#6c63ff,#00d4aa); }
+    .perfil-logo-preview img { @apply w-full h-full object-cover rounded-[10px]; }
+    .upload-btn { @apply flex-1 bg-surface-2 border border-dashed border-brd rounded-lg px-2.5 py-[7px] text-txt-2 text-xs cursor-pointer text-center transition-colors hover:border-accent hover:text-accent; }
+    .mf-label { @apply text-[11px] font-semibold text-txt-2 mb-1; }
+    .mf-input { @apply w-full bg-surface-2 border border-brd rounded-lg px-2.5 py-[7px] text-txt text-[13px] outline-none mb-2.5 focus:border-accent; }
+    .user-chip-wrap { @apply relative flex items-center; }
+  }
+
+  /* Keyframes custom */
+  @keyframes slideIn { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes notifIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes ty { 0%,100%{opacity:.3;transform:translateY(0)} 50%{opacity:1;transform:translateY(-3px)} }
+  .td:nth-child(2){animation-delay:.15s;}
+  .td:nth-child(3){animation-delay:.3s;}
+
+  /* ── NAV items text hidden on mobile ── */
+  @media(max-width:767px){
+    .nav-item span:not(.nav-icon) { display:none; }
+    .logo-sub { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo" id="topLogo">
+    <div class="logo-icon" id="topLogoIcon">🏠</div>
+    <div>
+      <span id="topEmpresa">Tu Inmobiliaria</span>
+      <span class="logo-sub">CRM · Powered by LovBot IA</span>
+    </div>
+  </div>
+  <!-- BUSCADOR GLOBAL -->
+  <div class="search-wrap" style="margin:0 14px;">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="globalSearch" type="text" placeholder="Buscar lead, zona, teléfono..." oninput="buscarGlobal(this.value)" onblur="setTimeout(()=>cerrarBusqueda(),200)">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    Bot activo · 24/7
+  </div>
+  <div class="notif-btn" onclick="toggleNotif()">
+    <div class="notif-icon-wrap">🔔</div>
+    <div class="notif-badge" id="notifBadge">3</div>
+  </div>
+  <div class="user-chip-wrap">
+    <div class="user-chip" onclick="irConfiguracion()" title="Ir a Configuración" style="cursor:pointer">
+      <div class="avatar" id="topAvatar">LV</div>
+      <span id="topUsuario">LovBot CRM</span> ▾
+    </div>
+    <!-- DROPDOWN PERFIL -->
+    <div class="perfil-dropdown" id="perfilDropdown">
+      <div class="perfil-title">
+        ✏️ Editar perfil
+        <span style="cursor:pointer;color:var(--text2);font-size:18px" onclick="cerrarPerfil()">×</span>
+      </div>
+      <!-- Logo preview + subir -->
+      <div class="perfil-logo-row">
+        <div class="perfil-logo-preview" id="perfilLogoPreview">🏠</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <label class="upload-btn" for="pLogoFile">📁 Subir imagen</label>
+          <input type="file" id="pLogoFile" accept="image/*" style="display:none" onchange="subirLogo(this)">
+          <input class="mf-input" id="pLogoUrl" placeholder="o pegá una URL / emoji 🏢" oninput="previewLogo(this.value)" style="margin-bottom:0">
+        </div>
+      </div>
+      <div class="mf-label">Nombre de la inmobiliaria</div>
+      <input class="mf-input" id="pEmpresa" placeholder="Tu Inmobiliaria">
+      <div class="mf-label">Tu nombre</div>
+      <input class="mf-input" id="pUsuario" placeholder="Arnaldo">
+      <button class="btn btn-primary" style="width:100%;margin-top:2px" onclick="guardarPerfil()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION POPUP -->
+<div class="notif-popup" id="notifPopup">
+  <div class="np-icon">🔥</div>
+  <div class="np-body">
+    <strong id="npTitle">Nuevo lead caliente</strong>
+    <span id="npBody">Carlos M. preguntó por lote via WhatsApp</span>
+  </div>
+  <div class="np-close" onclick="hideNotif()">✕</div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">Principal</div>
+    <div class="nav-item active" onclick="nav('inicio',this)">
+      <span class="nav-icon">📊</span><span>Inicio</span>
+    </div>
+    <div class="nav-item" onclick="nav('pipeline',this)">
+      <span class="nav-icon">🔀</span><span>Mi Pipeline</span>
+      <span class="nav-badge" id="pipelineBadge">12</span>
+    </div>
+    <div class="nav-item" onclick="nav('leads',this)">
+      <span class="nav-icon">👥</span><span>Mis Leads</span>
+    </div>
+    <div class="nav-item" onclick="nav('chat',this)">
+      <span class="nav-icon">🤖</span><span>Resúmenes IA</span>
+      <span class="nav-badge green" id="chatBadge">4 leads</span>
+    </div>
+    <div class="nav-item" onclick="nav('propiedades',this)">
+      <span class="nav-icon">🏘️</span><span>Propiedades</span>
+    </div>
+    <div class="nav-item" onclick="nav('activos',this)">
+      <span class="nav-icon">🤝</span><span>Clientes Activos</span>
+      <span class="nav-badge green" id="activosBadge">0</span>
+    </div>
+    <div class="nav-item" onclick="nav('agenda',this)">
+      <span class="nav-icon">📅</span><span>Mi Agenda</span>
+    </div>
+    <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
+    <div class="nav-item" onclick="nav('formularios',this)">
+      <span class="nav-icon">📋</span><span>Formularios</span>
+    </div>
+    <div class="nav-item" onclick="nav('configuracion',this)">
+      <span class="nav-icon">⚙️</span><span>Configuración</span>
+    </div>
+    <div class="sidebar-footer">
+      <div class="plan-chip">
+        🤖 IA activa
+        <small>Bot respondiendo leads</small>
+      </div>
+      <button onclick="cerrarSesion()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:7px;cursor:pointer;">🔒 Cerrar sesión</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- ══════════ INICIO ══════════ -->
+    <div class="panel active" id="panel-inicio">
+
+      <div class="sh">
+        <div>
+          <div class="sh-title">Bienvenido, Arnaldo 👋</div>
+          <div class="sh-sub">Tu bot atendió <strong style="color:var(--green)">3 leads</strong> mientras estabas fuera. Hoy vas bien.</div>
+        </div>
+        <button class="btn btn-primary" onclick="simLead()">⚡ Simular lead nuevo</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpis">
+        <div class="kpi" style="--c:#6c63ff">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-val" id="kpi-total">47</div>
+          <div class="kpi-label">Total Leads</div>
+          <div class="kpi-delta">↑ +5 esta semana</div>
+        </div>
+        <div class="kpi" style="--c:#ff6b6b">
+          <div class="kpi-icon">🔥</div>
+          <div class="kpi-val" id="kpi-hot">12</div>
+          <div class="kpi-label">Leads Calientes</div>
+          <div class="kpi-delta">↑ +3 hoy</div>
+        </div>
+        <div class="kpi" style="--c:#00d4aa">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-val" id="kpi-citas">8</div>
+          <div class="kpi-label">Citas Agendadas</div>
+          <div class="kpi-delta">↑ 100% por el bot</div>
+        </div>
+        <div class="kpi" style="--c:#ffa94d">
+          <div class="kpi-icon">🤖</div>
+          <div class="kpi-val">47s</div>
+          <div class="kpi-label">Tiempo de respuesta</div>
+          <div class="kpi-delta">Promedio del bot</div>
+        </div>
+        <div class="kpi" style="--c:#4d9fff">
+          <div class="kpi-icon">📋</div>
+          <div class="kpi-val" id="kpi-form">23</div>
+          <div class="kpi-label">Desde tus formularios</div>
+          <div class="kpi-delta">↑ +7 esta semana</div>
+        </div>
+        <div class="kpi" style="--c:#a78bfa">
+          <div class="kpi-icon">🏠</div>
+          <div class="kpi-val">34</div>
+          <div class="kpi-label">Propiedades activas</div>
+          <div class="kpi-delta">5 con interés hoy</div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Origen de tus leads este mes</div>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <div class="bar-label">📋 Formulario</div>
+              <div class="bar-track"><div class="bar-fill" style="width:69%;background:#6c63ff;color:#fff">49%</div></div>
+              <div class="bar-num">23</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">💬 WhatsApp</div>
+              <div class="bar-track"><div class="bar-fill" style="width:44%;background:#25d366;color:#fff">31%</div></div>
+              <div class="bar-num">15</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">🔥 Referidos</div>
+              <div class="bar-track"><div class="bar-fill" style="width:28%;background:#ffa94d;color:#000">20%</div></div>
+              <div class="bar-num">9</div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Estado actual del pipeline</div>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <div class="bar-label">🔵 Nuevos</div>
+              <div class="bar-track"><div class="bar-fill" style="width:53%;background:#3b82f6;color:#fff">5</div></div>
+              <div class="bar-num">5</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">🟡 Contactados</div>
+              <div class="bar-track"><div class="bar-fill" style="width:32%;background:#f59e0b;color:#000">3</div></div>
+              <div class="bar-num">3</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">🟣 Calificados</div>
+              <div class="bar-track"><div class="bar-fill" style="width:21%;background:#8b5cf6;color:#fff">2</div></div>
+              <div class="bar-num">2</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">🟢 Con cita</div>
+              <div class="bar-track"><div class="bar-fill" style="width:21%;background:#10b981;color:#fff">2</div></div>
+              <div class="bar-num">2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY -->
+      <div class="act-feed">
+        <div class="act-head">
+          Lo que hizo tu bot hoy
+          <span style="color:var(--text2);font-size:11px;font-weight:400">mientras vos hacías otras cosas</span>
+        </div>
+        <div id="actList">
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--green)"></div>
+            <div class="act-text"><strong>Calificó a Carla R.</strong> — respondió 8 preguntas via WhatsApp, detectó presupuesto $180K, interés confirmado en lote residencial</div>
+            <div class="act-time">hace 3 min</div>
+          </div>
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--accent)"></div>
+            <div class="act-text"><strong>Agendó cita automáticamente</strong> — Marcos V. eligió slot Jue 3 Abr 10:00 AM sin que vos intervinieras</div>
+            <div class="act-time">hace 12 min</div>
+          </div>
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--yellow)"></div>
+            <div class="act-text"><strong>Seguimiento automático</strong> — Andrea G. no respondía hace 4h, el bot envió mensaje de seguimiento y reactivó la conversación</div>
+            <div class="act-time">hace 28 min</div>
+          </div>
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--blue)"></div>
+            <div class="act-text"><strong>Nuevo lead desde tu formulario web</strong> — Lucía M. completó el form, bot inició conversación en 47 segundos</div>
+            <div class="act-time">hace 1h</div>
+          </div>
+          <div class="act-item">
+            <div class="act-dot" style="background:var(--s4)"></div>
+            <div class="act-text"><strong>Envió catálogo de propiedades</strong> — Roberto A. pidió opciones, bot le mandó 3 fichas personalizadas según su presupuesto</div>
+            <div class="act-time">hace 2h</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ PIPELINE ══════════ -->
+    <div class="panel" id="panel-pipeline">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Mi Pipeline de Ventas</div>
+          <div class="sh-sub">Todos tus leads ordenados por etapa — el bot mueve los contactados automáticamente</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-green" onclick="simLead()">⚡ Simular lead nuevo</button>
+          <button class="btn btn-primary" onclick="openModal('modalNuevo')">+ Agregar lead</button>
+        </div>
+      </div>
+
+      <div class="kanban" id="kanban">
+        <!-- Nuevo -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s1)"></div>Nuevo</div>
+            <div class="kanban-cnt" id="cnt-n">5</div>
+          </div>
+          <div class="kanban-body" id="col-n">
+            <div class="lcard" id="kcard-0">
+              <div class="lcard-name">Carlos Mendoza</div>
+              <div class="lcard-meta">+52 55 1234-5678<br>Lote Fracc. Prados Norte</div>
+              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(0)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(0,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-1">
+              <div class="lcard-name">María González</div>
+              <div class="lcard-meta">Formulario web<br>Casa 3 rec. $150K</div>
+              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(1)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(1,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-2">
+              <div class="lcard-name">Jorge Ramírez</div>
+              <div class="lcard-meta">Referido<br>Depto. centro histórico</div>
+              <div class="lcard-badges"><span class="badge b-ref">🔥 Referido</span><span class="badge b-hot">Caliente</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(2)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(2,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-3">
+              <div class="lcard-name">Ana Torres</div>
+              <div class="lcard-meta">WhatsApp<br>Renta local comercial</div>
+              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(3)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(3,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-4">
+              <div class="lcard-name">Luis Hernández</div>
+              <div class="lcard-meta">Formulario<br>Terreno 300m²</div>
+              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(4)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(4,'contactado')">→ Contactado</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Contactado -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s2)"></div>Contactado</div>
+            <div class="kanban-cnt" id="cnt-c">3</div>
+          </div>
+          <div class="kanban-body" id="col-c">
+            <div class="lcard" id="kcard-5">
+              <div class="lcard-name">Carla Reyes</div>
+              <div class="lcard-meta">Bot respondió en 2 min<br>Presupuesto $180K</div>
+              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span><span class="badge b-hot">Caliente</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(5)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(5,'calificado')">→ Calificado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-6">
+              <div class="lcard-name">Héctor Castillo</div>
+              <div class="lcard-meta">2 propiedades de interés<br>Zona Polanco</div>
+              <div class="lcard-badges"><span class="badge b-ref">🔥 Referido</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(6)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(6,'calificado')">→ Calificado</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-7">
+              <div class="lcard-name">Patricia López</div>
+              <div class="lcard-meta">Requiere financiamiento<br>Casa 2 rec.</div>
+              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(7)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(7,'calificado')">→ Calificado</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Calificado -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s3)"></div>Calificado</div>
+            <div class="kanban-cnt" id="cnt-q">2</div>
+          </div>
+          <div class="kanban-body" id="col-q">
+            <div class="lcard" id="kcard-8">
+              <div class="lcard-name">Roberto Alvarado</div>
+              <div class="lcard-meta">✅ Presupuesto confirmado<br>Lote #12, $200K</div>
+              <div class="lcard-badges"><span class="badge b-hot">Caliente</span><span class="badge b-cita">📅 Con cita</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(8)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(8,'cita')">→ Cita agendada</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-9">
+              <div class="lcard-name">Sandra Ruiz</div>
+              <div class="lcard-meta">3 propiedades en renta<br>Presupuesto $50K/año</div>
+              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(9)">Ver</button>
+                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(9,'cita')">→ Cita agendada</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Cita -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s4)"></div>Cita Agendada</div>
+            <div class="kanban-cnt" id="cnt-a">2</div>
+          </div>
+          <div class="kanban-body" id="col-a">
+            <div class="lcard" id="kcard-10">
+              <div class="lcard-name">Marcos Vega</div>
+              <div class="lcard-meta">📅 Jue 3 Abr · 10:00 AM<br>Lote #47 Fracc. Norte</div>
+              <div class="lcard-badges"><span class="badge b-cita">📅 Cita</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(10)">Ver</button>
+                <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="event.stopPropagation();moverLead(10,'cerrado')">✅ Cerrar venta</button>
+              </div>
+            </div>
+            <div class="lcard" id="kcard-11">
+              <div class="lcard-name">Diana Flores</div>
+              <div class="lcard-meta">📅 Vie 4 Abr · 3:00 PM<br>Depto 502, Torre B</div>
+              <div class="lcard-badges"><span class="badge b-cita">📅 Cita</span><span class="badge b-hot">Caliente</span></div>
+              <div class="lcard-actions">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(11)">Ver</button>
+                <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="event.stopPropagation();moverLead(11,'cerrado')">✅ Cerrar venta</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Cerrado -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:#00d4aa"></div>Cerrado 🏆</div>
+            <div class="kanban-cnt" id="cnt-z">0</div>
+          </div>
+          <div class="kanban-body" id="col-z">
+            <div style="color:var(--text2);font-size:12px;text-align:center;padding:18px 0">Las ventas cerradas aparecen aquí 🏆</div>
+          </div>
+        </div>
+        <!-- Perdido -->
+        <div class="kanban-col">
+          <div class="kanban-head">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s5)"></div>Perdido</div>
+            <div class="kanban-cnt" id="cnt-p">0</div>
+          </div>
+          <div class="kanban-body" id="col-p">
+            <div style="color:var(--text2);font-size:12px;text-align:center;padding:18px 0">Sin leads perdidos esta semana 🎉</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ LEADS TABLE ══════════ -->
+    <div class="panel" id="panel-leads">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Mis Leads</div>
+          <div class="sh-sub" id="leadsCount">47 contactos registrados</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="search-wrap">
+            <span>🔍</span>
+            <input type="text" placeholder="Buscar..." oninput="filterLeads(this.value)" id="searchInput">
+          </div>
+          <button class="btn btn-primary" onclick="openModal('modalNuevo')">+ Nuevo lead</button>
+        </div>
+      </div>
+      <div class="leads-wrap">
+        <table class="leads-tbl"><thead><tr>
+          <th>Nombre</th><th>Contacto</th><th>Origen</th><th>Interés</th><th>Estado</th><th>Score</th><th></th>
+        </tr></thead><tbody id="leadsBody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══════════ RESÚMENES IA ══════════ -->
+    <div class="panel" id="panel-chat">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Resúmenes de conversación</div>
+          <div class="sh-sub">Lo que tu bot extrajo de cada lead — llegás a la cita sabiendo todo</div>
+        </div>
+        <span class="ia-chip">🤖 Generados automáticamente por IA</span>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:center">
+        <span style="font-size:20px">💡</span>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">Las conversaciones de WhatsApp quedan en el celular del lead y en el tuyo — son privadas. Acá tu bot te deja un resumen inteligente de cada charla para que llegués preparado a cada cita.</div>
+      </div>
+      <div id="resumenesGrid" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+
+    <!-- ══════════ PROPIEDADES ══════════ -->
+    <div class="panel" id="panel-propiedades">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Mis Propiedades</div>
+          <div class="sh-sub" id="propsSub">Tu catálogo que el bot muestra automáticamente a los leads</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div id="propsStatus" style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"></div>
+          <button class="btn" onclick="renderProps()">↺ Actualizar</button>
+          <button class="btn btn-primary">+ Agregar propiedad</button>
+        </div>
+      </div>
+      <div class="props-grid" id="propsGrid">
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
+          <div style="font-size:32px;margin-bottom:8px">⏳</div>
+          Cargando propiedades desde Airtable...
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ CLIENTES ACTIVOS ══════════ -->
+    <div class="panel" id="panel-activos">
+      <div class="sh">
+        <div>
+          <div class="sh-title">🤝 Clientes Activos</div>
+          <div class="sh-sub">Compradores con cuotas — seguimiento de pagos y vencimientos</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div id="activosStatus" style="font-size:12px;color:var(--text2)"></div>
+          <button class="btn" onclick="cargarActivos()">↺ Actualizar</button>
+          <button class="btn btn-primary" onclick="abrirModalActivo()">+ Nuevo cliente activo</button>
+        </div>
+      </div>
+
+      <!-- KPIs Activos -->
+      <div class="kpis" id="activosKpis" style="margin-bottom:16px">
+        <div class="kpi" style="--c:#00d4aa">
+          <div class="kpi-icon">🤝</div>
+          <div class="kpi-val" id="kpi-activos-total">—</div>
+          <div class="kpi-label">Total activos</div>
+        </div>
+        <div class="kpi" style="--c:#00d4aa">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-val" id="kpi-activos-aldia">—</div>
+          <div class="kpi-label">Al día</div>
+        </div>
+        <div class="kpi" style="--c:#ffa94d">
+          <div class="kpi-icon">⏰</div>
+          <div class="kpi-val" id="kpi-activos-atrasado">—</div>
+          <div class="kpi-label">Atrasados</div>
+        </div>
+        <div class="kpi" style="--c:#ff6b6b">
+          <div class="kpi-icon">🚨</div>
+          <div class="kpi-val" id="kpi-activos-mora">—</div>
+          <div class="kpi-label">En mora</div>
+        </div>
+        <div class="kpi" style="--c:#6c63ff">
+          <div class="kpi-icon">🎉</div>
+          <div class="kpi-val" id="kpi-activos-cancelado">—</div>
+          <div class="kpi-label">Cancelados</div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="leads-wrap">
+        <table class="leads-tbl" style="min-width:700px">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Propiedad</th>
+              <th>Cuotas</th>
+              <th>Próx. Vencimiento</th>
+              <th>Estado Pago</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="activosTbody">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text2)">
+              <div style="font-size:28px;margin-bottom:8px">⏳</div>
+              Cargando clientes activos...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Nuevo/Editar Cliente Activo -->
+    <div id="modalActivo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;margin:16px;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-weight:700;font-size:15px" id="modalActivoTitle">➕ Nuevo Cliente Activo</div>
+          <button onclick="cerrarModalActivo()" style="background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer">✕</button>
+        </div>
+        <input type="hidden" id="activoId">
+        <div style="display:grid;gap:14px">
+          <div class="mf"><label>Nombre completo *</label><input id="ac-nombre" class="mi" placeholder="Ej: Juan Pérez"></div>
+          <div class="mf"><label>Teléfono</label><input id="ac-tel" class="mi" placeholder="+52 55 1234-5678"></div>
+          <div class="mf"><label>Email</label><input id="ac-email" class="mi" type="email" placeholder="juan@email.com"></div>
+          <div class="mf"><label>Propiedad</label><input id="ac-prop" class="mi" placeholder="Ej: Lote 12 - Fracc. Norte"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="mf"><label>Cuotas totales</label><input id="ac-total" class="mi" type="number" min="1" placeholder="24"></div>
+            <div class="mf"><label>Cuotas pagadas</label><input id="ac-pagadas" class="mi" type="number" min="0" placeholder="3"></div>
+          </div>
+          <div class="mf"><label>Próximo vencimiento</label><input id="ac-venc" class="mi" type="date"></div>
+          <div class="mf"><label>Monto cuota (<span id="ac-moneda-lbl">USD</span>)</label><input id="ac-monto" class="mi" type="number" placeholder="500"></div>
+          <div class="mf"><label>Notas</label><textarea id="ac-notas" class="mi" rows="2" placeholder="Observaciones..."></textarea></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end">
+          <button class="btn" onclick="cerrarModalActivo()">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarActivo()" id="btnGuardarActivo">💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ AGENDA ══════════ -->
+    <div class="panel" id="panel-agenda">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Mi Agenda</div>
+          <div class="sh-sub">Citas agendadas automáticamente por tu bot — vos solo te presentás</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <div class="act-head">Próximas citas <span style="color:var(--accent2);font-size:11px;font-weight:400">📅 8 esta semana</span></div>
+          <div id="citasList" style="padding:4px 0"></div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px">
+          <div class="chart-title">Estadísticas de agenda</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
+              <div style="font-size:20px;margin-bottom:3px">📅</div>
+              <div style="font-size:20px;font-weight:700;color:#00d4aa" id="stat-total">-</div>
+              <div style="color:var(--text2);font-size:11px">Citas totales</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
+              <div style="font-size:20px;margin-bottom:3px">✅</div>
+              <div style="font-size:20px;font-weight:700;color:#10b981" id="stat-completadas">-</div>
+              <div style="color:var(--text2);font-size:11px">Completadas</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
+              <div style="font-size:20px;margin-bottom:3px">⏳</div>
+              <div style="font-size:20px;font-weight:700;color:#ffa94d" id="stat-pendientes">-</div>
+              <div style="color:var(--text2);font-size:11px">Pendientes</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:11px;text-align:center">
+              <div style="font-size:20px;margin-bottom:3px">🤖</div>
+              <div style="font-size:20px;font-weight:700;color:#6c63ff">100%</div>
+              <div style="color:var(--text2);font-size:11px">Agendadas por bot</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;background:#064e3b;border:1px solid #1a5c33;border-radius:8px;padding:11px;color:#34d399;font-size:12px;line-height:1.5">
+            🤖 <strong>El 100% de tus citas fueron agendadas por el bot</strong> — sin que intervinieras una sola vez.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FORMULARIOS ══════════ -->
+    <div class="panel" id="panel-formularios">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Formularios de Captación</div>
+          <div class="sh-sub">Cada formulario está optimizado para tu tipo de negocio y conectado a tu bot</div>
+        </div>
+      </div>
+
+      <div class="info-banner">
+        <div class="info-banner-icon">💡</div>
+        <div>
+          <strong>¿Para qué sirven estos formularios?</strong>
+          <p>Los publicás en tus ads de Facebook/Instagram o en tu sitio web. Cada lead que complete el form llega directo a tu CRM y el bot lo contacta en menos de 60 segundos — automáticamente.</p>
+        </div>
+      </div>
+
+      <div class="forms-grid">
+        <!-- Desarrolladora -->
+        <div class="form-card">
+          <div class="form-card-head">
+            <div class="form-icon" style="background:#1e3a5f">🏗️</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Desarrolladora / Fraccionamiento</div>
+              <div style="color:var(--text2);font-size:12px;margin-top:2px">Lotes, casas en preventa, nuevos desarrollos</div>
+            </div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-feature">Captura: nombre, WhatsApp, zona de interés, presupuesto y tipo de lote</div>
+            <div class="form-feature">Pregunta de calificación: ¿es para construir o invertir?</div>
+            <div class="form-feature">Bot pregunta si tiene financiamiento o paga contado</div>
+            <div class="form-feature">Ofrece visita al fraccionamiento directamente</div>
+          </div>
+          <div class="form-card-foot">
+            <button class="btn btn-primary" onclick="previewForm('dev')">👁 Ver formulario</button>
+            <button class="btn">📋 Copiar link</button>
+          </div>
+        </div>
+
+        <!-- Agencia -->
+        <div class="form-card">
+          <div class="form-card-head">
+            <div class="form-icon" style="background:#2d1f5e">🏢</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Agencia Inmobiliaria</div>
+              <div style="color:var(--text2);font-size:12px;margin-top:2px">Venta y renta de propiedades diversas</div>
+            </div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-feature">Captura: nombre, WhatsApp, operación (compra/renta), zona y presupuesto</div>
+            <div class="form-feature">Filtro: cantidad de recámaras, garage, amenidades deseadas</div>
+            <div class="form-feature">Bot envía catálogo personalizado según criterios</div>
+            <div class="form-feature">Agenda visita con el asesor disponible</div>
+          </div>
+          <div class="form-card-foot">
+            <button class="btn btn-primary" onclick="previewForm('agency')">👁 Ver formulario</button>
+            <button class="btn">📋 Copiar link</button>
+          </div>
+        </div>
+
+        <!-- Agente Individual -->
+        <div class="form-card">
+          <div class="form-card-head">
+            <div class="form-icon" style="background:#064e3b">🤝</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Agente Individual</div>
+              <div style="color:var(--text2);font-size:12px;margin-top:2px">Captación personal, seguimiento 1 a 1</div>
+            </div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-feature">Captura: nombre, WhatsApp, tipo de propiedad buscada</div>
+            <div class="form-feature">Pregunta cuánto tiempo lleva buscando (urgencia)</div>
+            <div class="form-feature">Bot califica y asigna directamente al agente</div>
+            <div class="form-feature">Seguimiento automático si no responde en 2h</div>
+          </div>
+          <div class="form-card-foot">
+            <button class="btn btn-primary" onclick="previewForm('agent')">👁 Ver formulario</button>
+            <button class="btn">📋 Copiar link</button>
+          </div>
+        </div>
+
+        <!-- Property Manager -->
+        <div class="form-card">
+          <div class="form-card-head">
+            <div class="form-icon" style="background:#451a03">🔑</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Property Manager</div>
+              <div style="color:var(--text2);font-size:12px;margin-top:2px">Administración de propiedades en renta</div>
+            </div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-feature">Captura: nombre, WhatsApp, tipo de propiedad disponible</div>
+            <div class="form-feature">Pregunta: ¿busca inquilino o quiere administración completa?</div>
+            <div class="form-feature">Bot explica el servicio y solicita datos de la propiedad</div>
+            <div class="form-feature">Genera contrato de administración automáticamente</div>
+          </div>
+          <div class="form-card-foot">
+            <button class="btn btn-primary" onclick="previewForm('pm')">👁 Ver formulario</button>
+            <button class="btn">📋 Copiar link</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px">¿Cómo funciona el flujo completo?</div>
+        <div style="display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:4px">
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📣</div><div style="font-size:12px;font-weight:600">Anuncio en ads</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Facebook / Instagram</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📋</div><div style="font-size:12px;font-weight:600">Lead completa form</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Datos al instante</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🔔</div><div style="font-size:12px;font-weight:600">Llega a tu CRM</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Registrado automáticamente</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🤖</div><div style="font-size:12px;font-weight:600">Bot lo contacta</div><div style="color:var(--text2);font-size:11px;margin-top:2px">En menos de 60 seg</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🎯</div><div style="font-size:12px;font-weight:600">Califica al lead</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Presupuesto, zona, urgencia</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="display:flex;align-items:center"><div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">📅</div><div style="font-size:12px;font-weight:600">Agenda la cita</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Sin que vos intervengas</div></div><div style="color:var(--text2);font-size:18px;flex-shrink:0">→</div></div>
+          <div style="text-align:center;min-width:110px;padding:8px"><div style="font-size:24px;margin-bottom:5px">🏠</div><div style="font-size:12px;font-weight:600">Vos cerrás la venta</div><div style="color:var(--text2);font-size:11px;margin-top:2px">Solo te presentás</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURACION (inside .main) -->
+    <div class="panel" id="panel-configuracion">
+      <div class="sh">
+        <div>
+          <div class="sh-title">⚙️ Configuración de Marca</div>
+          <div class="sh-sub">Personalizá tu CRM — los cambios se aplican en tiempo real</div>
+        </div>
+        <button class="btn btn-primary" onclick="guardarMarca()" id="btnGuardarMarca">💾 Guardar cambios</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
+
+        <!-- Identidad -->
+        <div class="bg-surface border border-brd rounded-[14px] p-6">
+          <div class="font-bold text-sm mb-4 text-txt">🏢 Identidad</div>
+
+          <div class="mf">
+            <label>Nombre de la empresa</label>
+            <input id="cfg-nombre" class="mi" type="text" placeholder="Ej: Back Urbanizaciones">
+          </div>
+          <div class="mf">
+            <label>Ciudad / Zona</label>
+            <input id="cfg-ciudad" class="mi" type="text" placeholder="Ej: San Ignacio, Misiones">
+          </div>
+          <div class="mf">
+            <label>Moneda</label>
+            <select id="cfg-moneda" class="mi">
+              <option value="USD">USD — Dólar</option>
+              <option value="ARS">ARS — Peso Argentino</option>
+              <option value="MXN">MXN — Peso Mexicano</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Branding visual -->
+        <div class="bg-surface border border-brd rounded-[14px] p-6">
+          <div class="font-bold text-sm mb-4 text-txt">🎨 Branding Visual</div>
+
+          <div class="mf">
+            <label>Logo</label>
+            <div class="flex items-center gap-3">
+              <div id="cfg-logo-preview" class="w-[60px] h-[60px] bg-surface-2 border border-brd rounded-[10px] flex items-center justify-center text-[28px] shrink-0 overflow-hidden cursor-pointer" onclick="document.getElementById('cfg-logo-file').click()" title="Clic para cambiar logo">🏠</div>
+              <div class="flex flex-col gap-2 flex-1">
+                <input id="cfg-logo-file" type="file" accept="image/*" class="hidden" onchange="onLogoFileChange(this)">
+                <button type="button" onclick="document.getElementById('cfg-logo-file').click()" class="btn btn-primary text-xs">📤 Subir desde dispositivo</button>
+                <input id="cfg-logo" class="mi text-xs" type="url" placeholder="o pegar URL del logo..." oninput="previewCfgLogo(this.value)">
+                <div id="cfg-logo-uploading" class="hidden text-[11px] text-txt-2">⏳ Subiendo...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mf grid grid-cols-2 gap-3">
+            <div>
+              <label>Color principal</label>
+              <div class="flex items-center gap-2">
+                <input id="cfg-color-primary" type="color" value="#6c63ff" class="w-9 h-9 border-none rounded-lg cursor-pointer bg-transparent">
+                <input id="cfg-color-primary-hex" class="mi" type="text" value="#6c63ff" style="font-size:12px" oninput="syncColor('primary')">
+              </div>
+            </div>
+            <div>
+              <label>Color acento</label>
+              <div class="flex items-center gap-2">
+                <input id="cfg-color-accent" type="color" value="#00d4aa" class="w-9 h-9 border-none rounded-lg cursor-pointer bg-transparent">
+                <input id="cfg-color-accent-hex" class="mi" type="text" value="#00d4aa" style="font-size:12px" oninput="syncColor('accent')">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Preview en vivo -->
+      <div class="bg-surface border border-brd rounded-[14px] p-6 mt-5">
+        <div class="font-bold text-sm mb-4 text-txt">👁 Preview en vivo</div>
+        <div class="flex items-center gap-4 p-4 bg-surface-2 rounded-[10px]">
+          <div id="cfg-prev-logo" class="w-11 h-11 rounded-[10px] flex items-center justify-center text-[22px]" style="background:linear-gradient(135deg,#6c63ff,#00d4aa)">🏠</div>
+          <div>
+            <div id="cfg-prev-nombre" class="font-bold text-[15px] text-txt">Tu Empresa</div>
+            <div id="cfg-prev-ciudad" class="text-xs text-txt-2">Ciudad</div>
+          </div>
+          <div class="ml-auto flex gap-2">
+            <div id="cfg-prev-btn1" class="text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold" style="background:#6c63ff">Ver leads</div>
+            <div id="cfg-prev-btn2" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold" style="background:#00d4aa22;color:#00d4aa;border:1px solid #00d4aa44">Propiedades</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cfg-feedback" class="mt-3 text-[13px] min-h-[20px]"></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- MODAL: LEAD DETAIL -->
+<div class="modal-bg" id="modalDetalle">
+  <div class="modal">
+    <button class="mc" onclick="closeModal('modalDetalle')">✕</button>
+    <h3 id="detalleTitulo">Detalle del Lead</h3>
+    <div id="detalleBody"></div>
+  </div>
+</div>
+
+<!-- MODAL: NUEVO LEAD -->
+<div class="modal-bg" id="modalNuevo">
+  <div class="modal">
+    <button class="mc" onclick="closeModal('modalNuevo')">✕</button>
+    <h3>Agregar nuevo lead</h3>
+    <div class="mf"><label>Nombre completo</label><input type="text" placeholder="Ej: Juan Pérez" id="nl-name"></div>
+    <div class="mf"><label>Teléfono WhatsApp</label><input type="tel" placeholder="+52 55 1234-5678"></div>
+    <div class="mf"><label>Interés / Propiedad</label><input type="text" placeholder="Ej: Lote en Fracc. Norte, $200K"></div>
+    <div class="mf"><label>Origen</label>
+      <select><option>💬 WhatsApp</option><option>📋 Formulario Web</option><option>🔥 Referido</option></select>
+    </div>
+    <div class="mf"><label>Notas</label><textarea rows="2" placeholder="Observaciones..."></textarea></div>
+    <div class="ma">
+      <button class="btn" onclick="closeModal('modalNuevo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearLead()">Crear + Iniciar bot 🤖</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="
+  display:none; position:fixed; inset:0; background:#0f1117;
+  z-index:9999; align-items:center; justify-content:center; flex-direction:column;
+">
+  <div style="
+    background:#1a1d27; border:1px solid #2e3347; border-radius:20px;
+    padding:40px 36px; width:100%; max-width:380px; text-align:center;
+    box-shadow:0 25px 60px rgba(0,0,0,0.5);
+  ">
+    <div id="loginLogo" style="
+      width:64px; height:64px; background:linear-gradient(135deg,#6c63ff,#00d4aa);
+      border-radius:16px; display:flex; align-items:center; justify-content:center;
+      font-size:32px; margin:0 auto 20px;
+    ">🏠</div>
+    <div id="loginEmpresa" style="font-size:1.3rem;font-weight:700;color:#e8eaf0;margin-bottom:6px">CRM</div>
+    <div style="font-size:0.85rem;color:#8b92a5;margin-bottom:32px">Ingresá tu PIN para continuar</div>
+
+    <!-- PIN dots display -->
+    <div style="display:flex;justify-content:center;gap:12px;margin-bottom:28px">
+      <div id="dot0" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot1" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot2" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+      <div id="dot3" style="width:14px;height:14px;border-radius:50%;background:#2e3347;transition:background .2s"></div>
+    </div>
+
+    <!-- Teclado numérico -->
+    <div id="pinTeclado" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <button onclick="pinKey('1')" class="pin-btn">1</button>
+      <button onclick="pinKey('2')" class="pin-btn">2</button>
+      <button onclick="pinKey('3')" class="pin-btn">3</button>
+      <button onclick="pinKey('4')" class="pin-btn">4</button>
+      <button onclick="pinKey('5')" class="pin-btn">5</button>
+      <button onclick="pinKey('6')" class="pin-btn">6</button>
+      <button onclick="pinKey('7')" class="pin-btn">7</button>
+      <button onclick="pinKey('8')" class="pin-btn">8</button>
+      <button onclick="pinKey('9')" class="pin-btn">9</button>
+      <button onclick="pinKey('⌫')" class="pin-btn">⌫</button>
+      <button onclick="pinKey('0')" class="pin-btn">0</button>
+      <button onclick="submitPin()" class="pin-btn" style="background:#6c63ff;color:#fff;font-size:13px;font-weight:600">Ingresar</button>
+    </div>
+
+    <div id="loginError" style="color:#f87171;font-size:0.85rem;min-height:20px;margin-bottom:8px"></div>
+    <div style="font-size:0.75rem;color:#4b5563;margin-top:8px">Powered by LovBot IA</div>
+    <button onclick="cerrarSesion()" style="margin-top:14px;background:none;border:none;color:#4b5563;font-size:0.75rem;cursor:pointer;text-decoration:underline">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- MODAL: FORM PREVIEW -->
+<div class="modal-bg" id="modalForm">
+  <div class="modal" style="max-width:440px">
+    <button class="mc" onclick="closeModal('modalForm')">✕</button>
+    <div id="formPreviewBody"></div>
+  </div>
+</div>
+
+<!-- MODAL: DETALLE PROPIEDAD -->
+<div class="modal-bg" id="modalProp">
+  <div class="modal" style="max-width:600px">
+    <button class="mc" onclick="closeModal('modalProp')">✕</button>
+    <div id="modalPropBody"></div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+// LEADS se carga desde Airtable al iniciar. Fallback a datos demo si el backend no responde.
+let LEADS = [];
+
+// Mapeo estado Airtable → estado visual del pipeline
+const ESTADO_MAP = {
+  'no_contactado': 'nuevo',
+  'contactado':    'contactado',
+  'en_negociacion':'calificado',
+  'cerrado':       'cerrado',
+  'descartado':    'perdido',
+};
+// Si las notas dicen "CITA AGENDADA" y tiene Fecha_Cita → se muestra como "cita"
+
+const FUENTE_ORIGEN = {
+  'formulario-desarrolladora': 'form',
+  'formulario-agencia':        'form',
+  'formulario-agente':         'form',
+  'whatsapp_directo':          'wa',
+};
+
+const LEADS_FALLBACK = [
+  {id:0,name:"Carlos Mendoza",phone:"+5493764112233",origen:"form",status:"nuevo",interes:"Lote 500m² · San Ignacio",fecha:"2026-04-01",presupuesto:"USD 50k-100k",score:12,subnicho:"desarrolladora",notas:"Interesado en lote de 500m2. Plazo: inmediato."},
+  {id:1,name:"María González",phone:"+5493764220011",origen:"form",status:"nuevo",interes:"Casa 3 dorm · Apóstoles",fecha:"2026-04-01",presupuesto:"USD 100k-200k",score:9,subnicho:"agencia_inmobiliaria",notas:"Busca casa 3 dorm para comprar. Crédito hipotecario."},
+  {id:2,name:"Lucas Romero",phone:"+5493764334455",origen:"form",status:"nuevo",interes:"Dpto 2 dorm alquiler · Roca",fecha:"2026-04-01",presupuesto:"Hasta USD 50k",score:6,subnicho:"agente_independiente",notas:"Alquiler dpto 2 dorm. Presupuesto ajustado."},
+  {id:3,name:"Sofía Fernández",phone:"+5493764556677",origen:"wa",status:"contactado",interes:"Lote residencial · San Ignacio",fecha:"2026-03-31",presupuesto:"USD 50k-100k",score:14,subnicho:"desarrolladora",notas:"Contactada. Pidió fotos del lote B-12."},
+  {id:4,name:"Martín López",phone:"+5493764668899",origen:"form",status:"contactado",interes:"Casa San Ignacio centro",fecha:"2026-03-31",presupuesto:"USD 100k-200k",score:11,subnicho:"agencia_inmobiliaria",notas:"Tiene pre-aprobación bancaria."},
+  {id:5,name:"Ana Pereyra",phone:"+5493764771100",origen:"wa",status:"contactado",interes:"Casa alquiler · Apóstoles",fecha:"2026-03-30",presupuesto:"Hasta USD 50k",score:7,subnicho:"agente_independiente",notas:"Llegó por WhatsApp. Tiene garante."},
+  {id:6,name:"Roberto Acosta",phone:"+5493764882211",origen:"form",status:"calificado",interes:"Lote A-3/B-7 · San Ignacio",fecha:"2026-03-29",presupuesto:"USD 100k-200k",score:16,subnicho:"desarrolladora",notas:"Visitó lotes. Pide reserva. 50% contado."},
+  {id:7,name:"Valeria Ríos",phone:"+5493764993322",origen:"form",status:"calificado",interes:"Casa con piscina · San Ignacio",fecha:"2026-03-29",presupuesto:"Más de USD 200k",score:18,subnicho:"agencia_inmobiliaria",notas:"Cliente premium. Mandó propuesta escrita."},
+  {id:8,name:"Fernanda Aguirre",phone:"+5493765771100",origen:"form",status:"cita",interes:"Lote sector este · San Ignacio",fecha:"2026-03-28",presupuesto:"USD 50k-100k",score:15,subnicho:"desarrolladora",notas:"CITA AGENDADA: 05/04 10:00hs. Viene con pareja.",cita:"Sáb 5 Abr 10:00 AM"},
+  {id:9,name:"Nicolás Herrera",phone:"+5493765882211",origen:"form",status:"cita",interes:"Casa barrio norte · San Ignacio",fecha:"2026-03-28",presupuesto:"USD 100k-200k",score:13,subnicho:"agencia_inmobiliaria",notas:"CITA AGENDADA: 07/04 15:00hs. Trae contador.",cita:"Lun 7 Abr 3:00 PM"},
+  {id:10,name:"Patricia Molina",phone:"+5493765115544",origen:"form",status:"cerrado",interes:"Lote C-5 · San Ignacio",fecha:"2026-03-25",presupuesto:"USD 50k-100k",score:15,subnicho:"desarrolladora",notas:"CERRADO. Compró lote C-5 a USD 62.000. Firmó boleto."},
+  {id:11,name:"Héctor Vargas",phone:"+5493765226655",origen:"form",status:"cerrado",interes:"Casa alquiler · San Ignacio",fecha:"2026-03-24",presupuesto:"Hasta USD 50k",score:10,subnicho:"agencia_inmobiliaria",notas:"CERRADO. Alquiler firmado 2 años. USD 350/mes."},
+];
+
+const PROPS = [
+  {emoji:"🏠",title:"Casa Fracc. Prados Norte",loc:"Zona Norte · 180 m²",price:"$145,000 USD",specs:["3 rec","2 baños","Garage"],status:"disponible"},
+  {emoji:"🏢",title:"Depto 502 Torre B",loc:"Centro · 85 m²",price:"$280,000 USD",specs:["2 rec","2 baños","Terraza"],status:"reservado"},
+  {emoji:"🌿",title:"Lote Residencial #47",loc:"Fracc. Norte · 300 m²",price:"$175,000 USD",specs:["300 m²","Servicios","Escritura"],status:"disponible"},
+  {emoji:"🏬",title:"Local Plaza Sur",loc:"Av. Principal · 120 m²",price:"$3,500/mes",specs:["120 m²","A/C","Bodega"],status:"disponible"},
+  {emoji:"🏡",title:"Casa Colonial Centro",loc:"Col. Centro · 220 m²",price:"$320,000 USD",specs:["4 rec","3 baños","Jardín"],status:"disponible"},
+  {emoji:"🏘️",title:"Lote Industrial #12",loc:"Parque Industrial · 800 m²",price:"$200,000 USD",specs:["800 m²","Nave","Oficinas"],status:"vendido"},
+];
+
+const CHATS = [
+  {id:0,name:"Carlos Mendoza",initials:"CM",color:"#3b82f6",unread:2,lastMsg:"Sí, me interesa el lote de 300m²",time:"2 min"},
+  {id:1,name:"Carla Reyes",initials:"CR",color:"#8b5cf6",unread:1,lastMsg:"¿Cuándo puedo visitar?",time:"15 min"},
+  {id:2,name:"Héctor Castillo",initials:"HC",color:"#f59e0b",unread:0,lastMsg:"Ok, quedo pendiente",time:"1h"},
+  {id:3,name:"Marcos Vega",initials:"MV",color:"#10b981",unread:0,lastMsg:"Perfecto, ahí estaré el jueves 👍",time:"2h"},
+];
+
+const CONV = {
+  0:[
+    {t:"bot",m:"¡Hola Carlos! 👋 Soy el asistente de **Tu Inmobiliaria**. Vi que te interesaron nuestros lotes en Fracc. Prados Norte. ¿Qué tipo de lote buscás?",h:"10:32"},
+    {t:"user",m:"Hola, sí me interesa. ¿Cuánto cuesta un lote de 300m²?",h:"10:33"},
+    {t:"bot",m:"¡Excelente elección! 🌿 Los lotes de 300m² están desde **$175,000 USD**, con:\n✅ Escrituración incluida\n✅ Todos los servicios\n✅ Acceso a amenidades\n\n¿Tu presupuesto está en ese rango?",h:"10:33"},
+    {t:"user",m:"Sí. ¿Tienen financiamiento?",h:"10:35"},
+    {t:"bot",m:"¡Claro! 💳 Opciones disponibles:\n\n1. **Contado** — 5% descuento\n2. **Financiamiento directo** — 24 a 48 meses\n3. **Crédito bancario** — te asesoramos\n\n¿Cuál preferís?",h:"10:35"},
+    {t:"user",m:"Prefiero financiamiento a 36 meses",h:"10:38"},
+    {t:"bot",m:"Perfecto 🎯 Con 36 meses: **~$5,200 USD/mes** con 20% de enganche (~$35,000 USD).\n\n¿Querés agendar una visita para ver el fraccionamiento y revisar el plan de pagos?",h:"10:38"},
+    {t:"user",m:"Sí, me interesa visitar",h:"10:40"},
+    {t:"bot",m:"¡Genial! 📅 Tengo disponibilidad:\n\n• **Jueves 3 Abr** — 10:00 AM o 4:00 PM\n• **Viernes 4 Abr** — 11:00 AM o 3:00 PM\n\n¿Cuál te viene mejor?",h:"10:40"},
+    {t:"user",m:"El jueves a las 10",h:"10:41"},
+    {t:"bot",m:"✅ ¡Cita confirmada! **Jueves 3 de Abril, 10:00 AM**.\n📍 Te envío la dirección exacta.\n📲 Recibirás un recordatorio 24h antes.\n\n¿Algo más en que pueda ayudarte?",h:"10:41"},
+  ],
+  1:[
+    {t:"bot",m:"¡Hola Carla! 👋 Gracias por escribirnos. ¿Qué tipo de propiedad buscás?",h:"09:15"},
+    {t:"user",m:"Hola, vi un lote en su página. ¿Está disponible?",h:"09:16"},
+    {t:"bot",m:"¡Sí! 🌿 Tenemos lotes disponibles. ¿Qué superficie buscás y cuál es tu presupuesto aproximado?",h:"09:16"},
+    {t:"user",m:"Algo de 250-300m² para construir casa. Presupuesto hasta $180K",h:"09:18"},
+    {t:"bot",m:"Tengo opciones perfectas:\n\n🌿 **Lote #47** — 300m², $175K, Fracc. Norte\n🌿 **Lote #23** — 250m², $145K, Fracc. Sur\n\nAmbos con todos los servicios y escrituración. ¿Cuál te llama más?",h:"09:18"},
+    {t:"user",m:"El lote #47. ¿Cuándo puedo visitar?",h:"09:45"},
+    {t:"bot",m:"¡Excelente elección! Buscando disponibilidad para visita... 📅",h:"09:45"},
+  ],
+};
+
+// CITAS se cargan desde Airtable (leads con Fecha_Cita)
+let CITAS = [];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let activeChat = 0;
+let simCount = 0;
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function nav(id, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  if(id==='chat') renderResumenes();
+  if(id==='leads') renderLeads();
+  if(id==='pipeline') renderKanbanFromLeads();
+  if(id==='propiedades') renderProps();
+  if(id==='activos') cargarActivos();
+  if(id==='agenda') renderAgenda();
+  if(id==='configuracion') cargarConfiguracion();
+}
+
+// ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
+async function cargarLeads() {
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes`, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const records = data.records || [];
+    if (records.length === 0) throw new Error('Sin registros');
+
+    LEADS = records.map((r, idx) => {
+      const f = r;
+      const estadoAirtable = (f.Estado || '').toLowerCase();
+      // Si las notas dicen CITA AGENDADA y hay fecha → estado cita
+      const tieneCita = f.Fecha_Cita && (f.Notas_Bot || '').includes('CITA AGENDADA');
+      let status = tieneCita ? 'cita' : (ESTADO_MAP[estadoAirtable] || 'nuevo');
+
+      // Cita label legible
+      let citaLabel = '';
+      if (tieneCita && f.Fecha_Cita) {
+        const d = new Date(f.Fecha_Cita + 'T12:00:00');
+        const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        citaLabel = `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
+      }
+
+      const presupuestoLabel = {
+        'hata_50k':'Hasta USD 50k','50k_100k':'USD 50k-100k',
+        '100k_200k':'USD 100k-200k','mas_200k':'Más de USD 200k'
+      };
+      const operLabel = { 'venta':'Venta','alquiler':'Alquiler','Todo':'Compra/Alquiler' };
+
+      return {
+        id: idx,
+        atId: r.id || '',
+        name: `${f.Nombre || ''} ${f.Apellido || ''}`.trim() || 'Sin nombre',
+        phone: f.Telefono || '',
+        email: f.Email || '',
+        origen: FUENTE_ORIGEN[f.Fuente] || (f.Llego_WhatsApp ? 'wa' : 'form'),
+        status,
+        interes: [operLabel[f.Operacion] || f.Operacion, f.Tipo_Propiedad, f.Zona].filter(Boolean).join(' · ') || 'Sin especificar',
+        fecha: f.Fecha_WhatsApp || (r.createdTime ? r.createdTime.slice(0,10) : ''),
+        presupuesto: presupuestoLabel[f.Presupuesto] || f.Presupuesto || '',
+        score: f.Score || 0,
+        subnicho: f.Sub_nicho || '',
+        notas: f.Notas_Bot || '',
+        cita: citaLabel,
+        ciudad: f.Ciudad || '',
+      };
+    });
+
+    // Actualizar KPI total
+    const kt = document.getElementById('kpi-total');
+    if (kt) kt.textContent = LEADS.length;
+
+    renderLeads();
+    renderKanbanFromLeads();
+  } catch (err) {
+    console.warn('[Leads] Usando datos demo:', err.message);
+    LEADS = LEADS_FALLBACK;
+    renderLeads();
+    renderKanbanFromLeads();
+  }
+}
+
+// ── LEADS TABLE ────────────────────────────────────────────────────────────
+function renderLeads(data) {
+  data = data || LEADS;
+  const tb = document.getElementById('leadsBody');
+  tb.innerHTML = '';
+  const spills = {
+    nuevo:     '<span class="spill s-nuevo">🔵 Nuevo</span>',
+    contactado:'<span class="spill s-contactado">🟡 Contactado</span>',
+    calificado:'<span class="spill s-calificado">🟣 Calificado</span>',
+    cita:      '<span class="spill s-cita">🟢 Con cita</span>',
+    cerrado:   '<span class="spill" style="background:#064e3b;color:#34d399;border:1px solid #1a5c33">🏆 Cerrado</span>',
+    perdido:   '<span class="spill s-perdido">🔴 Perdido</span>',
+  };
+  const origs = {
+    wa:  '<span class="badge b-wa">💬 WhatsApp</span>',
+    web: '<span class="badge b-web">📋 Web</span>',
+    form:'<span class="badge b-web">📋 Formulario</span>',
+    ref: '<span class="badge b-ref">🔥 Referido</span>',
+  };
+  const ini = n=>n.split(' ').map(x=>x[0]).join('').substring(0,2);
+  const scoreColor = s => s >= 12 ? 'var(--green)' : s >= 7 ? 'var(--yellow)' : 'var(--red)';
+
+  data.forEach(l => {
+    tb.innerHTML += `
+      <tr onclick="openDetalle(${l.id})" style="cursor:pointer">
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="width:28px;height:28px;font-size:10px">${ini(l.name)}</div>
+          <div>
+            <strong>${l.name}</strong>
+            ${l.subnicho ? `<div style="font-size:10px;color:var(--text2)">${l.subnicho.replace('_',' ')}</div>` : ''}
+          </div>
+        </div></td>
+        <td style="color:var(--text2)">${l.phone}</td>
+        <td>${origs[l.origen] || ''}</td>
+        <td style="color:var(--text2);font-size:12px">${l.interes}</td>
+        <td>${spills[l.status] || ''}</td>
+        <td style="color:${scoreColor(l.score)};font-weight:600;font-size:12px">${l.score ? l.score + ' pts' : '—'}</td>
+        <td><button class="btn" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button></td>
+      </tr>`;
+  });
+}
+
+function filterLeads(q) {
+  document.querySelectorAll('#leadsBody tr').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+// ── KANBAN DESDE LEADS ─────────────────────────────────────────────────────
+function renderKanbanFromLeads() {
+  const cols = {
+    nuevo: 'col-n', contactado: 'col-c', calificado: 'col-q',
+    cita: 'col-a', cerrado: 'col-z', perdido: 'col-p'
+  };
+  const cnts = {
+    nuevo: 'cnt-n', contactado: 'cnt-c', calificado: 'cnt-q',
+    cita: 'cnt-a', cerrado: 'cnt-z', perdido: 'cnt-p'
+  };
+  // Limpiar columnas
+  Object.values(cols).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+
+  const scoreColor = s => s >= 12 ? '#34d399' : s >= 7 ? '#fbbf24' : '#f87171';
+  const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
+
+  LEADS.forEach(l => {
+    const colId = cols[l.status];
+    const col = document.getElementById(colId);
+    if (!col) return;
+
+    const origenBadge = l.origen === 'wa'
+      ? '<span class="badge b-wa">💬 WhatsApp</span>'
+      : '<span class="badge b-web">📋 Formulario</span>';
+
+    // Botón de avance según estado
+    const nextMap = {
+      nuevo:     {next:'contactado', label:'→ Contactado'},
+      contactado:{next:'calificado', label:'→ Calificado'},
+      calificado:{next:'cita',       label:'→ Cita agendada'},
+      cita:      {next:'cerrado',    label:'✅ Cerrar venta'},
+    };
+    const nextInfo = nextMap[l.status];
+    const nextBtn = nextInfo
+      ? `<button class="btn ${nextInfo.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${nextInfo.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${l.id},'${nextInfo.next}')">${nextInfo.label}</button>`
+      : '';
+
+    const card = document.createElement('div');
+    card.className = 'lcard';
+    card.id = `kcard-${l.id}`;
+    card.onclick = () => openDetalle(l.id);
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      <div class="lcard-name">${l.name}</div>
+      <div class="lcard-meta">${l.interes}</div>
+      <div class="lcard-badges">${origenBadge}
+        ${l.score ? `<span class="badge" style="background:#0d1a0d;color:${scoreColor(l.score)};border:1px solid ${scoreColor(l.score)}44">${scoreLabel(l.score)}</span>` : ''}
+      </div>
+      ${l.cita ? `<div style="font-size:11px;color:#34d399;margin-top:4px">📅 Cita: ${l.cita}</div>` : ''}
+      <div class="lcard-actions">
+        <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button>
+        ${nextBtn}
+      </div>`;
+    col.appendChild(card);
+  });
+
+  // Actualizar contadores
+  Object.entries(cnts).forEach(([status, cntId]) => {
+    const cnt = document.getElementById(cntId);
+    const col = document.getElementById(cols[status]);
+    if (cnt && col) cnt.textContent = col.querySelectorAll('.lcard').length;
+  });
+
+  // Actualizar badge nav pipeline
+  const badge = document.getElementById('pipelineBadge');
+  if (badge) badge.textContent = LEADS.length;
+}
+
+// ── LEAD DETAIL ────────────────────────────────────────────────────────────
+// Mapeo visual status → valor Airtable
+const STATUS_TO_AT = {
+  nuevo:'no_contactado', contactado:'contactado', calificado:'en_negociacion',
+  cita:'en_negociacion', cerrado:'cerrado', perdido:'descartado'
+};
+// Mapeo Airtable → visual (para re-render tras guardar)
+const AT_TO_STATUS = {
+  no_contactado:'nuevo', contactado:'contactado', en_negociacion:'calificado',
+  cerrado:'cerrado', descartado:'perdido'
+};
+
+function openDetalle(id) {
+  const l = LEADS[id] || LEADS[0];
+  document.getElementById('detalleTitulo').textContent = l.name;
+  const og = { wa:'💬 WhatsApp', form:'📋 Formulario', web:'📋 Formulario', ref:'🔥 Referido' };
+  const scoreColor = s => s >= 12 ? 'var(--green)' : s >= 7 ? 'var(--yellow)' : 'var(--red)';
+  const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
+
+  // Valor actual en Airtable
+  const estadoAt = STATUS_TO_AT[l.status] || 'no_contactado';
+  const estadoOpts = [
+    {v:'no_contactado', label:'🔵 No contactado'},
+    {v:'contactado',    label:'🟡 Contactado'},
+    {v:'en_negociacion',label:'🟣 En negociación'},
+    {v:'cerrado',       label:'🏆 Cerrado'},
+    {v:'descartado',    label:'🔴 Descartado'},
+  ];
+
+  document.getElementById('detalleBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      ${[
+        ['Teléfono', l.phone || '—', ''],
+        ['Presupuesto', l.presupuesto || '—', 'color:var(--accent2)'],
+        ['Origen', og[l.origen] || l.origen || '—', ''],
+        ['Score', l.score ? `<span style="color:${scoreColor(l.score)};font-weight:700">${l.score} pts — ${scoreLabel(l.score)}</span>` : '—', ''],
+        ['Sub-nicho', l.subnicho ? l.subnicho.replace(/_/g,' ') : '—', 'text-transform:capitalize'],
+      ].map(([k,v,s]) => `
+        <div style="background:var(--surface2);border-radius:8px;padding:11px">
+          <div style="color:var(--text2);font-size:11px;margin-bottom:3px">${k}</div>
+          <div style="font-weight:600;${s}">${v}</div>
+        </div>`).join('')}
+    </div>
+
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:7px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">✏️ Cambiar estado</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="selectEstado" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:13px;flex:1;min-width:160px;cursor:pointer">
+          ${estadoOpts.map(o => `<option value="${o.v}"${o.v===estadoAt?' selected':''}>${o.label}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="guardarEstado(${id})">
+          Guardar
+        </button>
+        <span id="estadoFeedback" style="font-size:11px;color:var(--text2)"></span>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:3px">Propiedad / Interés</div>
+      <div>${l.interes}</div>
+    </div>
+    ${l.cita ? `<div style="background:#064e3b;border:1px solid #1a5c33;border-radius:8px;padding:11px;margin-bottom:14px;color:#34d399;font-size:13px">
+      📅 Cita agendada: <strong>${l.cita}</strong> — coordinada automáticamente por el bot
+    </div>` : ''}
+    ${l.notas ? `<div style="background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:14px">
+      <div style="color:var(--text2);font-size:11px;margin-bottom:3px">📝 Notas del bot</div>
+      <div style="font-size:13px;line-height:1.5;color:var(--text)">${l.notas}</div>
+    </div>` : ''}
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">Historial</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot" style="background:#6c63ff"></div>
+        <div><div class="tl-title">Lead registrado — via ${og[l.origen] || l.origen}</div><div class="tl-time">${l.fecha}</div></div>
+      </div>
+      ${l.status !== 'nuevo' ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#ffa94d"></div>
+        <div><div class="tl-title">Bot inició conversación — respondió en segundos</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+      ${['calificado','cita','cerrado'].includes(l.status) ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#a78bfa"></div>
+        <div><div class="tl-title">Calificado — presupuesto y necesidades confirmados</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+      ${(l.status === 'cita' || l.cita) ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#00d4aa"></div>
+        <div><div class="tl-title">Cita agendada por bot${l.cita ? ' — ' + l.cita : ''}</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+      ${l.status === 'cerrado' ? `<div class="tl-item">
+        <div class="tl-dot" style="background:#34d399"></div>
+        <div><div class="tl-title">🏆 Venta / alquiler cerrado</div><div class="tl-time">${l.fecha}</div></div>
+      </div>` : ''}
+    </div>
+    <div class="ma">
+      <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
+    </div>`;
+  openModal('modalDetalle');
+}
+
+async function guardarEstado(id) {
+  const l = LEADS[id];
+  if (!l) return;
+  const nuevoAt = document.getElementById('selectEstado').value;
+  const fb = document.getElementById('estadoFeedback');
+  fb.textContent = '⏳ Guardando...';
+  fb.style.color = 'var(--text2)';
+
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Estado: nuevoAt }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'ok') {
+      fb.textContent = '✅ Guardado en Airtable';
+      fb.style.color = 'var(--green)';
+      // Actualizar estado local
+      const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
+      LEADS[id].status = nuevoStatus;
+      renderLeads();
+      renderKanbanFromLeads();
+      addAct(`<strong>${l.name}</strong> — estado actualizado a <em>${nuevoAt.replace('_',' ')}</em>`, 'var(--accent)', 'ahora mismo');
+    } else {
+      throw new Error(data.detalle || 'Error desconocido');
+    }
+  } catch (err) {
+    // Demo: actualizar localmente aunque falle el backend
+    const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
+    LEADS[id].status = nuevoStatus;
+    renderLeads();
+    renderKanbanFromLeads();
+    fb.textContent = '⚠ Actualizado localmente (backend offline)';
+    fb.style.color = 'var(--yellow)';
+  }
+}
+
+// ── VERSIONADO ──────────────────────────────────────────────────────────────
+const CRM_VERSION = '1.0.0';
+const CRM_VERSION_KEY = 'crm_version_dismissed';
+
+async function checkVersion() {
+  try {
+    const res = await fetch(`${SAAS_API}/crm/version`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.version && data.version !== CRM_VERSION) {
+      const dismissed = localStorage.getItem(CRM_VERSION_KEY);
+      if (dismissed === data.version) return;
+      showUpdateBanner(data.version, data.changelog || '');
+    }
+  } catch(e) { /* silencioso */ }
+}
+
+function showUpdateBanner(newVersion, changelog) {
+  const existing = document.getElementById('updateBanner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'updateBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#6c63ff,#00d4aa);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,sans-serif;font-size:13px;color:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.3)';
+  const changelogText = changelog ? ` — ${changelog}` : '';
+  banner.innerHTML = `
+    <div>🔔 <strong>Nueva versión disponible (v${newVersion})</strong>${changelogText}</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="location.reload(true)" style="background:#fff;color:#1a1d27;border:none;padding:5px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">🔄 Actualizar</button>
+      <button onclick="dismissUpdate('${newVersion}')" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ahora no</button>
+    </div>`;
+  document.body.prepend(banner);
+}
+
+function dismissUpdate(version) {
+  localStorage.setItem(CRM_VERSION_KEY, version);
+  const banner = document.getElementById('updateBanner');
+  if (banner) banner.remove();
+}
+
+// ── MULTI-TENANT + LOGIN ─────────────────────────────────────────────────────
+const SAAS_API = 'https://agentes.arnaldoayalaestratega.cloud';
+let API_BASE = `${SAAS_API}/demos/inmobiliaria`; // fallback
+let TENANT_SLUG = 'demo';
+let pinBuffer = '';
+
+// ── PIN keyboard ─────────────────────────────────────────────────────────────
+function pinKey(k) {
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  if (k === '⌫') {
+    pinBuffer = pinBuffer.slice(0, -1);
+  } else if (k !== '' && pinBuffer.length < 4) {
+    pinBuffer += k;
+  }
+  // Actualizar dots
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`dot${i}`);
+    dot.style.background = i < pinBuffer.length ? '#6c63ff' : '#2e3347';
+  }
+  if (pinBuffer.length === 4) {
+    setTimeout(submitPin, 200);
+  }
+}
+
+async function submitPin() {
+  const err = document.getElementById('loginError');
+  if (pinBuffer.length < 4) {
+    err.textContent = 'Ingresá los 4 dígitos del PIN';
+    return;
+  }
+  try {
+    const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: pinBuffer }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      sessionStorage.setItem(`crm_token_${TENANT_SLUG}`, data.token);
+      // Ocultar login, mostrar app
+      document.getElementById('loginScreen').style.display = 'none';
+      document.querySelector('.layout') && (document.querySelector('.layout').style.display = ''); nav('inicio', document.querySelector('.nav-item'));
+      cargarLeads();
+      renderProps();
+      cargarActivos();
+      renderAgenda();
+    } else {
+      pinBuffer = '';
+      for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).style.background = '#f87171';
+      setTimeout(() => {
+        for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).style.background = '#2e3347';
+      }, 600);
+      err.textContent = 'PIN incorrecto. Intentá de nuevo.';
+    }
+  } catch(e) {
+    pinBuffer = '';
+    err.textContent = 'Error de conexión. Reintentá.';
+  }
+}
+
+// ── Init tenant + login flow ─────────────────────────────────────────────────
+async function initTenant() {
+  const params = new URLSearchParams(window.location.search);
+  TENANT_SLUG = params.get('tenant') || 'demo';
+  try {
+    const res = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`tenant no encontrado: ${TENANT_SLUG}`);
+    const t = await res.json();
+
+    // Aplicar API_BASE
+    API_BASE = `${SAAS_API}${t.api_prefix}`;
+
+    // Aplicar branding
+    document.getElementById('page-title').textContent = `${t.nombre} — CRM`;
+    const topEmpresa = document.getElementById('topEmpresa');
+    if (topEmpresa) topEmpresa.textContent = t.nombre;
+    // Actualizar chip del topbar con nombre del tenant
+    const topUsuario = document.getElementById('topUsuario');
+    const topAvatar = document.getElementById('topAvatar');
+    if (topUsuario) topUsuario.textContent = t.nombre;
+    if (topAvatar) topAvatar.textContent = t.nombre.substring(0,2).toUpperCase();
+    if (t.logo_url) aplicarLogo(t.logo_url);
+    if (t.color_primario) document.documentElement.style.setProperty('--accent', t.color_primario);
+
+    // Verificar estado de pago
+    const estadoPago = t.estado_pago || 'trial';
+    if (estadoPago === 'suspendido') {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f1117;font-family:Inter,sans-serif;color:#e8eaf0;text-align:center;padding:20px">
+          <div>
+            <div style="font-size:48px;margin-bottom:16px">🔒</div>
+            <h1 style="font-size:1.5rem;margin-bottom:8px">Cuenta suspendida</h1>
+            <p style="color:#8b92a5;max-width:400px">Tu suscripción fue suspendida. Contactá a soporte para reactivar tu cuenta.</p>
+            <a href="https://wa.me/5219987434234?text=Hola, necesito reactivar mi CRM (${TENANT_SLUG})" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#6c63ff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">📱 Contactar soporte</a>
+          </div>
+        </div>`;
+      return false;
+    }
+    if (estadoPago === 'vencido') {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f1117;font-family:Inter,sans-serif;color:#e8eaf0;text-align:center;padding:20px">
+          <div>
+            <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+            <h1 style="font-size:1.5rem;margin-bottom:8px">Suscripción vencida</h1>
+            <p style="color:#8b92a5;max-width:400px">Tu período de suscripción venció${t.fecha_vence ? ' el ' + t.fecha_vence : ''}. Renová para seguir usando el CRM.</p>
+            <a href="https://wa.me/5219987434234?text=Hola, quiero renovar mi CRM (${TENANT_SLUG})" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#38a169;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">💳 Renovar suscripción</a>
+            <br><a href="https://wa.me/5219987434234?text=Tengo dudas sobre mi cuenta (${TENANT_SLUG})" style="display:inline-block;margin-top:10px;color:#8b92a5;font-size:13px;text-decoration:underline">Contactar soporte</a>
+          </div>
+        </div>`;
+      return false;
+    }
+
+    // Login si requiere PIN
+    if (t.requiere_pin) {
+      const token = sessionStorage.getItem(`crm_token_${TENANT_SLUG}`);
+      if (!token) {
+        // Mostrar pantalla de login
+        const ls = document.getElementById('loginScreen');
+        document.getElementById('loginEmpresa').textContent = t.nombre;
+        if (t.logo_url) {
+          document.getElementById('loginLogo').innerHTML = `<img src="${t.logo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`;
+        }
+        ls.style.display = 'flex';
+        // Ocultar layout principal hasta autenticar
+        const layout = document.querySelector('.layout');
+        if (layout) layout.style.display = 'none';
+        return false; // no continuar cargando datos
+      }
+    }
+  } catch(err) {
+    console.warn('[Tenant] Usando config por defecto:', err.message);
+  }
+  return true; // continuar cargando datos
+}
+
+// ── PROPS — conectado a Airtable via backend ────────────────────────────────
+
+async function renderProps() {
+  const g = document.getElementById('propsGrid');
+  const statusEl = document.getElementById('propsStatus');
+  const subEl = document.getElementById('propsSub');
+
+  g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
+    <div style="font-size:32px;margin-bottom:8px">⏳</div>Cargando desde Airtable...
+  </div>`;
+  if(statusEl) statusEl.innerHTML = '<span style="color:var(--yellow)">⏳ Conectando...</span>';
+
+  try {
+    const res = await fetch(`${API_BASE}/crm/propiedades`, { signal: AbortSignal.timeout(12000) });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const records = data.records || [];
+
+    if(records.length === 0) {
+      g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
+        <div style="font-size:32px;margin-bottom:8px">🏠</div>No hay propiedades cargadas en Airtable aún.
+      </div>`;
+      if(statusEl) statusEl.innerHTML = '<span style="color:var(--text2)">0 propiedades</span>';
+      return;
+    }
+
+    _cachedProps = records;
+    if(subEl) subEl.textContent = `${records.length} propiedades · datos en tiempo real desde Airtable`;
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ Airtable conectado · ${records.length} registros</span>`;
+
+    g.innerHTML = '';
+    records.forEach(p => {
+      // Normalizar campos Airtable
+      const titulo = p.Titulo || p.titulo || p.Nombre || 'Propiedad';
+      const precio = p.Precio || p.precio || 0;
+      const moneda = p.Moneda || p.moneda || 'USD';
+      const precioStr = precio ? `$${Number(precio).toLocaleString('es')} ${moneda}` : 'Consultar precio';
+      const disponible = p.Disponible || p.disponible || '';
+      const zona = p.Zona || p.zona || '';
+      const tipo = p.Tipo || p.tipo || '';
+      const operacion = p.Operacion || p.operacion || '';
+      const desc = p.Descripcion || p.descripcion || '';
+      const dorms = p.Dormitorios || p.dormitorios || '';
+      const metrosCub = p.Metros_Cubiertos || p.metros_cubiertos || '';
+      const metrosTerr = p.Metros_Terreno || p.metros_terreno || '';
+      const mapsUrl = p.Google_Maps_URL || p.google_maps_url || '';
+
+      // Imagen — puede ser array Airtable [{url:...}] o string
+      let imgUrl = '';
+      const imgField = p.Imagen_URL || p.imagen_url || p.Foto || p.foto || '';
+      if(Array.isArray(imgField) && imgField.length > 0) {
+        imgUrl = imgField[0].url || imgField[0].thumbnails?.large?.url || '';
+      } else if(typeof imgField === 'string') {
+        imgUrl = imgField;
+      }
+
+      // Status
+      const isDisp = disponible.includes('Disponible') || disponible.includes('disponible');
+      const isRes  = disponible.includes('Reservado') || disponible.includes('reservado');
+      const sc = isDisp ? 'ps-disp' : isRes ? 'ps-res' : 'ps-vend';
+      const sl = isDisp ? 'Disponible' : isRes ? 'Reservado' : 'No disponible';
+
+      // Specs
+      const specs = [];
+      if(dorms) specs.push(`🛏 ${dorms} dorm.`);
+      if(metrosCub) specs.push(`📐 ${metrosCub}m²`);
+      if(metrosTerr) specs.push(`🌿 ${metrosTerr}m² terreno`);
+      if(tipo) specs.push(tipo);
+      if(operacion) specs.push(operacion);
+
+      // Imagen o emoji fallback
+      const imgContent = imgUrl
+        ? `<img src="${imgUrl}" alt="${titulo}" style="width:100%;height:100%;object-fit:cover;border-radius:0" onerror="this.parentElement.innerHTML='🏠'">`
+        : '🏠';
+
+      const pid = p.id || p.ID || '';
+      g.innerHTML += `
+        <div class="pcard" onclick="verDetalleProp('${pid}')" style="cursor:pointer">
+          <div class="pcard-img" style="${imgUrl?'padding:0;overflow:hidden':''}">${imgContent}<span class="pcard-status ${sc}">${sl}</span></div>
+          <div class="pcard-body">
+            <div class="pcard-title">${titulo}</div>
+            ${zona ? `<div class="pcard-loc">📍 ${zona}</div>` : ''}
+            <div class="pcard-price">${precioStr}</div>
+            ${specs.length ? `<div class="pcard-specs">${specs.map(s=>`<span>${s}</span>`).join('')}</div>` : ''}
+            ${desc ? `<div style="color:var(--text2);font-size:12px;margin-top:6px;line-height:1.4">${desc.substring(0,90)}${desc.length>90?'…':''}</div>` : ''}
+          </div>
+          <div class="pcard-foot">
+            <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
+            <div style="display:flex;gap:5px" onclick="event.stopPropagation()">
+              ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺 Maps</a>` : ''}
+              <button class="btn" style="padding:4px 10px;font-size:11px" onclick="verDetalleProp('${pid}')">Ver detalle</button>
+            </div>
+          </div>
+        </div>`;
+    });
+
+  } catch(err) {
+    // Fallback a datos simulados si el backend no responde
+    console.warn('[Propiedades] Backend no disponible, usando datos demo:', err.message);
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--yellow)">⚠ Datos demo (backend offline)</span>`;
+    if(subEl) subEl.textContent = 'Mostrando datos de ejemplo — conectado a Airtable en producción';
+    g.innerHTML = '';
+    PROPS.forEach((p,i)=>{
+      const sc=p.status==='disponible'?'ps-disp':p.status==='reservado'?'ps-res':'ps-vend';
+      const sl=p.status==='disponible'?'Disponible':p.status==='reservado'?'Reservado':'No disponible';
+      g.innerHTML+=`
+        <div class="pcard" onclick="verDetallePropDemo(${i})" style="cursor:pointer">
+          <div class="pcard-img">${p.emoji}<span class="pcard-status ${sc}">${sl}</span></div>
+          <div class="pcard-body">
+            <div class="pcard-title">${p.title}</div>
+            <div class="pcard-loc">📍 ${p.loc}</div>
+            <div class="pcard-price">${p.price}</div>
+            <div class="pcard-specs">${p.specs.map(s=>`<span>✓ ${s}</span>`).join('')}</div>
+          </div>
+          <div class="pcard-foot">
+            <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
+            <button class="btn" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();verDetallePropDemo(${i})">Ver detalle</button>
+          </div>
+        </div>`;
+    });
+  }
+}
+
+// ── DETALLE PROPIEDAD ────────────────────────────────────────────────────────
+// Cache de props cargadas desde Airtable para el modal
+let _cachedProps = [];
+
+function _renderModalProp(titulo, zona, precio, moneda, tipo, operacion, disponible, desc, dorms, metros, metrosTerr, imgUrl, mapsUrl, videoUrl) {
+  const precioStr = precio ? `${moneda === 'ARS' ? '$' : 'USD '}${Number(precio).toLocaleString('es-AR')}` : 'Consultar';
+  const isDisp = (disponible||'').toLowerCase().includes('disponible');
+  const isRes  = (disponible||'').toLowerCase().includes('reservado');
+  const badgeColor = isDisp ? '#00d4aa' : isRes ? '#ffa94d' : '#ff6b6b';
+  const badgeLabel = isDisp ? '✅ Disponible' : isRes ? '⏳ Reservado' : '❌ No disponible';
+
+  const specs = [
+    dorms ? `🛏 ${dorms} dormitorios` : '',
+    metros ? `📐 ${metros}m² cubiertos` : '',
+    metrosTerr ? `🌿 ${metrosTerr}m² terreno` : '',
+    tipo ? `🏠 ${tipo}` : '',
+    operacion ? `🔑 ${operacion}` : '',
+  ].filter(Boolean);
+
+  const ytEmbed = videoUrl ? (() => {
+    const m = videoUrl.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
+    if (!m) return '';
+    return `<div style="border-radius:10px;overflow:hidden;margin-top:14px">
+      <iframe width="100%" height="220" src="https://www.youtube.com/embed/${m[1]}" frameborder="0" allowfullscreen style="display:block"></iframe>
+    </div>`;
+  })() : '';
+
+  document.getElementById('modalPropBody').innerHTML = `
+    ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:220px;object-fit:cover;border-radius:12px;margin-bottom:16px" onerror="this.style.display='none'">` : ''}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
+      <h3 style="font-size:18px;font-weight:700;color:#e8eaf0;line-height:1.3">${titulo || 'Sin título'}</h3>
+      <span style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}44;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;white-space:nowrap">${badgeLabel}</span>
+    </div>
+    ${zona ? `<div style="color:#8b92a5;font-size:13px;margin-bottom:12px">📍 ${zona}</div>` : ''}
+    <div style="font-size:22px;font-weight:700;color:#00d4aa;margin-bottom:16px">${precioStr} <span style="font-size:13px;color:#8b92a5">${moneda||'USD'}</span></div>
+    ${specs.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${specs.map(s=>`<span style="background:#222636;border:1px solid #2e3347;border-radius:8px;padding:5px 10px;font-size:12px">${s}</span>`).join('')}</div>` : ''}
+    ${desc ? `<p style="color:#8b92a5;font-size:13px;line-height:1.6;margin-bottom:14px">${desc}</p>` : ''}
+    ${ytEmbed}
+    ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn btn-primary" style="margin-top:14px;display:inline-flex;gap:6px">🗺 Ver en Google Maps</a>` : ''}
+  `;
+  openModal('modalProp');
+}
+
+function verDetalleProp(id) {
+  // Buscar en cache de props cargadas desde API
+  const p = _cachedProps.find(x => (x.id||x.ID) === id);
+  if (!p) return;
+  let imgUrl = '';
+  const imgField = p.Imagen_URL || p.imagen_url || p.Foto || '';
+  if(Array.isArray(imgField) && imgField.length > 0) imgUrl = imgField[0].thumbnails?.large?.url || imgField[0].url || '';
+  else if(typeof imgField === 'string') imgUrl = imgField;
+  _renderModalProp(
+    p.Titulo||p.titulo, p.Zona||p.zona, p.Precio||p.precio, p.Moneda||p.moneda||'USD',
+    p.Tipo||p.tipo, p.Operacion||p.operacion, p.Disponible||p.disponible,
+    p.Descripcion||p.descripcion, p.Dormitorios||p.dormitorios,
+    p.Metros_Cubiertos||p.metros_cubiertos, p.Metros_Terreno||p.metros_terreno,
+    imgUrl, p.Google_Maps_URL||p.google_maps_url||'', p.Video_URL||p.video_url||''
+  );
+}
+
+function verDetallePropDemo(idx) {
+  const p = PROPS[idx];
+  if (!p) return;
+  _renderModalProp(p.title, p.loc, null, 'USD', null, null, p.status, null, null, null, null, '', '', '');
+}
+
+// ── AGENDA ─────────────────────────────────────────────────────────────────
+const CITA_ESTADOS = {}; // id -> estado actual
+
+async function renderAgenda() {
+  const list=document.getElementById('citasList'); if(!list) return;
+  list.innerHTML='<div style="padding:16px;color:var(--text2)">Cargando citas...</div>';
+
+  // Cargar leads con Fecha_Cita desde Airtable
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes`, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const records = data.records || [];
+
+    const DIAS_ES = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+    const MESES_ES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const COLORES = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ec4899','#06b6d4'];
+
+    CITAS = records
+      .filter(r => r.Fecha_Cita)
+      .map((r, i) => {
+        const dt = new Date(r.Fecha_Cita + 'T10:00:00');
+        const nombre = [r.Nombre||'', r.Apellido||''].join(' ').trim() || r.Telefono || 'Lead';
+        const tipo = r.Tipo_Propiedad || '';
+        const zona = r.Zona || '';
+        const prop = [tipo, zona].filter(Boolean).join(' · ') || 'Consulta general';
+        return {
+          id: r.id,
+          name: nombre,
+          dia: DIAS_ES[dt.getDay()],
+          num: String(dt.getDate()),
+          mes: MESES_ES[dt.getMonth()],
+          hora: dt.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit', hour12:true}).toUpperCase(),
+          prop: prop,
+          color: COLORES[i % COLORES.length],
+          estado_lead: r.Estado || 'contactado',
+          fecha_raw: r.Fecha_Cita,
+        };
+      })
+      .sort((a,b) => a.fecha_raw.localeCompare(b.fecha_raw));
+
+  } catch(e) {
+    console.warn('[AGENDA] Error cargando citas:', e);
+    CITAS = [];
+  }
+
+  list.innerHTML='';
+  if (CITAS.length === 0) {
+    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--text2)">No hay citas agendadas aún.<br>El bot las crea automáticamente cuando un lead agenda con Cal.com 📅</div>';
+  }
+
+  const pendientes = CITAS.filter((_,i) => (CITA_ESTADOS[i]||'pendiente')==='pendiente').length;
+  const completadas = CITAS.filter((_,i) => CITA_ESTADOS[i]==='completada').length;
+
+  CITAS.forEach((c,i)=>{
+    const estado = CITA_ESTADOS[i] || 'pendiente';
+    const estadoClass = estado==='completada'?'ep-completada':estado==='cancelada'?'ep-cancelada':'ep-pendiente';
+    const estadoLabel = estado==='completada'?'✅ Completada':estado==='cancelada'?'❌ Cancelada':'⏳ Pendiente';
+    list.innerHTML+=`
+      <div class="cita-item" id="cita-${i}">
+        <div class="cita-date-box" style="background:${c.color}22;border:1px solid ${c.color}44">
+          <div class="cita-date-day" style="color:${c.color}">${c.dia} ${c.mes}</div>
+          <div class="cita-date-num" style="color:${c.color}">${c.num}</div>
+        </div>
+        <div class="cita-body">
+          <div style="font-weight:600;font-size:13px">${c.name}</div>
+          <div style="color:var(--text2);font-size:12px">${c.hora} · ${c.prop}</div>
+          <div class="cita-actions">
+            <span class="estado-pill ${estadoClass}">${estadoLabel}</span>
+            <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="cambiarEstadoCita(${i},'completada')">✅ Completar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;background:#3d0d0d;border-color:#7a1a1a;color:#f87171" onclick="cambiarEstadoCita(${i},'cancelada')">✗ Cancelar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;margin-left:auto" onclick="abrirDetalleCita(${i})">📋 Ver lead</button>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  // Actualizar estadísticas
+  const statTotal = document.querySelector('#panel-agenda .act-head span');
+  if(statTotal) statTotal.textContent = `📅 ${CITAS.length} cita(s)`;
+  const elTotal = document.getElementById('stat-total');
+  const elComp = document.getElementById('stat-completadas');
+  const elPend = document.getElementById('stat-pendientes');
+  if(elTotal) elTotal.textContent = CITAS.length;
+  if(elComp) elComp.textContent = completadas;
+  if(elPend) elPend.textContent = pendientes;
+}
+
+function cambiarEstadoCita(i, nuevoEstado) {
+  CITA_ESTADOS[i] = nuevoEstado;
+  renderAgenda();
+  const c = CITAS[i];
+  const msg = nuevoEstado==='completada'
+    ? `<strong>Cita completada</strong> — ${c.name} visitó ${c.prop}`
+    : `<strong>Cita cancelada</strong> — ${c.name} · ${c.prop}`;
+  addAct(msg, nuevoEstado==='completada'?'var(--green)':'var(--red)', 'ahora mismo');
+  if(nuevoEstado==='completada') showNotif('🏆 Cita completada', `${c.name} — marcá el lead como Cerrado si cerraste la venta`);
+}
+
+function abrirDetalleCita(i) {
+  const c = CITAS[i];
+  // Find matching lead
+  const lead = LEADS.find(l=>l.name===c.name) || LEADS[10];
+  openDetalle(lead.id);
+}
+
+// ── MOVER LEAD EN KANBAN ────────────────────────────────────────────────────
+const COL_MAP = {
+  contactado:{col:'col-c',cnt:'cnt-c',label:'Contactado',next:'calificado',nextLabel:'→ Calificado'},
+  calificado:{col:'col-q',cnt:'cnt-q',label:'Calificado',next:'cita',nextLabel:'→ Cita agendada'},
+  cita:{col:'col-a',cnt:'cnt-a',label:'Cita Agendada',next:'cerrado',nextLabel:'✅ Cerrar venta'},
+  cerrado:{col:'col-z',cnt:'cnt-z',label:'Cerrado 🏆',next:null,nextLabel:''},
+};
+
+function moverLead(id, destino) {
+  const card = document.getElementById(`kcard-${id}`);
+  if(!card) return;
+
+  // remove from current col
+  card.parentElement.removeChild(card);
+
+  // update all kanban counts
+  ['cnt-n','cnt-c','cnt-q','cnt-a','cnt-z'].forEach(cntId=>{
+    const el=document.getElementById(cntId);
+    if(el){
+      const col=document.getElementById(cntId.replace('cnt-','col-').replace('n','n').replace('c','c').replace('q','q').replace('a','a').replace('z','z'));
+    }
+  });
+
+  // add to dest col
+  const info = COL_MAP[destino];
+  const destCol = document.getElementById(info.col);
+  if(!destCol) return;
+
+  const l = LEADS[id];
+  const origenBadge = l.origen==='wa'?'<span class="badge b-wa">💬 WhatsApp</span>':l.origen==='web'?'<span class="badge b-web">📋 Web</span>':'<span class="badge b-ref">🔥 Referido</span>';
+
+  card.className='lcard fresh';
+  const nextBtn = info.next
+    ? `<button class="btn ${info.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${info.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${id},'${info.next}')">${info.nextLabel}</button>`
+    : `<span style="color:var(--green);font-size:11px;font-weight:600">🏆 Venta cerrada</span>`;
+
+  card.querySelector('.lcard-actions').innerHTML = `
+    <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(${id})">Ver</button>
+    ${nextBtn}
+  `;
+  destCol.insertBefore(card, destCol.firstChild);
+
+  // recount
+  recontarKanban();
+
+  // update lead data
+  const statusMap = {contactado:'contactado',calificado:'calificado',cita:'cita',cerrado:'cita'};
+  if(LEADS[id]) LEADS[id].status = statusMap[destino]||destino;
+
+  // feedback
+  const msgs = {
+    contactado:`<strong>${l.name}</strong> movido a Contactado`,
+    calificado:`<strong>${l.name}</strong> calificado — bot confirmó presupuesto y necesidades`,
+    cita:`<strong>${l.name}</strong> tiene cita agendada 📅`,
+    cerrado:`🏆 <strong>¡Venta cerrada!</strong> — ${l.name}`,
+  };
+  addAct(msgs[destino]||'Lead actualizado','var(--accent)','ahora mismo');
+  if(destino==='cerrado') showNotif('🏆 ¡Venta cerrada!',`${l.name} — ¡felicitaciones!`);
+
+  // refresh leads table if visible
+  renderLeads();
+}
+
+function recontarKanban() {
+  const map = {n:'col-n',c:'col-c',q:'col-q',a:'col-a',z:'col-z',p:'col-p'};
+  Object.entries(map).forEach(([k,colId])=>{
+    const col=document.getElementById(colId);
+    const cnt=document.getElementById(`cnt-${k}`);
+    if(col&&cnt) cnt.textContent=[...col.querySelectorAll('.lcard')].length;
+  });
+}
+
+// ── RESÚMENES IA ────────────────────────────────────────────────────────────
+const RESUMENES = [
+  {leadId:5,stars:4,duracion:"8 min",mensajes:12,
+   resumen:"Busca lote residencial entre 250-300m² para construir casa familiar. Tiene presupuesto aprobado de $180K USD. Prefiere financiamiento directo a 36 meses. Muy interesado, preguntó por amenidades y vecindario.",
+   datos:{presupuesto:"$180K USD",zona:"Fracc. Sur",urgencia:"Alta — quiere decidir este mes",financiamiento:"36 meses directo"}},
+  {leadId:8,stars:5,duracion:"12 min",mensajes:18,
+   resumen:"Lead caliente. Confirmó presupuesto de $200K USD para Lote #12. Ya visitó el fraccionamiento anteriormente. Está comparando con otra opción. Cita agendada para cerrar trato.",
+   datos:{presupuesto:"$200K USD",zona:"Fracc. Sur · Lote #12",urgencia:"Muy alta — decidiendo esta semana",financiamiento:"Contado"}},
+  {leadId:10,stars:5,duracion:"6 min",mensajes:9,
+   resumen:"Lead altamente calificado. Tiene pre-aprobación bancaria. Solo necesita visitar el lote físicamente para confirmar. Llegará con su esposa a la cita. Muy amigable.",
+   datos:{presupuesto:"$175K USD",zona:"Fracc. Norte · Lote #47",urgencia:"Alta — cita confirmada Jue 3 Abr",financiamiento:"Crédito bancario pre-aprobado"}},
+  {leadId:6,stars:3,duracion:"5 min",mensajes:7,
+   resumen:"Interesado en 2 departamentos en Zona Polanco. Presupuesto alto pero indeciso. Comparando varias opciones. Recomendable hacer seguimiento personal.",
+   datos:{presupuesto:"$400K USD",zona:"Polanco",urgencia:"Media — sin fecha definida",financiamiento:"Por confirmar"}},
+];
+
+function renderResumenes() {
+  const grid = document.getElementById('resumenesGrid');
+  if(!grid) return;
+  grid.innerHTML='';
+  RESUMENES.forEach(r=>{
+    const l = LEADS[r.leadId];
+    const ini = l.name.split(' ').map(x=>x[0]).join('').substring(0,2);
+    const stars = '⭐'.repeat(r.stars) + '☆'.repeat(5-r.stars);
+    grid.innerHTML+=`
+      <div class="rcard">
+        <div class="rcard-head">
+          <div class="rcard-av" style="background:linear-gradient(135deg,#6c63ff,#a78bfa)">${ini}</div>
+          <div class="rcard-info">
+            <div class="rcard-name">${l.name}</div>
+            <div class="rcard-sub">🤖 Bot conversó ${r.duracion} · ${r.mensajes} mensajes · ${l.fecha}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="stars">${stars}</div>
+            <div style="color:var(--text2);font-size:11px;margin-top:2px">Calificación del bot</div>
+          </div>
+        </div>
+        <div class="rcard-body">
+          <div class="rcard-field">
+            <div class="rcard-field-label">💰 Presupuesto</div>
+            <div class="rcard-field-val" style="color:var(--accent2);font-weight:700">${r.datos.presupuesto}</div>
+          </div>
+          <div class="rcard-field">
+            <div class="rcard-field-label">📍 Zona de interés</div>
+            <div class="rcard-field-val">${r.datos.zona}</div>
+          </div>
+          <div class="rcard-field">
+            <div class="rcard-field-label">⚡ Urgencia</div>
+            <div class="rcard-field-val">${r.datos.urgencia}</div>
+          </div>
+          <div class="rcard-field">
+            <div class="rcard-field-label">🏦 Financiamiento</div>
+            <div class="rcard-field-val">${r.datos.financiamiento}</div>
+          </div>
+          <div style="grid-column:1/-1;background:var(--surface2);border-radius:8px;padding:10px">
+            <div style="color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">📝 Resumen generado por bot</div>
+            <div style="font-size:13px;line-height:1.6;color:var(--text)">${r.resumen}</div>
+          </div>
+        </div>
+        <div class="rcard-foot">
+          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openDetalle(${r.leadId})">Ver perfil completo</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="moverLead(${r.leadId},'${LEADS[r.leadId].status==='contactado'?'calificado':'cita'}')">Avanzar etapa →</button>
+          <span style="margin-left:auto;color:var(--text2);font-size:11px">Estado: <strong style="color:var(--text)">${LEADS[r.leadId].status}</strong></span>
+        </div>
+      </div>`;
+  });
+}
+
+// ── SIMULATE NEW LEAD ──────────────────────────────────────────────────────
+function simLead() {
+  const names=["Felipe Morales","Valentina Cruz","Andrés Ramos","Sofía Jiménez","Miguel Díaz","Luciana Pérez"];
+  const interes=["Lote residencial zona norte","Casa 3 rec. con jardín","Depto. torre céntrica","Local comercial av. principal","Terreno 500m² inversión"];
+  const n=names[simCount%names.length];
+  const it=interes[simCount%interes.length];
+  simCount++;
+
+  // Add to kanban col-n
+  const col=document.getElementById('col-n');
+  if(col){
+    const card=document.createElement('div');
+    card.className='lcard fresh';
+    card.innerHTML=`<div class="lcard-name">${n}</div><div class="lcard-meta">💬 WhatsApp · Ahora mismo<br>${it}</div><div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span><span class="badge" style="background:#0d2e1a;color:#34d399;border:1px solid #1a5c33">🤖 Bot respondiendo</span></div>`;
+    col.insertBefore(card,col.firstChild);
+    const cnt=document.getElementById('cnt-n');
+    if(cnt) cnt.textContent=parseInt(cnt.textContent)+1;
+  }
+
+  // KPI
+  const kt=document.getElementById('kpi-total');
+  if(kt) kt.textContent=parseInt(kt.textContent)+1;
+
+  // Notif
+  showNotif(`🔔 Nuevo lead: ${n}`,`Llegó via WhatsApp · Bot ya lo está atendiendo`);
+
+  // Activity
+  addAct(`<strong>Nuevo lead atendido por bot</strong> — ${n} escribió por WhatsApp, interés: ${it}`, 'var(--green)', 'ahora mismo');
+}
+
+// ── NOTIF ──────────────────────────────────────────────────────────────────
+function showNotif(title,body) {
+  document.getElementById('npTitle').textContent=title;
+  document.getElementById('npBody').textContent=body;
+  const p=document.getElementById('notifPopup'); p.classList.add('show');
+  const b=document.getElementById('notifBadge'); b.textContent=parseInt(b.textContent)+1;
+  setTimeout(()=>p.classList.remove('show'),4500);
+}
+function hideNotif(){ document.getElementById('notifPopup').classList.remove('show'); }
+function toggleNotif(){ document.getElementById('notifBadge').textContent='0'; }
+
+// ── ACTIVITY ───────────────────────────────────────────────────────────────
+function addAct(text,color,time) {
+  const list=document.getElementById('actList'); if(!list) return;
+  const item=document.createElement('div');
+  item.className='act-item'; item.style.animation='slideIn .4s ease';
+  item.innerHTML=`<div class="act-dot" style="background:${color}"></div><div class="act-text">${text}</div><div class="act-time">${time}</div>`;
+  list.insertBefore(item,list.firstChild);
+  while(list.children.length>7) list.removeChild(list.lastChild);
+}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+
+function crearLead() {
+  const name=document.getElementById('nl-name').value||'Nuevo Contacto';
+  closeModal('modalNuevo');
+  showNotif('✅ Lead creado','Bot iniciará conversación en WhatsApp en segundos');
+  addAct(`<strong>Lead creado manualmente: ${name}</strong> — bot iniciará contacto en WhatsApp`, 'var(--accent)', 'ahora mismo');
+  const kt=document.getElementById('kpi-total');
+  if(kt) kt.textContent=parseInt(kt.textContent)+1;
+}
+
+// ── FORM PREVIEWS ──────────────────────────────────────────────────────────
+const FORM_DATA = {
+  dev:{
+    title:"🏗️ Formulario — Desarrolladora",
+    sub:"Para anuncios de lotes / casas en preventa",
+    color:"#3b82f6",
+    fields:[
+      {label:"¿Cuál es tu nombre?",type:"text",placeholder:"Tu nombre completo"},
+      {label:"Tu WhatsApp",type:"tel",placeholder:"+52 55 0000-0000"},
+      {label:"¿Qué tipo de lote buscás?",type:"select",opts:["Lote residencial","Lote comercial","Casa en preventa"]},
+      {label:"¿Cuál es tu presupuesto aproximado?",type:"select",opts:["Menos de $100K USD","$100K - $200K USD","Más de $200K USD"]},
+      {label:"¿Para qué lo usarías?",type:"select",opts:["Construir mi casa","Inversión / reventa"]},
+    ],
+    cta:"Quiero que me contacten 🏗️",
+  },
+  agency:{
+    title:"🏢 Formulario — Agencia Inmobiliaria",
+    sub:"Para anuncios de compra/renta de propiedades",
+    color:"#8b5cf6",
+    fields:[
+      {label:"¿Cuál es tu nombre?",type:"text",placeholder:"Tu nombre completo"},
+      {label:"Tu WhatsApp",type:"tel",placeholder:"+52 55 0000-0000"},
+      {label:"¿Buscás comprar o rentar?",type:"select",opts:["Comprar","Rentar"]},
+      {label:"¿Qué zona preferís?",type:"text",placeholder:"Ej: Zona Norte, Centro..."},
+      {label:"¿Cuántas recámaras necesitás?",type:"select",opts:["1","2","3","4 o más"]},
+      {label:"Presupuesto mensual / total",type:"text",placeholder:"Ej: $2,500/mes o $180K"},
+    ],
+    cta:"Ver propiedades disponibles 🏢",
+  },
+  agent:{
+    title:"🤝 Formulario — Agente Individual",
+    sub:"Captación personal, atención 1 a 1",
+    color:"#10b981",
+    fields:[
+      {label:"¿Cuál es tu nombre?",type:"text",placeholder:"Tu nombre completo"},
+      {label:"Tu WhatsApp",type:"tel",placeholder:"+52 55 0000-0000"},
+      {label:"¿Qué tipo de propiedad buscás?",type:"select",opts:["Casa","Departamento","Local comercial","Terreno"]},
+      {label:"¿Hace cuánto tiempo lo buscás?",type:"select",opts:["Recién empecé","1 a 3 meses","Más de 3 meses"]},
+      {label:"¿Cuál es tu presupuesto?",type:"text",placeholder:"Ej: hasta $150K USD"},
+    ],
+    cta:"Hablar con un asesor ahora 🤝",
+  },
+  pm:{
+    title:"🔑 Formulario — Property Manager",
+    sub:"Para dueños que quieren administrar su propiedad",
+    color:"#f59e0b",
+    fields:[
+      {label:"¿Cuál es tu nombre?",type:"text",placeholder:"Tu nombre completo"},
+      {label:"Tu WhatsApp",type:"tel",placeholder:"+52 55 0000-0000"},
+      {label:"¿Qué tipo de propiedad tenés?",type:"select",opts:["Casa","Departamento","Local comercial","Oficina"]},
+      {label:"¿Qué necesitás?",type:"select",opts:["Encontrar inquilino","Administración completa","Mantenimiento","Todo incluido"]},
+      {label:"Colonia / Zona de la propiedad",type:"text",placeholder:"Ej: Col. Centro, Zona Norte"},
+    ],
+    cta:"Quiero que administren mi propiedad 🔑",
+  },
+};
+
+function previewForm(type) {
+  const fd=FORM_DATA[type];
+  document.getElementById('formPreviewBody').innerHTML=`
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:32px;margin-bottom:6px">${fd.title.split(' ')[0]}</div>
+      <div style="font-weight:700;font-size:15px">${fd.title.substring(fd.title.indexOf(' ')+1)}</div>
+      <div style="color:var(--text2);font-size:12px;margin-top:3px">${fd.sub}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:14px">
+      ${fd.fields.map(f=>`
+        <div class="mf">
+          <label>${f.label}</label>
+          ${f.type==='select'
+            ?`<select>${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`
+            :`<input type="${f.type}" placeholder="${f.placeholder||''}">`
+          }
+        </div>`).join('')}
+      <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="closeModal('modalForm');showNotif('📋 Lead registrado','Bot lo contactará en menos de 60 segundos')">
+        ${fd.cta}
+      </button>
+    </div>
+    <div style="color:var(--text2);font-size:11px;text-align:center">
+      🤖 Al enviar, el bot contacta al lead en menos de 60 segundos
+    </div>`;
+  openModal('modalForm');
+}
+
+// ── AUTO NOTIFS ─────────────────────────────────────────────────────────────
+setTimeout(()=>showNotif('🔥 Lead caliente detectado','Carlos M. respondió todas las preguntas de calificación. ¡Listo para cita!'),5000);
+setTimeout(()=>showNotif('📅 Cita agendada automáticamente','Carla R. eligió slot Vie 4 Abr 11:00 AM sin intervención tuya'),22000);
+setTimeout(()=>simLead(),40000);
+
+// ── BUSCADOR GLOBAL ──────────────────────────────────────────────────────────
+function buscarGlobal(q) {
+  const res = document.getElementById('searchResults');
+  q = q.trim();
+  if (!q) { res.classList.remove('show'); return; }
+  const hits = LEADS.filter(l =>
+    [l.name, l.phone, l.email, l.interes, l.ciudad, l.subnicho, l.notas]
+      .join(' ').toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 6);
+  if (!hits.length) {
+    res.innerHTML = `<div class="sr-empty">Sin resultados para "${q}"</div>`;
+  } else {
+    const ini = n => n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase();
+    const scoreEmoji = s => s >= 12 ? '🔥' : s >= 7 ? '🌡️' : '❄️';
+    res.innerHTML = hits.map(l => `
+      <div class="sr-item" onclick="irALead(${l.id})">
+        <div class="sr-av">${ini(l.name)}</div>
+        <div>
+          <div class="sr-name">${l.name} ${l.score ? scoreEmoji(l.score) : ''}</div>
+          <div class="sr-meta">${l.phone} · ${l.interes}</div>
+        </div>
+      </div>`).join('');
+  }
+  res.classList.add('show');
+}
+
+function cerrarBusqueda() {
+  document.getElementById('searchResults').classList.remove('show');
+  document.getElementById('globalSearch').value = '';
+}
+
+function irALead(id) {
+  cerrarBusqueda();
+  nav('leads');
+  setTimeout(() => openDetalle(id), 100);
+}
+
+// ── PERFIL EDITABLE ──────────────────────────────────────────────────────────
+function cargarPerfil() {
+  const p = JSON.parse(localStorage.getItem('crm_perfil') || '{}');
+  if (p.empresa) {
+    document.getElementById('topEmpresa').textContent = p.empresa;
+    document.title = p.empresa + ' — CRM';
+  }
+  if (p.usuario) {
+    document.getElementById('topUsuario').textContent = p.usuario;
+    document.getElementById('topAvatar').textContent = p.usuario.substring(0,2).toUpperCase();
+  }
+  if (p.logo) aplicarLogo(p.logo);
+}
+
+function aplicarLogo(val) {
+  const icon = document.getElementById('topLogoIcon');
+  if (!val) return;
+  if (val.startsWith('http') || val.startsWith('data:')) {
+    icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+  } else {
+    icon.textContent = val;
+  }
+}
+
+function togglePerfil(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('perfilDropdown');
+  const isOpen = dd.classList.contains('show');
+  // cerrar cualquier otro dropdown abierto
+  document.querySelectorAll('.perfil-dropdown.show').forEach(el => el.classList.remove('show'));
+  if (!isOpen) {
+    const p = JSON.parse(localStorage.getItem('crm_perfil') || '{}');
+    document.getElementById('pLogoUrl').value = p.logo || '';
+    document.getElementById('pEmpresa').value = p.empresa || '';
+    document.getElementById('pUsuario').value = p.usuario || '';
+    previewLogo(p.logo || '');
+    dd.classList.add('show');
+  }
+}
+
+function cerrarPerfil() {
+  document.getElementById('perfilDropdown').classList.remove('show');
+}
+
+function irConfiguracion() {
+  const navItem = document.querySelector('.nav-item[onclick*="configuracion"]');
+  nav('configuracion', navItem);
+}
+
+function cerrarSesion() {
+  sessionStorage.removeItem(`crm_token_${TENANT_SLUG}`);
+  location.reload();
+}
+
+// Cerrar dropdown al hacer click fuera
+document.addEventListener('click', e => {
+  const dd = document.getElementById('perfilDropdown');
+  if (dd && !dd.closest('.user-chip-wrap').contains(e.target)) cerrarPerfil();
+});
+
+function subirLogo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    document.getElementById('pLogoUrl').value = '';
+    previewLogo(dataUrl);
+    // guardar base64 en perfil temporal
+    document.getElementById('perfilDropdown').dataset.logoBase64 = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewLogo(val) {
+  const prev = document.getElementById('perfilLogoPreview');
+  if (!val) { prev.innerHTML = '🏠'; return; }
+  if (val.startsWith('http') || val.startsWith('data:')) {
+    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" onerror="this.parentElement.textContent='🏠'">`;
+  } else {
+    prev.textContent = val;
+  }
+}
+
+function guardarPerfil() {
+  const dd = document.getElementById('perfilDropdown');
+  const logoBase64 = dd.dataset.logoBase64 || '';
+  const logoUrl = document.getElementById('pLogoUrl').value.trim();
+  const logo = logoBase64 || logoUrl;
+  const empresa = document.getElementById('pEmpresa').value.trim();
+  const usuario = document.getElementById('pUsuario').value.trim();
+  const perfil = { logo, empresa, usuario };
+  localStorage.setItem('crm_perfil', JSON.stringify(perfil));
+  if (empresa) { document.getElementById('topEmpresa').textContent = empresa; document.title = empresa + ' — CRM'; }
+  if (usuario) { document.getElementById('topUsuario').textContent = usuario; document.getElementById('topAvatar').textContent = usuario.substring(0,2).toUpperCase(); }
+  if (logo) aplicarLogo(logo);
+  dd.dataset.logoBase64 = '';
+  cerrarPerfil();
+  showNotif('✅ Perfil actualizado', empresa || 'Cambios guardados');
+}
+
+
+// ── CONFIGURACIÓN DE MARCA ──────────────────────────────────────────────────
+function cargarConfiguracion() {
+  // Cargar valores actuales del tenant en los inputs
+  fetch(`${SAAS_API}/tenant/${TENANT_SLUG}`)
+    .then(r => r.json())
+    .then(t => {
+      document.getElementById('cfg-nombre').value = t.nombre || '';
+      document.getElementById('cfg-ciudad').value = t.ciudad || '';
+      document.getElementById('cfg-moneda').value = t.moneda || 'USD';
+      document.getElementById('cfg-logo').value = t.logo_url || '';
+      document.getElementById('cfg-color-primary').value = t.color_primario || '#6c63ff';
+      document.getElementById('cfg-color-primary-hex').value = t.color_primario || '#6c63ff';
+      document.getElementById('cfg-color-accent').value = t.color_acento || '#00d4aa';
+      document.getElementById('cfg-color-accent-hex').value = t.color_acento || '#00d4aa';
+      actualizarPreview();
+      if (t.logo_url) previewCfgLogo(t.logo_url);
+    }).catch(() => {});
+}
+
+function previewCfgLogo(url) {
+  const el = document.getElementById('cfg-logo-preview');
+  const prev = document.getElementById('cfg-prev-logo');
+  if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+    const img = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+    el.innerHTML = img;
+    prev.innerHTML = img;
+  } else {
+    el.textContent = '🏠';
+    prev.textContent = '🏠';
+  }
+}
+
+async function onLogoFileChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  // Preview inmediato con FileReader
+  const reader = new FileReader();
+  reader.onload = e => previewCfgLogo(e.target.result);
+  reader.readAsDataURL(file);
+  // Subir a Cloudinary via fetch (unsigned preset)
+  const uploading = document.getElementById('cfg-logo-uploading');
+  uploading.classList.remove('hidden');
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'social_media_posts');
+    fd.append('folder', 'lovbot/logos');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dmqkqcreo/image/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.secure_url) {
+      document.getElementById('cfg-logo').value = data.secure_url;
+      previewCfgLogo(data.secure_url);
+    }
+  } catch(e) {
+    // Si falla Cloudinary, quedamos con el base64 local (no se pierde el preview)
+  } finally {
+    uploading.classList.add('hidden');
+    input.value = '';
+  }
+}
+
+function syncColor(tipo) {
+  if (tipo === 'primary') {
+    const hex = document.getElementById('cfg-color-primary-hex').value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) document.getElementById('cfg-color-primary').value = hex;
+  } else {
+    const hex = document.getElementById('cfg-color-accent-hex').value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) document.getElementById('cfg-color-accent').value = hex;
+  }
+  actualizarPreview();
+}
+
+function actualizarPreview() {
+  const nombre = document.getElementById('cfg-nombre').value || 'Tu Empresa';
+  const ciudad = document.getElementById('cfg-ciudad').value || 'Ciudad';
+  const c1 = document.getElementById('cfg-color-primary').value;
+  const c2 = document.getElementById('cfg-color-accent').value;
+  document.getElementById('cfg-prev-nombre').textContent = nombre;
+  document.getElementById('cfg-prev-ciudad').textContent = ciudad;
+  document.getElementById('cfg-prev-btn1').style.background = c1;
+  document.getElementById('cfg-prev-btn2').style.color = c2;
+  document.getElementById('cfg-prev-btn2').style.borderColor = c2 + '44';
+  document.getElementById('cfg-prev-btn2').style.background = c2 + '22';
+}
+
+// Live preview al escribir
+['cfg-nombre','cfg-ciudad'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', actualizarPreview);
+});
+['cfg-color-primary','cfg-color-accent'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    const tipo = id.includes('primary') ? 'primary' : 'accent';
+    const hexId = id + '-hex';
+    document.getElementById(hexId).value = el.value;
+    actualizarPreview();
+  });
+});
+
+async function guardarMarca() {
+  const fb = document.getElementById('cfg-feedback');
+  const btn = document.getElementById('btnGuardarMarca');
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+  fb.textContent = '';
+  try {
+    const payload = {
+      nombre:         document.getElementById('cfg-nombre').value.trim() || undefined,
+      logo_url:       document.getElementById('cfg-logo').value.trim() || undefined,
+      color_primario: document.getElementById('cfg-color-primary').value,
+      color_acento:   document.getElementById('cfg-color-accent').value,
+      ciudad:         document.getElementById('cfg-ciudad').value.trim() || undefined,
+      moneda:         document.getElementById('cfg-moneda').value,
+    };
+    // Limpiar undefined
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+    const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/marca`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const data = await r.json();
+    // Aplicar cambios al CRM en vivo
+    if (data.nombre) {
+      document.getElementById('topEmpresa').textContent = data.nombre;
+      document.getElementById('page-title').textContent = data.nombre + ' — CRM';
+    }
+    if (data.color_primario) document.documentElement.style.setProperty('--accent', data.color_primario);
+    if (data.logo_url) aplicarLogo(data.logo_url);
+    fb.style.color = 'var(--green)';
+    fb.textContent = '✅ Cambios guardados y aplicados';
+    showNotif('✅ Marca actualizada', data.nombre || 'Cambios guardados');
+  } catch(e) {
+    fb.style.color = 'var(--red)';
+    fb.textContent = '❌ Error al guardar: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Guardar cambios';
+  }
+}
+
+// ── CLIENTES ACTIVOS ─────────────────────────────────────────────────────────
+let _activosData = [];
+
+function _estadoPagoStyle(estado) {
+  const map = {
+    'Al día':    { bg:'#064e3b', color:'#00d4aa', border:'#1a5c33' },
+    'Atrasado':  { bg:'#451a03', color:'#fbbf24', border:'#92400e' },
+    'En mora':   { bg:'#3d0d0d', color:'#f87171', border:'#7a1a1a' },
+    'Cancelado': { bg:'#1e2a4a', color:'#818cf8', border:'#3730a3' },
+  };
+  return map[estado] || { bg:'#1a1d27', color:'#8b92a5', border:'#2e3347' };
+}
+
+async function cargarActivos() {
+  const tbody = document.getElementById('activosTbody');
+  const statusEl = document.getElementById('activosStatus');
+  if(statusEl) statusEl.innerHTML = '<span style="color:var(--yellow)">⏳ Cargando...</span>';
+
+  try {
+    const res = await fetch(`${API_BASE}/crm/activos`, { signal: AbortSignal.timeout(12000) });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    _activosData = data.records || [];
+    _renderTablaActivos(_activosData);
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ ${_activosData.length} registros</span>`;
+  } catch(err) {
+    console.warn('[Activos] Backend no disponible:', err.message);
+    _activosData = [];
+    _renderTablaActivos([]);
+    if(statusEl) statusEl.innerHTML = '<span style="color:var(--text2)">⚠ Sin conexión al backend</span>';
+  }
+}
+
+function _renderTablaActivos(records) {
+  const tbody = document.getElementById('activosTbody');
+  if(!tbody) return;
+
+  // KPIs
+  const total     = records.length;
+  const aldia     = records.filter(r => r.Estado_Pago === 'Al día').length;
+  const atrasado  = records.filter(r => r.Estado_Pago === 'Atrasado').length;
+  const mora      = records.filter(r => r.Estado_Pago === 'En mora').length;
+  const cancelado = records.filter(r => r.Estado_Pago === 'Cancelado').length;
+
+  const setKpi = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  setKpi('kpi-activos-total', total);
+  setKpi('kpi-activos-aldia', aldia);
+  setKpi('kpi-activos-atrasado', atrasado);
+  setKpi('kpi-activos-mora', mora);
+  setKpi('kpi-activos-cancelado', cancelado);
+  const badge = document.getElementById('activosBadge');
+  if(badge) badge.textContent = total;
+
+  if(records.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text2)">
+      <div style="font-size:28px;margin-bottom:8px">🤝</div>
+      No hay clientes activos registrados aún.<br>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="abrirModalActivo()">+ Agregar el primero</button>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = records.map(r => {
+    const nombre   = r.Nombre || r.nombre || '—';
+    const telefono = r.Telefono || r.telefono || '';
+    const propiedad = r.Propiedad || r.propiedad || r.Tipo_Propiedad || '—';
+    const cuotasTotal   = r.Cuotas_Total   ?? '—';
+    const cuotasPagadas = r.Cuotas_Pagadas ?? 0;
+    const progPct = (cuotasTotal && cuotasTotal !== '—')
+      ? Math.min(100, Math.round((cuotasPagadas / cuotasTotal) * 100)) : 0;
+    const venc = r.Proximo_Vencimiento
+      ? new Date(r.Proximo_Vencimiento).toLocaleDateString('es', {day:'2-digit',month:'short',year:'numeric'})
+      : '—';
+    const estado = r.Estado_Pago || 'Al día';
+    const st = _estadoPagoStyle(estado);
+    const progColor = estado === 'Al día' ? '#00d4aa' : estado === 'Atrasado' ? '#ffa94d' : estado === 'En mora' ? '#ff6b6b' : '#818cf8';
+    const monto = r.Monto_Cuota ? ` · $${Number(r.Monto_Cuota).toLocaleString('es')}` : '';
+
+    return `<tr>
+      <td>
+        <div style="font-weight:600;font-size:13px">${nombre}</div>
+        ${telefono ? `<div style="font-size:11px;color:var(--text2)">${telefono}</div>` : ''}
+      </td>
+      <td style="font-size:12px;color:var(--text2)">${propiedad}${monto}</td>
+      <td>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${cuotasPagadas} / ${cuotasTotal} cuotas</div>
+        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;width:80px">
+          <div style="background:${progColor};height:100%;width:${progPct}%;transition:width .6s ease;border-radius:4px"></div>
+        </div>
+      </td>
+      <td style="font-size:12px">${venc}</td>
+      <td>
+        <span style="background:${st.bg};color:${st.color};border:1px solid ${st.border};
+          padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500">${estado}</span>
+      </td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn" style="font-size:11px;padding:3px 8px"
+            onclick="abrirModalActivo('${r.id}')">✏️ Editar</button>
+          <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red)"
+            onclick="eliminarActivo('${r.id}','${nombre}')">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirModalActivo(id) {
+  const modal = document.getElementById('modalActivo');
+  const monedaLbl = document.getElementById('ac-moneda-lbl');
+  if(monedaLbl) monedaLbl.textContent = (window._cfg && window._cfg.moneda) || 'USD';
+
+  if(id) {
+    const r = _activosData.find(x => x.id === id);
+    if(!r) return;
+    document.getElementById('modalActivoTitle').textContent = '✏️ Editar Cliente Activo';
+    document.getElementById('activoId').value = id;
+    document.getElementById('ac-nombre').value  = r.Nombre || '';
+    document.getElementById('ac-tel').value     = r.Telefono || '';
+    document.getElementById('ac-email').value   = r.Email || '';
+    document.getElementById('ac-prop').value    = r.Propiedad || r.Tipo_Propiedad || '';
+    document.getElementById('ac-total').value   = r.Cuotas_Total ?? '';
+    document.getElementById('ac-pagadas').value = r.Cuotas_Pagadas ?? '';
+    document.getElementById('ac-venc').value    = r.Proximo_Vencimiento || '';
+    document.getElementById('ac-monto').value   = r.Monto_Cuota || '';
+    document.getElementById('ac-notas').value   = r.Notas || '';
+  } else {
+    document.getElementById('modalActivoTitle').textContent = '➕ Nuevo Cliente Activo';
+    document.getElementById('activoId').value = '';
+    ['ac-nombre','ac-tel','ac-email','ac-prop','ac-total','ac-pagadas','ac-venc','ac-monto','ac-notas']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  }
+  modal.style.display = 'flex';
+}
+
+function cerrarModalActivo() {
+  document.getElementById('modalActivo').style.display = 'none';
+}
+
+async function guardarActivo() {
+  const btn = document.getElementById('btnGuardarActivo');
+  const id = document.getElementById('activoId').value;
+  const nombre = document.getElementById('ac-nombre').value.trim();
+  if(!nombre) { alert('El nombre es obligatorio'); return; }
+
+  const fields = {
+    Nombre:              nombre,
+    Telefono:            document.getElementById('ac-tel').value.trim() || null,
+    Email:               document.getElementById('ac-email').value.trim() || null,
+    Propiedad:           document.getElementById('ac-prop').value.trim() || null,
+    Cuotas_Total:        parseInt(document.getElementById('ac-total').value) || null,
+    Cuotas_Pagadas:      parseInt(document.getElementById('ac-pagadas').value) || 0,
+    Proximo_Vencimiento: document.getElementById('ac-venc').value || null,
+    Monto_Cuota:         parseFloat(document.getElementById('ac-monto').value) || null,
+    Notas:               document.getElementById('ac-notas').value.trim() || null,
+  };
+  // Limpiar nulls
+  Object.keys(fields).forEach(k => fields[k] === null && delete fields[k]);
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+  try {
+    const url = id ? `${API_BASE}/crm/activos/${id}` : `${API_BASE}/crm/activos`;
+    const method = id ? 'PATCH' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ fields }),
+    });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    cerrarModalActivo();
+    await cargarActivos();
+    showNotif('✅ Cliente activo guardado', nombre);
+  } catch(e) {
+    alert('Error al guardar: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Guardar';
+  }
+}
+
+async function eliminarActivo(id, nombre) {
+  if(!confirm(`¿Eliminar a ${nombre}?`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/crm/activos/${id}`, { method: 'DELETE' });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    await cargarActivos();
+    showNotif('🗑 Cliente eliminado', nombre);
+  } catch(e) {
+    alert('Error al eliminar: ' + e.message);
+  }
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+cargarPerfil();
+initTenant().then(ok => {
+  if (ok) {
+    cargarLeads();
+    renderProps();
+    cargarActivos();
+    renderAgenda();
+  }
+  // Si ok=false → login screen visible, datos se cargan desde submitPin()
+  checkVersion();
+});
+</script>
+</body>
+</html>

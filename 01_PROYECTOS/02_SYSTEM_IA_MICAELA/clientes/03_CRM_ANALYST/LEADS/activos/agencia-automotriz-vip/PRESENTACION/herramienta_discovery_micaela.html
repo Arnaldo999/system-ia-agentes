@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Comercial Profundo - System IA</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #3b82f6;
+            --accent: #8b5cf6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text-main); }
+        .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+        h1 { font-size: 2.2rem; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card-form { background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+        
+        .q-block { background: rgba(0, 0, 0, 0.2); margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .q-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        
+        .mica-script { background: rgba(139, 92, 246, 0.1); border-left: 4px solid var(--accent); padding: 1rem; margin-bottom: 1.5rem; border-radius: 0 8px 8px 0; font-size: 1.1rem; color: #fff; font-style: italic; }
+        .mica-script strong { color: var(--accent); font-style: normal; }
+        
+        .options-title { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+        .opt-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1.2rem; cursor: pointer; transition: 0.3s; position: relative; }
+        .opt-card:hover { border-color: var(--primary); background: rgba(59, 130, 246, 0.05); }
+        .opt-card.selected { border-color: var(--primary); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 15px rgba(59,130,246,0.3); }
+        .opt-card input { display: none; }
+        .opt-text { font-size: 1rem; line-height: 1.4; margin-bottom: 0.5rem; font-weight: 500;}
+        .opt-pain { font-size: 0.85rem; color: var(--danger); font-weight: bold; margin-top: 5px; display: block; }
+        .opt-insight { font-size: 0.85rem; color: var(--success); margin-top: 5px; font-style: italic; display: block; }
+        
+        .btn { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; border: none; padding: 1.2rem 2rem; border-radius: 8px; font-size: 1.1rem; width: 100%; cursor: pointer; font-weight: bold; margin-top: 1rem; transition: transform 0.2s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); }
+        
+        #results { display: none; background: #0f172a; border: 1px solid var(--accent); border-radius: 12px; padding: 2rem; margin-top: 2rem; }
+        .rec-box { background: rgba(255,255,255,0.03); border-left: 4px solid var(--primary); padding: 1.5rem; margin-bottom: 1.5rem; display: none; }
+        .rec-box.active { display: block; animation: fadeIn 0.4s; }
+        .rec-price { float: right; background: rgba(16,185,129,0.1); color: var(--success); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.1rem;}
+        .pitch { margin-top: 1rem; color: #cbd5e1; font-style: italic; border-left: 2px solid var(--success); padding-left: 1rem; background: rgba(16, 185, 129, 0.05); padding: 1rem; border-radius: 0 8px 8px 0; }
+        .total-box { text-align: center; margin-top: 3rem; font-size: 2.2rem; color: var(--success); font-weight: bold; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header style="text-align:center; margin-bottom: 2rem;">
+        <h1>Scanner Comercial Profundo - System IA</h1>
+        <p style="color:var(--text-muted); font-size: 1.1rem;">Panel de Control para Micaela. Lee las preguntas en voz alta al dueño y marca su respuesta.</p>
+    </header>
+
+    <div class="card-form">
+        <!-- Q0: Rompehielo / Sucursal Nueva -->
+        <div class="q-block" style="border-color: var(--success); background: rgba(16, 185, 129, 0.05);">
+            <div class="q-title" style="color: var(--success);">🚀 Rompehielo de Apertura: Nueva Sucursal y Crecimiento</div>
+            <div class="mica-script" style="background: rgba(16,185,129,0.1); border-left-color: var(--success);">
+                <strong>🎙️ ¡Carga la Escopeta! Lee esto al saludar:</strong> "¡Hola [Nombre del Dueño]! Estuve investigando y vi que están a punto de abrir una nueva sucursal. ¡Felicitaciones! Pero me surge algo crítico: al duplicar los salones, el volumen de consultas también se va a duplicar o triplicar. ¿Cómo piensan escalar la atención al cliente si los vendedores de hoy a veces ni dan abasto?"
+            </div>
+            <p style="color:var(--text-muted); font-size: 0.9rem; margin-top: 10px;"><i>(Usa esto solo para romper el hielo y hacerle notar de inicio que necesita infraestructura digital urgente para su nueva sucursal. No lleva checkboxes).</i></p>
+        </div>
+
+        <!-- Q1: Trafico -->
+        <div class="q-block">
+            <div class="q-title">🎯 1. Captación y Tráfico</div>
+            <div class="mica-script">
+                <strong>🎙️ Lee esto:</strong> "[Nombre del Dueño], ¿cómo están atrayendo clientes hoy? ¿Dependen más de la gente que entra caminando al salón o tienen un buen volumen de mensajes diarios por Facebook o Instagram?"
+            </div>
+            <div class="options-title">👉 Marca la respuesta del dueño:</div>
+            <div class="options">
+                <label class="opt-card" data-srv="meta_ads">
+                    <input type="checkbox" onchange="toggle(this)">
+                    <div class="opt-text">"Dependemos del salón" / "Nos escriben poco"</div>
+                    <span class="opt-pain">Dolor detectado: Falta de Leads (Ofrecer Meta Ads)</span>
+                </label>
+                <label class="opt-card">
+                    <input type="checkbox" onchange="toggle(this)">
+                    <div class="opt-text">"Nos escriben 50 o 100 mensajes al día"</div>
+                    <span class="opt-insight">Sano: Tienen tráfico, justificación perfecta para la IA.</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Q2: Velocidad y Tonalidad -->
+        <div class="q-block">
+            <div class="q-title">⚡ 2. Velocidad de Respuesta y Tonalidad</div>
+            <div class="mica-script">
+                <strong>🎙️ Lee esto:</strong> "Y si una persona les escribe un domingo a las 10 de la noche preguntando por una camioneta... ¿Tienen alguien contestando al instante, o los vendedores responden al día siguiente cuando pueden?"
+            </div>
+            <div class="options-title">👉 Marca la respuesta del dueño:</div>
+            <div class="options">
+                <label class="opt-card" data-srv="agente_ventas_ia">
+                    <input type="checkbox" onchange="toggle(this)">
+                    <div class="opt-text">"Responden cuando pueden" / "Al otro día hábíl"</div>
+                    <span class="opt-pain">Dolor detectado: Clientes perdidos por frío comercial.</span>
+                </label>
+                <label class="opt-card" data-srv="agente_ventas_ia">
+                    <input type="checkbox" onchange="toggle(this)">
+                    <div class="opt-text">"Tenemos un bot de respuestas rápidas básico"</div>
+                    <span class="opt-pain">Dolor detectado: Bot aburrido, la gente quiere interacción natural.</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Q3: Permutas y Vehículos en Parte de Pago -->
+        <div class="q-block">
+            <div class="q-title">🚗 3. Gestión de Permutas o Parte de Pago (Alta Gama)</div>
+            <div class="mica-script">
+                <strong>🎙️ Lee esto:</strong> "[Nombre del Dueño], ¿ustedes están tomando vehículos usados como parte de pago para estos autos de alta gama? Si es así, ¿cuánto tiempo pierden tus vendedores pidiendo fotos y especificaciones técnicas para que el tasador o tú lo evalúen?"
+            </div>
+            <div class="options-title">👉 Marca la respuesta del dueño:</div>
+            <div class="options">
+                <label class="opt-card" data-srv="agente_permutas">
+                    <input type="checkbox" onchange="toggle(this)">
+                    <div class="opt-text">"Sí tomamos usados, y es un ida y vuelta terrible por WhatsApp"</div>
+                    <span class="opt-pain">Dolor detectado: Vendedores perdiendo tiempo perfilando mallas usadas en lugar de vender la alta gama.</span>
+                </label>
+                <label class="opt-card">
+                    <input type="checkbox" onchange="toggle(this)">
+                    <div class="opt-text">"No, solo venta directa sin permuta"</div>
+                    <span class="opt-insight">Sano: Dinámica sencilla. (No lo marques, así el bot no cotiza el módulo de permuta)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Q4: Financiación -->
+        <div class="q-block">
+            <div class="q-title">💳 4. Pre-calificación Financiera</div>
+            <div class="mica-script">
+                <strong>🎙️ Lee esto:</strong> "Y en cuanto a la plata... ¿Qué porcentaje de tiempo dirías que pierden tus vendedores atendiendo, enamorando al cliente, y al final resulta que no tiene un peso o no califica para el crédito?"
+            </div>
+            <div class="options-title">👉 Marca la respuesta del dueño:</div>
+            <div class="options">
+                <label class="opt-card" data-srv="agente_finanzas">
+                    <input type="checkbox" onchange="toggle(this)">
+                    <div class="opt-text">"Un montón, viene mucha gente sin presupuesto real"</div>
+                    <span class="opt-pain">Dolor detectado: Esfuerzo de ventas tirado a la basura. Necesitan filtro IA.</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Q5: CRM Invisible -->
+        <div class="q-block">
+            <div class="q-title">👻 5. Carga de Datos Gerencial (CRM)</div>
+            <div class="mica-script">
+                <strong>🎙️ Lee esto:</strong> "Siendo sinceros [Nombre del Dueño]... ¿Tus vendedores son super juiciosos cargando los datos de cada cliente, su celular y el auto que buscan en el CRM/Excel, o tienes que andar persiguiéndolos?"
+            </div>
+            <div class="options-title">👉 Marca la respuesta del dueño:</div>
+            <div class="options">
+                <label class="opt-card" data-srv="agente_fantasma_crm">
+                    <input type="checkbox" onchange="toggle(this)">
+                    <div class="opt-text">"Los tengo que perseguir" / "No lo completan nunca"</div>
+                    <span class="opt-pain">Dolor Gerencial: El dueño está a ciegas, no sabe el volumen de negocios real.</span>
+                </label>
+            </div>
+        </div>
+
+        <button class="btn" onclick="gen()">Analizar la Operatoria y Generar Diagnóstico de Cierre</button>
+    </div>
+
+    <!-- REPORT -->
+    <div id="results">
+        <h2 style="margin-top:0; color:white; font-size: 2rem;">🔥 Diagnóstico y Guiones de Cierre</h2>
+        <p style="color:var(--text-muted); margin-bottom: 2rem; font-size:1.1rem;">Lee la frase verde al dueño para venderle la solución exacta (Meter el dedo en la llaga).</p>
+        
+        <div class="rec-box" id="rec-meta_ads">
+            <span class="rec-price">$500/mes</span>
+            <h3 style="color:var(--primary); font-size: 1.4rem;">1. Motor de Captación Meta Ads</h3>
+            <p style="color:#cbd5e1;">Detectado: Necesitan volumen para rentabilizar la estructura.</p>
+            <div class="pitch"><strong>🎙️ Dile al cliente:</strong> "Veo que dependen mucho de referidos, [Nombre del Dueño]. Nuestro primer paso en System IA es conectarte un embudo de pautas en Meta Ads ultra-segmentado, para inyectar 100 consultas mensuales de personas que buscan autos en tu zona."</div>
+        </div>
+
+        <div class="rec-box" id="rec-agente_ventas_ia">
+            <span class="rec-price">$900 USD</span>
+            <h3 style="color:var(--primary); font-size: 1.4rem;">2. AI Sales Agent (Tono Autóctono)</h3>
+            <p style="color:#cbd5e1;">Detectado: Clientes se enfrían por demora humana o bots aburridos.</p>
+            <div class="pitch"><strong>🎙️ Dile al cliente:</strong> "Justamente ahí pierdes ventas. Te instalaremos una IA entrenada para hablar como ESE mejor vendedor argentino que tenés ('Está impecable, las 4 cubiertas nuevas'), enviando catálogo y fotos al instante sin que tus humanos toquen el teléfono, sea lunes o domingo 3 AM."</div>
+        </div>
+
+        <div class="rec-box" id="rec-agente_permutas">
+            <span class="rec-price">$600 USD</span>
+            <h3 style="color:var(--primary); font-size: 1.4rem;">3. Módulo Recepción de Permutas Premium</h3>
+            <p style="color:#cbd5e1;">Detectado: Evaluación lenta de vehículos en parte de pago frena el cierre de autos de alta gama.</p>
+            <div class="pitch"><strong>🎙️ Dile al cliente:</strong> "[Nombre del Dueño], ¿sabés las horas que pierden tus vendedores pidiendo detalles de esos autos viejos? Nuestra IA interroga al prospecto, exige año, kilómetros y fotos del vehículo que quiere entregar como parte de pago, luego se APAGA sola y alerta a tu tasador humano. Operativa limpia y sin demoras."</div>
+        </div>
+
+        <div class="rec-box" id="rec-agente_finanzas">
+            <span class="rec-price">$450 USD</span>
+            <h3 style="color:var(--primary); font-size: 1.4rem;">4. Perfilado de Financiación Predictivo</h3>
+            <p style="color:#cbd5e1;">Detectado: Esfuerzo quemado en leads curiosos sin billetera.</p>
+            <div class="pitch"><strong>🎙️ Dile al cliente:</strong> "Antes de que uno de tus humanos gaste saliva, la IA indagará sutilmente si el prospecto financia el 100% o entrega anticipo. Tus vendedores solo hablarán con gente que tiene la plata en la mano."</div>
+        </div>
+
+        <div class="rec-box" id="rec-agente_fantasma_crm">
+            <span class="rec-price">$750 USD</span>
+            <h3 style="color:var(--primary); font-size: 1.4rem;">5. Agente "Fantasma" de Carga CRM</h3>
+            <p style="color:#cbd5e1;">Detectado: Vendedores no llenan el CRM, gerencia no tiene control.</p>
+            <div class="pitch"><strong>🎙️ Dile al cliente:</strong> "Ese es el dolor gerencial más clásico. Por eso incluimos un 'Agente Fantasma'. Mientras tu vendedor chatea por WhatsApp, esta IA lee la charla en silencio y va rellenando automáticamente tu Google Sheets o CRM con el teléfono, auto buscado y datos del usado. Adiós al Data-Entry manual, control total para vos."</div>
+        </div>
+
+        <div class="total-box">
+            Inversión Setup Único Total: <span id="total-val">$0</span> USD
+            <p style="font-size:1.1rem;font-weight:normal;color:var(--text-muted); margin-top:1.5rem;">🚨 <b>CIERRE EN LLAMADA (Leverage de Capital y Crecimiento):</b> <br><br><i>"[Nombre del Dueño], como van a abrir una sucursal nueva, necesitan sistemas serios que aguanten el doble del volumen de gente sin contratar el doble de empleados. El valor de este Cerebro Digital es de [TOTAL] por única vez. A mí me encanta trabajar con dueños en expansión e inversión como tú. Si me das la autorización ahora para arrancar la integración de inmediato, asumo personalmente y te bonifico los costos de los servidores / infraestructura inicial."</i></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggle(chk) { 
+        Array.from(chk.parentElement.parentElement.children).forEach(lbl => lbl.classList.remove('selected'));
+        if(chk.checked) chk.parentElement.classList.add('selected'); 
+    }
+    
+    function gen() {
+        const prices = { 'meta_ads': 500, 'agente_ventas_ia': 900, 'agente_permutas': 600, 'agente_finanzas': 450, 'agente_fantasma_crm': 750 };
+        let t = 0; let active = false;
+        document.querySelectorAll('.rec-box').forEach(el => el.classList.remove('active'));
+        
+        document.querySelectorAll('.opt-card input:checked').forEach(chk => {
+            const s = chk.parentElement.getAttribute('data-srv');
+            if(s) { document.getElementById('rec-'+s).classList.add('active'); t += prices[s]; active=true; }
+        });
+        
+        if(active) {
+            document.getElementById('results').style.display='block';
+            document.getElementById('total-val').innerText = '$' + t;
+            window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+        } else {
+            alert("Por favor, marca al menos una opción basada en las respuestas del cliente.");
+        }
+    }
+</script>
+</body>
+</html>

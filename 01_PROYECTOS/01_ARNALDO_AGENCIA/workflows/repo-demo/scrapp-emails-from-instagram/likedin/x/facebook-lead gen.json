@@ -1,0 +1,881 @@
+{
+  "updatedAt": "2026-02-25T21:53:15.196Z",
+  "createdAt": "2026-02-21T04:03:02.273Z",
+  "id": "5jeSIrop5qrGYZ7f",
+  "name": "Scrapp emails from instagram/likedin/x/facebook",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cantidadConsultas"
+            },
+            {
+              "name": "tipoNegocio"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2640,
+        -144
+      ],
+      "id": "8f23147e-b29a-46ca-9541-5c552c0607d6",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Np1owYL-Xw922plKL_hJCNrcFg4PIeqQ52UW-FZlp28",
+          "mode": "list",
+          "cachedResultName": "Scrap import from web",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Np1owYL-Xw922plKL_hJCNrcFg4PIeqQ52UW-FZlp28/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174085852,
+          "mode": "list",
+          "cachedResultName": "IG",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Np1owYL-Xw922plKL_hJCNrcFg4PIeqQ52UW-FZlp28/edit#gid=1174085852"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "correo": "={{ $json.email }}",
+            "Titulo": "={{ $json.pageTitle }}",
+            "Link": "={{ $json.pageLink }}",
+            "Snippet": "={{ $json.snippet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Titulo",
+              "displayName": "Titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "correo",
+              "displayName": "correo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Snippet",
+              "displayName": "Snippet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Icebreaker",
+              "displayName": "Icebreaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Valido",
+              "displayName": "Valido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email1",
+              "displayName": "email1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email2",
+              "displayName": "email2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email3",
+              "displayName": "email3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email4",
+              "displayName": "email4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email5",
+              "displayName": "email5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -720,
+        -144
+      ],
+      "id": "37d58d19-4b1d-4a8c-9469-4a4d166abb10",
+      "name": "Google Sheets"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -944,
+        -224
+      ],
+      "id": "3209a688-8e30-4504-b5ff-2c1ad4dbc50e",
+      "name": "Wait",
+      "webhookId": "20957c0c-ee00-4b5f-a456-3270b8e49a2b"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2496,
+        80
+      ],
+      "id": "7be31261-232e-477c-b6ed-fabda0c96868",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"queries\": [\n    \"site:instagram.com+\\\"clinica+dental\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"odontologos+profesionales\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"consultorio+odontologico\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"dentistas+especialistas\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"ortodoncistas\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"periodoncia\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"blanqueamiento+dental\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"implantes+dentales\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"odontopediatria\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"terapia+oral\\\"+\\\"@gmail.com\\\" OR \\\"@hotmail.com\\\" OR \\\"@outlook.com\\\" OR \\\"@yahoo.com\\\"\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -2272,
+        80
+      ],
+      "id": "eea1ff59-3b1b-4cfe-ad50-88d8376f2fe3",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "email",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        -224
+      ],
+      "id": "c4acd308-b284-44cd-8ab2-85c57ea9ba07",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tarea:  \nGenera una lista de {{ $json.cantidadConsultas }} cadenas de búsqueda relacionadas con este tipo de negocio: {{ $json.tipoNegocio }}.\n\nInstrucciones:\n\n1. **Formato de cada consulta**:  \n- Por cada término generado, crea 4 consultas, una para cada uno de estos sitios: `instagram.com`, `x.com`, `facebook.com`, `linkedin.com`.\n- El formato de cada consulta debe ser:  \n  `site:<DOMINIO>+\"<tipo_de_negocio_formateado>\"+\"@gmail.com\" OR \"@hotmail.com\" OR \"@outlook.com\" OR \"@yahoo.com\"`.\n- Dentro de las comillas `\"`, todos los espacios deben ser reemplazados por signos `+`.\n- Usa siempre minúsculas. No uses acentos ni caracteres especiales.\n- No traduzcas el término proporcionado en la variable `tipoNegocio`; respétalo tal como está en su idioma original.\n- Expande el término principal en variaciones relevantes en el mismo idioma, incluyendo sinónimos, servicios relacionados y especializaciones específicas del tipo de negocio.\n- Utiliza términos que estén más orientados a una búsqueda más específica y localizada. Por ejemplo, si el `tipoNegocio` es \"Dentistas\", genera consultas como: \"consultorio dental\", \"clínica dental\", \"endodoncia\", \"odontólogos\", \"higienistas dentales\", etc. No uses términos genéricos como \"dentist\" o traducciones incorrectas como \"surgery\" si el término original está en español.\n\n2. **Generación de términos**:  \n- Para cada tipo de negocio, expande el término principal usando variaciones como sinónimos, especializaciones, servicios adicionales relacionados y nombres populares locales. Las búsquedas deben ser lo más específicas posible a la industria y contexto local.\n- Evita términos demasiado generales o irreales, y enfócate en aquellos que puedan generar resultados precisos.\n- Las búsquedas deben estar orientadas a encontrar contactos de correos electrónicos en plataformas como Instagram, Facebook, LinkedIn y X, ya que se utilizarán para scrapeo con SerpApi.\n\n3. **Formato de salida**:  \n- Devuelve exclusivamente un objeto JSON válido con un nodo `\"queries\"`, que contendrá todas las cadenas de búsqueda generadas.  \n- El número total de consultas será de `{{ $json.cantidadConsultas * 4 }}`, ya que hay 4 sitios por cada búsqueda.\n\nEjemplo de salida:\n\n```json\n{\n  \"queries\": [\n    \"site:instagram.com+\\\"consultorio+dental\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:x.com+\\\"consultorio+dental\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:facebook.com+\\\"consultorio+dental\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:linkedin.com+\\\"consultorio+dental\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"clinica+dental\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:x.com+\\\"clinica+dental\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:facebook.com+\\\"clinica+dental\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:linkedin.com+\\\"clinica+dental\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:instagram.com+\\\"endodoncia\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:x.com+\\\"endodoncia\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:facebook.com+\\\"endodoncia\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    \"site:linkedin.com+\\\"endodoncia\\\"+\\\"@gmail.com\\\"+OR+\\\"@hotmail.com\\\"+OR+\\\"@outlook.com\\\"+OR+\\\"@yahoo.com\\\"\",\n    ...\n  ]\n}\n",
+        "hasOutputParser": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        -2416,
+        -144
+      ],
+      "id": "3dba934c-09ec-4b38-959a-0a0c05042f5e",
+      "name": "Generar queries"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.queries",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -2048,
+        -144
+      ],
+      "id": "e979fd1f-c6e2-441a-8d28-7d3efa8a5918",
+      "name": "Separar queries"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1824,
+        -144
+      ],
+      "id": "f69fa943-f2b0-4603-8a58-6ff833f21bb0",
+      "name": "Loop queries"
+    },
+    {
+      "parameters": {
+        "url": "=https://serpapi.com/search?engine=google&q={{ $json[\"output.queries\"] }}&num=100&gl=MX&hl=es&api_key=[tu api key]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1600,
+        -224
+      ],
+      "id": "8f33f678-5d28-420a-8122-95b5987cde30",
+      "name": "Obtener resultados"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener datos de entrada\nconst items = $input.all();\n\n// Crear un array para guardar los datos extraídos\nconst extractedData = [];\n\nfor (const item of items) {\n  const results = item.json.organic_results || [];\n\n  for (const result of results) {\n    const text = result.snippet || '';\n    const title = result.title || '';\n    const link = result.link || '';\n    const emails = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/g);\n\n    if (emails) {\n      for (const email of emails) {\n        extractedData.push({\n          pageTitle: title,\n          pageLink: link,\n          snippet: text,\n          email\n        });\n      }\n    }\n  }\n}\n\n// Devolver solo los datos que contienen email\nreturn extractedData.map(data => ({ json: data }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        -224
+      ],
+      "id": "85365ba0-fb49-491d-b398-a53f8c521c7f",
+      "name": "Extraer datos"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Generar queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Loop queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generar queries",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generar queries",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar queries": {
+      "main": [
+        [
+          {
+            "node": "Separar queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar queries": {
+      "main": [
+        [
+          {
+            "node": "Loop queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop queries": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Obtener resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener resultados": {
+      "main": [
+        [
+          {
+            "node": "Extraer datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer datos": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "cantidadConsultas": "5",
+          "tipoNegocio": "clinicas"
+        }
+      }
+    ]
+  },
+  "versionId": "c2617219-911e-4deb-ba18-180e423cc045",
+  "activeVersionId": "b4fa699e-ccc8-4d12-b42a-ed1aea21103a",
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-21T04:03:02.273Z",
+      "createdAt": "2026-02-21T04:03:02.273Z",
+      "role": "workflow:owner",
+      "workflowId": "5jeSIrop5qrGYZ7f",
+      "projectId": "A5erh6pqAqSjR28k"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T04:24:50.257Z",
+    "createdAt": "2026-02-21T04:24:21.235Z",
+    "versionId": "b4fa699e-ccc8-4d12-b42a-ed1aea21103a",
+    "workflowId": "5jeSIrop5qrGYZ7f",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "prospectos-vip",
+          "options": {}
+        },
+        "id": "webhook-1",
+        "name": "Webhook (Entrada)",
+        "position": [
+          -288,
+          -16
+        ],
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "webhookId": "e8797a6a-7e1d-4c48-ba8a-f88ca2f1c887"
+      },
+      {
+        "parameters": {
+          "language": "javascript",
+          "jsCode": "const lead = $input.item.json.body || {};\\nlet score = 0;\\nif (lead.companySize > 100) score += 30;\\nif (lead.role === 'CEO') score += 50;\\nif (lead.industry === 'Tech') score += 20;\\nlead.lead_score = score;\\nreturn { json: lead };"
+        },
+        "id": "code-1",
+        "name": "Generar Score Comercial",
+        "position": [
+          256,
+          0
+        ],
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "number": [
+              {
+                "value1": "={{$json.lead_score}}",
+                "operation": "largerEqual",
+                "value2": 50
+              }
+            ]
+          }
+        },
+        "id": "if-1",
+        "name": "¿Score Mayor a 50?",
+        "position": [
+          512,
+          0
+        ],
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "dataType": "string",
+          "value1": "={{$json.industry}}",
+          "rules": {
+            "rules": [
+              {
+                "value2": "Tech"
+              },
+              {
+                "value2": "Inmobiliaria",
+                "output": 1
+              },
+              {
+                "value2": "Restaurante",
+                "output": 2
+              }
+            ]
+          }
+        },
+        "id": "switch-1",
+        "name": "Ruteo por Vertical",
+        "position": [
+          752,
+          -144
+        ],
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "canal",
+                "value": "#ventas-tech"
+              },
+              {
+                "name": "mensaje",
+                "value": "=🔥 URGENTE: Lead Tech gigante. Info: {{$json.name}}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "set-tech",
+        "name": "Notificar Slack VIP",
+        "position": [
+          1008,
+          -304
+        ],
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://echo.free.beeceptor.com/slack",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "text",
+                "value": "={{$json.mensaje}}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "req-tech",
+        "name": "HTTP Slack",
+        "position": [
+          1264,
+          -304
+        ],
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "tarjeta",
+                "value": "Venta Propiedad: {{$json.name}}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "set-inmo",
+        "name": "Actualizar Trello",
+        "position": [
+          1008,
+          -144
+        ],
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "tipo",
+                "value": "Restaurante"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "set-resto",
+        "name": "Base Menús",
+        "position": [
+          1008,
+          0
+        ],
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "subject",
+                "value": "Lo sentimos"
+              },
+              {
+                "name": "body",
+                "value": "No tenemos capacidad comercial hoy."
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "set-rechazo",
+        "name": "Prepara Rechazo",
+        "position": [
+          752,
+          208
+        ],
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://echo.free.beeceptor.com/mail",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "subject",
+                "value": "={{$json.subject}}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "req-reject",
+        "name": "HTTP Enviar Mail",
+        "position": [
+          1008,
+          208
+        ],
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1
+      },
+      {
+        "parameters": {
+          "content": "## El Modelo Tradicional (IFs y Switches)\\nMira lo difícil y gigante que se vuelve esto cuando queremos cubrir todos los escenarios posibles sin Inteligencia Artificial.\\n\\nHay que programar matemáticamente un puntaje, verificar con IFs duros, y usar Switches (Ruteos) para separar caminos visualmente... ¡Y esto es solo para 3 tipos de clientes! Si un cliente nuevo no está en la lista de reglas, se pierde el proceso.",
+          "height": 300,
+          "width": 350,
+          "color": 6
+        },
+        "id": "sticky-1",
+        "name": "Sticky Note",
+        "position": [
+          112,
+          -304
+        ],
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "content": "### Zona VIP (Ruteo)\\nAquí perdemos mucho tiempo armando un camino distinto para cada industria. Si mañana un cliente es de 'Abogacía', el sistema falla porque no hay un camino programado para él, a menos que un humano (tú) venga a agregar otra rama.",
+          "height": 450,
+          "width": 550,
+          "color": 2
+        },
+        "id": "sticky-2",
+        "name": "Sticky Note 2",
+        "position": [
+          720,
+          -448
+        ],
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://sytem-ia-pruebas-agente.6g0gdj.easypanel.host/procesar",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "mensaje",
+                "value": "=Tengo un Lead de industria {{$json.body.industry}}  con {{$json.body.companySize}} empleados. Evalúalo e indícame si es calificado."
+              },
+              {
+                "name": "cliente_id",
+                "value": "={{$json.body.email || \"desconocido\"}}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "agente-externo",
+        "name": "Agente Inteligente (Python)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [
+          272,
+          -576
+        ]
+      },
+      {
+        "parameters": {
+          "content": "## El Futuro (Agentic Workflow)\\n👆 ¡Aquí está el nodo que pediste! \\n\\nConecta el Webhook a él y fíjate como este ÚNICO nodo **reemplaza TODO el desastre de abajo** usando a tu Agente en la Nube.\\n\\nSimplemente ponle Play a este nodo simulando información.",
+          "height": 220,
+          "width": 350,
+          "color": 4
+        },
+        "id": "sticky-3",
+        "name": "Sticky Note 3",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -496,
+          -672
+        ]
+      }
+    ],
+    "connections": {
+      "Generar Score Comercial": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "¿Score Mayor a 50?",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Notificar Slack VIP": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "HTTP Slack",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Prepara Rechazo": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "HTTP Enviar Mail",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Ruteo por Vertical": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Notificar Slack VIP",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "index": 0,
+              "node": "Actualizar Trello",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "index": 0,
+              "node": "Base Menús",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Webhook (Entrada)": {
+        "main": [
+          [
+            {
+              "node": "Agente Inteligente (Python)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Score Mayor a 50?": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Ruteo por Vertical",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "index": 0,
+              "node": "Prepara Rechazo",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Micaela Colmenares",
+    "name": "Version b4fa699e",
+    "description": "",
+    "autosaved": true
+  },
+  "tags": [
+    {
+      "updatedAt": "2026-02-25T21:52:57.310Z",
+      "createdAt": "2026-02-25T21:52:57.310Z",
+      "id": "NQf3W0X079BTqMng",
+      "name": "lead gen"
+    }
+  ]
+}

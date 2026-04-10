@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checklist — Conexión Número Producción Maicol</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    header p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+    .badge {
+      display: inline-block;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-top: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .section {
+      background: #1e293b;
+      border: 1px solid #2d3f55;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      background: #162032;
+      border-bottom: 1px solid #2d3f55;
+    }
+    .section-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+    .icon-ycloud  { background: #0c3547; }
+    .icon-render  { background: #1a1035; }
+    .icon-chatwoot{ background: #0a2e1a; }
+    .icon-code    { background: #1a2a0a; }
+    .icon-n8n     { background: #2e1a0a; }
+    .icon-test    { background: #2e0a1a; }
+
+    .section-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #f1f5f9;
+    }
+    .section-subtitle {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .step-number {
+      margin-left: auto;
+      background: #0f1117;
+      color: #475569;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      border: 1px solid #334155;
+      letter-spacing: 0.05em;
+    }
+
+    .steps { padding: 16px 22px; }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid #253347;
+      cursor: pointer;
+      user-select: none;
+    }
+    .step:last-child { border-bottom: none; }
+    .step:hover { opacity: 0.85; }
+
+    .checkbox {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #334155;
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      transition: all 0.15s;
+    }
+    .checkbox.done {
+      background: #22c55e;
+      border-color: #22c55e;
+    }
+    .checkbox.done::after {
+      content: '✓';
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .step-content {}
+    .step-text {
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .step-text strong { color: #f1f5f9; }
+    .step-note {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    code {
+      background: #0f1117;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      word-break: break-all;
+    }
+
+    .alert {
+      background: #2d1a00;
+      border: 1px solid #7c4a00;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 16px 22px;
+      font-size: 0.85rem;
+      color: #fbbf24;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .progress-bar-wrap {
+      background: #0f1117;
+      border-radius: 20px;
+      height: 6px;
+      margin: 12px 22px 0;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #22c55e, #38bdf8);
+      border-radius: 20px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+    .progress-label {
+      font-size: 0.72rem;
+      color: #475569;
+      text-align: right;
+      padding: 4px 22px 12px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #334155;
+      font-size: 0.8rem;
+    }
+
+    .done-banner {
+      display: none;
+      background: linear-gradient(135deg, #064e3b, #065f46);
+      border: 1px solid #22c55e;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .done-banner h2 { color: #22c55e; font-size: 1.4rem; margin-bottom: 8px; }
+    .done-banner p  { color: #a7f3d0; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🏠 Conexión Número Producción</h1>
+    <p>Back Urbanizaciones — Maicol</p>
+    <div class="badge">Checklist paso a paso</div>
+  </header>
+
+  <!-- PASO 1: YCloud -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ycloud">📱</div>
+      <div>
+        <div class="section-title">1 — YCloud</div>
+        <div class="section-subtitle">Activar número y configurar webhook</div>
+      </div>
+      <div class="step-number">PASO 1</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="pb-1"></div></div>
+    <div class="progress-label" id="pl-1">0 / 3</div>
+    <div class="steps" id="steps-1">
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Comprar / activar el <strong>número definitivo de Maicol</strong> en YCloud (misma cuenta tuya)</div>
+          <div class="step-note">Si ya está activado, salteás este paso</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Ir al número en YCloud → <strong>Configuración de Webhook</strong> → ingresar la URL:</div>
+          <div class="step-note"><code>https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol/whatsapp</code></div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Copiar la <strong>API Key</strong> del número nuevo (puede ser la misma de cuenta o una nueva por número)</div>
+          <div class="step-note">La vas a necesitar para Render en el paso 2</div>
+        </div>
+      </div>
+    </div>
+    <div class="alert">⚠️ El webhook apunta directo a FastAPI — <strong>NO usar n8n</strong> como intermediario</div>
+  </div>
+
+  <!-- PASO 2: Render -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-render">⚙️</div>
+      <div>
+        <div class="section-title">2 — Render</div>
+        <div class="section-subtitle">Actualizar variables de entorno</div>
+      </div>
+      <div class="step-number">PASO 2</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="pb-2"></div></div>
+    <div class="progress-label" id="pl-2">0 / 4</div>
+    <div class="steps" id="steps-2">
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Ir a Render → servicio <strong>system-ia-agentes</strong> → Environment</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Actualizar <code>YCLOUD_API_KEY_MAICOL</code> con la key del número nuevo (si cambió)</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Actualizar <code>NUMERO_BOT_MAICOL</code> con el número nuevo</div>
+          <div class="step-note">Formato: <code>549376XXXXXXX</code> (sin +, sin espacios)</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Agregar <code>CHATWOOT_API_TOKEN_MAICOL</code> y <code>CHATWOOT_INBOX_ID_MAICOL</code></div>
+          <div class="step-note">Los valores los obtenés en el paso 3 (Chatwoot)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 3: Chatwoot -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-chatwoot">💬</div>
+      <div>
+        <div class="section-title">3 — Chatwoot</div>
+        <div class="section-subtitle">Crear inbox y configurar webhook</div>
+      </div>
+      <div class="step-number">PASO 3</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="pb-3"></div></div>
+    <div class="progress-label" id="pl-3">0 / 5</div>
+    <div class="steps" id="steps-3">
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Ir a <strong>chatwoot.arnaldoayalaestratega.cloud</strong> → Ajustes → Bandejas de entrada → <strong>Agregar bandeja</strong></div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Elegir canal <strong>API</strong> → nombre: <code>Bot Maicol - Back Urbanizaciones</code> → Guardar</div>
+          <div class="step-note">Anotar el Inbox ID que aparece — lo necesitás para Render</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Ir a <strong>Ajustes → Integraciones → Webhook</strong> → Agregar nuevo</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">URL del webhook:</div>
+          <div class="step-note"><code>https://system-ia-agentes.onrender.com/clientes/arnaldo/maicol/chatwoot-webhook</code></div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Seleccionar evento: <strong>message_created</strong> → Guardar</div>
+          <div class="step-note">Este evento dispara el webhook cuando el agente responde manualmente desde Chatwoot → llega al cliente por WhatsApp</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 4: Código -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-code">💻</div>
+      <div>
+        <div class="section-title">4 — Código (lo hace Claude)</div>
+        <div class="section-subtitle">Agregar Chatwoot sync al worker de Maicol</div>
+      </div>
+      <div class="step-number">PASO 4</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="pb-4"></div></div>
+    <div class="progress-label" id="pl-4">0 / 3</div>
+    <div class="steps" id="steps-4">
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Agregar config vars Chatwoot + funciones <code>_cw_*</code> y <code>_sincronizar_chatwoot()</code> al worker de Maicol</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Llamar <code>_sincronizar_chatwoot()</code> al final de los endpoints <code>/whatsapp</code> y <code>/lead</code></div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Agregar endpoint <code>POST /chatwoot-webhook</code> para respuestas manuales del agente → YCloud → cliente</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 5: Deploy -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-n8n">🚀</div>
+      <div>
+        <div class="section-title">5 — Deploy</div>
+        <div class="section-subtitle">Push y esperar Render</div>
+      </div>
+      <div class="step-number">PASO 5</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="pb-5"></div></div>
+    <div class="progress-label" id="pl-5">0 / 3</div>
+    <div class="steps" id="steps-5">
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text"><code>git add</code> + <code>git commit</code> + <code>git push origin master:main</code></div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Esperar <strong>~2 minutos</strong> hasta que Render confirme el deploy</div>
+          <div class="step-note">Verificar con GET https://system-ia-agentes.onrender.com/health</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Desactivar workflow n8n <code>o4CrjByltFurUWox</code> (ya no hace falta el proxy)</div>
+          <div class="step-note">Mantener activo solo el keep-alive <code>kjmQdyTGFzMSfzov</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 6: Test -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-test">✅</div>
+      <div>
+        <div class="section-title">6 — Test final</div>
+        <div class="section-subtitle">Verificar flujo completo</div>
+      </div>
+      <div class="step-number">PASO 6</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="pb-6"></div></div>
+    <div class="progress-label" id="pl-6">0 / 5</div>
+    <div class="steps" id="steps-6">
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Mandar <strong>"hola"</strong> al número nuevo de Maicol → debe responder con bienvenida Back Urbanizaciones</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Navegar el menú → zona → tipo → propiedades reales de Airtable</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Verificar que la conversación aparece en <strong>Chatwoot</strong> inbox "Bot Maicol"</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Responder manualmente desde Chatwoot → verificar que llega al WhatsApp del cliente</div>
+        </div>
+      </div>
+      <div class="step" onclick="toggle(this)">
+        <div class="checkbox"></div>
+        <div class="step-content">
+          <div class="step-text">Verificar que el lead se registra correctamente en <strong>Airtable</strong> (tabla Clientes)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="done-banner" id="done-banner">
+    <h2>🎉 ¡Todo listo!</h2>
+    <p>El número de producción de Maicol está 100% conectado y operativo.</p>
+  </div>
+
+  <footer>Back Urbanizaciones — System IA · Checklist generado automáticamente</footer>
+
+</div>
+
+<script>
+  const totals = { 1: 3, 2: 4, 3: 5, 4: 3, 5: 3, 6: 5 };
+
+  function toggle(stepEl) {
+    const cb = stepEl.querySelector('.checkbox');
+    cb.classList.toggle('done');
+    updateSection(stepEl.closest('.steps').id.replace('steps-', ''));
+    checkAll();
+  }
+
+  function updateSection(id) {
+    const steps = document.querySelectorAll(`#steps-${id} .step`);
+    const done  = document.querySelectorAll(`#steps-${id} .checkbox.done`).length;
+    const total = totals[id];
+    const pct   = Math.round((done / total) * 100);
+    document.getElementById(`pb-${id}`).style.width = pct + '%';
+    document.getElementById(`pl-${id}`).textContent = `${done} / ${total}`;
+  }
+
+  function checkAll() {
+    const allDone = document.querySelectorAll('.checkbox:not(.done)').length === 0;
+    document.getElementById('done-banner').style.display = allDone ? 'block' : 'none';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+{
+  "updatedAt": "2026-03-02T21:19:26.138Z",
+  "createdAt": "2026-03-02T15:21:16.838Z",
+  "id": "XlUnOc2ngUfmixCq",
+  "name": "Sub: Router - Activar Demo",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "wt-activar-01",
+      "name": "Recibir Solicitud",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "14f2808Uxz8qUbG3BDPSCDk6o4fgLE_nTmwn1p-WHkYE",
+          "mode": "list",
+          "cachedResultName": "sesiones_demo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14f2808Uxz8qUbG3BDPSCDk6o4fgLE_nTmwn1p-WHkYE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14f2808Uxz8qUbG3BDPSCDk6o4fgLE_nTmwn1p-WHkYE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "telefono"
+          ],
+          "schema": [
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nombre_wa",
+              "displayName": "nombre_wa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "demo_activa",
+              "displayName": "demo_activa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "paso",
+              "displayName": "paso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "datos_extra",
+              "displayName": "datos_extra",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "gs-activar-01",
+      "name": "Activar Sesión en GSheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        480,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ySGy5iHCXbMxirsk",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Recibir Solicitud": {
+      "main": [
+        [
+          {
+            "node": "Activar Sesión en GSheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "4471ecd4-e520-4c8d-8a48-3622a0a678ee",
+  "activeVersionId": "4471ecd4-e520-4c8d-8a48-3622a0a678ee",
+  "versionCounter": 15,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-02T15:21:16.841Z",
+      "createdAt": "2026-03-02T15:21:16.841Z",
+      "role": "workflow:owner",
+      "workflowId": "XlUnOc2ngUfmixCq",
+      "projectId": "YfmAb61LMhjH6jFL",
+      "project": {
+        "updatedAt": "2026-03-02T10:33:35.043Z",
+        "createdAt": "2026-03-02T10:28:45.056Z",
+        "id": "YfmAb61LMhjH6jFL",
+        "name": "Micaela Colmenares <micaelacolmenares208@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-02T21:19:51.000Z",
+    "createdAt": "2026-03-02T21:19:26.139Z",
+    "versionId": "4471ecd4-e520-4c8d-8a48-3622a0a678ee",
+    "workflowId": "XlUnOc2ngUfmixCq",
+    "nodes": [
+      {
+        "parameters": {},
+        "id": "wt-activar-01",
+        "name": "Recibir Solicitud",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1,
+        "position": [
+          240,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "appendOrUpdate",
+          "documentId": {
+            "__rl": true,
+            "value": "14f2808Uxz8qUbG3BDPSCDk6o4fgLE_nTmwn1p-WHkYE",
+            "mode": "list",
+            "cachedResultName": "sesiones_demo",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14f2808Uxz8qUbG3BDPSCDk6o4fgLE_nTmwn1p-WHkYE/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "gid=0",
+            "mode": "list",
+            "cachedResultName": "Hoja 1",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14f2808Uxz8qUbG3BDPSCDk6o4fgLE_nTmwn1p-WHkYE/edit#gid=0"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": {},
+            "matchingColumns": [
+              "telefono"
+            ],
+            "schema": [
+              {
+                "id": "telefono",
+                "displayName": "telefono",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "nombre_wa",
+                "displayName": "nombre_wa",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "demo_activa",
+                "displayName": "demo_activa",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "paso",
+                "displayName": "paso",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "datos_extra",
+                "displayName": "datos_extra",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "id": "gs-activar-01",
+        "name": "Activar Sesión en GSheets",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4,
+        "position": [
+          480,
+          304
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "ySGy5iHCXbMxirsk",
+            "name": "Google Sheets account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Recibir Solicitud": {
+        "main": [
+          [
+            {
+              "node": "Activar Sesión en GSheets",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Micaela Colmenares",
+    "name": "Version 4471ecd4",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-02T21:19:51.083Z",
+        "id": 80,
+        "workflowId": "XlUnOc2ngUfmixCq",
+        "versionId": "4471ecd4-e520-4c8d-8a48-3622a0a678ee",
+        "event": "activated",
+        "userId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      },
+      {
+        "createdAt": "2026-03-02T21:19:56.909Z",
+        "id": 83,
+        "workflowId": "XlUnOc2ngUfmixCq",
+        "versionId": "4471ecd4-e520-4c8d-8a48-3622a0a678ee",
+        "event": "activated",
+        "userId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      },
+      {
+        "createdAt": "2026-03-02T21:19:56.902Z",
+        "id": 82,
+        "workflowId": "XlUnOc2ngUfmixCq",
+        "versionId": "4471ecd4-e520-4c8d-8a48-3622a0a678ee",
+        "event": "deactivated",
+        "userId": "92b9d887-3183-46b1-9db4-c38b54ef2cb6"
+      }
+    ]
+  }
+}
