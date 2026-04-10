@@ -105,8 +105,8 @@ Respondé con el número 👆"""
 MSG_SIN_PRODUCTOS = """Todavía no hay trabajos cargados en esa categoría.
 ¡Pero podemos hacerlo a medida para vos! 🎨
 
-¿Querés hablar con Lau directamente?
-Respondé *SI* y te paso su contacto."""
+0️⃣ Volver al menú
+1️⃣ Solicitar igual (te contacta Lau directamente)"""
 
 MSG_DERIVAR = """¡Genial! 🌟 Lau te va a atender personalmente.
 
@@ -479,22 +479,28 @@ def _procesar_cliente(telefono: str, texto: str, nombre_push: str) -> str:
         _enviar_texto(telefono, MSG_BIENVENIDA)
         return MSG_BIENVENIDA
 
-    # Derivar a Lau
-    if txt in ("si", "sí", "si quiero", "sí quiero") and sesion.get("esperando_derivar"):
+    # Opción 1 — Solicitar producto → deriva a Lau
+    if txt == "1" and sesion.get("esperando_accion"):
         SESIONES.pop(telefono, None)
         categoria = sesion.get("categoria", "")
         _guardar_lead(nombre_push, telefono, categoria)
         _enviar_texto(telefono, MSG_DERIVAR)
         return MSG_DERIVAR
 
+    # Opción 0 — Volver al menú anterior
+    if txt == "0" and sesion.get("esperando_accion"):
+        SESIONES.pop(telefono, None)
+        _enviar_texto(telefono, MSG_BIENVENIDA)
+        return MSG_BIENVENIDA
+
     # Selección de categoría
     if txt in CATEGORIAS:
         categoria = CATEGORIAS[txt]
-        SESIONES[telefono] = {"categoria": categoria, "esperando_derivar": False}
+        SESIONES[telefono] = {"categoria": categoria, "esperando_accion": False}
         productos = _obtener_productos_por_categoria(categoria)
 
         if not productos:
-            SESIONES[telefono]["esperando_derivar"] = True
+            SESIONES[telefono]["esperando_accion"] = True
             _enviar_texto(telefono, MSG_SIN_PRODUCTOS)
             return MSG_SIN_PRODUCTOS
 
@@ -507,13 +513,16 @@ def _procesar_cliente(telefono: str, texto: str, nombre_push: str) -> str:
             if url:
                 _enviar_imagen(telefono, url, caption)
 
-        msg_final = f"¿Te interesa algo de *{categoria}*? ¿Querés hablar con Lau?\nRespondé *SI* y te paso el contacto, o *MENU* para volver. 😊"
-        SESIONES[telefono]["esperando_derivar"] = True
+        msg_final = f"""¿Qué querés hacer?
+
+0️⃣ Volver al menú
+1️⃣ Solicitar este producto (te contacta Lau directamente)"""
+        SESIONES[telefono]["esperando_accion"] = True
         _enviar_texto(telefono, msg_final)
         return msg_final
 
     # Fallback
-    msg = "Escribí *MENU* para ver las opciones 😊"
+    msg = "Escribí *0* para ver el menú 😊"
     _enviar_texto(telefono, msg)
     return msg
 
