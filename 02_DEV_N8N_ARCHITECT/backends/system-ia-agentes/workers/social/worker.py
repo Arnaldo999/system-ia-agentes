@@ -25,7 +25,8 @@ router = APIRouter(prefix="/social", tags=["Social Media"])
 
 # ── Gemini ────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_TEXT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+GEMINI_TEXT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+GEMINI_TEXT_FALLBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 GEMINI_IMG_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
 
 # ── Publicación en redes (Fallbacks de seguridad) ─────────────────────────────
@@ -168,36 +169,39 @@ class DatosSeleccionarTema(BaseModel):
 
 
 def _call_gemini_text(prompt: str, timeout: int = 60, json_mode: bool = False, max_reintentos: int = 3) -> str:
-    """Llamada centralizada a Gemini para texto. Reintenta hasta 3 veces en errores 503/429."""
+    """Llamada centralizada a Gemini para texto. Reintenta en 503/429, con fallback a gemini-2.0-flash."""
     import time
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     if json_mode:
         payload["generationConfig"] = {"responseMimeType": "application/json"}
 
+    endpoints = [GEMINI_TEXT_URL, GEMINI_TEXT_FALLBACK_URL]
     ultimo_error = None
-    for intento in range(max_reintentos):
-        try:
-            resp = req.post(
-                GEMINI_TEXT_URL,
-                headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
-                json=payload,
-                timeout=timeout,
-            )
-            if resp.status_code in (503, 429) and intento < max_reintentos - 1:
-                espera = 5 * (intento + 1)  # 5s, 10s, 15s
-                logger.warning(f"Gemini {resp.status_code} — reintento {intento + 1}/{max_reintentos} en {espera}s")
-                time.sleep(espera)
-                continue
-            resp.raise_for_status()
-            return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception as e:
-            ultimo_error = e
-            if intento < max_reintentos - 1:
-                espera = 5 * (intento + 1)
-                logger.warning(f"Gemini error ({type(e).__name__}) — reintento {intento + 1}/{max_reintentos} en {espera}s")
-                time.sleep(espera)
-            else:
-                raise
+    for endpoint in endpoints:
+        for intento in range(max_reintentos):
+            try:
+                resp = req.post(
+                    endpoint,
+                    headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+                    json=payload,
+                    timeout=timeout,
+                )
+                if resp.status_code in (503, 429) and intento < max_reintentos - 1:
+                    espera = 5 * (intento + 1)
+                    logger.warning(f"Gemini {resp.status_code} en {endpoint} — reintento {intento + 1}/{max_reintentos} en {espera}s")
+                    time.sleep(espera)
+                    continue
+                resp.raise_for_status()
+                return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            except Exception as e:
+                ultimo_error = e
+                if intento < max_reintentos - 1:
+                    espera = 5 * (intento + 1)
+                    logger.warning(f"Gemini error ({type(e).__name__}) en {endpoint} — reintento {intento + 1}/{max_reintentos} en {espera}s")
+                    time.sleep(espera)
+                else:
+                    logger.warning(f"Gemini agotó reintentos en {endpoint}, probando fallback...")
+                    break
     raise ultimo_error
 
 
