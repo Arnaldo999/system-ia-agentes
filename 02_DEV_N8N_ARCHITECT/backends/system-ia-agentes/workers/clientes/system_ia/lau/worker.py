@@ -314,17 +314,21 @@ def _guardar_producto(nombre: str, descripcion: str, categoria: str, url_cloudin
 def _guardar_lead(nombre: str, telefono: str, categoria: str) -> None:
     """Registra un interesado en la tabla Leads."""
     try:
-        requests.post(
+        r = requests.post(
             _at_base_url(TABLE_LEADS),
             headers=_at_headers(),
             json={"fields": {
-                "Nombre": nombre,
+                "Nombre": nombre or "Sin nombre",
                 "Telefono": telefono,
                 "Categoria_Interes": categoria,
-                "Fecha_Consulta": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "Fecha_Consulta": datetime.now().strftime("%Y-%m-%d"),
             }},
             timeout=10,
         )
+        if r.status_code in (200, 201):
+            logger.info("[Lau] Lead guardado OK: %s %s", telefono, categoria)
+        else:
+            logger.warning("[Lau] Error guardando lead: %s — %s", r.status_code, r.text[:300])
     except Exception as e:
         logger.warning("[Lau] Error Airtable guardar_lead: %s", e)
 
