@@ -364,6 +364,7 @@ CATEGORIAS_ADMIN = {
     "2": "Fiestas y Eventos",
     "3": "Papeleria Creativa",
     "4": "Diseños e Impresiones",
+    "5": "Invitaciones y Videos Digitales",
 }
 
 
@@ -499,8 +500,8 @@ def _procesar_mensaje(
         pin_ingresado = txt[7:].strip()
         if pin_ingresado == ADMIN_PIN:
             SESIONES[telefono] = {"modo": "admin"}
-            _enviar_texto(telefono, MSG_ADMIN_BIENVENIDA)
-            return MSG_ADMIN_BIENVENIDA
+            _enviar_texto(telefono, MSG_ADMIN_ELEGIR_CATEGORIA)
+            return MSG_ADMIN_ELEGIR_CATEGORIA
         else:
             msg = "❌ PIN incorrecto."
             _enviar_texto(telefono, msg)
