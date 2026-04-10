@@ -4,9 +4,9 @@
     "Arnaldo Ayala",
     "Micaela Colmenares"
   ],
-  "timestamp_ultima_actualizacion": "2026-03-29T20:17:00",
+  "timestamp_ultima_actualizacion": "2026-04-10T13:00:00",
   "agente_activo": "dev",
-  "ultimo_modelo": "gemini",
+  "ultimo_modelo": "claude-sonnet-4-6",
 
   "infraestructura_por_proyecto": {
     "arnaldo_proyectos_propios": {
@@ -34,7 +34,7 @@
 
   "arquitectura_workers": {
     "repo": "github.com/Arnaldo999/system-ia-agentes",
-    "deploy": "Render (system-ia-agentes.onrender.com)",
+    "deploy": "Coolify Hostinger (agentes.arnaldoayalaestratega.cloud) — Render ya no se usa",
     "convencion": "Un worker demo por vertical. Para nuevo cliente: copiar demo, renombrar, configurar env vars. NUNCA editar la demo.",
     "verticales": {
       "inmobiliaria": {
@@ -48,14 +48,14 @@
     "maicol": {
       "nombre": "Back Urbanizaciones (Maicol)",
       "tipo": "proyecto propio Arnaldo — cliente externo",
-      "carpeta": "/home/arna/PROYECTO PROPIO ARNALDO AUTOMATIZACION/INMOBILIARIA MAICOL/",
+      "carpeta": "01_PROYECTOS/01_ARNALDO_AGENCIA/clientes/maicol/",
       "fase": "produccion",
       "estado": "activo",
       "entorno": "arnaldo_proyectos_propios",
       "arquitectura_correcta": {
         "flujo_bot_whatsapp": "YCloud → webhook/inmobiliaria → n8n → https://system-ia-agentes.onrender.com/inmobiliaria/whatsapp → responde vía YCloud",
         "flujo_formulario": "formulario-leads.html → webhook/inmobiliaria-formulario → n8n → Airtable → YCloud (avisa lead) — FUNCIONA",
-        "fastapi_render": "system-ia-agentes.onrender.com — workers/inmobiliaria/worker.py integrado como router",
+        "fastapi_coolify": "agentes.arnaldoayalaestratega.cloud — workers/clientes/arnaldo/maicol/worker.py integrado como router",
         "bot_whatsapp_py": "LEGACY LOCAL — reemplazado por workers/inmobiliaria/worker.py en el repo central"
       },
       "numero_maicol": "5493764815689",
@@ -138,7 +138,7 @@
     "orquestador": { "status": "standby", "path": ".agents/01-orquestador/AGENT.md" },
     "ventas": { "status": "espera", "path": "01_PROYECTOS/01_ARNALDO_AGENCIA/clientes/ventas-consultivo/AGENT.md" },
     "dev": { "status": "activo", "path": ".agents/03-dev/AGENT.md" },
-    "crm": { "status": "espera", "path": "03_CRM_ANALYST/AGENT.md" }
+    "crm": { "status": "espera", "path": "01_PROYECTOS/02_SYSTEM_IA_MICAELA/clientes/03_CRM_ANALYST/AGENT.md" }
   },
   "alertas_urgentes": [
     "Maicol: entregar formulario onboarding ya publicado",

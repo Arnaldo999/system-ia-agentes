@@ -16,13 +16,11 @@ Architecture rule:
 
 ## 2) Mandatory reads before substantial edits
 Read in this order:
-1. `AI_START.md`
-2. `ai/core/mission.md`
-3. `ai/core/project-map.md`
-4. `ai/core/n8n-agent-rules.md`
-5. `ai/core/memory-index.md`
-6. `ai/core/safety.md`
-7. `CLAUDE.md`
+1. `ai.context.json` — agente activo, proyectos, infraestructura
+2. `memory/ESTADO_ACTUAL.md` — estado del ecosistema
+3. `02_OPERACION_COMPARTIDA/handoff/ULTIMA_SESION.md` — qué quedó pendiente
+4. `CLAUDE.md` — reglas del proyecto (obligatorio)
+5. Si aplica: `01_PROYECTOS/<PROYECTO>/docs/ESTADO_ACTUAL.md`
 
 If request mentions `nuevo cliente`, `agregar cliente`, `redes sociales`, `instagram`, `facebook`, or `comentarios`, read `memory/nuevo-cliente-redes-sociales.md` first.
 
