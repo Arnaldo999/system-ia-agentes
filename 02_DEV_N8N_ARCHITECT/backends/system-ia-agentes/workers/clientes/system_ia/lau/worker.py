@@ -517,10 +517,10 @@ def _procesar_cliente(telefono: str, texto: str, nombre_push: str) -> str:
             if url:
                 _enviar_imagen(telefono, url, caption)
 
-        msg_final = f"""¿Qué querés hacer?
+        msg_final = f"""¿Te gustó algún diseño de *{categoria}*? 😊
 
-0️⃣ Volver al menú
-1️⃣ Solicitar este producto (te contacta Lau directamente)"""
+1️⃣ Sí, quiero consultarlo con Lau
+0️⃣ Volver al menú principal"""
         SESIONES[telefono]["esperando_accion"] = True
         _enviar_texto(telefono, msg_final)
         return msg_final
