@@ -545,11 +545,23 @@ async def webhook_whatsapp(request: Request):
 
     # Detectar si hay imagen
     imagen_bytes = None
-    if "imageMessage" in message and message_id:
+    tiene_imagen = "imageMessage" in message
+    if tiene_imagen and message_id:
         imagen_bytes = _descargar_media_evolution(message_id)
+        if imagen_bytes is None:
+            logger.warning("[Lau] No se pudo descargar imagen message_id=%s", message_id)
+        else:
+            logger.info("[Lau] Imagen descargada OK, size=%d bytes", len(imagen_bytes))
 
     if not telefono:
         return {"status": "ignored", "reason": "sin telefono"}
+
+    # Si hay imagen pero falló la descarga, avisar y pedir reenvío
+    if tiene_imagen and imagen_bytes is None:
+        sesion = SESIONES.get(telefono, {})
+        if sesion.get("modo") == "admin":
+            _enviar_texto(telefono, "⚠️ No pude procesar la imagen. ¿Podés reenviarla?")
+            return {"status": "ok", "note": "imagen no descargada"}
 
     _procesar_mensaje(telefono, texto, nombre_push, imagen_bytes)
     return {"status": "ok"}
