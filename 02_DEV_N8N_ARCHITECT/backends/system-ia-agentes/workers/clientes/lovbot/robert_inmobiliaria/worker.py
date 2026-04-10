@@ -361,8 +361,11 @@ def _gemini(prompt: str) -> str:
 
 def _gemini_calificar(sesion: dict) -> dict:
     zonas_str = "|".join(ZONAS_LIST)
-    prompt = f"""Sos un analista comercial inmobiliario de {NOMBRE_EMPRESA} en {CIUDAD}.
-Analizá las respuestas del lead y devolvé SOLO un JSON:
+    prompt = f"""Sos un analista comercial inmobiliario senior de {NOMBRE_EMPRESA} en {CIUDAD}.
+Tu trabajo es clasificar leads con precisión para que el asesor no pierda tiempo con curiosos
+y tampoco descarte leads tibios que pueden madurar.
+
+Analizá las respuestas del lead y devolvé SOLO un JSON válido:
 {{
   "score": "caliente|tibio|frio",
   "tipo": "casa|departamento|terreno|local|oficina|null",
@@ -370,14 +373,30 @@ Analizá las respuestas del lead y devolvé SOLO un JSON:
   "operacion": "venta|alquiler|null",
   "presupuesto_detectado": "alto|medio|bajo|sin_info",
   "derivar_sitio_web": true|false,
-  "nota_para_asesor": "texto breve"
+  "nota_para_asesor": "texto breve con lo más relevante del lead"
 }}
 
-Reglas:
-- caliente: presupuesto claro + compra/alquiler en menos de 6 meses
-- tibio: interesado pero sin urgencia o presupuesto indefinido
-- frio: solo curiosidad, explorando, más de 1 año → derivar_sitio_web: true
-- Opciones 3 y 4 de urgencia ("próximo año", "explorando") → frio + derivar_sitio_web: true
+Criterios de clasificación:
+- CALIENTE: urgencia 1-2 (menos de 6 meses) + presupuesto definido. Asesor debe contactar HOY.
+- TIBIO: interesado con intención clara pero sin urgencia inmediata O presupuesto indefinido.
+  → derivar_sitio_web: false — mostrar propiedades y ofrecer cita igual, pueden madurar.
+  → NUNCA marcar tibio como derivar_sitio_web true, son leads recuperables.
+- FRÍO: urgencia 3-4 ("próximo año", "explorando") O respuestas evasivas sin intención clara.
+  → derivar_sitio_web: true
+
+Señales que elevan el score (aunque la urgencia sea baja):
+- Mencionó zona específica (no "cualquiera" o "no sé")
+- Preguntó por precio, cuota, financiamiento, escritura
+- Tiene presupuesto definido (opciones 1-4)
+- Mencionó familia, hijos, mudanza, proyecto concreto
+
+Señales que bajan el score:
+- Solo dijo "info", "quiero saber", sin contexto
+- Eligió "explorando" + sin zona + sin presupuesto
+- Respuestas de una sola palabra sin contexto
+
+Nota para asesor: mencionar zona, tipo, urgencia real y cualquier señal de compra seria.
+Si el lead preguntó por escritura, financiamiento o mencionó familia → indicarlo.
 
 Respuestas del lead:
 - Objetivo/intención: "{sesion.get('resp_objetivo', '')}"
@@ -386,7 +405,7 @@ Respuestas del lead:
 - Presupuesto: "{sesion.get('resp_presupuesto', '')}"
 - Urgencia: "{sesion.get('resp_urgencia', '')}"
 
-Devolvé SOLO el JSON."""
+Devolvé SOLO el JSON, sin explicaciones."""
     try:
         texto = _gemini(prompt)
         if texto.startswith("```"):
@@ -624,11 +643,9 @@ MSG_SUBNICHO = (
 
 MSG_BIENVENIDA = (
     "¡Hola! 👋 Bienvenido/a a *{empresa}*.\n\n"
-    "Soy su asistente virtual y estoy aquí para ayudarle a encontrar "
-    "la propiedad ideal en *{ciudad}* 🏙️\n\n"
-    "Le haré solo *5 preguntas rápidas* para mostrarle opciones "
-    "que se ajusten exactamente a lo que busca. ¡Son menos de 2 minutos! ⚡\n\n"
-    "Para empezar — ¿me podría decir su nombre, por favor? 😊"
+    "Para no hacerle perder el tiempo, le voy a hacer *4 preguntas rápidas* "
+    "y le muestro las propiedades que mejor encajan con lo que busca. ⚡\n\n"
+    "¿Me dice su nombre para llamarle bien? 😊"
 )
 
 # Contexto por subniche (adapta nombre empresa, copy y asesor)
@@ -733,16 +750,50 @@ def _procesar(telefono: str, texto: str) -> None:
         )
         return
 
+    # ── Detector de objeción familiar (cualquier paso post-nombre) ───────────
+    _OBJECION_FAMILIAR = (
+        "lo hablo con", "lo consulto con", "lo veo con", "lo comento con",
+        "mi esposa", "mi esposo", "mi marido", "mi pareja", "mi socio", "mi socia",
+        "mi papa", "mi papá", "mi mama", "mi mamá", "mi hijo", "mi hija",
+        "tengo que consultar", "tenemos que ver", "lo decidimos juntos"
+    )
+    if step not in ("inicio", "subnicho", "nombre") and any(p in texto_lower for p in _OBJECION_FAMILIAR):
+        n = nombre_corto or nombre or "estimado/a"
+        _enviar_texto(telefono,
+            f"¡Por supuesto, *{n}*! Es una decisión importante y está muy bien consultarlo. 😊\n\n"
+            f"Le mando la información para que la puedan revisar juntos 👇\n\n"
+            f"¿Le gustaría que *{NOMBRE_ASESOR}* los llame cuando estén los dos disponibles, "
+            f"o prefieren seguir por aquí a su ritmo?"
+        )
+        # No reseteamos sesión — esperamos su respuesta y continuamos
+        SESIONES[telefono] = {**sesion, "step": sesion.get("step", step), "_espera_familiar": True}
+        return
+
+    # Si venía de objeción familiar y responde, retomamos el flujo donde estaba
+    if sesion.get("_espera_familiar"):
+        SESIONES[telefono] = {**{k: v for k, v in sesion.items() if k != "_espera_familiar"}}
+        sesion = SESIONES[telefono]
+        step = sesion.get("step", "inicio")
+        n = nombre_corto or nombre
+        if "asesor" in texto_lower or "llame" in texto_lower or "llamada" in texto_lower or texto.strip() in ("1", "si", "sí"):
+            _ir_asesor(telefono, sesion)
+            return
+        _enviar_texto(telefono,
+            f"¡Perfecto, *{n}*! Sin apuro. Seguimos cuando quieran 😊\n\n"
+            f"Retomamos donde lo dejamos — " + _pregunta(step, nombre_corto, subniche)
+        )
+        return
+
     # ── NOMBRE ────────────────────────────────────────────────────────────────
     if step == "nombre":
         nombre = texto.title()
         SESIONES[telefono] = {**sesion, "step": "email", "nombre": nombre}
         n = nombre.split()[0]
         _enviar_texto(telefono,
-            f"¡Mucho gusto, *{n}*! 😊 Es un placer atenderle.\n\n"
-            f"¿Me comparte su *correo electrónico*? 📬\n"
-            f"_(Lo usamos para enviarle fichas de propiedades y novedades)_\n\n"
-            f"_(Si prefiere no compartirlo, escriba *no*)_"
+            f"¡Mucho gusto, *{n}*! 😊\n\n"
+            f"¿Me comparte su *correo electrónico*? Lo usamos para enviarle fichas "
+            f"de propiedades antes de que salgan al público. 📬\n\n"
+            f"_(Escriba *no* si prefiere omitirlo)_"
         )
         return
 
@@ -752,14 +803,14 @@ def _procesar(telefono: str, texto: str) -> None:
         if texto_lower in rechazos:
             SESIONES[telefono] = {**sesion, "step": "ciudad", "email": ""}
             _enviar_texto(telefono,
-                f"Sin problema 😊\n\n¿Desde qué *ciudad* nos escribe? 📍"
+                f"Sin problema 😊 ¿Desde qué *ciudad* nos escribe? 📍"
             )
         elif "@" in texto and "." in texto:
             email = texto.strip()
             threading.Thread(target=_at_guardar_email, args=(telefono, email), daemon=True).start()
             SESIONES[telefono] = {**sesion, "step": "ciudad", "email": email}
             _enviar_texto(telefono,
-                f"¡Perfecto! 📬 Email registrado.\n\n¿Desde qué *ciudad* nos escribe? 📍"
+                f"¡Perfecto! 📬 Anotado.\n\n¿Desde qué *ciudad* nos escribe? 📍"
             )
         else:
             _enviar_texto(telefono,
@@ -772,43 +823,62 @@ def _procesar(telefono: str, texto: str) -> None:
         ciudad_resp = texto.strip().title()
         SESIONES[telefono] = {**sesion, "step": "objetivo", "ciudad_resp": ciudad_resp}
         _enviar_texto(telefono,
-            f"¡Gracias! 📍 *{ciudad_resp}*\n\n" + _pregunta("objetivo", nombre, subniche)
+            f"📍 *{ciudad_resp}*, anotado.\n\n" + _pregunta("objetivo", nombre, subniche)
         )
         return
 
     # ── OBJETIVO (comprar/alquilar + para qué) ────────────────────────────────
+    _ACUSE_OBJETIVO = {
+        "1": "Comprar, perfecto. 🏠",
+        "2": "Alquilar, entendido. 🔑",
+        "3": "Invertir, excelente decisión. 📈",
+    }
     if step == "objetivo":
         mapa_op = {"1": "venta", "2": "alquiler", "3": "venta"}
         operacion = mapa_op.get(texto.strip(), "venta")
+        acuse = _ACUSE_OBJETIVO.get(texto.strip(), "Entendido. 👍")
         SESIONES[telefono] = {**sesion, "step": "tipo", "resp_objetivo": texto,
                               "operacion_at": operacion}
-        _enviar_texto(telefono, _pregunta("tipo", nombre_corto, subniche))
+        _enviar_texto(telefono, acuse + "\n\n" + _pregunta("tipo", nombre_corto, subniche))
         return
 
     # ── TIPO DE PROPIEDAD ─────────────────────────────────────────────────────
+    _ACUSE_TIPO = {
+        "1": "Casa, perfecto. 🏡",
+        "2": "Departamento, anotado. 🏢",
+        "3": "Terreno, muy bien. 🌿",
+        "4": "Local comercial, entendido. 🏪",
+        "5": "Oficina, anotado. 💼",
+    }
     if step == "tipo":
         mapa_tipo = {
             "1": "casa", "2": "departamento", "3": "terreno",
             "4": "otro", "5": "otro",
         }
         tipo_detectado = mapa_tipo.get(texto.strip(), _normalizar_tipo(texto) or texto.lower())
+        acuse = _ACUSE_TIPO.get(texto.strip(), "Entendido. 👍")
         SESIONES[telefono] = {**sesion, "step": "zona", "resp_tipo": tipo_detectado}
-        _enviar_texto(telefono, _pregunta("zona", nombre_corto, subniche))
+        _enviar_texto(telefono, acuse + "\n\n" + _pregunta("zona", nombre_corto, subniche))
         return
 
     # ── ZONA ──────────────────────────────────────────────────────────────────
     if step == "zona":
         zona_detectada = texto
+        zona_label = texto
         try:
             idx = int(texto) - 1
             if 0 <= idx < len(ZONAS_LIST):
                 zona_detectada = ZONAS_LIST[idx]
+                zona_label = ZONAS_LIST[idx]
             elif idx == len(ZONAS_LIST):
                 zona_detectada = ""
+                zona_label = "cualquier zona"
         except ValueError:
-            pass
+            zona_detectada = _normalizar_zona(texto) or texto
+            zona_label = zona_detectada
+        acuse_zona = f"📍 *{zona_label}*, anotado." if zona_label != "cualquier zona" else "Sin zona preferida, le muestro todo lo disponible."
         SESIONES[telefono] = {**sesion, "step": "presupuesto", "resp_zona": zona_detectada}
-        _enviar_texto(telefono, _pregunta("presupuesto", nombre_corto, subniche))
+        _enviar_texto(telefono, acuse_zona + "\n\n" + _pregunta("presupuesto", nombre_corto, subniche))
         return
 
     # ── PRESUPUESTO ───────────────────────────────────────────────────────────
@@ -881,32 +951,34 @@ def _procesar(telefono: str, texto: str) -> None:
 
         if not props:
             _enviar_texto(telefono,
-                f"*{nombre_corto or nombre}*, no tenemos propiedades disponibles "
-                f"con esas características en este momento, pero nuestro asesor "
-                f"*{NOMBRE_ASESOR}* puede ayudarle a encontrar opciones personalizadas. 🏡"
+                f"*{nombre_corto or nombre}*, en este momento no tenemos propiedades "
+                f"con exactamente esas características en nuestro portal, "
+                f"pero *{NOMBRE_ASESOR}* trabaja con opciones que no siempre están publicadas. 🏡\n\n"
+                f"¿Le parece si le coordino una llamada rápida — *hoy o mañana* — "
+                f"para que le cuente lo que hay disponible?"
             )
         else:
             # Mostrar lista de propiedades
             SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props,
                                   "tipo": tipo, "zona": zona, "operacion": operacion}
             _enviar_texto(telefono,
-                f"¡Excelente, *{nombre_corto or nombre}*! 🎉\n\n"
-                f"Revisé nuestro portafolio y encontré *{len(props)} propiedad(es)* "
-                f"que coinciden con lo que está buscando. Aquí están 👇"
+                f"*{nombre_corto or nombre}*, encontré *{len(props)} opción{'es' if len(props) > 1 else ''}* "
+                f"que coincide{'n' if len(props) > 1 else ''} con lo que busca 👇"
             )
             _enviar_texto(telefono, _lista_titulos(props))
             return  # queda en step lista para que elija ficha
 
-        # Ofrecer cita con Cal.com (ya tiene email y datos)
+        # Ofrecer cita con Cal.com — primero pregunta binaria, luego slots
         if _cal_disponible():
             slots = _cal_obtener_slots()
             if slots:
-                SESIONES[telefono] = {**sesion_act, "step": "agendar_slots",
+                SESIONES[telefono] = {**sesion_act, "step": "ofrecer_cita",
                                       "slots": slots, "email": email}
                 _enviar_texto(telefono,
-                    f"¿Le gustaría agendar una cita con nuestro asesor *{NOMBRE_ASESOR}*? 📅\n\n"
-                    f"{_formatear_slots(slots)}\n\n"
-                    f"Responda con el *número* del horario que prefiere, o *0* para omitir."
+                    f"¿Prefiere que *{NOMBRE_ASESOR}* lo llame *hoy* o *mañana* para "
+                    f"mostrarle opciones personalizadas?\n\n"
+                    f"*1️⃣* Ver horarios disponibles 📅\n"
+                    f"*0️⃣* Que me contacten ellos a la brevedad"
                 )
                 return
 
@@ -946,6 +1018,24 @@ def _procesar(telefono: str, texto: str) -> None:
             return
         # Cualquier otra respuesta → ofrecer cita
         _ir_asesor(telefono, sesion)
+        return
+
+    # ── OFRECER CITA — PREGUNTA BINARIA ANTES DE MOSTRAR SLOTS ──────────────
+    if step == "ofrecer_cita":
+        slots = sesion.get("slots", [])
+        if texto.strip() == "1" or texto_lower in ("si", "sí", "ver", "horarios", "dale"):
+            SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
+            _enviar_texto(telefono,
+                f"Estos son los horarios disponibles con *{NOMBRE_ASESOR}* 📅\n\n"
+                f"{_formatear_slots(slots)}\n\n"
+                f"Responda con el *número* del horario que prefiere."
+            )
+        else:
+            _enviar_texto(telefono,
+                f"¡Perfecto! *{NOMBRE_ASESOR}* se pondrá en contacto con usted a la brevedad. 🏡\n\n"
+                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
+            )
+            SESIONES.pop(telefono, None)
         return
 
     # ── AGENDAMIENTO — SELECCIÓN DE SLOT ─────────────────────────────────────
@@ -1075,16 +1165,16 @@ def _ir_asesor(telefono: str, sesion: dict) -> None:
             + (f" en {zona}" if zona else "")
         )
 
-    # Ofrecer cita con Cal.com (ya tiene email desde el inicio)
+    # Ofrecer cita — primero pregunta binaria, luego slots
     if _cal_disponible():
         slots = _cal_obtener_slots()
         if slots:
-            SESIONES[telefono] = {**sesion, "step": "agendar_slots",
-                                  "slots": slots, "email": email}
+            SESIONES[telefono] = {**sesion, "step": "ofrecer_cita", "slots": slots, "email": email}
             _enviar_texto(telefono,
-                f"¡Con gusto, {nombre_corto}! Estos son los horarios disponibles con *{NOMBRE_ASESOR}*: 📅\n\n"
-                f"{_formatear_slots(slots)}\n\n"
-                f"Responda con el *número* del horario que prefiere, o *0* para que lo contacten."
+                f"¡Con gusto, {nombre_corto}! ¿Prefiere ver los horarios disponibles "
+                f"con *{NOMBRE_ASESOR}* ahora mismo, o que él se contacte con usted?\n\n"
+                f"*1️⃣* Ver horarios disponibles 📅\n"
+                f"*0️⃣* Que me contacten a la brevedad"
             )
             return
 
