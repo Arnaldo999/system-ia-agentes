@@ -35,6 +35,7 @@ AIRTABLE_BASE_MAICOL    = os.getenv("AIRTABLE_BASE_ID_MAICOL", "")
 AIRTABLE_API_KEY        = os.getenv("AIRTABLE_API_KEY", "")
 AIRTABLE_BASE_LAU       = os.getenv("LAU_AIRTABLE_BASE_ID", "")
 AIRTABLE_BASE_ROBERT    = os.getenv("ROBERT_AIRTABLE_BASE", "")
+AIRTABLE_BASE_MICA      = os.getenv("MICA_AIRTABLE_BASE_ID", "")
 
 REQUEST_TIMEOUT = 10
 RETRY_WAIT      = 5
@@ -166,6 +167,7 @@ def run() -> dict:
         "Airtable Maicol":  _check_airtable_base("Maicol", AIRTABLE_TOKEN_MAICOL, AIRTABLE_BASE_MAICOL),
         "Airtable Lau":     _check_airtable_base("Lau", AIRTABLE_API_KEY, AIRTABLE_BASE_LAU),
         "Airtable Robert":  _check_airtable_base("Robert", AIRTABLE_API_KEY, AIRTABLE_BASE_ROBERT),
+        "Airtable Mica":    _check_airtable_base("Mica", AIRTABLE_API_KEY, AIRTABLE_BASE_MICA),
     }
 
     alertas = [
