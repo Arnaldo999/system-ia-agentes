@@ -58,15 +58,16 @@ Producción de Maicol intacta — sin redeploy ni cambios en runtime.
 - Frecuencia: cada 5min via cron | Retry 1x | Cooldown 30min
 - **Pendiente: configurar cron en VPS Arnaldo**
 
-### Auditoría Diaria (workflow n8n — Capa B)
-- Workflow: `🔍 Auditoría Diaria — Ecosistema Agencia (Fase 2)` (ID: `IuHJLy2hQhOIDlYK`)
-- Checks: n8n Mica + Lovbot health, 7 workflows críticos activos, últimas ejecuciones con error
-- Frecuencia: diaria 8am ARG | Alerta Telegram solo si hay alertas
-- **Pendiente: cargar env vars N8N_MICA_KEY, N8N_LOVBOT_KEY, N8N_ARNALDO_KEY en n8n Arnaldo y activar**
+### Auditoría Diaria script-first — Capa B (Fase 2.2) ✅
+- `auditor_infra.py` — n8n Mica + Lovbot health — testeado ✅
+- `auditor_workflows.py` — 7 workflows críticos estado activo + ejecuciones — testeado ✅
+- `auditor_runner.py` — orquestador, Telegram directo, silencioso si todo OK — testeado ✅
+- Workflow n8n `IuHJLy2hQhOIDlYK` queda activo en paralelo hasta validar scripts en producción
+- Nota: n8n Mica y Lovbot no exponen REST API con las keys actuales → checks de esas instancias se hacen via health check (infra) y se skipean en workflows (401 handled)
 
 ## Próximo paso recomendado
-1. Configurar cron guardia_critica en VPS Arnaldo
-2. Cargar variables de entorno del workflow auditoría en n8n UI
-3. Activar workflow `IuHJLy2hQhOIDlYK`
-4. Validar con ejecución manual antes de dejar corriendo
-5. Cuando Capa 1+2 estables → diseñar Capa 3+4 (tokens + CRM)
+1. **Configurar cron en VPS Arnaldo** — guardia_critica (5min) + auditor_runner (8am ARG)
+2. Correr en paralelo con workflows existentes por 2-3 días
+3. Validar que no hay falsos positivos
+4. Luego decidir qué workflows viejos se apagan
+5. Fase 2.3: auditor_ycloud + auditor_tokens
