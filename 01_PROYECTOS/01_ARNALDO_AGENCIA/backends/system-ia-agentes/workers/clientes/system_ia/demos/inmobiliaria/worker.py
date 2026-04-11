@@ -67,6 +67,7 @@ AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "appl
 
 # ─── EVOLUTION API ────────────────────────────────────────────────────────────
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
+    print(f"[MICA-EVO] enviar tel={telefono} url={EVOLUTION_API_URL!r} key={'SI' if EVOLUTION_API_KEY else 'NO'} inst={EVOLUTION_INSTANCE!r}")
     if not EVOLUTION_API_URL or not EVOLUTION_API_KEY:
         print(f"[MICA-EVO] Sin config. Msg: {mensaje[:80]}")
         return False
