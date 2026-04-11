@@ -78,8 +78,7 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
             json={"number": re.sub(r'\D', '', telefono), "text": mensaje},
             timeout=10,
         )
-        if r.status_code not in (200, 201):
-            print(f"[MICA-EVO] Error {r.status_code}: {r.text[:300]}")
+        print(f"[MICA-EVO] status={r.status_code} resp={r.text[:200]}")
         return r.status_code in (200, 201)
     except Exception as e:
         print(f"[MICA-EVO] Excepción: {e}")
