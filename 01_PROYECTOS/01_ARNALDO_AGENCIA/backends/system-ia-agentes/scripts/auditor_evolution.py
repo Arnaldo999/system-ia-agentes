@@ -29,6 +29,7 @@ EVOLUTION_API_URL  = os.getenv("EVOLUTION_API_URL", "").rstrip("/")
 EVOLUTION_API_KEY  = os.getenv("EVOLUTION_API_KEY", "")
 EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "System IA Demo")
 LAU_INSTANCE       = os.getenv("LAU_EVOLUTION_INSTANCE", "Lau Emprende")
+MICA_DEMO_INSTANCE = os.getenv("MICA_DEMO_EVOLUTION_INSTANCE", "")
 
 REQUEST_TIMEOUT = 10
 RETRY_WAIT      = 5
@@ -92,7 +93,7 @@ def _check_instance(nombre: str) -> dict:
 
 
 def run() -> dict:
-    instancias = [EVOLUTION_INSTANCE, LAU_INSTANCE]
+    instancias = [EVOLUTION_INSTANCE, LAU_INSTANCE, MICA_DEMO_INSTANCE]
     checks     = [_check_instance(i) for i in instancias if i]
     alertas    = [c for c in checks if not c["ok"]]
 
