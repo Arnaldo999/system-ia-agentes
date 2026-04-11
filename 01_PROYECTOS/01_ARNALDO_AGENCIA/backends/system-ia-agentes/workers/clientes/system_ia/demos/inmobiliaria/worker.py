@@ -1184,7 +1184,8 @@ async def procesar_whatsapp(request: Request):
         return {"status": "error", "detalle": "body no es JSON válido"}
 
     # Evolution API payload structure
-    event = body.get("event", "")
+    # Evolution manda "MESSAGES_UPSERT" (mayúscula + guión bajo)
+    event = body.get("event", "").lower().replace("_", ".")
     if event and event != "messages.upsert":
         return {"status": "ignorado", "razon": f"evento: {event}"}
 
