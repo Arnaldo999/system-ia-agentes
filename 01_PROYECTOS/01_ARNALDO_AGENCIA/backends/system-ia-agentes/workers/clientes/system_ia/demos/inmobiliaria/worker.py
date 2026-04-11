@@ -96,18 +96,41 @@ SUBNICHE_LABELS = {
     "agente":         "Agente Independiente",
 }
 
+# Preguntas de precalificación por sub-nicho — tono cálido y conversacional
+PREGUNTAS_PRECAL = {
+    "desarrolladora": [
+        "¿Cuántas unidades o lotes tiene el proyecto que querés comercializar? 🏗️",
+        "¿Ya tenés equipo de ventas o estás buscando automatizar la captación de leads? 🤔",
+        "¿En qué etapa está el proyecto — en planos, en construcción o ya entregado? 📋",
+    ],
+    "inmobiliaria": [
+        "¿Cuántas propiedades tiene aproximadamente tu cartera activa? 🏢",
+        "¿Cuántos asesores trabajan en tu equipo actualmente? 👥",
+        "¿Cuál es tu mayor desafío hoy — captar leads, hacer seguimiento o cerrar ventas? 🎯",
+    ],
+    "agente": [
+        "¿Trabajás de forma independiente o estás asociado a alguna inmobiliaria? 🧑‍💼",
+        "¿Cuántas propiedades manejás en promedio por mes? 📊",
+        "¿Qué zonas o tipos de propiedades son tu especialidad? 📍",
+    ],
+    "comprador": [
+        "¿Estás buscando para vivir o como inversión? 🏠",
+        "¿Tenés alguna zona o barrio en mente? 📍",
+        "¿Cuál sería tu presupuesto aproximado? (podés decirme un rango) 💰",
+    ],
+}
+
 # Contexto de bienvenida por sub-nicho — simula el bot de ESA empresa
 SUBNICHE_BIENVENIDA = {
     "desarrolladora": (
-        "🏗️ Bienvenido a *{empresa}*.\n\n"
-        "Somos una desarrolladora inmobiliaria en {ciudad}.\n"
-        "Tenemos proyectos de casas y lotes disponibles.\n\n"
-        "¿Qué estás buscando?\n\n"
+        "👋 ¡Hola! Bienvenido a *{empresa}*. 🏗️\n\n"
+        "Somos una desarrolladora inmobiliaria en {ciudad} con proyectos de casas y lotes.\n\n"
+        "¿En qué te puedo ayudar hoy?\n\n"
         "*1* Ver proyectos disponibles\n"
         "*2* Hablar con un asesor"
     ),
     "inmobiliaria": (
-        "🏢 Hola, bienvenido a *{empresa}*.\n\n"
+        "👋 ¡Hola! Bienvenido a *{empresa}*. 🏢\n\n"
         "Somos una inmobiliaria en {ciudad} con propiedades en venta y alquiler.\n\n"
         "¿Qué estás buscando?\n\n"
         "*1* Comprar una propiedad\n"
@@ -115,8 +138,8 @@ SUBNICHE_BIENVENIDA = {
         "*3* Hablar con un asesor"
     ),
     "agente": (
-        "🧑‍💼 Hola, soy *{asesor}*, asesor inmobiliario independiente en {ciudad}.\n\n"
-        "Te puedo ayudar a encontrar la propiedad ideal.\n\n"
+        "👋 ¡Hola! Soy *{asesor}*, asesora inmobiliaria en {ciudad}. 🧑‍💼\n\n"
+        "Con gusto te ayudo a encontrar exactamente lo que buscás. 😊\n\n"
         "¿Qué necesitás?\n\n"
         "*1* Comprar\n"
         "*2* Alquilar\n"
@@ -333,8 +356,12 @@ def _gemini_clasificar(texto: str, sesion: dict) -> dict:
 
     historial_txt = "\n".join([f"  {h['rol']}: {h['msg']}" for h in historial]) if historial else "  (primera interacción)"
 
-    prompt = f"""Sos el cerebro de un agente inmobiliario IA para {EMPRESA['nombre']} en {EMPRESA['ciudad']}.
-Tu trabajo es analizar el mensaje del cliente y devolver un JSON con la clasificación.
+    nombre_corto = nombre.split()[0] if nombre else ""
+    saludo_nombre = f", {nombre_corto}" if nombre_corto else ""
+
+    prompt = f"""Sos {EMPRESA['asesor']}, asesora virtual de {EMPRESA['nombre']} en {EMPRESA['ciudad']}.
+Sos cálida, cercana y profesional — como una asesora humana que realmente quiere ayudar.
+Tu trabajo es analizar el mensaje y devolver un JSON con clasificación + respuesta conversacional.
 
 CONTEXTO ACTUAL:
 - Sub-nicho detectado: {subniche_actual or 'ninguno aún'}
@@ -346,6 +373,7 @@ CONTEXTO ACTUAL:
 NUEVO MENSAJE DEL CLIENTE: "{texto}"
 
 INSTRUCCIONES:
+
 1. Detectá el sub-nicho si no está definido:
    - "desarrolladora": tiene un proyecto inmobiliario para vender (desarrollador, proyecto, unidades, preventa)
    - "inmobiliaria": agencia o inmobiliaria con cartera y equipo
@@ -366,12 +394,16 @@ INSTRUCCIONES:
    - tipo: "casa", "departamento", "terreno" (null si no menciona)
    - zona: nombre de zona si menciona alguna (null si no)
 
-4. Generá una respuesta natural, breve, en español LATAM (no Spain).
-   - Tono: profesional pero cercano, como un asesor experto
-   - Si es saludo → presentarte y preguntar en qué podés ayudar
-   - Si detectás sub-nicho por primera vez → confirmarlo y arrancar precalificación
-   - Si es comprador → ir directo a qué busca
-   - Máximo 3 líneas de texto libre, podés usar emojis con moderación
+4. Generá una respuesta CÁLIDA y NATURAL en español latinoamericano.
+   REGLAS DE TONO — seguirlas siempre:
+   - Empezá con una confirmación positiva cuando el cliente responde algo: "¡Perfecto{saludo_nombre}! 😊", "¡Genial{saludo_nombre}! 🌟", "Entendido{saludo_nombre} 👍"
+   - Usá el nombre del cliente cuando lo tenés — hace la conversación más personal
+   - Emojis con moderación pero presentes: 🏠 🌿 😊 ✨ 📅 — dan calidez
+   - Preguntas abiertas y amigables, nunca interrogatorio frío
+   - Ofrecé opciones numeradas cuando hay más de una alternativa
+   - Cerrá siempre con una CTA clara y amable
+   - Máximo 4 líneas, directo pero humano
+   - NUNCA uses "estimado/a", "saludos cordiales" ni lenguaje formal/corporativo
 
 Respondé SOLO con JSON válido, sin markdown, sin explicaciones:
 {{
