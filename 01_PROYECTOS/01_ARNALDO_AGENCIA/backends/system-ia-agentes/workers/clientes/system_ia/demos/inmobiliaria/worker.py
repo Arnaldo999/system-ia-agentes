@@ -1,270 +1,216 @@
 """
-Worker DEMO Mica — Agente Precalificador Inmobiliario (Evolution API)
-=====================================================================
-Demo inmobiliaria para System IA (Micaela). Adaptado del demo base.
-Usa Evolution API para enviar mensajes (no YCloud).
+Worker — Mica (System IA) — Demo Inmobiliaria
+==============================================
+Clon del worker de Robert (Lovbot Inmobiliaria v2) adaptado a Mica.
+Mismo flow: precalificación Gemini + Airtable + Cal.com.
+Canal: Evolution API (en vez de Meta Graph API).
 
-Variables de entorno requeridas (prefijo MICA_DEMO_):
-  MICA_DEMO_NOMBRE                   Nombre de la empresa/proyecto
-  MICA_DEMO_CIUDAD                   Ciudad o región
-  MICA_DEMO_ASESOR                   Nombre del asesor senior
-  MICA_DEMO_NUMERO_BOT               Número WhatsApp del bot (5493765005465)
-  MICA_DEMO_NUMERO_ASESOR            Número WhatsApp del asesor
-  MICA_DEMO_AIRTABLE_BASE            Base ID Airtable
+Variables de entorno:
+  EVOLUTION_API_URL              URL base Evolution API (compartida)
+  EVOLUTION_API_KEY              API key Evolution (compartida)
+  MICA_DEMO_EVOLUTION_INSTANCE   Nombre instancia = "Demos"
+  GEMINI_API_KEY                 Compartida
+  AIRTABLE_API_KEY               Token Airtable compartido
+  MICA_AIRTABLE_BASE_ID          Base ID Airtable Mica
   MICA_DEMO_AIRTABLE_TABLE_PROPS     ID tabla propiedades
   MICA_DEMO_AIRTABLE_TABLE_CLIENTES  ID tabla clientes/leads
   MICA_DEMO_AIRTABLE_TABLE_ACTIVOS   ID tabla activos
-  MICA_DEMO_ZONAS                    Zonas separadas por coma
-  MICA_DEMO_MONEDA                   Moneda principal (def: USD)
-  MICA_DEMO_CAL_API_KEY              API Key Cal.com (compartida con Robert)
-  MICA_DEMO_CAL_EVENT_ID             Event Type ID Cal.com
 
-  EVOLUTION_API_URL              URL base Evolution API (compartida)
-  EVOLUTION_API_KEY              API Key Evolution (compartida)
-  MICA_DEMO_EVOLUTION_INSTANCE   Nombre instancia Evolution = "Demos"
-  GEMINI_API_KEY                 Compartida
-  AIRTABLE_API_KEY               Compartida
+  MICA_DEMO_NOMBRE         Nombre empresa
+  MICA_DEMO_CIUDAD         Ciudad
+  MICA_DEMO_ASESOR         Nombre asesor
+  MICA_DEMO_NUMERO_ASESOR  Número asesor para notificaciones
+  MICA_DEMO_ZONAS          Zonas separadas por coma
+  MICA_DEMO_MONEDA         Moneda (def: USD)
+  MICA_DEMO_SITIO_WEB      URL del sitio web (opcional)
+  MICA_DEMO_CAL_API_KEY    API Key Cal.com
+  MICA_DEMO_CAL_EVENT_ID   Event Type ID Cal.com
 """
 
 import os
 import re
 import json
+import threading
 import requests
 from google import genai
 from fastapi import APIRouter, Request
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
-GEMINI_API_KEY        = os.environ.get("GEMINI_API_KEY", "")
-AIRTABLE_TOKEN        = os.environ.get("AIRTABLE_API_KEY", "") or os.environ.get("AIRTABLE_TOKEN", "")
-CLOUDINARY_CLOUD_NAME    = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
-CLOUDINARY_UPLOAD_PRESET = os.environ.get("CLOUDINARY_UPLOAD_PRESET", "")
+GEMINI_API_KEY     = os.environ.get("GEMINI_API_KEY", "")
+EVOLUTION_API_URL  = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
+EVOLUTION_API_KEY  = os.environ.get("EVOLUTION_API_KEY", "")
+EVOLUTION_INSTANCE = os.environ.get("MICA_DEMO_EVOLUTION_INSTANCE", "Demos")
 
-# Evolution API (reemplaza YCloud en este worker)
-EVOLUTION_API_URL      = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
-EVOLUTION_API_KEY      = os.environ.get("EVOLUTION_API_KEY", "")
-EVOLUTION_INSTANCE     = os.environ.get("MICA_DEMO_EVOLUTION_INSTANCE", "Demos")
+AIRTABLE_TOKEN         = os.environ.get("AIRTABLE_API_KEY", "") or os.environ.get("AIRTABLE_TOKEN", "")
+AIRTABLE_BASE_ID       = os.environ.get("MICA_AIRTABLE_BASE_ID", "") or os.environ.get("MICA_DEMO_AIRTABLE_BASE", "")
+AIRTABLE_TABLE_PROPS   = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_PROPS", "")
+AIRTABLE_TABLE_LEADS   = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_CLIENTES", "")
+AIRTABLE_TABLE_ACTIVOS = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_ACTIVOS", "")
 
-NOMBRE_EMPRESA  = os.environ.get("MICA_DEMO_NOMBRE",       "System IA — Demo Inmobiliaria")
-CIUDAD          = os.environ.get("MICA_DEMO_CIUDAD",        "tu ciudad")
-NOMBRE_ASESOR   = os.environ.get("MICA_DEMO_ASESOR",        "el asesor")
-NUMERO_BOT      = os.environ.get("MICA_DEMO_NUMERO_BOT",    "5493765005465")
-NUMERO_ASESOR   = os.environ.get("MICA_DEMO_NUMERO_ASESOR", "")
-MONEDA          = os.environ.get("MICA_DEMO_MONEDA",        "USD")
-
-AIRTABLE_BASE_ID        = os.environ.get("MICA_DEMO_AIRTABLE_BASE",                  "") or os.environ.get("MICA_AIRTABLE_BASE_ID", "")
-AIRTABLE_TABLE_PROPS    = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_PROPS",    "")
-AIRTABLE_TABLE_CLIENTES = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_CLIENTES", "")
-AIRTABLE_TABLE_ACTIVOS  = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_ACTIVOS",  "")
-
-CAL_API_KEY   = os.environ.get("MICA_DEMO_CAL_API_KEY",  "")
-CAL_EVENT_ID  = os.environ.get("MICA_DEMO_CAL_EVENT_ID", "")
+NOMBRE_EMPRESA = os.environ.get("MICA_DEMO_NOMBRE",  "System IA — Demo Inmobiliaria")
+CIUDAD         = os.environ.get("MICA_DEMO_CIUDAD",  "Argentina")
+NOMBRE_ASESOR  = os.environ.get("MICA_DEMO_ASESOR",  "Micaela")
+NUMERO_ASESOR  = os.environ.get("MICA_DEMO_NUMERO_ASESOR", "")
+MONEDA         = os.environ.get("MICA_DEMO_MONEDA",  "USD")
+SITIO_WEB      = os.environ.get("MICA_DEMO_SITIO_WEB", "")
+CAL_API_KEY    = os.environ.get("MICA_DEMO_CAL_API_KEY", "")
+CAL_EVENT_ID   = os.environ.get("MICA_DEMO_CAL_EVENT_ID", "")
 
 _zonas_raw = os.environ.get("MICA_DEMO_ZONAS", "Zona Norte,Zona Sur,Zona Centro")
 ZONAS_LIST = [z.strip() for z in _zonas_raw.split(",") if z.strip()]
-
-EMPRESA = {
-    "nombre":   NOMBRE_EMPRESA,
-    "ciudad":   CIUDAD,
-    "asesor":   NOMBRE_ASESOR,
-    "whatsapp": ("+" + re.sub(r'\D', '', NUMERO_ASESOR)) if NUMERO_ASESOR and not NUMERO_ASESOR.startswith("+") else NUMERO_ASESOR,
-}
 
 _gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 router = APIRouter(prefix="/mica/demos/inmobiliaria", tags=["Mica — Demo Inmobiliaria"])
 
-# ─── SESIONES (in-memory) ─────────────────────────────────────────────────────
-# Estructura de sesión:
-# {
-#   "step": str,           — bienvenida | precalificacion | propiedades | lista | ficha | agendamiento
-#   "subniche": str,       — desarrolladora | inmobiliaria | agente | comprador | None
-#   "score": str,          — caliente | tibio | frio | None
-#   "operacion": str,      — venta | alquiler
-#   "tipo": str,
-#   "zona": str,
-#   "props": list,
-#   "nombre": str,
-#   "preguntas_hechas": int,
-#   "respuestas_precal": list,
-# }
+# ─── SESIONES EN MEMORIA ──────────────────────────────────────────────────────
 SESIONES: dict[str, dict] = {}
 
-# ─── CONSTANTES SUB-NICHO ─────────────────────────────────────────────────────
-SUBNICHE_LABELS = {
-    "desarrolladora": "Desarrolladora Inmobiliaria",
-    "inmobiliaria":   "Inmobiliaria / Agencia",
-    "agente":         "Agente Independiente",
-}
-
-# Preguntas de precalificación por sub-nicho — tono cálido y conversacional
-PREGUNTAS_PRECAL = {
-    "desarrolladora": [
-        "¿Cuántas unidades o lotes tiene el proyecto que querés comercializar? 🏗️",
-        "¿Ya tenés equipo de ventas o estás buscando automatizar la captación de leads? 🤔",
-        "¿En qué etapa está el proyecto — en planos, en construcción o ya entregado? 📋",
-    ],
-    "inmobiliaria": [
-        "¿Cuántas propiedades tiene aproximadamente tu cartera activa? 🏢",
-        "¿Cuántos asesores trabajan en tu equipo actualmente? 👥",
-        "¿Cuál es tu mayor desafío hoy — captar leads, hacer seguimiento o cerrar ventas? 🎯",
-    ],
-    "agente": [
-        "¿Trabajás de forma independiente o estás asociado a alguna inmobiliaria? 🧑‍💼",
-        "¿Cuántas propiedades manejás en promedio por mes? 📊",
-        "¿Qué zonas o tipos de propiedades son tu especialidad? 📍",
-    ],
-    "comprador": [
-        "¿Estás buscando para vivir o como inversión? 🏠",
-        "¿Tenés alguna zona o barrio en mente? 📍",
-        "¿Cuál sería tu presupuesto aproximado? (podés decirme un rango) 💰",
-    ],
-}
-
-# Contexto de bienvenida por sub-nicho — simula el bot de ESA empresa
-SUBNICHE_BIENVENIDA = {
-    "desarrolladora": (
-        "👋 ¡Hola! Bienvenido a *{empresa}*. 🏗️\n\n"
-        "Somos una desarrolladora inmobiliaria en {ciudad} con proyectos de casas y lotes.\n\n"
-        "¿En qué te puedo ayudar hoy?\n\n"
-        "*1* Ver proyectos disponibles\n"
-        "*2* Hablar con un asesor"
-    ),
-    "inmobiliaria": (
-        "👋 ¡Hola! Bienvenido a *{empresa}*. 🏢\n\n"
-        "Somos una inmobiliaria en {ciudad} con propiedades en venta y alquiler.\n\n"
-        "¿Qué estás buscando?\n\n"
-        "*1* Comprar una propiedad\n"
-        "*2* Alquilar una propiedad\n"
-        "*3* Hablar con un asesor"
-    ),
-    "agente": (
-        "👋 ¡Hola! Soy *{asesor}*, asesora inmobiliaria en {ciudad}. 🧑‍💼\n\n"
-        "Con gusto te ayudo a encontrar exactamente lo que buscás. 😊\n\n"
-        "¿Qué necesitás?\n\n"
-        "*1* Comprar\n"
-        "*2* Alquilar\n"
-        "*3* Hablar conmigo directo"
-    ),
-}
-
-# ─── AIRTABLE ─────────────────────────────────────────────────────────────────
 AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "application/json"}
 
 
-def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: str = "",  # noqa: ARG001
-                       operacion: str = "", tipo: str = "", notas: str = "",
-                       email: str = "", ciudad: str = "", fecha_cita: str = "") -> None:
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
-        print(f"[AT-SKIP] base={AIRTABLE_BASE_ID!r} tabla={AIRTABLE_TABLE_CLIENTES!r} — vars no configuradas")
-        return
-    from datetime import date
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
-    buscar = requests.get(url, headers=AT_HEADERS,
-        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
-    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
-
-    campos = {"Telefono": telefono, "Llego_WhatsApp": True}
-    if nombre:
-        partes = nombre.strip().split(" ", 1)
-        campos["Nombre"] = partes[0]
-        if len(partes) > 1:
-            campos["Apellido"] = partes[1]
-    if email:
-        campos["Email"] = email
-    if ciudad:
-        campos["Ciudad"] = ciudad
-    if score:
-        if score == "caliente":
-            campos["Estado"] = "en_negociacion"
-        elif score == "tibio":
-            campos["Estado"] = "contactado"
-        else:
-            campos["Estado"] = "no_contactado"
-    if operacion:
-        campos["Operacion"] = operacion.lower()
-    if tipo:
-        campos["Tipo_Propiedad"] = tipo
-    if fecha_cita:
-        campos["Fecha_Cita"] = fecha_cita[:10]  # Airtable date solo acepta YYYY-MM-DD
-    if notas:
-        campos["Notas_Bot"] = notas
-
-    if records:
-        rec_id = records[0]["id"]
-        r = requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS, json={"fields": campos}, timeout=8)
-        print(f"[AT-PATCH] tel={telefono} status={r.status_code} resp={r.text[:200]}")
-    else:
-        campos["Fecha_WhatsApp"] = date.today().isoformat()
-        if "Estado" not in campos:
-            campos["Estado"] = "nuevo"
-        r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
-        print(f"[AT-POST] tel={telefono} status={r.status_code} resp={r.text[:200]}")
-
-
-def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = None) -> list[dict]:
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
-        return []
-    filtros = ["OR({Disponible}='✅ Disponible',{Disponible}='⏳ Reservado')"]
-    if tipo:
-        filtros.append(f"LOWER({{Tipo}})='{tipo.lower()}'")
-    if operacion:
-        filtros.append(f"LOWER({{Operacion}})='{operacion.lower()}'")
-    if zona and zona != "otra":
-        filtros.append(f"{{Zona}}='{zona}'")
-    formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
-    try:
-        r = requests.get(url, headers=AT_HEADERS,
-            params={"filterByFormula": formula, "maxRecords": 5,
-                    "sort[0][field]": "Precio", "sort[0][direction]": "asc"}, timeout=8)
-        return [rec["fields"] for rec in r.json().get("records", [])]
-    except Exception as e:
-        print(f"[DEMO-AT] Error: {e}")
-        return []
-
-
 # ─── EVOLUTION API ────────────────────────────────────────────────────────────
-def _norm_tel(tel: str) -> str:
-    return re.sub(r'\D', '', tel)  # Evolution no usa "+" — solo dígitos
-
-
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
     if not EVOLUTION_API_URL or not EVOLUTION_API_KEY:
-        print(f"[MICA-DEMO] Sin Evolution configurado. Mensaje:\n{mensaje}")
+        print(f"[MICA-EVO] Sin config. Msg: {mensaje[:80]}")
         return False
     try:
         r = requests.post(
             f"{EVOLUTION_API_URL}/message/sendText/{EVOLUTION_INSTANCE}",
             headers={"Content-Type": "application/json", "apikey": EVOLUTION_API_KEY},
-            json={"number": telefono, "text": mensaje},
+            json={"number": re.sub(r'\D', '', telefono), "text": mensaje},
             timeout=10,
         )
-        ok = r.status_code in (200, 201)
-        if not ok:
-            print(f"[MICA-DEMO-EVO] Error texto status={r.status_code} body={r.text[:200]}")
-        return ok
+        if r.status_code not in (200, 201):
+            print(f"[MICA-EVO] Error {r.status_code}: {r.text[:300]}")
+        return r.status_code in (200, 201)
     except Exception as e:
-        print(f"[MICA-DEMO-EVO] Error texto: {e}")
+        print(f"[MICA-EVO] Excepción: {e}")
         return False
 
 
-def _enviar_imagen(telefono: str, url_img: str, caption: str = "") -> bool:
-    if not EVOLUTION_API_URL or not EVOLUTION_API_KEY or not url_img:
+def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
+    if not EVOLUTION_API_URL or not EVOLUTION_API_KEY or not url_imagen:
         return False
     try:
         r = requests.post(
             f"{EVOLUTION_API_URL}/message/sendMedia/{EVOLUTION_INSTANCE}",
             headers={"Content-Type": "application/json", "apikey": EVOLUTION_API_KEY},
-            json={"number": telefono, "mediatype": "image", "media": url_img, "caption": caption},
+            json={
+                "number": re.sub(r'\D', '', telefono),
+                "mediatype": "image",
+                "media": url_imagen,
+                "caption": caption,
+            },
             timeout=10,
         )
-        ok = r.status_code in (200, 201)
-        if not ok:
-            print(f"[MICA-DEMO-EVO] Error imagen status={r.status_code} body={r.text[:200]}")
-        return ok
+        if r.status_code not in (200, 201):
+            print(f"[MICA-EVO] Error imagen {r.status_code}: {r.text[:300]}")
+        return r.status_code in (200, 201)
     except Exception as e:
-        print(f"[MICA-DEMO-EVO] Error imagen: {e}")
+        print(f"[MICA-EVO] Excepción imagen: {e}")
         return False
+
+
+# ─── AIRTABLE ─────────────────────────────────────────────────────────────────
+_TIPO_MAP = {
+    "casa": "casa", "casas": "casa",
+    "departamento": "departamento", "depto": "departamento", "apartamento": "departamento",
+    "terreno": "terreno", "lote": "terreno",
+    "local": "otro", "oficina": "otro",
+}
+_ZONA_MAP = {
+    "apostoles": "Apóstoles", "apóstoles": "Apóstoles",
+    "gdor roca": "Gdor Roca", "gobernador roca": "Gdor Roca", "gdorroca": "Gdor Roca",
+    "san ignacio": "San Ignacio", "sanignacio": "San Ignacio",
+    "otra zona": "Otra Zona", "otra": "Otra Zona", "no sé": "Otra Zona", "no se": "Otra Zona",
+}
+
+
+def _normalizar_tipo(tipo: str) -> str:
+    return _TIPO_MAP.get(tipo.lower().strip(), "") if tipo else ""
+
+
+def _normalizar_zona(zona: str) -> str:
+    return _ZONA_MAP.get(zona.lower().strip(), "") if zona else ""
+
+
+def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
+                       tipo: str = "", zona: str = "", notas: str = "",
+                       presupuesto: str = "", operacion: str = "",
+                       ciudad: str = "", subniche: str = "") -> None:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        print("[MICA-AT] Sin base/tabla configurada — skip registro lead")
+        return
+    from datetime import date
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    buscar = requests.get(url, headers=AT_HEADERS,
+        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+
+    campos = {"Telefono": telefono, "Llego_WhatsApp": True, "Fuente": "whatsapp_directo"}
+    if nombre:
+        partes = nombre.strip().split(" ", 1)
+        campos["Nombre"] = partes[0]
+        if len(partes) > 1:
+            campos["Apellido"] = partes[1]
+    if score == "caliente":
+        campos["Estado"] = "en_negociacion"
+    elif score == "tibio":
+        campos["Estado"] = "contactado"
+    elif score:
+        campos["Estado"] = "no_contactado"
+    tipo_norm = _normalizar_tipo(tipo)
+    if tipo_norm:
+        campos["Tipo_Propiedad"] = tipo_norm
+    zona_norm = _normalizar_zona(zona)
+    if zona_norm:
+        campos["Zona"] = zona_norm
+    if operacion in ("venta", "alquiler"):
+        campos["Operacion"] = operacion
+    if ciudad:
+        campos["Ciudad"] = ciudad
+    if notas:
+        campos["Notas_Bot"] = notas
+    if presupuesto:
+        campos["Presupuesto"] = presupuesto
+    if subniche:
+        campos["Sub_nicho"] = subniche
+
+    if records:
+        rec_id = records[0]["id"]
+        r = requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
+                           json={"fields": campos}, timeout=8)
+        print(f"[MICA-AT] PATCH tel={telefono} status={r.status_code}")
+    else:
+        campos["Fecha_WhatsApp"] = date.today().isoformat()
+        if "Estado" not in campos:
+            campos["Estado"] = "no_contactado"
+        r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        print(f"[MICA-AT] POST tel={telefono} status={r.status_code}")
+
+
+# Mapa respuesta usuario → valor singleSelect Airtable
+_PRESUPUESTO_MAP = {
+    "1": "hata_50k",
+    "2": "50k_100k",
+    "3": "100k_200k",
+    "4": "mas_200k",
+}
+
+
+def _at_guardar_email(telefono: str, email: str) -> None:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    buscar = requests.get(url, headers=AT_HEADERS,
+        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+    if records:
+        rec_id = records[0]["id"]
+        requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
+                       json={"fields": {"Email": email}}, timeout=8)
+        print(f"[MICA-AT] Email guardado tel={telefono}")
 
 
 # ─── CAL.COM ──────────────────────────────────────────────────────────────────
@@ -273,7 +219,7 @@ def _cal_disponible() -> bool:
 
 
 def _cal_obtener_slots(dias: int = 7) -> list[dict]:
-    """Retorna slots disponibles en los próximos N días."""
+    """Retorna hasta 6 slots disponibles en los próximos N días."""
     if not _cal_disponible():
         return []
     from datetime import datetime, timedelta
@@ -281,24 +227,21 @@ def _cal_obtener_slots(dias: int = 7) -> list[dict]:
     end   = (datetime.utcnow() + timedelta(days=dias)).strftime("%Y-%m-%d")
     try:
         r = requests.get(
-            f"https://api.cal.com/v1/slots",
+            "https://api.cal.com/v1/slots",
             params={"apiKey": CAL_API_KEY, "eventTypeId": CAL_EVENT_ID,
                     "startTime": start, "endTime": end},
             timeout=10,
         )
         if r.status_code == 200:
-            data = r.json()
-            slots_raw = data.get("slots", {})
-            # Aplanar: {fecha: [{time: ...}]} → lista de strings legibles
+            slots_raw = r.json().get("slots", {})
             slots = []
             for fecha, lista in slots_raw.items():
-                for slot in lista[:2]:  # máx 2 por día para no saturar WhatsApp
-                    dt = slot.get("time", "")
-                    if dt:
-                        slots.append({"fecha": fecha, "time": dt})
-            return slots[:6]  # máx 6 opciones totales
+                for slot in lista[:2]:
+                    if slot.get("time"):
+                        slots.append({"fecha": fecha, "time": slot["time"]})
+            return slots[:6]
     except Exception as e:
-        print(f"[DEMO-CAL] Error slots: {e}")
+        print(f"[MICA-CAL] Error slots: {e}")
     return []
 
 
@@ -315,11 +258,11 @@ def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, n
                 "start": slot_time,
                 "responses": {
                     "name": nombre,
-                    "email": email or (re.sub(r'\D', '', telefono) + "@demo.com"),
+                    "email": email or (re.sub(r'\D', '', telefono) + "@lovbot.ai"),
                     "phone": telefono,
                 },
-                "metadata": {"fuente": "WhatsApp Bot", "notas": notas},
-                "timeZone": "America/Argentina/Buenos_Aires",
+                "metadata": {"fuente": "WhatsApp Bot Lovbot", "notas": notas},
+                "timeZone": "America/Mexico_City",
                 "language": "es",
             },
             timeout=10,
@@ -327,185 +270,271 @@ def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, n
         if r.status_code in (200, 201):
             data = r.json()
             return {"ok": True, "uid": data.get("uid", ""), "start": data.get("startTime", slot_time)}
-        print(f"[CAL-ERROR] status={r.status_code} body={r.text[:500]}")
+        print(f"[MICA-CAL] Error {r.status_code}: {r.text[:300]}")
         return {"ok": False, "error": r.text[:200]}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
 
-# ─── GEMINI — CLASIFICADOR PRINCIPAL ──────────────────────────────────────────
-def _gemini_clasificar(texto: str, sesion: dict) -> dict:
-    """
-    Clasifica intención y extrae datos del mensaje.
-    Retorna dict con:
-      intencion: bienvenida | precalificacion | propiedades | asesor | agendar | respuesta_libre
-      subniche:  desarrolladora | inmobiliaria | agente | comprador | None (mantener actual)
-      operacion: venta | alquiler | None
-      tipo:      casa | departamento | terreno | None
-      zona:      str | None
-      respuesta: str (mensaje a enviar al usuario)
-    """
-    if not _gemini_client:
-        return {"intencion": "respuesta_libre", "subniche": None, "operacion": None,
-                "tipo": None, "zona": None, "respuesta": ""}
+_DIAS_ES = {
+    "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles",
+    "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo",
+}
 
-    subniche_actual = sesion.get("subniche", "")
-    step_actual     = sesion.get("step", "bienvenida")
-    nombre          = sesion.get("nombre", "")
-    historial       = sesion.get("historial", [])[-6:]  # últimas 6 interacciones
 
-    historial_txt = "\n".join([f"  {h['rol']}: {h['msg']}" for h in historial]) if historial else "  (primera interacción)"
+def _formatear_slots(slots: list[dict]) -> str:
+    """Formatea slots para mostrar en WhatsApp (en español)."""
+    from datetime import datetime, timezone, timedelta
+    lineas = []
+    for i, s in enumerate(slots, 1):
+        try:
+            dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
+            mx = dt.astimezone(timezone(timedelta(hours=-6)))
+            dia_en = mx.strftime("%A")
+            dia_es = _DIAS_ES.get(dia_en, dia_en)
+            lineas.append(f"*{i}️⃣* {dia_es} {mx.strftime('%d/%m')} a las *{mx.strftime('%H:%M')}* hs")
+        except Exception:
+            lineas.append(f"*{i}️⃣* {s['time']}")
+    return "\n".join(lineas)
 
-    nombre_corto = nombre.split()[0] if nombre else ""
-    saludo_nombre = f", {nombre_corto}" if nombre_corto else ""
 
-    prompt = f"""Sos {EMPRESA['asesor']}, asesora virtual de {EMPRESA['nombre']} en {EMPRESA['ciudad']}.
-Sos cálida, cercana y profesional — como una asesora humana que realmente quiere ayudar.
-Tu trabajo es analizar el mensaje y devolver un JSON con clasificación + respuesta conversacional.
+def _at_guardar_cita(telefono: str, fecha_cita: str) -> None:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    buscar = requests.get(url, headers=AT_HEADERS,
+        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+    if records:
+        rec_id = records[0]["id"]
+        requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
+                       json={"fields": {"Fecha_Cita": fecha_cita[:10], "Estado": "en_negociacion"}},
+                       timeout=8)
+        print(f"[MICA-AT] Cita guardada tel={telefono}")
 
-CONTEXTO ACTUAL:
-- Sub-nicho detectado: {subniche_actual or 'ninguno aún'}
-- Paso actual: {step_actual}
-- Nombre del cliente: {nombre or 'desconocido'}
-- Historial reciente:
-{historial_txt}
 
-NUEVO MENSAJE DEL CLIENTE: "{texto}"
-
-INSTRUCCIONES:
-
-1. Detectá el sub-nicho si no está definido:
-   - "desarrolladora": tiene un proyecto inmobiliario para vender (desarrollador, proyecto, unidades, preventa)
-   - "inmobiliaria": agencia o inmobiliaria con cartera y equipo
-   - "agente": asesor o agente independiente
-   - "comprador": quiere comprar, alquilar, busca propiedad para vivir o invertir
-   Si ya hay sub-nicho definido, devolvé null (mantener).
-
-2. Detectá la intención:
-   - "saludo": primeros mensajes, hola, inicio
-   - "precalificacion": responde a una pregunta de precalificación
-   - "ver_propiedades": quiere ver propiedades del catálogo
-   - "agendar": quiere agendar una cita o visita
-   - "asesor": pide hablar con un humano
-   - "respuesta_libre": consulta general, pregunta, otro
-
-3. Extraé si mencionó:
-   - operacion: "venta" o "alquiler" (null si no menciona)
-   - tipo: "casa", "departamento", "terreno" (null si no menciona)
-   - zona: nombre de zona si menciona alguna (null si no)
-
-4. Generá una respuesta CÁLIDA y NATURAL en español latinoamericano.
-   REGLAS DE TONO — seguirlas siempre:
-   - Empezá con una confirmación positiva cuando el cliente responde algo: "¡Perfecto{saludo_nombre}! 😊", "¡Genial{saludo_nombre}! 🌟", "Entendido{saludo_nombre} 👍"
-   - Usá el nombre del cliente cuando lo tenés — hace la conversación más personal
-   - Emojis con moderación pero presentes: 🏠 🌿 😊 ✨ 📅 — dan calidez
-   - Preguntas abiertas y amigables, nunca interrogatorio frío
-   - Ofrecé opciones numeradas cuando hay más de una alternativa
-   - Cerrá siempre con una CTA clara y amable
-   - Máximo 4 líneas, directo pero humano
-   - NUNCA uses "estimado/a", "saludos cordiales" ni lenguaje formal/corporativo
-
-Respondé SOLO con JSON válido, sin markdown, sin explicaciones:
-{{
-  "intencion": "...",
-  "subniche": "...",
-  "operacion": "...",
-  "tipo": "...",
-  "zona": "...",
-  "respuesta": "..."
-}}
-Donde los campos sin valor van como null (no string vacío)."""
-
+def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
+                           zona: str = None, presupuesto: str = None) -> list[dict]:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        return []
+    filtros = ["OR({Disponible}='✅ Disponible',{Disponible}='⏳ Reservado')"]
+    if tipo:
+        filtros.append(f"LOWER({{Tipo}})='{tipo.lower()}'")
+    if operacion:
+        filtros.append(f"LOWER({{Operacion}})='{operacion.lower()}'")
+    if zona and zona.lower() not in ("otra zona", "otra", "no sé", "no se"):
+        filtros.append(f"{{Zona}}='{zona}'")
+    if presupuesto and presupuesto in ("hata_50k", "50k_100k", "100k_200k", "mas_200k"):
+        filtros.append(f"{{Presupuesto}}='{presupuesto}'")
+    formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
     try:
-        result = _gemini_client.models.generate_content(model="gemini-2.5-flash-lite", contents=prompt)
-        raw = result.text.strip()
-        if raw.startswith("```"):
-            raw = re.sub(r"```(?:json)?", "", raw).replace("```", "").strip()
-        return json.loads(raw)
+        r = requests.get(url, headers=AT_HEADERS,
+            params={"filterByFormula": formula, "maxRecords": 5,
+                    "sort[0][field]": "Precio", "sort[0][direction]": "asc"}, timeout=8)
+        return [rec["fields"] for rec in r.json().get("records", [])]
     except Exception as e:
-        print(f"[DEMO-GEMINI-CLAS] Error: {e}")
-        return {"intencion": "respuesta_libre", "subniche": None, "operacion": None,
-                "tipo": None, "zona": None, "respuesta": ""}
+        print(f"[MICA-AT] Error buscar props: {e}")
+        return []
 
 
-def _gemini_score_precal(subniche: str, respuestas: list[str]) -> dict:
-    """
-    Evalúa las respuestas de precalificación y devuelve score + razonamiento.
-    Retorna: {score: caliente|tibio|frio, razon: str, respuesta: str}
-    """
-    if not _gemini_client or not respuestas:
-        return {"score": "tibio", "razon": "Sin Gemini", "respuesta": ""}
+# ─── GEMINI ───────────────────────────────────────────────────────────────────
+def _gemini(prompt: str) -> str:
+    if not _gemini_client:
+        return ""
+    try:
+        resp = _gemini_client.models.generate_content(
+            model="gemini-2.5-flash-lite", contents=prompt)
+        return resp.text.strip()
+    except Exception as e:
+        print(f"[MICA-GEMINI] Error: {e}")
+        return ""
 
-    preguntas = PREGUNTAS_PRECAL.get(subniche, [])
-    pares = []
-    for i, r in enumerate(respuestas):
-        pregunta = preguntas[i] if i < len(preguntas) else f"Pregunta {i+1}"
-        pares.append(f"  P: {pregunta}\n  R: {r}")
-    pares_txt = "\n".join(pares)
 
-    prompt = f"""Sos un experto en ventas inmobiliarias B2B evaluando la calidad de un lead.
+def _gemini_calificar(sesion: dict) -> dict:
+    zonas_str = "|".join(ZONAS_LIST)
+    prompt = f"""Sos un analista comercial inmobiliario senior de {NOMBRE_EMPRESA} en {CIUDAD}.
+Tu trabajo es clasificar leads con precisión para que el asesor no pierda tiempo con curiosos
+y tampoco descarte leads tibios que pueden madurar.
 
-Sub-nicho: {SUBNICHE_LABELS.get(subniche, subniche)}
-Empresa: {EMPRESA['nombre']}
-
-Respuestas de precalificación:
-{pares_txt}
-
-Evaluá el lead y devolvé JSON:
+Analizá las respuestas del lead y devolvé SOLO un JSON válido:
 {{
-  "score": "caliente" | "tibio" | "frio",
-  "razon": "explicación breve en 1 línea",
-  "respuesta": "mensaje para enviar al lead ahora (máx 3 líneas, tono consultivo)"
+  "score": "caliente|tibio|frio",
+  "tipo": "casa|departamento|terreno|local|oficina|null",
+  "zona": "{zonas_str}|null",
+  "operacion": "venta|alquiler|null",
+  "presupuesto_detectado": "alto|medio|bajo|sin_info",
+  "derivar_sitio_web": true|false,
+  "nota_para_asesor": "texto breve con lo más relevante del lead"
 }}
 
-Criterios:
-- CALIENTE: tiene necesidad real, urgencia, presupuesto o volumen claro → ofrecé agendar cita YA
-- TIBIO: interés real pero no urgente, falta info → nutrir con seguimiento
-- FRIO: sin presupuesto, sin proyecto, curiosidad sin intención real → cierre educado
+Criterios de clasificación:
+- CALIENTE: urgencia 1-2 (menos de 6 meses) + presupuesto definido. Asesor debe contactar HOY.
+- TIBIO: interesado con intención clara pero sin urgencia inmediata O presupuesto indefinido.
+  → derivar_sitio_web: false — mostrar propiedades y ofrecer cita igual, pueden madurar.
+  → NUNCA marcar tibio como derivar_sitio_web true, son leads recuperables.
+- FRÍO: urgencia 3-4 ("próximo año", "explorando") O respuestas evasivas sin intención clara.
+  → derivar_sitio_web: true
 
-Respondé SOLO JSON válido sin markdown."""
+Señales que elevan el score (aunque la urgencia sea baja):
+- Mencionó zona específica (no "cualquiera" o "no sé")
+- Preguntó por precio, cuota, financiamiento, escritura
+- Tiene presupuesto definido (opciones 1-4)
+- Mencionó familia, hijos, mudanza, proyecto concreto
 
+Señales que bajan el score:
+- Solo dijo "info", "quiero saber", sin contexto
+- Eligió "explorando" + sin zona + sin presupuesto
+- Respuestas de una sola palabra sin contexto
+
+Nota para asesor: mencionar zona, tipo, urgencia real y cualquier señal de compra seria.
+Si el lead preguntó por escritura, financiamiento o mencionó familia → indicarlo.
+
+Respuestas del lead:
+- Objetivo/intención: "{sesion.get('resp_objetivo', '')}"
+- Tipo de propiedad: "{sesion.get('resp_tipo', '')}"
+- Zona: "{sesion.get('resp_zona', '')}"
+- Presupuesto: "{sesion.get('resp_presupuesto', '')}"
+- Urgencia: "{sesion.get('resp_urgencia', '')}"
+
+Devolvé SOLO el JSON, sin explicaciones."""
     try:
-        result = _gemini_client.models.generate_content(model="gemini-2.5-flash-lite", contents=prompt)
-        raw = result.text.strip()
-        if raw.startswith("```"):
-            raw = re.sub(r"```(?:json)?", "", raw).replace("```", "").strip()
-        return json.loads(raw)
-    except Exception as e:
-        print(f"[DEMO-GEMINI-SCORE] Error: {e}")
-        return {"score": "tibio", "razon": str(e), "respuesta": ""}
+        texto = _gemini(prompt)
+        if texto.startswith("```"):
+            texto = texto.split("```")[1]
+            if texto.startswith("json"):
+                texto = texto[4:]
+        return json.loads(texto.strip())
+    except Exception:
+        return {"score": "tibio", "tipo": None, "zona": None, "operacion": None,
+                "presupuesto_detectado": "sin_info", "derivar_sitio_web": False,
+                "nota_para_asesor": "Error en calificación"}
 
 
-def _gemini_libre(texto: str, sesion: dict) -> str:
-    """Respuesta libre para preguntas generales."""
-    if not _gemini_client:
-        return f"Para más información hablá con {EMPRESA['asesor']} al {EMPRESA['whatsapp']} 🏠"
-    subniche = sesion.get("subniche", "")
-    contexto_subniche = f"El cliente es: {SUBNICHE_LABELS.get(subniche, 'visitante')}." if subniche else ""
-    try:
-        result = _gemini_client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=(f"Sos el asistente de {EMPRESA['nombre']} en {EMPRESA['ciudad']}. "
-                      f"{contexto_subniche} Respondé en español LATAM, breve y profesional. "
-                      f"Solo temas inmobiliarios. Pregunta: {texto}")
-        )
-        return result.text.strip()
-    except Exception as e:
-        print(f"[DEMO-GEMINI-LIBRE] Error: {e}")
-        return f"Para más info escribile a {EMPRESA['asesor']} al {EMPRESA['whatsapp']} 🏠"
+def _pregunta(paso: str, nombre: str = "", subniche: str = "") -> str:
+    """Preguntas adaptadas por subniche — sin llamadas a Gemini."""
+    n = nombre.split()[0] if nombre else ""
+    nt = f", {n}" if n else ""
+    zonas_ops = "\n".join(f"{i+1}️⃣ {z}" for i, z in enumerate(ZONAS_LIST))
+    ultimo_num = len(ZONAS_LIST) + 1
+
+    # ── Desarrolladora: el cliente compra unidades de proyecto ────────────
+    if subniche == "desarrolladora":
+        msgs = {
+            "objetivo": (
+                f"Perfecto{nt}, con gusto le ayudo 😊\n\n"
+                f"¿Qué le interesa de nuestros proyectos?\n\n"
+                f"*1️⃣* 🏠 Comprar una unidad en preventa\n"
+                f"*2️⃣* 🌿 Adquirir un lote / terreno\n"
+                f"*3️⃣* 📈 Invertir en un proyecto inmobiliario\n\n"
+                f"_(También puede escribirme libremente)_"
+            ),
+            "tipo": (
+                f"¡Excelente{nt}! 🌟\n\n"
+                f"¿Qué tipo de unidad le interesa?\n\n"
+                f"*1️⃣* 🏡 Casa en proyecto residencial\n"
+                f"*2️⃣* 🏢 Departamento / Apartamento\n"
+                f"*3️⃣* 🌿 Lote / Terreno urbanizado\n"
+                f"*4️⃣* 🏪 Local comercial en desarrollo\n"
+                f"*5️⃣* 💼 Oficina en edificio nuevo\n\n"
+                f"_(También puede describirme lo que busca)_"
+            ),
+            "zona": (
+                f"Entendido{nt} 📍\n\n"
+                f"¿En qué zona de *{CIUDAD}* le interesa nuestro proyecto?\n\n"
+                f"{zonas_ops}\n"
+                f"{ultimo_num}️⃣ 🗺️ Otra zona / Me es indiferente\n\n"
+                f"_(Puede escribir la zona directamente)_"
+            ),
+            "presupuesto": (
+                f"Perfecto{nt} 💰\n\n"
+                f"¿Con qué rango de inversión cuenta?\n\n"
+                f"*1️⃣* Menos de 50,000 {MONEDA}\n"
+                f"*2️⃣* 50,000 — 100,000 {MONEDA}\n"
+                f"*3️⃣* 100,000 — 200,000 {MONEDA}\n"
+                f"*4️⃣* Más de 200,000 {MONEDA}\n"
+                f"*5️⃣* 💬 Prefiero hablarlo con el asesor comercial\n\n"
+                f"_(Una referencia es suficiente para orientarlo mejor)_"
+            ),
+            "urgencia": (
+                f"¡Casi terminamos{nt}! 🙌\n\n"
+                f"¿En qué etapa de compra se encuentra?\n\n"
+                f"*1️⃣* 🔥 Listo para reservar — quiero asegurar precio de preventa\n"
+                f"*2️⃣* 📅 Decidiendo en los próximos 6 meses\n"
+                f"*3️⃣* 🗓️ Planifico para el próximo año\n"
+                f"*4️⃣* 🔍 Estoy explorando proyectos y comparando"
+            ),
+        }
+        return msgs[paso]
+
+    # ── Agencia / Agente Independiente (flujo estándar) ──────────────────
+    msgs = {
+        "objetivo": (
+            f"Perfecto{nt}, con gusto le ayudo 😊\n\n"
+            f"Para mostrarle las mejores opciones, ¿qué está buscando?\n\n"
+            f"*1️⃣* 🏠 Comprar una propiedad\n"
+            f"*2️⃣* 🔑 Alquilar una propiedad\n"
+            f"*3️⃣* 📈 Invertir en bienes raíces\n\n"
+            f"_(También puede escribirme libremente)_"
+        ),
+        "tipo": (
+            f"¡Excelente elección{nt}! 🌟\n\n"
+            f"¿Qué tipo de propiedad está buscando?\n\n"
+            f"*1️⃣* 🏡 Casa\n"
+            f"*2️⃣* 🏢 Departamento / Apartamento\n"
+            f"*3️⃣* 🌿 Terreno\n"
+            f"*4️⃣* 🏪 Local comercial\n"
+            f"*5️⃣* 💼 Oficina\n\n"
+            f"_(También puede describirme lo que busca)_"
+        ),
+        "zona": (
+            f"Entendido{nt} 📍\n\n"
+            f"¿En qué zona de *{CIUDAD}* le interesa buscar?\n\n"
+            f"{zonas_ops}\n"
+            f"{ultimo_num}️⃣ 🗺️ Otra zona / Aún no lo sé\n\n"
+            f"_(Puede escribir el nombre de la zona directamente)_"
+        ),
+        "presupuesto": (
+            f"Perfecto{nt} 💰\n\n"
+            f"¿Con qué rango de presupuesto cuenta aproximadamente?\n\n"
+            f"*1️⃣* Menos de 50,000 {MONEDA}\n"
+            f"*2️⃣* 50,000 — 100,000 {MONEDA}\n"
+            f"*3️⃣* 100,000 — 200,000 {MONEDA}\n"
+            f"*4️⃣* Más de 200,000 {MONEDA}\n"
+            f"*5️⃣* 💬 Prefiero hablarlo con el asesor\n\n"
+            f"_(No hace falta que sea exacto, una referencia es suficiente)_"
+        ),
+        "urgencia": (
+            f"¡Casi terminamos{nt}! 🙌\n\n"
+            f"¿En qué tiempo está pensando concretar?\n\n"
+            f"*1️⃣* 🔥 Lo antes posible — 1 a 3 meses\n"
+            f"*2️⃣* 📅 En los próximos 6 meses\n"
+            f"*3️⃣* 🗓️ Durante el próximo año\n"
+            f"*4️⃣* 🔍 Estoy explorando opciones por ahora"
+        ),
+    }
+    return msgs[paso]
 
 
-# ─── FORMATEO DE PROPIEDADES ───────────────────────────────────────────────────
-def _lista_titulos(props: list[dict], label: str) -> str:
-    lineas = [f"✨ *{label.upper()}*\n"]
+# ─── FORMATEO PROPIEDADES ─────────────────────────────────────────────────────
+def _lista_titulos(props: list[dict]) -> str:
+    lineas = ["🏘️ *PROPIEDADES DISPONIBLES PARA USTED*\n"]
     for i, p in enumerate(props, 1):
         precio = p.get("Precio", 0)
         moneda = p.get("Moneda", MONEDA)
-        precio_str = f"${precio:,.0f} {moneda}" if precio else "Consultar"
-        tag = " ⏳" if "Reservado" in str(p.get("Disponible", "")) else ""
-        lineas.append(f"*{i}.* {p.get('Titulo', 'Propiedad')} — {precio_str}{tag}")
-    lineas.append("\nRespondé con el *número* para ver la ficha.")
-    lineas.append("*1* Hablar con un asesor | *0* volver")
+        precio_str = f"${precio:,.0f} {moneda}" if precio else "Consultar precio"
+        estado = p.get("Disponible", "")
+        tag = " ⏳ _Reservada_" if "Reservado" in str(estado) else " ✅"
+        tipo = p.get("Tipo", "")
+        zona = p.get("Zona", "")
+        tipo_zona = f" · {tipo}" if tipo else ""
+        if zona:
+            tipo_zona += f" · {zona}"
+        lineas.append(f"*{i}.* 🏠 {p.get('Titulo', 'Propiedad')}{tipo_zona}\n    💰 {precio_str}{tag}")
+    lineas.append(
+        "\n📲 Responda con el *número* de la propiedad para ver todos los detalles y fotos.\n\n"
+        "*0* 🔄 Ver otras opciones  |  *#* 👤 Hablar con el asesor"
+    )
     return "\n".join(lineas)
 
 
@@ -513,699 +542,671 @@ def _ficha_propiedad(p: dict) -> str:
     precio = p.get("Precio", 0)
     moneda = p.get("Moneda", MONEDA)
     precio_str = f"${precio:,.0f} {moneda}" if precio else "Consultar precio"
-    es_reservado = "Reservado" in str(p.get("Disponible", ""))
-    lineas = [f"🏠 *{p.get('Titulo', 'Propiedad')}*"]
+    estado = p.get("Disponible", "✅ Disponible")
+    es_reservado = "Reservado" in str(estado)
+    titulo = p.get("Titulo", "Propiedad")
+    lineas = [f"🏠 *{titulo}*"]
     if es_reservado:
-        lineas.append("⏳ *RESERVADO* — podés anotarte por si se libera\n")
+        lineas.append("⏳ *RESERVADO* — Puede anotarse por si se libera\n")
     else:
         lineas.append("")
-    if p.get("Descripcion"):
-        lineas.append(f"{p['Descripcion']}\n")
+    desc = p.get("Descripcion", "")
+    if desc:
+        lineas.append(f"{desc}\n")
     lineas.append(f"💰 *Precio:* {precio_str}")
-    if p.get("Dormitorios"):
-        lineas.append(f"🛏 *Dormitorios:* {p['Dormitorios']}")
-    if p.get("Metros_Cubiertos"):
-        lineas.append(f"📐 *Sup. cubierta:* {p['Metros_Cubiertos']}m²")
-    if p.get("Metros_Terreno"):
-        lineas.append(f"🌿 *Terreno:* {p['Metros_Terreno']}m²")
-    if p.get("Zona"):
-        lineas.append(f"📍 *Zona:* {p['Zona']}")
-    if p.get("Google_Maps_URL"):
-        lineas.append(f"\n🗺 *Ver en Maps:* {p['Google_Maps_URL']}")
-    lineas.append(f"\n¿Te interesa?\n*1* Agendar visita | *2* Hablar con {EMPRESA['asesor']} | *0* Volver")
+    operacion = p.get("Operacion", "")
+    if operacion:
+        lineas.append(f"📋 *Operación:* {operacion.capitalize()}")
+    tipo = p.get("Tipo", "")
+    if tipo:
+        lineas.append(f"🏡 *Tipo:* {tipo}")
+    dorm = p.get("Dormitorios", "")
+    banios = p.get("Banos", "")
+    metros_c = p.get("Metros_Cubiertos", "")
+    metros_t = p.get("Metros_Terreno", "")
+    if dorm:
+        lineas.append(f"🛏 *Dormitorios:* {dorm}")
+    if banios:
+        lineas.append(f"🚿 *Baños:* {banios}")
+    if metros_c:
+        lineas.append(f"📐 *Sup. cubierta:* {metros_c}m²")
+    if metros_t:
+        lineas.append(f"🌿 *Terreno:* {metros_t}m²")
+    zona = p.get("Zona", "")
+    if zona:
+        lineas.append(f"📍 *Zona:* {zona}")
+    maps = p.get("Google_Maps_URL", "")
+    if maps:
+        lineas.append(f"\n🗺 *Ver en Maps:* {maps}")
+    lineas.append(
+        f"\n¿Le interesa esta propiedad? 😊\n\n"
+        f"*#* 👤 Hablar con {NOMBRE_ASESOR}  |  *0* 🔄 Ver otras propiedades"
+    )
     return "\n".join(lineas)
 
 
 def _enviar_ficha(telefono: str, p: dict) -> None:
     img_field = p.get("Imagen_URL", "")
-    img = ""
     if isinstance(img_field, list) and img_field:
         img = img_field[0].get("url", "")
     elif isinstance(img_field, str):
         img = img_field
+    else:
+        img = ""
     if img:
         _enviar_imagen(telefono, img, caption=p.get("Titulo", ""))
     _enviar_texto(telefono, _ficha_propiedad(p))
 
 
-def _mostrar_propiedades(telefono: str, sesion: dict) -> None:
-    operacion = sesion.get("operacion", "venta")
-    tipo      = sesion.get("tipo")
-    zona      = sesion.get("zona")
-    props     = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona)
-    op_label  = "en Venta" if operacion == "venta" else "en Alquiler"
-    if not props:
-        _enviar_texto(telefono,
-            f"En este momento no tenemos propiedades disponibles con esos criterios. 😔\n\n"
-            f"¿Querés que te avise cuando tengamos? Escribí *asesor* para hablar con {EMPRESA['asesor']}.")
+# ─── NOTIFICACIONES ──────────────────────────────────────────────────────────
+def _notificar_asesor(telefono: str, sesion: dict, calificacion: dict) -> None:
+    if not NUMERO_ASESOR:
         return
-    SESIONES[telefono] = {**sesion, "step": "lista", "props": props}
-    label = f"{tipo.capitalize() if tipo else 'Propiedades'} {op_label}"
+    nombre = sesion.get("nombre", telefono)
+    score = calificacion.get("score", "tibio")
+    emoji = {"caliente": "🔥", "tibio": "🌡️", "frio": "🧊"}.get(score, "📋")
+    nota = calificacion.get("nota_para_asesor", "")
+    tipo = calificacion.get("tipo") or sesion.get("resp_tipo", "")
+    zona = calificacion.get("zona") or sesion.get("resp_zona", "")
+    msg = (
+        f"{emoji} *Nuevo Lead — {NOMBRE_EMPRESA}*\n\n"
+        f"👤 *Nombre:* {nombre}\n"
+        f"📱 *WhatsApp:* +{re.sub(r'[^0-9]', '', telefono)}\n"
+        f"📊 *Score:* {score.upper()}\n"
+    )
+    if tipo:
+        msg += f"🏡 *Busca:* {tipo}\n"
     if zona:
-        label += f" — {zona}"
-    _enviar_texto(telefono, _lista_titulos(props, label))
-
-
-# ─── AGENDAMIENTO CAL.COM ──────────────────────────────────────────────────────
-def _mostrar_slots(telefono: str, sesion: dict) -> None:
-    """Obtiene slots de Cal.com y los muestra al usuario."""
-    slots = _cal_obtener_slots(dias=7)
-    if not slots:
-        _enviar_texto(telefono,
-            f"En este momento no hay turnos disponibles en el calendario. 😔\n"
-            f"Escribile a {EMPRESA['asesor']} al {EMPRESA['whatsapp']} para coordinar. 📱")
-        return
-
-    nombre = sesion.get("nombre", "")
-    _enviar_texto(telefono,
-        f"Perfecto{', ' + nombre.split()[0] if nombre else ''}! 😊 "
-        f"Estos son los turnos disponibles esta semana para reunirte con {EMPRESA['asesor']}:")
-
-    lineas = []
-    for i, s in enumerate(slots, 1):
-        from datetime import datetime, timezone, timedelta
-        try:
-            dt_utc = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
-            tz_local = timezone(timedelta(hours=int(os.environ.get("INMO_DEMO_UTC_OFFSET", "-3"))))
-            dt = dt_utc.astimezone(tz_local)
-            _dias_es = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
-            dia_es = _dias_es[dt.weekday()]
-            legible = f"{dia_es} {dt.strftime('%d/%m')} — {dt.strftime('%H:%M')} hs"
-        except Exception:
-            legible = s["time"]
-        lineas.append(f"*{i}.* {legible}")
-    lineas.append("\nRespondé con el *número* del turno que te queda mejor.")
-    lineas.append("*0* para volver")
-
-    SESIONES[telefono] = {**sesion, "step": "agendamiento", "slots": slots}
-    _enviar_texto(telefono, "\n".join(lineas))
-
-
-def _iniciar_agendamiento(telefono: str, sesion: dict) -> None:
-    if not _cal_disponible():
-        _enviar_texto(telefono,
-            f"¡Perfecto! {EMPRESA['asesor']} se va a poner en contacto con vos para coordinar. 📅\n\n"
-            f"También podés escribirle directamente al {EMPRESA['whatsapp']}. 🏠")
-        SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-        return
-
-    # Iniciar captura de datos del lead antes de mostrar turnos
-    SESIONES[telefono] = {**sesion, "step": "captura_datos", "captura_campo": "nombre"}
-    _enviar_texto(telefono,
-        f"¡Genial! Para coordinar la reunión con {EMPRESA['asesor']}, necesito algunos datos. 📋\n\n"
-        f"¿Cuál es tu *nombre y apellido*?")
-
-
-def _confirmar_reserva(telefono: str, sesion: dict, slot_idx: int) -> None:
-    slots  = sesion.get("slots", [])
-    nombre = sesion.get("nombre", "Cliente")
-    if slot_idx < 0 or slot_idx >= len(slots):
-        _enviar_texto(telefono, f"Elegí un número del 1 al {len(slots)}.")
-        return
-    slot  = slots[slot_idx]
-    result = _cal_crear_reserva(nombre=nombre, email=sesion.get("email_lead", ""), telefono=telefono,
-                                 slot_time=slot["time"],
-                                 notas=f"Agendado por WhatsApp Bot — {EMPRESA['nombre']}")
-    if result.get("ok"):
-        from datetime import datetime, timezone, timedelta
-        try:
-            dt_utc = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
-            tz_local = timezone(timedelta(hours=int(os.environ.get("INMO_DEMO_UTC_OFFSET", "-3"))))
-            dt = dt_utc.astimezone(tz_local)
-            _dias_es = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
-            _meses_es = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
-                         "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-            legible = f"{_dias_es[dt.weekday()]} {dt.day} de {_meses_es[dt.month - 1]} a las {dt.strftime('%H:%M')} hs"
-        except Exception:
-            legible = slot["time"]
-        _at_registrar_lead(telefono, nombre,
-                           subniche=sesion.get("subniche", ""),
-                           email=sesion.get("email_lead", ""),
-                           ciudad=sesion.get("ciudad_lead", ""),
-                           score="caliente",
-                           fecha_cita=slot["time"],
-                           notas=f"Cita agendada: {legible}")
-        _enviar_texto(telefono,
-            f"✅ *¡Cita confirmada!*\n\n"
-            f"📅 {legible}\n"
-            f"📍 {EMPRESA['ciudad']}\n\n"
-            f"Vas a recibir un recordatorio. Si necesitás cambiarla escribí *asesor*. 🏠")
-        SESIONES[telefono] = {**sesion, "step": "bienvenida", "score": "caliente"}
-    else:
-        err = result.get("error", "")
-        print(f"[CAL-BOOKING-FAIL] tel={telefono} error={err}")
-        # Si el slot ya no está disponible, mostrar nuevos slots
-        if "no longer available" in err.lower() or "slot" in err.lower() or "available" in err.lower():
-            _enviar_texto(telefono,
-                "Ese turno ya no está disponible. 😔 Te muestro los turnos actualizados:")
-            _mostrar_slots(telefono, sesion)
-        else:
-            _enviar_texto(telefono,
-                f"Hubo un problema al confirmar la cita. 😔\n"
-                f"Escribile directamente a {EMPRESA['asesor']} al {EMPRESA['whatsapp']}.")
-
-
-# ─── FLUJO PRECALIFICACIÓN ─────────────────────────────────────────────────────
-def _siguiente_pregunta_precal(telefono: str, sesion: dict) -> None:
-    subniche  = sesion.get("subniche", "comprador")
-    preguntas = PREGUNTAS_PRECAL.get(subniche, [])
-    hechas    = sesion.get("preguntas_hechas", 0)
-
-    if hechas >= len(preguntas):
-        # Todas las preguntas hechas → evaluar score
-        respuestas = sesion.get("respuestas_precal", [])
-        eval_result = _gemini_score_precal(subniche, respuestas)
-        score = eval_result.get("score", "tibio")
-        respuesta_gemini = eval_result.get("respuesta", "")
-
-        SESIONES[telefono] = {**sesion, "step": "post_precal", "score": score}
-        _at_registrar_lead(telefono, sesion.get("nombre", ""), subniche=subniche,
-                           score=score, notas=f"Score: {score} | {eval_result.get('razon', '')}")
-
-        es_b2b = subniche in ("desarrolladora", "inmobiliaria", "agente")
-
-        if respuesta_gemini:
-            _enviar_texto(telefono, respuesta_gemini)
-
-        if score == "caliente":
-            if es_b2b:
-                _enviar_texto(telefono,
-                    f"🔥 ¡Perfecto! Esto tiene mucho potencial.\n\n"
-                    f"¿Agendamos una llamada de 20 min para mostrarte exactamente cómo funciona el sistema? 📅\n\n"
-                    f"*1* Sí, agendar reunión ahora\n*2* Prefiero que me contacten")
-            else:
-                _enviar_texto(telefono,
-                    f"¿Querés que agendemos una visita? 📅\n\n"
-                    f"*1* Sí, agendar visita\n*2* Ver propiedades primero\n*3* Hablar con {EMPRESA['asesor']}")
-        elif score == "tibio":
-            if es_b2b:
-                _enviar_texto(telefono,
-                    f"💡 Entiendo tu situación. Te cuento brevemente cómo podemos ayudarte:\n\n"
-                    f"✅ Bot WhatsApp que responde leads 24/7\n"
-                    f"✅ Precalificación automática — filtra curiosos vs compradores reales\n"
-                    f"✅ Agenda citas sin intervención humana\n"
-                    f"✅ CRM integrado con todo el historial\n\n"
-                    f"*1* Agendar demo de 20 min\n*2* Hablar con {EMPRESA['asesor']}")
-            else:
-                _enviar_texto(telefono,
-                    f"Te muestro lo que tenemos disponible 🏠\n"
-                    f"*1* Ver propiedades\n*2* Hablar con {EMPRESA['asesor']}")
-        else:  # frio
-            if es_b2b:
-                _enviar_texto(telefono,
-                    f"Entendido. Cuando el proyecto tome forma, acá estamos. 🤝\n\n"
-                    f"Escribí *hola* cuando quieras retomar o *asesor* para hablar con nosotros.")
-            else:
-                _enviar_texto(telefono,
-                    f"Cuando estés listo para buscar, acá estamos. 🏠\n"
-                    f"Escribí *hola* para volver al menú o *asesor* para hablar con nosotros.")
-        return
-
-    # Hacer la siguiente pregunta
-    pregunta = preguntas[hechas]
-    SESIONES[telefono] = {**sesion, "preguntas_hechas": hechas + 1, "step": "precalificacion"}
-    _enviar_texto(telefono, f"*{hechas + 1}/{len(preguntas)}* {pregunta}")
-
-
-# ─── PROCESADOR PRINCIPAL ──────────────────────────────────────────────────────
-def _procesar_mensaje(telefono: str, texto: str) -> None:
-    t       = texto.lower().strip()
-    sesion  = SESIONES.get(telefono, {"step": "bienvenida", "props": [], "operacion": "",
-                                       "preguntas_hechas": 0, "respuestas_precal": [],
-                                       "historial": []})
-    step    = sesion.get("step", "bienvenida")
-
-    # ── Guardar en historial ─────────────────────────────────────────────────
-    historial = sesion.get("historial", [])
-    historial.append({"rol": "cliente", "msg": texto[:200]})
-    sesion["historial"] = historial[-10:]  # ventana de 10 mensajes
-    SESIONES[telefono]  = sesion
-
-    # ── Comandos universales ─────────────────────────────────────────────────
-    # "0" solo resetea al menú principal desde bienvenida o palabras clave explícitas.
-    # En cualquier otro paso, "0" es manejado por el handler del paso (volver atrás).
-    if t in ("menu", "menú", "inicio", "restart") or (t == "0" and step == "bienvenida"):
-        nombre = sesion.get("nombre", "")
-        SESIONES[telefono] = {"step": "bienvenida", "props": [], "operacion": "",
-                               "preguntas_hechas": 0, "respuestas_precal": [],
-                               "nombre": nombre, "historial": sesion.get("historial", [])}
-        _at_registrar_lead(telefono, nombre, notas="Reinició conversación")
-        _enviar_texto(telefono, _msg_bienvenida())
-        return
-
-    if t in ("asesor", "humano", "vendedor", "persona"):
-        _ir_asesor(telefono)
-        return
-
-    # ── PASO: captura de datos del lead (nombre, email, ciudad) ─────────────
-    # Si el lead viene del formulario, ya tiene todos los datos — saltar directo a slots
-    if step == "captura_datos" and sesion.get("captura_completa"):
-        _mostrar_slots(telefono, sesion)
-        return
-
-    if step == "captura_datos":
-        campo = sesion.get("captura_campo", "nombre")
-        valor = texto.strip()
-
-        if campo == "nombre":
-            sesion["nombre"] = valor
-            SESIONES[telefono] = {**sesion, "captura_campo": "email"}
-            _enviar_texto(telefono, f"Gracias, *{valor.split()[0]}*! 😊\n\n¿Cuál es tu *email*?")
-
-        elif campo == "email":
-            sesion["email_lead"] = valor
-            SESIONES[telefono] = {**sesion, "captura_campo": "telefono_lead"}
-            _enviar_texto(telefono, "¿Cuál es tu *número de teléfono* (con código de área)?")
-
-        elif campo == "telefono_lead":
-            sesion["telefono_lead"] = valor
-            SESIONES[telefono] = {**sesion, "captura_campo": "ciudad"}
-            _enviar_texto(telefono, "¿Desde qué *ciudad o zona* nos escribís?")
-
-        elif campo == "ciudad":
-            sesion["ciudad_lead"] = valor
-            nombre        = sesion.get("nombre", "")
-            email         = sesion.get("email_lead", "")
-            tel_alt       = sesion.get("telefono_lead", "")
-            notas_extra   = f" | Tel alternativo: {tel_alt}" if tel_alt else ""
-            _at_registrar_lead(telefono, nombre, email=email, ciudad=valor,
-                               notas="Datos capturados — pendiente agendar cita" + notas_extra)
-            SESIONES[telefono] = {**sesion}
-            _mostrar_slots(telefono, SESIONES[telefono])
-        return
-
-    # ── PASO: agendamiento ───────────────────────────────────────────────────
-    if step == "agendamiento":
-        if t == "0":
-            # Volver a la ficha o lista según contexto
-            _mostrar_propiedades(telefono, sesion)
-        elif re.fullmatch(r"\d+", t):
-            _confirmar_reserva(telefono, sesion, int(t) - 1)
-        else:
-            _enviar_texto(telefono, "Elegí un número de la lista o *0* para volver.")
-        return
-
-    # ── PASO: lista de propiedades ───────────────────────────────────────────
-    if step == "lista":
-        props = sesion.get("props", [])
-        if t == "0":
-            subniche = sesion.get("subniche")
-            if subniche:
-                SESIONES[telefono] = {**sesion, "step": "demo_subniche"}
-                _enviar_texto(telefono, _msg_subniche(subniche))
-            else:
-                SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-                _enviar_texto(telefono, _msg_bienvenida())
-        elif t in ("1", "agendar", "visita"):
-            _iniciar_agendamiento(telefono, sesion)
-        elif t in ("2", "asesor"):
-            _ir_asesor(telefono)
-        elif re.fullmatch(r"\d+", t):
-            idx = int(t) - 1
-            if 0 <= idx < len(props):
-                SESIONES[telefono] = {**sesion, "step": "ficha", "prop_actual": props[idx]}
-                _enviar_ficha(telefono, props[idx])
-            else:
-                _enviar_texto(telefono,
-                    f"Elegí un número del 1 al {len(props)}.\n*0* volver | *asesor* hablar con nosotros")
-        else:
-            _enviar_texto(telefono, _gemini_libre(texto, sesion))
-        return
-
-    # ── PASO: ficha individual ───────────────────────────────────────────────
-    if step == "ficha":
-        if t in ("1", "agendar", "visita", "quiero"):
-            _iniciar_agendamiento(telefono, sesion)
-        elif t == "2":
-            _ir_asesor(telefono)
-        elif t == "0":
-            # Volver a la lista de propiedades (que a su vez permite volver al sub-nicho)
-            _mostrar_propiedades(telefono, sesion)
-        else:
-            _enviar_texto(telefono, _gemini_libre(texto, sesion))
-        return
-
-    # ── PASO: post-precalificación ───────────────────────────────────────────
-    if step == "post_precal":
-        score    = sesion.get("score", "tibio")
-        es_b2b   = sesion.get("subniche", "") in ("desarrolladora", "inmobiliaria", "agente")
-        if t == "1":
-            # B2B siempre agenda. B2C caliente agenda, tibio ve propiedades
-            if es_b2b or score == "caliente":
-                _iniciar_agendamiento(telefono, sesion)
-            else:
-                _mostrar_propiedades(telefono, sesion)
-        elif t == "2":
-            if es_b2b and score == "caliente":
-                _ir_asesor(telefono)
-            elif es_b2b:
-                _ir_asesor(telefono)
-            else:
-                _ir_asesor(telefono)
-        elif t == "3":
-            _mostrar_propiedades(telefono, sesion)
-        else:
-            _enviar_texto(telefono, _gemini_libre(texto, sesion))
-        return
-
-    # ── PASO: demo_subniche — el prospecto experimenta el bot como lead ──────
-    if step == "demo_subniche":
-        subniche = sesion.get("subniche", "inmobiliaria")
-        if subniche == "desarrolladora":
-            # Solo venta de proyectos propios
-            if t in ("1", "ver", "proyectos"):
-                _mostrar_propiedades(telefono, {**sesion, "operacion": "venta"})
-            elif t in ("2", "asesor"):
-                _iniciar_agendamiento(telefono, sesion)
-            else:
-                _enviar_texto(telefono, _gemini_libre(texto, sesion))
-        else:
-            # Inmobiliaria y agente: compra o alquiler
-            if t in ("1", "comprar"):
-                _mostrar_propiedades(telefono, {**sesion, "operacion": "venta"})
-            elif t in ("2", "alquilar"):
-                _mostrar_propiedades(telefono, {**sesion, "operacion": "alquiler"})
-            elif t in ("3", "asesor"):
-                _iniciar_agendamiento(telefono, sesion)
-            else:
-                _enviar_texto(telefono, _gemini_libre(texto, sesion))
-        return
-
-    # ── PASO: bienvenida — opción numérica directa ────────────────────────────
-    if step == "bienvenida" and re.fullmatch(r"[1-3]", t):
-        mapa = {"1": "desarrolladora", "2": "inmobiliaria", "3": "agente"}
-        subniche = mapa[t]
-        SESIONES[telefono] = {**sesion, "subniche": subniche, "step": "demo_subniche"}
-        _at_registrar_lead(telefono, sesion.get("nombre", ""), subniche=subniche)
-        _enviar_texto(telefono, _msg_subniche(subniche))
-        return
-
-    # ── PASO: operacion comprador ─────────────────────────────────────────────
-    if step == "operacion_comprador":
-        if t in ("1", "comprar", "compra", "venta"):
-            sesion["operacion"] = "venta"
-            SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-            _mostrar_propiedades(telefono, {**sesion, "operacion": "venta"})
-        elif t in ("2", "alquilar", "alquiler", "renta"):
-            sesion["operacion"] = "alquiler"
-            SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-            _mostrar_propiedades(telefono, {**sesion, "operacion": "alquiler"})
-        elif t == "3":
-            _ir_asesor(telefono)
-        else:
-            _enviar_texto(telefono, _gemini_libre(texto, sesion))
-        return
-
-    # ── PASO: bienvenida / fallback → Gemini decide ───────────────────────────
-    # Shortcut: saludos simples en paso bienvenida siempre muestran el menú
-    _saludos = {"hola", "hi", "hello", "buenas", "buen dia", "buen día", "buenos dias",
-                "buenos días", "buenas tardes", "buenas noches", "ola", "hey", "start"}
-    if step == "bienvenida" and t in _saludos:
-        SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-        _at_registrar_lead(telefono, sesion.get("nombre", ""), notas="Primer contacto WhatsApp")
-        _enviar_texto(telefono, _msg_bienvenida())
-        return
-
-    clas = _gemini_clasificar(texto, sesion)
-
-    # Actualizar sub-nicho si Gemini detectó uno nuevo
-    nuevo_subniche = clas.get("subniche")
-    if nuevo_subniche and nuevo_subniche != sesion.get("subniche"):
-        sesion["subniche"] = nuevo_subniche
-        SESIONES[telefono] = sesion
-        _at_registrar_lead(telefono, sesion.get("nombre", ""),
-                           subniche=nuevo_subniche, notas=f"Sub-nicho detectado: {nuevo_subniche}")
-
-    intencion = clas.get("intencion", "respuesta_libre")
-    respuesta_gemini = clas.get("respuesta", "")
-
-    if intencion == "saludo":
-        nombre = sesion.get("nombre", "")
-        SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-        _at_registrar_lead(telefono, nombre, notas="Primer contacto WhatsApp")
-        _enviar_texto(telefono, respuesta_gemini or _msg_bienvenida())
-
-    elif intencion == "ver_propiedades":
-        if clas.get("operacion"):
-            sesion["operacion"] = clas["operacion"]
-        if clas.get("tipo"):
-            sesion["tipo"] = clas["tipo"]
-        if clas.get("zona"):
-            sesion["zona"] = clas["zona"]
-        SESIONES[telefono] = sesion
-        if respuesta_gemini:
-            _enviar_texto(telefono, respuesta_gemini)
-        _mostrar_propiedades(telefono, sesion)
-
-    elif intencion == "agendar":
-        if respuesta_gemini:
-            _enviar_texto(telefono, respuesta_gemini)
-        _iniciar_agendamiento(telefono, sesion)
-
-    elif intencion == "asesor":
-        _ir_asesor(telefono)
-
-    elif intencion == "precalificacion":
-        subniche = sesion.get("subniche", "comprador")
-        if subniche and subniche != "comprador":
-            # Sub-nicho B2B → arrancar precalificación
-            if respuesta_gemini:
-                _enviar_texto(telefono, respuesta_gemini)
-            SESIONES[telefono] = {**sesion, "step": "precalificacion",
-                                   "preguntas_hechas": 0, "respuestas_precal": []}
-            _siguiente_pregunta_precal(telefono, SESIONES[telefono])
-        else:
-            # Comprador → respuesta libre + propiedades
-            _enviar_texto(telefono, respuesta_gemini or _gemini_libre(texto, sesion))
-
-    else:
-        # respuesta_libre
-        subniche = sesion.get("subniche")
-        if subniche and subniche != "comprador" and not sesion.get("preguntas_hechas"):
-            # Detectó sub-nicho B2B pero aún no precalificó
-            if respuesta_gemini:
-                _enviar_texto(telefono, respuesta_gemini)
-            _enviar_texto(telefono,
-                f"Para entender mejor cómo podemos ayudarte, "
-                f"¿te hago unas preguntas rápidas? Son solo {len(PREGUNTAS_PRECAL.get(subniche, []))}. 😊\n\n"
-                f"*1* Sí, dale\n*2* Prefiero hablar con un asesor")
-            SESIONES[telefono] = {**sesion, "step": "oferta_precal"}
-        else:
-            _enviar_texto(telefono, respuesta_gemini or _gemini_libre(texto, sesion))
+        msg += f"📍 *Zona:* {zona}\n"
+    msg += f"📝 *Nota:* {nota}"
+    _enviar_texto(NUMERO_ASESOR, msg)
 
 
 # ─── MENSAJES FIJOS ───────────────────────────────────────────────────────────
-def _msg_bienvenida() -> str:
-    return ("👋 ¡Hola! Bienvenido a esta *demo de agente inmobiliario IA*. 🏘️\n\n"
-            "Seleccioná el tipo de negocio que querés ver en acción:\n\n"
-            "🏗️ *1.* Desarrolladora inmobiliaria\n"
-            "🏢 *2.* Inmobiliaria / Agencia\n"
-            "🧑‍💼 *3.* Agente independiente\n\n"
-            "Vas a experimentar exactamente cómo el bot atiende a los leads de cada negocio. 🤖")
+MSG_SUBNICHO = (
+    "¡Hola! 👋 Bienvenido/a a *{empresa}* — la plataforma de automatización "
+    "inmobiliaria con WhatsApp + IA 🤖🏡\n\n"
+    "Para mostrarte cómo funciona el bot según tu perfil, dime:\n\n"
+    "*1️⃣* 🏢 Soy *Agencia Inmobiliaria* (equipo de asesores)\n"
+    "*2️⃣* 🧑‍💼 Soy *Agente Independiente* (trabajo solo)\n"
+    "*3️⃣* 🏗️ Soy *Desarrolladora / Constructora*\n\n"
+    "_(Elige una opción para ver la demo de tu subniche)_"
+)
+
+MSG_BIENVENIDA = (
+    "¡Hola! 👋 Bienvenido/a a *{empresa}*.\n\n"
+    "Para no hacerle perder el tiempo, le voy a hacer *4 preguntas rápidas* "
+    "y le muestro las propiedades que mejor encajan con lo que busca. ⚡\n\n"
+    "¿Me dice su nombre para llamarle bien? 😊"
+)
+
+# Contexto por subniche (adapta nombre empresa, copy y asesor)
+_SUBNICHO_CONFIG = {
+    "1": {
+        "subniche": "agencia_inmobiliaria",
+        "label": "Agencia Inmobiliaria",
+        "empresa": "Lovbot — Agencia Inmobiliaria",
+        "intro": "💼 *Agencia Inmobiliaria*\n\nEsta demo muestra cómo el bot filtra leads y los distribuye entre tu equipo de asesores automáticamente.",
+    },
+    "2": {
+        "subniche": "agente_independiente",
+        "label": "Agente Independiente",
+        "empresa": "Lovbot — Agente Inteligente",
+        "intro": "🧑‍💼 *Agente Independiente*\n\nEsta demo muestra cómo el bot trabaja 24/7 por vos, califica leads y agenda citas mientras te enfocás en cerrar ventas.",
+    },
+    "3": {
+        "subniche": "desarrolladora",
+        "label": "Desarrolladora / Constructora",
+        "empresa": "Lovbot — Desarrollos Inmobiliarios",
+        "intro": "🏗️ *Desarrolladora / Constructora*\n\nEste bot atiende a compradores interesados en tus proyectos: preventa, lotes urbanizados, unidades en construcción. Filtra inversores serios, califica por presupuesto y agenda reuniones con tu equipo comercial.",
+    },
+}
+
+MSG_SITIO_WEB = (
+    "¡Muchas gracias por su tiempo, *{nombre}*! 🙏\n\n"
+    "Entendemos perfectamente — tomarse el tiempo para explorar es lo más inteligente "
+    "al momento de invertir en una propiedad. 😊\n\n"
+    "Mientras tanto, le invitamos a conocer nuestro portafolio completo con propiedades, "
+    "precios y disponibilidad actualizada:\n\n"
+    "{web_line}"
+    "Cuando esté listo para dar el siguiente paso, escríbanos *hola* aquí mismo y "
+    "nuestro asesor *{asesor}* le ayudará personalmente. ¡Estamos para servirle! 🏡"
+)
+
+MSG_ASESOR_CONTACTO = (
+    "¡Muchas gracias, {nombre}! 🎉\n\n"
+    "Con la información que nos compartió, nuestro asesor *{asesor}* "
+    "se pondrá en contacto con usted a la brevedad para presentarle "
+    "las mejores opciones disponibles. 🏠\n\n"
+    "Mientras tanto, si tiene alguna pregunta adicional, estoy aquí para ayudarle.\n\n"
+    "¡Gracias por confiar en *{empresa}*! 🌟"
+)
+
+MSG_EMAIL_CTA = (
+    "📬 *Una última cosa, {nombre}...*\n\n"
+    "En *{empresa}* publicamos nuevas propiedades con frecuencia — "
+    "algunas se reservan en días por sus precios de lanzamiento. 🏷️\n\n"
+    "¿Le gustaría que le avisemos cuando salga algo que coincida con lo que busca? "
+    "Solo necesito su *correo electrónico* para enviarle información "
+    "exclusiva antes de que salga al público.\n\n"
+    "_(Opcional — responda con su email o escriba *\"no\"* si prefiere no recibirlo)_"
+)
 
 
-def _msg_subniche(subniche: str) -> str:
-    """Primer mensaje del bot simulando ser el negocio del sub-nicho."""
-    tpl = SUBNICHE_BIENVENIDA.get(subniche, "")
-    return tpl.format(empresa=EMPRESA["nombre"], ciudad=EMPRESA["ciudad"], asesor=EMPRESA["asesor"])
-
-
-def _ir_asesor(telefono: str) -> None:
+# ─── FLUJO PRINCIPAL ──────────────────────────────────────────────────────────
+def _procesar(telefono: str, texto: str) -> None:
+    texto = texto.strip()
+    texto_lower = texto.lower()
     sesion = SESIONES.get(telefono, {})
-    SESIONES[telefono] = {**sesion, "step": "bienvenida"}
-    _enviar_texto(telefono,
-        f"¡Perfecto! Te conecto con {EMPRESA['asesor']}. 👤\n\n"
-        f"Podés escribirle al {EMPRESA['whatsapp']} o aguardá que te contacte en breve. 🏠")
+    step = sesion.get("step", "inicio")
+    nombre = sesion.get("nombre", "")
+    nombre_corto = nombre.split()[0] if nombre else ""
+    subniche = sesion.get("subniche", "")
 
+    # Comandos globales
+    if texto_lower in ("0", "menú", "menu", "inicio", "hola", "hi", "buenas"):
+        SESIONES.pop(telefono, None)
+        step = "inicio"
 
-# ─── ENDPOINTS ────────────────────────────────────────────────────────────────
+    if texto_lower == "#":
+        _ir_asesor(telefono, sesion)
+        return
 
-@router.post("/lead")
-async def recibir_lead_formulario(request: Request):
-    """
-    Endpoint para leads que vienen del formulario web.
-    El lead ya viene con todos sus datos precargados (nombre, apellido, email,
-    teléfono, operación, tipo de propiedad, zona, presupuesto).
+    # ── INICIO → MENÚ SUBNICHO ────────────────────────────────────────────────
+    if step == "inicio":
+        SESIONES[telefono] = {"step": "subnicho"}
+        _enviar_texto(telefono, MSG_SUBNICHO.format(empresa=NOMBRE_EMPRESA))
+        return
 
-    Acción:
-      1. Registrar el lead en Airtable directamente (sin pedir más datos).
-      2. Enviar mensaje de WhatsApp de bienvenida personalizado.
-      3. Cargar sesión con los datos ya precargados y mostrar propiedades
-         (o slots de agenda si urgencia es inmediata).
+    # ── SUBNICHO ──────────────────────────────────────────────────────────────
+    if step == "subnicho":
+        cfg = _SUBNICHO_CONFIG.get(texto.strip())
+        if not cfg:
+            _enviar_texto(telefono,
+                "Por favor elige una opción:\n\n"
+                "*1️⃣* Agencia Inmobiliaria\n"
+                "*2️⃣* Agente Independiente\n"
+                "*3️⃣* Desarrolladora / Constructora"
+            )
+            return
+        SESIONES[telefono] = {
+            "step": "nombre",
+            "subniche": cfg["subniche"],
+            "empresa_demo": cfg["empresa"],
+        }
+        empresa_show = cfg["empresa"]
+        _enviar_texto(telefono,
+            cfg["intro"] + f"\n\n"
+            f"Perfecto 🎯 Ahora simulás ser un *cliente real* que escribe a *{empresa_show}*.\n\n"
+            f"¡Empecemos! — ¿cuál es tu nombre? 😊"
+        )
+        return
 
-    El bot NO vuelve a pedir nombre/email/ciudad — ya los tiene.
-    """
-    try:
-        body = await request.json()
-    except Exception:
-        return {"status": "error", "detalle": "body no es JSON válido"}
-
-    # ── Extraer campos del formulario ──────────────────────────────────────────
-    nombre    = (body.get("Nombre") or body.get("nombre") or "").strip()
-    apellido  = (body.get("Apellido") or body.get("apellido") or "").strip()
-    nombre_completo = (nombre + " " + apellido).strip()
-    telefono_raw = str(body.get("Telefono") or body.get("telefono") or "")
-    email     = (body.get("Email") or body.get("email") or "").strip()
-    operacion = (body.get("Operacion") or body.get("operacion") or "venta").lower()
-    tipo      = (body.get("Tipo_Propiedad") or body.get("tipo_propiedad") or "").lower()
-    zona      = (body.get("Zona") or body.get("zona") or "").strip()
-    presupuesto = (body.get("Presupuesto") or body.get("presupuesto") or "A consultar")
-    urgencia  = (body.get("urgencia") or "").strip()
-    notas_raw = (body.get("Notas_Bot") or body.get("notas") or "").strip()
-    sub_nicho = (body.get("Sub_nicho") or body.get("subnicho") or "").strip()
-    fuente    = (body.get("Fuente") or body.get("fuente") or "formulario").strip()
-    score_num = body.get("Score") or body.get("score_num")
-
-    if not telefono_raw:
-        return {"status": "error", "detalle": "Telefono requerido"}
-
-    telefono = _norm_tel(telefono_raw)
-    nombre_corto = nombre or "allí"
-
-    # ── Determinar score basado en urgencia ────────────────────────────────────
-    score = "caliente" if urgencia in ("inmediata", "1-3 meses") else "tibio"
-
-    # ── Registrar en Airtable inmediatamente con todos los datos ──────────────
-    notas_at = f"Lead formulario web | Urgencia: {urgencia or '-'} | {notas_raw}".strip(" |")
-    _at_registrar_lead(
-        telefono, nombre_completo,
-        score=score, operacion=operacion, tipo=tipo,
-        email=email, ciudad=zona,
-        notas=notas_at,
+    # ── Detector de objeción familiar (cualquier paso post-nombre) ───────────
+    _OBJECION_FAMILIAR = (
+        "lo hablo con", "lo consulto con", "lo veo con", "lo comento con",
+        "mi esposa", "mi esposo", "mi marido", "mi pareja", "mi socio", "mi socia",
+        "mi papa", "mi papá", "mi mama", "mi mamá", "mi hijo", "mi hija",
+        "tengo que consultar", "tenemos que ver", "lo decidimos juntos"
     )
+    if step not in ("inicio", "subnicho", "nombre") and any(p in texto_lower for p in _OBJECION_FAMILIAR):
+        n = nombre_corto or nombre or "estimado/a"
+        _enviar_texto(telefono,
+            f"¡Por supuesto, *{n}*! Es una decisión importante y está muy bien consultarlo. 😊\n\n"
+            f"Le mando la información para que la puedan revisar juntos 👇\n\n"
+            f"¿Le gustaría que *{NOMBRE_ASESOR}* los llame cuando estén los dos disponibles, "
+            f"o prefieren seguir por aquí a su ritmo?"
+        )
+        # No reseteamos sesión — esperamos su respuesta y continuamos
+        SESIONES[telefono] = {**sesion, "step": sesion.get("step", step), "_espera_familiar": True}
+        return
 
-    # ── Guardar Sub_nicho, Fuente y Score numérico en Airtable ────────────────
-    if sub_nicho or fuente or score_num is not None:
-        if AIRTABLE_BASE_ID and AIRTABLE_TABLE_CLIENTES:
-            _url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
-            _buscar = requests.get(_url, headers=AT_HEADERS,
-                params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
-            _recs = _buscar.json().get("records", []) if _buscar.status_code == 200 else []
-            if _recs:
-                _extra: dict = {}
-                if sub_nicho:
-                    _extra["Sub_nicho"] = sub_nicho
-                if fuente:
-                    _extra["Fuente"] = fuente
-                if score_num is not None:
-                    try:
-                        _extra["Score"] = int(score_num)
-                    except (ValueError, TypeError):
-                        pass
-                if _extra:
-                    requests.patch(f"{_url}/{_recs[0]['id']}", headers=AT_HEADERS,
-                                   json={"fields": _extra}, timeout=8)
+    # Si venía de objeción familiar y responde, retomamos el flujo donde estaba
+    if sesion.get("_espera_familiar"):
+        SESIONES[telefono] = {**{k: v for k, v in sesion.items() if k != "_espera_familiar"}}
+        sesion = SESIONES[telefono]
+        step = sesion.get("step", "inicio")
+        n = nombre_corto or nombre
+        if "asesor" in texto_lower or "llame" in texto_lower or "llamada" in texto_lower or texto.strip() in ("1", "si", "sí"):
+            _ir_asesor(telefono, sesion)
+            return
+        _enviar_texto(telefono,
+            f"¡Perfecto, *{n}*! Sin apuro. Seguimos cuando quieran 😊\n\n"
+            f"Retomamos donde lo dejamos — " + _pregunta(step, nombre_corto, subniche)
+        )
+        return
 
-    # ── Precargar sesión con datos del formulario ─────────────────────────────
-    sesion_nueva = {
-        "step":               "lista",
-        "subniche":           "inmobiliaria",
-        "score":              score,
-        "operacion":          operacion,
-        "tipo":               tipo,
-        "zona":               zona,
-        "nombre":             nombre_completo,
-        "email_lead":         email,
-        "telefono_lead":      telefono,
-        "ciudad_lead":        zona,
-        "presupuesto":        str(presupuesto),
-        "urgencia":           urgencia,
-        "captura_completa":   True,   # flag: no volver a pedir datos
-        "props":              [],
-        "historial":          [],
-        "preguntas_hechas":   0,
-        "respuestas_precal":  [],
-        "origen":             "formulario",
+    # ── NOMBRE ────────────────────────────────────────────────────────────────
+    if step == "nombre":
+        nombre = texto.title()
+        SESIONES[telefono] = {**sesion, "step": "email", "nombre": nombre}
+        n = nombre.split()[0]
+        _enviar_texto(telefono,
+            f"¡Mucho gusto, *{n}*! 😊\n\n"
+            f"¿Me comparte su *correo electrónico*? Lo usamos para enviarle fichas "
+            f"de propiedades antes de que salgan al público. 📬\n\n"
+            f"_(Escriba *no* si prefiere omitirlo)_"
+        )
+        return
+
+    # ── EMAIL ─────────────────────────────────────────────────────────────────
+    if step == "email":
+        rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
+        if texto_lower in rechazos:
+            SESIONES[telefono] = {**sesion, "step": "ciudad", "email": ""}
+            _enviar_texto(telefono,
+                f"Sin problema 😊 ¿Desde qué *ciudad* nos escribe? 📍"
+            )
+        elif "@" in texto and "." in texto:
+            email = texto.strip()
+            threading.Thread(target=_at_guardar_email, args=(telefono, email), daemon=True).start()
+            SESIONES[telefono] = {**sesion, "step": "ciudad", "email": email}
+            _enviar_texto(telefono,
+                f"¡Perfecto! 📬 Anotado.\n\n¿Desde qué *ciudad* nos escribe? 📍"
+            )
+        else:
+            _enviar_texto(telefono,
+                f"Por favor ingrese un email válido (ej: nombre@gmail.com) o escriba *no* para omitir. 😊"
+            )
+        return
+
+    # ── CIUDAD ────────────────────────────────────────────────────────────────
+    if step == "ciudad":
+        ciudad_resp = texto.strip().title()
+        SESIONES[telefono] = {**sesion, "step": "objetivo", "ciudad_resp": ciudad_resp}
+        _enviar_texto(telefono,
+            f"📍 *{ciudad_resp}*, anotado.\n\n" + _pregunta("objetivo", nombre, subniche)
+        )
+        return
+
+    # ── OBJETIVO (comprar/alquilar + para qué) ────────────────────────────────
+    _ACUSE_OBJETIVO = {
+        "1": "Comprar, perfecto. 🏠",
+        "2": "Alquilar, entendido. 🔑",
+        "3": "Invertir, excelente decisión. 📈",
     }
-    SESIONES[telefono] = sesion_nueva
+    if step == "objetivo":
+        mapa_op = {"1": "venta", "2": "alquiler", "3": "venta"}
+        operacion = mapa_op.get(texto.strip(), "venta")
+        acuse = _ACUSE_OBJETIVO.get(texto.strip(), "Entendido. 👍")
+        SESIONES[telefono] = {**sesion, "step": "tipo", "resp_objetivo": texto,
+                              "operacion_at": operacion}
+        _enviar_texto(telefono, acuse + "\n\n" + _pregunta("tipo", nombre_corto, subniche))
+        return
 
-    # ── Enviar bienvenida personalizada via WhatsApp ───────────────────────────
-    if not EVOLUTION_API_URL or not EVOLUTION_API_KEY or not NUMERO_BOT:
-        print(f"[LEAD-FORM] tel={telefono} — Evolution no configurado, solo Airtable registrado")
-        return {"status": "ok_airtable_only", "telefono": telefono, "score": score}
+    # ── TIPO DE PROPIEDAD ─────────────────────────────────────────────────────
+    _ACUSE_TIPO = {
+        "1": "Casa, perfecto. 🏡",
+        "2": "Departamento, anotado. 🏢",
+        "3": "Terreno, muy bien. 🌿",
+        "4": "Local comercial, entendido. 🏪",
+        "5": "Oficina, anotado. 💼",
+    }
+    if step == "tipo":
+        mapa_tipo = {
+            "1": "casa", "2": "departamento", "3": "terreno",
+            "4": "otro", "5": "otro",
+        }
+        tipo_detectado = mapa_tipo.get(texto.strip(), _normalizar_tipo(texto) or texto.lower())
+        acuse = _ACUSE_TIPO.get(texto.strip(), "Entendido. 👍")
+        SESIONES[telefono] = {**sesion, "step": "zona", "resp_tipo": tipo_detectado}
+        _enviar_texto(telefono, acuse + "\n\n" + _pregunta("zona", nombre_corto, subniche))
+        return
 
-    # Saludo personalizado
-    saludo_tipo = {
-        "venta": "propiedades en venta",
-        "alquiler": "propiedades en alquiler",
-    }.get(operacion, "propiedades")
+    # ── ZONA ──────────────────────────────────────────────────────────────────
+    if step == "zona":
+        zona_detectada = texto
+        zona_label = texto
+        try:
+            idx = int(texto) - 1
+            if 0 <= idx < len(ZONAS_LIST):
+                zona_detectada = ZONAS_LIST[idx]
+                zona_label = ZONAS_LIST[idx]
+            elif idx == len(ZONAS_LIST):
+                zona_detectada = ""
+                zona_label = "cualquier zona"
+        except ValueError:
+            zona_detectada = _normalizar_zona(texto) or texto
+            zona_label = zona_detectada
+        acuse_zona = f"📍 *{zona_label}*, anotado." if zona_label != "cualquier zona" else "Sin zona preferida, le muestro todo lo disponible."
+        SESIONES[telefono] = {**sesion, "step": "presupuesto", "resp_zona": zona_detectada}
+        _enviar_texto(telefono, acuse_zona + "\n\n" + _pregunta("presupuesto", nombre_corto, subniche))
+        return
 
-    msg_bienvenida = (
-        f"¡Hola {nombre_corto}! 👋 Recibimos tu consulta desde el formulario web.\n\n"
-        f"Buscamos las *{saludo_tipo}*"
-        + (f" en *{zona}*" if zona else "")
-        + (f" — tipo: _{tipo}_" if tipo else "")
-        + ".\n\n"
-        f"Te muestro las opciones disponibles ahora mismo 🏠"
-    )
-    _enviar_texto(telefono, msg_bienvenida)
+    # ── PRESUPUESTO ───────────────────────────────────────────────────────────
+    if step == "presupuesto":
+        # Opción 5 = hablar con asesor directo
+        if texto.strip() == "5":
+            _ir_asesor(telefono, sesion)
+            return
+        presupuesto_at = _PRESUPUESTO_MAP.get(texto.strip(), "")
+        SESIONES[telefono] = {**sesion, "step": "urgencia",
+                              "resp_presupuesto": texto, "presupuesto_at": presupuesto_at}
+        _enviar_texto(telefono, _pregunta("urgencia", nombre_corto, subniche))
+        return
 
-    # ── Notificar al asesor que llegó un lead nuevo ───────────────────────────
+    # ── URGENCIA → CALIFICAR → BUSCAR PROPIEDADES ─────────────────────────────
+    if step == "urgencia":
+        sesion_act = {**sesion, "step": "calificado", "resp_urgencia": texto}
+        SESIONES[telefono] = sesion_act
+
+        calificacion = _gemini_calificar(sesion_act)
+        score      = calificacion.get("score", "tibio")
+        derivar    = calificacion.get("derivar_sitio_web", False)
+        tipo       = calificacion.get("tipo") or sesion_act.get("resp_tipo", "")
+        zona       = calificacion.get("zona") or sesion_act.get("resp_zona", "")
+        operacion  = calificacion.get("operacion")
+        nota       = calificacion.get("nota_para_asesor", "")
+
+        # Normalizar nulls de Gemini
+        if tipo in (None, "null", ""):
+            tipo = sesion_act.get("resp_tipo", "")
+        if zona in (None, "null", ""):
+            zona = sesion_act.get("resp_zona", "")
+        if operacion in (None, "null", ""):
+            operacion = sesion_act.get("operacion_at", None)
+
+        presupuesto_at = sesion_act.get("presupuesto_at", "")
+        operacion_at   = sesion_act.get("operacion_at", "")
+        ciudad_at      = sesion_act.get("ciudad_resp", CIUDAD)
+        subniche_at    = sesion_act.get("subniche", "")
+        email          = sesion_act.get("email", "")
+
+        # Registrar lead en Airtable (background)
+        threading.Thread(
+            target=_at_registrar_lead,
+            args=(telefono, nombre, score, tipo, zona, nota, presupuesto_at,
+                  operacion_at, ciudad_at, subniche_at), daemon=True
+        ).start()
+
+        # Lead frío → derivar a sitio web
+        if derivar or score == "frio":
+            web_line = f"🌐 *{SITIO_WEB}*\n\n" if SITIO_WEB else ""
+            _enviar_texto(telefono, MSG_SITIO_WEB.format(
+                nombre=nombre_corto or nombre, web_line=web_line,
+                asesor=NOMBRE_ASESOR))
+            threading.Thread(
+                target=_notificar_asesor,
+                args=(telefono, sesion_act, calificacion), daemon=True
+            ).start()
+            SESIONES.pop(telefono, None)
+            return
+
+        # Lead caliente/tibio → buscar propiedades en Airtable
+        props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona,
+                                       presupuesto=presupuesto_at)
+
+        threading.Thread(
+            target=_notificar_asesor,
+            args=(telefono, sesion_act, calificacion), daemon=True
+        ).start()
+
+        if not props:
+            _enviar_texto(telefono,
+                f"*{nombre_corto or nombre}*, en este momento no tenemos propiedades "
+                f"con exactamente esas características en nuestro portal, "
+                f"pero *{NOMBRE_ASESOR}* trabaja con opciones que no siempre están publicadas. 🏡\n\n"
+                f"¿Le parece si le coordino una llamada rápida — *hoy o mañana* — "
+                f"para que le cuente lo que hay disponible?"
+            )
+        else:
+            # Mostrar lista de propiedades
+            SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props,
+                                  "tipo": tipo, "zona": zona, "operacion": operacion}
+            _enviar_texto(telefono,
+                f"*{nombre_corto or nombre}*, encontré *{len(props)} opción{'es' if len(props) > 1 else ''}* "
+                f"que coincide{'n' if len(props) > 1 else ''} con lo que busca 👇"
+            )
+            _enviar_texto(telefono, _lista_titulos(props))
+            return  # queda en step lista para que elija ficha
+
+        # Ofrecer cita con Cal.com — primero pregunta binaria, luego slots
+        if _cal_disponible():
+            slots = _cal_obtener_slots()
+            if slots:
+                SESIONES[telefono] = {**sesion_act, "step": "ofrecer_cita",
+                                      "slots": slots, "email": email}
+                _enviar_texto(telefono,
+                    f"¿Prefiere que *{NOMBRE_ASESOR}* lo llame *hoy* o *mañana* para "
+                    f"mostrarle opciones personalizadas?\n\n"
+                    f"*1️⃣* Ver horarios disponibles 📅\n"
+                    f"*0️⃣* Que me contacten ellos a la brevedad"
+                )
+                return
+
+        # Sin Cal.com → despedida
+        _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+            nombre=nombre_corto or nombre,
+            asesor=NOMBRE_ASESOR,
+            empresa=NOMBRE_EMPRESA,
+        ))
+        SESIONES.pop(telefono, None)
+        return
+
+    # ── LISTA → FICHA ─────────────────────────────────────────────────────────
+    if step == "lista":
+        props = sesion.get("props", [])
+        try:
+            idx = int(texto) - 1
+            if 0 <= idx < len(props):
+                SESIONES[telefono] = {**sesion, "step": "ficha", "ficha_actual": idx}
+                _enviar_ficha(telefono, props[idx])
+            else:
+                _enviar_texto(telefono,
+                    f"Por favor elija un número del 1 al {len(props)}, "
+                    f"*0* para volver o *#* para hablar con el asesor.")
+        except ValueError:
+            _enviar_texto(telefono,
+                "Responda con el *número* de la propiedad que desea ver, "
+                "*0* para volver o *#* para hablar con el asesor. 😊")
+        return
+
+    # ── FICHA → ACCIONES ─────────────────────────────────────────────────────
+    if step == "ficha":
+        props = sesion.get("props", [])
+        if texto == "0":
+            SESIONES[telefono] = {**sesion, "step": "lista"}
+            _enviar_texto(telefono, _lista_titulos(props))
+            return
+        # Cualquier otra respuesta → ofrecer cita
+        _ir_asesor(telefono, sesion)
+        return
+
+    # ── OFRECER CITA — PREGUNTA BINARIA ANTES DE MOSTRAR SLOTS ──────────────
+    if step == "ofrecer_cita":
+        slots = sesion.get("slots", [])
+        if texto.strip() == "1" or texto_lower in ("si", "sí", "ver", "horarios", "dale"):
+            SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
+            _enviar_texto(telefono,
+                f"Estos son los horarios disponibles con *{NOMBRE_ASESOR}* 📅\n\n"
+                f"{_formatear_slots(slots)}\n\n"
+                f"Responda con el *número* del horario que prefiere."
+            )
+        else:
+            _enviar_texto(telefono,
+                f"¡Perfecto! *{NOMBRE_ASESOR}* se pondrá en contacto con usted a la brevedad. 🏡\n\n"
+                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
+            )
+            SESIONES.pop(telefono, None)
+        return
+
+    # ── AGENDAMIENTO — SELECCIÓN DE SLOT ─────────────────────────────────────
+    if step == "agendar_slots":
+        slots = sesion.get("slots", [])
+        nombre_corto2 = nombre.split()[0] if nombre else ""
+        if texto.strip() == "0":
+            _enviar_texto(telefono,
+                f"¡De acuerdo, {nombre_corto2}! Nuestro asesor *{NOMBRE_ASESOR}* "
+                f"estará en contacto con usted a la brevedad. 🏡\n\n"
+                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
+            )
+            SESIONES.pop(telefono, None)
+            return
+        try:
+            idx = int(texto.strip()) - 1
+            if 0 <= idx < len(slots):
+                slot = slots[idx]
+                from datetime import datetime, timezone, timedelta
+                try:
+                    dt = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
+                    mx = dt.astimezone(timezone(timedelta(hours=-6)))
+                    dia_es = _DIAS_ES.get(mx.strftime("%A"), mx.strftime("%A"))
+                    fecha_str = f"{dia_es} {mx.strftime('%d/%m a las %H:%M hs')}"
+                except Exception:
+                    fecha_str = slot["time"]
+                # Guardar slot elegido y pedir confirmación
+                SESIONES[telefono] = {**sesion, "step": "confirmar_cita",
+                                      "slot_elegido": slot, "fecha_str": fecha_str}
+                _enviar_texto(telefono,
+                    f"📅 Perfecto, *{nombre_corto2}*. Le confirmo:\n\n"
+                    f"📆 *Fecha:* {fecha_str}\n"
+                    f"👤 *Asesor:* {NOMBRE_ASESOR}\n\n"
+                    f"¿Confirmamos esta cita?\n\n"
+                    f"*1️⃣* ✅ Sí, confirmar\n"
+                    f"*2️⃣* 🔄 Elegir otro horario\n"
+                    f"*0️⃣* ❌ No agendar"
+                )
+            else:
+                _enviar_texto(telefono,
+                    f"Por favor elija un número del 1 al {len(slots)}, o *0* para omitir. 😊")
+        except ValueError:
+            _enviar_texto(telefono,
+                f"Responda con el *número* del horario (1-{len(slots)}) o *0* para omitir. 😊")
+        return
+
+    # ── CONFIRMAR CITA ───────────────────────────────────────────────────────
+    if step == "confirmar_cita":
+        email = sesion.get("email", "")
+        nombre_corto2 = nombre.split()[0] if nombre else ""
+        slot = sesion.get("slot_elegido", {})
+        fecha_str = sesion.get("fecha_str", "")
+        if texto.strip() == "1" or texto_lower in ("si", "sí", "confirmar", "dale", "ok"):
+            notas = (f"Busca: {sesion.get('resp_tipo','')} en {sesion.get('resp_zona','')} "
+                     f"— Presupuesto: {sesion.get('resp_presupuesto','')}")
+            resultado = _cal_crear_reserva(nombre, email, telefono, slot.get("time", ""), notas)
+            if resultado["ok"]:
+                threading.Thread(
+                    target=_at_guardar_cita,
+                    args=(telefono, slot.get("time", "")), daemon=True
+                ).start()
+                _enviar_texto(telefono,
+                    f"✅ *¡Cita confirmada, {nombre_corto2}!*\n\n"
+                    f"📅 *Fecha:* {fecha_str}\n"
+                    f"👤 *Asesor:* {NOMBRE_ASESOR}\n\n"
+                    f"Recibirá una confirmación por email. "
+                    f"Si necesita reagendar, escríbanos aquí. 😊\n\n"
+                    f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
+                )
+                SESIONES.pop(telefono, None)
+            else:
+                _enviar_texto(telefono,
+                    f"Lo sentimos, ese horario ya no está disponible. 😔\n\n"
+                    f"Por favor escriba *2* para elegir otro horario o *0* para omitir."
+                )
+        elif texto.strip() == "2" or texto_lower in ("no", "otro", "cambiar"):
+            slots = sesion.get("slots", [])
+            if slots:
+                SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
+                _enviar_texto(telefono,
+                    f"Sin problema 😊 Elija otro horario:\n\n"
+                    f"{_formatear_slots(slots)}\n\n"
+                    f"Responda con el *número* del horario que prefiere, o *0* para omitir."
+                )
+            else:
+                _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+                    nombre=nombre_corto2, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
+                SESIONES.pop(telefono, None)
+        elif texto.strip() == "0":
+            _enviar_texto(telefono,
+                f"¡De acuerdo, {nombre_corto2}! Nuestro asesor *{NOMBRE_ASESOR}* "
+                f"estará en contacto con usted a la brevedad. 🏡\n\n"
+                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
+            )
+            SESIONES.pop(telefono, None)
+        else:
+            _enviar_texto(telefono,
+                f"Responda *1* para confirmar, *2* para elegir otro horario, o *0* para no agendar. 😊")
+        return
+
+    # ── FALLBACK ──────────────────────────────────────────────────────────────
+    _enviar_texto(telefono,
+        "Disculpe, no entendí su mensaje. 😊\n\n"
+        "Puede usar estas opciones:\n\n"
+        "▪️ Escriba *hola* para iniciar una nueva consulta\n"
+        "▪️ Escriba *#* para hablar directamente con el asesor\n"
+        "▪️ Escriba *0* para volver al menú anterior")
+    SESIONES.pop(telefono, None)
+
+
+def _ir_asesor(telefono: str, sesion: dict) -> None:
+    nombre = sesion.get("nombre", "")
+    nombre_corto = nombre.split()[0] if nombre else ""
+    email = sesion.get("email", "")
+
+    # Notificar al asesor
     if NUMERO_ASESOR:
-        score_emoji = {"caliente": "🔥", "tibio": "🌡️"}.get(score, "❄️")
-        asesor_tel = re.sub(r'\D', '', NUMERO_ASESOR)
-        _enviar_texto(asesor_tel,
-            f"🏠 *Nuevo lead desde el formulario web*\n\n"
-            f"👤 *Nombre:* {nombre_completo}\n"
-            f"📱 *Teléfono:* {telefono}\n"
-            f"📍 *Zona:* {zona or '-'}\n"
-            f"🏷 *Tipo:* {tipo or '-'} · {operacion or '-'}\n"
-            f"💰 *Presupuesto:* {presupuesto}\n"
-            f"⏱ *Urgencia:* {urgencia or '-'}\n"
-            f"{score_emoji} *Score:* {score}\n\n"
-            f"_El bot ya le escribió y le está mostrando propiedades._"
+        numero_limpio = re.sub(r"[^0-9]", "", NUMERO_ASESOR)
+        tipo  = sesion.get("resp_tipo", "")
+        zona  = sesion.get("resp_zona", "")
+        _enviar_texto(numero_limpio,
+            f"🔔 *{NOMBRE_EMPRESA}*\n\n"
+            f"Un cliente solicita hablar con vos:\n"
+            f"👤 *{nombre or 'Sin nombre'}*\n"
+            f"📱 +{re.sub(r'[^0-9]', '', telefono)}\n"
+            + (f"🏡 Busca: {tipo}" if tipo else "")
+            + (f" en {zona}" if zona else "")
         )
 
-    # ── Mostrar propiedades o agendar según urgencia ──────────────────────────
-    if score == "caliente" and _cal_disponible():
-        # Lead urgente → ir directo a agenda
-        sesion_nueva["step"] = "agendamiento"
-        SESIONES[telefono] = sesion_nueva
-        _mostrar_slots(telefono, sesion_nueva)
-    else:
-        # Mostrar propiedades filtradas por sus preferencias
-        _mostrar_propiedades(telefono, sesion_nueva)
+    # Ofrecer cita — primero pregunta binaria, luego slots
+    if _cal_disponible():
+        slots = _cal_obtener_slots()
+        if slots:
+            SESIONES[telefono] = {**sesion, "step": "ofrecer_cita", "slots": slots, "email": email}
+            _enviar_texto(telefono,
+                f"¡Con gusto, {nombre_corto}! ¿Prefiere ver los horarios disponibles "
+                f"con *{NOMBRE_ASESOR}* ahora mismo, o que él se contacte con usted?\n\n"
+                f"*1️⃣* Ver horarios disponibles 📅\n"
+                f"*0️⃣* Que me contacten a la brevedad"
+            )
+            return
 
-    return {
-        "status": "ok",
-        "telefono": telefono,
-        "nombre": nombre_completo,
-        "score": score,
-        "step": SESIONES.get(telefono, {}).get("step"),
-    }
+    _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+        nombre=nombre_corto or nombre,
+        asesor=NOMBRE_ASESOR,
+        empresa=NOMBRE_EMPRESA,
+    ))
+    SESIONES.pop(telefono, None)
 
 
+# ─── ENDPOINT WEBHOOK ─────────────────────────────────────────────────────────
 @router.post("/whatsapp")
-async def procesar_whatsapp(request: Request):
-    """Webhook para Evolution API. Payload: {event, instance, data: {key, message, pushName}}"""
+async def webhook_whatsapp(request: Request):
+    """Recibe mensajes directamente desde Evolution API."""
     try:
         body = await request.json()
     except Exception:
-        return {"status": "error", "detalle": "body no es JSON válido"}
+        return {"status": "error"}
 
-    # Evolution API payload structure
-    # Evolution manda "MESSAGES_UPSERT" (mayúscula + guión bajo)
+    # Evolution manda "MESSAGES_UPSERT" (uppercase) o "messages.upsert"
     event = body.get("event", "").lower().replace("_", ".")
     if event and event != "messages.upsert":
-        return {"status": "ignorado", "razon": f"evento: {event}"}
+        return {"status": "ignored", "event": event}
 
     data    = body.get("data", body)
     key     = data.get("key", {})
     message = data.get("message", {})
 
-    # Ignorar mensajes propios (fromMe=True)
+    # Ignorar mensajes propios del bot
     if key.get("fromMe"):
-        return {"status": "ignorado", "razon": "mensaje propio"}
+        return {"status": "ignored", "reason": "fromMe"}
 
-    # Extraer teléfono — Evolution usa formato "5493764112233@s.whatsapp.net"
+    # Extraer teléfono — Evolution usa "549XXXX@s.whatsapp.net"
     remote_jid = key.get("remoteJid", "")
-    telefono   = re.sub(r'@.*', '', remote_jid)  # quitar @s.whatsapp.net
-    telefono   = _norm_tel(telefono)
+    telefono   = re.sub(r'@.*', '', remote_jid)
 
     # Extraer texto según tipo de mensaje
     texto = ""
     msg_type = list(message.keys())[0] if message else ""
-
     if msg_type == "conversation":
         texto = message.get("conversation", "")
     elif msg_type == "extendedTextMessage":
@@ -1215,97 +1216,60 @@ async def procesar_whatsapp(request: Request):
     elif msg_type == "listResponseMessage":
         texto = message.get("listResponseMessage", {}).get("title", "")
     elif msg_type in ("imageMessage", "audioMessage", "videoMessage", "documentMessage", "stickerMessage"):
-        return {"status": "ignorado", "razon": f"media: {msg_type}"}
+        return {"status": "ignored", "reason": f"media: {msg_type}"}
 
     if not telefono or not texto:
-        return {"status": "ignorado", "razon": "sin telefono o texto"}
+        return {"status": "ignored", "reason": "sin telefono o texto"}
 
-    # Capturar nombre del perfil (pushName en Evolution)
-    raw_name = data.get("pushName", "")
-    sesion   = SESIONES.get(telefono, {})
-    if raw_name and not sesion.get("nombre"):
-        sesion["nombre"] = raw_name
-        SESIONES[telefono] = sesion
+    # Capturar nombre del perfil si viene
+    push_name = data.get("pushName", "")
+    if push_name and telefono not in SESIONES:
+        SESIONES[telefono] = {"nombre": push_name}
+    elif push_name and not SESIONES.get(telefono, {}).get("nombre"):
+        SESIONES.setdefault(telefono, {})["nombre"] = push_name
 
-    _procesar_mensaje(telefono, texto)
-    return {"status": "ok", "telefono": telefono, "texto": texto,
-            "subniche": SESIONES.get(telefono, {}).get("subniche"),
-            "step": SESIONES.get(telefono, {}).get("step")}
+    threading.Thread(target=_procesar, args=(telefono, texto), daemon=True).start()
+    return {"status": "processing", "telefono": telefono}
 
 
-@router.get("/propiedades")
-def ver_propiedades(tipo: str = None, operacion: str = None, zona: str = None):
-    props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona)
-    return {"total": len(props), "propiedades": props}
-
-
-@router.get("/crm/propiedades")
-def crm_propiedades():
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
-        return {"records": [], "error": "INMO_DEMO_AIRTABLE_BASE no configurado"}
-    url     = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
-    records, offset = [], None
-    while True:
-        params = {"pageSize": 100}
-        if offset:
-            params["offset"] = offset
-        r    = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
-        data = r.json()
-        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
-        offset   = data.get("offset")
-        if not offset:
-            break
-    return {"total": len(records), "records": records}
-
-
+# ─── CRM ENDPOINTS ────────────────────────────────────────────────────────────
 @router.get("/crm/clientes")
 def crm_clientes():
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
-        return {"records": [], "error": "INMO_DEMO_AIRTABLE_BASE no configurado"}
-    url     = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return {"records": [], "error": "Airtable no configurado"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
     records, offset = [], None
     while True:
         params = {"pageSize": 100}
         if offset:
             params["offset"] = offset
-        r    = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
+        r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
         data = r.json()
         records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
-        offset   = data.get("offset")
+        offset = data.get("offset")
         if not offset:
             break
     return {"total": len(records), "records": records}
 
 
 @router.patch("/crm/clientes/{record_id}")
-async def actualizar_cliente(record_id: str, request: Request):
-    """Actualiza campos de un lead en Airtable (Estado, datos, notas, etc.)."""
+async def crm_actualizar_cliente(record_id: str, request: Request):
     from fastapi import HTTPException
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
         return {"status": "error", "detalle": "Airtable no configurado"}
-    try:
-        body = await request.json()
-    except Exception:
-        return {"status": "error", "detalle": "body no es JSON válido"}
-
+    body = await request.json()
     CAMPOS_VALIDOS = {
         "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
-        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Subniche", "Fuente",
-        "fecha_ultimo_contacto",
+        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Fuente", "Llego_WhatsApp",
     }
     ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
-
-    # Acepta campos directamente o bajo 'fields'
     fields = body.get("fields", body)
     campos = {k: v for k, v in fields.items() if k in CAMPOS_VALIDOS and v is not None}
-
     if "Estado" in campos and campos["Estado"] not in ESTADOS_VALIDOS:
         raise HTTPException(status_code=422, detail=f"Estado inválido. Valores: {sorted(ESTADOS_VALIDOS)}")
-
     if not campos:
         return {"status": "error", "detalle": "Nada que actualizar"}
-
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}/{record_id}"
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}/{record_id}"
     r = requests.patch(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
     if r.status_code in (200, 201):
         return {"status": "ok", "record_id": record_id, "campos": campos}
@@ -1314,105 +1278,49 @@ async def actualizar_cliente(record_id: str, request: Request):
 
 @router.post("/crm/clientes")
 async def crm_crear_cliente(request: Request):
-    """Crea un nuevo lead en Airtable desde el CRM."""
     from fastapi import HTTPException
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
         raise HTTPException(status_code=500, detail="Airtable no configurado")
     data = await request.json()
     CAMPOS_VALIDOS = {
         "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
-        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Subniche", "Fuente", "Llego_WhatsApp",
+        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Fuente", "Llego_WhatsApp",
     }
     campos = {k: v for k, v in data.items() if k in CAMPOS_VALIDOS and v is not None}
     campos.setdefault("Estado", "no_contactado")
     ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
     if campos["Estado"] not in ESTADOS_VALIDOS:
         raise HTTPException(status_code=422, detail=f"Estado inválido: {campos['Estado']}")
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
     r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=10)
     if r.status_code not in (200, 201):
         raise HTTPException(status_code=r.status_code, detail=r.text)
     return {"status": "ok", "record": r.json()}
 
 
-@router.post("/crm/propiedades")
-async def crm_crear_propiedad(request: Request):
-    """Crea una nueva propiedad en Airtable."""
-    from fastapi import HTTPException
+@router.get("/crm/propiedades")
+def crm_propiedades():
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
-        raise HTTPException(status_code=500, detail="Airtable no configurado")
-    data = await request.json()
-    fields = data.get("fields", data)
+        return {"records": [], "error": "Airtable no configurado"}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
-    r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
-    if r.status_code not in (200, 201):
-        raise HTTPException(status_code=r.status_code, detail=r.text)
-    return r.json()
-
-
-@router.patch("/crm/propiedades/{record_id}")
-async def crm_editar_propiedad(record_id: str, request: Request):
-    """Actualiza una propiedad existente en Airtable."""
-    from fastapi import HTTPException
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
-        raise HTTPException(status_code=500, detail="Airtable no configurado")
-    data = await request.json()
-    fields = data.get("fields", data)
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}/{record_id}"
-    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
-    if r.status_code not in (200, 201):
-        raise HTTPException(status_code=r.status_code, detail=r.text)
-    return r.json()
-
-
-@router.post("/crm/upload-imagen")
-async def crm_upload_imagen(request: Request):
-    """Recibe imagen multipart, la sube a Cloudinary y devuelve la URL."""
-    from fastapi import HTTPException
-    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_UPLOAD_PRESET:
-        raise HTTPException(status_code=500, detail="Cloudinary no configurado")
-    form = await request.form()
-    file = form.get("file")
-    if not file:
-        raise HTTPException(status_code=400, detail="No se recibió ningún archivo")
-    content = await file.read()
-    resp = requests.post(
-        f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
-        files={"file": (file.filename, content, file.content_type)},
-        data={"upload_preset": CLOUDINARY_UPLOAD_PRESET, "folder": "demos/inmobiliaria"},
-        timeout=30,
-    )
-    if resp.status_code not in (200, 201):
-        raise HTTPException(status_code=resp.status_code, detail=resp.text[:300])
-    return {"url": resp.json().get("secure_url")}
-
-
-# ─── CLIENTES ACTIVOS ─────────────────────────────────────────────────────────
-def _calcular_estado_pago(fields: dict) -> str:
-    from datetime import date
-    total   = fields.get("Cuotas_Total")
-    pagadas = fields.get("Cuotas_Pagadas")
-    if total and pagadas is not None and int(pagadas) >= int(total):
-        return "Cancelado"
-    venc_str = fields.get("Proximo_Vencimiento")
-    if not venc_str:
-        return fields.get("Estado_Pago", "Al día")
-    try:
-        venc = date.fromisoformat(venc_str)
-        hoy  = date.today()
-        if venc >= hoy:
-            return "Al día"
-        dias = (hoy - venc).days
-        return "Atrasado" if dias <= 90 else "En mora"
-    except Exception:
-        return fields.get("Estado_Pago", "Al día")
+    records, offset = [], None
+    while True:
+        params = {"pageSize": 100}
+        if offset:
+            params["offset"] = offset
+        r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
+        data = r.json()
+        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
+        offset = data.get("offset")
+        if not offset:
+            break
+    return {"total": len(records), "records": records}
 
 
 @router.get("/crm/activos")
 def crm_activos():
-    """Lista todos los clientes activos con estado de pago calculado."""
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
-        return {"records": []}
+        return {"records": [], "error": "Airtable no configurado"}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
     records, offset = [], None
     while True:
@@ -1421,70 +1329,48 @@ def crm_activos():
             params["offset"] = offset
         r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
         data = r.json()
-        for rec in data.get("records", []):
-            fields = rec["fields"]
-            fields["Estado_Pago"] = _calcular_estado_pago(fields)
-            records.append({"id": rec["id"], **fields})
+        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
         offset = data.get("offset")
         if not offset:
             break
-    return {"records": records}
+    return {"total": len(records), "records": records}
 
 
 @router.post("/crm/activos")
 async def crm_crear_activo(request: Request):
     from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
     data = await request.json()
     fields = data.get("fields", data)
-    fields = {k: v for k, v in fields.items() if v is not None and v != ""}
-    fields["Estado_Pago"] = _calcular_estado_pago(fields)
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
     r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
     if r.status_code not in (200, 201):
         raise HTTPException(status_code=r.status_code, detail=r.text)
-    return r.json()
+    return {"status": "ok", "record": r.json()}
 
 
 @router.patch("/crm/activos/{record_id}")
-async def crm_editar_activo(record_id: str, request: Request):
+async def crm_actualizar_activo(record_id: str, request: Request):
     from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
     data = await request.json()
     fields = data.get("fields", data)
-    fields = {k: v for k, v in fields.items() if v is not None and v != ""}
-    fields["Estado_Pago"] = _calcular_estado_pago(fields)
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
-    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=8)
     if r.status_code not in (200, 201):
         raise HTTPException(status_code=r.status_code, detail=r.text)
-    return r.json()
+    return {"status": "ok", "record": r.json()}
 
 
 @router.delete("/crm/activos/{record_id}")
-async def crm_eliminar_activo(record_id: str):
+def crm_eliminar_activo(record_id: str):
     from fastapi import HTTPException
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        raise HTTPException(status_code=500, detail="Airtable no configurado")
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
-    r = requests.delete(url, headers=AT_HEADERS, timeout=10)
+    r = requests.delete(url, headers=AT_HEADERS, timeout=8)
     if r.status_code not in (200, 201):
         raise HTTPException(status_code=r.status_code, detail=r.text)
-    return {"status": "ok"}
-
-
-@router.get("/config")
-def ver_config():
-    return {
-        "nombre":        NOMBRE_EMPRESA,
-        "ciudad":        CIUDAD,
-        "asesor":        NOMBRE_ASESOR,
-        "numero_bot":    NUMERO_BOT[:6] + "..." if NUMERO_BOT else "❌ no configurado",
-        "numero_asesor": NUMERO_ASESOR[:6] + "..." if NUMERO_ASESOR else "❌ no configurado",
-        "moneda":        MONEDA,
-        "zonas":         ZONAS_LIST,
-        "evolution":     "✅" if (EVOLUTION_API_URL and EVOLUTION_API_KEY) else "❌",
-        "airtable":           "✅" if AIRTABLE_TOKEN else "❌",
-        "airtable_base":      AIRTABLE_BASE_ID or "❌",
-        "airtable_clientes":  AIRTABLE_TABLE_CLIENTES or "❌ INMO_DEMO_TABLE_CLIENTES no seteada",
-        "airtable_props":     AIRTABLE_TABLE_PROPS or "❌ INMO_DEMO_TABLE_PROPS no seteada",
-        "gemini":        "✅" if GEMINI_API_KEY else "❌",
-        "cal_com":       "✅ activo" if _cal_disponible() else "⚠️ no configurado (derivación a asesor)",
-        "subnichos":     list(SUBNICHE_LABELS.keys()),
-    }
+    return {"status": "ok", "deleted": record_id}
