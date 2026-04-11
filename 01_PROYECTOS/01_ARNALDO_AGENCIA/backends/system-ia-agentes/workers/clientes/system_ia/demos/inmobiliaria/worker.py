@@ -685,6 +685,16 @@ MSG_EMAIL_CTA = (
 
 # ─── FLUJO PRINCIPAL ──────────────────────────────────────────────────────────
 def _procesar(telefono: str, texto: str) -> None:
+    try:
+        _procesar_interno(telefono, texto)
+    except Exception as e:
+        import traceback
+        print(f"[MICA-DEMO] ERROR en _procesar tel={telefono}: {e}")
+        print(traceback.format_exc())
+
+
+def _procesar_interno(telefono: str, texto: str) -> None:
+    print(f"[MICA-DEMO] _procesar tel={telefono} texto={texto[:50]!r}")
     texto = texto.strip()
     texto_lower = texto.lower()
     sesion = SESIONES.get(telefono, {})
