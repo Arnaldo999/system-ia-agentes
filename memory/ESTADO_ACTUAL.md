@@ -71,3 +71,24 @@ Producción de Maicol intacta — sin redeploy ni cambios en runtime.
 3. Validar que no hay falsos positivos
 4. Luego decidir qué workflows viejos se apagan
 5. Fase 2.3: auditor_ycloud + auditor_tokens
+
+### Auditoría Diaria script-first — Fase 2.3 ✅ TESTEADO
+- `auditor_ycloud.py` — número WhatsApp Maicol (YCloud) — testeado ✅
+- `auditor_tokens.py` — LinkedIn Arnaldo/Mica, Gemini, Airtable — testeado ✅
+- Ambos integrados en auditor_runner.py
+
+### Auditoría Diaria script-first — Fase 2.4 ✅ DEPLOYADO Y TESTEADO
+- `auditor_evolution.py` — instancias WhatsApp Mica (Evolution API) — testeado en Coolify ✅
+- `auditor_meta_provider.py` — credenciales Meta Robert (Lovbot) — testeado en Coolify ✅
+- Ambos integrados en auditor_runner.py
+- Endpoint testing: `/debug/auditor-runner` agrega al main.py para ejecución via HTTP
+- **Deployado a Coolify Arnaldo el 2026-04-11 a las 07:40 ARG**
+- Scheduled tasks habilitadas en Coolify:
+  - "Auditoría Diaria" → 0 11 * * * (11 AM ARG) ✅
+  - "Guardia Crítica" → */5 * * * * (cada 5 min) ✅
+
+## Estado actual (2026-04-11 07:40 ARG)
+- Fase 2.4: auditor_evolution + auditor_meta_provider LIVE en Coolify
+- Scheduled task "Auditoría Diaria" esperando ejecución automática a las 11 AM
+- Reporte Telegram se enviará cuando haya alertas
+- Sistema listo para monitoreo continuo multi-proyecto
