@@ -1,23 +1,20 @@
 """
 Auditor de Tokens — Fase 2.3
 ==============================
-Verifica vencimiento de tokens críticos del ecosistema.
-Chequea: LinkedIn Arnaldo, LinkedIn Mica, Gemini API, Airtable.
+Verifica validez de tokens críticos del ecosistema.
+Chequea: LinkedIn Arnaldo (token en Supabase), LinkedIn Mica (fecha env var),
+         Gemini API, Airtable.
 
-Interfaz estándar:
-    run() -> dict con keys: auditor, ok, alertas[], detalle{}
+Estrategia LinkedIn:
+- Arnaldo: lee token desde Supabase tabla `clientes`, hace llamada real a /v2/userinfo
+- Mica: verifica fecha de vencimiento desde env var LINKEDIN_EXPIRY_MICA
 
 Variables de entorno requeridas:
-    LINKEDIN_EXPIRY_ARNALDO  → fecha vencimiento token LinkedIn Arnaldo (ISO: YYYY-MM-DD)
-    LINKEDIN_EXPIRY_MICA     → fecha vencimiento token LinkedIn Mica (ISO: YYYY-MM-DD)
-    GEMINI_API_KEY           → API key Gemini (test de accesibilidad)
-    AIRTABLE_API_KEY         → API key Airtable (test de accesibilidad)
-
-Severidades LinkedIn:
-    ≤3d  → crítico 🔴
-    ≤7d  → urgente 🟠
-    ≤14d → importante 🟡
-    ≤30d → aviso 🔵
+    SUPABASE_URL            → URL del proyecto Supabase
+    SUPABASE_KEY            → API key Supabase (service role o anon)
+    LINKEDIN_EXPIRY_MICA    → fecha vencimiento token LinkedIn Mica (ISO: YYYY-MM-DD)
+    GEMINI_API_KEY          → API key Gemini (test de accesibilidad)
+    AIRTABLE_API_KEY        → API key Airtable (test de accesibilidad)
 """
 
 import os
@@ -27,7 +24,8 @@ from dotenv import load_dotenv
 
 load_dotenv()  # en container las vars vienen del entorno Coolify
 
-LINKEDIN_EXPIRY_ARNALDO = os.getenv("LINKEDIN_EXPIRY_ARNALDO", "")
+SUPABASE_URL            = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY            = os.getenv("SUPABASE_KEY", "")
 LINKEDIN_EXPIRY_MICA    = os.getenv("LINKEDIN_EXPIRY_MICA", "2026-06-09")
 GEMINI_API_KEY          = os.getenv("GEMINI_API_KEY", "")
 AIRTABLE_API_KEY        = os.getenv("AIRTABLE_API_KEY") or os.getenv("AIRTABLE_TOKEN", "")
@@ -42,32 +40,72 @@ UMBRALES = [
 ]
 
 
-def _check_linkedin(nombre: str, fecha_str: str) -> dict:
+def _check_linkedin_arnaldo() -> dict:
+    """Lee token desde Supabase y verifica contra API LinkedIn."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return {"token": "LinkedIn Arnaldo", "ok": False,
+                "tipo": "config_faltante", "detalle": "SUPABASE_URL/KEY no configuradas"}
+    try:
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/clientes",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"},
+            params={"cliente_id": "eq.Arnaldo_Ayala", "select": "linkedin_access_token"},
+            timeout=REQUEST_TIMEOUT,
+        )
+        r.raise_for_status()
+        rows = r.json()
+        if not rows or not rows[0].get("linkedin_access_token"):
+            return {"token": "LinkedIn Arnaldo", "ok": False,
+                    "tipo": "token_no_encontrado", "detalle": "no hay token en Supabase"}
+        token = rows[0]["linkedin_access_token"]
+    except Exception as e:
+        return {"token": "LinkedIn Arnaldo", "ok": False,
+                "tipo": "supabase_error", "detalle": f"error leyendo Supabase: {e}"}
+
+    # Verificar token contra API LinkedIn
+    try:
+        li = requests.get(
+            "https://api.linkedin.com/v2/userinfo",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if li.status_code == 200:
+            return {"token": "LinkedIn Arnaldo", "ok": True, "detalle": "token válido"}
+        if li.status_code == 401:
+            return {"token": "LinkedIn Arnaldo", "ok": False,
+                    "tipo": "token_vencido", "detalle": "token inválido o vencido (401) — renovar"}
+        return {"token": "LinkedIn Arnaldo", "ok": False,
+                "tipo": "token_invalido", "detalle": f"HTTP {li.status_code}"}
+    except Exception as e:
+        return {"token": "LinkedIn Arnaldo", "ok": False,
+                "tipo": "api_inaccesible", "detalle": f"no responde LinkedIn API: {e}"}
+
+
+def _check_linkedin_mica(fecha_str: str) -> dict:
+    """Verifica fecha de vencimiento del token de Mica."""
     if not fecha_str:
-        return {"token": f"LinkedIn {nombre}", "ok": True,
-                "detalle": "fecha no configurada — skip"}
+        return {"token": "LinkedIn Mica", "ok": True, "detalle": "fecha no configurada — skip"}
     try:
         vence = datetime.date.fromisoformat(fecha_str)
     except ValueError:
-        return {"token": f"LinkedIn {nombre}", "ok": False,
-                "tipo": "config_invalida",
-                "detalle": f"LINKEDIN_EXPIRY_{nombre.upper()} tiene formato inválido: {fecha_str}"}
+        return {"token": "LinkedIn Mica", "ok": False,
+                "tipo": "config_invalida", "detalle": f"formato inválido: {fecha_str}"}
 
     hoy  = datetime.date.today()
     dias = (vence - hoy).days
 
     if dias < 0:
-        return {"token": f"LinkedIn {nombre}", "ok": False,
+        return {"token": "LinkedIn Mica", "ok": False,
                 "tipo": "token_vencido",
                 "detalle": f"venció hace {abs(dias)} días ({fecha_str})"}
 
     for umbral, severidad, icono in UMBRALES:
         if dias <= umbral:
-            return {"token": f"LinkedIn {nombre}", "ok": False,
+            return {"token": "LinkedIn Mica", "ok": False,
                     "tipo": "token_por_vencer",
                     "detalle": f"{icono} {severidad} — {dias} días restantes (vence {fecha_str})"}
 
-    return {"token": f"LinkedIn {nombre}", "ok": True,
+    return {"token": "LinkedIn Mica", "ok": True,
             "detalle": f"{dias} días restantes (vence {fecha_str})"}
 
 
@@ -113,8 +151,8 @@ def _check_airtable() -> dict:
 
 def run() -> dict:
     checks = [
-        _check_linkedin("Arnaldo", LINKEDIN_EXPIRY_ARNALDO),
-        _check_linkedin("Mica",    LINKEDIN_EXPIRY_MICA),
+        _check_linkedin_arnaldo(),
+        _check_linkedin_mica(LINKEDIN_EXPIRY_MICA),
         _check_gemini(),
         _check_airtable(),
     ]
