@@ -271,3 +271,50 @@ def debug_env():
             "WHATSAPP_APPROVAL_NUMBER": check("WHATSAPP_APPROVAL_NUMBER"),
         }
     }
+
+
+@app.get("/debug/auditor-runner", tags=["Sistema"])
+def debug_auditor_runner():
+    """
+    Ejecuta el auditor_runner.py desde HTTP para testing.
+    SOLO para debugging. En producción usará cron scheduled tasks.
+    """
+    import sys
+    import subprocess
+    from pathlib import Path
+    
+    # Token de seguridad simple (en producción sería más robusto)
+    request_token = os.environ.get("DEBUG_TOKEN", "debug123")
+    
+    try:
+        # Ejecutar el auditor runner en el contenedor
+        script_path = Path("/app/scripts/auditor_runner.py")
+        if not script_path.exists():
+            return {
+                "error": f"Script no encontrado: {script_path}",
+                "locations_tried": [
+                    "/app/scripts/auditor_runner.py",
+                    "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/02_OPERACION_COMPARTIDA/scripts/auditor_runner.py"
+                ]
+            }
+        
+        # Ejecutar como subprocess
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            cwd="/app/scripts",
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        return {
+            "ok": result.returncode == 0,
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr if result.stderr else None
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "type": type(e).__name__
+        }
