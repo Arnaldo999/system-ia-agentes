@@ -22,9 +22,7 @@ Auditores activos (Fase 2.4):
     - auditor_tokens         → LinkedIn Arnaldo/Mica, Gemini, Airtable
     - auditor_evolution      → instancias WhatsApp Mica (Evolution API)
     - auditor_meta_provider  → WABA + token Robert (Meta Graph API)
-
-Auditores pendientes (se agregan en fases siguientes):
-    - auditor_crm        (Fase 2.5)
+    - auditor_crm            → Supabase tenants + Airtable Maicol/Lau/Robert
 """
 
 import os
@@ -49,6 +47,7 @@ import auditor_ycloud
 import auditor_tokens
 import auditor_evolution
 import auditor_meta_provider
+import auditor_crm
 
 AUDITORES = [
     auditor_infra,
@@ -57,6 +56,7 @@ AUDITORES = [
     auditor_tokens,
     auditor_evolution,
     auditor_meta_provider,
+    auditor_crm,
 ]
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
