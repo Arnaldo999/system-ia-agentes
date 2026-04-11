@@ -5,17 +5,19 @@ Verifica estado de instancias WhatsApp de Mica via Evolution API.
 Chequea: instancia conectada, sesión activa, no hay QR pendiente.
 
 Instancias monitoreadas:
-    - System IA Demo (instancia base de Mica)
-    - Lau Emprende   (cliente activo de Mica)
+    - System IA Demo      (instancia base de Mica — EVOLUTION_INSTANCE)
+    - Lau Emprende        (cliente activo de Mica — LAU_EVOLUTION_INSTANCE)
+    - Demos               (demo inmobiliaria Mica — MICA_DEMO_EVOLUTION_INSTANCE)
 
 Interfaz estándar:
     run() -> dict con keys: auditor, ok, alertas[], detalle{}
 
 Variables de entorno requeridas:
-    EVOLUTION_API_URL   → URL base Evolution API
-    EVOLUTION_API_KEY   → API key Evolution
-    EVOLUTION_INSTANCE  → nombre instancia base (ej: "System IA Demo")
-    LAU_EVOLUTION_INSTANCE → nombre instancia Lau (ej: "Lau Emprende")
+    EVOLUTION_API_URL              → URL base Evolution API
+    EVOLUTION_API_KEY              → API key Evolution
+    EVOLUTION_INSTANCE             → nombre instancia base (ej: "System IA Demo")
+    LAU_EVOLUTION_INSTANCE         → nombre instancia Lau (ej: "Lau Emprende")
+    MICA_DEMO_EVOLUTION_INSTANCE   → nombre instancia demo (ej: "Demos")
 """
 
 import os

@@ -8,6 +8,7 @@ Checks:
     2. Airtable Maicol  — base accesible (AIRTABLE_TOKEN_MAICOL + AIRTABLE_BASE_ID_MAICOL)
     3. Airtable Lau     — base accesible (AIRTABLE_API_KEY + LAU_AIRTABLE_BASE_ID)
     4. Airtable Robert  — base accesible (AIRTABLE_API_KEY + ROBERT_AIRTABLE_BASE)
+    5. Airtable Mica    — base accesible (AIRTABLE_API_KEY + MICA_AIRTABLE_BASE_ID)
 
 Interfaz estándar:
     run() -> dict con keys: auditor, ok, alertas[], detalle{}
@@ -15,7 +16,10 @@ Interfaz estándar:
 Variables de entorno requeridas:
     SUPABASE_URL, SUPABASE_KEY
     AIRTABLE_TOKEN_MAICOL, AIRTABLE_BASE_ID_MAICOL
-    AIRTABLE_API_KEY, LAU_AIRTABLE_BASE_ID, ROBERT_AIRTABLE_BASE
+    AIRTABLE_API_KEY
+    LAU_AIRTABLE_BASE_ID
+    ROBERT_AIRTABLE_BASE
+    MICA_AIRTABLE_BASE_ID
 """
 
 import os
