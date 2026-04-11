@@ -473,7 +473,7 @@ def _lista_titulos(props: list[dict], label: str) -> str:
         tag = " ⏳" if "Reservado" in str(p.get("Disponible", "")) else ""
         lineas.append(f"*{i}.* {p.get('Titulo', 'Propiedad')} — {precio_str}{tag}")
     lineas.append("\nRespondé con el *número* para ver la ficha.")
-    lineas.append("*0* volver | *asesor* hablar con un humano")
+    lineas.append("*1* Hablar con un asesor | *0* volver")
     return "\n".join(lineas)
 
 
@@ -1088,8 +1088,8 @@ async def recibir_lead_formulario(request: Request):
     SESIONES[telefono] = sesion_nueva
 
     # ── Enviar bienvenida personalizada via WhatsApp ───────────────────────────
-    if not YCLOUD_API_KEY or not NUMERO_BOT:
-        print(f"[LEAD-FORM] tel={telefono} — YCloud no configurado, solo Airtable registrado")
+    if not EVOLUTION_API_URL or not EVOLUTION_API_KEY or not NUMERO_BOT:
+        print(f"[LEAD-FORM] tel={telefono} — Evolution no configurado, solo Airtable registrado")
         return {"status": "ok_airtable_only", "telefono": telefono, "score": score}
 
     # Saludo personalizado
@@ -1446,7 +1446,7 @@ def ver_config():
         "numero_asesor": NUMERO_ASESOR[:6] + "..." if NUMERO_ASESOR else "❌ no configurado",
         "moneda":        MONEDA,
         "zonas":         ZONAS_LIST,
-        "ycloud":        "✅" if YCLOUD_API_KEY else "❌",
+        "evolution":     "✅" if (EVOLUTION_API_URL and EVOLUTION_API_KEY) else "❌",
         "airtable":           "✅" if AIRTABLE_TOKEN else "❌",
         "airtable_base":      AIRTABLE_BASE_ID or "❌",
         "airtable_clientes":  AIRTABLE_TABLE_CLIENTES or "❌ INMO_DEMO_TABLE_CLIENTES no seteada",
