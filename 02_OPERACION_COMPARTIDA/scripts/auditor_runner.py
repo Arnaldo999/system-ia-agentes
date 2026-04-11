@@ -15,15 +15,15 @@ Variables de entorno requeridas:
     TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
     (las variables de cada auditor se cargan desde sus propios módulos)
 
-Auditores activos (Fase 2.2):
-    - auditor_infra      → n8n Mica + Lovbot health
-    - auditor_workflows  → workflows críticos × 3 instancias
+Auditores activos (Fase 2.4):
+    - auditor_infra          → n8n Mica + Lovbot health
+    - auditor_workflows      → workflows críticos × 3 instancias
+    - auditor_ycloud         → número WhatsApp Maicol (YCloud)
+    - auditor_tokens         → LinkedIn Arnaldo/Mica, Gemini, Airtable
+    - auditor_evolution      → instancias WhatsApp Mica (Evolution API)
+    - auditor_meta_provider  → WABA + token Robert (Meta Graph API)
 
 Auditores pendientes (se agregan en fases siguientes):
-    - auditor_ycloud     (Fase 2.3)
-    - auditor_tokens     (Fase 2.3)
-    - auditor_evolution  (Fase 2.4)
-    - auditor_meta_provider (Fase 2.4)
     - auditor_crm        (Fase 2.5)
 """
 
@@ -47,12 +47,16 @@ import auditor_infra
 import auditor_workflows
 import auditor_ycloud
 import auditor_tokens
+import auditor_evolution
+import auditor_meta_provider
 
 AUDITORES = [
     auditor_infra,
     auditor_workflows,
     auditor_ycloud,
     auditor_tokens,
+    auditor_evolution,
+    auditor_meta_provider,
 ]
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
