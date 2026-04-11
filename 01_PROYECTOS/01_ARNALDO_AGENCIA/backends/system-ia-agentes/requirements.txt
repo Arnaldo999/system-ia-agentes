@@ -8,3 +8,4 @@ Pillow>=10.0.0
 google-genai>=1.0.0
 supabase>=2.3.0
 cloudinary>=1.36.0
+python-dotenv>=1.0.0
