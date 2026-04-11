@@ -1,21 +1,21 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "has": [{"type":"host","value":"form.backurbanizaciones.com"}], "destination": "/DEMOS/back-urbanizaciones/formulario.html" },
-    { "source": "/mapa-publico.html", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}], "destination": "/DEMOS/back-urbanizaciones/mapa-publico.html" },
-    { "source": "/(.*)", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}],  "destination": "/DEMOS/back-urbanizaciones/crm.html" },
-    { "source": "/(.*)", "has": [{"type":"host","value":"crm.lovbot.ai"}],             "destination": "/DEMOS/INMOBILIARIA/demo-crm-mvp.html" },
-    { "source": "/crm",                       "destination": "/DEMOS/INMOBILIARIA/demo-crm-mvp.html" },
-    { "source": "/dev/crm",                   "destination": "/DEMOS/INMOBILIARIA/dev/crm.html" },
-    { "source": "/dev/admin",                 "destination": "/DEMOS/INMOBILIARIA/dev/admin.html" },
-    { "source": "/(.*)", "has": [{"type":"host","value":"admin.lovbot.ai"}],            "destination": "/DEMOS/INMOBILIARIA/dev/admin.html" },
-    { "source": "/informe",                   "destination": "/DEMOS/INMOBILIARIA/informe-mercado-inmobiliario.html" },
-    { "source": "/formulario-desarrolladora", "destination": "/DEMOS/INMOBILIARIA/formulario-desarrolladora.html" },
-    { "source": "/formulario-agencia",        "destination": "/DEMOS/INMOBILIARIA/formulario-agencia.html" },
-    { "source": "/formulario-agente",         "destination": "/DEMOS/INMOBILIARIA/formulario-agente.html" },
-    { "source": "/back-urbanizaciones/crm",        "destination": "/DEMOS/back-urbanizaciones/crm.html" },
-    { "source": "/back-urbanizaciones/formulario", "destination": "/DEMOS/back-urbanizaciones/formulario.html" },
-    { "source": "/gastronomia",                    "destination": "/DEMOS/GASTRONOMIA/gastronomia.html" },
-    { "source": "/system-ia/admin",                "destination": "/DEMOS/SYSTEM-IA/admin.html" },
-    { "source": "/system-ia/crm",                  "destination": "/DEMOS/SYSTEM-IA/crm.html" }
+    { "source": "/(.*)", "has": [{"type":"host","value":"form.backurbanizaciones.com"}], "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/formulario.html" },
+    { "source": "/mapa-publico.html", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}], "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/mapa-publico.html" },
+    { "source": "/(.*)", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}],  "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/crm.html" },
+    { "source": "/(.*)", "has": [{"type":"host","value":"crm.lovbot.ai"}],             "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html" },
+    { "source": "/crm",                       "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html" },
+    { "source": "/dev/crm",                   "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/crm.html" },
+    { "source": "/dev/admin",                 "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/admin.html" },
+    { "source": "/(.*)", "has": [{"type":"host","value":"admin.lovbot.ai"}],            "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/admin.html" },
+    { "source": "/informe",                   "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/informe-mercado-inmobiliario.html" },
+    { "source": "/formulario-desarrolladora", "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/formulario-desarrolladora.html" },
+    { "source": "/formulario-agencia",        "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/formulario-agencia.html" },
+    { "source": "/formulario-agente",         "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/formulario-agente.html" },
+    { "source": "/back-urbanizaciones/crm",        "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/crm.html" },
+    { "source": "/back-urbanizaciones/formulario", "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/formulario.html" },
+    { "source": "/gastronomia",                    "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/GASTRONOMIA/gastronomia.html" },
+    { "source": "/system-ia/admin",                "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/admin.html" },
+    { "source": "/system-ia/crm",                  "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/crm.html" }
   ]
 }
