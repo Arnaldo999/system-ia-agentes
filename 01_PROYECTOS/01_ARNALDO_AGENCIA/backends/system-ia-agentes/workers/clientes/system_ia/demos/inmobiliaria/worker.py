@@ -219,57 +219,65 @@ def _cal_disponible() -> bool:
 
 
 def _cal_obtener_slots(dias: int = 7) -> list[dict]:
-    """Retorna hasta 6 slots disponibles en los próximos N días."""
+    """Retorna hasta 6 slots disponibles en los próximos N días (Cal.com API v2)."""
     if not _cal_disponible():
         return []
-    from datetime import datetime, timedelta
-    start = datetime.utcnow().strftime("%Y-%m-%d")
-    end   = (datetime.utcnow() + timedelta(days=dias)).strftime("%Y-%m-%d")
+    from datetime import datetime, timedelta, timezone
+    start = datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00Z")
+    end   = (datetime.now(timezone.utc) + timedelta(days=dias)).strftime("%Y-%m-%dT00:00:00Z")
     try:
         r = requests.get(
-            "https://api.cal.com/v1/slots",
-            params={"apiKey": CAL_API_KEY, "eventTypeId": CAL_EVENT_ID,
-                    "startTime": start, "endTime": end},
+            "https://api.cal.com/v2/slots",
+            params={"eventTypeId": CAL_EVENT_ID, "start": start, "end": end},
+            headers={
+                "Authorization": f"Bearer {CAL_API_KEY}",
+                "cal-api-version": "2024-09-04",
+            },
             timeout=10,
         )
         if r.status_code == 200:
-            slots_raw = r.json().get("slots", {})
+            slots_raw = r.json().get("data", {})
             slots = []
             for fecha, lista in slots_raw.items():
                 for slot in lista[:2]:
-                    if slot.get("time"):
-                        slots.append({"fecha": fecha, "time": slot["time"]})
+                    if slot.get("start"):
+                        slots.append({"fecha": fecha, "time": slot["start"]})
             return slots[:6]
+        print(f"[MICA-CAL] Error slots {r.status_code}: {r.text[:200]}")
     except Exception as e:
         print(f"[MICA-CAL] Error slots: {e}")
     return []
 
 
 def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, notas: str = "") -> dict:
-    """Crea una reserva en Cal.com."""
+    """Crea una reserva en Cal.com (API v2)."""
     if not _cal_disponible():
         return {"ok": False, "error": "Cal.com no configurado"}
     try:
         r = requests.post(
-            "https://api.cal.com/v1/bookings",
-            params={"apiKey": CAL_API_KEY},
+            "https://api.cal.com/v2/bookings",
+            headers={
+                "Authorization": f"Bearer {CAL_API_KEY}",
+                "cal-api-version": "2024-08-13",
+                "Content-Type": "application/json",
+            },
             json={
                 "eventTypeId": int(CAL_EVENT_ID),
                 "start": slot_time,
-                "responses": {
+                "attendee": {
                     "name": nombre,
-                    "email": email or (re.sub(r'\D', '', telefono) + "@lovbot.ai"),
-                    "phone": telefono,
+                    "email": email or (re.sub(r'\D', '', telefono) + "@system-ia.com"),
+                    "timeZone": "America/Argentina/Buenos_Aires",
+                    "language": "es",
+                    "phoneNumber": "+" + re.sub(r'\D', '', telefono),
                 },
-                "metadata": {"fuente": "WhatsApp Bot Lovbot", "notas": notas},
-                "timeZone": "America/Mexico_City",
-                "language": "es",
+                "metadata": {"fuente": "WhatsApp Bot System IA", "notas": notas[:200] if notas else ""},
             },
             timeout=10,
         )
         if r.status_code in (200, 201):
-            data = r.json()
-            return {"ok": True, "uid": data.get("uid", ""), "start": data.get("startTime", slot_time)}
+            data = r.json().get("data", {})
+            return {"ok": True, "uid": data.get("uid", ""), "start": data.get("start", slot_time)}
         print(f"[MICA-CAL] Error {r.status_code}: {r.text[:300]}")
         return {"ok": False, "error": r.text[:200]}
     except Exception as e:
@@ -283,16 +291,16 @@ _DIAS_ES = {
 
 
 def _formatear_slots(slots: list[dict]) -> str:
-    """Formatea slots para mostrar en WhatsApp (en español)."""
+    """Formatea slots para mostrar en WhatsApp (en español, hora Argentina)."""
     from datetime import datetime, timezone, timedelta
     lineas = []
     for i, s in enumerate(slots, 1):
         try:
             dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
-            mx = dt.astimezone(timezone(timedelta(hours=-6)))
-            dia_en = mx.strftime("%A")
+            ar = dt.astimezone(timezone(timedelta(hours=-3)))
+            dia_en = ar.strftime("%A")
             dia_es = _DIAS_ES.get(dia_en, dia_en)
-            lineas.append(f"*{i}️⃣* {dia_es} {mx.strftime('%d/%m')} a las *{mx.strftime('%H:%M')}* hs")
+            lineas.append(f"*{i}️⃣* {dia_es} {ar.strftime('%d/%m')} a las *{ar.strftime('%H:%M')}* hs")
         except Exception:
             lineas.append(f"*{i}️⃣* {s['time']}")
     return "\n".join(lineas)
