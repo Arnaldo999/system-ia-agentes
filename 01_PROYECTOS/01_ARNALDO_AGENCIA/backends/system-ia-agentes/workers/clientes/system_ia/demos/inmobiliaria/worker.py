@@ -1178,7 +1178,8 @@ async def webhook_whatsapp(request: Request):
         return {"status": "error"}
 
     # Ignorar eventos que no son mensajes entrantes
-    event = body.get("event", "")
+    # Evolution puede enviar "messages.upsert" o "MESSAGES_UPSERT"
+    event = body.get("event", "").lower().replace("_", ".")
     if event and event != "messages.upsert":
         return {"status": "ignored", "event": event}
 
