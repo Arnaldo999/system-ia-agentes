@@ -48,6 +48,7 @@ from workers.shared.tenants import router as tenants_router, crm_router, admin_r
 
 # ── System IA — Clientes ──────────────────────────────────────────────────────
 from workers.clientes.system_ia.lau.worker import router as lau_router
+from workers.clientes.system_ia.demos.inmobiliaria.worker import router as mica_demo_inmo_router
 
 # ── System IA ─────────────────────────────────────────────────────────────────
 from workers.social.worker import router as social_router
@@ -94,6 +95,7 @@ app.include_router(robert_inmo_router)
 app.include_router(demo_inmobiliaria_router)
 app.include_router(demo_gastronomico_router)
 app.include_router(lau_router)
+app.include_router(mica_demo_inmo_router)
 app.include_router(social_router)
 
 
