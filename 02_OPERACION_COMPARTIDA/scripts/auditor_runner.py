@@ -45,10 +45,14 @@ REQUEST_TIMEOUT    = 10
 
 import auditor_infra
 import auditor_workflows
+import auditor_ycloud
+import auditor_tokens
 
 AUDITORES = [
     auditor_infra,
     auditor_workflows,
+    auditor_ycloud,
+    auditor_tokens,
 ]
 
 # ── Telegram ──────────────────────────────────────────────────────────────────

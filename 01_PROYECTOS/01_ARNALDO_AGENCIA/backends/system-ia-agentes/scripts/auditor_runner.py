@@ -34,7 +34,7 @@ import requests
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()  # en container las vars vienen del entorno Coolify
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID   = os.environ["TELEGRAM_CHAT_ID"]
@@ -45,10 +45,14 @@ REQUEST_TIMEOUT    = 10
 
 import auditor_infra
 import auditor_workflows
+import auditor_ycloud
+import auditor_tokens
 
 AUDITORES = [
     auditor_infra,
     auditor_workflows,
+    auditor_ycloud,
+    auditor_tokens,
 ]
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
