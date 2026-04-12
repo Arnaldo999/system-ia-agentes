@@ -48,6 +48,7 @@ import auditor_tokens
 import auditor_evolution
 import auditor_meta_provider
 import auditor_crm
+import auditor_social
 import auto_reparador
 
 AUDITORES = [
@@ -58,6 +59,7 @@ AUDITORES = [
     auditor_evolution,
     auditor_meta_provider,
     auditor_crm,
+    auditor_social,
 ]
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
@@ -91,6 +93,7 @@ TITULOS_AUDITOR = {
     "evolution": "💬 Evolution API",
     "meta":      "🌐 Meta Tech Provider",
     "crm":       "🗄️ CRM / Tenants",
+    "social":    "📱 Redes Sociales",
 }
 
 def _formatear_reporte(resultados: list[dict], fecha: str) -> str:
