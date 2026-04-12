@@ -5,8 +5,7 @@ Verifica estado de instancias WhatsApp de Mica via Evolution API.
 Chequea: instancia conectada, sesión activa, no hay QR pendiente.
 
 Instancias monitoreadas:
-    - System IA Demo      (instancia base de Mica — EVOLUTION_INSTANCE)
-    - Lau Emprende        (cliente activo de Mica — LAU_EVOLUTION_INSTANCE)
+    - Lau Emprende        (cliente activo — LAU_EVOLUTION_INSTANCE)
     - Demos               (demo inmobiliaria Mica — MICA_DEMO_EVOLUTION_INSTANCE)
 
 Interfaz estándar:
@@ -15,7 +14,6 @@ Interfaz estándar:
 Variables de entorno requeridas:
     EVOLUTION_API_URL              → URL base Evolution API
     EVOLUTION_API_KEY              → API key Evolution
-    EVOLUTION_INSTANCE             → nombre instancia base (ej: "System IA Demo")
     LAU_EVOLUTION_INSTANCE         → nombre instancia Lau (ej: "Lau Emprende")
     MICA_DEMO_EVOLUTION_INSTANCE   → nombre instancia demo (ej: "Demos")
 """
@@ -29,9 +27,8 @@ load_dotenv()  # en container las vars vienen del entorno Coolify
 
 EVOLUTION_API_URL  = os.getenv("EVOLUTION_API_URL", "").rstrip("/")
 EVOLUTION_API_KEY  = os.getenv("EVOLUTION_API_KEY", "")
-EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "System IA Demo")
 LAU_INSTANCE       = os.getenv("LAU_EVOLUTION_INSTANCE", "Lau Emprende")
-MICA_DEMO_INSTANCE = os.getenv("MICA_DEMO_EVOLUTION_INSTANCE", "")
+MICA_DEMO_INSTANCE = os.getenv("MICA_DEMO_EVOLUTION_INSTANCE", "Demos")
 
 REQUEST_TIMEOUT = 10
 RETRY_WAIT      = 5
@@ -95,7 +92,7 @@ def _check_instance(nombre: str) -> dict:
 
 
 def run() -> dict:
-    instancias = [EVOLUTION_INSTANCE, LAU_INSTANCE, MICA_DEMO_INSTANCE]
+    instancias = [LAU_INSTANCE, MICA_DEMO_INSTANCE]
     checks     = [_check_instance(i) for i in instancias if i]
     alertas    = [c for c in checks if not c["ok"]]
 
