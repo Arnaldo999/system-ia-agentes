@@ -48,6 +48,7 @@ import auditor_tokens
 import auditor_evolution
 import auditor_meta_provider
 import auditor_crm
+import auto_reparador
 
 AUDITORES = [
     auditor_infra,
@@ -151,9 +152,17 @@ def main():
         print("[runner] Todo OK — sin alertas, no se envía Telegram")
         return
 
+    # ── Auto-reparación ──────────────────────────────────────────────────────
+    print(f"[runner] {total_alertas} alertas detectadas — ejecutando auto-reparador...")
+    acciones = auto_reparador.reparar(resultados)
+    texto_reparacion = auto_reparador.formatear_acciones(acciones)
+
     reporte = _formatear_reporte(resultados, fecha)
+    if texto_reparacion:
+        reporte += texto_reparacion
+
     _enviar_telegram(reporte)
-    print(f"[runner] Reporte enviado — {total_alertas} alertas, {errores_runner} errores runner")
+    print(f"[runner] Reporte enviado — {total_alertas} alertas, {len(acciones)} reparaciones, {errores_runner} errores runner")
 
 
 if __name__ == "__main__":
