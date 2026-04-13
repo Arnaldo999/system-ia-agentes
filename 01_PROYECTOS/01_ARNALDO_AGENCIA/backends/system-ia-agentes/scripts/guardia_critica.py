@@ -126,6 +126,40 @@ def check_n8n() -> tuple[bool, str]:
     return False, "no responde"
 
 
+def check_n8n_mica() -> tuple[bool, str]:
+    """Chequea /healthz de n8n Mica (Easypanel)."""
+    url = os.getenv("N8N_MICA_URL", "https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host") + "/healthz"
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT)
+            if r.status_code == 200:
+                return True, "ok"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_n8n_lovbot() -> tuple[bool, str]:
+    """Chequea /healthz de n8n Lovbot (Hetzner)."""
+    url = os.getenv("N8N_LOVBOT_URL", "https://n8n.lovbot.ai") + "/healthz"
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT)
+            if r.status_code == 200:
+                return True, "ok"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
 def check_coolify() -> tuple[bool, str]:
     """Consulta la API Coolify para verificar que la app esté running:healthy."""
     url = f"{COOLIFY_API_URL}/api/v1/applications/{COOLIFY_APP_UUID}"
@@ -169,15 +203,19 @@ def main():
     estado = cargar_estado()
 
     checks = {
-        "fastapi":  check_fastapi,
-        "n8n":      check_n8n,
-        "coolify":  check_coolify,
+        "fastapi":    check_fastapi,
+        "n8n":        check_n8n,
+        "n8n_mica":   check_n8n_mica,
+        "n8n_lovbot": check_n8n_lovbot,
+        "coolify":    check_coolify,
     }
 
     nombres = {
-        "fastapi": "FastAPI Arnaldo",
-        "n8n":     "n8n Arnaldo",
-        "coolify": "Coolify app",
+        "fastapi":    "FastAPI Arnaldo",
+        "n8n":        "n8n Arnaldo",
+        "n8n_mica":   "n8n Mica",
+        "n8n_lovbot": "n8n Lovbot",
+        "coolify":    "Coolify app",
     }
 
     for servicio, fn in checks.items():
