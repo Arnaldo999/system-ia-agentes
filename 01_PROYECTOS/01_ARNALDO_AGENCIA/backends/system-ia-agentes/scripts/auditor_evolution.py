@@ -29,7 +29,7 @@ load_dotenv()  # en container las vars vienen del entorno Coolify
 
 EVOLUTION_API_URL  = os.getenv("EVOLUTION_API_URL", "").rstrip("/")
 EVOLUTION_API_KEY  = os.getenv("EVOLUTION_API_KEY", "")
-EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "System IA Demo")
+EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "")
 LAU_INSTANCE       = os.getenv("LAU_EVOLUTION_INSTANCE", "Lau Emprende")
 MICA_DEMO_INSTANCE = os.getenv("MICA_DEMO_EVOLUTION_INSTANCE", "")
 

@@ -70,7 +70,8 @@ def run() -> dict:
 
     # Buscar el número de Maicol
     numero = next((n for n in numeros if n.get("wabaPhoneNumber", "").replace("+", "") == NUMERO_MAICOL
-                   or n.get("displayPhoneNumber", "").replace("+", "").replace(" ", "") == NUMERO_MAICOL), None)
+                   or n.get("displayPhoneNumber", "").replace("+", "").replace(" ", "") == NUMERO_MAICOL
+                   or n.get("phoneNumber", "").replace("+", "").replace(" ", "") == NUMERO_MAICOL), None)
 
     if not numero:
         return {
