@@ -78,6 +78,19 @@ ZONAS_LIST = [z.strip() for z in _zonas_raw.split(",") if z.strip()]
 
 _gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
+# Importar módulo PostgreSQL
+try:
+    from workers.clientes.lovbot.robert_inmobiliaria import db_postgres as db
+    USE_POSTGRES = db._available()
+    if USE_POSTGRES:
+        print("[ROBERT] ✅ PostgreSQL disponible — usando DB directa")
+    else:
+        print("[ROBERT] ⚠️ PostgreSQL no configurado — usando Airtable")
+except ImportError:
+    USE_POSTGRES = False
+    db = None
+    print("[ROBERT] ⚠️ db_postgres no encontrado — usando Airtable")
+
 router = APIRouter(prefix="/clientes/lovbot/inmobiliaria", tags=["Robert — Inmobiliaria"])
 
 # ─── SESIONES EN MEMORIA ──────────────────────────────────────────────────────
@@ -1745,12 +1758,14 @@ async def webhook_whatsapp(request: Request):
 # ─── MÉTRICAS ────────────────────────────────────────────────────────────────
 @router.get("/crm/metricas")
 def crm_metricas():
-    """Retorna métricas del pipeline: leads por estado, tasa citas, tasa cierre."""
+    """Retorna métricas del pipeline."""
+    if USE_POSTGRES:
+        return db.get_metricas()
+    # Fallback Airtable
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
-        return {"error": "Airtable no configurado"}
+        return {"error": "DB no configurada"}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
     try:
-        # Leer todos los leads
         records, offset = [], None
         while True:
             params = {"pageSize": 100}
@@ -1762,122 +1777,82 @@ def crm_metricas():
             offset = data.get("offset")
             if not offset:
                 break
-
         total = len(records)
         if total == 0:
             return {"total": 0, "por_estado": {}, "tasa_citas": 0, "tasa_cierre": 0}
-
-        # Contar por estado
-        por_estado = {}
-        con_cita = 0
-        cerrados_ganados = 0
-        scores = {"caliente": 0, "tibio": 0, "frio": 0}
-        fuentes = {}
-
+        por_estado, con_cita, cerrados, scores, fuentes = {}, 0, 0, {"caliente":0,"tibio":0,"frio":0}, {}
         for rec in records:
             f = rec.get("fields", {})
-            estado = f.get("Estado", "no_contactado")
-            por_estado[estado] = por_estado.get(estado, 0) + 1
-
-            if f.get("Fecha_Cita"):
-                con_cita += 1
-            if estado == "cerrado_ganado":
-                cerrados_ganados += 1
-
-            # Score
-            score_val = f.get("Score", 0)
-            if isinstance(score_val, (int, float)):
-                if score_val >= 12:
-                    scores["caliente"] += 1
-                elif score_val >= 7:
-                    scores["tibio"] += 1
-                else:
-                    scores["frio"] += 1
-
-            # Fuentes
-            fuente = f.get("Fuente", "desconocido")
-            fuentes[fuente] = fuentes.get(fuente, 0) + 1
-
-        tasa_citas = round((con_cita / total) * 100, 1) if total > 0 else 0
-        tasa_cierre = round((cerrados_ganados / total) * 100, 1) if total > 0 else 0
-
-        return {
-            "total": total,
-            "por_estado": por_estado,
-            "scores": scores,
-            "fuentes": fuentes,
-            "con_cita": con_cita,
-            "cerrados_ganados": cerrados_ganados,
-            "tasa_citas": tasa_citas,
-            "tasa_cierre": tasa_cierre,
-        }
+            e = f.get("Estado", "no_contactado")
+            por_estado[e] = por_estado.get(e, 0) + 1
+            if f.get("Fecha_Cita"): con_cita += 1
+            if e == "cerrado_ganado": cerrados += 1
+            s = f.get("Score", 0) or 0
+            if s >= 12: scores["caliente"] += 1
+            elif s >= 7: scores["tibio"] += 1
+            else: scores["frio"] += 1
+            fu = f.get("Fuente", "desconocido")
+            fuentes[fu] = fuentes.get(fu, 0) + 1
+        return {"total": total, "por_estado": por_estado, "scores": scores, "fuentes": fuentes,
+                "con_cita": con_cita, "cerrados_ganados": cerrados,
+                "tasa_citas": round((con_cita/total)*100,1) if total else 0,
+                "tasa_cierre": round((cerrados/total)*100,1) if total else 0}
     except Exception as e:
         return {"error": str(e)}
 
 
-# ─── CRM ENDPOINTS ────────────────────────────────────────────────────────────
+# ─── CRM ENDPOINTS (PostgreSQL principal → Airtable fallback) ────────────────
+
 @router.get("/crm/clientes")
 def crm_clientes():
+    if USE_POSTGRES:
+        records = db.get_all_leads()
+        return {"total": len(records), "records": records}
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
-        return {"records": [], "error": "Airtable no configurado"}
+        return {"records": [], "error": "DB no configurada"}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
     records, offset = [], None
     while True:
         params = {"pageSize": 100}
-        if offset:
-            params["offset"] = offset
+        if offset: params["offset"] = offset
         r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
         data = r.json()
         records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
         offset = data.get("offset")
-        if not offset:
-            break
+        if not offset: break
     return {"total": len(records), "records": records}
 
 
 @router.patch("/crm/clientes/{record_id}")
 async def crm_actualizar_cliente(record_id: str, request: Request):
     from fastapi import HTTPException
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
-        return {"status": "error", "detalle": "Airtable no configurado"}
     body = await request.json()
-    CAMPOS_VALIDOS = {
-        "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
-        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Fuente", "Llego_WhatsApp",
-        "Ultima_Interaccion", "Propiedad_Interes", "Fuente_Detalle", "Ciudad",
-    }
-    ESTADOS_VALIDOS = {"no_contactado", "contactado", "calificado", "visita_agendada", "visito", "en_negociacion", "seguimiento", "cerrado_ganado", "cerrado_perdido"}
     fields = body.get("fields", body)
-    campos = {k: v for k, v in fields.items() if k in CAMPOS_VALIDOS and v is not None}
-    if "Estado" in campos and campos["Estado"] not in ESTADOS_VALIDOS:
+    ESTADOS_VALIDOS = {"no_contactado", "contactado", "calificado", "visita_agendada", "visito", "en_negociacion", "seguimiento", "cerrado_ganado", "cerrado_perdido"}
+    if "Estado" in fields and fields["Estado"] not in ESTADOS_VALIDOS:
         raise HTTPException(status_code=422, detail=f"Estado inválido. Valores: {sorted(ESTADOS_VALIDOS)}")
-    if not campos:
-        return {"status": "error", "detalle": "Nada que actualizar"}
+    if USE_POSTGRES:
+        ok = db.update_lead(record_id, fields)
+        return {"status": "ok" if ok else "error", "record_id": record_id}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}/{record_id}"
-    r = requests.patch(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=8)
     if r.status_code in (200, 201):
-        return {"status": "ok", "record_id": record_id, "campos": campos}
+        return {"status": "ok", "record_id": record_id}
     raise HTTPException(status_code=r.status_code, detail=r.text[:200])
 
 
 @router.post("/crm/clientes")
 async def crm_crear_cliente(request: Request):
     from fastapi import HTTPException
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
-        raise HTTPException(status_code=500, detail="Airtable no configurado")
     data = await request.json()
-    CAMPOS_VALIDOS = {
-        "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
-        "Presupuesto", "Zona", "Estado", "Notas_Bot", "Fuente", "Llego_WhatsApp",
-        "Ultima_Interaccion", "Propiedad_Interes", "Fuente_Detalle", "Ciudad",
-    }
-    campos = {k: v for k, v in data.items() if k in CAMPOS_VALIDOS and v is not None}
-    campos.setdefault("Estado", "no_contactado")
-    ESTADOS_VALIDOS = {"no_contactado", "contactado", "calificado", "visita_agendada", "visito", "en_negociacion", "seguimiento", "cerrado_ganado", "cerrado_perdido"}
-    if campos["Estado"] not in ESTADOS_VALIDOS:
-        raise HTTPException(status_code=422, detail=f"Estado inválido: {campos['Estado']}")
+    data.setdefault("Estado", "no_contactado")
+    if USE_POSTGRES:
+        result = db.create_lead(data)
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return {"status": "ok", "record": result}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
-    r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=10)
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": data}, timeout=10)
     if r.status_code not in (200, 201):
         raise HTTPException(status_code=r.status_code, detail=r.text)
     return {"status": "ok", "record": r.json()}
@@ -1885,49 +1860,52 @@ async def crm_crear_cliente(request: Request):
 
 @router.get("/crm/propiedades")
 def crm_propiedades():
+    if USE_POSTGRES:
+        records = db.get_all_propiedades()
+        return {"total": len(records), "records": records}
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
-        return {"records": [], "error": "Airtable no configurado"}
+        return {"records": [], "error": "DB no configurada"}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
     records, offset = [], None
     while True:
         params = {"pageSize": 100}
-        if offset:
-            params["offset"] = offset
+        if offset: params["offset"] = offset
         r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
         data = r.json()
         records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
         offset = data.get("offset")
-        if not offset:
-            break
+        if not offset: break
     return {"total": len(records), "records": records}
 
 
 @router.get("/crm/activos")
 def crm_activos():
+    if USE_POSTGRES:
+        records = db.get_all_activos()
+        return {"total": len(records), "records": records}
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
-        return {"records": [], "error": "Airtable no configurado"}
+        return {"records": [], "error": "DB no configurada"}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
     records, offset = [], None
     while True:
         params = {"pageSize": 100}
-        if offset:
-            params["offset"] = offset
+        if offset: params["offset"] = offset
         r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
         data = r.json()
         records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
         offset = data.get("offset")
-        if not offset:
-            break
+        if not offset: break
     return {"total": len(records), "records": records}
 
 
 @router.post("/crm/activos")
 async def crm_crear_activo(request: Request):
     from fastapi import HTTPException
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
-        raise HTTPException(status_code=500, detail="Airtable no configurado")
     data = await request.json()
     fields = data.get("fields", data)
+    # TODO: implementar en PostgreSQL cuando se necesite
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        raise HTTPException(status_code=500, detail="DB no configurada")
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
     r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
     if r.status_code not in (200, 201):
@@ -1938,10 +1916,10 @@ async def crm_crear_activo(request: Request):
 @router.patch("/crm/activos/{record_id}")
 async def crm_actualizar_activo(record_id: str, request: Request):
     from fastapi import HTTPException
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
-        raise HTTPException(status_code=500, detail="Airtable no configurado")
     data = await request.json()
     fields = data.get("fields", data)
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        raise HTTPException(status_code=500, detail="DB no configurada")
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
     r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=8)
     if r.status_code not in (200, 201):

@@ -317,6 +317,21 @@ async def auditor_fase2():
     }
 
 
+@app.get("/admin/migrar-airtable", tags=["Admin"])
+async def admin_migrar_airtable():
+    """Migra datos de Airtable a PostgreSQL (una sola vez)."""
+    import sys
+    scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    try:
+        from scripts.migrar_airtable_postgres import migrate
+        migrate()
+        return {"ok": True, "message": "Migración completada"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.get("/admin/setup-postgres", tags=["Admin"])
 async def admin_setup_postgres():
     """Ejecuta el setup de PostgreSQL para Lovbot CRM (una sola vez)."""
