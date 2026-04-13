@@ -196,13 +196,9 @@
 ## PUNTO 5: INTERVENCIÓN HUMANA (CHATWOOT)
 
 ### 5.1 Escalamiento automático a Chatwoot
-- **Estado**: 🟡 PARCIAL
-- **Detalle actual**: Escala por WhatsApp directo al número del asesor
-- **Requerimiento PDF**: Usar Chatwoot como canal — asesor ve toda la conversación
-- **Implementación necesaria**:
-  - [ ] Configurar bridge Meta WhatsApp ↔ Chatwoot para Robert (Coolify Hetzner o Arnaldo)
-  - [ ] Webhook Chatwoot → FastAPI para sincronizar estados
-  - [ ] Crear inbox en Chatwoot para el número de Robert
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Inbox WhatsApp ya conectado (ID:4, +5219987434234). Al escalar: `_chatwoot_escalar()` agrega label `atiende-humano` + nota privada con historial y score. Webhook configurado en Chatwoot → FastAPI para pausa/retoma automática.
 
 ### 5.2 Bot se pausa cuando entra humano
 - **Estado**: ✅ LISTO

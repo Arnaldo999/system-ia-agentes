@@ -41,6 +41,12 @@ OPENAI_API_KEY    = os.environ.get("OPENAI_API_KEY", "")
 META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "")
 META_PHONE_ID     = os.environ.get("META_PHONE_NUMBER_ID", "")
 
+# Chatwoot
+CHATWOOT_API_TOKEN  = os.environ.get("LOVBOT_CHATWOOT_API_TOKEN", "")
+CHATWOOT_URL        = os.environ.get("LOVBOT_CHATWOOT_URL", "https://chatwoot.lovbot.ai")
+CHATWOOT_ACCOUNT_ID = os.environ.get("LOVBOT_CHATWOOT_ACCOUNT_ID", "2")
+CHATWOOT_INBOX_ID   = os.environ.get("LOVBOT_CHATWOOT_INBOX_ID", "4")
+
 AIRTABLE_TOKEN         = os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
 AIRTABLE_BASE_ID       = os.environ.get("ROBERT_AIRTABLE_BASE", "")
 AIRTABLE_TABLE_PROPS   = os.environ.get("ROBERT_TABLE_PROPS", "")
@@ -112,6 +118,111 @@ def _guardar_historial_at(telefono: str):
                 json={"fields": {"Notas_Bot": resumen[:5000]}}, timeout=8)
     except Exception as e:
         print(f"[ROBERT] Error guardando historial: {e}")
+
+
+# ─── CHATWOOT BRIDGE ─────────────────────────────────────────────────────────
+
+def _chatwoot_headers():
+    return {"api_access_token": CHATWOOT_API_TOKEN, "Content-Type": "application/json"}
+
+
+def _chatwoot_buscar_contacto(telefono: str) -> dict | None:
+    """Busca un contacto en Chatwoot por teléfono."""
+    if not CHATWOOT_API_TOKEN:
+        return None
+    tel = "+" + re.sub(r'\D', '', telefono)
+    try:
+        r = requests.get(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts/search",
+            headers=_chatwoot_headers(),
+            params={"q": tel, "include_contacts": True},
+            timeout=8,
+        )
+        if r.status_code == 200:
+            contacts = r.json().get("payload", [])
+            for c in contacts:
+                if c.get("phone_number", "").replace(" ", "") == tel:
+                    return c
+    except Exception as e:
+        print(f"[CHATWOOT] Error buscando contacto: {e}")
+    return None
+
+
+def _chatwoot_buscar_conversacion(contacto_id: int) -> dict | None:
+    """Busca conversación abierta del contacto en inbox WhatsApp."""
+    if not CHATWOOT_API_TOKEN:
+        return None
+    try:
+        r = requests.get(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts/{contacto_id}/conversations",
+            headers=_chatwoot_headers(),
+            timeout=8,
+        )
+        if r.status_code == 200:
+            convs = r.json().get("payload", [])
+            for c in convs:
+                if c.get("inbox_id") == int(CHATWOOT_INBOX_ID) and c.get("status") == "open":
+                    return c
+    except Exception as e:
+        print(f"[CHATWOOT] Error buscando conversación: {e}")
+    return None
+
+
+def _chatwoot_escalar(telefono: str, sesion: dict, calificacion: dict = None):
+    """Escala conversación a Chatwoot: busca contacto, añade label atiende-humano, envía nota."""
+    if not CHATWOOT_API_TOKEN:
+        print("[CHATWOOT] Sin token — skip escalamiento")
+        return
+
+    contacto = _chatwoot_buscar_contacto(telefono)
+    if not contacto:
+        print(f"[CHATWOOT] Contacto no encontrado para {telefono}")
+        return
+
+    contacto_id = contacto.get("id")
+    conv = _chatwoot_buscar_conversacion(contacto_id)
+    if not conv:
+        print(f"[CHATWOOT] Sin conversación abierta para contacto {contacto_id}")
+        return
+
+    conv_id = conv.get("id")
+    nombre = sesion.get("nombre", "")
+    score = calificacion.get("score", "?") if calificacion else "?"
+    nota = calificacion.get("nota_para_asesor", "") if calificacion else ""
+    hist = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
+    historial_texto = "\n".join(hist[-10:]) if hist else "Sin historial"
+
+    try:
+        # Agregar label atiende-humano
+        labels = conv.get("labels", [])
+        if "atiende-humano" not in labels:
+            labels.append("atiende-humano")
+            if "atiende-agenteai" in labels:
+                labels.remove("atiende-agenteai")
+            requests.post(
+                f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/labels",
+                headers=_chatwoot_headers(),
+                json={"labels": labels},
+                timeout=8,
+            )
+
+        # Enviar nota privada con contexto para el asesor
+        nota_asesor = (
+            f"🤖 Bot escaló esta conversación al asesor\n\n"
+            f"👤 Nombre: {nombre}\n"
+            f"📊 Score: {score.upper()}\n"
+            f"📝 Nota: {nota}\n\n"
+            f"💬 Últimos mensajes:\n{historial_texto}"
+        )
+        requests.post(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/messages",
+            headers=_chatwoot_headers(),
+            json={"content": nota_asesor, "message_type": "activity", "private": True},
+            timeout=8,
+        )
+        print(f"[CHATWOOT] Escalado conv {conv_id} — label atiende-humano + nota privada")
+    except Exception as e:
+        print(f"[CHATWOOT] Error escalando: {e}")
 
 
 # ─── PAUSA BOT (cuando asesor interviene) ────────────────────────────────────
@@ -1517,12 +1628,51 @@ def _ir_asesor(telefono: str, sesion: dict) -> None:
     ))
     # Guardar historial para que el asesor vea la conversación
     threading.Thread(target=_guardar_historial_at, args=(telefono,), daemon=True).start()
+    # Escalar a Chatwoot (label atiende-humano + nota privada con contexto)
+    threading.Thread(target=_chatwoot_escalar, args=(telefono, sesion), daemon=True).start()
     # Pausar bot — asesor tomó control
     pausar_bot(telefono)
     SESIONES.pop(telefono, None)
 
 
 # ─── ENDPOINTS DE CONTROL BOT ────────────────────────────────────────────────
+
+@router.post("/chatwoot/webhook")
+async def chatwoot_webhook(request: Request):
+    """Recibe eventos de Chatwoot para pausa/retoma del bot."""
+    try:
+        data = await request.json()
+    except Exception:
+        return {"status": "ignored"}
+
+    event = data.get("event", "")
+
+    # Cuando el asesor resuelve la conversación → despausar bot
+    if event == "conversation_resolved":
+        contact = data.get("meta", {}).get("sender", {})
+        phone = contact.get("phone_number", "")
+        if phone:
+            despausar_bot(phone)
+            print(f"[CHATWOOT-WEBHOOK] Conversación resuelta — bot despausado para {phone}")
+
+    # Cuando se asigna label atiende-humano → pausar bot
+    elif event == "conversation_updated":
+        labels = data.get("labels", [])
+        if "atiende-humano" in labels:
+            contact = data.get("meta", {}).get("sender", {})
+            phone = contact.get("phone_number", "")
+            if phone:
+                pausar_bot(phone)
+                print(f"[CHATWOOT-WEBHOOK] Label atiende-humano — bot pausado para {phone}")
+        elif "atiende-agenteai" in labels:
+            contact = data.get("meta", {}).get("sender", {})
+            phone = contact.get("phone_number", "")
+            if phone:
+                despausar_bot(phone)
+                print(f"[CHATWOOT-WEBHOOK] Label atiende-agenteai — bot despausado para {phone}")
+
+    return {"status": "ok"}
+
 
 @router.post("/bot/pausar/{telefono}")
 async def api_pausar_bot(telefono: str):
