@@ -66,10 +66,17 @@ SESIONES: dict[str, dict] = {}
 
 CATEGORIAS = {
     "1": "Escolar",
-    "2": "Fiestas y Eventos",
-    "3": "Papeleria Creativa",
-    "4": "Diseños e Impresiones",
-    "5": "Invitaciones y Videos Digitales",
+    "2": "Eventos",
+    "3": "Cumpleaños",
+    "4": "Diseños",
+}
+
+# Mapeo display → Airtable singleSelect (nombres exactos de Airtable)
+CATEGORIAS_DISPLAY = {
+    "Escolar": "Manualidades escolares",
+    "Eventos": "Fiestas y eventos",
+    "Cumpleaños": "Cumpleaños y celebraciones",
+    "Diseños": "Diseños e Impresiones",
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -83,10 +90,9 @@ Hacemos manualidades y decoraciones para que tus momentos sean únicos 💫
 ¿Qué te interesa ver?
 
 1️⃣ Manualidades escolares (carpetas, maquetas, láminas)
-2️⃣ Fiestas y eventos (decoración con telas y globos, souvenirs, centros de mesa, cajas sorpresa)
-3️⃣ Papelería creativa (invitaciones, tarjetería, cuadernos, stickers)
-4️⃣ Diseños e Impresiones
-5️⃣ Invitaciones digitales y videos de momentos especiales (15 años, bautismo, casamiento, egresados)
+2️⃣ Fiestas y eventos (decoración, souvenirs, centros de mesa, invitaciones)
+3️⃣ Cumpleaños y celebraciones (tortas temáticas, cajas sorpresa, decoración)
+4️⃣ Diseños e Impresiones (stickers, tarjetería, papelería creativa)
 
 Respondé con el número de tu opción 😊"""
 
@@ -95,10 +101,9 @@ MSG_ADMIN_ELEGIR_CATEGORIA = """✅ *Modo carga activado*
 ¿A qué categoría pertenece el trabajo?
 
 1️⃣ Escolar
-2️⃣ Fiestas y Eventos
-3️⃣ Papelería Creativa
-4️⃣ Diseños e Impresiones
-5️⃣ Invitaciones y Videos Digitales
+2️⃣ Eventos
+3️⃣ Cumpleaños
+4️⃣ Diseños
 
 Respondé con el número 👆"""
 
@@ -341,20 +346,20 @@ def _detectar_categoria(descripcion: str) -> str:
     if not _gemini_client:
         return "Cumpleaños"
     try:
-        prompt = f"""Clasificá el siguiente trabajo de manualidades en UNA de estas categorías:
+        prompt = f"""Clasificá el siguiente trabajo de manualidades en UNA de estas categorías exactas:
 - Escolar
-- Cumpleaños
 - Eventos
-- Cameo/Diseños
+- Cumpleaños
+- Diseños
 
 Descripción: "{descripcion}"
 
-Respondé SOLO con el nombre exacto de la categoría, sin explicación."""
+Respondé SOLO con el nombre exacto de la categoría (una sola palabra o dos), sin explicación."""
         resp = _gemini_client.models.generate_content(
             model="gemini-2.5-flash-lite", contents=prompt
         )
         cat = resp.text.strip()
-        if cat in ["Escolar", "Cumpleaños", "Eventos", "Cameo/Diseños"]:
+        if cat in ["Escolar", "Eventos", "Cumpleaños", "Diseños"]:
             return cat
         return "Cumpleaños"
     except Exception as e:
@@ -404,10 +409,9 @@ def _procesar_y_guardar_con_categoria(telefono: str, descripcion: str, imagen_by
 
 CATEGORIAS_ADMIN = {
     "1": "Escolar",
-    "2": "Fiestas y Eventos",
-    "3": "Papeleria Creativa",
-    "4": "Diseños e Impresiones",
-    "5": "Invitaciones y Videos Digitales",
+    "2": "Eventos",
+    "3": "Cumpleaños",
+    "4": "Diseños",
 }
 
 
