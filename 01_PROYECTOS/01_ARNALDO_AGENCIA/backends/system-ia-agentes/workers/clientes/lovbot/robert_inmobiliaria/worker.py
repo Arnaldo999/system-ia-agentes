@@ -37,6 +37,7 @@ from fastapi import APIRouter, Request
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
+OPENAI_API_KEY    = os.environ.get("OPENAI_API_KEY", "")
 META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "")
 META_PHONE_ID     = os.environ.get("META_PHONE_NUMBER_ID", "")
 
@@ -446,17 +447,45 @@ def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
         return []
 
 
-# ─── GEMINI ───────────────────────────────────────────────────────────────────
+# ─── LLM (OpenAI principal → Gemini fallback) ───────────────────────────────
+
+def _llm(prompt: str, system: str = "") -> str:
+    """Llama a GPT-4o (principal) → Gemini 2.5 Flash (fallback)."""
+    # ── OpenAI (principal) ──
+    if OPENAI_API_KEY:
+        try:
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            r = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "gpt-4o", "messages": messages, "temperature": 0.3, "max_tokens": 1500},
+                timeout=15,
+            )
+            if r.status_code == 200:
+                return r.json()["choices"][0]["message"]["content"].strip()
+            print(f"[ROBERT-LLM] OpenAI error {r.status_code}: {r.text[:200]}")
+        except Exception as e:
+            print(f"[ROBERT-LLM] OpenAI excepción: {e}")
+
+    # ── Gemini (fallback) ──
+    if _gemini_client:
+        try:
+            full_prompt = f"{system}\n\n{prompt}" if system else prompt
+            resp = _gemini_client.models.generate_content(
+                model="gemini-2.5-flash", contents=full_prompt)
+            return resp.text.strip()
+        except Exception as e:
+            print(f"[ROBERT-LLM] Gemini fallback error: {e}")
+
+    return ""
+
+
 def _gemini(prompt: str) -> str:
-    if not _gemini_client:
-        return ""
-    try:
-        resp = _gemini_client.models.generate_content(
-            model="gemini-2.5-flash-lite", contents=prompt)
-        return resp.text.strip()
-    except Exception as e:
-        print(f"[ROBERT-GEMINI] Error: {e}")
-        return ""
+    """Wrapper legacy — redirige a _llm."""
+    return _llm(prompt)
 
 
 def _gemini_calificar(sesion: dict) -> dict:
@@ -507,9 +536,10 @@ Respuestas del lead:
 
 Devolvé SOLO el JSON, sin explicaciones."""
     try:
-        texto = _gemini(prompt)
-        if texto.startswith("```"):
-            texto = texto.split("```")[1]
+        texto = _llm(prompt, system="Sos un analista comercial inmobiliario. Respondé SOLO con JSON válido, sin markdown ni explicaciones.")
+        # Limpiar backticks si los hay
+        if "```" in texto:
+            texto = texto.split("```")[1] if texto.startswith("```") else texto.split("```")[0]
             if texto.startswith("json"):
                 texto = texto[4:]
         return json.loads(texto.strip())
