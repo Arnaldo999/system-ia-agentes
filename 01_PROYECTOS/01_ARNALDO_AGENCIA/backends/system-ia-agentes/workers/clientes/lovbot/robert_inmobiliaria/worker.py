@@ -488,6 +488,32 @@ def _gemini(prompt: str) -> str:
     return _llm(prompt)
 
 
+def _interpretar_respuesta(texto: str, opciones: dict, contexto: str = "") -> str | None:
+    """Usa GPT-4o para interpretar respuesta abierta y mapear a opción válida.
+    opciones: {"1": "comprar", "2": "alquilar", "3": "invertir"}
+    Retorna la key ("1", "2", etc.) o None si no matchea.
+    """
+    # Primero intentar match directo (si escribió el número)
+    if texto.strip() in opciones:
+        return texto.strip()
+
+    # Intentar match por valor (si escribió la palabra)
+    for key, val in opciones.items():
+        if val.lower() in texto.lower() or texto.lower() in val.lower():
+            return key
+
+    # Si no matchea, usar LLM para interpretar
+    opts_str = "\n".join([f"{k}: {v}" for k, v in opciones.items()])
+    result = _llm(
+        f"El usuario respondió: \"{texto}\"\n\nOpciones válidas:\n{opts_str}\n\n"
+        f"¿A cuál opción corresponde? Respondé SOLO con el número de la opción. "
+        f"Si no corresponde a ninguna, respondé 'null'.",
+        system="Sos un clasificador. Respondé SOLO con el número o 'null'. Sin explicaciones."
+    )
+    result = result.strip().strip('"').strip("'")
+    return result if result in opciones else None
+
+
 def _gemini_calificar(sesion: dict) -> dict:
     zonas_str = "|".join(ZONAS_LIST)
     prompt = f"""Sos un analista comercial inmobiliario senior de {NOMBRE_EMPRESA} en {CIUDAD}.
@@ -1061,9 +1087,13 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         "3": "Invertir, excelente decisión. 📈",
     }
     if step == "objetivo":
-        mapa_op = {"1": "venta", "2": "alquiler", "3": "venta"}
-        operacion = mapa_op.get(texto.strip(), "venta")
-        acuse = _ACUSE_OBJETIVO.get(texto.strip(), "Entendido. 👍")
+        mapa_op = {"1": "comprar", "2": "alquilar", "3": "invertir"}
+        opcion = _interpretar_respuesta(texto, mapa_op)
+        if not opcion:
+            opcion = "1"  # default: comprar
+        operacion_map = {"1": "venta", "2": "alquiler", "3": "venta"}
+        operacion = operacion_map.get(opcion, "venta")
+        acuse = _ACUSE_OBJETIVO.get(opcion, "Entendido. 👍")
         SESIONES[telefono] = {**sesion, "step": "tipo", "resp_objetivo": texto,
                               "operacion_at": operacion}
         _enviar_texto(telefono, acuse + "\n\n" + _pregunta("tipo", nombre_corto, subniche))
@@ -1078,13 +1108,15 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         "5": "Oficina, anotado. 💼",
     }
     if step == "tipo":
-        mapa_tipo = {
-            "1": "casa", "2": "departamento", "3": "terreno",
-            "4": "otro", "5": "otro",
-        }
-        tipo_detectado = mapa_tipo.get(texto.strip(), _normalizar_tipo(texto) or texto.lower())
-        acuse = _ACUSE_TIPO.get(texto.strip(), "Entendido. 👍")
-        SESIONES[telefono] = {**sesion, "step": "zona", "resp_tipo": tipo_detectado}
+        mapa_tipo = {"1": "casa", "2": "departamento", "3": "terreno", "4": "local comercial", "5": "oficina"}
+        opcion = _interpretar_respuesta(texto, mapa_tipo)
+        if opcion:
+            tipo_final = {"1": "casa", "2": "departamento", "3": "terreno", "4": "otro", "5": "otro"}.get(opcion, "otro")
+            acuse = _ACUSE_TIPO.get(opcion, "Entendido. 👍")
+        else:
+            tipo_final = _normalizar_tipo(texto) or texto.lower()
+            acuse = "Entendido. 👍"
+        SESIONES[telefono] = {**sesion, "step": "zona", "resp_tipo": tipo_final}
         _enviar_texto(telefono, acuse + "\n\n" + _pregunta("zona", nombre_corto, subniche))
         return
 
@@ -1110,11 +1142,18 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
 
     # ── PRESUPUESTO ───────────────────────────────────────────────────────────
     if step == "presupuesto":
-        # Opción 5 = hablar con asesor directo
-        if texto.strip() == "5":
+        mapa_presu = {
+            "1": f"menos de 50,000 {MONEDA}",
+            "2": f"50,000 a 100,000 {MONEDA}",
+            "3": f"100,000 a 200,000 {MONEDA}",
+            "4": f"más de 200,000 {MONEDA}",
+            "5": "hablar con asesor",
+        }
+        opcion = _interpretar_respuesta(texto, mapa_presu)
+        if opcion == "5":
             _ir_asesor(telefono, sesion)
             return
-        presupuesto_at = _PRESUPUESTO_MAP.get(texto.strip(), "")
+        presupuesto_at = _PRESUPUESTO_MAP.get(opcion or texto.strip(), "")
         SESIONES[telefono] = {**sesion, "step": "urgencia",
                               "resp_presupuesto": texto, "presupuesto_at": presupuesto_at}
         _enviar_texto(telefono, _pregunta("urgencia", nombre_corto, subniche))

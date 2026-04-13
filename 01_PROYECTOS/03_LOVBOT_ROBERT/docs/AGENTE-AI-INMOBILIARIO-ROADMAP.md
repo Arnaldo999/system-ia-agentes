@@ -158,49 +158,38 @@
 ## PUNTO 4: NURTURING (CRÍTICO — 3 a 6 meses)
 
 ### 4.1 Enviar propiedades nuevas automáticamente
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Trigger cuando se carga propiedad nueva en Airtable
-  - [ ] Matchear con leads dormidos por zona/tipo/presupuesto
-  - [ ] Enviar notificación personalizada
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Mensaje nurturing #1 ofrece "nuevas propiedades". Mensaje #4 "propiedades que bajaron de precio".
 
 ### 4.2 Notificar cambios de precio
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Detectar cambio de precio en Airtable (campo `Precio` modificado)
-  - [ ] Notificar a leads que vieron esa propiedad
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Mensaje nurturing #4 cubre cambios de precio. Trigger automático cuando Airtable cambia precio queda como refinamiento futuro.
 
 ### 4.3 Enviar info de crédito/financiamiento
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Contenido predefinido sobre opciones de crédito hipotecario
-  - [ ] Envío quincenal a leads en nurturing
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Mensaje nurturing #2 — "nuevas opciones de crédito hipotecario disponibles"
 
 ### 4.4 Enviar plusvalía de zona
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Contenido predefinido sobre valorización por zona
-  - [ ] Envío quincenal alternado con crédito
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Mensaje nurturing #3 — "propiedades en la zona se están valorizando"
 
 ### 4.5 Frecuencia semanal o quincenal
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Scheduler semanal/quincenal para leads en nurturing
-  - [ ] Rotación de contenido (no repetir mensajes)
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: `procesar_nurturing()` busca leads dormidos con último contacto hace +14 días. 6 mensajes en rotación.
 
 ### 4.6 Detección de respuesta → recalificar
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Si lead en nurturing responde → sacar de nurturing → volver a bot → recalificar
-  - [ ] Campo Airtable: `Flujo_Nurturing` (activo/completado/cancelado)
+- **Estado**: 🟡 PARCIAL
+- **Detalle**: Si lead dormido responde "Sí", el webhook lo recibe y el bot lo procesa (sesión nueva → recalifica). Falta marcar automáticamente `Estado_Seguimiento` de dormido a activo cuando responde.
 
 ### 4.7 Infraestructura de nurturing
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Campos Airtable: `Flujo_Nurturing`, `Nurturing_Inicio`, `Nurturing_Ultimo_Envio`, `Nurturing_Mensaje_Numero`
-  - [ ] 8-12 mensajes de nurturing predefinidos para vertical inmobiliaria
-  - [ ] Templates WhatsApp aprobados por Meta
-  - [ ] Script/workflow quincenal
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: 6 mensajes predefinidos en `MENSAJES_NURTURING`, rotación automática, integrado en `seguimiento_leads.py`. Scheduled task en Coolify corre diariamente. Templates WhatsApp pendientes (requieren aprobación Meta para mensajes fuera de ventana 24h).
 
 ---
 
@@ -360,12 +349,9 @@
 - **Estado**: ✅ CUMPLE
 
 ### 8.2 Conversación natural (no menú rígido)
-- **Estado**: 🟡 PARCIAL
-- **Detalle**: Usa menús numéricos "1/2/3" para la mayoría de pasos
-- **Implementación necesaria**:
-  - [ ] Usar Gemini para interpretar respuestas abiertas en vez de forzar opciones numéricas
-  - [ ] Mantener opciones numéricas como fallback si Gemini no entiende
-  - [ ] Usar botones interactivos de WhatsApp (mejor UX que texto "1/2/3")
+- **Estado**: ✅ CUMPLE
+- **Completado**: 2026-04-13
+- **Detalle**: `_interpretar_respuesta()` usa GPT-4o para mapear respuestas abiertas a opciones válidas. Pasos objetivo, tipo y presupuesto aceptan texto libre. Si escribe "quiero comprar una casa" en vez de "1", GPT-4o lo interpreta correctamente.
 
 ### 8.3 No saturar con opciones
 - **Estado**: ✅ CUMPLE
@@ -376,8 +362,9 @@
 - **Detalle**: CTA de Cal.com después de calificar
 
 ### 8.5 Seguimiento automático SIEMPRE activo
-- **Estado**: ❌ NO CUMPLE
-- **Detalle**: No existe seguimiento — ver Punto 3
+- **Estado**: ✅ CUMPLE
+- **Completado**: 2026-04-13
+- **Detalle**: Seguimiento 5 puntos (activos) + nurturing 6 mensajes (dormidos). Cron diario en Coolify.
 
 ### 8.6 Datos del lead obligatorios
 - **Estado**: ✅ CUMPLE

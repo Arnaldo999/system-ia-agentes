@@ -87,6 +87,46 @@ MENSAJES_SEGUIMIENTO = {
     ),
 }
 
+# Mensajes de nurturing (para leads dormidos — quincenal)
+MENSAJES_NURTURING = {
+    1: (
+        "Hola *{nombre}* 🏡\n\n"
+        "Desde *{empresa}* queremos compartirte que tenemos *nuevas propiedades* "
+        "que podrían interesarte.\n\n"
+        "Si querés ver las opciones actualizadas, escribí *Sí* y te las muestro. 📱"
+    ),
+    2: (
+        "Hola *{nombre}* 💡\n\n"
+        "¿Sabías que hay *nuevas opciones de crédito hipotecario* disponibles? "
+        "Muchos de nuestros clientes están aprovechando tasas competitivas.\n\n"
+        "Si te interesa saber más, escribinos y te asesoramos sin compromiso. 🏦"
+    ),
+    3: (
+        "Hola *{nombre}* 📈\n\n"
+        "Las propiedades en la zona que te interesaba están *valorizándose*. "
+        "Invertir ahora podría ser una gran oportunidad.\n\n"
+        "¿Te gustaría ver las opciones actualizadas? Escribí *Sí*. 🏡"
+    ),
+    4: (
+        "Hola *{nombre}* 🏠\n\n"
+        "Tenemos *propiedades que bajaron de precio* esta semana. "
+        "Puede ser el momento ideal para concretar.\n\n"
+        "¿Querés que te envíe las mejores opciones? Estamos para ayudarte. 😊"
+    ),
+    5: (
+        "Hola *{nombre}* 👋\n\n"
+        "Pasó un tiempo desde que conversamos. Solo quería recordarte que "
+        "en *{empresa}* seguimos buscando la propiedad ideal para vos.\n\n"
+        "Cuando quieras retomar, escribinos. ¡Te esperamos! 🙌"
+    ),
+    6: (
+        "Hola *{nombre}* 🏡\n\n"
+        "¿Seguís con planes de buscar propiedad? Tenemos opciones nuevas "
+        "y *{asesor}* está disponible para asesorarte personalmente.\n\n"
+        "Escribí *Sí* para ver novedades o *#* para hablar directo con el asesor. 📞"
+    ),
+}
+
 
 # ── WhatsApp ─────────────────────────────────────────────────────────────────
 def enviar_whatsapp(telefono: str, mensaje: str) -> bool:
@@ -178,6 +218,69 @@ def enviar_telegram(mensaje: str):
         print(f"[seguimiento] Error Telegram: {e}")
 
 
+# ── Nurturing (leads dormidos — quincenal) ───────────────────────────────────
+
+def obtener_leads_nurturing() -> list[dict]:
+    """Busca leads dormidos que necesitan nurturing (cada 14 días)."""
+    hace_14_dias = (datetime.date.today() - datetime.timedelta(days=14)).isoformat()
+    formula = (
+        "AND("
+        "{Estado_Seguimiento}='dormido',"
+        "OR("
+        "  {Ultimo_Contacto_Bot}='',"
+        f"  IS_BEFORE({{Ultimo_Contacto_Bot}}, '{hace_14_dias}T23:59:59.000Z')"
+        "),"
+        "{Cantidad_Seguimientos}<11"
+        ")"
+    )
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE}/{AIRTABLE_TABLE}"
+    try:
+        r = requests.get(url, headers=AT_HEADERS,
+                         params={"filterByFormula": formula, "maxRecords": 20},
+                         timeout=REQUEST_TIMEOUT)
+        return r.json().get("records", [])
+    except Exception as e:
+        print(f"[nurturing] Error Airtable GET: {e}")
+        return []
+
+
+def procesar_nurturing():
+    """Envía mensajes de nurturing a leads dormidos."""
+    leads = obtener_leads_nurturing()
+    print(f"[nurturing] {len(leads)} leads dormidos para nurturing")
+
+    enviados = 0
+    for record in leads:
+        fields = record.get("fields", {})
+        record_id = record["id"]
+        telefono = fields.get("Telefono", "")
+        nombre = fields.get("Nombre", "Cliente")
+        cantidad = int(fields.get("Cantidad_Seguimientos", 5))
+
+        if not telefono:
+            continue
+
+        # Calcular qué mensaje de nurturing enviar (rotar 1-6)
+        nurturing_num = ((cantidad - 5) % 6) + 1
+        plantilla = MENSAJES_NURTURING.get(nurturing_num, MENSAJES_NURTURING[5])
+        mensaje = plantilla.format(
+            nombre=nombre.split()[0] if nombre else "Cliente",
+            asesor=NOMBRE_ASESOR,
+            empresa=NOMBRE_EMPRESA,
+        )
+
+        ok = enviar_whatsapp(telefono, mensaje)
+        if ok:
+            actualizar_lead(record_id, {
+                "Cantidad_Seguimientos": cantidad + 1,
+                "Ultimo_Contacto_Bot": datetime.datetime.utcnow().isoformat() + "Z",
+            })
+            enviados += 1
+            print(f"[nurturing] ✅ {nombre} — nurturing #{nurturing_num} enviado")
+
+    return enviados
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 def main():
     if not AIRTABLE_BASE or not AIRTABLE_TABLE:
@@ -246,14 +349,20 @@ def main():
     # Reporte
     print(f"[seguimiento] Resultado: {enviados} enviados, {dormidos} dormidos, {errores} errores")
 
-    if enviados > 0 or dormidos > 0:
+    # ── Nurturing (leads dormidos — quincenal) ──
+    nurturing_enviados = procesar_nurturing()
+
+    # ── Reporte Telegram ──
+    total_acciones = enviados + dormidos + nurturing_enviados
+    if total_acciones > 0 or errores > 0:
         fecha = datetime.datetime.now(
             datetime.timezone(datetime.timedelta(hours=-3))
         ).strftime("%d/%m/%Y %H:%M ARG")
         enviar_telegram(
             f"🔄 <b>Seguimiento Leads — Lovbot</b> — {fecha}\n\n"
-            f"📤 Mensajes enviados: {enviados}\n"
+            f"📤 Seguimiento enviados: {enviados}\n"
             f"😴 Movidos a dormido: {dormidos}\n"
+            f"🌱 Nurturing enviados: {nurturing_enviados}\n"
             f"❌ Errores: {errores}\n"
             f"📊 Total procesados: {len(leads)}"
         )
