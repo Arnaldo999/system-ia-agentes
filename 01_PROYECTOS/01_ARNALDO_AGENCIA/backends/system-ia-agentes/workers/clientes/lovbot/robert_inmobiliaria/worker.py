@@ -54,6 +54,17 @@ MONEDA         = os.environ.get("INMO_DEMO_MONEDA",  "USD")
 SITIO_WEB      = os.environ.get("INMO_DEMO_SITIO_WEB", "")
 CAL_API_KEY    = os.environ.get("INMO_DEMO_CAL_API_KEY", "")
 CAL_EVENT_ID   = os.environ.get("INMO_DEMO_CAL_EVENT_ID", "")
+CAL_TIMEZONE   = os.environ.get("INMO_DEMO_CAL_TIMEZONE", "America/Argentina/Buenos_Aires")
+
+# Mapeo timezone → offset UTC para conversión de slots
+_TZ_OFFSETS = {
+    "America/Argentina/Buenos_Aires": -3,
+    "America/Mexico_City": -6,
+    "America/Bogota": -5,
+    "America/Santiago": -4,
+    "America/Lima": -5,
+}
+_TZ_OFFSET_HOURS = _TZ_OFFSETS.get(CAL_TIMEZONE, -3)
 
 _zonas_raw = os.environ.get("INMO_DEMO_ZONAS", "Zona Norte,Zona Sur,Zona Centro")
 ZONAS_LIST = [z.strip() for z in _zonas_raw.split(",") if z.strip()]
@@ -64,6 +75,37 @@ router = APIRouter(prefix="/clientes/lovbot/inmobiliaria", tags=["Robert — Inm
 
 # ─── SESIONES EN MEMORIA ──────────────────────────────────────────────────────
 SESIONES: dict[str, dict] = {}
+
+# ─── PAUSA BOT (cuando asesor interviene) ────────────────────────────────────
+# Formato: {telefono: timestamp_pausa}
+# El bot NO responde si el lead está pausado (asesor activo)
+LEADS_PAUSADOS: dict[str, float] = {}
+PAUSA_TIMEOUT_HORAS = 4  # después de 4h sin actividad del asesor, bot retoma
+
+
+def pausar_bot(telefono: str):
+    """Pausa el bot para este lead — asesor tomó control."""
+    import time
+    LEADS_PAUSADOS[re.sub(r'\D', '', telefono)] = time.time()
+
+
+def despausar_bot(telefono: str):
+    """Reactiva el bot para este lead."""
+    LEADS_PAUSADOS.pop(re.sub(r'\D', '', telefono), None)
+
+
+def bot_pausado(telefono: str) -> bool:
+    """Retorna True si el bot debe estar en silencio para este lead."""
+    import time
+    tel = re.sub(r'\D', '', telefono)
+    if tel not in LEADS_PAUSADOS:
+        return False
+    # Auto-despausar después de PAUSA_TIMEOUT_HORAS
+    elapsed = time.time() - LEADS_PAUSADOS[tel]
+    if elapsed > PAUSA_TIMEOUT_HORAS * 3600:
+        LEADS_PAUSADOS.pop(tel, None)
+        return False
+    return True
 
 AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "application/json"}
 
@@ -163,7 +205,7 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
         if len(partes) > 1:
             campos["Apellido"] = partes[1]
     if score == "caliente":
-        campos["Estado"] = "en_negociacion"
+        campos["Estado"] = "calificado"
     elif score == "tibio":
         campos["Estado"] = "contactado"
     elif score:
@@ -275,7 +317,7 @@ def _cal_crear_reserva(nombre: str, email: str, telefono: str, slot_time: str, n
                 "attendee": {
                     "name": nombre,
                     "email": email or (re.sub(r'\D', '', telefono) + "@lovbot.ai"),
-                    "timeZone": "America/Mexico_City",
+                    "timeZone": CAL_TIMEZONE,
                     "language": "es",
                     "phoneNumber": "+" + re.sub(r'\D', '', telefono),
                 },
@@ -305,7 +347,7 @@ def _formatear_slots(slots: list[dict]) -> str:
     for i, s in enumerate(slots, 1):
         try:
             dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
-            mx = dt.astimezone(timezone(timedelta(hours=-6)))
+            mx = dt.astimezone(timezone(timedelta(hours=_TZ_OFFSET_HOURS)))
             dia_en = mx.strftime("%A")
             dia_es = _DIAS_ES.get(dia_en, dia_en)
             lineas.append(f"*{i}️⃣* {dia_es} {mx.strftime('%d/%m')} a las *{mx.strftime('%H:%M')}* hs")
@@ -324,7 +366,7 @@ def _at_guardar_cita(telefono: str, fecha_cita: str) -> None:
     if records:
         rec_id = records[0]["id"]
         requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
-                       json={"fields": {"Fecha_Cita": fecha_cita[:10], "Estado": "en_negociacion"}},
+                       json={"fields": {"Fecha_Cita": fecha_cita[:10], "Estado": "visita_agendada"}},
                        timeout=8)
         print(f"[ROBERT-AT] Cita guardada tel={telefono}")
 
@@ -711,6 +753,11 @@ MSG_EMAIL_CTA = (
 
 # ─── FLUJO PRINCIPAL ──────────────────────────────────────────────────────────
 def _procesar(telefono: str, texto: str) -> None:
+    # Si el asesor tomó control, el bot NO responde
+    if bot_pausado(telefono):
+        print(f"[ROBERT] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
+        return
+
     texto = texto.strip()
     texto_lower = texto.lower()
     sesion = SESIONES.get(telefono, {})
@@ -966,14 +1013,21 @@ def _procesar(telefono: str, texto: str) -> None:
                 f"para que le cuente lo que hay disponible?"
             )
         else:
-            # Mostrar lista de propiedades
-            SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props,
+            # Mostrar las 2 mejores propiedades primero (no saturar)
+            props_iniciales = props[:2]
+            props_restantes = props[2:]
+            SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props_iniciales,
+                                  "props_extra": props_restantes,
                                   "tipo": tipo, "zona": zona, "operacion": operacion}
             _enviar_texto(telefono,
-                f"*{nombre_corto or nombre}*, encontré *{len(props)} opción{'es' if len(props) > 1 else ''}* "
-                f"que coincide{'n' if len(props) > 1 else ''} con lo que busca 👇"
+                f"*{nombre_corto or nombre}*, encontré opciones que coinciden con lo que busca. "
+                f"Le muestro las *{len(props_iniciales)} mejores* 👇"
             )
-            _enviar_texto(telefono, _lista_titulos(props))
+            _enviar_texto(telefono, _lista_titulos(props_iniciales))
+            if props_restantes:
+                _enviar_texto(telefono,
+                    f"Tengo *{len(props_restantes)} opción{'es' if len(props_restantes) > 1 else ''}* más. "
+                    f"Escriba *+* si desea verlas.")
             return  # queda en step lista para que elija ficha
 
         # Ofrecer cita con Cal.com — primero pregunta binaria, luego slots
@@ -1002,6 +1056,16 @@ def _procesar(telefono: str, texto: str) -> None:
     # ── LISTA → FICHA ─────────────────────────────────────────────────────────
     if step == "lista":
         props = sesion.get("props", [])
+        props_extra = sesion.get("props_extra", [])
+
+        # "+" → mostrar más propiedades
+        if texto.strip() == "+" and props_extra:
+            props_todas = props + props_extra
+            SESIONES[telefono] = {**sesion, "step": "lista", "props": props_todas, "props_extra": []}
+            _enviar_texto(telefono, f"Estas son las *{len(props_extra)} opciones adicionales* 👇")
+            _enviar_texto(telefono, _lista_titulos(props_todas))
+            return
+
         try:
             idx = int(texto) - 1
             if 0 <= idx < len(props):
@@ -1010,11 +1074,11 @@ def _procesar(telefono: str, texto: str) -> None:
             else:
                 _enviar_texto(telefono,
                     f"Por favor elija un número del 1 al {len(props)}, "
-                    f"*0* para volver o *#* para hablar con el asesor.")
+                    f"*+* para ver más, *0* para volver o *#* para hablar con el asesor.")
         except ValueError:
             _enviar_texto(telefono,
                 "Responda con el *número* de la propiedad que desea ver, "
-                "*0* para volver o *#* para hablar con el asesor. 😊")
+                "*+* para ver más, *0* para volver o *#* para hablar con el asesor. 😊")
         return
 
     # ── FICHA → ACCIONES ─────────────────────────────────────────────────────
@@ -1065,7 +1129,7 @@ def _procesar(telefono: str, texto: str) -> None:
                 from datetime import datetime, timezone, timedelta
                 try:
                     dt = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
-                    mx = dt.astimezone(timezone(timedelta(hours=-6)))
+                    mx = dt.astimezone(timezone(timedelta(hours=_TZ_OFFSET_HOURS)))
                     dia_es = _DIAS_ES.get(mx.strftime("%A"), mx.strftime("%A"))
                     fecha_str = f"{dia_es} {mx.strftime('%d/%m a las %H:%M hs')}"
                 except Exception:
@@ -1191,7 +1255,31 @@ def _ir_asesor(telefono: str, sesion: dict) -> None:
         asesor=NOMBRE_ASESOR,
         empresa=NOMBRE_EMPRESA,
     ))
+    # Pausar bot — asesor tomó control
+    pausar_bot(telefono)
     SESIONES.pop(telefono, None)
+
+
+# ─── ENDPOINTS DE CONTROL BOT ────────────────────────────────────────────────
+
+@router.post("/bot/pausar/{telefono}")
+async def api_pausar_bot(telefono: str):
+    """Pausa el bot para un lead — asesor toma control."""
+    pausar_bot(telefono)
+    return {"status": "ok", "telefono": telefono, "bot_pausado": True}
+
+
+@router.post("/bot/despausar/{telefono}")
+async def api_despausar_bot(telefono: str):
+    """Reactiva el bot para un lead — asesor terminó."""
+    despausar_bot(telefono)
+    return {"status": "ok", "telefono": telefono, "bot_pausado": False}
+
+
+@router.get("/bot/estado/{telefono}")
+async def api_estado_bot(telefono: str):
+    """Consulta si el bot está pausado para un lead."""
+    return {"telefono": telefono, "bot_pausado": bot_pausado(telefono)}
 
 
 # ─── ENDPOINT WEBHOOK ─────────────────────────────────────────────────────────
@@ -1236,8 +1324,9 @@ async def crm_actualizar_cliente(record_id: str, request: Request):
     CAMPOS_VALIDOS = {
         "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
         "Presupuesto", "Zona", "Estado", "Notas_Bot", "Fuente", "Llego_WhatsApp",
+        "Ultima_Interaccion", "Propiedad_Interes", "Fuente_Detalle", "Ciudad",
     }
-    ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
+    ESTADOS_VALIDOS = {"no_contactado", "contactado", "calificado", "visita_agendada", "visito", "en_negociacion", "seguimiento", "cerrado_ganado", "cerrado_perdido"}
     fields = body.get("fields", body)
     campos = {k: v for k, v in fields.items() if k in CAMPOS_VALIDOS and v is not None}
     if "Estado" in campos and campos["Estado"] not in ESTADOS_VALIDOS:
@@ -1260,10 +1349,11 @@ async def crm_crear_cliente(request: Request):
     CAMPOS_VALIDOS = {
         "Nombre", "Apellido", "Telefono", "Email", "Operacion", "Tipo_Propiedad",
         "Presupuesto", "Zona", "Estado", "Notas_Bot", "Fuente", "Llego_WhatsApp",
+        "Ultima_Interaccion", "Propiedad_Interes", "Fuente_Detalle", "Ciudad",
     }
     campos = {k: v for k, v in data.items() if k in CAMPOS_VALIDOS and v is not None}
     campos.setdefault("Estado", "no_contactado")
-    ESTADOS_VALIDOS = {"no_contactado", "contactado", "en_negociacion", "cerrado", "descartado"}
+    ESTADOS_VALIDOS = {"no_contactado", "contactado", "calificado", "visita_agendada", "visito", "en_negociacion", "seguimiento", "cerrado_ganado", "cerrado_perdido"}
     if campos["Estado"] not in ESTADOS_VALIDOS:
         raise HTTPException(status_code=422, detail=f"Estado inválido: {campos['Estado']}")
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
