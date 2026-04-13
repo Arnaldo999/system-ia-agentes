@@ -317,6 +317,29 @@ async def auditor_fase2():
     }
 
 
+@app.post("/admin/onboard", tags=["Admin"])
+async def admin_onboard(request: Request):
+    """Onboarding automático de cliente inmobiliario. Llamado desde n8n."""
+    import sys
+    scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from scripts.onboard_inmobiliaria import onboard
+
+    data = await request.json()
+    resultado = onboard(
+        nombre_empresa=data.get("nombre_empresa", ""),
+        nombre_asesor=data.get("nombre_asesor", ""),
+        email_asesor=data.get("email_asesor", ""),
+        telefono_whatsapp=data.get("telefono_whatsapp", ""),
+        ciudad=data.get("ciudad", ""),
+        zonas=data.get("zonas", ""),
+        moneda=data.get("moneda", "USD"),
+        chatwoot_account_id=data.get("chatwoot_account_id"),
+    )
+    return resultado
+
+
 @app.get("/debug/linkedin-id", tags=["Sistema"])
 def debug_linkedin_id():
     """Llama a LinkedIn con el token guardado y devuelve tu Person ID."""
