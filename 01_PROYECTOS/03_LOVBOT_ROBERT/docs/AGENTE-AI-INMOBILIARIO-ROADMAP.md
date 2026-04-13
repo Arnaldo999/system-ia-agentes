@@ -135,43 +135,42 @@
 - **Detalle**: Bot responde al instante via webhook
 
 ### 3.2 Contacto 2 — +24 horas (seguimiento suave)
-- **Estado**: ❌ FALTA
-- **Mensaje tipo**: "Hola [nombre], ¿pudiste ver las opciones que te envié? Estoy para ayudarte"
-- **Implementación necesaria**:
-  - [ ] Campo Airtable: `Ultimo_Contacto` (date), `Cantidad_Seguimientos` (number), `Proximo_Seguimiento` (date)
-  - [ ] Script diario que busque leads con `Proximo_Seguimiento <= HOY`
-  - [ ] Template de WhatsApp aprobado por Meta para este mensaje
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Script**: `seguimiento_leads.py` mensaje #1 — "¿Pudiste ver las opciones?"
 
 ### 3.3 Contacto 3 — +3 días (valor / ficha)
-- **Estado**: ❌ FALTA
-- **Mensaje tipo**: "Te comparto la ficha completa del departamento que te interesó + un par de opciones similares en la misma zona"
-- **Implementación necesaria**:
-  - [ ] Guardar `Propiedad_Interes` en Airtable para referencia
-  - [ ] Generar ficha/comparativo automatizado
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Script**: `seguimiento_leads.py` mensaje #2 — "Te comparto información adicional + agendar visita"
 
 ### 3.4 Contacto 4 — +7 días (nuevas opciones)
-- **Estado**: ❌ FALTA
-- **Mensaje tipo**: "Tenemos propiedades nuevas en [zona] que podrían interesarte"
-- **Implementación necesaria**:
-  - [ ] Buscar propiedades nuevas en Airtable que matcheen perfil del lead
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Script**: `seguimiento_leads.py` mensaje #3 — "Tenemos nuevas propiedades"
 
 ### 3.5 Contacto 5 — +14 días (reactivación)
-- **Estado**: ❌ FALTA
-- **Mensaje tipo**: "Hola [nombre], ¿seguís buscando en [zona]? Hay novedades que te pueden interesar"
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Script**: `seguimiento_leads.py` mensaje #4 — "¿Seguís buscando? Hay novedades"
 
 ### 3.6 Contacto 6 — +30 días (último intento)
-- **Estado**: ❌ FALTA
-- **Mensaje tipo**: "Hola [nombre], quería saber si seguís con planes de [comprar/invertir]. Quedamos a disposición"
-- **Después de este**: mover a "lead dormido" → entra a nurturing (Punto 4)
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Script**: `seguimiento_leads.py` mensaje #5 — último intento → mover a "dormido"
 
 ### 3.7 Infraestructura de seguimiento
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Campos Airtable: `Ultimo_Contacto`, `Cantidad_Seguimientos`, `Proximo_Seguimiento`, `Estado_Seguimiento` (activo/pausado/dormido)
-  - [ ] Script Python o workflow n8n que corra diariamente
-  - [ ] Templates de WhatsApp aprobados por Meta (mensajes fuera de ventana de 24h)
-  - [ ] Pausa automática si lead responde → vuelve al bot conversacional
-  - [ ] Lógica: si lead responde en cualquier punto → recalificar
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Campos Airtable**: `Estado_Seguimiento`, `Cantidad_Seguimientos`, `Proximo_Seguimiento`, `Ultimo_Contacto_Bot` — creados ✅
+- **Script**: `scripts/seguimiento_leads.py` — busca leads con seguimiento activo y envía mensajes ✅
+- **Activación automática**: worker marca `Estado_Seguimiento=activo` + `Proximo_Seguimiento=mañana` al calificar lead caliente/tibio ✅
+- **5 mensajes predefinidos**: seguimiento suave, valor, nuevas opciones, reactivación, último intento ✅
+- **Reporte Telegram**: notifica cantidad de mensajes enviados/dormidos ✅
+- **Pendiente**:
+  - [ ] Registrar como scheduled task en Coolify (cron diario 14:00 UTC)
+  - [ ] Templates WhatsApp aprobados por Meta (necesario para mensajes fuera de ventana 24h)
+  - [ ] Pausa automática si lead responde durante seguimiento
 
 ---
 

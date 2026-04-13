@@ -227,6 +227,14 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
     if subniche:
         campos["Sub_nicho"] = subniche
 
+    # Activar seguimiento automático para leads caliente/tibio
+    from datetime import timedelta
+    if score in ("caliente", "tibio"):
+        campos["Estado_Seguimiento"] = "activo"
+        campos["Cantidad_Seguimientos"] = 0
+        campos["Proximo_Seguimiento"] = (date.today() + timedelta(days=1)).isoformat()
+        campos["Ultimo_Contacto_Bot"] = date.today().isoformat()
+
     if records:
         rec_id = records[0]["id"]
         r = requests.patch(f"{url}/{rec_id}", headers=AT_HEADERS,
