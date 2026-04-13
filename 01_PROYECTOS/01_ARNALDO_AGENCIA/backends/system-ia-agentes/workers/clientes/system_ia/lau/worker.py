@@ -20,7 +20,7 @@ import cloudinary
 import cloudinary.uploader
 from datetime import datetime
 from google import genai
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, BackgroundTasks
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +157,7 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
             f"{EVOLUTION_API_URL}/message/sendText/{EVOLUTION_INSTANCE}",
             headers=_evo_headers(),
             json={"number": numero, "text": mensaje},
-            timeout=10,
+            timeout=20,
         )
         return r.status_code in (200, 201)
     except Exception as e:
@@ -574,24 +574,19 @@ def _procesar_mensaje(
 #  ENDPOINTS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@router.post("/whatsapp")
-async def webhook_whatsapp(request: Request):
-    """Webhook Evolution API — mensajes entrantes de Creaciones Lau."""
-    body = await request.json()
-
+def _handle_webhook(body: dict):
+    """Procesa el webhook en background para no bloquear la respuesta."""
     data = body.get("data", body)
     key = data.get("key", {})
 
-    # Ignorar mensajes propios del bot
     if key.get("fromMe"):
-        return {"status": "ignored", "reason": "fromMe"}
+        return
 
     telefono = key.get("remoteJid", "").replace("@s.whatsapp.net", "")
     message = data.get("message", {})
     nombre_push = data.get("pushName", "")
     message_id = key.get("id", "")
 
-    # Extraer texto
     texto = (
         message.get("conversation", "")
         or message.get("extendedTextMessage", {}).get("text", "")
@@ -599,7 +594,6 @@ async def webhook_whatsapp(request: Request):
         or ""
     )
 
-    # Detectar si hay imagen
     imagen_bytes = None
     tiene_imagen = "imageMessage" in message
     if tiene_imagen and message_id:
@@ -610,16 +604,27 @@ async def webhook_whatsapp(request: Request):
             logger.info("[Lau] Imagen descargada OK, size=%d bytes", len(imagen_bytes))
 
     if not telefono:
-        return {"status": "ignored", "reason": "sin telefono"}
+        return
 
-    # Si hay imagen pero falló la descarga, avisar y pedir reenvío
     if tiene_imagen and imagen_bytes is None:
         sesion = SESIONES.get(telefono, {})
         if sesion.get("modo") == "admin":
             _enviar_texto(telefono, "⚠️ No pude procesar la imagen. ¿Podés reenviarla?")
-            return {"status": "ok", "note": "imagen no descargada"}
+            return
 
     _procesar_mensaje(telefono, texto, nombre_push, imagen_bytes)
+
+
+@router.post("/whatsapp")
+async def webhook_whatsapp(request: Request, bg: BackgroundTasks):
+    """Webhook Evolution API — responde inmediato y procesa en background."""
+    body = await request.json()
+
+    data = body.get("data", body)
+    if data.get("key", {}).get("fromMe"):
+        return {"status": "ignored", "reason": "fromMe"}
+
+    bg.add_task(_handle_webhook, body)
     return {"status": "ok"}
 
 
