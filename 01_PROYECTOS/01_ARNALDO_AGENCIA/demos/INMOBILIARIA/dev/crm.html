@@ -1263,11 +1263,17 @@ let LEADS = [];
 
 // Mapeo estado Airtable → estado visual del pipeline
 const ESTADO_MAP = {
-  'no_contactado': 'nuevo',
-  'contactado':    'contactado',
-  'en_negociacion':'calificado',
-  'cerrado':       'cerrado',
-  'descartado':    'perdido',
+  'no_contactado':   'nuevo',
+  'contactado':      'contactado',
+  'calificado':      'calificado',
+  'visita_agendada': 'cita',
+  'visito':          'cita',
+  'en_negociacion':  'calificado',
+  'seguimiento':     'contactado',
+  'cerrado_ganado':  'cerrado',
+  'cerrado_perdido': 'perdido',
+  'cerrado':         'cerrado',
+  'descartado':      'perdido',
 };
 // Si las notas dicen "CITA AGENDADA" y tiene Fecha_Cita → se muestra como "cita"
 
@@ -1500,8 +1506,8 @@ function renderKanbanFromLeads() {
     const nextMap = {
       nuevo:     {next:'contactado', label:'→ Contactado'},
       contactado:{next:'calificado', label:'→ Calificado'},
-      calificado:{next:'cita',       label:'→ Cita agendada'},
-      cita:      {next:'cerrado',    label:'✅ Cerrar venta'},
+      calificado:{next:'cita',       label:'📅 Agendar visita'},
+      cita:      {next:'cerrado',    label:'🏆 Cerrar venta'},
     };
     const nextInfo = nextMap[l.status];
     const nextBtn = nextInfo
@@ -1542,12 +1548,14 @@ function renderKanbanFromLeads() {
 // ── LEAD DETAIL ────────────────────────────────────────────────────────────
 // Mapeo visual status → valor Airtable
 const STATUS_TO_AT = {
-  nuevo:'no_contactado', contactado:'contactado', calificado:'en_negociacion',
-  cita:'en_negociacion', cerrado:'cerrado', perdido:'descartado'
+  nuevo:'no_contactado', contactado:'contactado', calificado:'calificado',
+  cita:'visita_agendada', cerrado:'cerrado_ganado', perdido:'cerrado_perdido'
 };
 // Mapeo Airtable → visual (para re-render tras guardar)
 const AT_TO_STATUS = {
-  no_contactado:'nuevo', contactado:'contactado', en_negociacion:'calificado',
+  no_contactado:'nuevo', contactado:'contactado', calificado:'calificado',
+  visita_agendada:'cita', visito:'cita', en_negociacion:'calificado',
+  seguimiento:'contactado', cerrado_ganado:'cerrado', cerrado_perdido:'perdido',
   cerrado:'cerrado', descartado:'perdido'
 };
 
@@ -1561,11 +1569,15 @@ function openDetalle(id) {
   // Valor actual en Airtable
   const estadoAt = STATUS_TO_AT[l.status] || 'no_contactado';
   const estadoOpts = [
-    {v:'no_contactado', label:'🔵 No contactado'},
-    {v:'contactado',    label:'🟡 Contactado'},
-    {v:'en_negociacion',label:'🟣 En negociación'},
-    {v:'cerrado',       label:'🏆 Cerrado'},
-    {v:'descartado',    label:'🔴 Descartado'},
+    {v:'no_contactado',   label:'🔵 No contactado'},
+    {v:'contactado',      label:'🟡 Contactado'},
+    {v:'calificado',      label:'🟣 Calificado'},
+    {v:'visita_agendada', label:'📅 Visita agendada'},
+    {v:'visito',          label:'🏠 Visitó'},
+    {v:'en_negociacion',  label:'💼 En negociación'},
+    {v:'seguimiento',     label:'🔄 Seguimiento'},
+    {v:'cerrado_ganado',  label:'🏆 Cerrado (ganado)'},
+    {v:'cerrado_perdido', label:'🔴 Cerrado (perdido)'},
   ];
 
   document.getElementById('detalleBody').innerHTML = `
