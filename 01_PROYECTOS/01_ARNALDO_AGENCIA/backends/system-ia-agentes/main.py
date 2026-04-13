@@ -219,6 +219,78 @@ def health_check():
     }
 
 
+@app.get("/auditor/fase2", tags=["Sistema"])
+async def auditor_fase2():
+    """Ejecuta auditoría completa y retorna reporte estructurado + mensaje Telegram."""
+    import sys, datetime, traceback
+    scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+
+    from scripts import auditor_infra, auditor_workflows, auditor_ycloud
+    from scripts import auditor_tokens, auditor_evolution, auditor_meta_provider, auditor_crm
+
+    AUDITORES = [
+        auditor_infra, auditor_workflows, auditor_ycloud,
+        auditor_tokens, auditor_evolution, auditor_meta_provider, auditor_crm,
+    ]
+    TITULOS = {
+        "infra": "🏗️ Infraestructura", "workflows": "📋 Workflows",
+        "ycloud": "📡 YCloud", "tokens": "🔐 Tokens",
+        "evolution": "💬 Evolution API", "meta": "🌐 Meta Tech Provider",
+        "crm": "🗄️ CRM / Tenants",
+    }
+
+    fecha = datetime.datetime.now(
+        datetime.timezone(datetime.timedelta(hours=-3))
+    ).strftime("%d/%m/%Y %H:%M ARG")
+
+    resultados = []
+    for auditor in AUDITORES:
+        nombre = getattr(auditor, "__name__", str(auditor)).split(".")[-1].replace("auditor_", "")
+        try:
+            resultado = auditor.run()
+            resultados.append(resultado)
+        except Exception as e:
+            resultados.append({
+                "auditor": nombre, "ok": False,
+                "alertas": [], "error_runner": str(e),
+            })
+
+    total_alertas = sum(len(r["alertas"]) for r in resultados)
+
+    # Armar mensaje Telegram
+    lineas = [f"🔍 <b>AUDITORÍA DIARIA</b> — {fecha}", ""]
+    for r in resultados:
+        titulo = TITULOS.get(r["auditor"], r["auditor"].upper())
+        if r.get("error_runner"):
+            lineas.append(f"{titulo}: ⚠️ error — {r['error_runner']}")
+        elif r["ok"]:
+            lineas.append(f"{titulo}: ✅ OK")
+        else:
+            lineas.append(f"{titulo}:")
+            for a in r["alertas"]:
+                nombre_a = a.get("nombre") or a.get("servicio") or "—"
+                detalle = a.get("detalle", "")
+                inst = f" [{a['instancia']}]" if "instancia" in a else ""
+                lineas.append(f"  ⚠️ {nombre_a}{inst} — {detalle}")
+
+    lineas.append("")
+    if total_alertas == 0:
+        lineas.append("✅ <b>Todo OK</b> — sin alertas")
+    else:
+        lineas.append(f"⚠️ <b>{total_alertas} alerta{'s' if total_alertas != 1 else ''}</b> — revisá el panel")
+
+    mensaje = "\n".join(lineas)
+
+    return {
+        "fecha": fecha,
+        "total_alertas": total_alertas,
+        "mensaje_telegram": mensaje,
+        "resultados": resultados,
+    }
+
+
 @app.get("/debug/linkedin-id", tags=["Sistema"])
 def debug_linkedin_id():
     """Llama a LinkedIn con el token guardado y devuelve tu Person ID."""
