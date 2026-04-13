@@ -76,6 +76,43 @@ router = APIRouter(prefix="/clientes/lovbot/inmobiliaria", tags=["Robert — Inm
 # ─── SESIONES EN MEMORIA ──────────────────────────────────────────────────────
 SESIONES: dict[str, dict] = {}
 
+# ─── HISTORIAL DE CONVERSACIÓN ────────────────────────────────────────────────
+# Guarda los últimos mensajes de cada lead para que el asesor vea contexto
+HISTORIAL: dict[str, list[str]] = {}
+MAX_HISTORIAL = 20  # últimos 20 mensajes
+
+
+def _agregar_historial(telefono: str, quien: str, texto: str):
+    """Agrega un mensaje al historial del lead."""
+    tel = re.sub(r'\D', '', telefono)
+    if tel not in HISTORIAL:
+        HISTORIAL[tel] = []
+    from datetime import datetime
+    ts = datetime.now().strftime("%H:%M")
+    HISTORIAL[tel].append(f"[{ts}] {quien}: {texto[:150]}")
+    if len(HISTORIAL[tel]) > MAX_HISTORIAL:
+        HISTORIAL[tel] = HISTORIAL[tel][-MAX_HISTORIAL:]
+
+
+def _guardar_historial_at(telefono: str):
+    """Guarda el historial en Airtable campo Notas_Bot (async)."""
+    tel = re.sub(r'\D', '', telefono)
+    hist = HISTORIAL.get(tel, [])
+    if not hist or not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return
+    resumen = "\n".join(hist[-10:])  # últimos 10 mensajes
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    try:
+        buscar = requests.get(url, headers=AT_HEADERS,
+            params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+        records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+        if records:
+            requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
+                json={"fields": {"Notas_Bot": resumen[:5000]}}, timeout=8)
+    except Exception as e:
+        print(f"[ROBERT] Error guardando historial: {e}")
+
+
 # ─── PAUSA BOT (cuando asesor interviene) ────────────────────────────────────
 # Formato: {telefono: timestamp_pausa}
 # El bot NO responde si el lead está pausado (asesor activo)
@@ -112,6 +149,7 @@ AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "appl
 
 # ─── META GRAPH API ───────────────────────────────────────────────────────────
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
+    _agregar_historial(telefono, "Bot", mensaje)
     if not META_ACCESS_TOKEN or not META_PHONE_ID:
         print(f"[ROBERT-META] Sin token/phone_id. Msg: {mensaje[:80]}")
         return False
@@ -775,6 +813,9 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     if referral and telefono not in SESIONES:
         print(f"[ROBERT] Lead desde anuncio: {referral.get('source_url', referral.get('body', ''))}")
 
+    # Registrar mensaje del lead en historial
+    _agregar_historial(telefono, "Lead", texto)
+
     # Actualizar última interacción en Airtable (async para no bloquear)
     def _update_interaccion():
         from datetime import datetime, timezone
@@ -1187,8 +1228,21 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         try:
             idx = int(texto) - 1
             if 0 <= idx < len(props):
+                prop = props[idx]
                 SESIONES[telefono] = {**sesion, "step": "ficha", "ficha_actual": idx}
-                _enviar_ficha(telefono, props[idx])
+                _enviar_ficha(telefono, prop)
+                # Guardar propiedad de interés en Airtable (async)
+                prop_nombre = f"{prop.get('Tipo', '')} {prop.get('Zona', '')} - {prop.get('Titulo', prop.get('Nombre', ''))}".strip()
+                def _guardar_interes():
+                    if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+                        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+                        buscar = requests.get(url, headers=AT_HEADERS,
+                            params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+                        records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+                        if records:
+                            requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
+                                json={"fields": {"Propiedad_Interes": prop_nombre[:200]}}, timeout=8)
+                threading.Thread(target=_guardar_interes, daemon=True).start()
             else:
                 _enviar_texto(telefono,
                     f"Por favor elija un número del 1 al {len(props)}, "
@@ -1373,6 +1427,8 @@ def _ir_asesor(telefono: str, sesion: dict) -> None:
         asesor=NOMBRE_ASESOR,
         empresa=NOMBRE_EMPRESA,
     ))
+    # Guardar historial para que el asesor vea la conversación
+    threading.Thread(target=_guardar_historial_at, args=(telefono,), daemon=True).start()
     # Pausar bot — asesor tomó control
     pausar_bot(telefono)
     SESIONES.pop(telefono, None)

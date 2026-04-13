@@ -82,10 +82,9 @@
 - **Detalle**: Score caliente → propiedades → Cal.com → notifica asesor por WhatsApp
 
 ### 2.4 Lead explorador → más propiedades + nurturing ligero
-- **Estado**: 🟡 PARCIAL
-- **Detalle**: Score tibio recibe propiedades + cita (igual que caliente) pero sin nurturing posterior
-- **Implementación necesaria**:
-  - [ ] Diferenciar flujo tibio: propiedades + cita + entrada a nurturing si no agenda
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Lead tibio recibe propiedades + cita + se activa `Estado_Seguimiento=activo` automáticamente. Script de seguimiento contacta en 5 puntos. Diferenciación fina de mensajes por score queda como refinamiento futuro.
 
 ### 2.5 Lead frío → flujo de nurturing
 - **Estado**: ✅ LISTO
@@ -231,16 +230,14 @@
 - **Pendiente**: webhook Chatwoot "conversation_resolved" para despausar automático
 
 ### 5.4 Panel del asesor — historial completo
-- **Estado**: 🟡 PARCIAL
-- **Detalle**: Airtable tiene datos del lead pero no historial de la conversación
-- **Implementación necesaria**:
-  - [ ] Guardar mensajes del bot y del cliente en campo Airtable `Historial_Conversacion` (long text)
-  - [ ] O mejor: visible directamente en Chatwoot (tiene historial nativo)
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Dict `HISTORIAL` guarda últimos 20 mensajes (Lead + Bot con timestamp). Se persiste en Airtable `Notas_Bot` cuando escala al asesor.
 
 ### 5.5 Panel del asesor — respuestas del bot
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Incluido en 5.4 — si se usa Chatwoot, el asesor ve todo
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Cada `_enviar_texto()` registra en historial. El asesor ve las respuestas del bot en `Notas_Bot`.
 
 ### 5.6 Panel del asesor — datos de calificación
 - **Estado**: ✅ LISTO
@@ -267,11 +264,9 @@
 - **Detalle**: `Fuente` = "meta_ads" o "whatsapp_directo". `Fuente_Detalle` = "ad:source_id|headline" o "referral:url"
 
 ### 6.3 Datos clave — propiedad de interés
-- **Estado**: 🟡 PARCIAL
-- **Actual**: Se guarda tipo/zona pero no la propiedad específica
-- **Implementación necesaria**:
-  - [ ] Campo `Propiedad_Interes` en Airtable (nombre o record ID de la propiedad elegida)
-  - [ ] Guardar cuando el lead selecciona una ficha
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Cuando el lead selecciona una ficha, guarda `Propiedad_Interes` en Airtable con tipo+zona+título
 
 ### 6.4 Datos clave — última interacción
 - **Estado**: ✅ LISTO
