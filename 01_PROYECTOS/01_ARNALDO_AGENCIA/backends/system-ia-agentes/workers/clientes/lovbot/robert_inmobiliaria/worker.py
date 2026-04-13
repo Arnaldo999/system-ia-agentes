@@ -766,6 +766,21 @@ def _procesar(telefono: str, texto: str) -> None:
         print(f"[ROBERT] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
         return
 
+    # Actualizar última interacción en Airtable (async para no bloquear)
+    def _update_interaccion():
+        from datetime import datetime, timezone
+        if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+            url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+            buscar = requests.get(url, headers=AT_HEADERS,
+                params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+            records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+            if records:
+                requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
+                    json={"fields": {"fecha_ultimo_contacto": datetime.now(timezone.utc).isoformat()}}, timeout=8)
+    threading.Thread(target=_update_interaccion, daemon=True).start()
+
+    import time as _time
+
     texto = texto.strip()
     texto_lower = texto.lower()
     sesion = SESIONES.get(telefono, {})
@@ -773,6 +788,53 @@ def _procesar(telefono: str, texto: str) -> None:
     nombre = sesion.get("nombre", "")
     nombre_corto = nombre.split()[0] if nombre else ""
     subniche = sesion.get("subniche", "")
+
+    # ── Detección de caída: si pasaron >30 min desde último mensaje ────────
+    SESSION_TIMEOUT = 30 * 60  # 30 minutos
+    ultimo_ts = sesion.get("_ultimo_ts", 0)
+    ahora_ts = _time.time()
+
+    if ultimo_ts and step not in ("inicio", "subnicho") and (ahora_ts - ultimo_ts) > SESSION_TIMEOUT:
+        # Lead volvió después de mucho tiempo → modo recuperación
+        if nombre:
+            _enviar_texto(telefono,
+                f"¡Hola de nuevo, *{nombre_corto}*! 👋\n\n"
+                f"¿Seguís interesado en las propiedades que estuvimos viendo?\n\n"
+                f"*1️⃣* Sí, quiero retomar\n"
+                f"*2️⃣* Quiero ver otras opciones\n"
+                f"*3️⃣* Quiero hablar con *{NOMBRE_ASESOR}*\n"
+                f"*0️⃣* Empezar de nuevo"
+            )
+            SESIONES[telefono] = {**sesion, "step": "recuperacion", "_ultimo_ts": ahora_ts}
+            return
+
+    # Actualizar timestamp de sesión
+    if telefono in SESIONES:
+        SESIONES[telefono]["_ultimo_ts"] = ahora_ts
+
+    # ── Step recuperación ─────────────────────────────────────────────────
+    if step == "recuperacion":
+        if texto_lower in ("1", "si", "sí"):
+            # Retomar desde donde estaba
+            prev_step = sesion.get("_prev_step", "inicio")
+            SESIONES[telefono] = {**sesion, "step": prev_step, "_ultimo_ts": ahora_ts}
+            _enviar_texto(telefono, f"¡Perfecto, *{nombre_corto}*! Retomamos donde quedamos. 🏡")
+            return
+        elif texto_lower in ("2", "otras", "opciones"):
+            SESIONES.pop(telefono, None)
+            SESIONES[telefono] = {"step": "objetivo", "nombre": nombre, "subniche": subniche, "_ultimo_ts": ahora_ts}
+            _enviar_texto(telefono, _pregunta("objetivo", nombre, subniche))
+            return
+        elif texto_lower in ("3", "#"):
+            _ir_asesor(telefono, sesion)
+            return
+        else:
+            SESIONES.pop(telefono, None)
+            step = "inicio"
+
+    # Guardar step previo para recuperación
+    if step not in ("inicio", "subnicho", "recuperacion"):
+        SESIONES.get(telefono, {})["_prev_step"] = step
 
     # Comandos globales
     if texto_lower in ("0", "menú", "menu", "inicio", "hola", "hi", "buenas"):
@@ -785,7 +847,7 @@ def _procesar(telefono: str, texto: str) -> None:
 
     # ── INICIO → MENÚ SUBNICHO ────────────────────────────────────────────────
     if step == "inicio":
-        SESIONES[telefono] = {"step": "subnicho"}
+        SESIONES[telefono] = {"step": "subnicho", "_ultimo_ts": ahora_ts}
         _enviar_texto(telefono, MSG_SUBNICHO.format(empresa=NOMBRE_EMPRESA))
         return
 
@@ -990,7 +1052,7 @@ def _procesar(telefono: str, texto: str) -> None:
                   operacion_at, ciudad_at, subniche_at), daemon=True
         ).start()
 
-        # Lead frío → derivar a sitio web
+        # Lead frío → derivar a sitio web + activar nurturing automático
         if derivar or score == "frio":
             web_line = f"🌐 *{SITIO_WEB}*\n\n" if SITIO_WEB else ""
             _enviar_texto(telefono, MSG_SITIO_WEB.format(
@@ -1000,6 +1062,22 @@ def _procesar(telefono: str, texto: str) -> None:
                 target=_notificar_asesor,
                 args=(telefono, sesion_act, calificacion), daemon=True
             ).start()
+            # Activar seguimiento para leads fríos también (nurturing)
+            def _activar_nurturing():
+                from datetime import date, timedelta
+                if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+                    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+                    buscar = requests.get(url, headers=AT_HEADERS,
+                        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+                    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+                    if records:
+                        requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
+                            json={"fields": {
+                                "Estado_Seguimiento": "activo",
+                                "Cantidad_Seguimientos": 0,
+                                "Proximo_Seguimiento": (date.today() + timedelta(days=3)).isoformat(),
+                            }}, timeout=8)
+            threading.Thread(target=_activar_nurturing, daemon=True).start()
             SESIONES.pop(telefono, None)
             return
 

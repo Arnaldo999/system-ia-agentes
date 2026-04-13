@@ -96,29 +96,19 @@
   - [ ] Diferenciar flujo tibio: propiedades + cita + entrada a nurturing si no agenda
 
 ### 2.5 Lead frío → flujo de nurturing
-- **Estado**: ❌ FALTA
-- **Detalle**: Hoy el lead frío se deriva al sitio web y se abandona
-- **Requerimiento PDF**: Debe entrar a flujo de nurturing automático
-- **Implementación necesaria**:
-  - [ ] En vez de abandonar, marcar en Airtable `Flujo_Nurturing=activo`
-  - [ ] Script/workflow semanal envía contenido de valor
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Lead frío se deriva a sitio web + se activa `Estado_Seguimiento=activo` con `Proximo_Seguimiento=+3 días`. El script `seguimiento_leads.py` lo contacta automáticamente.
 
 ### 2.6 Detección de caída del lead
-- **Estado**: ❌ FALTA
-- **Detalle**: Si el lead deja de responder, la sesión queda en memoria sin timeout ni acción
-- **Requerimiento PDF**: Detectar: deja de responder, responde corto, evade visita
-- **Implementación necesaria**:
-  - [ ] Timeout de sesión (ej: 30 min sin respuesta → guardar estado en Airtable)
-  - [ ] Detectar respuestas cortas/evasivas (Gemini)
-  - [ ] Activar modo recuperación automático
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Timeout de 30 min sin actividad. Si lead vuelve después de timeout, activa modo recuperación automáticamente. Timestamp `_ultimo_ts` en cada sesión.
 
 ### 2.7 Modo recuperación
-- **Estado**: ❌ FALTA
-- **Detalle**: No existe ningún mecanismo de recuperación
-- **Requerimiento PDF**: "Tengo otras opciones similares", "Te puedo enviar comparativo", "¿Qué te faltó para decidir?"
-- **Implementación necesaria**:
-  - [ ] Detectar caída (2.6) y cambiar a mensajes de recuperación
-  - [ ] 3 intentos de recuperación antes de mover a nurturing
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Step "recuperacion" con 4 opciones: retomar, ver otras opciones, hablar con asesor, empezar de nuevo. Guarda `_prev_step` para retomar exactamente donde quedó.
 
 ### 2.8 Detección de objeción familiar
 - **Estado**: ✅ LISTO
@@ -276,7 +266,7 @@
 - **Estado**: 🟡 PARCIAL
 - **Worker**: ✅ Actualizado 2026-04-13 — 9 estados: `no_contactado, contactado, calificado, visita_agendada, visito, en_negociacion, seguimiento, cerrado_ganado, cerrado_perdido`
 - **Airtable**: ⚠️ Pendiente agregar nuevos estados al singleSelect (se crean automáticamente al primer uso, pero hay que verificar)
-- **CRM HTML**: ⚠️ Pendiente actualizar pipeline visual
+- **CRM HTML**: ✅ Actualizado 2026-04-13 — mapeos ESTADO_MAP, STATUS_TO_AT, AT_TO_STATUS, dropdown 9 estados
 - **Lógica bot**: ✅ Caliente→`calificado`, cita confirmada→`visita_agendada`
 
 ### 6.2 Datos clave — fuente del lead
@@ -294,10 +284,9 @@
   - [ ] Guardar cuando el lead selecciona una ficha
 
 ### 6.4 Datos clave — última interacción
-- **Estado**: ❌ FALTA
-- **Actual**: Solo `Fecha_WhatsApp` (fecha de creación, nunca se actualiza)
-- **Implementación necesaria**:
-  - [ ] Campo `Ultima_Interaccion` (date) — actualizar cada vez que el lead escribe
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: `fecha_ultimo_contacto` se actualiza automáticamente cada vez que el lead escribe (async thread)
 
 ### 6.5 Métricas — tiempo de respuesta
 - **Estado**: ❌ FALTA
