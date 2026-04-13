@@ -193,18 +193,28 @@ def _chatwoot_escalar(telefono: str, sesion: dict, calificacion: dict = None):
     historial_texto = "\n".join(hist[-10:]) if hist else "Sin historial"
 
     try:
-        # Agregar label atiende-humano
+        # Agregar labels: atiende-humano + score (caliente/tibio/frio)
         labels = conv.get("labels", [])
         if "atiende-humano" not in labels:
             labels.append("atiende-humano")
-            if "atiende-agenteai" in labels:
-                labels.remove("atiende-agenteai")
-            requests.post(
-                f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/labels",
-                headers=_chatwoot_headers(),
-                json={"labels": labels},
-                timeout=8,
-            )
+        if "atiende-agenteai" in labels:
+            labels.remove("atiende-agenteai")
+        # Agregar label del score y quitar los otros scores
+        for s in ("caliente", "tibio", "frio"):
+            if s in labels:
+                labels.remove(s)
+        if score in ("caliente", "tibio", "frio"):
+            labels.append(score)
+        # Agregar automatizacion
+        if "automatizacion" not in labels:
+            labels.append("automatizacion")
+
+        requests.post(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/labels",
+            headers=_chatwoot_headers(),
+            json={"labels": labels},
+            timeout=8,
+        )
 
         # Enviar nota privada con contexto para el asesor
         nota_asesor = (
@@ -983,6 +993,21 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     # Registrar mensaje del lead en historial
     _agregar_historial(telefono, "Lead", texto)
 
+    # Si lead estaba en seguimiento/dormido y responde → desactivar seguimiento
+    def _desactivar_seguimiento():
+        if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+            url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+            buscar = requests.get(url, headers=AT_HEADERS,
+                params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+            records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+            if records:
+                estado_seg = records[0].get("fields", {}).get("Estado_Seguimiento", "")
+                if estado_seg in ("activo", "dormido"):
+                    requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
+                        json={"fields": {"Estado_Seguimiento": "pausado"}}, timeout=8)
+                    print(f"[ROBERT] Lead {telefono} respondió — seguimiento pausado (era {estado_seg})")
+    threading.Thread(target=_desactivar_seguimiento, daemon=True).start()
+
     # Actualizar última interacción en Airtable (async para no bloquear)
     def _update_interaccion():
         from datetime import datetime, timezone
@@ -1315,6 +1340,11 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 target=_notificar_asesor,
                 args=(telefono, sesion_act, calificacion), daemon=True
             ).start()
+            # Escalar a Chatwoot con score label
+            threading.Thread(
+                target=_chatwoot_escalar,
+                args=(telefono, sesion_act, calificacion), daemon=True
+            ).start()
             # Activar seguimiento para leads fríos también (nurturing)
             def _activar_nurturing():
                 from datetime import date, timedelta
@@ -1340,6 +1370,11 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
 
         threading.Thread(
             target=_notificar_asesor,
+            args=(telefono, sesion_act, calificacion), daemon=True
+        ).start()
+        # Actualizar labels en Chatwoot con score
+        threading.Thread(
+            target=_chatwoot_escalar,
             args=(telefono, sesion_act, calificacion), daemon=True
         ).start()
 

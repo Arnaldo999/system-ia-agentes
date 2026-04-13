@@ -183,8 +183,9 @@
 - **Detalle**: `procesar_nurturing()` busca leads dormidos con último contacto hace +14 días. 6 mensajes en rotación.
 
 ### 4.6 Detección de respuesta → recalificar
-- **Estado**: 🟡 PARCIAL
-- **Detalle**: Si lead dormido responde "Sí", el webhook lo recibe y el bot lo procesa (sesión nueva → recalifica). Falta marcar automáticamente `Estado_Seguimiento` de dormido a activo cuando responde.
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Cuando lead en seguimiento (activo/dormido) responde, `_desactivar_seguimiento()` cambia `Estado_Seguimiento` a `pausado`. El bot lo atiende como conversación nueva → recalifica.
 
 ### 4.7 Infraestructura de nurturing
 - **Estado**: ✅ LISTO
