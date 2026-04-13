@@ -1237,9 +1237,28 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 f"*{nombre_corto or nombre}*, en este momento no tenemos propiedades "
                 f"con exactamente esas características en nuestro portal, "
                 f"pero *{NOMBRE_ASESOR}* trabaja con opciones que no siempre están publicadas. 🏡\n\n"
-                f"¿Le parece si le coordino una llamada rápida — *hoy o mañana* — "
-                f"para que le cuente lo que hay disponible?"
+                f"Le coordino una reunión rápida para que le cuente lo que hay disponible."
             )
+            # Ir directo a Cal.com si hay slots
+            if _cal_disponible():
+                email = sesion_act.get("email", "")
+                slots = _cal_obtener_slots()
+                if slots:
+                    SESIONES[telefono] = {**sesion_act, "step": "ofrecer_cita",
+                                          "slots": slots, "email": email}
+                    _enviar_texto(telefono,
+                        f"¿Prefiere ver los horarios disponibles con *{NOMBRE_ASESOR}* "
+                        f"ahora mismo, o que él se contacte con usted?\n\n"
+                        f"*1️⃣* Ver horarios disponibles 📅\n"
+                        f"*0️⃣* Que me contacten a la brevedad"
+                    )
+                    return
+            # Sin Cal.com o sin slots → despedida con asesor
+            _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+                nombre=nombre_corto or nombre, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
+            pausar_bot(telefono)
+            SESIONES.pop(telefono, None)
+            return
         else:
             # Mostrar las 2 mejores propiedades primero (no saturar)
             props_iniciales = props[:2]
