@@ -283,9 +283,26 @@ async def auditor_fase2():
 
     mensaje = "\n".join(lineas)
 
+    # Enviar a Telegram directamente
+    import requests as req
+    tg_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    tg_chat = os.environ.get("TELEGRAM_CHAT_ID", "")
+    telegram_enviado = False
+    if tg_token and tg_chat:
+        try:
+            req.post(
+                f"https://api.telegram.org/bot{tg_token}/sendMessage",
+                json={"chat_id": tg_chat, "text": mensaje, "parse_mode": "HTML"},
+                timeout=10,
+            )
+            telegram_enviado = True
+        except Exception as e:
+            logger.error(f"[auditor/fase2] Error enviando Telegram: {e}")
+
     return {
         "fecha": fecha,
         "total_alertas": total_alertas,
+        "telegram_enviado": telegram_enviado,
         "mensaje_telegram": mensaje,
         "resultados": resultados,
     }
