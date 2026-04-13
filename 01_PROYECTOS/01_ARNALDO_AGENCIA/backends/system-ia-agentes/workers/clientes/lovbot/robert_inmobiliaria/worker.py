@@ -188,7 +188,8 @@ def _normalizar_zona(zona: str) -> str:
 def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
                        tipo: str = "", zona: str = "", notas: str = "",
                        presupuesto: str = "", operacion: str = "",
-                       ciudad: str = "", subniche: str = "") -> None:
+                       ciudad: str = "", subniche: str = "",
+                       fuente_detalle: str = "") -> None:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
         print("[ROBERT-AT] Sin base/tabla configurada — skip registro lead")
         return
@@ -226,6 +227,9 @@ def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
         campos["Presupuesto"] = presupuesto
     if subniche:
         campos["Sub_nicho"] = subniche
+    if fuente_detalle:
+        campos["Fuente"] = "meta_ads" if fuente_detalle.startswith("ad:") else "whatsapp_directo"
+        campos["Fuente_Detalle"] = fuente_detalle
 
     # Activar seguimiento automático para leads caliente/tibio
     from datetime import timedelta
@@ -760,11 +764,16 @@ MSG_EMAIL_CTA = (
 
 
 # ─── FLUJO PRINCIPAL ──────────────────────────────────────────────────────────
-def _procesar(telefono: str, texto: str) -> None:
+def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
+    referral = referral or {}
     # Si el asesor tomó control, el bot NO responde
     if bot_pausado(telefono):
         print(f"[ROBERT] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
         return
+
+    # Guardar referral en sesión si es nuevo lead (para Caso A)
+    if referral and telefono not in SESIONES:
+        print(f"[ROBERT] Lead desde anuncio: {referral.get('source_url', referral.get('body', ''))}")
 
     # Actualizar última interacción en Airtable (async para no bloquear)
     def _update_interaccion():
@@ -845,7 +854,29 @@ def _procesar(telefono: str, texto: str) -> None:
         _ir_asesor(telefono, sesion)
         return
 
-    # ── INICIO → MENÚ SUBNICHO ────────────────────────────────────────────────
+    # ── CASO A: Lead desde anuncio específico (Meta Ads referral) ────────────
+    if step == "inicio" and referral and (referral.get("source_url") or referral.get("body")):
+        ad_source = referral.get("source_url", "")
+        ad_body = referral.get("body", "")
+        ad_headline = referral.get("headline", "")
+        fuente_detalle = f"ad:{referral.get('source_id', '')}|{ad_headline[:50]}" if referral.get("source_id") else f"referral:{ad_source[:80]}"
+
+        SESIONES[telefono] = {
+            "step": "nombre", "_ultimo_ts": ahora_ts,
+            "subniche": "agencia_inmobiliaria",
+            "_referral": referral,
+            "_fuente_detalle": fuente_detalle,
+        }
+        # Respuesta contextual con info del anuncio
+        intro = ad_headline or ad_body or "la propiedad que viste"
+        _enviar_texto(telefono,
+            f"¡Hola! 👋 Gracias por tu interés en *{intro}*.\n\n"
+            f"Soy el asistente de *{NOMBRE_EMPRESA}*. "
+            f"Para darte la mejor atención, ¿me decís tu *nombre*?"
+        )
+        return
+
+    # ── INICIO → MENÚ SUBNICHO (Caso B: lead genérico) ───────────────────────
     if step == "inicio":
         SESIONES[telefono] = {"step": "subnicho", "_ultimo_ts": ahora_ts}
         _enviar_texto(telefono, MSG_SUBNICHO.format(empresa=NOMBRE_EMPRESA))
@@ -1046,10 +1077,11 @@ def _procesar(telefono: str, texto: str) -> None:
         email          = sesion_act.get("email", "")
 
         # Registrar lead en Airtable (background)
+        fuente_det = sesion_act.get("_fuente_detalle", "")
         threading.Thread(
             target=_at_registrar_lead,
             args=(telefono, nombre, score, tipo, zona, nota, presupuesto_at,
-                  operacion_at, ciudad_at, subniche_at), daemon=True
+                  operacion_at, ciudad_at, subniche_at, fuente_det), daemon=True
         ).start()
 
         # Lead frío → derivar a sitio web + activar nurturing automático

@@ -23,23 +23,15 @@
 - **Archivo**: `workers/clientes/lovbot/robert_inmobiliaria/worker.py`
 
 ### 1.2 Detectar origen del lead (anuncio/UTM/webhook)
-- **Estado**: ❌ FALTA
-- **Detalle**: Hoy todos los leads entran como "whatsapp_directo". No se detecta si viene de Meta Ads, portal, orgánico, etc.
-- **Requerimiento PDF**: "Detecta origen del lead (ID anuncio / UTM / webhook)"
-- **Implementación necesaria**:
-  - [ ] Leer `referral` del webhook de Meta (contiene ad_id, source_url)
-  - [ ] Guardar en Airtable campo `Fuente_Detalle` (ad_id, campaign_name, source_url)
-  - [ ] Adaptar respuesta inicial según origen (Caso A vs Caso B)
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Webhook main.py extrae `referral` de mensajes Meta (text + button). Worker guarda `Fuente_Detalle` en Airtable con ad_id/source_url. Campo `Fuente` se marca como "meta_ads" si viene de anuncio.
 
 ### 1.3 Caso A: Lead desde anuncio de propiedad específica
-- **Estado**: ❌ FALTA
-- **Detalle**: Hoy no diferencia entre lead de anuncio y lead genérico. Todos pasan por el mismo flujo.
-- **Requerimiento PDF**: "Responde con info DIRECTA de esa propiedad: precio, ubicación, highlights, disponibilidad"
-- **Implementación necesaria**:
-  - [ ] Detectar `referral.body` o `referral.source_url` del webhook Meta
-  - [ ] Matchear con propiedad en Airtable (por ID, nombre o URL)
-  - [ ] Responder directamente con ficha de esa propiedad
-  - [ ] Saltar pasos de tipo/zona y ir directo a calificación + cita
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Si hay referral, bot responde contextualmente con headline del anuncio, salta subnicho y va directo a pedir nombre. Guarda `_fuente_detalle` y `_referral` en sesión.
+- **Pendiente**: matchear referral con propiedad específica en Airtable (requiere que Robert configure source_url en sus ads apuntando a la propiedad)
 
 ### 1.4 Caso B: Lead genérico (sin propiedad)
 - **Estado**: ✅ LISTO
@@ -270,11 +262,9 @@
 - **Lógica bot**: ✅ Caliente→`calificado`, cita confirmada→`visita_agendada`
 
 ### 6.2 Datos clave — fuente del lead
-- **Estado**: 🟡 PARCIAL
-- **Actual**: Hardcodeado "whatsapp_directo"
-- **Implementación necesaria**:
-  - [ ] Campo `Fuente_Detalle` en Airtable (ad_id, campaign, orgánico, portal)
-  - [ ] Leer referral del webhook Meta
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: `Fuente` = "meta_ads" o "whatsapp_directo". `Fuente_Detalle` = "ad:source_id|headline" o "referral:url"
 
 ### 6.3 Datos clave — propiedad de interés
 - **Estado**: 🟡 PARCIAL
@@ -398,8 +388,9 @@
 - **Estado**: ✅ CUMPLE
 
 ### 8.7 No responder genérico sin contexto
-- **Estado**: 🟡 PARCIAL
-- **Detalle**: Leads genéricos reciben misma bienvenida. Con Caso A implementado, se contextualiza
+- **Estado**: ✅ CUMPLE
+- **Completado**: 2026-04-13
+- **Detalle**: Caso A contextualiza con headline del anuncio. Caso B sigue flujo genérico (correcto para leads orgánicos)
 
 ### 8.8 No depender del asesor para seguimiento
 - **Estado**: 🟡 PARCIAL

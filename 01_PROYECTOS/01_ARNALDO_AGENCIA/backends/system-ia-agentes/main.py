@@ -126,27 +126,36 @@ async def meta_webhook_events(request: Request):
             value = change.get("value", {})
             phone_number_id = value.get("metadata", {}).get("phone_number_id", "")
             for msg in value.get("messages", []):
-                if msg.get("type") != "text":
+                msg_type = msg.get("type", "")
+                # Aceptar text y button (Meta Ads envía button como primer mensaje)
+                if msg_type == "text":
+                    texto = msg.get("text", {}).get("body", "")
+                elif msg_type == "button":
+                    texto = msg.get("button", {}).get("text", "") or msg.get("button", {}).get("payload", "")
+                else:
                     continue
+
                 msg_id = msg.get("id", "")
                 if msg_id and msg_id in _META_MSG_IDS_PROCESADOS:
                     print(f"[META-WEBHOOK] Duplicado ignorado: {msg_id}")
                     continue
                 if msg_id:
                     _META_MSG_IDS_PROCESADOS.add(msg_id)
-                    # Mantener el set acotado a 500 entradas
                     if len(_META_MSG_IDS_PROCESADOS) > 500:
                         _META_MSG_IDS_PROCESADOS.clear()
 
                 telefono = msg.get("from", "")
-                texto = msg.get("text", {}).get("body", "")
                 if not telefono or not texto:
                     continue
+
+                # Extraer referral (origen del lead: Meta Ads, click-to-WhatsApp)
+                referral = msg.get("referral", {})
+
                 # Enrutar según phone_number_id
                 if phone_number_id == _ROBERT_PHONE_ID:
                     threading.Thread(
                         target=robert_inmo_procesar,
-                        args=(telefono, texto), daemon=True
+                        args=(telefono, texto, referral), daemon=True
                     ).start()
 
     return {"status": "received"}
