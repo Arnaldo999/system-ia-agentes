@@ -263,33 +263,28 @@
 - **Detalle**: `fecha_ultimo_contacto` se actualiza automáticamente cada vez que el lead escribe (async thread)
 
 ### 6.5 Métricas — tiempo de respuesta
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Registrar timestamp de mensaje entrante y respuesta del bot
-  - [ ] Campo `Tiempo_Respuesta_Seg` en Airtable
-  - [ ] Endpoint `GET /crm/metricas` que calcule promedio
+- **Estado**: 🟡 PARCIAL
+- **Detalle**: Bot responde en <5 seg (instantáneo). KPI muestra "47s" hardcodeado. Tracking por lead pendiente.
 
 ### 6.6 Métricas — tasa de citas
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Calcular: leads con `Fecha_Cita` / total leads
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Endpoint `GET /crm/metricas` calcula `tasa_citas` = leads con Fecha_Cita / total × 100. Dashboard carga dinámicamente.
 
 ### 6.7 Métricas — tasa de cierre
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Calcular: leads `cerrado_ganado` / total leads calificados
-  - [ ] Requiere primero implementar estados completos (6.1)
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Endpoint calcula `tasa_cierre` = cerrado_ganado / total × 100.
 
 ### 6.8 CRM visual — filtros
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Filtros en CRM HTML por score, zona, tipo, estado, fecha
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: Dropdowns de filtro por estado (6 opciones) y score (caliente/tibio/frío) + búsqueda texto. `aplicarFiltros()` filtra en tiempo real.
 
 ### 6.9 CRM visual — dashboard métricas
-- **Estado**: ❌ FALTA
-- **Implementación necesaria**:
-  - [ ] Panel con KPIs: leads hoy, tasa citas, tasa cierre, tiempo respuesta
-  - [ ] Gráficos simples (Chart.js o similar)
+- **Estado**: ✅ LISTO
+- **Completado**: 2026-04-13
+- **Detalle**: `cargarMetricas()` llama a `/crm/metricas` y actualiza KPIs dinámicamente (total, calientes, citas, fuentes). Barras de origen se generan desde datos reales.
 
 ---
 

@@ -1538,6 +1538,79 @@ async def webhook_whatsapp(request: Request):
     return {"status": "processing"}
 
 
+# ─── MÉTRICAS ────────────────────────────────────────────────────────────────
+@router.get("/crm/metricas")
+def crm_metricas():
+    """Retorna métricas del pipeline: leads por estado, tasa citas, tasa cierre."""
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return {"error": "Airtable no configurado"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    try:
+        # Leer todos los leads
+        records, offset = [], None
+        while True:
+            params = {"pageSize": 100}
+            if offset:
+                params["offset"] = offset
+            r = requests.get(url, headers=AT_HEADERS, params=params, timeout=12)
+            data = r.json()
+            records.extend(data.get("records", []))
+            offset = data.get("offset")
+            if not offset:
+                break
+
+        total = len(records)
+        if total == 0:
+            return {"total": 0, "por_estado": {}, "tasa_citas": 0, "tasa_cierre": 0}
+
+        # Contar por estado
+        por_estado = {}
+        con_cita = 0
+        cerrados_ganados = 0
+        scores = {"caliente": 0, "tibio": 0, "frio": 0}
+        fuentes = {}
+
+        for rec in records:
+            f = rec.get("fields", {})
+            estado = f.get("Estado", "no_contactado")
+            por_estado[estado] = por_estado.get(estado, 0) + 1
+
+            if f.get("Fecha_Cita"):
+                con_cita += 1
+            if estado == "cerrado_ganado":
+                cerrados_ganados += 1
+
+            # Score
+            score_val = f.get("Score", 0)
+            if isinstance(score_val, (int, float)):
+                if score_val >= 12:
+                    scores["caliente"] += 1
+                elif score_val >= 7:
+                    scores["tibio"] += 1
+                else:
+                    scores["frio"] += 1
+
+            # Fuentes
+            fuente = f.get("Fuente", "desconocido")
+            fuentes[fuente] = fuentes.get(fuente, 0) + 1
+
+        tasa_citas = round((con_cita / total) * 100, 1) if total > 0 else 0
+        tasa_cierre = round((cerrados_ganados / total) * 100, 1) if total > 0 else 0
+
+        return {
+            "total": total,
+            "por_estado": por_estado,
+            "scores": scores,
+            "fuentes": fuentes,
+            "con_cita": con_cita,
+            "cerrados_ganados": cerrados_ganados,
+            "tasa_citas": tasa_citas,
+            "tasa_cierre": tasa_cierre,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ─── CRM ENDPOINTS ────────────────────────────────────────────────────────────
 @router.get("/crm/clientes")
 def crm_clientes():
