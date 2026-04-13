@@ -390,7 +390,7 @@
 | **6** | CRM / Dashboard | 9 | 0 | 4 | 5 |
 | **7** | Stack técnico | 7 | 2 | 3 | 2 |
 | **8** | Reglas / No hacer | 9 | 3 | 2 | 4 |
-| **TOTAL** | | **64** | **17 (27%)** | **13 (20%)** | **34 (53%)** |
+| **TOTAL** | | **64** | **59 (92%)** | **2 (3%)** | **3 (5%)** |
 
 ### Prioridades de implementación (por impacto)
 
@@ -415,4 +415,22 @@
 | Fecha | Cambio | Items afectados |
 |-------|--------|-----------------|
 | 2026-04-13 | Documento creado — análisis inicial completo | Todos |
-| | | |
+| 2026-04-13 | Fix timezone Cal.com configurable | 7.7 |
+| 2026-04-13 | Mostrar 2 propiedades en vez de 5 | 2.2, 8.3, 8.9 |
+| 2026-04-13 | Pipeline CRM 9 estados + worker + HTML | 6.1 |
+| 2026-04-13 | Pausa bot cuando asesor interviene + endpoints | 5.2, 5.3 |
+| 2026-04-13 | Seguimiento automático 6 puntos + scheduled task | 3.1-3.7 |
+| 2026-04-13 | CRM HTML pipeline actualizado 9 estados | 6.1 |
+| 2026-04-13 | Detección caída + modo recuperación | 2.6, 2.7 |
+| 2026-04-13 | Lead frío → nurturing automático | 2.5 |
+| 2026-04-13 | Última interacción auto-update | 6.4 |
+| 2026-04-13 | Detección origen lead (Caso A) + referral Meta | 1.2, 1.3, 6.2, 8.7 |
+| 2026-04-13 | Historial conversación + propiedad interés | 5.4, 5.5, 6.3 |
+| 2026-04-13 | Migración LLM → GPT-4o + Gemini fallback | 7.1 |
+| 2026-04-13 | Conversación natural (GPT-4o interpreta texto libre) | 8.2 |
+| 2026-04-13 | Nurturing completo 6 mensajes quincenales | 4.1-4.5, 4.7 |
+| 2026-04-13 | Endpoint métricas + filtros CRM + dashboard dinámico | 6.5-6.9 |
+| 2026-04-13 | Fix Cal.com siempre para leads calientes sin props | — |
+| 2026-04-13 | Bridge Chatwoot completo + webhook pausa/retoma | 5.1 |
+| 2026-04-13 | Labels score automáticos en Chatwoot | 5.1 |
+| 2026-04-13 | Recalificar lead dormido que responde | 4.6 |
