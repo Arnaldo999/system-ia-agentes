@@ -390,7 +390,7 @@
 | **6** | CRM / Dashboard | 9 | 0 | 4 | 5 |
 | **7** | Stack técnico | 7 | 2 | 3 | 2 |
 | **8** | Reglas / No hacer | 9 | 3 | 2 | 4 |
-| **TOTAL** | | **64** | **59 (92%)** | **2 (3%)** | **3 (5%)** |
+| **TOTAL** | | **64** | **62 (97%)** | **1 (2%)** | **1 (2%)** |
 
 ### Prioridades de implementación (por impacto)
 
@@ -407,6 +407,112 @@
 | **P3** | Métricas y dashboard (6.5-6.9) | Nice to have — se puede calcular manual | Medio |
 | **P3** | Meta Ads integration (7.5) | Depende de que Robert tenga campañas activas | Medio |
 | **P3** | Cal.com timezone fix (7.7) | Bug menor — un cambio de variable | Bajo |
+
+---
+
+## PROPUESTA DE ESTRATEGIA DE REMARKETING (a presentar a Robert)
+
+> **Contexto**: el worker está 97% listo. Antes de activar el seguimiento automático
+> hay que decidir con Robert la estrategia de canales (WhatsApp vs Email) para evitar
+> fricción innecesaria con plantillas Meta y maximizar conversión.
+>
+> **Estado**: 🟡 Pendiente de validación con Robert (reunión).
+
+### El problema que resuelve esta propuesta
+
+WhatsApp Business API tiene la **regla de la ventana de 24 horas**:
+- Dentro de 24h del último mensaje del cliente → mensajes libres
+- Después de 24h → SOLO plantillas pre-aprobadas por Meta (1-3 días de aprobación)
+
+Si activamos el seguimiento de 6 puntos solo por WhatsApp, Robert necesita aprobar
+**5-6 plantillas** en su Meta Business Manager antes de arrancar → onboarding lento.
+
+### Solución: enfoque híbrido WhatsApp + Email
+
+**Tipos de cliente** (5 estados según comportamiento del lead):
+
+| # | Tipo | Cómo se identifica | Intención de compra |
+|---|------|-------------------|---------------------|
+| 1 | 🔥 Caliente | Tiene presupuesto + zona + quiere visitar ya | 0-30 días |
+| 2 | 🟡 Tibio (Explorador) | Compara opciones, pregunta mucho, no agenda | 1-3 meses |
+| 3 | ❄️ Frío | "Solo viendo", sin urgencia | 3-6 meses |
+| 4 | 💤 Dormido | No respondió en 30 días | 6+ meses |
+| 5 | 🚫 Perdido | Dijo "no me interesa" o compró en otro lado | Nunca |
+
+### Plazos por tipo de cliente
+
+#### 🔥 Lead Caliente — objetivo: cerrar visita YA
+| Plazo | Canal | Mensaje |
+|-------|-------|---------|
+| 0 min | WhatsApp libre | Respuesta + propiedades + agendar |
+| +2 hs (si no agendó) | WhatsApp libre | "¿Te quedó alguna duda? Te paso un asesor" |
+| +24 hs | WhatsApp libre | Confirmación visita / recordatorio |
+| +3 días (si no visitó) | WhatsApp libre | "¿Pudiste pasar? ¿Querés reagendar?" |
+
+→ Si no responde en 3 días → pasa a Tibio
+
+#### 🟡 Lead Tibio — objetivo: mantener interés + dar valor
+| Plazo | Canal | Mensaje |
+|-------|-------|---------|
+| +24 hs | WhatsApp libre | "¿Pudiste ver las opciones?" |
+| +3 días | **Email** | Ficha PDF detallada + comparativo |
+| +7 días | **Email** | Nuevas propiedades de la zona |
+| +14 días | **WhatsApp template** | "Hay novedades, ¿querés que te las muestre?" |
+| +30 días | **Email** | Última oferta + info financiamiento |
+
+→ Si no responde → pasa a Dormido
+
+#### ❄️ Lead Frío — objetivo: educar + esperar el momento
+| Plazo | Canal | Mensaje |
+|-------|-------|---------|
+| +7 días | **Email** | Guía "Cómo elegir tu primera propiedad" |
+| +21 días | **Email** | Plusvalía de zonas (contenido valor) |
+| +45 días | **Email** | Opciones de financiamiento |
+
+→ Después de 60 días → pasa a Dormido
+
+#### 💤 Lead Dormido — objetivo: top-of-mind
+| Plazo | Canal | Mensaje |
+|-------|-------|---------|
+| Cada 15 días | **Email** | Newsletter: nuevas propiedades + zona |
+| Cada 60 días | **WhatsApp template** | "¿Seguís en búsqueda?" |
+
+→ Si responde → vuelve a clasificarse desde cero
+
+### Total de mensajes y canales
+
+| Tipo | WhatsApp libre | WhatsApp template | Email | Total |
+|------|---------------|-------------------|-------|-------|
+| Caliente | 4 | 0 | 0 | 4 |
+| Tibio | 1 | 1 | 3 | 5 |
+| Frío | 0 | 0 | 3 | 3 |
+| Dormido | 0 | 1 | indefinido (newsletter) | ∞ |
+
+**Solo 2 plantillas Meta a aprobar** (vs 5-6 si fuera todo WhatsApp):
+1. **Reactivación tibio (+14 días)**: "Hola {{1}}, hay novedades en {{2}}, ¿te interesa verlas?"
+2. **Reactivación dormido (+60 días)**: "Hola {{1}}, ¿seguís buscando propiedad en {{2}}?"
+
+### Beneficios para Robert
+
+- **Onboarding rápido**: arranca en 1-2 días (no semanas esperando Meta)
+- **Email profesional con fichas PDF**: vendible como "newsletter inmobiliario"
+- **WhatsApp solo donde convierte**: ventana 24h y reactivación clave
+- **Más barato**: email es ~$0, WhatsApp template cuesta por mensaje
+
+### Beneficios para la agencia
+
+- Estrategia escalable a futuros clientes inmobiliarios
+- Producto más vendible: "CRM + bot + email marketing + remarketing WhatsApp"
+- Diferenciación: no es un bot suelto, es sistema completo de captación + nurturing
+
+### Próximos pasos (después de validar con Robert)
+
+- [ ] Decisión final con Robert sobre enfoque híbrido
+- [ ] Robert aprueba 2 plantillas en su Meta Business Manager
+- [ ] Adaptar `seguimiento_leads.py`: agregar canal email vía SMTP
+- [ ] Crear 4-5 templates HTML de email (ficha PDF, newsletter, plusvalía, financiamiento)
+- [ ] Configurar SMTP de Robert (Gmail, Brevo o el que use)
+- [ ] Activar scheduled task en Coolify (cron diario)
 
 ---
 
@@ -434,3 +540,4 @@
 | 2026-04-13 | Bridge Chatwoot completo + webhook pausa/retoma | 5.1 |
 | 2026-04-13 | Labels score automáticos en Chatwoot | 5.1 |
 | 2026-04-13 | Recalificar lead dormido que responde | 4.6 |
+| 2026-04-14 | Propuesta estrategia remarketing híbrida (WhatsApp + Email) | Sección nueva |
