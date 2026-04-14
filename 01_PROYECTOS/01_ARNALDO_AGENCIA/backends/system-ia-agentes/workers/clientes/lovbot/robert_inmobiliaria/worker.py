@@ -282,6 +282,40 @@ def bot_pausado(telefono: str) -> bool:
 AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "application/json"}
 
 
+# ─── CHATWOOT MIRROR ─────────────────────────────────────────────────────────
+def _cw_mirror_msg(telefono: str, contenido: str, es_bot: bool) -> None:
+    """
+    Espeja un mensaje en Chatwoot para que la conversación completa sea visible.
+    es_bot=True  → message_type='outgoing' (respuesta del bot)
+    es_bot=False → message_type='incoming' (mensaje del cliente)
+    Corre en hilo daemon — no agrega latencia al flujo principal.
+    """
+    if not CHATWOOT_API_TOKEN or not contenido.strip():
+        return
+
+    def _enviar():
+        try:
+            contacto = _chatwoot_buscar_contacto(telefono)
+            if not contacto:
+                return
+            conv = _chatwoot_buscar_conversacion(contacto["id"])
+            if not conv:
+                return
+            conv_id = conv["id"]
+            msg_type = "outgoing" if es_bot else "incoming"
+            requests.post(
+                f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/messages",
+                headers=_chatwoot_headers(),
+                json={"content": contenido, "message_type": msg_type, "private": False},
+                timeout=8,
+            )
+            print(f"[CW-MIRROR] {'🤖 bot' if es_bot else '👤 lead'} → conv {conv_id}")
+        except Exception as e:
+            print(f"[CW-MIRROR] Error: {e}")
+
+    threading.Thread(target=_enviar, daemon=True).start()
+
+
 # ─── META GRAPH API ───────────────────────────────────────────────────────────
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
     _agregar_historial(telefono, "Bot", mensaje)
@@ -305,7 +339,10 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
         )
         if r.status_code not in (200, 201):
             print(f"[ROBERT-META] Error {r.status_code}: {r.text[:300]}")
-        return r.status_code in (200, 201)
+        ok = r.status_code in (200, 201)
+        if ok:
+            _cw_mirror_msg(telefono, mensaje, es_bot=True)
+        return ok
     except Exception as e:
         print(f"[ROBERT-META] Excepción: {e}")
         return False
@@ -1760,6 +1797,8 @@ async def webhook_whatsapp(request: Request):
     texto    = data.get("text", "")
     if not telefono or not texto:
         return {"status": "ignored"}
+    # Espejamos mensaje del cliente en Chatwoot (incoming)
+    _cw_mirror_msg(telefono, texto, es_bot=False)
     threading.Thread(target=_procesar, args=(telefono, texto), daemon=True).start()
     return {"status": "processing"}
 
