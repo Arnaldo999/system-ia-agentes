@@ -404,6 +404,17 @@ async def admin_setup_postgres():
     return setup()
 
 
+@app.get("/admin/setup-crm-completo", tags=["Admin"])
+async def admin_setup_crm_completo():
+    """Migración CRM multi-subnicho: agrega columnas + tablas asesores/propietarios/loteos/contratos/visitas. Idempotente."""
+    import sys
+    scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from scripts.setup_postgres_crm_completo import setup
+    return setup()
+
+
 @app.post("/admin/onboard", tags=["Admin"])
 async def admin_onboard(request: Request):
     """Onboarding automático de cliente inmobiliario. Llamado desde n8n."""
