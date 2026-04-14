@@ -35,7 +35,7 @@ tailwind.config = {
       --s1: #3b82f6; --s2: #f59e0b; --s3: #8b5cf6; --s4: #10b981; --s5: #ef4444;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { @apply bg-bg text-txt font-sans text-sm min-h-screen; }
+    html, body { @apply bg-bg text-txt font-sans text-sm; height:100%; overflow:hidden; }
     ::-webkit-scrollbar { width:4px; height:4px; }
     ::-webkit-scrollbar-track { background:transparent; }
     ::-webkit-scrollbar-thumb { @apply bg-brd rounded-sm; }
@@ -58,7 +58,7 @@ tailwind.config = {
 
     /* ── LAYOUT ── */
     .layout { @apply flex h-[calc(100vh-56px)]; }
-    .sidebar { @apply w-[200px] max-md:w-12 bg-surface border-r border-brd py-3 shrink-0 flex flex-col; }
+    .sidebar { @apply w-[200px] max-md:w-12 bg-surface border-r border-brd py-3 shrink-0 flex flex-col overflow-hidden; }
     .sidebar-section { @apply px-4 py-2 pb-1 text-txt-2 text-[10px] font-semibold uppercase tracking-wider max-md:hidden; }
     .nav-item { @apply flex items-center gap-2.5 py-2.5 px-4 text-txt-2 cursor-pointer text-[13px] transition-all border-l-[3px] border-transparent my-px hover:text-txt hover:bg-surface-2; }
     .nav-item.active { @apply text-txt bg-surface-2 !border-l-accent; }
@@ -374,57 +374,61 @@ tailwind.config = {
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sidebar-section">Principal</div>
-    <div class="nav-item active" onclick="nav('inicio',this)">
-      <span class="nav-icon">📊</span><span>Inicio</span>
+    <!-- nav items scrolleable -->
+    <div style="flex:1;overflow-y:auto;overflow-x:hidden;">
+      <div class="sidebar-section">Principal</div>
+      <div class="nav-item active" onclick="nav('inicio',this)">
+        <span class="nav-icon">📊</span><span>Inicio</span>
+      </div>
+      <div class="nav-item" onclick="nav('pipeline',this)">
+        <span class="nav-icon">🔀</span><span>Mi Pipeline</span>
+        <span class="nav-badge" id="pipelineBadge">12</span>
+      </div>
+      <div class="nav-item" onclick="nav('leads',this)">
+        <span class="nav-icon">👥</span><span>Mis Leads</span>
+      </div>
+      <div class="nav-item" onclick="nav('chat',this)">
+        <span class="nav-icon">🤖</span><span>Resúmenes IA</span>
+        <span class="nav-badge green" id="chatBadge">4 leads</span>
+      </div>
+      <div class="nav-item" onclick="nav('propiedades',this)">
+        <span class="nav-icon">🏘️</span><span>Propiedades</span>
+      </div>
+      <div class="nav-item" onclick="nav('activos',this)">
+        <span class="nav-icon">🤝</span><span>Clientes Activos</span>
+        <span class="nav-badge green" id="activosBadge">0</span>
+      </div>
+      <div class="nav-item" onclick="nav('agenda',this)">
+        <span class="nav-icon">📅</span><span>Mi Agenda</span>
+      </div>
+      <div class="sidebar-section" style="margin-top:8px">Gestión</div>
+      <div class="nav-item" onclick="nav('asesores',this)">
+        <span class="nav-icon">👨‍💼</span><span>Equipo</span>
+      </div>
+      <div class="nav-item" onclick="nav('propietarios',this)">
+        <span class="nav-icon">📑</span><span>Propietarios</span>
+      </div>
+      <div class="nav-item" onclick="nav('loteos',this)">
+        <span class="nav-icon">📍</span><span>Loteos</span>
+      </div>
+      <div class="nav-item" onclick="nav('contratos',this)">
+        <span class="nav-icon">📄</span><span>Contratos</span>
+      </div>
+      <div class="nav-item" onclick="nav('visitas',this)">
+        <span class="nav-icon">🗓️</span><span>Visitas</span>
+      </div>
+      <div class="nav-item" onclick="nav('reportes',this)">
+        <span class="nav-icon">📈</span><span>Reportes</span>
+      </div>
+      <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
+      <div class="nav-item" onclick="nav('formularios',this)">
+        <span class="nav-icon">📋</span><span>Formularios</span>
+      </div>
+      <div class="nav-item" onclick="nav('configuracion',this)">
+        <span class="nav-icon">⚙️</span><span>Configuración</span>
+      </div>
     </div>
-    <div class="nav-item" onclick="nav('pipeline',this)">
-      <span class="nav-icon">🔀</span><span>Mi Pipeline</span>
-      <span class="nav-badge" id="pipelineBadge">12</span>
-    </div>
-    <div class="nav-item" onclick="nav('leads',this)">
-      <span class="nav-icon">👥</span><span>Mis Leads</span>
-    </div>
-    <div class="nav-item" onclick="nav('chat',this)">
-      <span class="nav-icon">🤖</span><span>Resúmenes IA</span>
-      <span class="nav-badge green" id="chatBadge">4 leads</span>
-    </div>
-    <div class="nav-item" onclick="nav('propiedades',this)">
-      <span class="nav-icon">🏘️</span><span>Propiedades</span>
-    </div>
-    <div class="nav-item" onclick="nav('activos',this)">
-      <span class="nav-icon">🤝</span><span>Clientes Activos</span>
-      <span class="nav-badge green" id="activosBadge">0</span>
-    </div>
-    <div class="nav-item" onclick="nav('agenda',this)">
-      <span class="nav-icon">📅</span><span>Mi Agenda</span>
-    </div>
-    <div class="sidebar-section" style="margin-top:8px">Gestión</div>
-    <div class="nav-item" onclick="nav('asesores',this)">
-      <span class="nav-icon">👨‍💼</span><span>Equipo</span>
-    </div>
-    <div class="nav-item" onclick="nav('propietarios',this)">
-      <span class="nav-icon">📑</span><span>Propietarios</span>
-    </div>
-    <div class="nav-item" onclick="nav('loteos',this)">
-      <span class="nav-icon">📍</span><span>Loteos</span>
-    </div>
-    <div class="nav-item" onclick="nav('contratos',this)">
-      <span class="nav-icon">📄</span><span>Contratos</span>
-    </div>
-    <div class="nav-item" onclick="nav('visitas',this)">
-      <span class="nav-icon">🗓️</span><span>Visitas</span>
-    </div>
-    <div class="nav-item" onclick="nav('reportes',this)">
-      <span class="nav-icon">📈</span><span>Reportes</span>
-    </div>
-    <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
-    <div class="nav-item" onclick="nav('formularios',this)">
-      <span class="nav-icon">📋</span><span>Formularios</span>
-    </div>
-    <div class="nav-item" onclick="nav('configuracion',this)">
-      <span class="nav-icon">⚙️</span><span>Configuración</span>
-    </div>
+    <!-- footer siempre visible -->
     <div class="sidebar-footer">
       <div class="plan-chip">
         🤖 IA activa
