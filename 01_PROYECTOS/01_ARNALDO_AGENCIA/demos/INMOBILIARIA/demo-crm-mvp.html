@@ -2015,8 +2015,8 @@ async function initTenant() {
     if (!res.ok) throw new Error(`tenant no encontrado: ${TENANT_SLUG}`);
     const t = await res.json();
 
-    // Aplicar API_BASE
-    API_BASE = `${SAAS_API}${t.api_prefix}`;
+    // Aplicar API_BASE — si api_prefix es URL completa, usarla directo
+    API_BASE = t.api_prefix.startsWith('http') ? t.api_prefix : `${SAAS_API}${t.api_prefix}`;
 
     // Aplicar branding
     document.getElementById('page-title').textContent = `${t.nombre} — CRM`;

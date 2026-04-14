@@ -343,3 +343,18 @@ def admin_crear_tenant(body: NuevoTenantRequest, request: Request):
     }
     res = sb.table("tenants").insert(nuevo).execute()
     return {"status": "ok", "tenant": res.data[0] if res.data else nuevo}
+
+
+class UpdateApiPrefixRequest(BaseModel):
+    api_prefix: str
+
+@admin_router.patch("/tenants/{slug}/api-prefix")
+def admin_update_api_prefix(slug: str, body: UpdateApiPrefixRequest, request: Request):
+    """Actualiza el api_prefix de un tenant (útil para apuntar a servidor diferente)."""
+    _get_agencia(request)
+    _get_tenant(slug)
+    sb = _get_sb()
+    if not body.api_prefix:
+        raise HTTPException(status_code=400, detail="api_prefix requerido")
+    sb.table("tenants").update({"api_prefix": body.api_prefix, "updated_at": "now()"}).eq("slug", slug).execute()
+    return {"status": "ok", "slug": slug, "api_prefix": body.api_prefix}
