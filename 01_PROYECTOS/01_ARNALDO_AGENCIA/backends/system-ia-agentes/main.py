@@ -137,6 +137,13 @@ async def meta_webhook_events(request: Request):
                     continue
 
                 msg_id = msg.get("id", "")
+                # Ignorar mensajes con timestamp > 30 segundos (reintentos de Meta tras restart)
+                import time as _time
+                msg_ts = int(msg.get("timestamp", 0))
+                if msg_ts and (_time.time() - msg_ts) > 30:
+                    print(f"[META-WEBHOOK] Mensaje viejo ignorado ({int(_time.time()-msg_ts)}s): {msg_id}")
+                    continue
+
                 if msg_id:
                     with _META_DEDUP_LOCK:
                         if msg_id in _META_MSG_IDS_PROCESADOS:
