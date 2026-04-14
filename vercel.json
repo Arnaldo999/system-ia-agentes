@@ -7,6 +7,7 @@
     { "source": "/crm",                       "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html" },
     { "source": "/dev/crm",                   "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/crm.html" },
     { "source": "/dev/admin",                 "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/admin.html" },
+    { "source": "/dev/js/:file",              "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/js/:file" },
     { "source": "/(.*)", "has": [{"type":"host","value":"admin.lovbot.ai"}],            "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/admin.html" },
     { "source": "/informe",                   "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/informe-mercado-inmobiliario.html" },
     { "source": "/formulario-desarrolladora", "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/formulario-desarrolladora.html" },

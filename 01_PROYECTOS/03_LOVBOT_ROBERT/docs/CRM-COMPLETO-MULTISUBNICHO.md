@@ -154,3 +154,9 @@ campo/panel, queda vacío sin afectar nada. Producto robusto, percepción de val
 |-------|--------|--------|
 | 2026-04-14 | 1 | Migración PostgreSQL: columnas universales + 5 tablas nuevas |
 | 2026-04-14 | 1 | Endpoint GET /admin/setup-crm-completo |
+| 2026-04-14 | 1 | db_postgres: col_map con campos universales + SELECT actualizado |
+| 2026-04-14 | 1 | db_postgres: CRUD genérico + funciones para 6 recursos nuevos |
+| 2026-04-14 | 3-8 | Worker: 20 endpoints nuevos (/crm/asesores, propietarios, loteos, lotes-mapa, contratos, visitas, reportes, upload-pdf) |
+| 2026-04-14 | 3-8 | Frontend separado en 6 archivos JS (/dev/js/panel-*.js) |
+| 2026-04-14 | 3-8 | HTML: 6 paneles nuevos + 7 modales + Chart.js + menú lateral "Gestión" |
+| 2026-04-14 | 3-8 | vercel.json: ruta /dev/js/* para servir JS estáticos |
