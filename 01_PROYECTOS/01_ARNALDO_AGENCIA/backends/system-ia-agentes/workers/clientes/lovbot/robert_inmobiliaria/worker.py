@@ -1131,7 +1131,9 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     # Comandos globales
     if texto_lower in ("0", "menú", "menu", "inicio", "hola", "hi", "buenas"):
         SESIONES.pop(telefono, None)
-        step = "inicio"
+        SESIONES[telefono] = {"step": "subnicho", "_ultimo_ts": ahora_ts}
+        _enviar_texto(telefono, MSG_SUBNICHO.format(empresa=NOMBRE_EMPRESA))
+        return
 
     if texto_lower == "#":
         _ir_asesor(telefono, sesion)
