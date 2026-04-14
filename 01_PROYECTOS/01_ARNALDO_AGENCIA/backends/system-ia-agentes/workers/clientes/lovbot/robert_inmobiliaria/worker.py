@@ -318,6 +318,9 @@ def _cw_mirror_msg(telefono: str, contenido: str, es_bot: bool) -> None:
 
 # ─── META GRAPH API ───────────────────────────────────────────────────────────
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
+    import traceback as _tb
+    print(f"[ENVIAR-TEXTO] tel={telefono} msg={mensaje[:60]!r}")
+    _tb.print_stack(limit=4)
     _agregar_historial(telefono, "Bot", mensaje)
     if not META_ACCESS_TOKEN or not META_PHONE_ID:
         print(f"[ROBERT-META] Sin token/phone_id. Msg: {mensaje[:80]}")
