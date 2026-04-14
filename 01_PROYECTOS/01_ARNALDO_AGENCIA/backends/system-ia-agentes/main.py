@@ -446,6 +446,66 @@ async def admin_debug_pg(db_name: str = "lovbot_crm", tenant: str = "robert"):
         return {"error": str(e), "host": PG_HOST, "db": db_name}
 
 
+@app.get("/admin/update-tenant-slug", tags=["Admin"])
+async def admin_update_tenant_slug(from_tenant: str = "demo", to_tenant: str = "robert", db_name: str = "lovbot_crm"):
+    """
+    Actualiza tenant_slug en todas las tablas de una DB.
+    
+    Params:
+        from_tenant: slug actual (default: demo)
+        to_tenant: slug nuevo (default: robert)
+        db_name: nombre de la DB (default: lovbot_crm)
+    
+    Ejemplo:
+        GET /admin/update-tenant-slug?from_tenant=demo&to_tenant=robert
+    """
+    import psycopg2
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "lovbot-postgres-tkkk8owkg40ssoksk8ok4gsc")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+    try:
+        conn = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=db_name,
+                                user=PG_USER, password=PG_PASS)
+        cur = conn.cursor()
+        
+        # UPDATEs
+        updates = [
+            "UPDATE leads SET tenant_slug = %s WHERE tenant_slug = %s",
+            "UPDATE propiedades SET tenant_slug = %s WHERE tenant_slug = %s",
+            "UPDATE clientes_activos SET tenant_slug = %s WHERE tenant_slug = %s"
+        ]
+        
+        results = {}
+        for update_query in updates:
+            cur.execute(update_query, (to_tenant, from_tenant))
+            rows_affected = cur.rowcount
+            table_name = update_query.split("UPDATE ")[1].split(" SET")[0]
+            results[table_name] = rows_affected
+        
+        conn.commit()
+        
+        # Verificar con SELECTs
+        verify = {}
+        for table in ["leads", "propiedades", "clientes_activos"]:
+            cur.execute(f"SELECT COUNT(*) FROM {table} WHERE tenant_slug = %s", (to_tenant,))
+            verify[table] = cur.fetchone()[0]
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            "status": "success",
+            "db": db_name,
+            "from_tenant": from_tenant,
+            "to_tenant": to_tenant,
+            "rows_updated": results,
+            "final_counts": verify
+        }
+    except Exception as e:
+        return {"error": str(e), "db": db_name, "from_tenant": from_tenant, "to_tenant": to_tenant}
+
+
 @app.get("/admin/crear-db-cliente", tags=["Admin"])
 async def admin_crear_db_cliente(db: str, from_tenant: str = None):
     """
