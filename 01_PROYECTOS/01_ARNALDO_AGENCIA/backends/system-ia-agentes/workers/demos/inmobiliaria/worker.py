@@ -43,6 +43,19 @@ import requests
 from google import genai
 from fastapi import APIRouter, Request
 
+# PostgreSQL — CRM Completo Multi-Subnicho (Sprints 1-8)
+try:
+    from workers.demos.inmobiliaria import db_postgres as db
+    USE_POSTGRES = db._available()
+    if USE_POSTGRES:
+        print("[DEMO-INMO] ✅ PostgreSQL disponible — CRM Completo activo")
+    else:
+        print("[DEMO-INMO] ⚠️ PostgreSQL no configurado — usando Airtable")
+except Exception as e:
+    USE_POSTGRES = False
+    db = None
+    print(f"[DEMO-INMO] ⚠️ db_postgres no disponible: {e}")
+
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY", "")
 AIRTABLE_TOKEN       = os.environ.get("AIRTABLE_TOKEN", "") or os.environ.get("AIRTABLE_API_KEY", "")
@@ -1447,3 +1460,198 @@ def ver_config():
         "cal_com":       "✅ activo" if _cal_disponible() else "⚠️ no configurado (derivación a asesor)",
         "subnichos":     list(SUBNICHE_LABELS.keys()),
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CRM COMPLETO MULTI-SUBNICHO — Endpoints Sprints 3-8
+# Asesores / Propietarios / Loteos / Lotes_Mapa / Contratos / Visitas / Reportes
+# NOTA: Demo usa PostgreSQL (lovbot_crm con tenant_slug='demo') — sandbox
+# para probar antes de deployar a cada cliente en su propia DB dedicada.
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _check_pg():
+    from fastapi import HTTPException
+    if not USE_POSTGRES:
+        raise HTTPException(status_code=503, detail="PostgreSQL no disponible en demo")
+
+
+# ── Asesores (Sprint 3) ─────────────────────────────────────────────────────
+@router.get("/crm/asesores")
+def demo_asesores_list():
+    _check_pg()
+    return db.get_all_asesores()
+
+@router.post("/crm/asesores")
+async def demo_asesor_create(request: Request):
+    _check_pg()
+    return db.create_asesor(await request.json())
+
+@router.patch("/crm/asesores/{record_id}")
+async def demo_asesor_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_asesor(record_id, await request.json())
+
+@router.delete("/crm/asesores/{record_id}")
+def demo_asesor_delete(record_id: int):
+    _check_pg()
+    return db.delete_asesor(record_id)
+
+
+# ── Propietarios (Sprint 4) ─────────────────────────────────────────────────
+@router.get("/crm/propietarios")
+def demo_propietarios_list():
+    _check_pg()
+    return db.get_all_propietarios()
+
+@router.post("/crm/propietarios")
+async def demo_propietario_create(request: Request):
+    _check_pg()
+    return db.create_propietario(await request.json())
+
+@router.patch("/crm/propietarios/{record_id}")
+async def demo_propietario_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_propietario(record_id, await request.json())
+
+@router.delete("/crm/propietarios/{record_id}")
+def demo_propietario_delete(record_id: int):
+    _check_pg()
+    return db.delete_propietario(record_id)
+
+
+# ── Loteos (Sprint 5) ───────────────────────────────────────────────────────
+@router.get("/crm/loteos")
+def demo_loteos_list():
+    _check_pg()
+    return db.get_all_loteos()
+
+@router.post("/crm/loteos")
+async def demo_loteo_create(request: Request):
+    _check_pg()
+    return db.create_loteo(await request.json())
+
+@router.patch("/crm/loteos/{record_id}")
+async def demo_loteo_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_loteo(record_id, await request.json())
+
+@router.delete("/crm/loteos/{record_id}")
+def demo_loteo_delete(record_id: int):
+    _check_pg()
+    return db.delete_loteo(record_id)
+
+
+# ── Lotes Mapa (Sprint 5) ───────────────────────────────────────────────────
+@router.get("/crm/lotes-mapa")
+def demo_lotes_mapa_list(loteo_id: int = None):
+    _check_pg()
+    return db.get_lotes_mapa(loteo_id)
+
+@router.post("/crm/lotes-mapa")
+async def demo_lote_mapa_create(request: Request):
+    _check_pg()
+    return db.create_lote_mapa(await request.json())
+
+@router.patch("/crm/lotes-mapa/{record_id}")
+async def demo_lote_mapa_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_lote_mapa(record_id, await request.json())
+
+@router.delete("/crm/lotes-mapa/{record_id}")
+def demo_lote_mapa_delete(record_id: int):
+    _check_pg()
+    return db.delete_lote_mapa(record_id)
+
+
+# ── Contratos (Sprint 6) ────────────────────────────────────────────────────
+@router.get("/crm/contratos")
+def demo_contratos_list():
+    _check_pg()
+    return db.get_all_contratos()
+
+@router.post("/crm/contratos")
+async def demo_contrato_create(request: Request):
+    _check_pg()
+    return db.create_contrato(await request.json())
+
+@router.patch("/crm/contratos/{record_id}")
+async def demo_contrato_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_contrato(record_id, await request.json())
+
+@router.delete("/crm/contratos/{record_id}")
+def demo_contrato_delete(record_id: int):
+    _check_pg()
+    return db.delete_contrato(record_id)
+
+
+# ── Visitas / Agenda (Sprint 8) ─────────────────────────────────────────────
+@router.get("/crm/visitas")
+def demo_visitas_list():
+    _check_pg()
+    return db.get_all_visitas()
+
+@router.post("/crm/visitas")
+async def demo_visita_create(request: Request):
+    _check_pg()
+    return db.create_visita(await request.json())
+
+@router.patch("/crm/visitas/{record_id}")
+async def demo_visita_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_visita(record_id, await request.json())
+
+@router.delete("/crm/visitas/{record_id}")
+def demo_visita_delete(record_id: int):
+    _check_pg()
+    return db.delete_visita(record_id)
+
+
+# ── Reportes (Sprint 7) ─────────────────────────────────────────────────────
+@router.get("/crm/reportes")
+def demo_reportes(fecha_desde: str = None, fecha_hasta: str = None):
+    _check_pg()
+    return db.get_reportes(fecha_desde, fecha_hasta)
+
+
+# ── Upload PDF Contratos (Sprint 6) ─────────────────────────────────────────
+@router.post("/crm/upload-pdf")
+async def demo_upload_pdf(request: Request):
+    """Sube PDF de contrato a Cloudinary y devuelve URL."""
+    from fastapi import HTTPException
+    import hashlib, time
+    data = await request.json()
+    pdf_base64 = data.get("file", "")
+    if not pdf_base64:
+        raise HTTPException(status_code=400, detail="Falta 'file' (base64)")
+
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+    api_key = os.environ.get("CLOUDINARY_API_KEY", "")
+    api_secret = os.environ.get("CLOUDINARY_API_SECRET", "")
+
+    if not (cloud_name and api_key and api_secret):
+        raise HTTPException(status_code=500, detail="Cloudinary no configurado")
+
+    timestamp = int(time.time())
+    folder = "demo_contratos"
+    to_sign = f"folder={folder}&resource_type=raw&timestamp={timestamp}{api_secret}"
+    signature = hashlib.sha1(to_sign.encode()).hexdigest()
+
+    try:
+        r = requests.post(
+            f"https://api.cloudinary.com/v1_1/{cloud_name}/raw/upload",
+            data={
+                "file": pdf_base64,
+                "api_key": api_key,
+                "timestamp": str(timestamp),
+                "signature": signature,
+                "folder": folder,
+            },
+            timeout=30,
+        )
+        if r.status_code == 200:
+            result = r.json()
+            return {"status": "ok", "url": result.get("secure_url"), "public_id": result.get("public_id")}
+        raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
