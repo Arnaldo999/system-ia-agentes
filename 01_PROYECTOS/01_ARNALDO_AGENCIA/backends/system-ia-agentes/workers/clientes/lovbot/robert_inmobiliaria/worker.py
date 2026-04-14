@@ -1706,18 +1706,27 @@ async def chatwoot_webhook(request: Request):
     # Cuando se asigna label atiende-humano → pausar bot
     elif event == "conversation_updated":
         labels = data.get("labels", [])
+        contact = data.get("meta", {}).get("sender", {})
+        phone = contact.get("phone_number", "")
+
         if "atiende-humano" in labels:
-            contact = data.get("meta", {}).get("sender", {})
-            phone = contact.get("phone_number", "")
             if phone:
                 pausar_bot(phone)
                 print(f"[CHATWOOT-WEBHOOK] Label atiende-humano — bot pausado para {phone}")
         elif "atiende-agenteai" in labels:
-            contact = data.get("meta", {}).get("sender", {})
-            phone = contact.get("phone_number", "")
             if phone:
                 despausar_bot(phone)
                 print(f"[CHATWOOT-WEBHOOK] Label atiende-agenteai — bot despausado para {phone}")
+
+        # Sync score: si el asesor cambió label de score en Chatwoot → actualizar PostgreSQL
+        if phone and USE_POSTGRES:
+            score_label = next((s for s in ("caliente", "tibio", "frio") if s in labels), None)
+            if score_label:
+                try:
+                    db.actualizar_score_por_telefono(phone, score_label)
+                    print(f"[CHATWOOT-WEBHOOK] Score sincronizado a CRM: {phone} → {score_label}")
+                except Exception as e:
+                    print(f"[CHATWOOT-WEBHOOK] Error sync score: {e}")
 
     return {"status": "ok"}
 

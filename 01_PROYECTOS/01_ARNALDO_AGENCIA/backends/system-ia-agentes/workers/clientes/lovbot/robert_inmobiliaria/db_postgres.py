@@ -8,6 +8,7 @@ Conexión: via env vars LOVBOT_PG_HOST/PORT/DB/USER/PASS
 """
 
 import os
+import re
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import date, datetime, timedelta
@@ -450,6 +451,32 @@ def get_all_activos() -> list[dict]:
     except Exception as e:
         print(f"[DB] Error get_all_activos: {e}")
         return []
+
+
+def actualizar_score_por_telefono(telefono: str, score: str) -> bool:
+    """Actualiza score de un lead por teléfono. Usado por webhook Chatwoot."""
+    if not _available() or score not in ("caliente", "tibio", "frio"):
+        return False
+    tel = re.sub(r'\D', '', telefono)
+    score_num = {"caliente": 12, "tibio": 7, "frio": 3}.get(score, 0)
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE leads
+            SET score=%s, score_numerico=%s, fecha_ultimo_contacto=now()
+            WHERE tenant_slug=%s AND telefono=%s
+        """, (score, score_num, TENANT, tel))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        if ok:
+            print(f"[DB] Score actualizado desde Chatwoot: {tel} → {score}")
+        return ok
+    except Exception as e:
+        print(f"[DB] Error actualizar_score_por_telefono: {e}")
+        return False
 
 
 def update_lead(record_id: str, campos: dict) -> bool:
