@@ -167,12 +167,50 @@ def migrate():
 
     print(f"[migrar] ✅ {props_ok}/{len(at_props)} propiedades migradas")
 
+    # ── Migrar Clientes Activos ──────────────────────────────────────────
+    print("[migrar] Leyendo clientes activos de Airtable...")
+    at_activos = at_fetch_all(AT_ACTIVOS)
+    print(f"[migrar] {len(at_activos)} activos encontrados")
+
+    activos_ok = 0
+    for rec in at_activos:
+        f = rec.get("fields", {})
+        try:
+            cur.execute("""
+                INSERT INTO clientes_activos (
+                    tenant_slug, nombre, apellido, telefono, email,
+                    propiedad, estado_pago, monto_cuota, cuotas_pagadas,
+                    cuotas_total, proximo_vencimiento, notas
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                TENANT,
+                f.get("Nombre", ""),
+                f.get("Apellido", ""),
+                f.get("Telefono", ""),
+                f.get("Email", ""),
+                f.get("Propiedad", "") or f.get("Loteo", ""),
+                f.get("Estado_Pago", "al_dia"),
+                f.get("Monto_Cuota") or None,
+                f.get("Cuotas_Pagadas") or 0,
+                f.get("Cuotas_Total") or 0,
+                f.get("Proximo_Vencimiento") or None,
+                f.get("Notas", "") or f.get("Observaciones", ""),
+            ))
+            activos_ok += 1
+        except Exception as e:
+            print(f"[migrar] Error activo: {e}")
+
+    print(f"[migrar] ✅ {activos_ok}/{len(at_activos)} activos migrados")
+
     # ── Verificar ────────────────────────────────────────────────────────
     cur.execute("SELECT count(*) FROM leads WHERE tenant_slug=%s", (TENANT,))
     print(f"[migrar] Total leads en PostgreSQL: {cur.fetchone()[0]}")
 
     cur.execute("SELECT count(*) FROM propiedades WHERE tenant_slug=%s", (TENANT,))
     print(f"[migrar] Total propiedades en PostgreSQL: {cur.fetchone()[0]}")
+
+    cur.execute("SELECT count(*) FROM clientes_activos WHERE tenant_slug=%s", (TENANT,))
+    print(f"[migrar] Total clientes activos en PostgreSQL: {cur.fetchone()[0]}")
 
     cur.close()
     conn.close()
