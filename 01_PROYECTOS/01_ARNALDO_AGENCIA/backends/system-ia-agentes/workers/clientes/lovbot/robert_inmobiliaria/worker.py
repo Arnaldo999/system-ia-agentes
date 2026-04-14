@@ -340,8 +340,6 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
         if r.status_code not in (200, 201):
             print(f"[ROBERT-META] Error {r.status_code}: {r.text[:300]}")
         ok = r.status_code in (200, 201)
-        if ok:
-            _cw_mirror_msg(telefono, mensaje, es_bot=True)
         return ok
     except Exception as e:
         print(f"[ROBERT-META] Excepción: {e}")
@@ -1797,8 +1795,6 @@ async def webhook_whatsapp(request: Request):
     texto    = data.get("text", "")
     if not telefono or not texto:
         return {"status": "ignored"}
-    # Espejamos mensaje del cliente en Chatwoot (incoming)
-    _cw_mirror_msg(telefono, texto, es_bot=False)
     threading.Thread(target=_procesar, args=(telefono, texto), daemon=True).start()
     return {"status": "processing"}
 
