@@ -2065,8 +2065,10 @@ async function initTenant() {
     if (!res.ok) throw new Error(`tenant no encontrado: ${TENANT_SLUG}`);
     const t = await res.json();
 
-    // Aplicar API_BASE
-    API_BASE = `${SAAS_API}${t.api_prefix}`;
+    // Aplicar API_BASE — si el tenant tiene api_url propio (ej: robert en Coolify Hetzner), usarlo
+    const apiHost = t.api_url || SAAS_API;
+    API_BASE = `${apiHost}${t.api_prefix}`;
+    console.log('[CRM] API_BASE configurado:', API_BASE);
 
     // Aplicar branding
     document.getElementById('page-title').textContent = `${t.nombre} — CRM`;

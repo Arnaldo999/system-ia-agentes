@@ -77,11 +77,21 @@ def tenant_config(slug: str):
         except (ValueError, TypeError):
             pass
 
+    # API URL: por defecto Coolify Arnaldo, pero algunos tenants tienen su propia infra
+    api_url = t.get("api_url", "")
+    if not api_url:
+        # Tenants que viven en Coolify Robert (Hetzner) — PostgreSQL propio
+        if t["slug"] in ("robert", "demo"):
+            api_url = "https://agentes.lovbot.ai"
+        else:
+            api_url = "https://agentes.arnaldoayalaestratega.cloud"
+
     return {
         "slug":           t["slug"],
         "nombre":         t["nombre"],
         "subniche":       t["subniche"],
         "api_prefix":     t["api_prefix"],
+        "api_url":        api_url,
         "logo_url":       t.get("logo_url"),
         "color_primario": t.get("color_primario", "#0A261A"),
         "color_acento":   t.get("color_acento", "#E5B239"),
