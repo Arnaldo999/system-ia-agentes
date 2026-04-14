@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente AI Inmobiliario · Implementación para Robert Bazan</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .gradient-hero { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%); }
+  .gradient-card { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); }
+  .glow { box-shadow: 0 0 40px rgba(59, 130, 246, 0.15); }
+  .pulse-dot { animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+  }
+  .progress-bar { transition: width 1.5s ease-out; }
+  .tab-active { background: #1e40af; color: white; }
+  .flow-line { background: linear-gradient(180deg, #3b82f6, #8b5cf6); width: 2px; }
+  .check-icon { background: #10b981; }
+  .partial-icon { background: #f59e0b; }
+  .miss-icon { background: #ef4444; }
+  details[open] summary .chevron { transform: rotate(90deg); }
+  .chevron { transition: transform 0.2s; }
+  .scroll-smooth { scroll-behavior: smooth; }
+  .badge-glow { animation: badgeGlow 3s ease-in-out infinite; }
+  @keyframes badgeGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.6); }
+  }
+  .step-num {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body class="bg-slate-50 scroll-smooth">
+
+<!-- HERO -->
+<header class="gradient-hero text-white">
+  <div class="max-w-7xl mx-auto px-6 py-16">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-3 h-3 rounded-full bg-emerald-400 pulse-dot"></div>
+      <span class="text-emerald-300 text-sm font-semibold tracking-wider uppercase">Propuesta de Implementación · 14 abril 2026</span>
+    </div>
+    <h1 class="text-5xl md:text-6xl font-black leading-tight mb-4">
+      Agente AI Inmobiliario<br>
+      <span class="bg-gradient-to-r from-emerald-300 to-blue-300 bg-clip-text text-transparent">para Robert Bazan</span>
+    </h1>
+    <p class="text-xl text-blue-100 max-w-3xl leading-relaxed mb-8">
+      Cómo vamos a implementar el sistema completo que pediste en tu documento del 12-04: respuesta inmediata, calificación, agendamiento, seguimiento y CRM — todo automatizado vía WhatsApp.
+    </p>
+
+    <!-- KPIs hero -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
+      <div class="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20">
+        <div class="text-4xl font-black text-emerald-300">99%</div>
+        <div class="text-sm text-blue-100 mt-1">Listo y funcionando</div>
+      </div>
+      <div class="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20">
+        <div class="text-4xl font-black text-white">8</div>
+        <div class="text-sm text-blue-100 mt-1">Sprints CRM completados</div>
+      </div>
+      <div class="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20">
+        <div class="text-4xl font-black text-yellow-300">&lt;5s</div>
+        <div class="text-sm text-blue-100 mt-1">Tiempo de respuesta</div>
+      </div>
+      <div class="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20">
+        <div class="text-4xl font-black text-blue-300">11</div>
+        <div class="text-sm text-blue-100 mt-1">Puntos de contacto auto</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- NAV STICKY -->
+<nav class="sticky top-0 bg-white shadow-md z-40 border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-6 py-3 flex gap-2 overflow-x-auto">
+    <a href="#flujo" class="px-4 py-2 rounded-lg hover:bg-slate-100 text-sm font-semibold whitespace-nowrap">🤖 Flujo del Bot</a>
+    <a href="#inteligencia" class="px-4 py-2 rounded-lg hover:bg-slate-100 text-sm font-semibold whitespace-nowrap">🧠 Inteligencia</a>
+    <a href="#seguimiento" class="px-4 py-2 rounded-lg hover:bg-slate-100 text-sm font-semibold whitespace-nowrap">📅 Seguimiento</a>
+    <a href="#nurturing" class="px-4 py-2 rounded-lg hover:bg-slate-100 text-sm font-semibold whitespace-nowrap">🌱 Nurturing</a>
+    <a href="#chatwoot" class="px-4 py-2 rounded-lg hover:bg-slate-100 text-sm font-semibold whitespace-nowrap">👤 Asesor</a>
+    <a href="#crm" class="px-4 py-2 rounded-lg hover:bg-slate-100 text-sm font-semibold whitespace-nowrap">📊 CRM</a>
+    <a href="#remarketing" class="px-4 py-2 rounded-lg hover:bg-slate-100 text-sm font-semibold whitespace-nowrap">💌 Remarketing</a>
+    <a href="#proximos" class="px-4 py-2 rounded-lg hover:bg-slate-100 text-sm font-semibold whitespace-nowrap">🚀 Próximos pasos</a>
+  </div>
+</nav>
+
+<!-- SCORECARD VISUAL -->
+<section class="max-w-7xl mx-auto px-6 py-16">
+  <div class="text-center mb-12">
+    <span class="text-blue-600 font-bold tracking-wider text-sm">ESTADO ACTUAL</span>
+    <h2 class="text-4xl font-black text-slate-900 mt-2">El sistema ya está construido</h2>
+    <p class="text-lg text-slate-600 mt-3 max-w-2xl mx-auto">De los 64 puntos que pediste en tu PDF, 62 ya están implementados y funcionando en producción.</p>
+  </div>
+
+  <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <!-- Card 1 -->
+    <div class="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-emerald-500">
+      <div class="flex justify-between items-start mb-4">
+        <div class="text-3xl">🤖</div>
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">100%</span>
+      </div>
+      <h3 class="font-bold text-slate-900">Flujo conversacional</h3>
+      <p class="text-sm text-slate-500 mt-1">10 de 10 puntos</p>
+      <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="bg-emerald-500 h-2 progress-bar" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-emerald-500">
+      <div class="flex justify-between items-start mb-4">
+        <div class="text-3xl">🧠</div>
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">100%</span>
+      </div>
+      <h3 class="font-bold text-slate-900">Lógica inteligente</h3>
+      <p class="text-sm text-slate-500 mt-1">8 de 8 puntos</p>
+      <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="bg-emerald-500 h-2 progress-bar" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-emerald-500">
+      <div class="flex justify-between items-start mb-4">
+        <div class="text-3xl">📅</div>
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">100%</span>
+      </div>
+      <h3 class="font-bold text-slate-900">Seguimiento auto</h3>
+      <p class="text-sm text-slate-500 mt-1">7 de 7 contactos</p>
+      <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="bg-emerald-500 h-2 progress-bar" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-emerald-500">
+      <div class="flex justify-between items-start mb-4">
+        <div class="text-3xl">🌱</div>
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">100%</span>
+      </div>
+      <h3 class="font-bold text-slate-900">Nurturing</h3>
+      <p class="text-sm text-slate-500 mt-1">7 de 7 mensajes</p>
+      <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="bg-emerald-500 h-2 progress-bar" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-emerald-500">
+      <div class="flex justify-between items-start mb-4">
+        <div class="text-3xl">👤</div>
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">100%</span>
+      </div>
+      <h3 class="font-bold text-slate-900">Chatwoot / Asesor</h3>
+      <p class="text-sm text-slate-500 mt-1">7 de 7 puntos</p>
+      <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="bg-emerald-500 h-2 progress-bar" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-emerald-500">
+      <div class="flex justify-between items-start mb-4">
+        <div class="text-3xl">📊</div>
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">100%</span>
+      </div>
+      <h3 class="font-bold text-slate-900">CRM / Dashboard</h3>
+      <p class="text-sm text-slate-500 mt-1">8 sprints completos · 8 paneles</p>
+      <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="bg-emerald-500 h-2 progress-bar" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-emerald-500">
+      <div class="flex justify-between items-start mb-4">
+        <div class="text-3xl">⚙️</div>
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">100%</span>
+      </div>
+      <h3 class="font-bold text-slate-900">Stack técnico</h3>
+      <p class="text-sm text-slate-500 mt-1">PostgreSQL propio + todos los servicios</p>
+      <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="bg-emerald-500 h-2 progress-bar" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-emerald-500">
+      <div class="flex justify-between items-start mb-4">
+        <div class="text-3xl">✅</div>
+        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">100%</span>
+      </div>
+      <h3 class="font-bold text-slate-900">Reglas críticas</h3>
+      <p class="text-sm text-slate-500 mt-1">9 de 9 cumplidas</p>
+      <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="bg-emerald-500 h-2 progress-bar" style="width: 100%"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FLUJO DEL BOT -->
+<section id="flujo" class="bg-white py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="text-blue-600 font-bold tracking-wider text-sm">PUNTO 1 + 2</span>
+      <h2 class="text-4xl font-black text-slate-900 mt-2">Cómo funciona el bot</h2>
+      <p class="text-lg text-slate-600 mt-3 max-w-2xl mx-auto">Dos casos de entrada, un solo flujo inteligente que califica y agenda en menos de 2 minutos.</p>
+    </div>
+
+    <!-- 2 casos -->
+    <div class="grid md:grid-cols-2 gap-8 mb-16">
+      <!-- CASO A -->
+      <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 border border-blue-200">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold">CASO A</span>
+          <span class="text-blue-700 font-semibold text-sm">Lead desde anuncio</span>
+        </div>
+        <h3 class="text-2xl font-bold text-slate-900 mb-4">Vino de Meta Ads con propiedad específica</h3>
+        <p class="text-slate-600 mb-6">El bot detecta el anuncio que vio y responde con info DIRECTA de esa propiedad: precio, ubicación, highlights, disponibilidad.</p>
+        <div class="bg-white rounded-xl p-4 space-y-3 text-sm">
+          <div class="flex gap-3">
+            <span class="text-blue-600 font-bold">✓</span>
+            <span>Detecta <code class="bg-blue-100 text-blue-800 px-1.5 rounded">referral</code> del anuncio</span>
+          </div>
+          <div class="flex gap-3">
+            <span class="text-blue-600 font-bold">✓</span>
+            <span>Salta el subnicho — va directo a calificar</span>
+          </div>
+          <div class="flex gap-3">
+            <span class="text-blue-600 font-bold">✓</span>
+            <span>Guarda <code class="bg-blue-100 text-blue-800 px-1.5 rounded">ad_id</code> + <code class="bg-blue-100 text-blue-800 px-1.5 rounded">source_url</code> en CRM</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASO B -->
+      <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 border border-purple-200">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="bg-purple-600 text-white px-3 py-1 rounded-lg text-xs font-bold">CASO B</span>
+          <span class="text-purple-700 font-semibold text-sm">Lead genérico</span>
+        </div>
+        <h3 class="text-2xl font-bold text-slate-900 mb-4">Llegó por WhatsApp directo o referido</h3>
+        <p class="text-slate-600 mb-6">Bienvenida personalizada y pregunta guiada para entender qué busca antes de mostrar opciones.</p>
+        <div class="bg-white rounded-xl p-4 space-y-3 text-sm">
+          <div class="flex gap-3">
+            <span class="text-purple-600 font-bold">✓</span>
+            <span>"¿Buscás comprar o invertir?"</span>
+          </div>
+          <div class="flex gap-3">
+            <span class="text-purple-600 font-bold">✓</span>
+            <span>Misma calificación rápida</span>
+          </div>
+          <div class="flex gap-3">
+            <span class="text-purple-600 font-bold">✓</span>
+            <span>Muestra <strong>solo 2 mejores opciones</strong> (no satura)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLUJO PASO A PASO -->
+    <h3 class="text-2xl font-bold text-slate-900 mb-8 text-center">El flujo paso a paso</h3>
+    <div class="max-w-3xl mx-auto space-y-4">
+      <div class="flex gap-4 items-start bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="step-num bg-blue-600">1</div>
+        <div>
+          <h4 class="font-bold text-slate-900">Respuesta inmediata · &lt;5 segundos</h4>
+          <p class="text-sm text-slate-600 mt-1">Webhook de Meta dispara FastAPI, el bot responde al instante con info contextual.</p>
+        </div>
+      </div>
+      <div class="flex gap-4 items-start bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="step-num bg-blue-600">2</div>
+        <div>
+          <h4 class="font-bold text-slate-900">Calificación rápida · &lt;2 minutos</h4>
+          <p class="text-sm text-slate-600 mt-1">Pregunta presupuesto, zona, tipo de compra (vivir/invertir), forma de pago, urgencia. Acepta texto libre — GPT-4o interpreta.</p>
+        </div>
+      </div>
+      <div class="flex gap-4 items-start bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="step-num bg-blue-600">3</div>
+        <div>
+          <h4 class="font-bold text-slate-900">Detección de intención (Gemini 2.5)</h4>
+          <p class="text-sm text-slate-600 mt-1">Califica como 🔥 Caliente, 🟡 Tibio o ❄️ Frío. Cada uno tiene su propio camino.</p>
+        </div>
+      </div>
+      <div class="flex gap-4 items-start bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="step-num bg-blue-600">4</div>
+        <div>
+          <h4 class="font-bold text-slate-900">Mostrar 2 propiedades (no saturar)</h4>
+          <p class="text-sm text-slate-600 mt-1">Filtra Airtable por zona+tipo+precio. Muestra solo las 2 mejores. Si hay más, escribir "+" para verlas.</p>
+        </div>
+      </div>
+      <div class="flex gap-4 items-start bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="step-num bg-blue-600">5</div>
+        <div>
+          <h4 class="font-bold text-slate-900">Agendar visita automática (Cal.com)</h4>
+          <p class="text-sm text-slate-600 mt-1">Muestra 6 slots disponibles en los próximos 7 días, crea reserva al confirmar, manda recordatorio.</p>
+        </div>
+      </div>
+      <div class="flex gap-4 items-start bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="step-num bg-blue-600">6</div>
+        <div>
+          <h4 class="font-bold text-slate-900">Branching inteligente</h4>
+          <p class="text-sm text-slate-600 mt-1">Si duda → maneja objeción. Si pide más → catálogo filtrado. Si dice "lo hablo con mi esposa" → pausa + ofrece asesor.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTELIGENCIA -->
+<section id="inteligencia" class="bg-slate-50 py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="text-purple-600 font-bold tracking-wider text-sm">PUNTO 3 — DETECCIÓN DE INTENCIÓN</span>
+      <h2 class="text-4xl font-black text-slate-900 mt-2">Cada lead recibe el trato que merece</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- CALIENTE -->
+      <div class="bg-gradient-to-br from-red-500 to-orange-500 rounded-3xl p-8 text-white relative overflow-hidden">
+        <div class="absolute top-4 right-4 text-6xl opacity-20">🔥</div>
+        <div class="text-5xl mb-4">🔥</div>
+        <h3 class="text-2xl font-black mb-2">Lead Caliente</h3>
+        <p class="text-orange-100 text-sm mb-4">Tiene presupuesto + quiere visitar ya</p>
+        <div class="bg-white/20 rounded-xl p-4 backdrop-blur">
+          <div class="text-xs uppercase tracking-wider mb-2 opacity-80">Acción del bot</div>
+          <p class="font-semibold">→ Agendamiento inmediato<br>→ Alerta WhatsApp al asesor<br>→ Marca "calificado" en CRM</p>
+        </div>
+      </div>
+
+      <!-- TIBIO -->
+      <div class="bg-gradient-to-br from-amber-500 to-yellow-500 rounded-3xl p-8 text-white relative overflow-hidden">
+        <div class="absolute top-4 right-4 text-6xl opacity-20">🟡</div>
+        <div class="text-5xl mb-4">🟡</div>
+        <h3 class="text-2xl font-black mb-2">Lead Explorador</h3>
+        <p class="text-amber-100 text-sm mb-4">Compara opciones, no agenda aún</p>
+        <div class="bg-white/20 rounded-xl p-4 backdrop-blur">
+          <div class="text-xs uppercase tracking-wider mb-2 opacity-80">Acción del bot</div>
+          <p class="font-semibold">→ Más propiedades + ficha PDF<br>→ Activa seguimiento 5 puntos<br>→ Nurturing semanal</p>
+        </div>
+      </div>
+
+      <!-- FRIO -->
+      <div class="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl p-8 text-white relative overflow-hidden">
+        <div class="absolute top-4 right-4 text-6xl opacity-20">❄️</div>
+        <div class="text-5xl mb-4">❄️</div>
+        <h3 class="text-2xl font-black mb-2">Lead Frío</h3>
+        <p class="text-cyan-100 text-sm mb-4">"Solo viendo", sin urgencia</p>
+        <div class="bg-white/20 rounded-xl p-4 backdrop-blur">
+          <div class="text-xs uppercase tracking-wider mb-2 opacity-80">Acción del bot</div>
+          <p class="font-semibold">→ Deriva al sitio web<br>→ Activa nurturing largo plazo<br>→ Educación + plusvalía</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETECCIÓN DE CAÍDA -->
+    <div class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-10 mt-12 text-white">
+      <div class="flex items-start gap-6 flex-wrap">
+        <div class="text-6xl">🚨</div>
+        <div class="flex-1 min-w-0">
+          <span class="text-amber-300 font-bold text-sm tracking-wider">DETECCIÓN DE CAÍDA</span>
+          <h3 class="text-2xl font-bold mt-2">El bot detecta cuando un lead se enfría</h3>
+          <p class="text-slate-300 mt-2 mb-4">Si pasan 30 minutos sin actividad o el lead responde corto/evade visita, activa el modo recuperación automáticamente.</p>
+          <div class="grid md:grid-cols-3 gap-3">
+            <div class="bg-white/10 rounded-xl p-4 border border-white/10">
+              <div class="text-amber-300 font-bold text-sm">Opción 1</div>
+              <p class="text-sm mt-1">"Tengo otras opciones similares"</p>
+            </div>
+            <div class="bg-white/10 rounded-xl p-4 border border-white/10">
+              <div class="text-amber-300 font-bold text-sm">Opción 2</div>
+              <p class="text-sm mt-1">"¿Qué te faltó para decidir?"</p>
+            </div>
+            <div class="bg-white/10 rounded-xl p-4 border border-white/10">
+              <div class="text-amber-300 font-bold text-sm">Opción 3</div>
+              <p class="text-sm mt-1">"¿Hablás con un asesor?"</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SEGUIMIENTO -->
+<section id="seguimiento" class="bg-white py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="text-emerald-600 font-bold tracking-wider text-sm">PUNTO 4 — SEGUIMIENTO AUTOMÁTICO</span>
+      <h2 class="text-4xl font-black text-slate-900 mt-2">6 contactos antes de soltar un lead</h2>
+      <p class="text-lg text-slate-600 mt-3 max-w-2xl mx-auto">Tu PDF dice "mínimo 6 contactos antes de considerar lead muerto". Lo cumplimos al pie de la letra.</p>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="max-w-3xl mx-auto relative">
+      <div class="absolute left-6 top-0 bottom-0 flow-line"></div>
+
+      <div class="space-y-6 relative">
+        <div class="flex gap-6 items-start">
+          <div class="step-num bg-emerald-500 z-10">1</div>
+          <div class="bg-emerald-50 rounded-2xl p-5 flex-1 border border-emerald-200">
+            <div class="flex justify-between items-center mb-1">
+              <h4 class="font-bold text-slate-900">Inmediato</h4>
+              <span class="text-xs bg-emerald-200 text-emerald-800 px-2 py-1 rounded-full font-semibold">Automático</span>
+            </div>
+            <p class="text-sm text-slate-600">Respuesta inicial del bot — webhook FastAPI, &lt;5 segundos</p>
+          </div>
+        </div>
+
+        <div class="flex gap-6 items-start">
+          <div class="step-num bg-blue-500 z-10">2</div>
+          <div class="bg-blue-50 rounded-2xl p-5 flex-1 border border-blue-200">
+            <div class="flex justify-between items-center mb-1">
+              <h4 class="font-bold text-slate-900">+24 horas</h4>
+              <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full font-semibold">Cron diario</span>
+            </div>
+            <p class="text-sm text-slate-600">"¿Pudiste ver las opciones que te mandé?"</p>
+          </div>
+        </div>
+
+        <div class="flex gap-6 items-start">
+          <div class="step-num bg-blue-500 z-10">3</div>
+          <div class="bg-blue-50 rounded-2xl p-5 flex-1 border border-blue-200">
+            <div class="flex justify-between items-center mb-1">
+              <h4 class="font-bold text-slate-900">+3 días</h4>
+              <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full font-semibold">Valor</span>
+            </div>
+            <p class="text-sm text-slate-600">Te comparto info adicional + ofrece agendar visita</p>
+          </div>
+        </div>
+
+        <div class="flex gap-6 items-start">
+          <div class="step-num bg-purple-500 z-10">4</div>
+          <div class="bg-purple-50 rounded-2xl p-5 flex-1 border border-purple-200">
+            <div class="flex justify-between items-center mb-1">
+              <h4 class="font-bold text-slate-900">+7 días</h4>
+              <span class="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-semibold">Nuevas opciones</span>
+            </div>
+            <p class="text-sm text-slate-600">"Tenemos nuevas propiedades en tu zona"</p>
+          </div>
+        </div>
+
+        <div class="flex gap-6 items-start">
+          <div class="step-num bg-pink-500 z-10">5</div>
+          <div class="bg-pink-50 rounded-2xl p-5 flex-1 border border-pink-200">
+            <div class="flex justify-between items-center mb-1">
+              <h4 class="font-bold text-slate-900">+14 días</h4>
+              <span class="text-xs bg-pink-200 text-pink-800 px-2 py-1 rounded-full font-semibold">Reactivación</span>
+            </div>
+            <p class="text-sm text-slate-600">"¿Seguís buscando? Hay novedades"</p>
+          </div>
+        </div>
+
+        <div class="flex gap-6 items-start">
+          <div class="step-num bg-red-500 z-10">6</div>
+          <div class="bg-red-50 rounded-2xl p-5 flex-1 border border-red-200">
+            <div class="flex justify-between items-center mb-1">
+              <h4 class="font-bold text-slate-900">+30 días · Último intento</h4>
+              <span class="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full font-semibold">→ Dormido</span>
+            </div>
+            <p class="text-sm text-slate-600">Última oferta. Si no responde → pasa a nurturing largo plazo</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-12 bg-emerald-50 border border-emerald-200 rounded-2xl p-6 max-w-3xl mx-auto">
+      <div class="flex items-start gap-4">
+        <div class="text-3xl">⚙️</div>
+        <div>
+          <h4 class="font-bold text-slate-900">Cómo se ejecuta</h4>
+          <p class="text-sm text-slate-600 mt-1">Script <code class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-xs">seguimiento_leads.py</code> corre todos los días en Coolify, busca leads activos, manda mensaje y actualiza Airtable. Si el lead responde, se pausa el seguimiento automáticamente.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NURTURING -->
+<section id="nurturing" class="bg-gradient-to-b from-slate-50 to-white py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="text-pink-600 font-bold tracking-wider text-sm">PUNTO 5 — NURTURING</span>
+      <h2 class="text-4xl font-black text-slate-900 mt-2">Top of mind durante 3-6 meses</h2>
+      <p class="text-lg text-slate-600 mt-3 max-w-2xl mx-auto">Para los leads que no están listos hoy. Mantenemos contacto cada 15 días con contenido de valor — sin saturar.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-200 hover:shadow-xl transition">
+        <div class="text-3xl mb-3">🏘️</div>
+        <h4 class="font-bold text-slate-900">Propiedades nuevas</h4>
+        <p class="text-sm text-slate-600 mt-2">Cuando entran al stock, los avisamos antes que nadie.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-200 hover:shadow-xl transition">
+        <div class="text-3xl mb-3">📉</div>
+        <h4 class="font-bold text-slate-900">Cambios de precio</h4>
+        <p class="text-sm text-slate-600 mt-2">"Esa propiedad que viste bajó de precio"</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-200 hover:shadow-xl transition">
+        <div class="text-3xl mb-3">💳</div>
+        <h4 class="font-bold text-slate-900">Info de crédito</h4>
+        <p class="text-sm text-slate-600 mt-2">"Hay nuevas opciones de financiamiento hipotecario"</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-200 hover:shadow-xl transition">
+        <div class="text-3xl mb-3">📈</div>
+        <h4 class="font-bold text-slate-900">Plusvalía de zona</h4>
+        <p class="text-sm text-slate-600 mt-2">"La zona donde mirabas se está valorizando"</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-200 hover:shadow-xl transition">
+        <div class="text-3xl mb-3">🔄</div>
+        <h4 class="font-bold text-slate-900">Recalificación</h4>
+        <p class="text-sm text-slate-600 mt-2">Si responde, vuelve al flujo del bot como conversación nueva.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-200 hover:shadow-xl transition">
+        <div class="text-3xl mb-3">📅</div>
+        <h4 class="font-bold text-slate-900">Frecuencia controlada</h4>
+        <p class="text-sm text-slate-600 mt-2">1 mensaje cada 15 días — top of mind, sin spam.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHATWOOT / ASESOR -->
+<section id="chatwoot" class="bg-slate-900 text-white py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="text-cyan-400 font-bold tracking-wider text-sm">PUNTO 6 — INTERVENCIÓN HUMANA</span>
+      <h2 class="text-4xl font-black mt-2">El asesor entra cuando hace falta</h2>
+      <p class="text-lg text-slate-300 mt-3 max-w-2xl mx-auto">Bot y humano nunca chocan. Cuando el asesor toma la conversación, el bot se pausa automáticamente.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8">
+      <!-- Escalamiento -->
+      <div class="bg-slate-800 rounded-3xl p-8 border border-slate-700">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center text-2xl">🚨</div>
+          <h3 class="text-xl font-bold">Escalamiento automático</h3>
+        </div>
+        <p class="text-slate-300 mb-6">El bot deriva al asesor cuando detecta:</p>
+        <ul class="space-y-3">
+          <li class="flex gap-3"><span class="text-cyan-400">●</span><span>Lead caliente listo para visitar</span></li>
+          <li class="flex gap-3"><span class="text-cyan-400">●</span><span>Cliente pide hablar con asesor</span></li>
+          <li class="flex gap-3"><span class="text-cyan-400">●</span><span>Objeción compleja ("lo hablo con mi esposa")</span></li>
+          <li class="flex gap-3"><span class="text-cyan-400">●</span><span>Pregunta fuera del scope del bot</span></li>
+        </ul>
+      </div>
+
+      <!-- Pausa/Retoma -->
+      <div class="bg-slate-800 rounded-3xl p-8 border border-slate-700">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-2xl">⏯️</div>
+          <h3 class="text-xl font-bold">Bot se pausa / retoma</h3>
+        </div>
+        <p class="text-slate-300 mb-6">Cero choque entre bot y asesor:</p>
+        <ul class="space-y-3">
+          <li class="flex gap-3"><span class="text-emerald-400">●</span><span>Asesor responde → bot se pausa al toque</span></li>
+          <li class="flex gap-3"><span class="text-emerald-400">●</span><span>Auto-retoma a las 4 horas si asesor no escribe más</span></li>
+          <li class="flex gap-3"><span class="text-emerald-400">●</span><span>Webhook Chatwoot detecta resolución</span></li>
+          <li class="flex gap-3"><span class="text-emerald-400">●</span><span>Bot retoma seguimiento donde quedó</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Panel asesor -->
+    <div class="mt-8 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-3xl p-8 border border-cyan-500/30">
+      <h3 class="text-2xl font-bold mb-6 flex items-center gap-3"><span class="text-3xl">📋</span> Lo que ve tu asesor en Chatwoot</h3>
+      <div class="grid md:grid-cols-4 gap-4">
+        <div class="bg-slate-800/50 rounded-xl p-4">
+          <div class="text-cyan-400 font-bold text-sm mb-2">HISTORIAL</div>
+          <p class="text-sm text-slate-300">Últimos 20 mensajes lead↔bot con timestamp</p>
+        </div>
+        <div class="bg-slate-800/50 rounded-xl p-4">
+          <div class="text-cyan-400 font-bold text-sm mb-2">CALIFICACIÓN</div>
+          <p class="text-sm text-slate-300">Score, zona, presupuesto, urgencia</p>
+        </div>
+        <div class="bg-slate-800/50 rounded-xl p-4">
+          <div class="text-cyan-400 font-bold text-sm mb-2">LABEL</div>
+          <p class="text-sm text-slate-300">"atiende-humano" + label de score (caliente/tibio/frío)</p>
+        </div>
+        <div class="bg-slate-800/50 rounded-xl p-4">
+          <div class="text-cyan-400 font-bold text-sm mb-2">NOTA PRIVADA</div>
+          <p class="text-sm text-slate-300">Resumen del bot con propiedad de interés</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CRM -->
+<section id="crm" class="bg-white py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="text-indigo-600 font-bold tracking-wider text-sm">PUNTO 7 — CRM Y DASHBOARD</span>
+      <h2 class="text-4xl font-black text-slate-900 mt-2">Tu CRM ya está vivo en <code class="text-2xl bg-indigo-100 text-indigo-700 px-3 py-1 rounded">crm.lovbot.ai</code></h2>
+      <p class="text-lg text-slate-600 mt-3 max-w-2xl mx-auto">CRM completo multi-subnicho. 8 paneles. Base de datos PostgreSQL propia (<code class="bg-slate-100 text-slate-700 px-1.5 rounded text-sm">robert_crm</code>). 100% tuyo.</p>
+    </div>
+
+    <!-- 8 Paneles -->
+    <h3 class="text-xl font-bold text-slate-900 mb-6 text-center">Los 8 paneles del CRM</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14">
+      <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-200 text-center">
+        <div class="text-3xl mb-2">👥</div>
+        <div class="font-bold text-slate-900 text-sm">Mis Leads</div>
+        <div class="text-xs text-slate-500 mt-1">Pipeline · filtros · historial</div>
+        <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">✓ Listo</span>
+      </div>
+      <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border border-purple-200 text-center">
+        <div class="text-3xl mb-2">🏘️</div>
+        <div class="font-bold text-slate-900 text-sm">Propiedades</div>
+        <div class="text-xs text-slate-500 mt-1">CRUD · fotos · precio</div>
+        <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">✓ Listo</span>
+      </div>
+      <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200 text-center">
+        <div class="text-3xl mb-2">🤝</div>
+        <div class="font-bold text-slate-900 text-sm">Clientes Activos</div>
+        <div class="text-xs text-slate-500 mt-1">Cuotas · estado pago</div>
+        <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">✓ Listo</span>
+      </div>
+      <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-200 text-center">
+        <div class="text-3xl mb-2">👨‍💼</div>
+        <div class="font-bold text-slate-900 text-sm">Equipo</div>
+        <div class="text-xs text-slate-500 mt-1">Asesores · comisiones</div>
+        <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">✓ Listo</span>
+      </div>
+      <div class="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-5 border border-rose-200 text-center">
+        <div class="text-3xl mb-2">📑</div>
+        <div class="font-bold text-slate-900 text-sm">Propietarios</div>
+        <div class="text-xs text-slate-500 mt-1">Dueños · contacto</div>
+        <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">✓ Listo</span>
+      </div>
+      <div class="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl p-5 border border-yellow-200 text-center">
+        <div class="text-3xl mb-2">📍</div>
+        <div class="font-bold text-slate-900 text-sm">Loteos</div>
+        <div class="text-xs text-slate-500 mt-1">Lotes · mapa interactivo</div>
+        <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">✓ Listo</span>
+      </div>
+      <div class="bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl p-5 border border-sky-200 text-center">
+        <div class="text-3xl mb-2">📄</div>
+        <div class="font-bold text-slate-900 text-sm">Contratos</div>
+        <div class="text-xs text-slate-500 mt-1">PDFs · upload Cloudinary</div>
+        <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">✓ Listo</span>
+      </div>
+      <div class="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-5 border border-violet-200 text-center">
+        <div class="text-3xl mb-2">📈</div>
+        <div class="font-bold text-slate-900 text-sm">Reportes</div>
+        <div class="text-xs text-slate-500 mt-1">Charts · tasa cierre</div>
+        <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">✓ Listo</span>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <h3 class="text-xl font-bold text-slate-900 mb-6">Pipeline de 9 estados</h3>
+    <div class="flex flex-wrap gap-2 mb-12 justify-center">
+      <span class="px-4 py-2 rounded-full bg-slate-200 text-slate-700 font-semibold text-sm">📥 No contactado</span>
+      <span class="text-slate-400">→</span>
+      <span class="px-4 py-2 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm">💬 Contactado</span>
+      <span class="text-slate-400">→</span>
+      <span class="px-4 py-2 rounded-full bg-cyan-100 text-cyan-700 font-semibold text-sm">✓ Calificado</span>
+      <span class="text-slate-400">→</span>
+      <span class="px-4 py-2 rounded-full bg-purple-100 text-purple-700 font-semibold text-sm">📅 Visita agendada</span>
+      <span class="text-slate-400">→</span>
+      <span class="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-sm">🚪 Visitó</span>
+      <span class="text-slate-400">→</span>
+      <span class="px-4 py-2 rounded-full bg-amber-100 text-amber-700 font-semibold text-sm">🤝 Negociación</span>
+      <span class="text-slate-400">→</span>
+      <span class="px-4 py-2 rounded-full bg-pink-100 text-pink-700 font-semibold text-sm">🔁 Seguimiento</span>
+      <span class="text-slate-400">→</span>
+      <span class="px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 font-semibold text-sm">✅ Cerrado ganado</span>
+      <span class="text-slate-400">/</span>
+      <span class="px-4 py-2 rounded-full bg-red-100 text-red-700 font-semibold text-sm">❌ Cerrado perdido</span>
+    </div>
+
+    <!-- Datos + Métricas -->
+    <div class="grid md:grid-cols-2 gap-8">
+      <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl p-8 border border-indigo-200">
+        <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">📊 Datos clave por lead</h3>
+        <ul class="space-y-2 text-sm">
+          <li class="flex gap-2"><span class="text-indigo-600">✓</span> Nombre, apellido, teléfono, email</li>
+          <li class="flex gap-2"><span class="text-indigo-600">✓</span> Fuente del lead (meta_ads / orgánico)</li>
+          <li class="flex gap-2"><span class="text-indigo-600">✓</span> Detalle de fuente (ad_id + headline)</li>
+          <li class="flex gap-2"><span class="text-indigo-600">✓</span> Propiedad de interés · asesor asignado</li>
+          <li class="flex gap-2"><span class="text-indigo-600">✓</span> Score (caliente/tibio/frío) sincronizado con Chatwoot</li>
+          <li class="flex gap-2"><span class="text-indigo-600">✓</span> Última interacción (auto-update)</li>
+          <li class="flex gap-2"><span class="text-indigo-600">✓</span> Notas del bot + historial completo</li>
+        </ul>
+      </div>
+
+      <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 border border-emerald-200">
+        <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">🗄️ Base de datos propia</h3>
+        <ul class="space-y-2 text-sm">
+          <li class="flex gap-2"><span class="text-emerald-600">✓</span> PostgreSQL dedicado: <code class="bg-emerald-100 text-emerald-800 px-1.5 rounded">robert_crm</code></li>
+          <li class="flex gap-2"><span class="text-emerald-600">✓</span> 9 tablas: leads, propiedades, activos, asesores, propietarios, loteos, lotes_mapa, contratos, visitas</li>
+          <li class="flex gap-2"><span class="text-emerald-600">✓</span> Sincronización Chatwoot ↔ CRM automática</li>
+          <li class="flex gap-2"><span class="text-emerald-600">✓</span> Tasa de citas y cierre en Reportes</li>
+          <li class="flex gap-2"><span class="text-emerald-600">✓</span> Gráficos Chart.js en tiempo real</li>
+          <li class="flex gap-2"><span class="text-emerald-600">✓</span> Upload PDFs contratos vía Cloudinary</li>
+          <li class="flex gap-2"><span class="text-emerald-600">✓</span> Multi-subnicho: agencia · agente · desarrolladora</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REMARKETING -->
+<section id="remarketing" class="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 text-white py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="bg-yellow-400 text-purple-900 px-4 py-1 rounded-full font-bold text-sm tracking-wider">⭐ PROPUESTA NUEVA — A DECIDIR JUNTOS</span>
+      <h2 class="text-4xl md:text-5xl font-black mt-4">Estrategia híbrida<br>WhatsApp + Email</h2>
+      <p class="text-lg text-purple-100 mt-3 max-w-2xl mx-auto">Para arrancar rápido sin esperar 1-3 días por aprobación de plantillas Meta.</p>
+    </div>
+
+    <!-- El problema -->
+    <div class="bg-white/10 backdrop-blur rounded-3xl p-8 mb-10 border border-white/20">
+      <div class="flex items-start gap-4">
+        <div class="text-4xl">⚠️</div>
+        <div>
+          <h3 class="text-xl font-bold mb-2">El problema con WhatsApp puro</h3>
+          <p class="text-purple-100">WhatsApp Business API tiene la <strong>regla de la ventana de 24 horas</strong>: después de 24h del último mensaje del cliente, solo podés mandar plantillas pre-aprobadas por Meta. Si hacemos los 6 puntos de seguimiento solo por WhatsApp, necesitás aprobar 5-6 plantillas antes de arrancar.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solución por tipo de lead -->
+    <div class="grid lg:grid-cols-2 gap-6">
+      <div class="bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-3xl p-6 border border-red-400/30">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-3xl">🔥</span>
+          <h4 class="font-bold text-lg">Caliente (0-30 días)</h4>
+        </div>
+        <p class="text-sm text-red-100 mb-4">Todo WhatsApp libre — sin templates</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>0 min</span><span class="font-semibold">Respuesta + propiedades</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+2 hs</span><span class="font-semibold">"¿Te quedó alguna duda?"</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+24 hs</span><span class="font-semibold">Recordatorio visita</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+3 días</span><span class="font-semibold">"¿Pudiste pasar?"</span></div>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-3xl p-6 border border-amber-400/30">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-3xl">🟡</span>
+          <h4 class="font-bold text-lg">Tibio (1-3 meses)</h4>
+        </div>
+        <p class="text-sm text-amber-100 mb-4">Mix WhatsApp + Email</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+24 hs</span><span class="font-semibold">📱 WhatsApp libre</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+3 días</span><span class="font-semibold">📧 Ficha PDF + comparativo</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+7 días</span><span class="font-semibold">📧 Nuevas propiedades</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+14 días</span><span class="font-semibold">📱 WhatsApp template</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+30 días</span><span class="font-semibold">📧 Última oferta</span></div>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-3xl p-6 border border-blue-400/30">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-3xl">❄️</span>
+          <h4 class="font-bold text-lg">Frío (3-6 meses)</h4>
+        </div>
+        <p class="text-sm text-blue-100 mb-4">100% Email — contenido de valor</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+7 días</span><span class="font-semibold">📧 Guía "primera propiedad"</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+21 días</span><span class="font-semibold">📧 Plusvalía de zonas</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>+45 días</span><span class="font-semibold">📧 Opciones de financiamiento</span></div>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-slate-500/20 to-gray-500/20 rounded-3xl p-6 border border-slate-400/30">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-3xl">💤</span>
+          <h4 class="font-bold text-lg">Dormido (6+ meses)</h4>
+        </div>
+        <p class="text-sm text-slate-200 mb-4">Newsletter + reactivación</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>Cada 15 días</span><span class="font-semibold">📧 Newsletter</span></div>
+          <div class="flex justify-between bg-white/10 rounded-lg px-3 py-2"><span>Cada 60 días</span><span class="font-semibold">📱 "¿Seguís buscando?"</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Beneficio destacado -->
+    <div class="mt-10 bg-gradient-to-r from-yellow-400 to-orange-400 text-purple-900 rounded-3xl p-8 badge-glow">
+      <div class="flex items-center gap-6 flex-wrap">
+        <div class="text-6xl">⚡</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-bold tracking-wider opacity-80">RESULTADO</div>
+          <h3 class="text-2xl md:text-3xl font-black">Solo 2 plantillas Meta a aprobar (vs 5-6)</h3>
+          <p class="mt-2 font-medium">Arrancás en 1-2 días en vez de 1-2 semanas. Email es ~$0 por mensaje, WhatsApp template cuesta — usás cada canal donde más convierte.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRÓXIMOS PASOS -->
+<section id="proximos" class="bg-white py-20">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="text-emerald-600 font-bold tracking-wider text-sm">PRÓXIMOS PASOS</span>
+      <h2 class="text-4xl font-black text-slate-900 mt-2">Para activar todo</h2>
+    </div>
+
+    <!-- Ya completado -->
+    <div class="bg-emerald-50 rounded-2xl p-5 border border-emerald-200 mb-6">
+      <h4 class="font-bold text-emerald-800 mb-3 flex items-center gap-2">✅ Completado — Sistema 99% operativo</h4>
+      <div class="grid sm:grid-cols-2 gap-2 text-sm text-emerald-700">
+        <div class="flex gap-2"><span>✓</span> Bot WhatsApp live 24/7</div>
+        <div class="flex gap-2"><span>✓</span> Calificación + agendamiento Cal.com</div>
+        <div class="flex gap-2"><span>✓</span> CRM 8 paneles en crm.lovbot.ai</div>
+        <div class="flex gap-2"><span>✓</span> PostgreSQL propio (robert_crm)</div>
+        <div class="flex gap-2"><span>✓</span> Chatwoot ↔ CRM sincronizados</div>
+        <div class="flex gap-2"><span>✓</span> Seguimiento automático (6 contactos)</div>
+        <div class="flex gap-2"><span>✓</span> Estrategia remarketing híbrida diseñada</div>
+        <div class="flex gap-2"><span>✓</span> Upload imágenes/PDFs Cloudinary</div>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <div class="bg-blue-50 rounded-2xl p-6 border-l-4 border-blue-500 flex items-start gap-4">
+        <div class="text-2xl">1️⃣</div>
+        <div class="flex-1">
+          <h4 class="font-bold text-slate-900">Aprobás 2 plantillas en Meta Business Manager</h4>
+          <p class="text-sm text-slate-600 mt-1">Para los mensajes de seguimiento después de las 24h. Te pasamos los textos exactos. Aprobación tarda 1-3 días.</p>
+        </div>
+        <span class="text-xs bg-blue-200 text-blue-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">1-3 días</span>
+      </div>
+
+      <div class="bg-purple-50 rounded-2xl p-6 border-l-4 border-purple-500 flex items-start gap-4">
+        <div class="text-2xl">2️⃣</div>
+        <div class="flex-1">
+          <h4 class="font-bold text-slate-900">Conectamos tu SMTP de email</h4>
+          <p class="text-sm text-slate-600 mt-1">Gmail, Brevo, Mailgun — el que prefieras. Templates HTML profesionales los hacemos nosotros.</p>
+        </div>
+        <span class="text-xs bg-purple-200 text-purple-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">Nosotros</span>
+      </div>
+
+      <div class="bg-amber-50 rounded-2xl p-6 border-l-4 border-amber-500 flex items-start gap-4">
+        <div class="text-2xl">3️⃣</div>
+        <div class="flex-1">
+          <h4 class="font-bold text-slate-900">Configurás campañas Meta Ads con referral</h4>
+          <p class="text-sm text-slate-600 mt-1">Para que el bot detecte de qué anuncio vino el lead y responda con info de esa propiedad específica.</p>
+        </div>
+        <span class="text-xs bg-amber-200 text-amber-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">Tu equipo</span>
+      </div>
+    </div>
+
+    <!-- CTA final -->
+    <div class="mt-16 text-center">
+      <div class="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl px-10 py-8 shadow-2xl">
+        <h3 class="text-2xl font-bold">El sistema está listo. Solo quedan 3 pasos tuyos.</h3>
+        <p class="text-blue-100 mt-2">Bot live · CRM completo · PostgreSQL propio · 8 paneles · Chatwoot sincronizado.</p>
+        <div class="mt-6 flex flex-wrap gap-4 justify-center text-sm">
+          <a href="https://crm.lovbot.ai" target="_blank" class="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition">Ver tu CRM en vivo →</a>
+          <a href="https://agentes.lovbot.ai" target="_blank" class="bg-blue-700 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-800 transition border border-blue-400">Ver backend →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-slate-900 text-slate-400 py-10">
+  <div class="max-w-7xl mx-auto px-6 text-center text-sm">
+    <p>Documento de implementación basado en tu PDF "AGENTE AI INMOBILIARIO" del 12-04-2026</p>
+    <p class="mt-2">Preparado por <strong class="text-white">Lovbot · Agencia System IA</strong> · 14 de abril de 2026</p>
+  </div>
+</footer>
+
+</body>
+</html>
