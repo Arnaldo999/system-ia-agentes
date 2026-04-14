@@ -340,6 +340,8 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
         if r.status_code not in (200, 201):
             print(f"[ROBERT-META] Error {r.status_code}: {r.text[:300]}")
         ok = r.status_code in (200, 201)
+        if ok:
+            _cw_mirror_msg(telefono, mensaje, es_bot=True)
         return ok
     except Exception as e:
         print(f"[ROBERT-META] Excepción: {e}")
