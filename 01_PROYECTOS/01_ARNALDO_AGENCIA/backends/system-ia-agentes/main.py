@@ -114,7 +114,8 @@ async def meta_webhook_verify(request: Request):
 @app.post("/meta/webhook", tags=["Meta"])
 async def meta_webhook_events(request: Request):
     """Recibe eventos de Meta (WhatsApp) y los despacha al worker correcto."""
-    import threading
+    import threading, time as _t
+    print(f"[META-WEBHOOK-IN] ts={_t.time():.3f} client={request.client}")
     try:
         data = await request.json()
     except Exception:
