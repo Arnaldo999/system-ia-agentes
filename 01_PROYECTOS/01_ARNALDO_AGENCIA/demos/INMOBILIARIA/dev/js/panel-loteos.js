@@ -70,7 +70,7 @@
     document.getElementById('loteoMapa').value = l.mapa_svg_url || '';
     document.getElementById('loteoPrecio').value = l.precio_desde || '';
     document.getElementById('loteoDescripcion').value = l.descripcion || '';
-    modal.classList.remove('hidden');
+    abrirModal('modalLoteo');
   };
 
   window.guardarLoteo = async function() {
@@ -87,7 +87,7 @@
     try {
       if (id) await crmUpdate('loteos', id, campos);
       else await crmCreate('loteos', campos);
-      document.getElementById('modalLoteo').classList.add('hidden');
+      cerrarModal('modalLoteo');
       notif('✅ Loteo guardado', campos.nombre);
       cargarLoteos();
     } catch (e) { notif('❌ Error', e.message); }
@@ -134,7 +134,7 @@
           </div>
         `;
       }
-      modal.classList.remove('hidden');
+      ;
     } catch (e) { notif('❌ Error', e.message); }
   };
 })();

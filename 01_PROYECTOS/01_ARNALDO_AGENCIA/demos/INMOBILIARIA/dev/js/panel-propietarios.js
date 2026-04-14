@@ -71,7 +71,7 @@
     document.getElementById('propietarioDireccion').value = p.direccion || '';
     document.getElementById('propietarioComision').value = p.comision_pactada || '';
     document.getElementById('propietarioNotas').value = p.notas || '';
-    modal.classList.remove('hidden');
+    abrirModal('modalPropietario');
   };
 
   window.guardarPropietario = async function() {
@@ -88,7 +88,7 @@
     try {
       if (id) await crmUpdate('propietarios', id, campos);
       else await crmCreate('propietarios', campos);
-      document.getElementById('modalPropietario').classList.add('hidden');
+      cerrarModal('modalPropietario');
       notif('✅ Propietario guardado', campos.nombre);
       cargarPropietarios();
     } catch (e) {

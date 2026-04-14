@@ -31,3 +31,18 @@ window.notif = function(title, body = '') {
   if (typeof showNotif === 'function') showNotif(title, body);
   else console.log(`[NOTIF] ${title} ${body}`);
 };
+
+// Helpers de modal compatibles con dev (hidden) y prod (show)
+window.abrirModal = function(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (typeof openModal === 'function') { openModal(id); }
+  else { el.classList.remove('hidden'); el.classList.add('show'); }
+};
+
+window.cerrarModal = function(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (typeof closeModal === 'function') { closeModal(id); }
+  else { el.classList.add('hidden'); el.classList.remove('show'); }
+};

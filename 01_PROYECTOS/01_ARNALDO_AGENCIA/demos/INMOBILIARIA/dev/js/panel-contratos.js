@@ -83,7 +83,7 @@
     document.getElementById('contratoEstado').value = c.estado || 'pendiente';
     document.getElementById('contratoArchivoUrl').value = c.archivo_url || '';
     document.getElementById('contratoNotas').value = c.notas || '';
-    modal.classList.remove('hidden');
+    abrirModal('modalContrato');
   };
 
   window.subirPdfContrato = async function(fileInput) {
@@ -119,7 +119,7 @@
     try {
       if (id) await crmUpdate('contratos', id, campos);
       else await crmCreate('contratos', campos);
-      document.getElementById('modalContrato').classList.add('hidden');
+      cerrarModal('modalContrato');
       notif('✅ Contrato guardado', campos.titulo);
       cargarContratos();
     } catch (e) { notif('❌ Error', e.message); }

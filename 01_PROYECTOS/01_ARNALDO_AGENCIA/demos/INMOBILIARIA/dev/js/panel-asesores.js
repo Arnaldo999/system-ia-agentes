@@ -56,7 +56,7 @@
     document.getElementById('asesorComision').value = a.comision_pct || '';
     document.getElementById('asesorNotas').value = a.notas || '';
     document.getElementById('asesorActivo').checked = a.activo !== false;
-    modal.classList.remove('hidden');
+    abrirModal('modalAsesor');
   };
 
   window.guardarAsesor = async function() {
@@ -74,7 +74,7 @@
     try {
       if (id) await crmUpdate('asesores', id, campos);
       else await crmCreate('asesores', campos);
-      document.getElementById('modalAsesor').classList.add('hidden');
+      cerrarModal('modalAsesor');
       notif('✅ Asesor guardado', `${campos.nombre} ${campos.apellido}`);
       cargarAsesores();
     } catch (e) {

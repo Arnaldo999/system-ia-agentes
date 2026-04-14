@@ -91,7 +91,7 @@
     document.getElementById('visitaEstado').value = v.estado || 'agendada';
     document.getElementById('visitaNotasPre').value = v.notas_pre || '';
     document.getElementById('visitaNotasPost').value = v.notas_post || '';
-    modal.classList.remove('hidden');
+    abrirModal('modalVisita');
   };
 
   window.guardarVisita = async function() {
@@ -108,7 +108,7 @@
     try {
       if (id) await crmUpdate('visitas', id, campos);
       else await crmCreate('visitas', campos);
-      document.getElementById('modalVisita').classList.add('hidden');
+      cerrarModal('modalVisita');
       notif('✅ Visita guardada');
       cargarVisitas();
     } catch (e) { notif('❌ Error', e.message); }

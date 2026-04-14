@@ -35,7 +35,7 @@ tailwind.config = {
       --s1: #3b82f6; --s2: #f59e0b; --s3: #8b5cf6; --s4: #10b981; --s5: #ef4444;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { @apply bg-bg text-txt font-sans text-sm min-h-screen; }
+    html, body { @apply bg-bg text-txt font-sans text-sm; height:100%; overflow:hidden; }
     ::-webkit-scrollbar { width:4px; height:4px; }
     ::-webkit-scrollbar-track { background:transparent; }
     ::-webkit-scrollbar-thumb { @apply bg-brd rounded-sm; }
@@ -58,7 +58,7 @@ tailwind.config = {
 
     /* ── LAYOUT ── */
     .layout { @apply flex h-[calc(100vh-56px)]; }
-    .sidebar { @apply w-[200px] max-md:w-12 bg-surface border-r border-brd py-3 shrink-0 flex flex-col; }
+    .sidebar { @apply w-[200px] max-md:w-12 bg-surface border-r border-brd py-3 shrink-0 flex flex-col overflow-hidden; }
     .sidebar-section { @apply px-4 py-2 pb-1 text-txt-2 text-[10px] font-semibold uppercase tracking-wider max-md:hidden; }
     .nav-item { @apply flex items-center gap-2.5 py-2.5 px-4 text-txt-2 cursor-pointer text-[13px] transition-all border-l-[3px] border-transparent my-px hover:text-txt hover:bg-surface-2; }
     .nav-item.active { @apply text-txt bg-surface-2 !border-l-accent; }
@@ -374,38 +374,61 @@ tailwind.config = {
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sidebar-section">Principal</div>
-    <div class="nav-item active" onclick="nav('inicio',this)">
-      <span class="nav-icon">📊</span><span>Inicio</span>
+    <!-- nav items scrolleable -->
+    <div style="flex:1;overflow-y:auto;overflow-x:hidden;">
+      <div class="sidebar-section">Principal</div>
+      <div class="nav-item active" onclick="nav('inicio',this)">
+        <span class="nav-icon">📊</span><span>Inicio</span>
+      </div>
+      <div class="nav-item" onclick="nav('pipeline',this)">
+        <span class="nav-icon">🔀</span><span>Mi Pipeline</span>
+        <span class="nav-badge" id="pipelineBadge">12</span>
+      </div>
+      <div class="nav-item" onclick="nav('leads',this)">
+        <span class="nav-icon">👥</span><span>Mis Leads</span>
+      </div>
+      <div class="nav-item" onclick="nav('chat',this)">
+        <span class="nav-icon">🤖</span><span>Resúmenes IA</span>
+        <span class="nav-badge green" id="chatBadge">4 leads</span>
+      </div>
+      <div class="nav-item" onclick="nav('propiedades',this)">
+        <span class="nav-icon">🏘️</span><span>Propiedades</span>
+      </div>
+      <div class="nav-item" onclick="nav('activos',this)">
+        <span class="nav-icon">🤝</span><span>Clientes Activos</span>
+        <span class="nav-badge green" id="activosBadge">0</span>
+      </div>
+      <div class="nav-item" onclick="nav('agenda',this)">
+        <span class="nav-icon">📅</span><span>Mi Agenda</span>
+      </div>
+      <div class="sidebar-section" style="margin-top:8px">Gestión</div>
+      <div class="nav-item" onclick="nav('asesores',this)">
+        <span class="nav-icon">👨‍💼</span><span>Equipo</span>
+      </div>
+      <div class="nav-item" onclick="nav('propietarios',this)">
+        <span class="nav-icon">📑</span><span>Propietarios</span>
+      </div>
+      <div class="nav-item" onclick="nav('loteos',this)">
+        <span class="nav-icon">📍</span><span>Loteos</span>
+      </div>
+      <div class="nav-item" onclick="nav('contratos',this)">
+        <span class="nav-icon">📄</span><span>Contratos</span>
+      </div>
+      <div class="nav-item" onclick="nav('visitas',this)">
+        <span class="nav-icon">🗓️</span><span>Visitas</span>
+      </div>
+      <div class="nav-item" onclick="nav('reportes',this)">
+        <span class="nav-icon">📈</span><span>Reportes</span>
+      </div>
+      <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
+      <div class="nav-item" onclick="nav('formularios',this)">
+        <span class="nav-icon">📋</span><span>Formularios</span>
+      </div>
+      <div class="nav-item" onclick="nav('configuracion',this)">
+        <span class="nav-icon">⚙️</span><span>Configuración</span>
+      </div>
     </div>
-    <div class="nav-item" onclick="nav('pipeline',this)">
-      <span class="nav-icon">🔀</span><span>Mi Pipeline</span>
-      <span class="nav-badge" id="pipelineBadge">12</span>
-    </div>
-    <div class="nav-item" onclick="nav('leads',this)">
-      <span class="nav-icon">👥</span><span>Mis Leads</span>
-    </div>
-    <div class="nav-item" onclick="nav('chat',this)">
-      <span class="nav-icon">🤖</span><span>Resúmenes IA</span>
-      <span class="nav-badge green" id="chatBadge">4 leads</span>
-    </div>
-    <div class="nav-item" onclick="nav('propiedades',this)">
-      <span class="nav-icon">🏘️</span><span>Propiedades</span>
-    </div>
-    <div class="nav-item" onclick="nav('activos',this)">
-      <span class="nav-icon">🤝</span><span>Clientes Activos</span>
-      <span class="nav-badge green" id="activosBadge">0</span>
-    </div>
-    <div class="nav-item" onclick="nav('agenda',this)">
-      <span class="nav-icon">📅</span><span>Mi Agenda</span>
-    </div>
-    <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
-    <div class="nav-item" onclick="nav('formularios',this)">
-      <span class="nav-icon">📋</span><span>Formularios</span>
-    </div>
-    <div class="nav-item" onclick="nav('configuracion',this)">
-      <span class="nav-icon">⚙️</span><span>Configuración</span>
-    </div>
+    <!-- footer siempre visible -->
     <div class="sidebar-footer">
       <div class="plan-chip">
         🤖 IA activa
@@ -1139,8 +1162,237 @@ tailwind.config = {
       <div id="cfg-feedback" class="mt-3 text-[13px] min-h-[20px]"></div>
     </div>
 
+
+    <!-- ══════════ ASESORES ══════════ -->
+    <div class="panel" id="panel-asesores" style="padding:20px">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold">👨‍💼 Equipo de Asesores</h2>
+          <p class="text-sm text-txt-2">Gestión del equipo de ventas</p>
+        </div>
+        <button onclick="abrirModalAsesor()" class="btn btn-primary">+ Nuevo asesor</button>
+      </div>
+      <div id="asesoresLista" class="space-y-2"></div>
+    </div>
+
+    <!-- ══════════ PROPIETARIOS ══════════ -->
+    <div class="panel" id="panel-propietarios" style="padding:20px">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold">📑 Propietarios</h2>
+          <p class="text-sm text-txt-2">Cartera de propiedades de terceros</p>
+        </div>
+        <button onclick="abrirModalPropietario()" class="btn btn-primary">+ Nuevo propietario</button>
+      </div>
+      <div id="propietariosLista"></div>
+    </div>
+
+    <!-- ══════════ LOTEOS ══════════ -->
+    <div class="panel" id="panel-loteos" style="padding:20px">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold">📍 Loteos</h2>
+          <p class="text-sm text-txt-2">Proyectos con mapa SVG interactivo</p>
+        </div>
+        <button onclick="abrirModalLoteo()" class="btn btn-primary">+ Nuevo loteo</button>
+      </div>
+      <div id="loteosLista"></div>
+    </div>
+
+    <!-- ══════════ CONTRATOS ══════════ -->
+    <div class="panel" id="panel-contratos" style="padding:20px">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold">📄 Contratos</h2>
+          <p class="text-sm text-txt-2">Reservas, ventas, alquileres</p>
+        </div>
+        <button onclick="abrirModalContrato()" class="btn btn-primary">+ Nuevo contrato</button>
+      </div>
+      <div id="contratosLista"></div>
+    </div>
+
+    <!-- ══════════ VISITAS ══════════ -->
+    <div class="panel" id="panel-visitas" style="padding:20px">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold">🗓️ Visitas Agendadas</h2>
+          <p class="text-sm text-txt-2">Sincronizado con Cal.com + agenda manual</p>
+        </div>
+        <button onclick="abrirModalVisita()" class="btn btn-primary">+ Agendar visita</button>
+      </div>
+      <div id="visitasLista"></div>
+    </div>
+
+    <!-- ══════════ REPORTES ══════════ -->
+    <div class="panel" id="panel-reportes" style="padding:20px">
+      <div class="mb-4">
+        <h2 class="text-xl font-bold">📈 Reportes</h2>
+        <p class="text-sm text-txt-2">Performance de ventas, asesores y fuentes</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="bg-surface border border-brd rounded-lg p-4">
+          <h3 class="text-sm font-semibold mb-3">📊 Ventas por mes</h3>
+          <div style="height:220px"><canvas id="chartVentasMes"></canvas></div>
+        </div>
+        <div class="bg-surface border border-brd rounded-lg p-4">
+          <h3 class="text-sm font-semibold mb-3">🌐 Origen de leads</h3>
+          <div style="height:220px"><canvas id="chartFuentes"></canvas></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-surface border border-brd rounded-lg p-4">
+          <h3 class="text-sm font-semibold mb-3">🏆 Ranking asesores</h3>
+          <div id="tablaAsesoresRanking"></div>
+        </div>
+        <div class="bg-surface border border-brd rounded-lg p-4">
+          <h3 class="text-sm font-semibold mb-3">📥 Detalle por fuente</h3>
+          <div id="tablaFuentes"></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
 </div><!-- /layout -->
+
+<!-- MODALES — CRM Completo Sprint 3-8 -->
+
+<div class="modal-bg" id="modalAsesor">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="closeModal('modalAsesor')">✕</button>
+    <h3 class="text-lg font-bold mb-4">👨‍💼 Asesor</h3>
+    <input type="hidden" id="asesorId"/>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Nombre</label><input id="asesorNombre" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Apellido</label><input id="asesorApellido" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Email</label><input id="asesorEmail" type="email" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Teléfono</label><input id="asesorTelefono" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Rol</label>
+        <select id="asesorRol" class="w-full p-2 bg-surface-2 border border-brd rounded">
+          <option value="asesor">Asesor</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option>
+        </select>
+      </div>
+      <div><label class="text-xs text-txt-2">% Comisión</label><input id="asesorComision" type="number" step="0.01" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="asesorNotas" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
+    <div class="mb-3"><label class="text-xs flex items-center gap-2"><input type="checkbox" id="asesorActivo" checked/> Asesor activo</label></div>
+    <button onclick="guardarAsesor()" class="btn btn-primary w-full">💾 Guardar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalPropietario">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="closeModal('modalPropietario')">✕</button>
+    <h3 class="text-lg font-bold mb-4">📑 Propietario</h3>
+    <input type="hidden" id="propietarioId"/>
+    <div class="mb-3"><label class="text-xs text-txt-2">Nombre completo</label><input id="propietarioNombre" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Teléfono</label><input id="propietarioTelefono" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">DNI / CUIT</label><input id="propietarioDni" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Email</label><input id="propietarioEmail" type="email" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Dirección</label><input id="propietarioDireccion" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">% Comisión pactada</label><input id="propietarioComision" type="number" step="0.01" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="propietarioNotas" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
+    <button onclick="guardarPropietario()" class="btn btn-primary w-full">💾 Guardar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalLoteo">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="closeModal('modalLoteo')">✕</button>
+    <h3 class="text-lg font-bold mb-4">📍 Loteo</h3>
+    <input type="hidden" id="loteoId"/>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Nombre</label><input id="loteoNombre" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Slug</label><input id="loteoSlug" class="w-full p-2 bg-surface-2 border border-brd rounded" placeholder="san-ignacio"/></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Ubicación</label><input id="loteoUbicacion" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Ciudad</label><input id="loteoCiudad" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">URL mapa SVG</label><input id="loteoMapa" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Precio desde (USD)</label><input id="loteoPrecio" type="number" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Descripción</label><textarea id="loteoDescripcion" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
+    <button onclick="guardarLoteo()" class="btn btn-primary w-full">💾 Guardar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalMapa">
+  <div class="modal" style="max-width:900px">
+    <button class="mc" onclick="closeModal('modalMapa')">✕</button>
+    <h3 class="text-lg font-bold mb-4" id="mapaTitulo">🗺️ Mapa</h3>
+    <div id="mapaContenido"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalContrato">
+  <div class="modal" style="max-width:550px">
+    <button class="mc" onclick="closeModal('modalContrato')">✕</button>
+    <h3 class="text-lg font-bold mb-4">📄 Contrato</h3>
+    <input type="hidden" id="contratoId"/>
+    <div class="mb-3"><label class="text-xs text-txt-2">Título</label><input id="contratoTitulo" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Tipo</label>
+        <select id="contratoTipo" class="w-full p-2 bg-surface-2 border border-brd rounded">
+          <option value="reserva">Reserva</option><option value="venta">Venta</option><option value="alquiler">Alquiler</option><option value="boleto">Boleto de compraventa</option><option value="otro">Otro</option>
+        </select>
+      </div>
+      <div><label class="text-xs text-txt-2">Estado</label>
+        <select id="contratoEstado" class="w-full p-2 bg-surface-2 border border-brd rounded">
+          <option value="pendiente">Pendiente</option><option value="firmado">Firmado</option><option value="vencido">Vencido</option><option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Monto</label><input id="contratoMonto" type="number" step="0.01" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Moneda</label>
+        <select id="contratoMoneda" class="w-full p-2 bg-surface-2 border border-brd rounded">
+          <option>USD</option><option>ARS</option><option>EUR</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Fecha firma</label><input id="contratoFechaFirma" type="date" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Vencimiento</label><input id="contratoFechaVenc" type="date" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3">
+      <label class="text-xs text-txt-2">PDF</label>
+      <div class="flex gap-2">
+        <input id="contratoArchivoUrl" class="flex-1 p-2 bg-surface-2 border border-brd rounded" placeholder="https://..."/>
+        <input type="file" accept="application/pdf" onchange="subirPdfContrato(this)" class="hidden" id="contratoFile"/>
+        <label for="contratoFile" class="btn btn-primary cursor-pointer px-3 py-2">📎 Subir</label>
+      </div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="contratoNotas" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
+    <button onclick="guardarContrato()" class="btn btn-primary w-full">💾 Guardar</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalVisita">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="closeModal('modalVisita')">✕</button>
+    <h3 class="text-lg font-bold mb-4">🗓️ Visita</h3>
+    <input type="hidden" id="visitaId"/>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Fecha y hora</label><input id="visitaFecha" type="datetime-local" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Duración (min)</label><input id="visitaDuracion" type="number" value="60" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">ID Lead</label><input id="visitaLead" type="number" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">ID Propiedad</label><input id="visitaPropiedad" type="number" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Estado</label>
+      <select id="visitaEstado" class="w-full p-2 bg-surface-2 border border-brd rounded">
+        <option value="agendada">Agendada</option><option value="realizada">Realizada</option><option value="cancelada">Cancelada</option><option value="no_show">No show</option>
+      </select>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas previas</label><textarea id="visitaNotasPre" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas posteriores</label><textarea id="visitaNotasPost" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
+    <button onclick="guardarVisita()" class="btn btn-primary w-full">💾 Guardar</button>
+  </div>
+</div>
 
 <!-- MODAL: LEAD DETAIL -->
 <div class="modal-bg" id="modalDetalle">
@@ -2906,5 +3158,15 @@ initTenant().then(ok => {
   checkVersion();
 });
 </script>
+
+<!-- Chart.js + JS paneles CRM Completo -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/dev/js/_crm-helpers.js"></script>
+<script src="/dev/js/panel-asesores.js"></script>
+<script src="/dev/js/panel-propietarios.js"></script>
+<script src="/dev/js/panel-loteos.js"></script>
+<script src="/dev/js/panel-contratos.js"></script>
+<script src="/dev/js/panel-visitas.js"></script>
+<script src="/dev/js/panel-reportes.js"></script>
 </body>
 </html>
