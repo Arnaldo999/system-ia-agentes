@@ -78,6 +78,12 @@ AIRTABLE_TABLE_ACTIVOS  = os.environ.get("INMO_DEMO_TABLE_ACTIVOS",    "")
 CAL_API_KEY   = os.environ.get("INMO_DEMO_CAL_API_KEY",  "")
 CAL_EVENT_ID  = os.environ.get("INMO_DEMO_CAL_EVENT_ID", "")
 
+# Chatwoot mirror — opcional, si no está configurado simplemente no espeja
+CHATWOOT_API_TOKEN  = os.environ.get("INMO_DEMO_CHATWOOT_TOKEN", "") or os.environ.get("LOVBOT_CHATWOOT_API_TOKEN", "")
+CHATWOOT_URL        = os.environ.get("INMO_DEMO_CHATWOOT_URL", "") or os.environ.get("LOVBOT_CHATWOOT_URL", "https://chatwoot.lovbot.ai")
+CHATWOOT_ACCOUNT_ID = os.environ.get("INMO_DEMO_CHATWOOT_ACCOUNT_ID", "") or os.environ.get("LOVBOT_CHATWOOT_ACCOUNT_ID", "2")
+CHATWOOT_INBOX_ID   = os.environ.get("INMO_DEMO_CHATWOOT_INBOX_ID", "") or os.environ.get("LOVBOT_CHATWOOT_INBOX_ID", "4")
+
 _zonas_raw = os.environ.get("INMO_DEMO_ZONAS", "Zona Norte,Zona Sur,Zona Centro")
 ZONAS_LIST = [z.strip() for z in _zonas_raw.split(",") if z.strip()]
 
@@ -197,6 +203,86 @@ def _at_registrar_lead(telefono: str, nombre: str, subniche: str = "", score: st
         print(f"[AT-POST] tel={telefono} status={r.status_code} resp={r.text[:200]}")
 
 
+# ─── CHATWOOT MIRROR ─────────────────────────────────────────────────────────
+# Espeja la conversación completa (cliente + bot) en Chatwoot.
+# Si CHATWOOT_API_TOKEN no está configurado, todas las funciones son no-op.
+
+def _cw_headers():
+    return {"api_access_token": CHATWOOT_API_TOKEN, "Content-Type": "application/json"}
+
+
+def _cw_buscar_contacto(telefono: str) -> int | None:
+    if not CHATWOOT_API_TOKEN:
+        return None
+    tel = "+" + re.sub(r'\D', '', telefono)
+    try:
+        r = requests.get(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts/search",
+            headers=_cw_headers(),
+            params={"q": tel, "include_contacts": True},
+            timeout=6,
+        )
+        if r.status_code == 200:
+            for c in r.json().get("payload", []):
+                if c.get("phone_number", "").replace(" ", "") == tel:
+                    return c["id"]
+    except Exception as e:
+        print(f"[CW-MIRROR] Error buscando contacto: {e}")
+    return None
+
+
+def _cw_buscar_conversacion(contacto_id: int) -> int | None:
+    if not CHATWOOT_API_TOKEN:
+        return None
+    try:
+        r = requests.get(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts/{contacto_id}/conversations",
+            headers=_cw_headers(),
+            timeout=6,
+        )
+        if r.status_code == 200:
+            for c in r.json().get("payload", []):
+                if c.get("inbox_id") == int(CHATWOOT_INBOX_ID) and c.get("status") == "open":
+                    return c["id"]
+    except Exception as e:
+        print(f"[CW-MIRROR] Error buscando conversación: {e}")
+    return None
+
+
+def _cw_mirror_msg(telefono: str, contenido: str, es_bot: bool) -> None:
+    """
+    Espeja un mensaje en Chatwoot.
+    es_bot=True  → message_type='outgoing' (mensaje del bot)
+    es_bot=False → message_type='incoming' (mensaje del cliente)
+    Corre en hilo daemon para no bloquear el flujo principal.
+    """
+    if not CHATWOOT_API_TOKEN or not contenido.strip():
+        return
+
+    import threading
+
+    def _enviar():
+        try:
+            contacto_id = _cw_buscar_contacto(telefono)
+            if not contacto_id:
+                return
+            conv_id = _cw_buscar_conversacion(contacto_id)
+            if not conv_id:
+                return
+            msg_type = "outgoing" if es_bot else "incoming"
+            requests.post(
+                f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/messages",
+                headers=_cw_headers(),
+                json={"content": contenido, "message_type": msg_type, "private": False},
+                timeout=8,
+            )
+            print(f"[CW-MIRROR] {'🤖 bot' if es_bot else '👤 lead'} → conv {conv_id}")
+        except Exception as e:
+            print(f"[CW-MIRROR] Error enviando mensaje: {e}")
+
+    threading.Thread(target=_enviar, daemon=True).start()
+
+
 def _at_buscar_propiedades(tipo: str = None, operacion: str = None, zona: str = None) -> list[dict]:
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
         return []
@@ -235,7 +321,10 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
             json={"from": NUMERO_BOT, "to": telefono, "type": "text", "text": {"body": mensaje}},
             timeout=10,
         )
-        return r.status_code in (200, 201)
+        ok = r.status_code in (200, 201)
+        if ok:
+            _cw_mirror_msg(telefono, mensaje, es_bot=True)
+        return ok
     except Exception as e:
         print(f"[DEMO-YCLOUD] Error: {e}")
         return False
@@ -1198,6 +1287,9 @@ async def procesar_whatsapp(request: Request):
     if raw_name and not sesion.get("nombre"):
         sesion["nombre"] = raw_name
         SESIONES[telefono] = sesion
+
+    # Espejamos mensaje del cliente en Chatwoot (incoming)
+    _cw_mirror_msg(telefono, texto, es_bot=False)
 
     _procesar_mensaje(telefono, texto)
     return {"status": "ok", "telefono": telefono, "texto": texto,
