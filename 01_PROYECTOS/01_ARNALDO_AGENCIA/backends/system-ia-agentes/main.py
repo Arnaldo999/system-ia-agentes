@@ -114,8 +114,7 @@ async def meta_webhook_verify(request: Request):
 @app.post("/meta/webhook", tags=["Meta"])
 async def meta_webhook_events(request: Request):
     """Recibe eventos de Meta (WhatsApp) y los despacha al worker correcto."""
-    import threading, time as _t
-    print(f"[META-WEBHOOK-IN] ts={_t.time():.3f} client={request.client}")
+    import threading
     try:
         data = await request.json()
     except Exception:
@@ -138,8 +137,6 @@ async def meta_webhook_events(request: Request):
                     continue
 
                 msg_id = msg.get("id", "")
-                telefono_debug = msg.get("from", "?")
-                print(f"[META-WEBHOOK-MSG] type={msg_type} from={telefono_debug} id={msg_id} ts={msg.get('timestamp')}")
                 # Ignorar mensajes con timestamp > 30 segundos (reintentos de Meta tras restart)
                 import time as _time
                 msg_ts = int(msg.get("timestamp", 0))
