@@ -32,7 +32,7 @@ PG_DB   = os.environ.get("LOVBOT_PG_DB", "lovbot_crm")
 PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
 PG_PASS = os.environ.get("LOVBOT_PG_PASS", "9C7i82bFVoscycGCF6f7XPbZyNpWvEXa")
 
-TENANT = "demo"
+TENANT = os.environ.get("LOVBOT_TENANT_SLUG", "demo")
 
 
 def at_fetch_all(table_id):
