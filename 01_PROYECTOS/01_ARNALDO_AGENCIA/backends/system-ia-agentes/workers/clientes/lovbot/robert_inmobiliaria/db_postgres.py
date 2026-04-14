@@ -354,6 +354,10 @@ def get_all_leads() -> list[dict]:
                 "Llego_WhatsApp": r.get("llego_whatsapp", True),
                 "Estado_Seguimiento": r.get("estado_seguimiento", ""),
                 "Cantidad_Seguimientos": r.get("cantidad_seguimientos", 0),
+                # Sprint 1 — Campos universales multi-subnicho
+                "Asesor_Asignado": r.get("asesor_asignado", ""),
+                "Tipo_Cliente": r.get("tipo_cliente", ""),
+                "Propiedad_Interes_Id": r.get("propiedad_interes_id"),
             })
         return result
     except Exception as e:
@@ -412,6 +416,16 @@ def get_all_propiedades() -> list[dict]:
                 "maps_url": r.get("maps_url", ""),
                 "Direccion": r.get("direccion", ""),
                 "direccion": r.get("direccion", ""),
+                # Sprint 1 — Campos universales multi-subnicho
+                "Propietario_Nombre": r.get("propietario_nombre", ""),
+                "Propietario_Telefono": r.get("propietario_telefono", ""),
+                "Propietario_Email": r.get("propietario_email", ""),
+                "Comision_Pct": float(r["comision_pct"]) if r.get("comision_pct") else None,
+                "Tipo_Cartera": r.get("tipo_cartera", "propia"),
+                "Asesor_Asignado": r.get("asesor_asignado", ""),
+                "Loteo": r.get("loteo", ""),
+                "Numero_Lote": r.get("numero_lote", ""),
+                "Propietario_Id": r.get("propietario_id"),
             })
         return result
     except Exception as e:
@@ -493,6 +507,9 @@ def update_lead(record_id: str, campos: dict) -> bool:
         "Presupuesto": "presupuesto", "Zona": "zona", "Estado": "estado",
         "Notas_Bot": "notas_bot", "Fuente": "fuente", "Ciudad": "ciudad",
         "Propiedad_Interes": "propiedad_interes", "Fuente_Detalle": "fuente_detalle",
+        # Sprint 1 — Campos universales multi-subnicho
+        "Asesor_Asignado": "asesor_asignado", "Tipo_Cliente": "tipo_cliente",
+        "Propiedad_Interes_Id": "propiedad_interes_id",
     }
 
     sets = []
@@ -640,6 +657,16 @@ def update_propiedad(record_id: str, campos: dict) -> bool:
         "Banios": "banios", "Metros_Cubiertos": "metros_cubiertos",
         "Metros_Terreno": "metros_terreno", "Imagen": "imagen_url",
         "Maps": "maps_url", "Direccion": "direccion",
+        # Sprint 1 — Campos universales multi-subnicho
+        "Propietario_Nombre": "propietario_nombre",
+        "Propietario_Telefono": "propietario_telefono",
+        "Propietario_Email": "propietario_email",
+        "Comision_Pct": "comision_pct",
+        "Tipo_Cartera": "tipo_cartera",
+        "Asesor_Asignado": "asesor_asignado",
+        "Loteo": "loteo",
+        "Numero_Lote": "numero_lote",
+        "Propietario_Id": "propietario_id",
     }
     sets, values = [], []
     for k, v in campos.items():
@@ -825,4 +852,218 @@ def get_metricas() -> dict:
         }
     except Exception as e:
         print(f"[DB] Error get_metricas: {e}")
+        return {"error": str(e)}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CRM COMPLETO MULTI-SUBNICHO — Sprints 3-8
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _crud_generico(tabla: str, accion: str, campos: dict = None, record_id: int = None) -> dict:
+    """Helper genérico para CRUD de tablas simples del CRM completo."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if accion == "list":
+            cur.execute(f"SELECT * FROM {tabla} WHERE tenant_slug=%s ORDER BY created_at DESC", (TENANT,))
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                row_dict = dict(r)
+                # Convertir tipos no-JSON-serializables
+                for k, v in row_dict.items():
+                    if hasattr(v, 'isoformat'):
+                        row_dict[k] = v.isoformat()
+                    elif hasattr(v, '__float__') and not isinstance(v, (int, bool)):
+                        row_dict[k] = float(v)
+                result.append(row_dict)
+            cur.close()
+            conn.close()
+            return {"items": result, "total": len(result)}
+
+        elif accion == "create":
+            keys = list(campos.keys())
+            placeholders = ", ".join(["%s"] * (len(keys) + 1))
+            cols = ", ".join(["tenant_slug"] + keys)
+            values = [TENANT] + list(campos.values())
+            cur.execute(f"INSERT INTO {tabla} ({cols}) VALUES ({placeholders}) RETURNING id", values)
+            new_id = cur.fetchone()["id"]
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"id": new_id, "ok": True}
+
+        elif accion == "update":
+            sets = ", ".join([f"{k}=%s" for k in campos.keys()])
+            values = list(campos.values()) + [record_id, TENANT]
+            cur.execute(f"UPDATE {tabla} SET {sets} WHERE id=%s AND tenant_slug=%s", values)
+            ok = cur.rowcount > 0
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"ok": ok}
+
+        elif accion == "delete":
+            cur.execute(f"DELETE FROM {tabla} WHERE id=%s AND tenant_slug=%s", (record_id, TENANT))
+            ok = cur.rowcount > 0
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"ok": ok}
+
+        cur.close()
+        conn.close()
+        return {"error": "acción inválida"}
+    except Exception as e:
+        print(f"[DB] Error _crud_generico {tabla}/{accion}: {e}")
+        return {"error": str(e)}
+
+
+# ── Asesores (Sprint 3) ─────────────────────────────────────────────────────
+def get_all_asesores():
+    return _crud_generico("asesores", "list")
+def create_asesor(campos: dict):
+    return _crud_generico("asesores", "create", campos=campos)
+def update_asesor(record_id: int, campos: dict):
+    return _crud_generico("asesores", "update", campos=campos, record_id=record_id)
+def delete_asesor(record_id: int):
+    return _crud_generico("asesores", "delete", record_id=record_id)
+
+
+# ── Propietarios (Sprint 4) ─────────────────────────────────────────────────
+def get_all_propietarios():
+    return _crud_generico("propietarios", "list")
+def create_propietario(campos: dict):
+    return _crud_generico("propietarios", "create", campos=campos)
+def update_propietario(record_id: int, campos: dict):
+    return _crud_generico("propietarios", "update", campos=campos, record_id=record_id)
+def delete_propietario(record_id: int):
+    return _crud_generico("propietarios", "delete", record_id=record_id)
+
+
+# ── Loteos (Sprint 5) ───────────────────────────────────────────────────────
+def get_all_loteos():
+    return _crud_generico("loteos", "list")
+def create_loteo(campos: dict):
+    return _crud_generico("loteos", "create", campos=campos)
+def update_loteo(record_id: int, campos: dict):
+    return _crud_generico("loteos", "update", campos=campos, record_id=record_id)
+def delete_loteo(record_id: int):
+    return _crud_generico("loteos", "delete", record_id=record_id)
+
+
+# ── Lotes Mapa (Sprint 5) ───────────────────────────────────────────────────
+def get_lotes_mapa(loteo_id: int = None):
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if loteo_id:
+            cur.execute("SELECT * FROM lotes_mapa WHERE tenant_slug=%s AND loteo_id=%s ORDER BY numero_lote",
+                       (TENANT, loteo_id))
+        else:
+            cur.execute("SELECT * FROM lotes_mapa WHERE tenant_slug=%s ORDER BY loteo_id, numero_lote", (TENANT,))
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            row = dict(r)
+            for k, v in row.items():
+                if hasattr(v, 'isoformat'):
+                    row[k] = v.isoformat()
+                elif hasattr(v, '__float__') and not isinstance(v, (int, bool)):
+                    row[k] = float(v)
+            result.append(row)
+        cur.close()
+        conn.close()
+        return {"items": result, "total": len(result)}
+    except Exception as e:
+        return {"error": str(e)}
+
+def create_lote_mapa(campos: dict):
+    return _crud_generico("lotes_mapa", "create", campos=campos)
+def update_lote_mapa(record_id: int, campos: dict):
+    return _crud_generico("lotes_mapa", "update", campos=campos, record_id=record_id)
+def delete_lote_mapa(record_id: int):
+    return _crud_generico("lotes_mapa", "delete", record_id=record_id)
+
+
+# ── Contratos (Sprint 6) ────────────────────────────────────────────────────
+def get_all_contratos():
+    return _crud_generico("contratos", "list")
+def create_contrato(campos: dict):
+    return _crud_generico("contratos", "create", campos=campos)
+def update_contrato(record_id: int, campos: dict):
+    return _crud_generico("contratos", "update", campos=campos, record_id=record_id)
+def delete_contrato(record_id: int):
+    return _crud_generico("contratos", "delete", record_id=record_id)
+
+
+# ── Visitas / Agenda (Sprint 8) ─────────────────────────────────────────────
+def get_all_visitas():
+    return _crud_generico("visitas", "list")
+def create_visita(campos: dict):
+    return _crud_generico("visitas", "create", campos=campos)
+def update_visita(record_id: int, campos: dict):
+    return _crud_generico("visitas", "update", campos=campos, record_id=record_id)
+def delete_visita(record_id: int):
+    return _crud_generico("visitas", "delete", record_id=record_id)
+
+
+# ── Reportes (Sprint 7) ─────────────────────────────────────────────────────
+def get_reportes(fecha_desde: str = None, fecha_hasta: str = None):
+    """Reportes agregados para el dashboard."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Cierres por asesor
+        cur.execute("""
+            SELECT COALESCE(asesor_asignado, 'Sin asignar') as asesor,
+                   count(*) FILTER (WHERE estado = 'cerrado_ganado') as ganados,
+                   count(*) as total_leads
+            FROM leads WHERE tenant_slug=%s
+            GROUP BY asesor_asignado
+            ORDER BY ganados DESC
+        """, (TENANT,))
+        por_asesor = [dict(r) for r in cur.fetchall()]
+
+        # Conversión por fuente
+        cur.execute("""
+            SELECT fuente,
+                   count(*) as total,
+                   count(*) FILTER (WHERE estado = 'cerrado_ganado') as ganados,
+                   count(*) FILTER (WHERE fecha_cita IS NOT NULL) as con_cita
+            FROM leads WHERE tenant_slug=%s
+            GROUP BY fuente
+            ORDER BY total DESC
+        """, (TENANT,))
+        por_fuente = [dict(r) for r in cur.fetchall()]
+
+        # Ventas por mes (últimos 6 meses)
+        cur.execute("""
+            SELECT to_char(date_trunc('month', updated_at), 'YYYY-MM') as mes,
+                   count(*) as ventas
+            FROM leads
+            WHERE tenant_slug=%s AND estado='cerrado_ganado'
+              AND updated_at > now() - interval '6 months'
+            GROUP BY mes
+            ORDER BY mes
+        """, (TENANT,))
+        por_mes = [dict(r) for r in cur.fetchall()]
+
+        cur.close()
+        conn.close()
+        return {
+            "por_asesor": por_asesor,
+            "por_fuente": por_fuente,
+            "ventas_por_mes": por_mes,
+        }
+    except Exception as e:
+        print(f"[DB] Error get_reportes: {e}")
         return {"error": str(e)}

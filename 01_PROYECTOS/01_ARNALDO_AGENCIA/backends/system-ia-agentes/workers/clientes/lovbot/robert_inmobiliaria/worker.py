@@ -2064,3 +2064,196 @@ async def crm_upload_imagen(request: Request):
         raise HTTPException(status_code=r.status_code, detail=r.text[:300])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CRM COMPLETO MULTI-SUBNICHO — Endpoints Sprints 3-8
+# Asesores / Propietarios / Loteos / Lotes_Mapa / Contratos / Visitas / Reportes
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _check_pg():
+    from fastapi import HTTPException
+    if not USE_POSTGRES:
+        raise HTTPException(status_code=503, detail="PostgreSQL no disponible")
+
+
+# ── Asesores (Sprint 3) ─────────────────────────────────────────────────────
+@router.get("/crm/asesores")
+def crm_asesores_list():
+    _check_pg()
+    return db.get_all_asesores()
+
+@router.post("/crm/asesores")
+async def crm_asesor_create(request: Request):
+    _check_pg()
+    return db.create_asesor(await request.json())
+
+@router.patch("/crm/asesores/{record_id}")
+async def crm_asesor_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_asesor(record_id, await request.json())
+
+@router.delete("/crm/asesores/{record_id}")
+def crm_asesor_delete(record_id: int):
+    _check_pg()
+    return db.delete_asesor(record_id)
+
+
+# ── Propietarios (Sprint 4) ─────────────────────────────────────────────────
+@router.get("/crm/propietarios")
+def crm_propietarios_list():
+    _check_pg()
+    return db.get_all_propietarios()
+
+@router.post("/crm/propietarios")
+async def crm_propietario_create(request: Request):
+    _check_pg()
+    return db.create_propietario(await request.json())
+
+@router.patch("/crm/propietarios/{record_id}")
+async def crm_propietario_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_propietario(record_id, await request.json())
+
+@router.delete("/crm/propietarios/{record_id}")
+def crm_propietario_delete(record_id: int):
+    _check_pg()
+    return db.delete_propietario(record_id)
+
+
+# ── Loteos (Sprint 5) ───────────────────────────────────────────────────────
+@router.get("/crm/loteos")
+def crm_loteos_list():
+    _check_pg()
+    return db.get_all_loteos()
+
+@router.post("/crm/loteos")
+async def crm_loteo_create(request: Request):
+    _check_pg()
+    return db.create_loteo(await request.json())
+
+@router.patch("/crm/loteos/{record_id}")
+async def crm_loteo_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_loteo(record_id, await request.json())
+
+@router.delete("/crm/loteos/{record_id}")
+def crm_loteo_delete(record_id: int):
+    _check_pg()
+    return db.delete_loteo(record_id)
+
+
+# ── Lotes Mapa (Sprint 5) ───────────────────────────────────────────────────
+@router.get("/crm/lotes-mapa")
+def crm_lotes_mapa_list(loteo_id: int = None):
+    _check_pg()
+    return db.get_lotes_mapa(loteo_id)
+
+@router.post("/crm/lotes-mapa")
+async def crm_lote_mapa_create(request: Request):
+    _check_pg()
+    return db.create_lote_mapa(await request.json())
+
+@router.patch("/crm/lotes-mapa/{record_id}")
+async def crm_lote_mapa_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_lote_mapa(record_id, await request.json())
+
+@router.delete("/crm/lotes-mapa/{record_id}")
+def crm_lote_mapa_delete(record_id: int):
+    _check_pg()
+    return db.delete_lote_mapa(record_id)
+
+
+# ── Contratos (Sprint 6) ────────────────────────────────────────────────────
+@router.get("/crm/contratos")
+def crm_contratos_list():
+    _check_pg()
+    return db.get_all_contratos()
+
+@router.post("/crm/contratos")
+async def crm_contrato_create(request: Request):
+    _check_pg()
+    return db.create_contrato(await request.json())
+
+@router.patch("/crm/contratos/{record_id}")
+async def crm_contrato_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_contrato(record_id, await request.json())
+
+@router.delete("/crm/contratos/{record_id}")
+def crm_contrato_delete(record_id: int):
+    _check_pg()
+    return db.delete_contrato(record_id)
+
+
+# ── Visitas / Agenda (Sprint 8) ─────────────────────────────────────────────
+@router.get("/crm/visitas")
+def crm_visitas_list():
+    _check_pg()
+    return db.get_all_visitas()
+
+@router.post("/crm/visitas")
+async def crm_visita_create(request: Request):
+    _check_pg()
+    return db.create_visita(await request.json())
+
+@router.patch("/crm/visitas/{record_id}")
+async def crm_visita_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_visita(record_id, await request.json())
+
+@router.delete("/crm/visitas/{record_id}")
+def crm_visita_delete(record_id: int):
+    _check_pg()
+    return db.delete_visita(record_id)
+
+
+# ── Reportes (Sprint 7) ─────────────────────────────────────────────────────
+@router.get("/crm/reportes")
+def crm_reportes(fecha_desde: str = None, fecha_hasta: str = None):
+    _check_pg()
+    return db.get_reportes(fecha_desde, fecha_hasta)
+
+
+# ── Upload PDF Contratos (Sprint 6) ─────────────────────────────────────────
+@router.post("/crm/upload-pdf")
+async def crm_upload_pdf(request: Request):
+    """Sube PDF de contrato a Cloudinary y devuelve URL."""
+    from fastapi import HTTPException
+    import hashlib, time
+    data = await request.json()
+    pdf_base64 = data.get("file", "")
+    if not pdf_base64:
+        raise HTTPException(status_code=400, detail="Falta 'file' (base64)")
+
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+    api_key = os.environ.get("CLOUDINARY_API_KEY", "")
+    api_secret = os.environ.get("CLOUDINARY_API_SECRET", "")
+
+    if not (cloud_name and api_key and api_secret):
+        raise HTTPException(status_code=500, detail="Cloudinary no configurado")
+
+    timestamp = int(time.time())
+    folder = "lovbot_contratos"
+    to_sign = f"folder={folder}&resource_type=raw&timestamp={timestamp}{api_secret}"
+    signature = hashlib.sha1(to_sign.encode()).hexdigest()
+
+    try:
+        r = requests.post(
+            f"https://api.cloudinary.com/v1_1/{cloud_name}/raw/upload",
+            data={
+                "file": pdf_base64,
+                "api_key": api_key,
+                "timestamp": str(timestamp),
+                "signature": signature,
+                "folder": folder,
+            },
+            timeout=30,
+        )
+        if r.status_code == 200:
+            result = r.json()
+            return {"status": "ok", "url": result.get("secure_url"), "public_id": result.get("public_id")}
+        raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
