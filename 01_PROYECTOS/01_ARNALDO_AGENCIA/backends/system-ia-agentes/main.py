@@ -138,6 +138,8 @@ async def meta_webhook_events(request: Request):
                     continue
 
                 msg_id = msg.get("id", "")
+                telefono_debug = msg.get("from", "?")
+                print(f"[META-WEBHOOK-MSG] type={msg_type} from={telefono_debug} id={msg_id} ts={msg.get('timestamp')}")
                 # Ignorar mensajes con timestamp > 30 segundos (reintentos de Meta tras restart)
                 import time as _time
                 msg_ts = int(msg.get("timestamp", 0))
