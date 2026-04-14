@@ -302,14 +302,17 @@ def _cw_mirror_msg(telefono: str, contenido: str, es_bot: bool) -> None:
             if not conv:
                 return
             conv_id = conv["id"]
+            # Mensajes del bot: private=True para que Chatwoot NO los reenvíe por WhatsApp
+            # (evita duplicados — el bot ya los envió directo por Meta Graph API)
+            private = es_bot
             msg_type = "outgoing" if es_bot else "incoming"
             requests.post(
                 f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/messages",
                 headers=_chatwoot_headers(),
-                json={"content": contenido, "message_type": msg_type, "private": False},
+                json={"content": contenido, "message_type": msg_type, "private": private},
                 timeout=8,
             )
-            print(f"[CW-MIRROR] {'🤖 bot' if es_bot else '👤 lead'} → conv {conv_id}")
+            print(f"[CW-MIRROR] {'🤖 bot (privado)' if es_bot else '👤 lead'} → conv {conv_id}")
         except Exception as e:
             print(f"[CW-MIRROR] Error: {e}")
 
@@ -318,9 +321,6 @@ def _cw_mirror_msg(telefono: str, contenido: str, es_bot: bool) -> None:
 
 # ─── META GRAPH API ───────────────────────────────────────────────────────────
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
-    import traceback as _tb
-    print(f"[ENVIAR-TEXTO] tel={telefono} msg={mensaje[:60]!r}")
-    _tb.print_stack(limit=4)
     _agregar_historial(telefono, "Bot", mensaje)
     if not META_ACCESS_TOKEN or not META_PHONE_ID:
         print(f"[ROBERT-META] Sin token/phone_id. Msg: {mensaje[:80]}")
