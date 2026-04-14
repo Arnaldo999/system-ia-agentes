@@ -415,6 +415,37 @@ async def admin_setup_crm_completo():
     return setup()
 
 
+@app.get("/admin/debug-pg", tags=["Admin"])
+async def admin_debug_pg(db_name: str = "lovbot_crm", tenant: str = "robert"):
+    """Debug: muestra count de leads en una DB específica. Temporal."""
+    import psycopg2
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "lovbot-postgres-tkkk8owkg40ssoksk8ok4gsc")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+    try:
+        conn = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=db_name,
+                                user=PG_USER, password=PG_PASS)
+        cur = conn.cursor()
+        cur.execute("SELECT count(*) FROM leads")
+        total = cur.fetchone()[0]
+        cur.execute("SELECT count(*) FROM leads WHERE tenant_slug=%s", (tenant,))
+        del_tenant = cur.fetchone()[0]
+        cur.execute("SELECT DISTINCT tenant_slug FROM leads")
+        tenants = [r[0] for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {
+            "db": db_name,
+            "host": PG_HOST,
+            "total_leads": total,
+            f"leads_tenant_{tenant}": del_tenant,
+            "tenants_distintos": tenants,
+        }
+    except Exception as e:
+        return {"error": str(e), "host": PG_HOST, "db": db_name}
+
+
 @app.get("/admin/crear-db-cliente", tags=["Admin"])
 async def admin_crear_db_cliente(db: str, from_tenant: str = None):
     """
