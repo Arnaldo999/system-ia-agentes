@@ -804,7 +804,7 @@ tailwind.config = {
       <div class="props-grid" id="propsGrid">
         <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
           <div style="font-size:32px;margin-bottom:8px">⏳</div>
-          Cargando propiedades desde Airtable...
+          Cargando propiedades...
         </div>
       </div>
     </div>
@@ -2139,7 +2139,7 @@ async function renderProps() {
   const subEl = document.getElementById('propsSub');
 
   g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
-    <div style="font-size:32px;margin-bottom:8px">⏳</div>Cargando desde Airtable...
+    <div style="font-size:32px;margin-bottom:8px">⏳</div>Cargando propiedades...
   </div>`;
   if(statusEl) statusEl.innerHTML = '<span style="color:var(--yellow)">⏳ Conectando...</span>';
 
@@ -2158,8 +2158,8 @@ async function renderProps() {
     }
 
     _cachedProps = records;
-    if(subEl) subEl.textContent = `${records.length} propiedades · datos en tiempo real desde Airtable`;
-    if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ Airtable conectado · ${records.length} registros</span>`;
+    if(subEl) subEl.textContent = `${records.length} propiedades · datos en tiempo real`;
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ Conectado · ${records.length} registros</span>`;
 
     g.innerHTML = '';
     records.forEach(p => {

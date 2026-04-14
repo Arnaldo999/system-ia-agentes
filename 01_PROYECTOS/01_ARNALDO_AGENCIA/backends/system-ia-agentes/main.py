@@ -317,6 +317,45 @@ async def auditor_fase2():
     }
 
 
+@app.get("/admin/limpiar-duplicados", tags=["Admin"])
+async def admin_limpiar_duplicados():
+    """Elimina propiedades y activos duplicados (deja el primero)."""
+    import psycopg2
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_DB = os.environ.get("LOVBOT_PG_DB", "lovbot_crm")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+    try:
+        conn = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=PG_DB, user=PG_USER, password=PG_PASS)
+        conn.autocommit = True
+        cur = conn.cursor()
+
+        # Eliminar duplicados de propiedades (deja el ID más bajo)
+        cur.execute("""
+            DELETE FROM propiedades a USING propiedades b
+            WHERE a.id > b.id
+              AND a.tenant_slug = b.tenant_slug
+              AND a.titulo = b.titulo
+        """)
+        props_eliminadas = cur.rowcount
+
+        # Eliminar duplicados de activos
+        cur.execute("""
+            DELETE FROM clientes_activos a USING clientes_activos b
+            WHERE a.id > b.id
+              AND a.tenant_slug = b.tenant_slug
+              AND a.telefono = b.telefono
+        """)
+        activos_eliminados = cur.rowcount
+
+        cur.close()
+        conn.close()
+        return {"ok": True, "propiedades_eliminadas": props_eliminadas, "activos_eliminados": activos_eliminados}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.get("/admin/migrar-airtable", tags=["Admin"])
 async def admin_migrar_airtable():
     """Migra datos de Airtable a PostgreSQL (una sola vez)."""
