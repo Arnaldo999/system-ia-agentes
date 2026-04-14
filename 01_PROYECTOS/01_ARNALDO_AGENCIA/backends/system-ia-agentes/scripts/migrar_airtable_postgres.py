@@ -126,13 +126,18 @@ def migrate():
     for rec in at_props:
         f = rec.get("fields", {})
 
-        # Imagen puede ser array o string
+        # Imagen puede ser array (attachments) o string
+        # En Airtable de Robert el campo se llama "Imagen_URL"
         img = ""
-        img_field = f.get("Imagen", "")
+        img_field = f.get("Imagen_URL", "") or f.get("Imagen", "") or f.get("Foto", "")
         if isinstance(img_field, list) and img_field:
-            img = img_field[0].get("url", "")
+            # Attachments de Airtable: [{url, thumbnails, ...}]
+            img = img_field[0].get("url", "") or img_field[0].get("thumbnails", {}).get("large", {}).get("url", "")
         elif isinstance(img_field, str):
             img = img_field
+
+        # Maps URL
+        maps = f.get("Google_Maps_URL", "") or f.get("Maps", "") or f.get("maps_url", "")
 
         try:
             cur.execute("""
@@ -158,7 +163,7 @@ def migrate():
                 f.get("Metros_Cubiertos") or None,
                 f.get("Metros_Terreno") or None,
                 img,
-                f.get("Maps", ""),
+                maps,
                 f.get("Direccion", ""),
             ))
             props_ok += 1

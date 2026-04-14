@@ -317,6 +317,28 @@ async def auditor_fase2():
     }
 
 
+@app.get("/admin/reset-propiedades", tags=["Admin"])
+async def admin_reset_propiedades():
+    """Borra TODAS las propiedades del tenant demo (para re-migrar limpio)."""
+    import psycopg2
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_DB = os.environ.get("LOVBOT_PG_DB", "lovbot_crm")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+    try:
+        conn = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=PG_DB, user=PG_USER, password=PG_PASS)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("DELETE FROM propiedades WHERE tenant_slug='demo'")
+        eliminadas = cur.rowcount
+        cur.close()
+        conn.close()
+        return {"ok": True, "propiedades_eliminadas": eliminadas}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.get("/admin/limpiar-duplicados", tags=["Admin"])
 async def admin_limpiar_duplicados():
     """Elimina propiedades y activos duplicados (deja el primero)."""
