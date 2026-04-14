@@ -371,7 +371,48 @@ def get_all_propiedades() -> list[dict]:
         rows = cur.fetchall()
         cur.close()
         conn.close()
-        return [dict(r) for r in rows]
+        # Mapear a formato compatible con CRM HTML (campos Airtable-like)
+        result = []
+        for r in rows:
+            result.append({
+                "id": f"pg_{r['id']}",
+                "Titulo": r.get("titulo", ""),
+                "titulo": r.get("titulo", ""),
+                "Nombre": r.get("titulo", ""),
+                "Descripcion": r.get("descripcion", ""),
+                "descripcion": r.get("descripcion", ""),
+                "Tipo": r.get("tipo", ""),
+                "tipo": r.get("tipo", ""),
+                "Operacion": r.get("operacion", ""),
+                "operacion": r.get("operacion", ""),
+                "Zona": r.get("zona", ""),
+                "zona": r.get("zona", ""),
+                "Precio": float(r["precio"]) if r.get("precio") else None,
+                "precio": float(r["precio"]) if r.get("precio") else None,
+                "Moneda": r.get("moneda", "USD"),
+                "moneda": r.get("moneda", "USD"),
+                "Presupuesto": r.get("presupuesto", ""),
+                "presupuesto": r.get("presupuesto", ""),
+                "Disponible": r.get("disponible", "✅ Disponible"),
+                "disponible": r.get("disponible", "✅ Disponible"),
+                "Dormitorios": r.get("dormitorios"),
+                "dormitorios": r.get("dormitorios"),
+                "Banios": r.get("banios"),
+                "banios": r.get("banios"),
+                "Metros_Cubiertos": float(r["metros_cubiertos"]) if r.get("metros_cubiertos") else None,
+                "metros_cubiertos": float(r["metros_cubiertos"]) if r.get("metros_cubiertos") else None,
+                "Metros_Terreno": float(r["metros_terreno"]) if r.get("metros_terreno") else None,
+                "metros_terreno": float(r["metros_terreno"]) if r.get("metros_terreno") else None,
+                "Imagen_URL": r.get("imagen_url", ""),
+                "imagen_url": r.get("imagen_url", ""),
+                "Imagen": r.get("imagen_url", ""),
+                "Google_Maps_URL": r.get("maps_url", ""),
+                "Maps": r.get("maps_url", ""),
+                "maps_url": r.get("maps_url", ""),
+                "Direccion": r.get("direccion", ""),
+                "direccion": r.get("direccion", ""),
+            })
+        return result
     except Exception as e:
         print(f"[DB] Error get_all_propiedades: {e}")
         return []
@@ -388,7 +429,24 @@ def get_all_activos() -> list[dict]:
         rows = cur.fetchall()
         cur.close()
         conn.close()
-        return [dict(r) for r in rows]
+        # Mapear a formato Airtable-like
+        result = []
+        for r in rows:
+            result.append({
+                "id": f"pg_{r['id']}",
+                "Nombre": r.get("nombre", ""),
+                "Apellido": r.get("apellido", ""),
+                "Telefono": r.get("telefono", ""),
+                "Email": r.get("email", ""),
+                "Propiedad": r.get("propiedad", ""),
+                "Estado_Pago": r.get("estado_pago", "al_dia"),
+                "Monto_Cuota": float(r["monto_cuota"]) if r.get("monto_cuota") else None,
+                "Cuotas_Pagadas": r.get("cuotas_pagadas", 0),
+                "Cuotas_Total": r.get("cuotas_total", 0),
+                "Proximo_Vencimiento": r["proximo_vencimiento"].isoformat() if r.get("proximo_vencimiento") else "",
+                "Notas": r.get("notas", ""),
+            })
+        return result
     except Exception as e:
         print(f"[DB] Error get_all_activos: {e}")
         return []
