@@ -415,6 +415,28 @@ async def admin_setup_crm_completo():
     return setup()
 
 
+@app.get("/admin/crear-db-cliente", tags=["Admin"])
+async def admin_crear_db_cliente(db: str, from_tenant: str = None):
+    """
+    Crea una DB dedicada para un cliente inmobiliario.
+    Cada cliente → su propia DB (aislamiento tipo Airtable).
+
+    Params:
+        db: nombre de la DB nueva (ej: robert_crm, maria_crm)
+        from_tenant: slug del tenant en lovbot_crm para copiar datos (opcional)
+
+    Ejemplos:
+        GET /admin/crear-db-cliente?db=robert_crm&from_tenant=robert
+        GET /admin/crear-db-cliente?db=maria_crm
+    """
+    import sys
+    scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from scripts.crear_db_cliente import crear_db_cliente
+    return crear_db_cliente(db, from_tenant)
+
+
 @app.post("/admin/onboard", tags=["Admin"])
 async def admin_onboard(request: Request):
     """Onboarding automático de cliente inmobiliario. Llamado desde n8n."""
