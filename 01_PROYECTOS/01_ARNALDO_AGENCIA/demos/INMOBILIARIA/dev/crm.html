@@ -798,7 +798,7 @@ tailwind.config = {
         <div style="display:flex;gap:8px;align-items:center">
           <div id="propsStatus" style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"></div>
           <button class="btn" onclick="renderProps()">↺ Actualizar</button>
-          <button class="btn btn-primary">+ Agregar propiedad</button>
+          <button class="btn btn-primary" onclick="abrirEditorPropiedad(null)">+ Agregar propiedad</button>
         </div>
       </div>
       <div class="props-grid" id="propsGrid">
@@ -1207,6 +1207,83 @@ tailwind.config = {
   </div>
 </div>
 
+<!-- MODAL EDITOR PROPIEDAD -->
+<div class="modal-bg" id="modalPropiedad">
+  <div class="modal" style="max-width:700px">
+    <button class="mc" onclick="closeModal('modalPropiedad')">✕</button>
+    <h3 id="propTitulo">Nueva propiedad</h3>
+    <input type="hidden" id="prop-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="mf" style="grid-column:span 2"><label>Título</label><input type="text" id="prop-titulo" placeholder="Casa 3 dorm Zona Norte"></div>
+      <div class="mf"><label>Tipo</label>
+        <select id="prop-tipo">
+          <option value="">—</option>
+          <option value="casa">Casa</option>
+          <option value="departamento">Departamento</option>
+          <option value="terreno">Terreno</option>
+          <option value="local">Local</option>
+          <option value="oficina">Oficina</option>
+        </select>
+      </div>
+      <div class="mf"><label>Operación</label>
+        <select id="prop-operacion">
+          <option value="">—</option>
+          <option value="venta">Venta</option>
+          <option value="alquiler">Alquiler</option>
+        </select>
+      </div>
+      <div class="mf"><label>Zona</label><input type="text" id="prop-zona" placeholder="San Ignacio"></div>
+      <div class="mf"><label>Disponibilidad</label>
+        <select id="prop-disponible">
+          <option value="✅ Disponible">✅ Disponible</option>
+          <option value="⏳ Reservado">⏳ Reservado</option>
+          <option value="❌ No disponible">❌ No disponible</option>
+        </select>
+      </div>
+      <div class="mf"><label>Precio</label><input type="number" id="prop-precio" placeholder="180000"></div>
+      <div class="mf"><label>Moneda</label>
+        <select id="prop-moneda">
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+          <option value="MXN">MXN</option>
+        </select>
+      </div>
+      <div class="mf"><label>Presupuesto (rango)</label>
+        <select id="prop-presupuesto">
+          <option value="">—</option>
+          <option value="hata_50k">Hasta USD 50k</option>
+          <option value="50k_100k">USD 50k-100k</option>
+          <option value="100k_200k">USD 100k-200k</option>
+          <option value="mas_200k">Más de USD 200k</option>
+        </select>
+      </div>
+      <div class="mf"><label>Dormitorios</label><input type="number" id="prop-dormitorios" placeholder="3"></div>
+      <div class="mf"><label>Baños</label><input type="number" id="prop-banios" placeholder="2"></div>
+      <div class="mf"><label>Metros cubiertos</label><input type="number" id="prop-mcubiertos" placeholder="120"></div>
+      <div class="mf"><label>Metros terreno</label><input type="number" id="prop-mterreno" placeholder="300"></div>
+      <div class="mf" style="grid-column:span 2"><label>Dirección</label><input type="text" id="prop-direccion" placeholder="Av. Ejemplo 123"></div>
+      <div class="mf" style="grid-column:span 2"><label>URL Google Maps</label><input type="text" id="prop-maps" placeholder="https://maps.google.com/..."></div>
+      <div class="mf" style="grid-column:span 2"><label>Descripción</label><textarea id="prop-descripcion" rows="3" placeholder="Descripción detallada..."></textarea></div>
+      <div class="mf" style="grid-column:span 2">
+        <label>📸 Imagen (subir archivo o URL directa)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="file" id="prop-imagen-file" accept="image/*" onchange="subirImagenPropiedad(this)" style="color:var(--text);flex:1">
+          <span id="prop-imagen-status" style="font-size:11px;color:var(--text2)"></span>
+        </div>
+        <input type="text" id="prop-imagen" placeholder="O pegá URL directa aquí" style="margin-top:6px">
+        <div id="prop-imagen-preview" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="ma" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <button id="prop-btn-eliminar" class="btn" style="background:#3b0a0a;border-color:#5c1a1a;color:#f87171;display:none" onclick="eliminarPropiedadDesdeModal()">🗑️ Eliminar</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modalPropiedad')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarPropiedad()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- LOGIN SCREEN -->
 <div id="loginScreen" style="
   display:none; position:fixed; inset:0; background:#0f1117;
@@ -1424,6 +1501,10 @@ async function cargarLeads() {
         notas: f.Notas_Bot || '',
         cita: citaLabel,
         ciudad: f.Ciudad || '',
+        zona: f.Zona || '',
+        operacion: f.Operacion || '',
+        tipo: f.Tipo_Propiedad || '',
+        presupuestoRaw: f.Presupuesto || '',
       };
     });
 
@@ -1668,19 +1749,64 @@ function openDetalle(id) {
     {v:'cerrado_perdido', label:'🔴 Cerrado (perdido)'},
   ];
 
+  // CAMPOS EDITABLES
+  const inputStyle = 'background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px;width:100%';
+  const labelStyle = 'color:var(--text2);font-size:11px;margin-bottom:4px;display:block;font-weight:600';
+
   document.getElementById('detalleBody').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      ${[
-        ['Teléfono', l.phone || '—', ''],
-        ['Presupuesto', l.presupuesto || '—', 'color:var(--accent2)'],
-        ['Origen', og[l.origen] || l.origen || '—', ''],
-        ['Score', l.score ? `<span style="color:${scoreColor(l.score)};font-weight:700">${l.score} pts — ${scoreLabel(l.score)}</span>` : '—', ''],
-        ['Sub-nicho', l.subnicho ? l.subnicho.replace(/_/g,' ') : '—', 'text-transform:capitalize'],
-      ].map(([k,v,s]) => `
-        <div style="background:var(--surface2);border-radius:8px;padding:11px">
-          <div style="color:var(--text2);font-size:11px;margin-bottom:3px">${k}</div>
-          <div style="font-weight:600;${s}">${v}</div>
-        </div>`).join('')}
+      <div>
+        <label style="${labelStyle}">Nombre</label>
+        <input id="edit-nombre" type="text" style="${inputStyle}" value="${(l.name || '').split(' ')[0] || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Apellido</label>
+        <input id="edit-apellido" type="text" style="${inputStyle}" value="${(l.name || '').split(' ').slice(1).join(' ') || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Teléfono</label>
+        <input id="edit-telefono" type="text" style="${inputStyle}" value="${l.phone || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Email</label>
+        <input id="edit-email" type="email" style="${inputStyle}" value="${l.email || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Ciudad</label>
+        <input id="edit-ciudad" type="text" style="${inputStyle}" value="${l.ciudad || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Zona</label>
+        <input id="edit-zona" type="text" style="${inputStyle}" value="${l.zona || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Operación</label>
+        <select id="edit-operacion" style="${inputStyle}">
+          <option value="">—</option>
+          <option value="venta"${l.operacion === 'venta' ? ' selected' : ''}>Venta</option>
+          <option value="alquiler"${l.operacion === 'alquiler' ? ' selected' : ''}>Alquiler</option>
+        </select>
+      </div>
+      <div>
+        <label style="${labelStyle}">Tipo Propiedad</label>
+        <select id="edit-tipo" style="${inputStyle}">
+          <option value="">—</option>
+          <option value="casa"${l.tipo === 'casa' ? ' selected' : ''}>Casa</option>
+          <option value="departamento"${l.tipo === 'departamento' ? ' selected' : ''}>Departamento</option>
+          <option value="terreno"${l.tipo === 'terreno' ? ' selected' : ''}>Terreno</option>
+          <option value="otro"${l.tipo === 'otro' ? ' selected' : ''}>Otro</option>
+        </select>
+      </div>
+      <div style="grid-column:span 2">
+        <label style="${labelStyle}">Presupuesto</label>
+        <input id="edit-presupuesto" type="text" style="${inputStyle}" value="${l.presupuestoRaw || l.presupuesto || ''}" readonly>
+      </div>
+      <div style="grid-column:span 2">
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--text2)">
+          <div>📊 Score: <strong style="color:${scoreColor(l.score)}">${l.score || 0} pts — ${scoreLabel(l.score || 0)}</strong></div>
+          <div>🔗 Origen: ${og[l.origen] || l.origen || '—'}</div>
+        </div>
+      </div>
     </div>
 
     <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
@@ -1730,10 +1856,64 @@ function openDetalle(id) {
         <div><div class="tl-title">🏆 Venta / alquiler cerrado</div><div class="tl-time">${l.fecha}</div></div>
       </div>` : ''}
     </div>
-    <div class="ma">
-      <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
+    <div class="ma" style="display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+      <button class="btn" style="background:#3b0a0a;border-color:#5c1a1a;color:#f87171" onclick="eliminarLead(${id})">🗑️ Eliminar lead</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
+        <button class="btn btn-primary" onclick="guardarLead(${id})">💾 Guardar cambios</button>
+      </div>
     </div>`;
   openModal('modalDetalle');
+}
+
+async function guardarLead(id) {
+  const l = LEADS[id];
+  if (!l) return;
+  const fields = {
+    Nombre: document.getElementById('edit-nombre').value,
+    Apellido: document.getElementById('edit-apellido').value,
+    Telefono: document.getElementById('edit-telefono').value,
+    Email: document.getElementById('edit-email').value,
+    Ciudad: document.getElementById('edit-ciudad').value,
+    Zona: document.getElementById('edit-zona').value,
+    Operacion: document.getElementById('edit-operacion').value,
+    Tipo_Propiedad: document.getElementById('edit-tipo').value,
+    Estado: document.getElementById('selectEstado').value,
+  };
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({fields}),
+    });
+    if (res.ok) {
+      alert('✅ Lead actualizado');
+      closeModal('modalDetalle');
+      cargarLeads();
+    } else {
+      alert('❌ Error: ' + (await res.text()));
+    }
+  } catch (e) {
+    alert('❌ Error de conexión: ' + e.message);
+  }
+}
+
+async function eliminarLead(id) {
+  const l = LEADS[id];
+  if (!l) return;
+  if (!confirm(`¿Eliminar a ${l.name}? Esta acción no se puede deshacer.`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {method: 'DELETE'});
+    if (res.ok) {
+      alert('✅ Lead eliminado');
+      closeModal('modalDetalle');
+      cargarLeads();
+    } else {
+      alert('❌ Error: ' + (await res.text()));
+    }
+  } catch (e) {
+    alert('❌ Error de conexión: ' + e.message);
+  }
 }
 
 async function guardarEstado(id) {
@@ -2040,8 +2220,9 @@ async function renderProps() {
           <div class="pcard-foot">
             <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
             <div style="display:flex;gap:5px" onclick="event.stopPropagation()">
-              ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺 Maps</a>` : ''}
-              <button class="btn" style="padding:4px 10px;font-size:11px" onclick="verDetalleProp('${pid}')">Ver detalle</button>
+              ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺</a>` : ''}
+              <button class="btn btn-primary" style="padding:4px 8px;font-size:11px" onclick="abrirEditorPropiedad('${pid}')">✏️</button>
+              <button class="btn" style="padding:4px 8px;font-size:11px;background:#3b0a0a;border-color:#5c1a1a;color:#f87171" onclick="eliminarPropiedad('${pid}', '${titulo.replace(/'/g,\"\\\\'\")}')" >🗑️</button>
             </div>
           </div>
         </div>`;
@@ -2077,6 +2258,168 @@ async function renderProps() {
 // ── DETALLE PROPIEDAD ────────────────────────────────────────────────────────
 // Cache de props cargadas desde Airtable para el modal
 let _cachedProps = [];
+
+// ── CRUD PROPIEDADES ──────────────────────────────────────────────────────
+function abrirEditorPropiedad(pid) {
+  // Limpiar form
+  ['prop-titulo','prop-zona','prop-precio','prop-dormitorios','prop-banios',
+   'prop-mcubiertos','prop-mterreno','prop-direccion','prop-maps',
+   'prop-descripcion','prop-imagen'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('prop-tipo').value = '';
+  document.getElementById('prop-operacion').value = '';
+  document.getElementById('prop-disponible').value = '✅ Disponible';
+  document.getElementById('prop-moneda').value = 'USD';
+  document.getElementById('prop-presupuesto').value = '';
+  document.getElementById('prop-imagen-preview').innerHTML = '';
+  document.getElementById('prop-imagen-status').textContent = '';
+  document.getElementById('prop-imagen-file').value = '';
+
+  const btnEliminar = document.getElementById('prop-btn-eliminar');
+
+  if (pid) {
+    // Editar — cargar datos
+    const p = _cachedProps.find(x => (x.id || x.ID || '') == pid);
+    if (p) {
+      document.getElementById('propTitulo').textContent = 'Editar propiedad';
+      document.getElementById('prop-id').value = pid;
+      document.getElementById('prop-titulo').value = p.Titulo || p.titulo || p.Nombre || '';
+      document.getElementById('prop-tipo').value = p.Tipo || p.tipo || '';
+      document.getElementById('prop-operacion').value = p.Operacion || p.operacion || '';
+      document.getElementById('prop-zona').value = p.Zona || p.zona || '';
+      document.getElementById('prop-disponible').value = p.Disponible || p.disponible || '✅ Disponible';
+      document.getElementById('prop-precio').value = p.Precio || p.precio || '';
+      document.getElementById('prop-moneda').value = p.Moneda || p.moneda || 'USD';
+      document.getElementById('prop-presupuesto').value = p.Presupuesto || p.presupuesto || '';
+      document.getElementById('prop-dormitorios').value = p.Dormitorios || p.dormitorios || '';
+      document.getElementById('prop-banios').value = p.Banios || p.banios || '';
+      document.getElementById('prop-mcubiertos').value = p.Metros_Cubiertos || p.metros_cubiertos || '';
+      document.getElementById('prop-mterreno').value = p.Metros_Terreno || p.metros_terreno || '';
+      document.getElementById('prop-direccion').value = p.Direccion || p.direccion || '';
+      document.getElementById('prop-maps').value = p.Maps || p.maps_url || p.Google_Maps_URL || '';
+      document.getElementById('prop-descripcion').value = p.Descripcion || p.descripcion || '';
+      let img = p.Imagen || p.imagen_url || '';
+      if (Array.isArray(img)) img = img[0]?.url || '';
+      document.getElementById('prop-imagen').value = img;
+      if (img) document.getElementById('prop-imagen-preview').innerHTML = `<img src="${img}" style="max-width:200px;border-radius:8px">`;
+    }
+    btnEliminar.style.display = '';
+  } else {
+    // Nuevo
+    document.getElementById('propTitulo').textContent = 'Nueva propiedad';
+    document.getElementById('prop-id').value = '';
+    btnEliminar.style.display = 'none';
+  }
+  openModal('modalPropiedad');
+}
+
+async function subirImagenPropiedad(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('prop-imagen-status');
+  status.textContent = '⏳ Subiendo...';
+  status.style.color = 'var(--yellow)';
+  try {
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+    const r = await fetch(`${API_BASE}/crm/upload-imagen`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({image: base64}),
+    });
+    const data = await r.json();
+    if (data.status === 'ok' && data.url) {
+      document.getElementById('prop-imagen').value = data.url;
+      document.getElementById('prop-imagen-preview').innerHTML = `<img src="${data.url}" style="max-width:200px;border-radius:8px">`;
+      status.textContent = '✅ Subida';
+      status.style.color = 'var(--green)';
+    } else {
+      status.textContent = '❌ Error';
+      status.style.color = 'var(--red)';
+    }
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+}
+
+async function guardarPropiedad() {
+  const pid = document.getElementById('prop-id').value;
+  const fields = {
+    Titulo: document.getElementById('prop-titulo').value,
+    Tipo: document.getElementById('prop-tipo').value,
+    Operacion: document.getElementById('prop-operacion').value,
+    Zona: document.getElementById('prop-zona').value,
+    Disponible: document.getElementById('prop-disponible').value,
+    Precio: parseFloat(document.getElementById('prop-precio').value) || null,
+    Moneda: document.getElementById('prop-moneda').value,
+    Presupuesto: document.getElementById('prop-presupuesto').value,
+    Dormitorios: parseInt(document.getElementById('prop-dormitorios').value) || null,
+    Banios: parseInt(document.getElementById('prop-banios').value) || null,
+    Metros_Cubiertos: parseFloat(document.getElementById('prop-mcubiertos').value) || null,
+    Metros_Terreno: parseFloat(document.getElementById('prop-mterreno').value) || null,
+    Direccion: document.getElementById('prop-direccion').value,
+    Maps: document.getElementById('prop-maps').value,
+    Descripcion: document.getElementById('prop-descripcion').value,
+    Imagen: document.getElementById('prop-imagen').value,
+  };
+  try {
+    const url = pid ? `${API_BASE}/crm/propiedades/${pid}` : `${API_BASE}/crm/propiedades`;
+    const method = pid ? 'PATCH' : 'POST';
+    const r = await fetch(url, {
+      method,
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({fields}),
+    });
+    if (r.ok) {
+      alert(pid ? '✅ Propiedad actualizada' : '✅ Propiedad creada');
+      closeModal('modalPropiedad');
+      renderProps();
+    } else {
+      alert('❌ Error: ' + (await r.text()));
+    }
+  } catch (e) {
+    alert('❌ Error: ' + e.message);
+  }
+}
+
+async function eliminarPropiedad(pid, titulo) {
+  if (!confirm(`¿Eliminar "${titulo}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    const r = await fetch(`${API_BASE}/crm/propiedades/${pid}`, {method: 'DELETE'});
+    if (r.ok) {
+      alert('✅ Propiedad eliminada');
+      renderProps();
+    } else {
+      alert('❌ Error: ' + (await r.text()));
+    }
+  } catch (e) {
+    alert('❌ Error: ' + e.message);
+  }
+}
+
+async function eliminarPropiedadDesdeModal() {
+  const pid = document.getElementById('prop-id').value;
+  const titulo = document.getElementById('prop-titulo').value;
+  if (!pid) return;
+  if (!confirm(`¿Eliminar "${titulo}"?`)) return;
+  try {
+    const r = await fetch(`${API_BASE}/crm/propiedades/${pid}`, {method: 'DELETE'});
+    if (r.ok) {
+      closeModal('modalPropiedad');
+      renderProps();
+    } else {
+      alert('❌ Error: ' + (await r.text()));
+    }
+  } catch (e) {
+    alert('❌ Error: ' + e.message);
+  }
+}
 
 function _renderModalProp(titulo, zona, precio, moneda, tipo, operacion, disponible, desc, dorms, metros, metrosTerr, imgUrl, mapsUrl, videoUrl) {
   const precioStr = precio ? `${moneda === 'ARS' ? '$' : 'USD '}${Number(precio).toLocaleString('es-AR')}` : 'Consultar';

@@ -477,6 +477,211 @@ def create_lead(campos: dict) -> dict:
         return {"error": str(e)}
 
 
+# ── DELETE LEADS ─────────────────────────────────────────────────────────────
+
+def delete_lead(record_id: str) -> bool:
+    if not _available():
+        return False
+    pg_id = int(record_id.replace("pg_", "")) if record_id.startswith("pg_") else record_id
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM leads WHERE id=%s AND tenant_slug=%s", (pg_id, TENANT))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        return ok
+    except Exception as e:
+        print(f"[DB] Error delete_lead: {e}")
+        return False
+
+
+# ── CRUD PROPIEDADES ────────────────────────────────────────────────────────
+
+def create_propiedad(campos: dict) -> dict:
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO propiedades (
+                tenant_slug, titulo, descripcion, tipo, operacion,
+                zona, precio, moneda, presupuesto, disponible,
+                dormitorios, banios, metros_cubiertos, metros_terreno,
+                imagen_url, maps_url, direccion
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            TENANT,
+            campos.get("titulo") or campos.get("Titulo", ""),
+            campos.get("descripcion") or campos.get("Descripcion", ""),
+            campos.get("tipo") or campos.get("Tipo", ""),
+            campos.get("operacion") or campos.get("Operacion", ""),
+            campos.get("zona") or campos.get("Zona", ""),
+            campos.get("precio") or campos.get("Precio") or None,
+            campos.get("moneda") or campos.get("Moneda", "USD"),
+            campos.get("presupuesto") or campos.get("Presupuesto", ""),
+            campos.get("disponible") or campos.get("Disponible", "✅ Disponible"),
+            campos.get("dormitorios") or campos.get("Dormitorios") or None,
+            campos.get("banios") or campos.get("Banios") or None,
+            campos.get("metros_cubiertos") or campos.get("Metros_Cubiertos") or None,
+            campos.get("metros_terreno") or campos.get("Metros_Terreno") or None,
+            campos.get("imagen_url") or campos.get("Imagen", ""),
+            campos.get("maps_url") or campos.get("Maps", ""),
+            campos.get("direccion") or campos.get("Direccion", ""),
+        ))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"id": f"pg_{new_id}"}
+    except Exception as e:
+        print(f"[DB] Error create_propiedad: {e}")
+        return {"error": str(e)}
+
+
+def update_propiedad(record_id: str, campos: dict) -> bool:
+    if not _available():
+        return False
+    pg_id = int(record_id.replace("pg_", "")) if record_id.startswith("pg_") else record_id
+
+    col_map = {
+        "Titulo": "titulo", "Nombre": "titulo", "Descripcion": "descripcion",
+        "Tipo": "tipo", "Operacion": "operacion", "Zona": "zona",
+        "Precio": "precio", "Moneda": "moneda", "Presupuesto": "presupuesto",
+        "Disponible": "disponible", "Dormitorios": "dormitorios",
+        "Banios": "banios", "Metros_Cubiertos": "metros_cubiertos",
+        "Metros_Terreno": "metros_terreno", "Imagen": "imagen_url",
+        "Maps": "maps_url", "Direccion": "direccion",
+    }
+    sets, values = [], []
+    for k, v in campos.items():
+        col = col_map.get(k, k.lower())
+        sets.append(f"{col}=%s")
+        values.append(v)
+    if not sets:
+        return False
+    values.append(pg_id)
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE propiedades SET {', '.join(sets)} WHERE id=%s", values)
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        return ok
+    except Exception as e:
+        print(f"[DB] Error update_propiedad: {e}")
+        return False
+
+
+def delete_propiedad(record_id: str) -> bool:
+    if not _available():
+        return False
+    pg_id = int(record_id.replace("pg_", "")) if record_id.startswith("pg_") else record_id
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM propiedades WHERE id=%s AND tenant_slug=%s", (pg_id, TENANT))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        return ok
+    except Exception as e:
+        print(f"[DB] Error delete_propiedad: {e}")
+        return False
+
+
+# ── CRUD ACTIVOS ─────────────────────────────────────────────────────────────
+
+def create_activo(campos: dict) -> dict:
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO clientes_activos (
+                tenant_slug, nombre, apellido, telefono, email,
+                propiedad, estado_pago, monto_cuota, cuotas_pagadas,
+                cuotas_total, proximo_vencimiento, notas
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
+        """, (
+            TENANT,
+            campos.get("nombre") or campos.get("Nombre", ""),
+            campos.get("apellido") or campos.get("Apellido", ""),
+            campos.get("telefono") or campos.get("Telefono", ""),
+            campos.get("email") or campos.get("Email", ""),
+            campos.get("propiedad") or campos.get("Propiedad", ""),
+            campos.get("estado_pago") or campos.get("Estado_Pago", "al_dia"),
+            campos.get("monto_cuota") or campos.get("Monto_Cuota") or None,
+            campos.get("cuotas_pagadas") or campos.get("Cuotas_Pagadas") or 0,
+            campos.get("cuotas_total") or campos.get("Cuotas_Total") or 0,
+            campos.get("proximo_vencimiento") or campos.get("Proximo_Vencimiento") or None,
+            campos.get("notas") or campos.get("Notas", ""),
+        ))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"id": f"pg_{new_id}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def update_activo(record_id: str, campos: dict) -> bool:
+    if not _available():
+        return False
+    pg_id = int(record_id.replace("pg_", "")) if record_id.startswith("pg_") else record_id
+    col_map = {
+        "Nombre": "nombre", "Apellido": "apellido", "Telefono": "telefono",
+        "Email": "email", "Propiedad": "propiedad", "Estado_Pago": "estado_pago",
+        "Monto_Cuota": "monto_cuota", "Cuotas_Pagadas": "cuotas_pagadas",
+        "Cuotas_Total": "cuotas_total", "Proximo_Vencimiento": "proximo_vencimiento",
+        "Notas": "notas",
+    }
+    sets, values = [], []
+    for k, v in campos.items():
+        col = col_map.get(k, k.lower())
+        sets.append(f"{col}=%s")
+        values.append(v)
+    if not sets:
+        return False
+    values.append(pg_id)
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE clientes_activos SET {', '.join(sets)} WHERE id=%s", values)
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        return ok
+    except Exception as e:
+        return False
+
+
+def delete_activo(record_id: str) -> bool:
+    if not _available():
+        return False
+    pg_id = int(record_id.replace("pg_", "")) if record_id.startswith("pg_") else record_id
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM clientes_activos WHERE id=%s AND tenant_slug=%s", (pg_id, TENANT))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        return ok
+    except Exception as e:
+        return False
+
+
 # ── MÉTRICAS ─────────────────────────────────────────────────────────────────
 
 def get_metricas() -> dict:

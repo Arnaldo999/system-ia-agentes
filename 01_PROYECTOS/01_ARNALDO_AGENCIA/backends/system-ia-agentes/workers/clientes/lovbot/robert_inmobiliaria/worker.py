@@ -1930,10 +1930,128 @@ async def crm_actualizar_activo(record_id: str, request: Request):
 @router.delete("/crm/activos/{record_id}")
 def crm_eliminar_activo(record_id: str):
     from fastapi import HTTPException
+    if USE_POSTGRES and record_id.startswith("pg_"):
+        ok = db.delete_activo(record_id)
+        return {"status": "ok" if ok else "error", "deleted": record_id}
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
-        raise HTTPException(status_code=500, detail="Airtable no configurado")
+        raise HTTPException(status_code=500, detail="DB no configurada")
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}/{record_id}"
     r = requests.delete(url, headers=AT_HEADERS, timeout=8)
     if r.status_code not in (200, 201):
         raise HTTPException(status_code=r.status_code, detail=r.text)
     return {"status": "ok", "deleted": record_id}
+
+
+# ─── DELETE LEADS ───────────────────────────────────────────────────────────
+
+@router.delete("/crm/clientes/{record_id}")
+def crm_eliminar_cliente(record_id: str):
+    from fastapi import HTTPException
+    if USE_POSTGRES and record_id.startswith("pg_"):
+        ok = db.delete_lead(record_id)
+        return {"status": "ok" if ok else "error", "deleted": record_id}
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        raise HTTPException(status_code=500, detail="DB no configurada")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}/{record_id}"
+    r = requests.delete(url, headers=AT_HEADERS, timeout=8)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "deleted": record_id}
+
+
+# ─── CRUD PROPIEDADES ───────────────────────────────────────────────────────
+
+@router.post("/crm/propiedades")
+async def crm_crear_propiedad(request: Request):
+    from fastapi import HTTPException
+    data = await request.json()
+    fields = data.get("fields", data)
+    if USE_POSTGRES:
+        result = db.create_propiedad(fields)
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return {"status": "ok", "record": result}
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        raise HTTPException(status_code=500, detail="DB no configurada")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
+    r = requests.post(url, headers=AT_HEADERS, json={"fields": fields}, timeout=10)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "record": r.json()}
+
+
+@router.patch("/crm/propiedades/{record_id}")
+async def crm_actualizar_propiedad(record_id: str, request: Request):
+    from fastapi import HTTPException
+    data = await request.json()
+    fields = data.get("fields", data)
+    if USE_POSTGRES and record_id.startswith("pg_"):
+        ok = db.update_propiedad(record_id, fields)
+        return {"status": "ok" if ok else "error", "record_id": record_id}
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        raise HTTPException(status_code=500, detail="DB no configurada")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}/{record_id}"
+    r = requests.patch(url, headers=AT_HEADERS, json={"fields": fields}, timeout=8)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "record": r.json()}
+
+
+@router.delete("/crm/propiedades/{record_id}")
+def crm_eliminar_propiedad(record_id: str):
+    from fastapi import HTTPException
+    if USE_POSTGRES and record_id.startswith("pg_"):
+        ok = db.delete_propiedad(record_id)
+        return {"status": "ok" if ok else "error", "deleted": record_id}
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
+        raise HTTPException(status_code=500, detail="DB no configurada")
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}/{record_id}"
+    r = requests.delete(url, headers=AT_HEADERS, timeout=8)
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"status": "ok", "deleted": record_id}
+
+
+# ─── UPLOAD IMAGEN A CLOUDINARY ─────────────────────────────────────────────
+
+@router.post("/crm/upload-imagen")
+async def crm_upload_imagen(request: Request):
+    """Recibe imagen en base64 y la sube a Cloudinary. Devuelve URL."""
+    from fastapi import HTTPException
+    import hashlib, hmac, time
+    data = await request.json()
+    imagen_base64 = data.get("image", "")
+    if not imagen_base64:
+        raise HTTPException(status_code=400, detail="Falta 'image' (base64)")
+
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+    api_key = os.environ.get("CLOUDINARY_API_KEY", "")
+    api_secret = os.environ.get("CLOUDINARY_API_SECRET", "")
+
+    if not (cloud_name and api_key and api_secret):
+        raise HTTPException(status_code=500, detail="Cloudinary no configurado")
+
+    timestamp = int(time.time())
+    folder = "lovbot_propiedades"
+    # Firma
+    to_sign = f"folder={folder}&timestamp={timestamp}{api_secret}"
+    signature = hashlib.sha1(to_sign.encode()).hexdigest()
+
+    try:
+        r = requests.post(
+            f"https://api.cloudinary.com/v1_1/{cloud_name}/image/upload",
+            data={
+                "file": imagen_base64,
+                "api_key": api_key,
+                "timestamp": str(timestamp),
+                "signature": signature,
+                "folder": folder,
+            },
+            timeout=30,
+        )
+        if r.status_code == 200:
+            result = r.json()
+            return {"status": "ok", "url": result.get("secure_url"), "public_id": result.get("public_id")}
+        raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
