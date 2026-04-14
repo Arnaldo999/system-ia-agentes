@@ -1887,14 +1887,14 @@ async function guardarLead(id) {
       body: JSON.stringify({fields}),
     });
     if (res.ok) {
-      alert('✅ Lead actualizado');
       closeModal('modalDetalle');
+      showNotif('✅ Lead actualizado', `${fields.Nombre} ${fields.Apellido}`);
       cargarLeads();
     } else {
-      alert('❌ Error: ' + (await res.text()));
+      showNotif('❌ Error', await res.text());
     }
   } catch (e) {
-    alert('❌ Error de conexión: ' + e.message);
+    showNotif('❌ Error de conexión', e.message);
   }
 }
 
@@ -1905,14 +1905,14 @@ async function eliminarLead(id) {
   try {
     const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {method: 'DELETE'});
     if (res.ok) {
-      alert('✅ Lead eliminado');
       closeModal('modalDetalle');
+      showNotif('✅ Lead eliminado', l.name);
       cargarLeads();
     } else {
-      alert('❌ Error: ' + (await res.text()));
+      showNotif('❌ Error', await res.text());
     }
   } catch (e) {
-    alert('❌ Error de conexión: ' + e.message);
+    showNotif('❌ Error de conexión', e.message);
   }
 }
 
@@ -2379,14 +2379,14 @@ async function guardarPropiedad() {
       body: JSON.stringify({fields}),
     });
     if (r.ok) {
-      alert(pid ? '✅ Propiedad actualizada' : '✅ Propiedad creada');
       closeModal('modalPropiedad');
+      showNotif(pid ? '✅ Propiedad actualizada' : '✅ Propiedad creada', fields.Titulo);
       renderProps();
     } else {
-      alert('❌ Error: ' + (await r.text()));
+      showNotif('❌ Error', await r.text());
     }
   } catch (e) {
-    alert('❌ Error: ' + e.message);
+    showNotif('❌ Error', e.message);
   }
 }
 
@@ -2395,13 +2395,13 @@ async function eliminarPropiedad(pid, titulo) {
   try {
     const r = await fetch(`${API_BASE}/crm/propiedades/${pid}`, {method: 'DELETE'});
     if (r.ok) {
-      alert('✅ Propiedad eliminada');
+      showNotif('✅ Propiedad eliminada', titulo);
       renderProps();
     } else {
-      alert('❌ Error: ' + (await r.text()));
+      showNotif('❌ Error', await r.text());
     }
   } catch (e) {
-    alert('❌ Error: ' + e.message);
+    showNotif('❌ Error', e.message);
   }
 }
 
@@ -2414,12 +2414,13 @@ async function eliminarPropiedadDesdeModal() {
     const r = await fetch(`${API_BASE}/crm/propiedades/${pid}`, {method: 'DELETE'});
     if (r.ok) {
       closeModal('modalPropiedad');
+      showNotif('✅ Propiedad eliminada', titulo);
       renderProps();
     } else {
-      alert('❌ Error: ' + (await r.text()));
+      showNotif('❌ Error', await r.text());
     }
   } catch (e) {
-    alert('❌ Error: ' + e.message);
+    showNotif('❌ Error', e.message);
   }
 }
 
