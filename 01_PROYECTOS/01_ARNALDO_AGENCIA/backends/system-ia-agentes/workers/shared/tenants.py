@@ -41,7 +41,10 @@ def _get_sb():
 
 def _get_tenant(slug: str) -> dict:
     sb = _get_sb()
-    res = sb.table("tenants").select("*").eq("slug", slug).eq("activo", True).single().execute()
+    try:
+        res = sb.table("tenants").select("*").eq("slug", slug).eq("activo", True).single().execute()
+    except Exception:
+        raise HTTPException(status_code=404, detail=f"Tenant '{slug}' no encontrado")
     if not res.data:
         raise HTTPException(status_code=404, detail=f"Tenant '{slug}' no encontrado")
     return res.data

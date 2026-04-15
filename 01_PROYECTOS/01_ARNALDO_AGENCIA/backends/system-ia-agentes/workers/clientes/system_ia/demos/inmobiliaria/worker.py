@@ -1240,6 +1240,59 @@ async def webhook_whatsapp(request: Request):
     return {"status": "processing", "telefono": telefono}
 
 
+# ─── MÉTRICAS ────────────────────────────────────────────────────────────────
+@router.get("/crm/metricas")
+def crm_metricas():
+    """Métricas del pipeline calculadas desde Airtable."""
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
+        return {"error": "Airtable no configurado"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+    try:
+        records, offset = [], None
+        while True:
+            params = {"pageSize": 100}
+            if offset:
+                params["offset"] = offset
+            r = requests.get(url, headers=AT_HEADERS, params=params, timeout=12)
+            data = r.json()
+            records.extend(data.get("records", []))
+            offset = data.get("offset")
+            if not offset:
+                break
+        total = len(records)
+        if total == 0:
+            return {"total": 0, "por_estado": {}, "tasa_citas": 0, "tasa_cierre": 0}
+        por_estado, con_cita, cerrados = {}, 0, 0
+        scores = {"caliente": 0, "tibio": 0, "frio": 0}
+        fuentes = {}
+        for rec in records:
+            f = rec.get("fields", {})
+            e = f.get("Estado", "no_contactado")
+            por_estado[e] = por_estado.get(e, 0) + 1
+            if f.get("Fecha_Cita") or "CITA AGENDADA" in (f.get("Notas_Bot") or ""):
+                con_cita += 1
+            if e == "cerrado":
+                cerrados += 1
+            s = f.get("Score", 0) or 0
+            if s >= 12:   scores["caliente"] += 1
+            elif s >= 7:  scores["tibio"] += 1
+            else:         scores["frio"] += 1
+            fu = f.get("Fuente", "desconocido")
+            fuentes[fu] = fuentes.get(fu, 0) + 1
+        return {
+            "total": total,
+            "por_estado": por_estado,
+            "scores": scores,
+            "fuentes": fuentes,
+            "con_cita": con_cita,
+            "cerrados_ganados": cerrados,
+            "tasa_citas":  round((con_cita / total) * 100, 1) if total else 0,
+            "tasa_cierre": round((cerrados / total) * 100, 1) if total else 0,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ─── CRM ENDPOINTS ────────────────────────────────────────────────────────────
 @router.get("/crm/clientes")
 def crm_clientes():
