@@ -66,8 +66,85 @@ _gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else Non
 
 router = APIRouter(prefix="/mica/demos/inmobiliaria", tags=["Mica — Demo Inmobiliaria"])
 
-# ─── SESIONES EN MEMORIA ──────────────────────────────────────────────────────
-SESIONES: dict[str, dict] = {}
+# ─── DB POSTGRES — persistencia de sesiones ───────────────────────────────────
+try:
+    from workers.clientes.system_ia.demos.inmobiliaria import db_postgres as db_mica
+    USE_POSTGRES = db_mica._available()
+    if USE_POSTGRES:
+        print("[MICA] ✅ PostgreSQL disponible — sesiones persistentes")
+    else:
+        print("[MICA] ⚠️ PostgreSQL no configurado — sesiones solo en RAM")
+except ImportError:
+    USE_POSTGRES = False
+    db_mica = None
+    print("[MICA] ⚠️ db_postgres no encontrado — sesiones solo en RAM")
+
+# ─── SESIONES + HISTORIAL — cache RAM + PostgreSQL ────────────────────────────
+HISTORIAL: dict[str, list[str]] = {}
+
+
+def _bg_save_session_mica(telefono: str, sesion: dict) -> None:
+    if not USE_POSTGRES:
+        return
+    tel = re.sub(r'\D', '', telefono)
+    hist = HISTORIAL.get(tel, [])
+    try:
+        db_mica.save_bot_session(telefono, sesion, hist)
+    except Exception as e:
+        print(f"[MICA-SESSION] Error save: {e}")
+
+
+def _bg_delete_session_mica(telefono: str) -> None:
+    if not USE_POSTGRES:
+        return
+    try:
+        db_mica.delete_bot_session(telefono)
+    except Exception as e:
+        print(f"[MICA-SESSION] Error delete: {e}")
+
+
+class _SessionStoreMica(dict):
+    """Dict que auto-persiste en PostgreSQL en background en cada write/delete."""
+
+    def __setitem__(self, telefono: str, sesion: dict):
+        super().__setitem__(telefono, sesion)
+        if USE_POSTGRES:
+            threading.Thread(target=_bg_save_session_mica, args=(telefono, sesion), daemon=True).start()
+
+    def pop(self, telefono, *args):
+        result = super().pop(telefono, *args)
+        if USE_POSTGRES:
+            threading.Thread(target=_bg_delete_session_mica, args=(telefono,), daemon=True).start()
+        return result
+
+
+SESIONES: _SessionStoreMica = _SessionStoreMica()
+
+# Inicializar tabla al arrancar
+if USE_POSTGRES:
+    try:
+        db_mica.setup_bot_sessions()
+    except Exception as _e:
+        print(f"[MICA-SESSION] setup_bot_sessions error: {_e}")
+
+
+def _cargar_sesion_mica(telefono: str) -> None:
+    """Restaura sesión + historial desde PostgreSQL al cache RAM (post-deploy)."""
+    if not USE_POSTGRES:
+        return
+    tel = re.sub(r'\D', '', telefono)
+    try:
+        data = db_mica.get_bot_session(telefono)
+        if data:
+            sesion = data.get("sesion", {})
+            historial = data.get("historial", [])
+            if sesion:
+                super(_SessionStoreMica, SESIONES).__setitem__(telefono, sesion)
+                print(f"[MICA-SESSION] Sesión restaurada {tel[-4:]}*** step={sesion.get('step','?')}")
+            if historial:
+                HISTORIAL[tel] = historial
+    except Exception as e:
+        print(f"[MICA-SESSION] Error carga: {e}")
 
 # ─── WHISPER — TRANSCRIPCIÓN DE AUDIO (Evolution API) ────────────────────────
 def _transcribir_audio(data: dict, message: dict) -> str:
@@ -810,8 +887,6 @@ MSG_EMAIL_CTA = (
 )
 
 
-# ─── HISTORIAL DE CONVERSACIÓN ───────────────────────────────────────────────
-HISTORIAL: dict[str, list[str]] = {}
 MAX_HISTORIAL = 20
 
 def _agregar_historial(telefono: str, quien: str, texto: str):
@@ -1016,6 +1091,11 @@ def _procesar(telefono: str, texto: str) -> None:
     import time as _time
     texto = texto.strip()
     texto_lower = texto.lower()
+
+    # ── Restaurar sesión desde PostgreSQL si no está en RAM (post-deploy) ──────
+    if telefono not in SESIONES:
+        _cargar_sesion_mica(telefono)
+
     sesion = SESIONES.get(telefono, {})
     ahora_ts = _time.time()
     nombre = sesion.get("nombre", "")
