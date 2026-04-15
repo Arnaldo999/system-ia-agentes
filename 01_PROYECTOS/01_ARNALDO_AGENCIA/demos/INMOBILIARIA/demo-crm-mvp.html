@@ -768,8 +768,23 @@ tailwind.config = {
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div class="search-wrap">
             <span>🔍</span>
-            <input type="text" placeholder="Buscar..." oninput="filterLeads(this.value)" id="searchInput">
+            <input type="text" placeholder="Buscar..." oninput="aplicarFiltros()" id="searchInput">
           </div>
+          <select id="filtroEstado" onchange="aplicarFiltros()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
+            <option value="">Todos los estados</option>
+            <option value="nuevo">🔵 Nuevo</option>
+            <option value="contactado">🟡 Contactado</option>
+            <option value="calificado">🟣 Calificado</option>
+            <option value="cita">🟢 Con cita</option>
+            <option value="cerrado">🏆 Cerrado</option>
+            <option value="perdido">🔴 Perdido</option>
+          </select>
+          <select id="filtroScore" onchange="aplicarFiltros()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
+            <option value="">Todos los scores</option>
+            <option value="caliente">🔥 Caliente</option>
+            <option value="tibio">🌡️ Tibio</option>
+            <option value="frio">❄️ Frío</option>
+          </select>
           <button class="btn btn-primary" onclick="openModal('modalNuevo')">+ Nuevo lead</button>
         </div>
       </div>
@@ -806,13 +821,13 @@ tailwind.config = {
         <div style="display:flex;gap:8px;align-items:center">
           <div id="propsStatus" style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"></div>
           <button class="btn" onclick="renderProps()">↺ Actualizar</button>
-          <button class="btn btn-primary">+ Agregar propiedad</button>
+          <button class="btn btn-primary" onclick="abrirEditorPropiedad(null)">+ Agregar propiedad</button>
         </div>
       </div>
       <div class="props-grid" id="propsGrid">
         <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
           <div style="font-size:32px;margin-bottom:8px">⏳</div>
-          Cargando propiedades desde Airtable...
+          Cargando propiedades...
         </div>
       </div>
     </div>
@@ -1160,239 +1175,32 @@ tailwind.config = {
       </div>
 
       <div id="cfg-feedback" class="mt-3 text-[13px] min-h-[20px]"></div>
-    </div>
 
-
-    <!-- ══════════ ASESORES ══════════ -->
-    <div class="panel" id="panel-asesores" style="padding:20px">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-bold">👨‍💼 Equipo de Asesores</h2>
-          <p class="text-sm text-txt-2">Gestión del equipo de ventas</p>
+      <!-- Cambiar PIN -->
+      <div class="bg-surface border border-brd rounded-[14px] p-6 mt-5">
+        <div class="font-bold text-sm mb-1 text-txt">🔐 Cambiar PIN de acceso</div>
+        <div class="text-xs text-txt-2 mb-4">Tu PIN protege el acceso al CRM. Debe ser de 4 dígitos.</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3" style="max-width:500px">
+          <div class="mf">
+            <label>PIN actual</label>
+            <input id="cfg-pin-actual" class="mi" type="password" maxlength="4" placeholder="••••" style="text-align:center;font-size:18px;letter-spacing:8px">
+          </div>
+          <div class="mf">
+            <label>Nuevo PIN</label>
+            <input id="cfg-pin-nuevo" class="mi" type="password" maxlength="4" placeholder="••••" style="text-align:center;font-size:18px;letter-spacing:8px">
+          </div>
+          <div class="mf">
+            <label>Confirmar PIN</label>
+            <input id="cfg-pin-confirmar" class="mi" type="password" maxlength="4" placeholder="••••" style="text-align:center;font-size:18px;letter-spacing:8px">
+          </div>
         </div>
-        <button onclick="abrirModalAsesor()" class="btn btn-primary">+ Nuevo asesor</button>
-      </div>
-      <div id="asesoresLista" class="space-y-2"></div>
-    </div>
-
-    <!-- ══════════ PROPIETARIOS ══════════ -->
-    <div class="panel" id="panel-propietarios" style="padding:20px">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-bold">📑 Propietarios</h2>
-          <p class="text-sm text-txt-2">Cartera de propiedades de terceros</p>
-        </div>
-        <button onclick="abrirModalPropietario()" class="btn btn-primary">+ Nuevo propietario</button>
-      </div>
-      <div id="propietariosLista"></div>
-    </div>
-
-    <!-- ══════════ LOTEOS ══════════ -->
-    <div class="panel" id="panel-loteos" style="padding:20px">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-bold">📍 Loteos</h2>
-          <p class="text-sm text-txt-2">Proyectos con mapa SVG interactivo</p>
-        </div>
-        <button onclick="abrirModalLoteo()" class="btn btn-primary">+ Nuevo loteo</button>
-      </div>
-      <div id="loteosLista"></div>
-    </div>
-
-    <!-- ══════════ CONTRATOS ══════════ -->
-    <div class="panel" id="panel-contratos" style="padding:20px">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-bold">📄 Contratos</h2>
-          <p class="text-sm text-txt-2">Reservas, ventas, alquileres</p>
-        </div>
-        <button onclick="abrirModalContrato()" class="btn btn-primary">+ Nuevo contrato</button>
-      </div>
-      <div id="contratosLista"></div>
-    </div>
-
-    <!-- ══════════ VISITAS ══════════ -->
-    <div class="panel" id="panel-visitas" style="padding:20px">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-bold">🗓️ Visitas Agendadas</h2>
-          <p class="text-sm text-txt-2">Sincronizado con Cal.com + agenda manual</p>
-        </div>
-        <button onclick="abrirModalVisita()" class="btn btn-primary">+ Agendar visita</button>
-      </div>
-      <div id="visitasLista"></div>
-    </div>
-
-    <!-- ══════════ REPORTES ══════════ -->
-    <div class="panel" id="panel-reportes" style="padding:20px">
-      <div class="mb-4">
-        <h2 class="text-xl font-bold">📈 Reportes</h2>
-        <p class="text-sm text-txt-2">Performance de ventas, asesores y fuentes</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div class="bg-surface border border-brd rounded-lg p-4">
-          <h3 class="text-sm font-semibold mb-3">📊 Ventas por mes</h3>
-          <div style="height:220px"><canvas id="chartVentasMes"></canvas></div>
-        </div>
-        <div class="bg-surface border border-brd rounded-lg p-4">
-          <h3 class="text-sm font-semibold mb-3">🌐 Origen de leads</h3>
-          <div style="height:220px"><canvas id="chartFuentes"></canvas></div>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-surface border border-brd rounded-lg p-4">
-          <h3 class="text-sm font-semibold mb-3">🏆 Ranking asesores</h3>
-          <div id="tablaAsesoresRanking"></div>
-        </div>
-        <div class="bg-surface border border-brd rounded-lg p-4">
-          <h3 class="text-sm font-semibold mb-3">📥 Detalle por fuente</h3>
-          <div id="tablaFuentes"></div>
-        </div>
+        <button class="btn btn-primary mt-3" onclick="cambiarPin()">🔐 Cambiar PIN</button>
+        <div id="cfg-pin-feedback" class="mt-2 text-[13px] min-h-[20px]"></div>
       </div>
     </div>
 
   </div><!-- /main -->
 </div><!-- /layout -->
-
-<!-- MODALES — CRM Completo Sprint 3-8 -->
-
-<div class="modal-bg" id="modalAsesor">
-  <div class="modal" style="max-width:500px">
-    <button class="mc" onclick="closeModal('modalAsesor')">✕</button>
-    <h3 class="text-lg font-bold mb-4">👨‍💼 Asesor</h3>
-    <input type="hidden" id="asesorId"/>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Nombre</label><input id="asesorNombre" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">Apellido</label><input id="asesorApellido" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    </div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Email</label><input id="asesorEmail" type="email" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Teléfono</label><input id="asesorTelefono" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Rol</label>
-        <select id="asesorRol" class="w-full p-2 bg-surface-2 border border-brd rounded">
-          <option value="asesor">Asesor</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option>
-        </select>
-      </div>
-      <div><label class="text-xs text-txt-2">% Comisión</label><input id="asesorComision" type="number" step="0.01" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    </div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="asesorNotas" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
-    <div class="mb-3"><label class="text-xs flex items-center gap-2"><input type="checkbox" id="asesorActivo" checked/> Asesor activo</label></div>
-    <button onclick="guardarAsesor()" class="btn btn-primary w-full">💾 Guardar</button>
-  </div>
-</div>
-
-<div class="modal-bg" id="modalPropietario">
-  <div class="modal" style="max-width:500px">
-    <button class="mc" onclick="closeModal('modalPropietario')">✕</button>
-    <h3 class="text-lg font-bold mb-4">📑 Propietario</h3>
-    <input type="hidden" id="propietarioId"/>
-    <div class="mb-3"><label class="text-xs text-txt-2">Nombre completo</label><input id="propietarioNombre" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Teléfono</label><input id="propietarioTelefono" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">DNI / CUIT</label><input id="propietarioDni" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    </div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Email</label><input id="propietarioEmail" type="email" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Dirección</label><input id="propietarioDireccion" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">% Comisión pactada</label><input id="propietarioComision" type="number" step="0.01" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="propietarioNotas" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
-    <button onclick="guardarPropietario()" class="btn btn-primary w-full">💾 Guardar</button>
-  </div>
-</div>
-
-<div class="modal-bg" id="modalLoteo">
-  <div class="modal" style="max-width:500px">
-    <button class="mc" onclick="closeModal('modalLoteo')">✕</button>
-    <h3 class="text-lg font-bold mb-4">📍 Loteo</h3>
-    <input type="hidden" id="loteoId"/>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Nombre</label><input id="loteoNombre" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">Slug</label><input id="loteoSlug" class="w-full p-2 bg-surface-2 border border-brd rounded" placeholder="san-ignacio"/></div>
-    </div>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Ubicación</label><input id="loteoUbicacion" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">Ciudad</label><input id="loteoCiudad" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    </div>
-    <div class="mb-3"><label class="text-xs text-txt-2">URL mapa SVG</label><input id="loteoMapa" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Precio desde (USD)</label><input id="loteoPrecio" type="number" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Descripción</label><textarea id="loteoDescripcion" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
-    <button onclick="guardarLoteo()" class="btn btn-primary w-full">💾 Guardar</button>
-  </div>
-</div>
-
-<div class="modal-bg" id="modalMapa">
-  <div class="modal" style="max-width:900px">
-    <button class="mc" onclick="closeModal('modalMapa')">✕</button>
-    <h3 class="text-lg font-bold mb-4" id="mapaTitulo">🗺️ Mapa</h3>
-    <div id="mapaContenido"></div>
-  </div>
-</div>
-
-<div class="modal-bg" id="modalContrato">
-  <div class="modal" style="max-width:550px">
-    <button class="mc" onclick="closeModal('modalContrato')">✕</button>
-    <h3 class="text-lg font-bold mb-4">📄 Contrato</h3>
-    <input type="hidden" id="contratoId"/>
-    <div class="mb-3"><label class="text-xs text-txt-2">Título</label><input id="contratoTitulo" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Tipo</label>
-        <select id="contratoTipo" class="w-full p-2 bg-surface-2 border border-brd rounded">
-          <option value="reserva">Reserva</option><option value="venta">Venta</option><option value="alquiler">Alquiler</option><option value="boleto">Boleto de compraventa</option><option value="otro">Otro</option>
-        </select>
-      </div>
-      <div><label class="text-xs text-txt-2">Estado</label>
-        <select id="contratoEstado" class="w-full p-2 bg-surface-2 border border-brd rounded">
-          <option value="pendiente">Pendiente</option><option value="firmado">Firmado</option><option value="vencido">Vencido</option><option value="cancelado">Cancelado</option>
-        </select>
-      </div>
-    </div>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Monto</label><input id="contratoMonto" type="number" step="0.01" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">Moneda</label>
-        <select id="contratoMoneda" class="w-full p-2 bg-surface-2 border border-brd rounded">
-          <option>USD</option><option>ARS</option><option>EUR</option>
-        </select>
-      </div>
-    </div>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Fecha firma</label><input id="contratoFechaFirma" type="date" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">Vencimiento</label><input id="contratoFechaVenc" type="date" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    </div>
-    <div class="mb-3">
-      <label class="text-xs text-txt-2">PDF</label>
-      <div class="flex gap-2">
-        <input id="contratoArchivoUrl" class="flex-1 p-2 bg-surface-2 border border-brd rounded" placeholder="https://..."/>
-        <input type="file" accept="application/pdf" onchange="subirPdfContrato(this)" class="hidden" id="contratoFile"/>
-        <label for="contratoFile" class="btn btn-primary cursor-pointer px-3 py-2">📎 Subir</label>
-      </div>
-    </div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="contratoNotas" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
-    <button onclick="guardarContrato()" class="btn btn-primary w-full">💾 Guardar</button>
-  </div>
-</div>
-
-<div class="modal-bg" id="modalVisita">
-  <div class="modal" style="max-width:500px">
-    <button class="mc" onclick="closeModal('modalVisita')">✕</button>
-    <h3 class="text-lg font-bold mb-4">🗓️ Visita</h3>
-    <input type="hidden" id="visitaId"/>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Fecha y hora</label><input id="visitaFecha" type="datetime-local" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">Duración (min)</label><input id="visitaDuracion" type="number" value="60" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    </div>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">ID Lead</label><input id="visitaLead" type="number" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">ID Propiedad</label><input id="visitaPropiedad" type="number" class="w-full p-2 bg-surface-2 border border-brd rounded"/></div>
-    </div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Estado</label>
-      <select id="visitaEstado" class="w-full p-2 bg-surface-2 border border-brd rounded">
-        <option value="agendada">Agendada</option><option value="realizada">Realizada</option><option value="cancelada">Cancelada</option><option value="no_show">No show</option>
-      </select>
-    </div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Notas previas</label><textarea id="visitaNotasPre" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Notas posteriores</label><textarea id="visitaNotasPost" class="w-full p-2 bg-surface-2 border border-brd rounded" rows="2"></textarea></div>
-    <button onclick="guardarVisita()" class="btn btn-primary w-full">💾 Guardar</button>
-  </div>
-</div>
 
 <!-- MODAL: LEAD DETAIL -->
 <div class="modal-bg" id="modalDetalle">
@@ -1418,6 +1226,83 @@ tailwind.config = {
     <div class="ma">
       <button class="btn" onclick="closeModal('modalNuevo')">Cancelar</button>
       <button class="btn btn-primary" onclick="crearLead()">Crear + Iniciar bot 🤖</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITOR PROPIEDAD -->
+<div class="modal-bg" id="modalPropiedad">
+  <div class="modal" style="max-width:700px">
+    <button class="mc" onclick="closeModal('modalPropiedad')">✕</button>
+    <h3 id="propTitulo">Nueva propiedad</h3>
+    <input type="hidden" id="prop-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="mf" style="grid-column:span 2"><label>Título</label><input type="text" id="prop-titulo" placeholder="Casa 3 dorm Zona Norte"></div>
+      <div class="mf"><label>Tipo</label>
+        <select id="prop-tipo">
+          <option value="">—</option>
+          <option value="casa">Casa</option>
+          <option value="departamento">Departamento</option>
+          <option value="terreno">Terreno</option>
+          <option value="local">Local</option>
+          <option value="oficina">Oficina</option>
+        </select>
+      </div>
+      <div class="mf"><label>Operación</label>
+        <select id="prop-operacion">
+          <option value="">—</option>
+          <option value="venta">Venta</option>
+          <option value="alquiler">Alquiler</option>
+        </select>
+      </div>
+      <div class="mf"><label>Zona</label><input type="text" id="prop-zona" placeholder="San Ignacio"></div>
+      <div class="mf"><label>Disponibilidad</label>
+        <select id="prop-disponible">
+          <option value="✅ Disponible">✅ Disponible</option>
+          <option value="⏳ Reservado">⏳ Reservado</option>
+          <option value="❌ No disponible">❌ No disponible</option>
+        </select>
+      </div>
+      <div class="mf"><label>Precio</label><input type="number" id="prop-precio" placeholder="180000"></div>
+      <div class="mf"><label>Moneda</label>
+        <select id="prop-moneda">
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+          <option value="MXN">MXN</option>
+        </select>
+      </div>
+      <div class="mf"><label>Presupuesto (rango)</label>
+        <select id="prop-presupuesto">
+          <option value="">—</option>
+          <option value="hata_50k">Hasta USD 50k</option>
+          <option value="50k_100k">USD 50k-100k</option>
+          <option value="100k_200k">USD 100k-200k</option>
+          <option value="mas_200k">Más de USD 200k</option>
+        </select>
+      </div>
+      <div class="mf"><label>Dormitorios</label><input type="number" id="prop-dormitorios" placeholder="3"></div>
+      <div class="mf"><label>Baños</label><input type="number" id="prop-banios" placeholder="2"></div>
+      <div class="mf"><label>Metros cubiertos</label><input type="number" id="prop-mcubiertos" placeholder="120"></div>
+      <div class="mf"><label>Metros terreno</label><input type="number" id="prop-mterreno" placeholder="300"></div>
+      <div class="mf" style="grid-column:span 2"><label>Dirección</label><input type="text" id="prop-direccion" placeholder="Av. Ejemplo 123"></div>
+      <div class="mf" style="grid-column:span 2"><label>URL Google Maps</label><input type="text" id="prop-maps" placeholder="https://maps.google.com/..."></div>
+      <div class="mf" style="grid-column:span 2"><label>Descripción</label><textarea id="prop-descripcion" rows="3" placeholder="Descripción detallada..."></textarea></div>
+      <div class="mf" style="grid-column:span 2">
+        <label>📸 Imagen (subir archivo o URL directa)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="file" id="prop-imagen-file" accept="image/*" onchange="subirImagenPropiedad(this)" style="color:var(--text);flex:1">
+          <span id="prop-imagen-status" style="font-size:11px;color:var(--text2)"></span>
+        </div>
+        <input type="text" id="prop-imagen" placeholder="O pegá URL directa aquí" style="margin-top:6px">
+        <div id="prop-imagen-preview" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="ma" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <button id="prop-btn-eliminar" class="btn" style="background:#3b0a0a;border-color:#5c1a1a;color:#f87171;display:none" onclick="eliminarPropiedadDesdeModal()">🗑️ Eliminar</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modalPropiedad')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarPropiedad()">💾 Guardar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1486,6 +1371,248 @@ tailwind.config = {
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- CRM COMPLETO MULTI-SUBNICHO — Paneles y Modales Sprint 3-8               -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+<!-- ASESORES -->
+<div class="panel hidden" id="panel-asesores" style="padding:20px">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-bold">👨‍💼 Equipo de Asesores</h2>
+      <p class="text-sm text-txt-2">Gestión del equipo de ventas</p>
+    </div>
+    <button onclick="abrirModalAsesor()" class="btn-primary">+ Nuevo asesor</button>
+  </div>
+  <div id="asesoresLista" class="space-y-2"></div>
+</div>
+
+<div class="modal-bg hidden" id="modalAsesor">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="document.getElementById('modalAsesor').classList.add('hidden')">✕</button>
+    <h3 class="text-lg font-bold mb-4">👨‍💼 Asesor</h3>
+    <input type="hidden" id="asesorId"/>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Nombre</label><input id="asesorNombre" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Apellido</label><input id="asesorApellido" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Email</label><input id="asesorEmail" type="email" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Teléfono</label><input id="asesorTelefono" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Rol</label>
+        <select id="asesorRol" class="w-full p-2 bg-surface-alt border border-brd rounded">
+          <option value="asesor">Asesor</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option>
+        </select>
+      </div>
+      <div><label class="text-xs text-txt-2">% Comisión</label><input id="asesorComision" type="number" step="0.01" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="asesorNotas" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2"></textarea></div>
+    <div class="mb-3"><label class="text-xs flex items-center gap-2"><input type="checkbox" id="asesorActivo" checked/> Asesor activo</label></div>
+    <button onclick="guardarAsesor()" class="w-full btn-primary">💾 Guardar</button>
+  </div>
+</div>
+
+<!-- PROPIETARIOS -->
+<div class="panel hidden" id="panel-propietarios" style="padding:20px">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-bold">📑 Propietarios</h2>
+      <p class="text-sm text-txt-2">Cartera de propiedades de terceros</p>
+    </div>
+    <button onclick="abrirModalPropietario()" class="btn-primary">+ Nuevo propietario</button>
+  </div>
+  <div id="propietariosLista"></div>
+</div>
+
+<div class="modal-bg hidden" id="modalPropietario">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="document.getElementById('modalPropietario').classList.add('hidden')">✕</button>
+    <h3 class="text-lg font-bold mb-4">📑 Propietario</h3>
+    <input type="hidden" id="propietarioId"/>
+    <div class="mb-3"><label class="text-xs text-txt-2">Nombre completo</label><input id="propietarioNombre" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Teléfono</label><input id="propietarioTelefono" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">DNI / CUIT</label><input id="propietarioDni" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Email</label><input id="propietarioEmail" type="email" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Dirección</label><input id="propietarioDireccion" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">% Comisión pactada</label><input id="propietarioComision" type="number" step="0.01" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="propietarioNotas" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2"></textarea></div>
+    <button onclick="guardarPropietario()" class="w-full btn-primary">💾 Guardar</button>
+  </div>
+</div>
+
+<!-- LOTEOS -->
+<div class="panel hidden" id="panel-loteos" style="padding:20px">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-bold">📍 Loteos</h2>
+      <p class="text-sm text-txt-2">Proyectos con mapa SVG interactivo</p>
+    </div>
+    <button onclick="abrirModalLoteo()" class="btn-primary">+ Nuevo loteo</button>
+  </div>
+  <div id="loteosLista"></div>
+</div>
+
+<div class="modal-bg hidden" id="modalLoteo">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="document.getElementById('modalLoteo').classList.add('hidden')">✕</button>
+    <h3 class="text-lg font-bold mb-4">📍 Loteo</h3>
+    <input type="hidden" id="loteoId"/>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Nombre</label><input id="loteoNombre" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Slug (URL)</label><input id="loteoSlug" class="w-full p-2 bg-surface-alt border border-brd rounded" placeholder="san-ignacio"/></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Ubicación</label><input id="loteoUbicacion" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Ciudad</label><input id="loteoCiudad" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">URL del mapa SVG (Cloudinary)</label><input id="loteoMapa" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Precio desde (USD)</label><input id="loteoPrecio" type="number" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Descripción</label><textarea id="loteoDescripcion" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2"></textarea></div>
+    <button onclick="guardarLoteo()" class="w-full btn-primary">💾 Guardar</button>
+  </div>
+</div>
+
+<div class="modal-bg hidden" id="modalMapa">
+  <div class="modal" style="max-width:900px">
+    <button class="mc" onclick="document.getElementById('modalMapa').classList.add('hidden')">✕</button>
+    <h3 class="text-lg font-bold mb-4" id="mapaTitulo">🗺️ Mapa</h3>
+    <div id="mapaContenido"></div>
+  </div>
+</div>
+
+<!-- CONTRATOS -->
+<div class="panel hidden" id="panel-contratos" style="padding:20px">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-bold">📄 Contratos</h2>
+      <p class="text-sm text-txt-2">Reservas, ventas, alquileres</p>
+    </div>
+    <button onclick="abrirModalContrato()" class="btn-primary">+ Nuevo contrato</button>
+  </div>
+  <div id="contratosLista"></div>
+</div>
+
+<div class="modal-bg hidden" id="modalContrato">
+  <div class="modal" style="max-width:550px">
+    <button class="mc" onclick="document.getElementById('modalContrato').classList.add('hidden')">✕</button>
+    <h3 class="text-lg font-bold mb-4">📄 Contrato</h3>
+    <input type="hidden" id="contratoId"/>
+    <div class="mb-3"><label class="text-xs text-txt-2">Título / Descripción</label><input id="contratoTitulo" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Tipo</label>
+        <select id="contratoTipo" class="w-full p-2 bg-surface-alt border border-brd rounded">
+          <option value="reserva">Reserva</option><option value="venta">Venta</option><option value="alquiler">Alquiler</option><option value="boleto">Boleto de compraventa</option><option value="otro">Otro</option>
+        </select>
+      </div>
+      <div><label class="text-xs text-txt-2">Estado</label>
+        <select id="contratoEstado" class="w-full p-2 bg-surface-alt border border-brd rounded">
+          <option value="pendiente">Pendiente</option><option value="firmado">Firmado</option><option value="vencido">Vencido</option><option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Monto</label><input id="contratoMonto" type="number" step="0.01" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Moneda</label>
+        <select id="contratoMoneda" class="w-full p-2 bg-surface-alt border border-brd rounded">
+          <option>USD</option><option>ARS</option><option>EUR</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Fecha firma</label><input id="contratoFechaFirma" type="date" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Vencimiento</label><input id="contratoFechaVenc" type="date" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3">
+      <label class="text-xs text-txt-2">PDF (subir o pegar URL)</label>
+      <div class="flex gap-2">
+        <input id="contratoArchivoUrl" class="flex-1 p-2 bg-surface-alt border border-brd rounded" placeholder="https://..."/>
+        <input type="file" accept="application/pdf" onchange="subirPdfContrato(this)" class="hidden" id="contratoFile"/>
+        <label for="contratoFile" class="btn-primary cursor-pointer px-3 py-2">📎 Subir</label>
+      </div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas</label><textarea id="contratoNotas" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2"></textarea></div>
+    <button onclick="guardarContrato()" class="w-full btn-primary">💾 Guardar</button>
+  </div>
+</div>
+
+<!-- VISITAS -->
+<div class="panel hidden" id="panel-visitas" style="padding:20px">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-bold">🗓️ Visitas Agendadas</h2>
+      <p class="text-sm text-txt-2">Sincronizado con Cal.com + agenda manual</p>
+    </div>
+    <button onclick="abrirModalVisita()" class="btn-primary">+ Agendar visita</button>
+  </div>
+  <div id="visitasLista"></div>
+</div>
+
+<div class="modal-bg hidden" id="modalVisita">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="document.getElementById('modalVisita').classList.add('hidden')">✕</button>
+    <h3 class="text-lg font-bold mb-4">🗓️ Visita</h3>
+    <input type="hidden" id="visitaId"/>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Fecha y hora</label><input id="visitaFecha" type="datetime-local" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">Duración (min)</label><input id="visitaDuracion" type="number" value="60" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">ID Lead</label><input id="visitaLead" type="number" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+      <div><label class="text-xs text-txt-2">ID Propiedad</label><input id="visitaPropiedad" type="number" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Estado</label>
+      <select id="visitaEstado" class="w-full p-2 bg-surface-alt border border-brd rounded">
+        <option value="agendada">Agendada</option><option value="realizada">Realizada</option><option value="cancelada">Cancelada</option><option value="no_show">No show</option>
+      </select>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas previas</label><textarea id="visitaNotasPre" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2"></textarea></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Notas posteriores (qué pasó)</label><textarea id="visitaNotasPost" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2"></textarea></div>
+    <button onclick="guardarVisita()" class="w-full btn-primary">💾 Guardar</button>
+  </div>
+</div>
+
+<!-- REPORTES -->
+<div class="panel hidden" id="panel-reportes" style="padding:20px">
+  <div class="mb-4">
+    <h2 class="text-xl font-bold">📈 Reportes</h2>
+    <p class="text-sm text-txt-2">Performance de ventas, asesores y fuentes</p>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div class="bg-surface border border-brd rounded-lg p-4">
+      <h3 class="text-sm font-semibold mb-3">📊 Ventas por mes</h3>
+      <div style="height:220px"><canvas id="chartVentasMes"></canvas></div>
+    </div>
+    <div class="bg-surface border border-brd rounded-lg p-4">
+      <h3 class="text-sm font-semibold mb-3">🌐 Origen de leads</h3>
+      <div style="height:220px"><canvas id="chartFuentes"></canvas></div>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-surface border border-brd rounded-lg p-4">
+      <h3 class="text-sm font-semibold mb-3">🏆 Ranking asesores</h3>
+      <div id="tablaAsesoresRanking"></div>
+    </div>
+    <div class="bg-surface border border-brd rounded-lg p-4">
+      <h3 class="text-sm font-semibold mb-3">📥 Detalle por fuente</h3>
+      <div id="tablaFuentes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js para reportes -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- JS separados por panel -->
+<script src="js/_crm-helpers.js"></script>
+<script src="js/panel-asesores.js"></script>
+<script src="js/panel-propietarios.js"></script>
+<script src="js/panel-loteos.js"></script>
+<script src="js/panel-contratos.js"></script>
+<script src="js/panel-visitas.js"></script>
+<script src="js/panel-reportes.js"></script>
+
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────
 // LEADS se carga desde Airtable al iniciar. Fallback a datos demo si el backend no responde.
@@ -1493,11 +1620,17 @@ let LEADS = [];
 
 // Mapeo estado Airtable → estado visual del pipeline
 const ESTADO_MAP = {
-  'no_contactado': 'nuevo',
-  'contactado':    'contactado',
-  'en_negociacion':'calificado',
-  'cerrado':       'cerrado',
-  'descartado':    'perdido',
+  'no_contactado':   'nuevo',
+  'contactado':      'contactado',
+  'calificado':      'calificado',
+  'visita_agendada': 'cita',
+  'visito':          'cita',
+  'en_negociacion':  'calificado',
+  'seguimiento':     'contactado',
+  'cerrado_ganado':  'cerrado',
+  'cerrado_perdido': 'perdido',
+  'cerrado':         'cerrado',
+  'descartado':      'perdido',
 };
 // Si las notas dicen "CITA AGENDADA" y tiene Fecha_Cita → se muestra como "cita"
 
@@ -1584,6 +1717,13 @@ function nav(id, el) {
   if(id==='activos') cargarActivos();
   if(id==='agenda') renderAgenda();
   if(id==='configuracion') cargarConfiguracion();
+  // Paneles CRM Completo (Sprints 3-8)
+  if(id==='asesores' && typeof cargarAsesores === 'function') cargarAsesores();
+  if(id==='propietarios' && typeof cargarPropietarios === 'function') cargarPropietarios();
+  if(id==='loteos' && typeof cargarLoteos === 'function') cargarLoteos();
+  if(id==='contratos' && typeof cargarContratos === 'function') cargarContratos();
+  if(id==='visitas' && typeof cargarVisitas === 'function') cargarVisitas();
+  if(id==='reportes' && typeof cargarReportes === 'function') cargarReportes();
 }
 
 // ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
@@ -1633,6 +1773,10 @@ async function cargarLeads() {
         notas: f.Notas_Bot || '',
         cita: citaLabel,
         ciudad: f.Ciudad || '',
+        zona: f.Zona || '',
+        operacion: f.Operacion || '',
+        tipo: f.Tipo_Propiedad || '',
+        presupuestoRaw: f.Presupuesto || '',
       };
     });
 
@@ -1642,11 +1786,60 @@ async function cargarLeads() {
 
     renderLeads();
     renderKanbanFromLeads();
+    cargarMetricas();
   } catch (err) {
     console.warn('[Leads] Usando datos demo:', err.message);
     LEADS = LEADS_FALLBACK;
     renderLeads();
     renderKanbanFromLeads();
+  }
+}
+
+async function cargarMetricas() {
+  try {
+    const res = await fetch(`${API_BASE}/crm/metricas`, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return;
+    const m = await res.json();
+    if (m.error) return;
+
+    // Actualizar KPIs del dashboard
+    const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+    el('kpi-total', m.total || 0);
+    el('kpi-hot', m.scores?.caliente || 0);
+    el('kpi-citas', m.con_cita || 0);
+    el('kpi-form', m.fuentes?.['formulario-agencia'] || m.fuentes?.['formulario-desarrolladora'] || 0);
+
+    // Actualizar deltas con tasas reales
+    const kpiCitas = document.getElementById('kpi-citas');
+    if (kpiCitas) {
+      const delta = kpiCitas.closest('.kpi')?.querySelector('.kpi-delta');
+      if (delta) delta.textContent = `${m.tasa_citas}% tasa de citas`;
+    }
+
+    // Actualizar barras de origen
+    const totalF = Object.values(m.fuentes || {}).reduce((a, b) => a + b, 0) || 1;
+    const barChart = document.querySelector('.bar-chart');
+    if (barChart && m.fuentes) {
+      barChart.innerHTML = '';
+      const iconos = { 'formulario-agencia': '📋', 'formulario-desarrolladora': '📋', 'formulario-agente': '📋', 'whatsapp_directo': '💬', 'meta_ads': '📣' };
+      const colores = { 'formulario-agencia': '#6c63ff', 'formulario-desarrolladora': '#6c63ff', 'formulario-agente': '#6c63ff', 'whatsapp_directo': '#25d366', 'meta_ads': '#1877f2' };
+      for (const [fuente, cant] of Object.entries(m.fuentes).sort((a, b) => b[1] - a[1])) {
+        const pct = Math.round((cant / totalF) * 100);
+        const icono = iconos[fuente] || '📌';
+        const color = colores[fuente] || '#888';
+        const label = fuente.replace(/_/g, ' ').replace(/formulario-/g, 'Form ');
+        barChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${icono} ${label}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};color:#fff">${pct}%</div></div>
+            <div class="bar-num">${cant}</div>
+          </div>`;
+      }
+    }
+
+    console.log('[Métricas] Cargadas:', m);
+  } catch (err) {
+    console.warn('[Métricas] Error:', err.message);
   }
 }
 
@@ -1698,6 +1891,30 @@ function filterLeads(q) {
   });
 }
 
+function aplicarFiltros() {
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const estadoF = document.getElementById('filtroEstado')?.value || '';
+  const scoreF = document.getElementById('filtroScore')?.value || '';
+
+  const filtrados = LEADS.filter(l => {
+    // Filtro texto
+    if (q && !`${l.name} ${l.phone} ${l.interes} ${l.notas}`.toLowerCase().includes(q)) return false;
+    // Filtro estado
+    if (estadoF && l.status !== estadoF) return false;
+    // Filtro score
+    if (scoreF) {
+      if (scoreF === 'caliente' && l.score < 12) return false;
+      if (scoreF === 'tibio' && (l.score < 7 || l.score >= 12)) return false;
+      if (scoreF === 'frio' && l.score >= 7) return false;
+    }
+    return true;
+  });
+
+  renderLeads(filtrados);
+  const cnt = document.getElementById('leadsCount');
+  if (cnt) cnt.textContent = `${filtrados.length} de ${LEADS.length} contactos`;
+}
+
 // ── KANBAN DESDE LEADS ─────────────────────────────────────────────────────
 function renderKanbanFromLeads() {
   const cols = {
@@ -1730,8 +1947,8 @@ function renderKanbanFromLeads() {
     const nextMap = {
       nuevo:     {next:'contactado', label:'→ Contactado'},
       contactado:{next:'calificado', label:'→ Calificado'},
-      calificado:{next:'cita',       label:'→ Cita agendada'},
-      cita:      {next:'cerrado',    label:'✅ Cerrar venta'},
+      calificado:{next:'cita',       label:'📅 Agendar visita'},
+      cita:      {next:'cerrado',    label:'🏆 Cerrar venta'},
     };
     const nextInfo = nextMap[l.status];
     const nextBtn = nextInfo
@@ -1772,12 +1989,14 @@ function renderKanbanFromLeads() {
 // ── LEAD DETAIL ────────────────────────────────────────────────────────────
 // Mapeo visual status → valor Airtable
 const STATUS_TO_AT = {
-  nuevo:'no_contactado', contactado:'contactado', calificado:'en_negociacion',
-  cita:'en_negociacion', cerrado:'cerrado', perdido:'descartado'
+  nuevo:'no_contactado', contactado:'contactado', calificado:'calificado',
+  cita:'visita_agendada', cerrado:'cerrado_ganado', perdido:'cerrado_perdido'
 };
 // Mapeo Airtable → visual (para re-render tras guardar)
 const AT_TO_STATUS = {
-  no_contactado:'nuevo', contactado:'contactado', en_negociacion:'calificado',
+  no_contactado:'nuevo', contactado:'contactado', calificado:'calificado',
+  visita_agendada:'cita', visito:'cita', en_negociacion:'calificado',
+  seguimiento:'contactado', cerrado_ganado:'cerrado', cerrado_perdido:'perdido',
   cerrado:'cerrado', descartado:'perdido'
 };
 
@@ -1791,26 +2010,75 @@ function openDetalle(id) {
   // Valor actual en Airtable
   const estadoAt = STATUS_TO_AT[l.status] || 'no_contactado';
   const estadoOpts = [
-    {v:'no_contactado', label:'🔵 No contactado'},
-    {v:'contactado',    label:'🟡 Contactado'},
-    {v:'en_negociacion',label:'🟣 En negociación'},
-    {v:'cerrado',       label:'🏆 Cerrado'},
-    {v:'descartado',    label:'🔴 Descartado'},
+    {v:'no_contactado',   label:'🔵 No contactado'},
+    {v:'contactado',      label:'🟡 Contactado'},
+    {v:'calificado',      label:'🟣 Calificado'},
+    {v:'visita_agendada', label:'📅 Visita agendada'},
+    {v:'visito',          label:'🏠 Visitó'},
+    {v:'en_negociacion',  label:'💼 En negociación'},
+    {v:'seguimiento',     label:'🔄 Seguimiento'},
+    {v:'cerrado_ganado',  label:'🏆 Cerrado (ganado)'},
+    {v:'cerrado_perdido', label:'🔴 Cerrado (perdido)'},
   ];
+
+  // CAMPOS EDITABLES
+  const inputStyle = 'background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px;width:100%';
+  const labelStyle = 'color:var(--text2);font-size:11px;margin-bottom:4px;display:block;font-weight:600';
 
   document.getElementById('detalleBody').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      ${[
-        ['Teléfono', l.phone || '—', ''],
-        ['Presupuesto', l.presupuesto || '—', 'color:var(--accent2)'],
-        ['Origen', og[l.origen] || l.origen || '—', ''],
-        ['Score', l.score ? `<span style="color:${scoreColor(l.score)};font-weight:700">${l.score} pts — ${scoreLabel(l.score)}</span>` : '—', ''],
-        ['Sub-nicho', l.subnicho ? l.subnicho.replace(/_/g,' ') : '—', 'text-transform:capitalize'],
-      ].map(([k,v,s]) => `
-        <div style="background:var(--surface2);border-radius:8px;padding:11px">
-          <div style="color:var(--text2);font-size:11px;margin-bottom:3px">${k}</div>
-          <div style="font-weight:600;${s}">${v}</div>
-        </div>`).join('')}
+      <div>
+        <label style="${labelStyle}">Nombre</label>
+        <input id="edit-nombre" type="text" style="${inputStyle}" value="${(l.name || '').split(' ')[0] || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Apellido</label>
+        <input id="edit-apellido" type="text" style="${inputStyle}" value="${(l.name || '').split(' ').slice(1).join(' ') || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Teléfono</label>
+        <input id="edit-telefono" type="text" style="${inputStyle}" value="${l.phone || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Email</label>
+        <input id="edit-email" type="email" style="${inputStyle}" value="${l.email || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Ciudad</label>
+        <input id="edit-ciudad" type="text" style="${inputStyle}" value="${l.ciudad || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Zona</label>
+        <input id="edit-zona" type="text" style="${inputStyle}" value="${l.zona || ''}">
+      </div>
+      <div>
+        <label style="${labelStyle}">Operación</label>
+        <select id="edit-operacion" style="${inputStyle}">
+          <option value="">—</option>
+          <option value="venta"${l.operacion === 'venta' ? ' selected' : ''}>Venta</option>
+          <option value="alquiler"${l.operacion === 'alquiler' ? ' selected' : ''}>Alquiler</option>
+        </select>
+      </div>
+      <div>
+        <label style="${labelStyle}">Tipo Propiedad</label>
+        <select id="edit-tipo" style="${inputStyle}">
+          <option value="">—</option>
+          <option value="casa"${l.tipo === 'casa' ? ' selected' : ''}>Casa</option>
+          <option value="departamento"${l.tipo === 'departamento' ? ' selected' : ''}>Departamento</option>
+          <option value="terreno"${l.tipo === 'terreno' ? ' selected' : ''}>Terreno</option>
+          <option value="otro"${l.tipo === 'otro' ? ' selected' : ''}>Otro</option>
+        </select>
+      </div>
+      <div style="grid-column:span 2">
+        <label style="${labelStyle}">Presupuesto</label>
+        <input id="edit-presupuesto" type="text" style="${inputStyle}" value="${l.presupuestoRaw || l.presupuesto || ''}" readonly>
+      </div>
+      <div style="grid-column:span 2">
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--text2)">
+          <div>📊 Score: <strong style="color:${scoreColor(l.score)}">${l.score || 0} pts — ${scoreLabel(l.score || 0)}</strong></div>
+          <div>🔗 Origen: ${og[l.origen] || l.origen || '—'}</div>
+        </div>
+      </div>
     </div>
 
     <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
@@ -1860,10 +2128,64 @@ function openDetalle(id) {
         <div><div class="tl-title">🏆 Venta / alquiler cerrado</div><div class="tl-time">${l.fecha}</div></div>
       </div>` : ''}
     </div>
-    <div class="ma">
-      <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
+    <div class="ma" style="display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+      <button class="btn" style="background:#3b0a0a;border-color:#5c1a1a;color:#f87171" onclick="eliminarLead(${id})">🗑️ Eliminar lead</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modalDetalle')">Cerrar</button>
+        <button class="btn btn-primary" onclick="guardarLead(${id})">💾 Guardar cambios</button>
+      </div>
     </div>`;
   openModal('modalDetalle');
+}
+
+async function guardarLead(id) {
+  const l = LEADS[id];
+  if (!l) return;
+  const fields = {
+    Nombre: document.getElementById('edit-nombre').value,
+    Apellido: document.getElementById('edit-apellido').value,
+    Telefono: document.getElementById('edit-telefono').value,
+    Email: document.getElementById('edit-email').value,
+    Ciudad: document.getElementById('edit-ciudad').value,
+    Zona: document.getElementById('edit-zona').value,
+    Operacion: document.getElementById('edit-operacion').value,
+    Tipo_Propiedad: document.getElementById('edit-tipo').value,
+    Estado: document.getElementById('selectEstado').value,
+  };
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({fields}),
+    });
+    if (res.ok) {
+      closeModal('modalDetalle');
+      showNotif('✅ Lead actualizado', `${fields.Nombre} ${fields.Apellido}`);
+      cargarLeads();
+    } else {
+      showNotif('❌ Error', await res.text());
+    }
+  } catch (e) {
+    showNotif('❌ Error de conexión', e.message);
+  }
+}
+
+async function eliminarLead(id) {
+  const l = LEADS[id];
+  if (!l) return;
+  if (!confirm(`¿Eliminar a ${l.name}? Esta acción no se puede deshacer.`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes/${l.atId}`, {method: 'DELETE'});
+    if (res.ok) {
+      closeModal('modalDetalle');
+      showNotif('✅ Lead eliminado', l.name);
+      cargarLeads();
+    } else {
+      showNotif('❌ Error', await res.text());
+    }
+  } catch (e) {
+    showNotif('❌ Error de conexión', e.message);
+  }
 }
 
 async function guardarEstado(id) {
@@ -1906,7 +2228,7 @@ async function guardarEstado(id) {
 }
 
 // ── VERSIONADO ──────────────────────────────────────────────────────────────
-const CRM_VERSION = '1.0.0';
+const CRM_VERSION = '1.1.0';
 const CRM_VERSION_KEY = 'crm_version_dismissed';
 
 async function checkVersion() {
@@ -2015,9 +2337,10 @@ async function initTenant() {
     if (!res.ok) throw new Error(`tenant no encontrado: ${TENANT_SLUG}`);
     const t = await res.json();
 
-    // Aplicar API_BASE — usa api_url si está disponible (tenant en servidor diferente)
-    const baseUrl = t.api_url || SAAS_API;
-    API_BASE = t.api_prefix.startsWith('http') ? t.api_prefix : `${baseUrl}${t.api_prefix}`;
+    // Aplicar API_BASE — si el tenant tiene api_url propio (ej: robert en Coolify Hetzner), usarlo
+    const apiHost = t.api_url || SAAS_API;
+    API_BASE = `${apiHost}${t.api_prefix}`;
+    console.log('[CRM] API_BASE configurado:', API_BASE);
 
     // Aplicar branding
     document.getElementById('page-title').textContent = `${t.nombre} — CRM`;
@@ -2090,7 +2413,7 @@ async function renderProps() {
   const subEl = document.getElementById('propsSub');
 
   g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
-    <div style="font-size:32px;margin-bottom:8px">⏳</div>Cargando desde Airtable...
+    <div style="font-size:32px;margin-bottom:8px">⏳</div>Cargando propiedades...
   </div>`;
   if(statusEl) statusEl.innerHTML = '<span style="color:var(--yellow)">⏳ Conectando...</span>';
 
@@ -2102,15 +2425,15 @@ async function renderProps() {
 
     if(records.length === 0) {
       g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">
-        <div style="font-size:32px;margin-bottom:8px">🏠</div>No hay propiedades cargadas en Airtable aún.
+        <div style="font-size:32px;margin-bottom:8px">🏠</div>No hay propiedades cargadas todavía. Agregá la primera 👆
       </div>`;
       if(statusEl) statusEl.innerHTML = '<span style="color:var(--text2)">0 propiedades</span>';
       return;
     }
 
     _cachedProps = records;
-    if(subEl) subEl.textContent = `${records.length} propiedades · datos en tiempo real desde Airtable`;
-    if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ Airtable conectado · ${records.length} registros</span>`;
+    if(subEl) subEl.textContent = `${records.length} propiedades · datos en tiempo real`;
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--green)">✅ Conectado · ${records.length} registros</span>`;
 
     g.innerHTML = '';
     records.forEach(p => {
@@ -2171,8 +2494,9 @@ async function renderProps() {
           <div class="pcard-foot">
             <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
             <div style="display:flex;gap:5px" onclick="event.stopPropagation()">
-              ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺 Maps</a>` : ''}
-              <button class="btn" style="padding:4px 10px;font-size:11px" onclick="verDetalleProp('${pid}')">Ver detalle</button>
+              ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺</a>` : ''}
+              <button class="btn btn-primary" style="padding:4px 8px;font-size:11px" onclick="abrirEditorPropiedad('${pid}')">✏️</button>
+              <button class="btn" data-pid="${pid}" data-titulo="${titulo.replace(/"/g,'&quot;')}" style="padding:4px 8px;font-size:11px;background:#3b0a0a;border-color:#5c1a1a;color:#f87171" onclick="eliminarPropiedad(this.dataset.pid, this.dataset.titulo)">🗑️</button>
             </div>
           </div>
         </div>`;
@@ -2208,6 +2532,169 @@ async function renderProps() {
 // ── DETALLE PROPIEDAD ────────────────────────────────────────────────────────
 // Cache de props cargadas desde Airtable para el modal
 let _cachedProps = [];
+
+// ── CRUD PROPIEDADES ──────────────────────────────────────────────────────
+function abrirEditorPropiedad(pid) {
+  // Limpiar form
+  ['prop-titulo','prop-zona','prop-precio','prop-dormitorios','prop-banios',
+   'prop-mcubiertos','prop-mterreno','prop-direccion','prop-maps',
+   'prop-descripcion','prop-imagen'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('prop-tipo').value = '';
+  document.getElementById('prop-operacion').value = '';
+  document.getElementById('prop-disponible').value = '✅ Disponible';
+  document.getElementById('prop-moneda').value = 'USD';
+  document.getElementById('prop-presupuesto').value = '';
+  document.getElementById('prop-imagen-preview').innerHTML = '';
+  document.getElementById('prop-imagen-status').textContent = '';
+  document.getElementById('prop-imagen-file').value = '';
+
+  const btnEliminar = document.getElementById('prop-btn-eliminar');
+
+  if (pid) {
+    // Editar — cargar datos
+    const p = _cachedProps.find(x => (x.id || x.ID || '') == pid);
+    if (p) {
+      document.getElementById('propTitulo').textContent = 'Editar propiedad';
+      document.getElementById('prop-id').value = pid;
+      document.getElementById('prop-titulo').value = p.Titulo || p.titulo || p.Nombre || '';
+      document.getElementById('prop-tipo').value = p.Tipo || p.tipo || '';
+      document.getElementById('prop-operacion').value = p.Operacion || p.operacion || '';
+      document.getElementById('prop-zona').value = p.Zona || p.zona || '';
+      document.getElementById('prop-disponible').value = p.Disponible || p.disponible || '✅ Disponible';
+      document.getElementById('prop-precio').value = p.Precio || p.precio || '';
+      document.getElementById('prop-moneda').value = p.Moneda || p.moneda || 'USD';
+      document.getElementById('prop-presupuesto').value = p.Presupuesto || p.presupuesto || '';
+      document.getElementById('prop-dormitorios').value = p.Dormitorios || p.dormitorios || '';
+      document.getElementById('prop-banios').value = p.Banios || p.banios || '';
+      document.getElementById('prop-mcubiertos').value = p.Metros_Cubiertos || p.metros_cubiertos || '';
+      document.getElementById('prop-mterreno').value = p.Metros_Terreno || p.metros_terreno || '';
+      document.getElementById('prop-direccion').value = p.Direccion || p.direccion || '';
+      document.getElementById('prop-maps').value = p.Maps || p.maps_url || p.Google_Maps_URL || '';
+      document.getElementById('prop-descripcion').value = p.Descripcion || p.descripcion || '';
+      let img = p.Imagen || p.imagen_url || '';
+      if (Array.isArray(img)) img = img[0]?.url || '';
+      document.getElementById('prop-imagen').value = img;
+      if (img) document.getElementById('prop-imagen-preview').innerHTML = `<img src="${img}" style="max-width:200px;border-radius:8px">`;
+    }
+    btnEliminar.style.display = '';
+  } else {
+    // Nuevo
+    document.getElementById('propTitulo').textContent = 'Nueva propiedad';
+    document.getElementById('prop-id').value = '';
+    btnEliminar.style.display = 'none';
+  }
+  openModal('modalPropiedad');
+}
+
+async function subirImagenPropiedad(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('prop-imagen-status');
+  status.textContent = '⏳ Subiendo...';
+  status.style.color = 'var(--yellow)';
+  try {
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+    const r = await fetch(`${API_BASE}/crm/upload-imagen`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({image: base64}),
+    });
+    const data = await r.json();
+    if (data.status === 'ok' && data.url) {
+      document.getElementById('prop-imagen').value = data.url;
+      document.getElementById('prop-imagen-preview').innerHTML = `<img src="${data.url}" style="max-width:200px;border-radius:8px">`;
+      status.textContent = '✅ Subida';
+      status.style.color = 'var(--green)';
+    } else {
+      status.textContent = '❌ Error';
+      status.style.color = 'var(--red)';
+    }
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+}
+
+async function guardarPropiedad() {
+  const pid = document.getElementById('prop-id').value;
+  const fields = {
+    Titulo: document.getElementById('prop-titulo').value,
+    Tipo: document.getElementById('prop-tipo').value,
+    Operacion: document.getElementById('prop-operacion').value,
+    Zona: document.getElementById('prop-zona').value,
+    Disponible: document.getElementById('prop-disponible').value,
+    Precio: parseFloat(document.getElementById('prop-precio').value) || null,
+    Moneda: document.getElementById('prop-moneda').value,
+    Presupuesto: document.getElementById('prop-presupuesto').value,
+    Dormitorios: parseInt(document.getElementById('prop-dormitorios').value) || null,
+    Banios: parseInt(document.getElementById('prop-banios').value) || null,
+    Metros_Cubiertos: parseFloat(document.getElementById('prop-mcubiertos').value) || null,
+    Metros_Terreno: parseFloat(document.getElementById('prop-mterreno').value) || null,
+    Direccion: document.getElementById('prop-direccion').value,
+    Maps: document.getElementById('prop-maps').value,
+    Descripcion: document.getElementById('prop-descripcion').value,
+    Imagen: document.getElementById('prop-imagen').value,
+  };
+  try {
+    const url = pid ? `${API_BASE}/crm/propiedades/${pid}` : `${API_BASE}/crm/propiedades`;
+    const method = pid ? 'PATCH' : 'POST';
+    const r = await fetch(url, {
+      method,
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({fields}),
+    });
+    if (r.ok) {
+      closeModal('modalPropiedad');
+      showNotif(pid ? '✅ Propiedad actualizada' : '✅ Propiedad creada', fields.Titulo);
+      renderProps();
+    } else {
+      showNotif('❌ Error', await r.text());
+    }
+  } catch (e) {
+    showNotif('❌ Error', e.message);
+  }
+}
+
+async function eliminarPropiedad(pid, titulo) {
+  if (!confirm(`¿Eliminar "${titulo}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    const r = await fetch(`${API_BASE}/crm/propiedades/${pid}`, {method: 'DELETE'});
+    if (r.ok) {
+      showNotif('✅ Propiedad eliminada', titulo);
+      renderProps();
+    } else {
+      showNotif('❌ Error', await r.text());
+    }
+  } catch (e) {
+    showNotif('❌ Error', e.message);
+  }
+}
+
+async function eliminarPropiedadDesdeModal() {
+  const pid = document.getElementById('prop-id').value;
+  const titulo = document.getElementById('prop-titulo').value;
+  if (!pid) return;
+  if (!confirm(`¿Eliminar "${titulo}"?`)) return;
+  try {
+    const r = await fetch(`${API_BASE}/crm/propiedades/${pid}`, {method: 'DELETE'});
+    if (r.ok) {
+      closeModal('modalPropiedad');
+      showNotif('✅ Propiedad eliminada', titulo);
+      renderProps();
+    } else {
+      showNotif('❌ Error', await r.text());
+    }
+  } catch (e) {
+    showNotif('❌ Error', e.message);
+  }
+}
 
 function _renderModalProp(titulo, zona, precio, moneda, tipo, operacion, disponible, desc, dorms, metros, metrosTerr, imgUrl, mapsUrl, videoUrl) {
   const precioStr = precio ? `${moneda === 'ARS' ? '$' : 'USD '}${Number(precio).toLocaleString('es-AR')}` : 'Consultar';
@@ -2910,6 +3397,64 @@ function actualizarPreview() {
   });
 });
 
+async function cambiarPin() {
+  const fb = document.getElementById('cfg-pin-feedback');
+  const actual = document.getElementById('cfg-pin-actual').value;
+  const nuevo = document.getElementById('cfg-pin-nuevo').value;
+  const confirmar = document.getElementById('cfg-pin-confirmar').value;
+
+  fb.textContent = '';
+  fb.style.color = '';
+
+  if (!actual || !nuevo || !confirmar) {
+    fb.textContent = '⚠️ Completá todos los campos';
+    fb.style.color = '#fbbf24';
+    return;
+  }
+  if (nuevo.length !== 4 || !/^\d{4}$/.test(nuevo)) {
+    fb.textContent = '⚠️ El PIN debe ser de 4 dígitos numéricos';
+    fb.style.color = '#fbbf24';
+    return;
+  }
+  if (nuevo !== confirmar) {
+    fb.textContent = '⚠️ Los PINs nuevos no coinciden';
+    fb.style.color = '#fbbf24';
+    return;
+  }
+  if (actual === nuevo) {
+    fb.textContent = '⚠️ El PIN nuevo debe ser diferente al actual';
+    fb.style.color = '#fbbf24';
+    return;
+  }
+
+  try {
+    fb.textContent = '⏳ Cambiando PIN...';
+    fb.style.color = '#8b92a5';
+    const r = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}/pin`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin_actual: actual, pin_nuevo: nuevo }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await r.json();
+    if (r.ok) {
+      fb.textContent = '✅ PIN actualizado correctamente';
+      fb.style.color = '#34d399';
+      document.getElementById('cfg-pin-actual').value = '';
+      document.getElementById('cfg-pin-nuevo').value = '';
+      document.getElementById('cfg-pin-confirmar').value = '';
+      // Limpiar sesión para que use el nuevo PIN
+      sessionStorage.removeItem(`crm_token_${TENANT_SLUG}`);
+    } else {
+      fb.textContent = `❌ ${data.detail || 'Error al cambiar PIN'}`;
+      fb.style.color = '#f87171';
+    }
+  } catch(e) {
+    fb.textContent = '❌ Error de conexión';
+    fb.style.color = '#f87171';
+  }
+}
+
 async function guardarMarca() {
   const fb = document.getElementById('cfg-feedback');
   const btn = document.getElementById('btnGuardarMarca');
@@ -3159,15 +3704,5 @@ initTenant().then(ok => {
   checkVersion();
 });
 </script>
-
-<!-- Chart.js + JS paneles CRM Completo -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="/dev/js/_crm-helpers.js"></script>
-<script src="/dev/js/panel-asesores.js"></script>
-<script src="/dev/js/panel-propietarios.js"></script>
-<script src="/dev/js/panel-loteos.js"></script>
-<script src="/dev/js/panel-contratos.js"></script>
-<script src="/dev/js/panel-visitas.js"></script>
-<script src="/dev/js/panel-reportes.js"></script>
 </body>
 </html>
