@@ -1750,6 +1750,10 @@ const CRM_VERSION = '1.2.0-dev';
 const CRM_VERSION_KEY = 'crm_version_dismissed';
 
 async function checkVersion() {
+  // No mostrar banner en DEV — solo en producción
+  if (CRM_VERSION.includes('-dev') || location.pathname.includes('/dev/')) {
+    return;
+  }
   try {
     const res = await fetch(`${SAAS_API}/crm/version`, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return;
