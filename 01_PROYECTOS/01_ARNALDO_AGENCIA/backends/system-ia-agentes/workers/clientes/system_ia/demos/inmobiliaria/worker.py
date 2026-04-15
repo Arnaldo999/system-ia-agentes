@@ -461,7 +461,7 @@ def _gemini(prompt: str) -> str:
         return ""
     try:
         resp = _gemini_client.models.generate_content(
-            model="gemini-2.5-flash-lite", contents=prompt)
+            model="gemini-2.5-flash", contents=prompt)
         return resp.text.strip()
     except Exception as e:
         print(f"[MICA-GEMINI] Error: {e}")
