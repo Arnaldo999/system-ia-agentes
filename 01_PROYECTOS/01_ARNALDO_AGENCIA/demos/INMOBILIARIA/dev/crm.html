@@ -71,8 +71,8 @@ tailwind.config = {
     .main { @apply flex-1 overflow-y-auto p-5 md:px-6; }
 
     /* ── PANELS ── */
-    .panel { @apply hidden; }
-    .panel.active { @apply block; }
+    .panel { display: none !important; }
+    .panel.active { display: block !important; }
 
     /* ── KPIs ── */
     .kpis { @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-5; }
@@ -1539,11 +1539,9 @@ let activeChat = 0;
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function nav(id, el) {
-  document.querySelectorAll('.panel').forEach(p=>{ p.classList.remove('active'); p.classList.add('hidden'); });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const target = document.getElementById('panel-'+id);
-  target.classList.remove('hidden');
-  target.classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
   if(el) el.classList.add('active');
   if(id==='chat') renderResumenes();
   if(id==='leads') renderLeads();
