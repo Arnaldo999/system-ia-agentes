@@ -449,7 +449,6 @@ tailwind.config = {
           <div class="sh-title">Bienvenido, Arnaldo 👋</div>
           <div class="sh-sub">Tu bot atendió <strong style="color:var(--green)">3 leads</strong> mientras estabas fuera. Hoy vas bien.</div>
         </div>
-        <button class="btn btn-primary" onclick="simLead()">⚡ Simular lead nuevo</button>
       </div>
 
       <!-- KPIs -->
@@ -585,7 +584,6 @@ tailwind.config = {
           <div class="sh-sub">Todos tus leads ordenados por etapa — el bot mueve los contactados automáticamente</div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-green" onclick="simLead()">⚡ Simular lead nuevo</button>
           <button class="btn btn-primary" onclick="openModal('modalNuevo')">+ Agregar lead</button>
         </div>
       </div>
@@ -2228,7 +2226,7 @@ async function guardarEstado(id) {
 }
 
 // ── VERSIONADO ──────────────────────────────────────────────────────────────
-const CRM_VERSION = '1.1.1-dev';
+const CRM_VERSION = '1.2.0-dev';
 const CRM_VERSION_KEY = 'crm_version_dismissed';
 
 async function checkVersion() {
@@ -2267,7 +2265,7 @@ function dismissUpdate(version) {
 }
 
 // ── MULTI-TENANT + LOGIN ─────────────────────────────────────────────────────
-const SAAS_API = 'https://agentes.arnaldoayalaestratega.cloud';
+const SAAS_API = 'https://agentes.lovbot.ai';
 let API_BASE = `${SAAS_API}/demos/inmobiliaria`; // fallback
 let TENANT_SLUG = 'demo';
 let pinBuffer = '';
@@ -3156,7 +3154,6 @@ function previewForm(type) {
 // ── AUTO NOTIFS ─────────────────────────────────────────────────────────────
 setTimeout(()=>showNotif('🔥 Lead caliente detectado','Carlos M. respondió todas las preguntas de calificación. ¡Listo para cita!'),5000);
 setTimeout(()=>showNotif('📅 Cita agendada automáticamente','Carla R. eligió slot Vie 4 Abr 11:00 AM sin intervención tuya'),22000);
-setTimeout(()=>simLead(),40000);
 
 // ── BUSCADOR GLOBAL ──────────────────────────────────────────────────────────
 function buscarGlobal(q) {
