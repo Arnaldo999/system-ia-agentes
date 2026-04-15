@@ -62,6 +62,12 @@ CAL_EVENT_ID   = os.environ.get("MICA_DEMO_CAL_EVENT_ID", "")
 _zonas_raw = os.environ.get("MICA_DEMO_ZONAS", "Zona Norte,Zona Sur,Zona Centro")
 ZONAS_LIST = [z.strip() for z in _zonas_raw.split(",") if z.strip()]
 
+# ─── CHATWOOT (Mica) ──────────────────────────────────────────────────────────
+CHATWOOT_URL        = os.environ.get("MICA_CHATWOOT_URL", "").rstrip("/")
+CHATWOOT_API_TOKEN  = os.environ.get("MICA_CHATWOOT_API_TOKEN", "")
+CHATWOOT_ACCOUNT_ID = int(os.environ.get("MICA_CHATWOOT_ACCOUNT_ID", "1"))
+CHATWOOT_INBOX_ID   = int(os.environ.get("MICA_CHATWOOT_INBOX_ID", "2"))
+
 _gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 router = APIRouter(prefix="/mica/demos/inmobiliaria", tags=["Mica — Demo Inmobiliaria"])
@@ -145,6 +151,177 @@ def _cargar_sesion_mica(telefono: str) -> None:
                 HISTORIAL[tel] = historial
     except Exception as e:
         print(f"[MICA-SESSION] Error carga: {e}")
+
+# ─── CHATWOOT BRIDGE ─────────────────────────────────────────────────────────
+
+def _chatwoot_headers():
+    return {"api_access_token": CHATWOOT_API_TOKEN, "Content-Type": "application/json"}
+
+
+def _chatwoot_buscar_contacto(telefono: str) -> dict | None:
+    """Busca un contacto en Chatwoot por teléfono."""
+    if not CHATWOOT_API_TOKEN:
+        return None
+    tel = "+" + re.sub(r'\D', '', telefono)
+    try:
+        r = requests.get(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts/search",
+            headers=_chatwoot_headers(),
+            params={"q": tel, "include_contacts": True},
+            timeout=8,
+        )
+        if r.status_code == 200:
+            contacts = r.json().get("payload", [])
+            for c in contacts:
+                if c.get("phone_number", "").replace(" ", "") == tel:
+                    return c
+    except Exception as e:
+        print(f"[MICA-CHATWOOT] Error buscando contacto: {e}")
+    return None
+
+
+def _chatwoot_buscar_conversacion(contacto_id: int) -> dict | None:
+    """Busca conversación abierta del contacto en inbox Mica."""
+    if not CHATWOOT_API_TOKEN:
+        return None
+    try:
+        r = requests.get(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts/{contacto_id}/conversations",
+            headers=_chatwoot_headers(),
+            timeout=8,
+        )
+        if r.status_code == 200:
+            convs = r.json().get("payload", [])
+            for c in convs:
+                if c.get("inbox_id") == CHATWOOT_INBOX_ID and c.get("status") == "open":
+                    return c
+    except Exception as e:
+        print(f"[MICA-CHATWOOT] Error buscando conversación: {e}")
+    return None
+
+
+def _chatwoot_escalar(telefono: str, sesion: dict, calificacion: dict = None):
+    """Escala conversación a Chatwoot: añade label atiende-humano + nota privada."""
+    if not CHATWOOT_API_TOKEN:
+        return
+
+    contacto = _chatwoot_buscar_contacto(telefono)
+    if not contacto:
+        print(f"[MICA-CHATWOOT] Contacto no encontrado para {telefono}")
+        return
+
+    contacto_id = contacto.get("id")
+    conv = _chatwoot_buscar_conversacion(contacto_id)
+    if not conv:
+        print(f"[MICA-CHATWOOT] Sin conversación abierta para contacto {contacto_id}")
+        return
+
+    conv_id = conv.get("id")
+    nombre = sesion.get("nombre", "")
+    score = calificacion.get("score", "?") if calificacion else "?"
+    nota = calificacion.get("nota_para_asesor", "") if calificacion else ""
+    tel = re.sub(r'\D', '', telefono)
+    hist = HISTORIAL.get(tel, [])
+    historial_texto = "\n".join(hist[-10:]) if hist else "Sin historial"
+
+    try:
+        labels = conv.get("labels", [])
+        if "atiende-humano" not in labels:
+            labels.append("atiende-humano")
+        if "atiende-agenteai" in labels:
+            labels.remove("atiende-agenteai")
+        for s in ("caliente", "tibio", "frio"):
+            if s in labels:
+                labels.remove(s)
+        if score in ("caliente", "tibio", "frio"):
+            labels.append(score)
+        if "automatizacion" not in labels:
+            labels.append("automatizacion")
+
+        requests.post(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/labels",
+            headers=_chatwoot_headers(),
+            json={"labels": labels},
+            timeout=8,
+        )
+
+        nota_asesor = (
+            f"🤖 Bot escaló esta conversación al asesor\n\n"
+            f"👤 Nombre: {nombre}\n"
+            f"📊 Score: {score.upper()}\n"
+            f"📝 Nota: {nota}\n\n"
+            f"💬 Últimos mensajes:\n{historial_texto}"
+        )
+        requests.post(
+            f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/messages",
+            headers=_chatwoot_headers(),
+            json={"content": nota_asesor, "message_type": "activity", "private": True},
+            timeout=8,
+        )
+        print(f"[MICA-CHATWOOT] Escalado conv {conv_id} — label atiende-humano + nota privada")
+    except Exception as e:
+        print(f"[MICA-CHATWOOT] Error escalando: {e}")
+
+
+# ─── PAUSA BOT (cuando asesor interviene) ────────────────────────────────────
+LEADS_PAUSADOS: dict[str, float] = {}
+PAUSA_TIMEOUT_HORAS = 4
+
+
+def pausar_bot(telefono: str):
+    import time
+    LEADS_PAUSADOS[re.sub(r'\D', '', telefono)] = time.time()
+
+
+def despausar_bot(telefono: str):
+    LEADS_PAUSADOS.pop(re.sub(r'\D', '', telefono), None)
+
+
+def bot_pausado(telefono: str) -> bool:
+    import time
+    tel = re.sub(r'\D', '', telefono)
+    if tel not in LEADS_PAUSADOS:
+        return False
+    elapsed = time.time() - LEADS_PAUSADOS[tel]
+    if elapsed > PAUSA_TIMEOUT_HORAS * 3600:
+        LEADS_PAUSADOS.pop(tel, None)
+        return False
+    return True
+
+
+# ─── CHATWOOT MIRROR ─────────────────────────────────────────────────────────
+def _cw_mirror_msg(telefono: str, contenido: str, es_bot: bool) -> None:
+    """
+    Espeja un mensaje en Chatwoot para visibilidad del asesor.
+    es_bot=True → private=True para que Chatwoot NO reenvíe por WhatsApp
+    (evita duplicados: el bot ya lo envió por Evolution API).
+    """
+    if not CHATWOOT_API_TOKEN or not contenido.strip():
+        return
+
+    def _enviar():
+        try:
+            contacto = _chatwoot_buscar_contacto(telefono)
+            if not contacto:
+                return
+            conv = _chatwoot_buscar_conversacion(contacto["id"])
+            if not conv:
+                return
+            conv_id = conv["id"]
+            private = es_bot  # candado: bot msgs son privados para no reenviar
+            msg_type = "outgoing" if es_bot else "incoming"
+            requests.post(
+                f"{CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conv_id}/messages",
+                headers=_chatwoot_headers(),
+                json={"content": contenido, "message_type": msg_type, "private": private},
+                timeout=8,
+            )
+            print(f"[MICA-CW-MIRROR] {'🤖 bot (privado)' if es_bot else '👤 lead'} → conv {conv_id}")
+        except Exception as e:
+            print(f"[MICA-CW-MIRROR] Error: {e}")
+
+    threading.Thread(target=_enviar, daemon=True).start()
+
 
 # ─── WHISPER — TRANSCRIPCIÓN DE AUDIO (Evolution API) ────────────────────────
 def _transcribir_audio(data: dict, message: dict) -> str:
@@ -269,7 +446,10 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
         )
         if r.status_code not in (200, 201):
             print(f"[MICA-EVO] Error {r.status_code}: {r.text[:300]}")
-        return r.status_code in (200, 201)
+        ok = r.status_code in (200, 201)
+        if ok:
+            _cw_mirror_msg(telefono, mensaje, es_bot=True)
+        return ok
     except Exception as e:
         print(f"[MICA-EVO] Excepción: {e}")
         return False
@@ -1092,6 +1272,11 @@ def _procesar(telefono: str, texto: str) -> None:
     texto = texto.strip()
     texto_lower = texto.lower()
 
+    # Si el asesor tomó control, el bot NO responde
+    if bot_pausado(telefono):
+        print(f"[MICA] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
+        return
+
     # ── Restaurar sesión desde PostgreSQL si no está en RAM (post-deploy) ──────
     if telefono not in SESIONES:
         _cargar_sesion_mica(telefono)
@@ -1101,8 +1286,9 @@ def _procesar(telefono: str, texto: str) -> None:
     nombre = sesion.get("nombre", "")
     nombre_corto = nombre.split()[0] if nombre else ""
 
-    # Registrar en historial
+    # Registrar en historial + espejo Chatwoot (incoming)
     _agregar_historial(telefono, "Lead", texto)
+    _cw_mirror_msg(telefono, texto, es_bot=False)
 
     # Comando # → asesor inmediato
     if texto_lower == "#":
@@ -1348,6 +1534,7 @@ def _procesar(telefono: str, texto: str) -> None:
             sesion_nueva.get("ciudad_resp", CIUDAD), sesion_nueva.get("subniche",""),
         ), daemon=True).start()
         threading.Thread(target=_notificar_asesor, args=(telefono, sesion_nueva, calificacion), daemon=True).start()
+        threading.Thread(target=_chatwoot_escalar, args=(telefono, sesion_nueva, calificacion), daemon=True).start()
 
         if derivar or score == "frio":
             web_line = f"🌐 *{SITIO_WEB}*\n\n" if SITIO_WEB else ""
@@ -1453,7 +1640,69 @@ def _ir_asesor(telefono: str, sesion: dict) -> None:
         asesor=NOMBRE_ASESOR,
         empresa=NOMBRE_EMPRESA,
     ))
+    # Escalar a Chatwoot (label atiende-humano + nota privada con contexto)
+    threading.Thread(target=_chatwoot_escalar, args=(telefono, sesion), daemon=True).start()
+    # Pausar bot — asesor tomó control
+    pausar_bot(telefono)
     SESIONES.pop(telefono, None)
+
+
+# ─── ENDPOINTS DE CONTROL BOT ────────────────────────────────────────────────
+
+@router.post("/bot/pausar/{telefono}")
+async def api_pausar_bot(telefono: str):
+    """Pausa el bot para un lead — asesor toma control."""
+    pausar_bot(telefono)
+    return {"status": "ok", "telefono": telefono, "bot_pausado": True}
+
+
+@router.post("/bot/despausar/{telefono}")
+async def api_despausar_bot(telefono: str):
+    """Reactiva el bot para un lead — asesor terminó."""
+    despausar_bot(telefono)
+    return {"status": "ok", "telefono": telefono, "bot_pausado": False}
+
+
+@router.get("/bot/estado/{telefono}")
+async def api_estado_bot(telefono: str):
+    """Consulta si el bot está pausado para un lead."""
+    return {"telefono": telefono, "bot_pausado": bot_pausado(telefono)}
+
+
+@router.post("/chatwoot/webhook")
+async def chatwoot_webhook(request: Request):
+    """Recibe eventos de Chatwoot para pausa/retoma del bot."""
+    try:
+        data = await request.json()
+    except Exception:
+        return {"status": "ignored"}
+
+    event = data.get("event", "")
+
+    # Cuando el asesor resuelve la conversación → despausar bot
+    if event == "conversation_resolved":
+        contact = data.get("meta", {}).get("sender", {})
+        phone = contact.get("phone_number", "")
+        if phone:
+            despausar_bot(phone)
+            print(f"[MICA-CHATWOOT-WEBHOOK] Conversación resuelta — bot despausado para {phone}")
+
+    # Cuando se asigna label atiende-humano → pausar bot
+    elif event == "conversation_updated":
+        labels = data.get("labels", [])
+        contact = data.get("meta", {}).get("sender", {})
+        phone = contact.get("phone_number", "")
+
+        if "atiende-humano" in labels:
+            if phone:
+                pausar_bot(phone)
+                print(f"[MICA-CHATWOOT-WEBHOOK] Label atiende-humano — bot pausado para {phone}")
+        elif "atiende-agenteai" in labels:
+            if phone:
+                despausar_bot(phone)
+                print(f"[MICA-CHATWOOT-WEBHOOK] Label atiende-agenteai — bot despausado para {phone}")
+
+    return {"status": "ok"}
 
 
 # ─── ENDPOINT WEBHOOK ─────────────────────────────────────────────────────────
