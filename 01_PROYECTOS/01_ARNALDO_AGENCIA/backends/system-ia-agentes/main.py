@@ -473,6 +473,16 @@ async def admin_setup_audit_columns():
         import psycopg2
         dsn = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
         if not dsn:
+            # Fallback: usar LOVBOT_PG_* si estamos en el VPS de Robert
+            pg_host = os.environ.get("LOVBOT_PG_HOST")
+            if pg_host:
+                dsn = (
+                    f"host={pg_host} port={os.environ.get('LOVBOT_PG_PORT','5432')} "
+                    f"dbname={os.environ.get('LOVBOT_PG_DB','lovbot_crm')} "
+                    f"user={os.environ.get('LOVBOT_PG_USER','lovbot')} "
+                    f"password={os.environ.get('LOVBOT_PG_PASS','')}"
+                )
+        if not dsn:
             return {"ok": False, "error": "DATABASE_URL no configurado"}
         conn = psycopg2.connect(dsn)
         cur = conn.cursor()
