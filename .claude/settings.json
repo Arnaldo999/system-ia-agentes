@@ -432,7 +432,19 @@
       "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/crm/leads\")",
       "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/crm/propiedades\")",
       "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/debug/errors?limit=3\")",
-      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/openapi.json\")"
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/openapi.json\")",
+      "Bash(curl -s \"https://agentes.lovbot.ai/docs\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://agentes.lovbot.ai/admin/setup-audit-columns\")",
+      "Bash(curl -s \"https://agentes.lovbot.ai/admin/setup-audit-columns\")",
+      "Bash(curl -s \"https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/crm/metricas\")",
+      "Bash(find \"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/memory\" -type f -name \"*.md\" -exec grep -l \"COOLIFY.*LOVBOT\\\\|LOVBOT.*TOKEN\\\\|coolify.lovbot\" {} \\\\;)",
+      "Bash(python -m py_compile \"01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/workers/clientes/system_ia/demos/inmobiliaria/worker.py\")",
+      "Bash(ls /home/arna/.env*)",
+      "Bash(curl -sS -X GET 'https://coolify.arnaldoayalaestratega.cloud/api/v1/deploy?uuid=ygjvl9byac1x99laqj4ky1b5&force=true' -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615')",
+      "Bash(curl -s -X POST https://coolify.arnaldoayalaestratega.cloud/api/v1/applications/ygjvl9byac1x99laqj4ky1b5/redeploy -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615' -H 'Content-Type: application/json')",
+      "Bash(curl -s -X POST 'https://coolify.arnaldoayalaestratega.cloud/api/v1/deploy?uuid=ygjvl9byac1x99laqj4ky1b5&force=false' -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615' -H 'Content-Type: application/json')",
+      "Bash(curl -s https://coolify.arnaldoayalaestratega.cloud/api/v1/deployments/o12ygty0p5bpvrx1zn1hit4v -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615')",
+      "Bash(curl -s \"https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/crm/propiedades\")"
     ],
     "deny": [
       "Edit(**/demos/SYSTEM-IA/crm.html)",

@@ -190,10 +190,28 @@ tailwind.config = {
     .props-grid { @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5; }
     .pcard { @apply bg-surface border border-brd rounded-xl overflow-hidden transition-all cursor-pointer hover:-translate-y-[3px] hover:border-accent; }
     .pcard-img { @apply h-[130px] flex items-center justify-center text-[46px] relative; background:linear-gradient(135deg,#1a2a4a,#2a1a4a); }
-    .pcard-status { @apply absolute top-2 right-2 text-[11px] px-2.5 py-[3px] rounded-lg font-semibold; }
+    .pcard-status { @apply absolute top-2 right-2 text-[11px] px-2.5 py-[3px] rounded-lg font-semibold cursor-pointer select-none; transition:filter .15s; }
+    .pcard-status:hover { filter: brightness(1.25); }
     .ps-disp { @apply bg-[#064e3b] text-[#34d399]; }
-    .ps-res { @apply bg-[#451a03] text-[#fbbf24]; }
+    .ps-res  { @apply bg-[#451a03] text-[#fbbf24]; }
     .ps-vend { @apply bg-[#3d0d0d] text-[#f87171]; }
+    /* Dropdown disponibilidad inline */
+    .disp-dropdown {
+      position:absolute; top:calc(100% + 4px); right:0; z-index:50;
+      background:#1a2235; border:1px solid #334155; border-radius:10px;
+      overflow:hidden; min-width:155px; box-shadow:0 8px 24px rgba(0,0,0,.5);
+      animation: fadeInDown .12s ease;
+    }
+    @keyframes fadeInDown { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+    .disp-opt {
+      display:flex; align-items:center; gap:8px; padding:9px 14px;
+      font-size:12px; font-weight:600; cursor:pointer; transition:background .12s;
+    }
+    .disp-opt:hover { background:#243044; }
+    .disp-opt .disp-icon { font-size:15px; }
+    .disp-opt.opt-disp { color:#34d399; }
+    .disp-opt.opt-res  { color:#fbbf24; }
+    .disp-opt.opt-vend { color:#f87171; }
     .pcard-body { @apply p-3; }
     .pcard-title { @apply font-semibold text-[13px] mb-[3px]; }
     .pcard-loc { @apply text-txt-2 text-xs mb-[7px]; }
@@ -2307,15 +2325,25 @@ async function renderProps() {
       if(tipo) specs.push(tipo);
       if(operacion) specs.push(operacion);
 
-      // Imagen o emoji fallback
-      const imgContent = imgUrl
-        ? `<img src="${imgUrl}" alt="${titulo}" style="width:100%;height:100%;object-fit:cover;border-radius:0" onerror="this.parentElement.innerHTML='🏠'">`
-        : '🏠';
+      // Imagen: siempre hay emoji de fondo; la img va encima absoluta y si falla se oculta sola
+      const imgTag = imgUrl
+        ? `<img src="${imgUrl}" alt="${titulo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0" onerror="this.style.display='none'">`
+        : '';
 
       const pid = p.id || p.ID || '';
       g.innerHTML += `
         <div class="pcard" onclick="verDetalleProp('${pid}')" style="cursor:pointer">
-          <div class="pcard-img" style="${imgUrl?'padding:0;overflow:hidden':''}">${imgContent}<span class="pcard-status ${sc}">${sl}</span></div>
+          <div class="pcard-img" style="position:relative;overflow:hidden">
+            🏠${imgTag}
+            <div class="pcard-status ${sc}" id="badge-${pid}" onclick="event.stopPropagation();toggleDispDropdown('${pid}','${sc}',this)" style="position:absolute;top:8px;right:8px">
+              <span id="lbl-${pid}">${sl}</span> ▾
+              <div class="disp-dropdown" id="dd-${pid}" style="display:none" onclick="event.stopPropagation()">
+                <div class="disp-opt opt-disp" onclick="cambiarDisponibilidad('${pid}','✅ Disponible',this)"><span class="disp-icon">✅</span> Disponible</div>
+                <div class="disp-opt opt-res"  onclick="cambiarDisponibilidad('${pid}','⏳ Reservado',this)"><span class="disp-icon">⏳</span> Reservado</div>
+                <div class="disp-opt opt-vend" onclick="cambiarDisponibilidad('${pid}','❌ No disponible',this)"><span class="disp-icon">❌</span> No disponible</div>
+              </div>
+            </div>
+          </div>
           <div class="pcard-body">
             <div class="pcard-title">${titulo}</div>
             ${zona ? `<div class="pcard-loc">📍 ${zona}</div>` : ''}
@@ -2358,6 +2386,96 @@ async function renderProps() {
           </div>
         </div>`;
     });
+  }
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────────
+let _toastTimer = null;
+function mostrarToast(msg, tipo = 'ok') {
+  let el = document.getElementById('_crm_toast');
+  if(!el) {
+    el = document.createElement('div');
+    el.id = '_crm_toast';
+    el.style.cssText = `
+      position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px);
+      padding:10px 20px; border-radius:10px; font-size:13px; font-weight:600;
+      z-index:9999; pointer-events:none; opacity:0;
+      transition: opacity .2s, transform .2s;
+      box-shadow: 0 4px 18px rgba(0,0,0,.5);
+    `;
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = tipo === 'error' ? '#3b0a0a' : '#064e3b';
+  el.style.color      = tipo === 'error' ? '#f87171' : '#34d399';
+  el.style.border     = `1px solid ${tipo === 'error' ? '#5c1a1a' : '#065f46'}`;
+  // Animate in
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(10px)';
+  }, 2500);
+}
+
+// ── DISPONIBILIDAD INLINE ────────────────────────────────────────────────────
+
+function toggleDispDropdown(pid, sc, badgeEl) {
+  // Cerrar cualquier otro dropdown abierto
+  document.querySelectorAll('.disp-dropdown').forEach(d => {
+    if(d.id !== `dd-${pid}`) d.style.display = 'none';
+  });
+  const dd = document.getElementById(`dd-${pid}`);
+  if(!dd) return;
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+// Cerrar dropdowns al hacer click fuera
+document.addEventListener('click', () => {
+  document.querySelectorAll('.disp-dropdown').forEach(d => d.style.display = 'none');
+});
+
+async function cambiarDisponibilidad(pid, nuevoValor, optEl) {
+  // Cerrar dropdown inmediatamente
+  const dd = document.getElementById(`dd-${pid}`);
+  if(dd) dd.style.display = 'none';
+
+  const badge = document.getElementById(`badge-${pid}`);
+  if(!badge) return;
+
+  // Mapear valor → clase CSS y label
+  const map = {
+    '✅ Disponible':   { sc:'ps-disp', label:'Disponible' },
+    '⏳ Reservado':    { sc:'ps-res',  label:'Reservado' },
+    '❌ No disponible':{ sc:'ps-vend', label:'No disponible' },
+  };
+  const meta = map[nuevoValor] || { sc:'ps-vend', label:'No disponible' };
+
+  // Actualizar badge visualmente de inmediato
+  badge.className = `pcard-status ${meta.sc}`;
+  const lbl = document.getElementById(`lbl-${pid}`);
+  if(lbl) lbl.textContent = meta.label;
+
+  // Actualizar cache local
+  const cached = _cachedProps.find(x => (x.id || x.ID || '') == pid);
+  if(cached) { cached.Disponible = nuevoValor; cached.disponible = nuevoValor; }
+
+  // Persistir en backend
+  try {
+    const r = await fetch(`${API_BASE}/crm/propiedades/${pid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Disponible: nuevoValor }),
+    });
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    mostrarToast(`✅ Disponibilidad → ${meta.label}`);
+  } catch(e) {
+    mostrarToast(`❌ Error al guardar: ${e.message}`, 'error');
+    // Revertir visual si falló
+    renderProps();
   }
 }
 
