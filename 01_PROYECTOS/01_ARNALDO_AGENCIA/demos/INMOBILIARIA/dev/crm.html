@@ -2325,9 +2325,10 @@ async function renderProps() {
       if(tipo) specs.push(tipo);
       if(operacion) specs.push(operacion);
 
-      // Imagen: siempre hay emoji de fondo; la img va encima absoluta y si falla se oculta sola
+      // Imagen: siempre hay emoji de fondo; la img va encima absoluta
+      // onerror llama función global sin strings problemáticos dentro del atributo HTML
       const imgTag = imgUrl
-        ? `<img src="${imgUrl}" alt="${titulo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0" onerror="this.style.display='none'">`
+        ? `<img src="${imgUrl}" alt="${titulo}" data-pid="${pid}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0" onerror="_imgErr(this)">`
         : '';
 
       const pid = p.id || p.ID || '';
@@ -2387,6 +2388,14 @@ async function renderProps() {
         </div>`;
     });
   }
+}
+
+// Ocultar imagen rota — función global, sin strings dentro del atributo onerror
+function _imgErr(imgEl) {
+  imgEl.style.display = 'none';
+  // Si el padre solo tenía la img (previews de logo/icono), mostrar emoji fallback
+  const p = imgEl.parentElement;
+  if(p && p.children.length === 1) p.textContent = '🏠';
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
@@ -2670,7 +2679,7 @@ function _renderModalProp(titulo, zona, precio, moneda, tipo, operacion, disponi
   })() : '';
 
   document.getElementById('modalPropBody').innerHTML = `
-    ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:220px;object-fit:cover;border-radius:12px;margin-bottom:16px" onerror="this.style.display='none'">` : ''}
+    ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:220px;object-fit:cover;border-radius:12px;margin-bottom:16px" onerror="_imgErr(this)">` : ''}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
       <h3 style="font-size:18px;font-weight:700;color:#e8eaf0;line-height:1.3">${titulo || 'Sin título'}</h3>
       <span style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}44;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;white-space:nowrap">${badgeLabel}</span>
@@ -3122,7 +3131,7 @@ function aplicarLogo(val) {
   const icon = document.getElementById('topLogoIcon');
   if (!val) return;
   if (val.startsWith('http') || val.startsWith('data:')) {
-    icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+    icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="_imgErr(this)">`;
   } else {
     icon.textContent = val;
   }
@@ -3182,7 +3191,7 @@ function previewLogo(val) {
   const prev = document.getElementById('perfilLogoPreview');
   if (!val) { prev.innerHTML = '🏠'; return; }
   if (val.startsWith('http') || val.startsWith('data:')) {
-    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" onerror="this.parentElement.textContent='🏠'">`;
+    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" onerror="_imgErr(this)">`;
   } else {
     prev.textContent = val;
   }
@@ -3229,7 +3238,7 @@ function previewCfgLogo(url) {
   const el = document.getElementById('cfg-logo-preview');
   const prev = document.getElementById('cfg-prev-logo');
   if (url && (url.startsWith('http') || url.startsWith('data:'))) {
-    const img = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+    const img = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="_imgErr(this)">`;
     el.innerHTML = img;
     prev.innerHTML = img;
   } else {
