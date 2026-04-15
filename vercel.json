@@ -17,6 +17,7 @@
     { "source": "/back-urbanizaciones/formulario", "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/formulario.html" },
     { "source": "/gastronomia",                    "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/GASTRONOMIA/gastronomia.html" },
     { "source": "/system-ia/admin",                "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/admin.html" },
+    { "source": "/system-ia/dev/crm",              "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/crm.html" },
     { "source": "/system-ia/crm",                  "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/crm.html" }
   ]
 }
