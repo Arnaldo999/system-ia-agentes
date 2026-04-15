@@ -2312,8 +2312,8 @@ async function renderProps() {
       }
 
       // Status
-      const isDisp = disponible.includes('Disponible') || disponible.includes('disponible');
       const isRes  = disponible.includes('Reservado') || disponible.includes('reservado');
+      const isDisp = !isRes && (disponible.includes('✅') || (disponible.toLowerCase().includes('disponible') && !disponible.includes('No') && !disponible.includes('no')));
       const sc = isDisp ? 'ps-disp' : isRes ? 'ps-res' : 'ps-vend';
       const sl = isDisp ? 'Disponible' : isRes ? 'Reservado' : 'No disponible';
 
@@ -2659,8 +2659,8 @@ async function eliminarPropiedadDesdeModal() {
 
 function _renderModalProp(titulo, zona, precio, moneda, tipo, operacion, disponible, desc, dorms, metros, metrosTerr, imgUrl, mapsUrl, videoUrl) {
   const precioStr = precio ? `${moneda === 'ARS' ? '$' : 'USD '}${Number(precio).toLocaleString('es-AR')}` : 'Consultar';
-  const isDisp = (disponible||'').toLowerCase().includes('disponible');
   const isRes  = (disponible||'').toLowerCase().includes('reservado');
+  const isDisp = !isRes && (disponible||'').includes('✅');
   const badgeColor = isDisp ? '#00d4aa' : isRes ? '#ffa94d' : '#ff6b6b';
   const badgeLabel = isDisp ? '✅ Disponible' : isRes ? '⏳ Reservado' : '❌ No disponible';
 
