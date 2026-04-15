@@ -1375,7 +1375,6 @@ async function cargarLeads() {
 
     renderLeads();
     renderKanbanFromLeads();
-    cargarMetricas();
   } catch (err) {
     console.warn('[Leads] Usando datos demo:', err.message);
     LEADS = LEADS_FALLBACK;
@@ -1747,7 +1746,7 @@ async function guardarEstado(id) {
 }
 
 // ── VERSIONADO ──────────────────────────────────────────────────────────────
-const CRM_VERSION = '1.1.0';
+const CRM_VERSION = '1.1.1';
 const CRM_VERSION_KEY = 'crm_version_dismissed';
 
 async function checkVersion() {
@@ -1830,6 +1829,7 @@ async function submitPin() {
       document.getElementById('loginScreen').style.display = 'none';
       document.querySelector('.layout') && (document.querySelector('.layout').style.display = ''); nav('inicio', document.querySelector('.nav-item'));
       cargarLeads();
+      cargarMetricas();
       renderProps();
       cargarActivos();
       renderAgenda();
@@ -3049,6 +3049,7 @@ cargarPerfil();
 initTenant().then(ok => {
   if (ok) {
     cargarLeads();
+    cargarMetricas();
     renderProps();
     cargarActivos();
     renderAgenda();
