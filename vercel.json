@@ -3,6 +3,7 @@
     { "source": "/(.*)", "has": [{"type":"host","value":"form.backurbanizaciones.com"}], "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/formulario.html" },
     { "source": "/mapa-publico.html", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}], "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/mapa-publico.html" },
     { "source": "/(.*)", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}],  "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/crm.html" },
+    { "source": "/js/:file",                  "has": [{"type":"host","value":"crm.lovbot.ai"}], "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/js/:file" },
     { "source": "/(.*)", "has": [{"type":"host","value":"crm.lovbot.ai"}],             "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html" },
     { "source": "/crm",                       "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html" },
     { "source": "/dev/crm",                   "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/crm.html" },
