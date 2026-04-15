@@ -30,8 +30,11 @@ Variables de entorno:
 import os
 import re
 import json
+import tempfile
 import threading
 import requests
+import base64 as b64
+from urllib.parse import quote
 from google import genai
 from fastapi import APIRouter, Request
 
@@ -65,6 +68,112 @@ router = APIRouter(prefix="/mica/demos/inmobiliaria", tags=["Mica — Demo Inmob
 
 # ─── SESIONES EN MEMORIA ──────────────────────────────────────────────────────
 SESIONES: dict[str, dict] = {}
+
+# ─── WHISPER — TRANSCRIPCIÓN DE AUDIO (Evolution API) ────────────────────────
+def _transcribir_audio(data: dict, message: dict) -> str:
+    """
+    Transcribe una nota de voz de WhatsApp usando Whisper (OpenAI).
+    Descarga el audio vía Evolution API getBase64FromMediaMessage.
+    Fallback: URL directa con/sin apikey.
+    Retorna el texto transcripto o "" si falla.
+    """
+    import openai as _openai
+
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+    if not openai_key:
+        print("[Whisper-Mica] Sin OPENAI_API_KEY — omitiendo transcripción")
+        return ""
+
+    audio_bytes  = None
+    content_type = ""
+    audio_url    = ""
+
+    MIME_EXT = {
+        "audio/mpeg": ".mp3", "audio/mp3": ".mp3", "audio/mpga": ".mp3",
+        "audio/ogg":  ".ogg", "audio/opus": ".ogg",
+        "audio/wav":  ".wav", "audio/x-wav": ".wav",
+        "audio/mp4":  ".m4a", "audio/m4a": ".m4a",
+        "audio/webm": ".webm", "audio/flac": ".flac",
+    }
+
+    def _ext(ct: str, url: str) -> str:
+        for mime, ext in MIME_EXT.items():
+            if mime in ct.lower(): return ext
+        for ext in [".mp3", ".ogg", ".wav", ".m4a", ".webm", ".flac", ".oga", ".mpga"]:
+            if url.lower().endswith(ext): return ext
+        return ".ogg"  # WhatsApp PTT siempre es OGG/Opus
+
+    # ── Método 0: Evolution getBase64FromMediaMessage (más confiable) ─────
+    try:
+        msg_payload = {"key": data.get("key", {}), "message": message}
+        resp = requests.post(
+            f"{EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/{quote(EVOLUTION_INSTANCE)}",
+            json={"message": msg_payload, "convertToMp4": False},
+            headers={"apikey": EVOLUTION_API_KEY, "Content-Type": "application/json"},
+            timeout=30,
+        )
+        if resp.status_code in (200, 201):
+            b64_data = resp.json().get("base64", "")
+            if b64_data:
+                audio_bytes  = b64.b64decode(b64_data)
+                audio_info   = message.get("audioMessage", message.get("pttMessage", {}))
+                content_type = audio_info.get("mimetype", "audio/ogg")
+                audio_url    = audio_info.get("url", "")
+                print(f"[Whisper-Mica] getBase64 OK — {len(audio_bytes)} bytes — {content_type}")
+            else:
+                print("[Whisper-Mica] getBase64 sin base64 en respuesta")
+        else:
+            print(f"[Whisper-Mica] getBase64 status={resp.status_code}: {resp.text[:200]}")
+    except Exception as e:
+        print(f"[Whisper-Mica] getBase64 FALLÓ: {e}")
+
+    # ── Método 1: URL directa sin auth ────────────────────────────────────
+    if not audio_bytes:
+        audio_info = message.get("audioMessage", message.get("pttMessage", {}))
+        audio_url  = audio_info.get("url", "")
+        if audio_url:
+            try:
+                r = requests.get(audio_url, timeout=15)
+                if r.status_code == 200 and len(r.content) > 100:
+                    audio_bytes  = r.content
+                    content_type = r.headers.get("Content-Type", "audio/ogg")
+                    print(f"[Whisper-Mica] URL directa OK — {len(audio_bytes)} bytes")
+            except Exception as e:
+                print(f"[Whisper-Mica] URL directa FALLÓ: {e}")
+
+    # ── Método 2: URL con apikey ──────────────────────────────────────────
+    if not audio_bytes and audio_url:
+        try:
+            r = requests.get(audio_url, headers={"apikey": EVOLUTION_API_KEY}, timeout=15)
+            if r.status_code == 200 and len(r.content) > 100:
+                audio_bytes  = r.content
+                content_type = r.headers.get("Content-Type", "audio/ogg")
+                print(f"[Whisper-Mica] URL+auth OK — {len(audio_bytes)} bytes")
+        except Exception as e:
+            print(f"[Whisper-Mica] URL+auth FALLÓ: {e}")
+
+    if not audio_bytes:
+        print("[Whisper-Mica] Ningún método obtuvo el audio")
+        return ""
+
+    # ── Transcribir con Whisper ───────────────────────────────────────────
+    ext = _ext(content_type, audio_url)
+    try:
+        cliente = _openai.OpenAI(api_key=openai_key)
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+        with open(tmp_path, "rb") as f:
+            transcripcion = cliente.audio.transcriptions.create(
+                model="whisper-1", file=f, language="es"
+            )
+        os.unlink(tmp_path)
+        texto = transcripcion.text.strip()
+        print(f"[Whisper-Mica] Transcripción: '{texto}'")
+        return texto
+    except Exception as e:
+        print(f"[Whisper-Mica] Error al transcribir: {e}")
+        return ""
 
 AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "application/json"}
 
@@ -1223,7 +1332,19 @@ async def webhook_whatsapp(request: Request):
         texto = message.get("buttonsResponseMessage", {}).get("selectedDisplayText", "")
     elif msg_type == "listResponseMessage":
         texto = message.get("listResponseMessage", {}).get("title", "")
-    elif msg_type in ("imageMessage", "audioMessage", "videoMessage", "documentMessage", "stickerMessage"):
+    elif msg_type in ("audioMessage", "pttMessage"):
+        # Nota de voz → transcribir con Whisper y procesar como texto
+        print(f"[MICA-EVO] Audio recibido de {telefono} — transcribiendo...")
+        texto = _transcribir_audio(data, message)
+        if not texto:
+            # Sin transcripción → avisar al usuario
+            threading.Thread(
+                target=_enviar_texto,
+                args=(telefono, "Recibí tu nota de voz, pero no pude entenderla bien. ¿Podés escribirme? 🙏"),
+                daemon=True,
+            ).start()
+            return {"status": "audio_sin_transcripcion"}
+    elif msg_type in ("imageMessage", "videoMessage", "documentMessage", "stickerMessage"):
         return {"status": "ignored", "reason": f"media: {msg_type}"}
 
     if not telefono or not texto:
