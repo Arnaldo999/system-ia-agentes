@@ -143,6 +143,68 @@ _META_VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "")
 _META_MSG_IDS_PROCESADOS: set[str] = set()  # deduplicación de reintentos Meta
 _META_DEDUP_LOCK = __import__("threading").Lock()  # thread-safe dedup
 
+
+def _transcribir_audio_meta(media_id: str) -> str:
+    """Descarga audio de Meta Graph API y transcribe con Whisper (OpenAI de Robert)."""
+    import requests, tempfile, os as _os
+    token = _os.environ.get("META_ACCESS_TOKEN", "")
+    openai_key = _os.environ.get("LOVBOT_OPENAI_API_KEY", "")
+    if not token or not openai_key:
+        print("[META-AUDIO] Faltan META_ACCESS_TOKEN o LOVBOT_OPENAI_API_KEY")
+        return ""
+    try:
+        # Paso 1: obtener URL del media
+        r = requests.get(
+            f"https://graph.facebook.com/v18.0/{media_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+        if r.status_code != 200:
+            print(f"[META-AUDIO] Error obteniendo URL media: {r.status_code} {r.text[:200]}")
+            return ""
+        media_url = r.json().get("url", "")
+        if not media_url:
+            return ""
+
+        # Paso 2: descargar el audio
+        r2 = requests.get(
+            media_url,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
+        )
+        if r2.status_code != 200:
+            print(f"[META-AUDIO] Error descargando audio: {r2.status_code}")
+            return ""
+
+        # Paso 3: transcribir con Whisper
+        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
+            tmp.write(r2.content)
+            tmp_path = tmp.name
+        try:
+            with open(tmp_path, "rb") as f:
+                resp = requests.post(
+                    "https://api.openai.com/v1/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {openai_key}"},
+                    data={"model": "whisper-1", "language": "es"},
+                    files={"file": ("audio.ogg", f, "audio/ogg")},
+                    timeout=30,
+                )
+            if resp.status_code == 200:
+                texto = resp.json().get("text", "").strip()
+                print(f"[META-AUDIO] Transcripción: '{texto[:80]}'")
+                return texto
+            else:
+                print(f"[META-AUDIO] Whisper error: {resp.status_code} {resp.text[:200]}")
+                return ""
+        finally:
+            try:
+                _os.unlink(tmp_path)
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[META-AUDIO] Excepción: {e}")
+        return ""
+
 @app.get("/meta/webhook", tags=["Meta"])
 async def meta_webhook_verify(request: Request):
     params = dict(request.query_params)
@@ -167,11 +229,35 @@ async def meta_webhook_events(request: Request):
             phone_number_id = value.get("metadata", {}).get("phone_number_id", "")
             for msg in value.get("messages", []):
                 msg_type = msg.get("type", "")
-                # Aceptar text y button (Meta Ads envía button como primer mensaje)
+                # Aceptar text, button y audio (notas de voz)
                 if msg_type == "text":
                     texto = msg.get("text", {}).get("body", "")
                 elif msg_type == "button":
                     texto = msg.get("button", {}).get("text", "") or msg.get("button", {}).get("payload", "")
+                elif msg_type == "audio":
+                    media_id = msg.get("audio", {}).get("id", "")
+                    if not media_id:
+                        continue
+                    texto = _transcribir_audio_meta(media_id)
+                    if not texto:
+                        # No se pudo transcribir — avisarle al usuario
+                        telefono_tmp = msg.get("from", "")
+                        if telefono_tmp:
+                            import requests as _req
+                            _token = os.environ.get("META_ACCESS_TOKEN", "")
+                            _phone_id = os.environ.get("META_PHONE_NUMBER_ID", "")
+                            if _token and _phone_id:
+                                try:
+                                    _req.post(
+                                        f"https://graph.facebook.com/v18.0/{_phone_id}/messages",
+                                        headers={"Authorization": f"Bearer {_token}", "Content-Type": "application/json"},
+                                        json={"messaging_product": "whatsapp", "to": telefono_tmp,
+                                              "type": "text", "text": {"body": "Recibí tu nota de voz, pero no pude entenderla bien. ¿Podés escribirme? 🙏"}},
+                                        timeout=8,
+                                    )
+                                except Exception:
+                                    pass
+                        continue
                 else:
                     continue
 
