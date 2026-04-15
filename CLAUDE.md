@@ -50,12 +50,39 @@ workers/
     lovbot/                     ← clientes Robert (Meta Graph API)
     system-ia/                  ← clientes Mica (Evolution API)
   demos/
-    inmobiliaria/worker.py      ← NUNCA editar, copiar para cliente nuevo
+    inmobiliaria/worker.py      ← SANDBOX DE PRUEBAS — primero acá, después a cliente
     gastronomia/worker.py       ← idem
   social/worker.py              ← comentarios IG/FB + publicación Pillow overlay
 ```
 
-**Regla**: comentarios IG/FB → FastAPI, NO n8n. Nunca compartir workers entre proyectos.
+## 🚨 REGLA IRROMPIBLE — Flujo Demo → Producción
+
+**NUNCA modificar directamente workers en `clientes/`. SIEMPRE primero en `demos/`.**
+
+Flujo obligatorio al implementar cualquier feature nueva:
+1. **Desarrollar en el worker demo** (`workers/demos/inmobiliaria/worker.py` o `gastronomia/worker.py`)
+2. **Probar funcionalidad** en el demo con datos de sandbox
+3. **Cuando esté validado**, **copiar los cambios** al worker del cliente (`workers/clientes/*/`)
+4. **Deploy del cliente** (redeploy Coolify)
+
+Por qué esta regla existe:
+- Los workers de `clientes/` atienden bots con tráfico REAL — un bug afecta conversaciones reales
+- La demo es el **sandbox** donde experimentamos sin riesgo
+- La demo es el **template** que se copia a clientes nuevos
+
+Si un agente IA (incluyéndome a mí) pide modificar algo en `clientes/` sin haber probado en demo,
+el usuario debe detenerme y recordarme esta regla.
+
+**Misma regla aplica al CRM HTML**:
+- Desarrollo: `demos/INMOBILIARIA/dev/crm.html` (sandbox)
+- Producción: `demos/INMOBILIARIA/demo-crm-mvp.html` (nunca editar directo)
+
+**Misma regla aplica a bases de datos**:
+- Cada cliente tiene su propia DB PostgreSQL dedicada (ej: `robert_crm`, `maria_crm`)
+- Demo usa `lovbot_crm` con `tenant_slug='demo'` como sandbox compartido
+- Nunca mezclar datos de cliente con datos de demo
+
+**Regla adicional**: comentarios IG/FB → FastAPI, NO n8n. Nunca compartir workers entre proyectos.
 
 ### Infraestructura
 

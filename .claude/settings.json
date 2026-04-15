@@ -409,15 +409,36 @@
       "Bash(curl -s -X POST https://coolify.arnaldoayalaestratega.cloud/api/v1/applications/ygjvl9byac1x99laqj4ky1b5/envs -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615' -H 'Content-Type: application/json' -d '{\"key\": \"COOLIFY_TOKEN\", \"value\": \"3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615\", \"is_preview\": false}')",
       "Bash(curl -s -X GET https://coolify.arnaldoayalaestratega.cloud/api/v1/servers -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615')",
       "Bash(curl -s -X POST https://coolify.arnaldoayalaestratega.cloud/api/v1/services -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615' -H 'Content-Type: application/json' -d '{:*)",
-      "Bash(curl -s -X GET https://coolify.arnaldoayalaestratega.cloud/api/v1/projects/wo3e9mp1r5s6i3zep7xvuhv1 -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615')"
+      "Bash(curl -s -X GET https://coolify.arnaldoayalaestratega.cloud/api/v1/projects/wo3e9mp1r5s6i3zep7xvuhv1 -H 'Authorization: Bearer 3|9jSOO9gENMQIafTfIMVUg8dcFvXL9UbKQGqsl64fe74c5615')",
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/crm/version\")",
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/health\")",
+      "Bash(cat \"01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/crm.html\")",
+      "Bash(sed -i \"s/const CRM_VERSION = '1.2.0-dev';/const CRM_VERSION = '1.2.0';/\" \"01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html\")",
+      "Bash(curl -sI -m 5 \"https://crm.lovbot.ai/js/panel-loteos.js\")",
+      "Bash(curl -s -m 5 -H \"Origin: https://crm.lovbot.ai\" -I \"https://agentes.lovbot.ai/crm/version\")",
+      "Bash(curl -s -m 5 -H \"Origin: https://crm.lovbot.ai\" -I \"https://agentes.lovbot.ai/tenant/robert\")",
+      "Bash(curl -s -m 5 -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://agentes.lovbot.ai/tenant/robert\")",
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/tenant/robert\")",
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/tenant/demo\")",
+      "Bash(curl -s -m 5 \"https://agentes.arnaldoayalaestratega.cloud/tenant/mica-demo\")",
+      "Bash(curl -s -X POST \"https://coolify.lovbot.ai/api/v1/deploy\" -H \"Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8\" -H \"Content-Type: application/json\" -d '{\"uuid\":\"ywg48w0gswwk0skokow48o8k\",\"force\":true}')",
+      "Bash(curl -s \"https://coolify.lovbot.ai/api/v1/applications/ywg48w0gswwk0skokow48o8k\" -H \"Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8\")",
+      "Bash(curl -s \"https://coolify.lovbot.ai/api/v1/applications/ywg48w0gswwk0skokow48o8k/deployments?per_page=3\" -H \"Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8\")",
+      "Bash(curl -s \"https://coolify.lovbot.ai/api/v1/deployments?per_page=5\" -H \"Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8\")",
+      "Bash(curl -s \"https://coolify.lovbot.ai/api/v1/deployments/bs8ocggggs088sksgkkgooog\" -H \"Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8\")",
+      "Bash(curl -s \"https://agentes.lovbot.ai/debug/errors?limit=1\" -m 10)",
+      "Bash(curl -s -X POST \"https://coolify.lovbot.ai/api/v1/applications/ywg48w0gswwk0skokow48o8k/envs\" -H \"Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8\" -H \"Content-Type: application/json\" -d '{\"key\":\"SUPABASE_URL\",\"value\":\"https://pczrezpmdugdsjrxspjh.supabase.co\",\"is_preview\":false}')",
+      "Bash(curl -s -X POST \"https://coolify.lovbot.ai/api/v1/applications/ywg48w0gswwk0skokow48o8k/envs\" -H \"Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8\" -H \"Content-Type: application/json\" -d '{\"key\":\"SUPABASE_KEY\",\"value\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjenJlenBtZHVnZHNqcnhzcGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzAzNjg5NCwiZXhwIjoyMDgyNjEyODk0fQ.DoRhW9e10ACffio4erVzDwy1Uxa47VxUNXffLVdC49k\",\"is_preview\":false}')",
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/crm/leads\")",
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/crm/propiedades\")",
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/debug/errors?limit=3\")",
+      "Bash(curl -s -m 5 \"https://agentes.lovbot.ai/openapi.json\")"
     ],
-    "additionalDirectories": [
-      "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL",
-      "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA",
-      "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.claude",
-      "/home/arna/.claude/channels/telegram",
-      "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/01_PROYECTOS/01_ARNALDO_AGENCIA/demos",
-      "/tmp"
+    "deny": [
+      "Edit(**/demos/SYSTEM-IA/crm.html)",
+      "Write(**/demos/SYSTEM-IA/crm.html)",
+      "Edit(**/demos/INMOBILIARIA/demo-crm-mvp.html)",
+      "Write(**/demos/INMOBILIARIA/demo-crm-mvp.html)"
     ],
     "ask": [
       "Edit(**/demos/INMOBILIARIA/**)",
@@ -437,11 +458,13 @@
       "Edit(**/workers/clientes/arnaldo/**)",
       "Write(**/workers/clientes/arnaldo/**)"
     ],
-    "deny": [
-      "Edit(**/demos/SYSTEM-IA/crm.html)",
-      "Write(**/demos/SYSTEM-IA/crm.html)",
-      "Edit(**/demos/INMOBILIARIA/demo-crm-mvp.html)",
-      "Write(**/demos/INMOBILIARIA/demo-crm-mvp.html)"
+    "additionalDirectories": [
+      "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL",
+      "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA",
+      "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.claude",
+      "/home/arna/.claude/channels/telegram",
+      "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/01_PROYECTOS/01_ARNALDO_AGENCIA/demos",
+      "/tmp"
     ]
   },
   "hooks": {
