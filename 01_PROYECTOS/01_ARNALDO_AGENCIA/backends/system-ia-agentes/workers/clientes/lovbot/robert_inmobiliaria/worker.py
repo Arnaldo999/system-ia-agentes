@@ -1789,6 +1789,7 @@ def crm_metricas():
 
 # ─── CRM ENDPOINTS (PostgreSQL principal → Airtable fallback) ────────────────
 
+@router.get("/crm/leads")
 @router.get("/crm/clientes")
 def crm_clientes():
     if USE_POSTGRES:
