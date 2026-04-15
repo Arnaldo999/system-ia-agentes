@@ -93,13 +93,80 @@ except ImportError:
 
 router = APIRouter(prefix="/clientes/lovbot/inmobiliaria", tags=["Robert — Inmobiliaria"])
 
-# ─── SESIONES EN MEMORIA ──────────────────────────────────────────────────────
-SESIONES: dict[str, dict] = {}
+# ─── SESIONES + HISTORIAL — cache en RAM + persistencia PostgreSQL ─────────────
+# Estrategia: RAM es el cache primario (sin latencia por mensaje).
+# PostgreSQL persiste en background → sobrevive reinicios y deploys.
+# Multi-tenant: cada cliente de Robert tiene su propio LOVBOT_TENANT_SLUG.
 
-# ─── HISTORIAL DE CONVERSACIÓN ────────────────────────────────────────────────
-# Guarda los últimos mensajes de cada lead para que el asesor vea contexto
 HISTORIAL: dict[str, list[str]] = {}
-MAX_HISTORIAL = 20  # últimos 20 mensajes
+MAX_HISTORIAL = 20
+
+
+def _bg_save_session(telefono: str, sesion: dict) -> None:
+    """Guarda sesión + historial en PostgreSQL (llamar desde background thread)."""
+    if not USE_POSTGRES:
+        return
+    tel = re.sub(r'\D', '', telefono)
+    hist = HISTORIAL.get(tel, [])
+    try:
+        db.save_bot_session(telefono, sesion, hist)
+    except Exception as e:
+        print(f"[ROBERT-SESSION] Error save: {e}")
+
+
+def _bg_delete_session(telefono: str) -> None:
+    """Elimina sesión de PostgreSQL (llamar desde background thread)."""
+    if not USE_POSTGRES:
+        return
+    try:
+        db.delete_bot_session(telefono)
+    except Exception as e:
+        print(f"[ROBERT-SESSION] Error delete: {e}")
+
+
+class _SessionStore(dict):
+    """Dict que auto-persiste en PostgreSQL en background en cada write/delete."""
+
+    def __setitem__(self, telefono: str, sesion: dict):
+        super().__setitem__(telefono, sesion)
+        if USE_POSTGRES:
+            threading.Thread(target=_bg_save_session, args=(telefono, sesion), daemon=True).start()
+
+    def pop(self, telefono, *args):
+        result = super().pop(telefono, *args)
+        if USE_POSTGRES:
+            threading.Thread(target=_bg_delete_session, args=(telefono,), daemon=True).start()
+        return result
+
+
+SESIONES: _SessionStore = _SessionStore()
+
+# Inicializar tabla bot_sessions al arrancar
+if USE_POSTGRES:
+    try:
+        db.setup_bot_sessions()
+    except Exception as _e:
+        print(f"[ROBERT-SESSION] setup_bot_sessions error: {_e}")
+
+
+def _cargar_sesion_db(telefono: str) -> None:
+    """Carga sesión y historial desde PostgreSQL al cache en RAM (si no existe en RAM)."""
+    if not USE_POSTGRES:
+        return
+    tel = re.sub(r'\D', '', telefono)
+    try:
+        data = db.get_bot_session(telefono)
+        if data:
+            sesion = data.get("sesion", {})
+            historial = data.get("historial", [])
+            if sesion:
+                # Cargar directo al dict base para no triggear otro save
+                super(_SessionStore, SESIONES).__setitem__(telefono, sesion)
+                print(f"[ROBERT-SESSION] Sesión restaurada para {tel[-4:]}*** ({sesion.get('step','?')})")
+            if historial:
+                HISTORIAL[tel] = historial
+    except Exception as e:
+        print(f"[ROBERT-SESSION] Error carga: {e}")
 
 
 def _agregar_historial(telefono: str, quien: str, texto: str):
@@ -1193,15 +1260,22 @@ Esta conversación es un filtro natural. Un comprador real se toma el tiempo de 
 7. **Siempre terminás con UNA sola pregunta o acción clara** — nunca dejés el mensaje colgado sin dirección.
 8. **Si todos los datos están completos** → devolvé ACCION: calificar (no lo decís al cliente).
 
-## ACCIONES ESPECIALES (agregar al FINAL de tu respuesta si aplica)
-- Para derivar al asesor: agregar en línea nueva → ACCION: ir_asesor
-- Para calificar cuando tenés todos los datos: → ACCION: calificar
-- Para cerrar amablemente a un curioso confirmado (ya intentaste pedir contexto y sigue evasivo): → ACCION: cerrar_curioso
-- Para guardar email cuando lo dan: → EMAIL: direccion@ejemplo.com
-- Para guardar nombre cuando lo dan: → NOMBRE: Juan García
-- Para guardar subniche: → SUBNICHE: agencia_inmobiliaria | agente_independiente | desarrolladora
+## EXTRACCIÓN DE DATOS (agregar al FINAL de tu respuesta, el cliente NUNCA las ve)
+Cada vez que el cliente revele un dato, extraélo en la línea correspondiente:
+- Nombre → NOMBRE: Juan García
+- Email → EMAIL: correo@ejemplo.com
+- Perfil → SUBNICHE: agencia_inmobiliaria | agente_independiente | desarrolladora
+- Ciudad donde trabaja → CIUDAD: NombreCiudad
+- Qué busca → OBJETIVO: comprar | alquilar | invertir
+- Tipo de propiedad → TIPO: casa | departamento | terreno | local | oficina
+- Zona preferida → ZONA: nombre_zona
+- Presupuesto → PRESUPUESTO: descripción exacta del presupuesto
+- Urgencia/timing → URGENCIA: descripción del timing
+- Para derivar al asesor → ACCION: ir_asesor
+- Para calificar cuando tenés todos los datos → ACCION: calificar
+- Para cerrar a un curioso confirmado → ACCION: cerrar_curioso
 
-Solo incluís la ACCION si realmente aplica en este turno. El cliente NUNCA ve estas líneas.
+Solo incluís los que aplican en este turno. El cliente NUNCA ve estas líneas.
 """
     return system
 
@@ -1212,6 +1286,10 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     if bot_pausado(telefono):
         print(f"[ROBERT] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
         return
+
+    # ── Restaurar sesión desde PostgreSQL si no está en RAM (post-deploy) ──────
+    if telefono not in SESIONES:
+        _cargar_sesion_db(telefono)
 
     # Registrar mensaje del lead en historial
     _agregar_historial(telefono, "Lead", texto)
@@ -1367,6 +1445,18 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             acciones["nombre"] = l.split(":", 1)[1].strip().title()
         elif l.startswith("SUBNICHE:"):
             acciones["subniche"] = l.split(":", 1)[1].strip()
+        elif l.startswith("CIUDAD:"):
+            acciones["ciudad"] = l.split(":", 1)[1].strip().title()
+        elif l.startswith("OBJETIVO:"):
+            acciones["objetivo"] = l.split(":", 1)[1].strip().lower()
+        elif l.startswith("TIPO:"):
+            acciones["tipo"] = l.split(":", 1)[1].strip().lower()
+        elif l.startswith("ZONA:"):
+            acciones["zona"] = l.split(":", 1)[1].strip()
+        elif l.startswith("PRESUPUESTO:"):
+            acciones["presupuesto"] = l.split(":", 1)[1].strip()
+        elif l.startswith("URGENCIA:"):
+            acciones["urgencia"] = l.split(":", 1)[1].strip()
         else:
             texto_visible.append(linea)
 
@@ -1389,8 +1479,29 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     if "subniche" in acciones and not sesion_nueva.get("subniche"):
         sesion_nueva["subniche"] = acciones["subniche"]
 
-    # ── Inferir datos desde el texto del usuario (progresivo) ─────────────
-    # El LLM extrae lo que puede; también inferimos desde el texto directo
+    if "ciudad" in acciones and not sesion_nueva.get("ciudad_resp"):
+        sesion_nueva["ciudad_resp"] = acciones["ciudad"]
+
+    if "objetivo" in acciones and not sesion_nueva.get("resp_objetivo"):
+        sesion_nueva["resp_objetivo"] = acciones["objetivo"]
+        for kw, val in [("comprar","venta"),("alquilar","alquiler"),("invertir","venta")]:
+            if kw in acciones["objetivo"]:
+                sesion_nueva["operacion_at"] = val
+                break
+
+    if "tipo" in acciones and not sesion_nueva.get("resp_tipo"):
+        sesion_nueva["resp_tipo"] = acciones["tipo"]
+
+    if "zona" in acciones and not sesion_nueva.get("resp_zona"):
+        sesion_nueva["resp_zona"] = acciones["zona"]
+
+    if "presupuesto" in acciones and not sesion_nueva.get("resp_presupuesto"):
+        sesion_nueva["resp_presupuesto"] = acciones["presupuesto"]
+
+    if "urgencia" in acciones and not sesion_nueva.get("resp_urgencia"):
+        sesion_nueva["resp_urgencia"] = acciones["urgencia"]
+
+    # ── Inferir datos desde el texto del usuario (backup si LLM no puso directive) ──
     if not sesion_nueva.get("resp_objetivo"):
         for kw, val in [("comprar","venta"),("alquiler","alquiler"),("alquilar","alquiler"),("invertir","venta"),("venta","venta")]:
             if kw in texto_lower:

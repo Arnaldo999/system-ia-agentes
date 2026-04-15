@@ -1067,3 +1067,99 @@ def get_reportes(fecha_desde: str = None, fecha_hasta: str = None):
     except Exception as e:
         print(f"[DB] Error get_reportes: {e}")
         return {"error": str(e)}
+
+
+# ── BOT SESSIONS (persistencia de conversaciones entre deploys) ───────────────
+
+def setup_bot_sessions():
+    """Crea la tabla bot_sessions si no existe. Llamar al iniciar el worker."""
+    if not _available():
+        return
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS bot_sessions (
+                telefono     TEXT PRIMARY KEY,
+                tenant       TEXT NOT NULL DEFAULT 'robert',
+                sesion_data  JSONB NOT NULL DEFAULT '{}',
+                historial    JSONB NOT NULL DEFAULT '[]',
+                updated_at   TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_bot_sessions_tenant
+            ON bot_sessions(tenant)
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("[DB] Tabla bot_sessions lista.")
+    except Exception as e:
+        print(f"[DB] Error setup_bot_sessions: {e}")
+
+
+def get_bot_session(telefono: str) -> dict:
+    """Carga sesión y historial desde PostgreSQL. Retorna {} si no existe."""
+    if not _available():
+        return {}
+    try:
+        import json
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            "SELECT sesion_data, historial FROM bot_sessions WHERE telefono = %s AND tenant = %s",
+            (telefono, TENANT),
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if not row:
+            return {}
+        sesion = row["sesion_data"] if isinstance(row["sesion_data"], dict) else json.loads(row["sesion_data"])
+        historial = row["historial"] if isinstance(row["historial"], list) else json.loads(row["historial"])
+        return {"sesion": sesion, "historial": historial}
+    except Exception as e:
+        print(f"[DB] Error get_bot_session ({telefono}): {e}")
+        return {}
+
+
+def save_bot_session(telefono: str, sesion: dict, historial: list) -> None:
+    """Upsert de sesión y historial. Llamar en background thread."""
+    if not _available():
+        return
+    try:
+        import json
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO bot_sessions (telefono, tenant, sesion_data, historial, updated_at)
+            VALUES (%s, %s, %s::jsonb, %s::jsonb, NOW())
+            ON CONFLICT (telefono) DO UPDATE SET
+                sesion_data = EXCLUDED.sesion_data,
+                historial   = EXCLUDED.historial,
+                updated_at  = NOW()
+        """, (telefono, TENANT, json.dumps(sesion), json.dumps(historial)))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"[DB] Error save_bot_session ({telefono}): {e}")
+
+
+def delete_bot_session(telefono: str) -> None:
+    """Elimina sesión cuando el lead se califica o cierra."""
+    if not _available():
+        return
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM bot_sessions WHERE telefono = %s AND tenant = %s",
+            (telefono, TENANT),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"[DB] Error delete_bot_session ({telefono}): {e}")
