@@ -23,7 +23,7 @@ Los archivos PROD están en la lista `deny` de `.claude/settings.json`. Este com
 
 ---
 
-## Flujo obligatorio (7 pasos)
+## Flujo obligatorio (8 pasos)
 
 ### PASO 1 — Confirmar proyecto
 Si no se pasa argumento, preguntar "¿Mica o Robert?". NUNCA asumir.
@@ -65,8 +65,112 @@ Clasificar respuestas:
   - `500` → "revisar env vars Coolify (probable falta SUPABASE_URL / SUPABASE_KEY / otras)"
   - timeout → "verificar que el servicio en Coolify esté UP + redeploy"
 
+### PASO 3.5 — DETECTOR DE DATOS FAKE HARDCODEADOS (guardia anti-mocks)
+**Objetivo**: el HTML dev puede tener datos de prueba/mocks que no deben llegar a prod (nombres inventados, KPIs con valores fijos, teléfonos ficticios, arrays con datos demo). Este paso los detecta antes del sync.
+
+Correr este script sobre el archivo dev y analizar salida:
+
+```bash
+DEV_FILE="<ruta al archivo dev>"
+python3 <<'EOF'
+import re, sys
+
+path = "DEV_FILE"  # reemplazar
+with open(path) as f:
+    html = f.read()
+
+findings = []
+
+# 1. Nombres comunes de personas en listas obvias (ficticios típicos)
+fake_names = [
+    "Carlos Mendoza", "Carla Reyes", "Marcos Vega", "María González",
+    "Jorge Ramírez", "Ana Torres", "Luis Hernández", "Héctor Castillo",
+    "Patricia López", "Roberto Alvarado", "Sandra Ruiz", "Diana Flores",
+    "Felipe Morales", "Valentina Cruz", "Andrés Ramos", "Sofía Jiménez",
+    "Miguel Díaz", "Luciana Pérez", "Lucía M", "Andrea G", "Carlos M.",
+    "Carla R.", "Marcos V.", "Juan Pérez", "María Pérez", "Lucas Romero",
+    "Sofía Fernández", "Martín López", "Ana Pereyra", "Roberto Acosta",
+    "Valeria Ríos", "Fernanda Aguirre", "Nicolás Herrera", "Patricia Molina",
+    "Héctor Vargas"
+]
+for name in fake_names:
+    for i, line in enumerate(html.splitlines(), 1):
+        if name in line and "//" not in line[:line.find(name)]:
+            findings.append(("NOMBRE_FAKE", i, name, line.strip()[:120]))
+
+# 2. Teléfonos con patrones sospechosos
+phone_patterns = [
+    r"\+549376[0-9]{7}",         # teléfonos Misiones con patrón repetido
+    r"\+52 55 1234-5678",         # secuencial obvio
+    r"\+?[0-9]{2,3}[- ]?1234[- ]?5678",
+]
+for pat in phone_patterns:
+    for m in re.finditer(pat, html):
+        line_n = html[:m.start()].count("\n") + 1
+        findings.append(("TEL_SOSPECHOSO", line_n, m.group(), ""))
+
+# 3. KPIs hardcodeados (números fijos donde debería ir placeholder)
+for m in re.finditer(r'<div class="kpi-val"[^>]*>(\d+s?)</div>', html):
+    line_n = html[:m.start()].count("\n") + 1
+    findings.append(("KPI_HARDCODE", line_n, m.group(1), m.group()))
+
+# 4. Deltas con texto fijo
+for m in re.finditer(r'<div class="kpi-delta"[^>]*>([^<]+)</div>', html):
+    text = m.group(1).strip()
+    if text and text != "&nbsp;" and re.search(r'(\d+|hoy|semana|mes|\$)', text):
+        line_n = html[:m.start()].count("\n") + 1
+        findings.append(("DELTA_HARDCODE", line_n, text[:60], ""))
+
+# 5. Arrays con datos de demo (buscar consts con >2 objetos y nombres)
+array_pattern = re.compile(r'const\s+(\w+)\s*=\s*\[[\s\S]*?\];')
+for m in array_pattern.finditer(html):
+    body = m.group(0)
+    name_count = sum(1 for fn in fake_names if fn in body)
+    if name_count >= 2:
+        line_n = html[:m.start()].count("\n") + 1
+        findings.append(("ARRAY_MOCK", line_n, m.group(1), f"{name_count} nombres fake"))
+
+# 6. Fechas hardcodeadas viejas
+date_patterns = [r'"2026-0[1-9]-\d{2}"', r"'2026-0[1-9]-\d{2}'"]
+for pat in date_patterns:
+    for m in re.finditer(pat, html):
+        line_n = html[:m.start()].count("\n") + 1
+        findings.append(("FECHA_FIJA", line_n, m.group(), ""))
+
+# 7. Strings de dinero hardcodeado
+for m in re.finditer(r'"\$\d{1,3}[,.]?\d{0,3}K?[^"]{0,20}(USD|mes|año)?"', html):
+    line_n = html[:m.start()].count("\n") + 1
+    findings.append(("DINERO_FIJO", line_n, m.group()[:50], ""))
+
+if not findings:
+    print("✅ No se detectaron datos fake hardcodeados")
+    sys.exit(0)
+
+print(f"⚠️ {len(findings)} posibles datos fake detectados:")
+for tipo, linea, valor, contexto in sorted(set(findings))[:30]:
+    print(f"  [{tipo}] línea {linea}: {valor}")
+    if contexto:
+        print(f"     → {contexto}")
+
+if len(findings) > 30:
+    print(f"  ... y {len(findings) - 30} más")
+sys.exit(1)
+EOF
+```
+
+**Interpretación**:
+- Exit 0 → no hay datos fake → continuar al paso 4.
+- Exit 1 → hay hallazgos → **ABORTAR el sync** y mostrar la lista.
+
+**Qué hacer si hay hallazgos**:
+1. Revisar cada línea reportada.
+2. Si son datos reales del tenant (ej. nombre real del cliente que coincide con la lista negra) → volver a correr con flag `--force-fake-data` (el usuario asume responsabilidad).
+3. Si son mocks de verdad → editar el archivo dev, eliminar los datos fake, volver a correr `/sync-crm-prod`.
+
+**Importante**: este paso existe para que los experimentos, debug, tests y placeholders que vivan en dev NUNCA lleguen a prod sin revisión explícita. Es especialmente útil porque dev está pensado como sandbox — se van a meter cosas de prueba constantemente.
+
 ### PASO 4 — Copiar DEMO → PROD
-Solo si el paso 3 pasó todo en verde.
+Solo si los pasos 3 y 3.5 pasaron en verde (o el usuario aprobó `--force-fake-data` en 3.5).
 
 ```bash
 cat <DEMO> > <PROD>
