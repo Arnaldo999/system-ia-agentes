@@ -624,7 +624,7 @@ def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
 # ─── LLM (OpenAI principal → Gemini fallback) ───────────────────────────────
 
 def _llm(prompt: str, system: str = "") -> str:
-    """Llama a GPT-4o (principal) → Gemini 2.5 Flash (fallback)."""
+    """Llama a GPT-5-mini (principal) → Gemini 2.5 Flash (fallback)."""
     # ── OpenAI (principal) ──
     if OPENAI_API_KEY:
         try:
@@ -635,7 +635,7 @@ def _llm(prompt: str, system: str = "") -> str:
             r = requests.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "gpt-4o-mini", "messages": messages, "temperature": 0.3, "max_tokens": 1500},
+                json={"model": "gpt-5-mini", "messages": messages, "max_completion_tokens": 1500},
                 timeout=15,
             )
             if r.status_code == 200:
