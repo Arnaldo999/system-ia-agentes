@@ -2325,13 +2325,12 @@ async function renderProps() {
       if(tipo) specs.push(tipo);
       if(operacion) specs.push(operacion);
 
+      const pid = p.id || p.ID || '';
+
       // Imagen: siempre hay emoji de fondo; la img va encima absoluta
-      // onerror llama función global sin strings problemáticos dentro del atributo HTML
       const imgTag = imgUrl
         ? `<img src="${imgUrl}" alt="${titulo}" data-pid="${pid}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0" onerror="_imgErr(this)">`
         : '';
-
-      const pid = p.id || p.ID || '';
       g.innerHTML += `
         <div class="pcard" data-pid="${pid}" onclick="_verProp(this)" style="cursor:pointer">
           <div class="pcard-img" style="position:relative;overflow:hidden">
