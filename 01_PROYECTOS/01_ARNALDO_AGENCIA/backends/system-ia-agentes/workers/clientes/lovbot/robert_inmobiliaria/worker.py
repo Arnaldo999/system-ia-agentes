@@ -37,7 +37,7 @@ from fastapi import APIRouter, Request
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
-OPENAI_API_KEY    = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_API_KEY    = os.environ.get("LOVBOT_OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
 META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "")
 META_PHONE_ID     = os.environ.get("META_PHONE_NUMBER_ID", "")
 
@@ -635,7 +635,7 @@ def _llm(prompt: str, system: str = "") -> str:
             r = requests.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "gpt-4o", "messages": messages, "temperature": 0.3, "max_tokens": 1500},
+                json={"model": "gpt-4o-mini", "messages": messages, "temperature": 0.3, "max_tokens": 1500},
                 timeout=15,
             )
             if r.status_code == 200:
@@ -1032,6 +1032,168 @@ MSG_EMAIL_CTA = (
 
 
 # ─── FLUJO PRINCIPAL ──────────────────────────────────────────────────────────
+def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
+    """Construye el system prompt dinámico según el estado actual de la sesión."""
+    import time as _t
+
+    # ── Datos extraídos hasta ahora ──
+    nombre      = sesion.get("nombre", "")
+    email       = sesion.get("email", "")
+    subniche    = sesion.get("subniche", "")
+    ciudad      = sesion.get("ciudad_resp", "")
+    objetivo    = sesion.get("resp_objetivo", "")
+    tipo        = sesion.get("resp_tipo", "")
+    zona        = sesion.get("resp_zona", "")
+    presupuesto = sesion.get("resp_presupuesto", "")
+    urgencia    = sesion.get("resp_urgencia", "")
+    score       = sesion.get("score", "")
+    step        = sesion.get("step", "inicio")
+    props       = sesion.get("props", [])
+    slots       = sesion.get("slots", [])
+    tiene_ref   = bool(referral and (referral.get("source_url") or referral.get("body") or referral.get("headline")))
+    ad_info     = referral.get("headline") or referral.get("body") or referral.get("source_url") or ""
+
+    # ── Historial de la conversación (últimos 10 turnos) ──
+    historial = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
+    historial_txt = ""
+    if historial:
+        # El historial guarda strings tipo "[14:32] Lead: mensaje"
+        # Normalizamos para el system prompt
+        lineas = []
+        for h in historial[-10:]:
+            if isinstance(h, dict):
+                rol = "Cliente" if h.get("rol") == "Lead" else "Vos (bot)"
+                lineas.append(f"{rol}: {h.get('msg','')}")
+            else:
+                # String format: "[HH:MM] Quien: texto"
+                # Reemplazar "Lead:" → "Cliente:" y "Bot:" → "Vos (bot):"
+                h2 = h.replace("] Lead:", "] Cliente:").replace("] Bot:", "] Vos (bot):")
+                lineas.append(h2)
+        historial_txt = "\n".join(lineas)
+
+    # ── Zonas disponibles ──
+    zonas_str = ", ".join(ZONAS_LIST) if ZONAS_LIST else "sin zonas definidas"
+
+    # ── Estado actual de la sesión en lenguaje natural ──
+    datos_conocidos = []
+    if nombre:        datos_conocidos.append(f"Nombre: {nombre}")
+    if email:         datos_conocidos.append(f"Email: {email}")
+    if subniche:      datos_conocidos.append(f"Perfil: {subniche}")
+    if ciudad:        datos_conocidos.append(f"Ciudad: {ciudad}")
+    if objetivo:      datos_conocidos.append(f"Objetivo: {objetivo}")
+    if tipo:          datos_conocidos.append(f"Tipo de propiedad: {tipo}")
+    if zona:          datos_conocidos.append(f"Zona: {zona}")
+    if presupuesto:   datos_conocidos.append(f"Presupuesto: {presupuesto}")
+    if urgencia:      datos_conocidos.append(f"Urgencia: {urgencia}")
+    if score:         datos_conocidos.append(f"Score lead: {score}")
+    datos_txt = "\n".join(datos_conocidos) if datos_conocidos else "Ninguno aún — primer contacto"
+
+    # ── Qué falta obtener ──
+    faltantes = []
+    if not nombre:      faltantes.append("nombre")
+    if not subniche and not tiene_ref: faltantes.append("perfil (agencia/agente independiente/desarrolladora)")
+    if not email:       faltantes.append("email (opcional, puede omitir)")
+    if not ciudad:      faltantes.append("ciudad")
+    if not objetivo:    faltantes.append("qué busca (comprar/alquilar/invertir)")
+    if not tipo:        faltantes.append("tipo de propiedad")
+    if not zona:        faltantes.append(f"zona preferida (opciones: {zonas_str})")
+    if not presupuesto: faltantes.append("presupuesto aproximado")
+    if not urgencia:    faltantes.append("urgencia / timing de compra")
+    faltantes_txt = ", ".join(faltantes) if faltantes else "TODOS los datos ya obtenidos — proceder a calificar"
+
+    # ── Propiedades disponibles para mostrar ──
+    props_txt = ""
+    if props:
+        props_txt = "\n\nPROPIEDADES YA ENCONTRADAS (ya las mostraste o estás por mostrar):\n"
+        for i, p in enumerate(props, 1):
+            titulo = p.get("Titulo") or p.get("Nombre") or p.get("fields", {}).get("Titulo", "Propiedad")
+            precio = p.get("Precio") or p.get("fields", {}).get("Precio", "")
+            zona_p = p.get("Zona") or p.get("fields", {}).get("Zona", "")
+            props_txt += f"  {i}. {titulo} — {zona_p} — {precio} {MONEDA}\n"
+
+    # ── Slots de cita disponibles ──
+    slots_txt = ""
+    if slots:
+        slots_txt = f"\n\nSLOTS DE CITA DISPONIBLES (ya los obtuviste de Cal.com, están en sesión):\n"
+        slots_txt += _formatear_slots(slots)
+
+    # ── Step actual → instrucción específica ──
+    instruccion_step = {
+        "inicio": (
+            "Es el PRIMER contacto. " +
+            (f"El cliente llegó desde un anuncio de Meta Ads: '{ad_info}'. Salúdalo mencionando el anuncio, preguntá su nombre de forma cálida."
+             if tiene_ref else
+             "Preguntar qué tipo de perfil tienen (agencia inmobiliaria / agente independiente / desarrolladora). Ser cálido y breve.")
+        ),
+        "subnicho": "Identificar si es agencia inmobiliaria, agente independiente o desarrolladora. Si ya lo dijo, confirmar y avanzar al nombre.",
+        "nombre": "Obtener el nombre del cliente. Ya tenés el perfil. Ser cálido.",
+        "email": "Pedir email. Aclarar que es opcional para enviarle fichas antes que salgan al público.",
+        "ciudad": f"Preguntar desde qué ciudad escribe. Contexto: empresa en {CIUDAD}.",
+        "objetivo": "Preguntar qué busca: comprar, alquilar o invertir. Adaptar al subniche.",
+        "tipo": "Preguntar tipo de propiedad (casa, departamento, terreno, local, oficina). Natural, sin listar opciones como menú.",
+        "zona": f"Preguntar zona preferida. Zonas disponibles: {zonas_str}. Si no tiene preferencia, también es válido.",
+        "presupuesto": f"Preguntar presupuesto aproximado en {MONEDA}. Dar rangos de referencia naturalmente.",
+        "urgencia": "Preguntar cuándo piensa concretar: ¿ya está buscando activamente, en los próximos meses, o explorando?",
+        "calificado": "Datos completos. Mostrar propiedades encontradas o derivar al asesor según score.",
+        "lista": "El cliente está viendo la lista de propiedades. Invitarlo a pedir más detalles de alguna. Si pregunta '#' o quiere hablar con alguien → ACCION: ir_asesor.",
+        "ficha": "El cliente está viendo una ficha. Preguntarle si quiere agendar una visita o tiene preguntas.",
+        "ofrecer_cita": f"Ofrecer ver horarios disponibles con {NOMBRE_ASESOR} o que el asesor lo contacte. Natural, sin opciones numeradas.",
+        "agendar_slots": f"Mostrar horarios disponibles y pedir que elija. Slots: {slots_txt}",
+        "confirmar_cita": "Confirmar la cita elegida. Pedir que confirme o cambie.",
+        "recuperacion": f"El cliente volvió después de un tiempo. Saludarlo por nombre ({nombre}) y preguntar si quiere retomar donde estaban o empezar de nuevo.",
+    }.get(step, "Continuar la conversación según el contexto.")
+
+    system = f"""Sos el asistente virtual de *{NOMBRE_EMPRESA}*, una empresa inmobiliaria en {CIUDAD}.
+Tu nombre no es importante — sos el asistente. El asesor humano se llama *{NOMBRE_ASESOR}*.
+
+## TU MISIÓN
+Calificar leads inmobiliarios de forma natural y humana, como si fueras un consultor experto que charla por WhatsApp — NO un bot con formularios. Tenés que obtener la información necesaria para que {NOMBRE_ASESOR} pueda dar seguimiento personalizado.
+
+## PERSONALIDAD Y TONO
+- Cálido, profesional, cercano. Como alguien que sabe de propiedades y quiere ayudar de verdad.
+- Usás *negrita* para destacar datos importantes (nombres, precios, fechas).
+- Mensajes cortos y directos. Máximo 3-4 líneas por respuesta. Sin listas numeradas salvo para propiedades o slots de horario.
+- Emojis con moderación — solo los que sumen contexto (🏡 🏢 📅 ✅).
+- Nunca usés "opción 1", "opción 2" para preguntas abiertas. Preguntás de forma natural.
+- Si el cliente dice algo ambiguo, interpretás lo más probable y avanzás.
+- Si el cliente dice "hola", "menú" o "0" → empezar de cero amablemente.
+
+## DATOS YA CONOCIDOS DEL CLIENTE
+{datos_txt}
+
+## DATOS QUE TODAVÍA FALTAN OBTENER
+{faltantes_txt}
+
+## STEP ACTUAL: {step.upper()}
+{instruccion_step}
+
+## HISTORIAL DE LA CONVERSACIÓN
+{historial_txt if historial_txt else "(Primer mensaje)"}
+{props_txt}
+{slots_txt}
+
+## REGLAS CRÍTICAS
+1. **Nunca inventés propiedades** — solo mostrás las que están en el sistema.
+2. **Un dato por turno** — no bombardees con varias preguntas a la vez.
+3. **Si el cliente pide hablar con alguien, quiere un asesor, o usa "#"** → respondé calurosamente y devolvé ACCION: ir_asesor.
+4. **Si el cliente da su email** → extraerlo exactamente como lo escribió.
+5. **Si mencionan "lo hablo con mi pareja/familia/socio"** → validar emocionalmente, ofrecer enviarles info, preguntar si prefieren llamada grupal.
+6. **No repitas información que ya sabés** — la conversación fluye, no volvés a preguntar lo que ya tenés.
+7. **Siempre terminás con UNA sola pregunta o acción clara** — nunca dejés el mensaje colgado sin dirección.
+8. **Si todos los datos están completos** → devolvé ACCION: calificar (no lo decís al cliente).
+
+## ACCIONES ESPECIALES (agregar al FINAL de tu respuesta si aplica)
+- Para derivar al asesor: agregar en línea nueva → ACCION: ir_asesor
+- Para calificar cuando tenés todos los datos: → ACCION: calificar
+- Para guardar email cuando lo dan: → EMAIL: direccion@ejemplo.com
+- Para guardar nombre cuando lo dan: → NOMBRE: Juan García
+- Para guardar subniche: → SUBNICHE: agencia_inmobiliaria | agente_independiente | desarrolladora
+
+Solo incluís la ACCION si realmente aplica en este turno. El cliente NUNCA ve estas líneas.
+"""
+    return system
+
+
 def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     referral = referral or {}
     # Si el asesor tomó control, el bot NO responde
@@ -1039,548 +1201,81 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         print(f"[ROBERT] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
         return
 
-    # Guardar referral en sesión si es nuevo lead (para Caso A)
-    if referral and telefono not in SESIONES:
-        print(f"[ROBERT] Lead desde anuncio: {referral.get('source_url', referral.get('body', ''))}")
-
     # Registrar mensaje del lead en historial
     _agregar_historial(telefono, "Lead", texto)
 
-    # Si lead estaba en seguimiento/dormido y responde → desactivar seguimiento
-    def _desactivar_seguimiento():
+    import time as _time
+    texto   = texto.strip()
+    texto_lower = texto.lower()
+    sesion  = SESIONES.get(telefono, {})
+    ahora_ts = _time.time()
+    nombre  = sesion.get("nombre", "")
+    nombre_corto = nombre.split()[0] if nombre else ""
+
+    # ── Tareas de background (no bloquean) ────────────────────────────────
+    def _bg_desactivar_seguimiento():
         if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
             url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
-            buscar = requests.get(url, headers=AT_HEADERS,
+            r = requests.get(url, headers=AT_HEADERS,
                 params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
-            records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+            records = r.json().get("records", []) if r.status_code == 200 else []
             if records:
-                estado_seg = records[0].get("fields", {}).get("Estado_Seguimiento", "")
-                if estado_seg in ("activo", "dormido"):
+                est = records[0].get("fields", {}).get("Estado_Seguimiento", "")
+                if est in ("activo", "dormido"):
                     requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
                         json={"fields": {"Estado_Seguimiento": "pausado"}}, timeout=8)
-                    print(f"[ROBERT] Lead {telefono} respondió — seguimiento pausado (era {estado_seg})")
-    threading.Thread(target=_desactivar_seguimiento, daemon=True).start()
+    threading.Thread(target=_bg_desactivar_seguimiento, daemon=True).start()
 
-    # Actualizar última interacción en Airtable (async para no bloquear)
-    def _update_interaccion():
+    def _bg_update_interaccion():
         from datetime import datetime, timezone
         if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
             url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
-            buscar = requests.get(url, headers=AT_HEADERS,
+            r = requests.get(url, headers=AT_HEADERS,
                 params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
-            records = buscar.json().get("records", []) if buscar.status_code == 200 else []
+            records = r.json().get("records", []) if r.status_code == 200 else []
             if records:
                 requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
                     json={"fields": {"fecha_ultimo_contacto": datetime.now(timezone.utc).isoformat()}}, timeout=8)
-    threading.Thread(target=_update_interaccion, daemon=True).start()
+    threading.Thread(target=_bg_update_interaccion, daemon=True).start()
 
-    import time as _time
-
-    texto = texto.strip()
-    texto_lower = texto.lower()
-    sesion = SESIONES.get(telefono, {})
-    step = sesion.get("step", "inicio")
-    nombre = sesion.get("nombre", "")
-    nombre_corto = nombre.split()[0] if nombre else ""
-    subniche = sesion.get("subniche", "")
-
-    # ── Detección de caída: si pasaron >30 min desde último mensaje ────────
-    SESSION_TIMEOUT = 30 * 60  # 30 minutos
-    ultimo_ts = sesion.get("_ultimo_ts", 0)
-    ahora_ts = _time.time()
-
-    if ultimo_ts and step not in ("inicio", "subnicho") and (ahora_ts - ultimo_ts) > SESSION_TIMEOUT:
-        # Lead volvió después de mucho tiempo → modo recuperación
-        if nombre:
-            _enviar_texto(telefono,
-                f"¡Hola de nuevo, *{nombre_corto}*! 👋\n\n"
-                f"¿Seguís interesado en las propiedades que estuvimos viendo?\n\n"
-                f"*1️⃣* Sí, quiero retomar\n"
-                f"*2️⃣* Quiero ver otras opciones\n"
-                f"*3️⃣* Quiero hablar con *{NOMBRE_ASESOR}*\n"
-                f"*0️⃣* Empezar de nuevo"
-            )
-            SESIONES[telefono] = {**sesion, "step": "recuperacion", "_ultimo_ts": ahora_ts}
-            return
-
-    # Actualizar timestamp de sesión
-    if telefono in SESIONES:
-        SESIONES[telefono]["_ultimo_ts"] = ahora_ts
-
-    # ── Step recuperación ─────────────────────────────────────────────────
-    if step == "recuperacion":
-        if texto_lower in ("1", "si", "sí"):
-            # Retomar desde donde estaba
-            prev_step = sesion.get("_prev_step", "inicio")
-            SESIONES[telefono] = {**sesion, "step": prev_step, "_ultimo_ts": ahora_ts}
-            _enviar_texto(telefono, f"¡Perfecto, *{nombre_corto}*! Retomamos donde quedamos. 🏡")
-            return
-        elif texto_lower in ("2", "otras", "opciones"):
-            SESIONES.pop(telefono, None)
-            SESIONES[telefono] = {"step": "objetivo", "nombre": nombre, "subniche": subniche, "_ultimo_ts": ahora_ts}
-            _enviar_texto(telefono, _pregunta("objetivo", nombre, subniche))
-            return
-        elif texto_lower in ("3", "#"):
-            _ir_asesor(telefono, sesion)
-            return
-        else:
-            SESIONES.pop(telefono, None)
-            step = "inicio"
-
-    # Guardar step previo para recuperación
-    if step not in ("inicio", "subnicho", "recuperacion"):
-        SESIONES.get(telefono, {})["_prev_step"] = step
-
-    # Comandos globales
-    if texto_lower in ("0", "menú", "menu", "inicio", "hola", "hi", "buenas"):
-        SESIONES.pop(telefono, None)
-        SESIONES[telefono] = {"step": "subnicho", "_ultimo_ts": ahora_ts}
-        _enviar_texto(telefono, MSG_SUBNICHO.format(empresa=NOMBRE_EMPRESA))
-        return
-
+    # ── Comando # → asesor inmediato ─────────────────────────────────────
     if texto_lower == "#":
         _ir_asesor(telefono, sesion)
         return
 
-    # ── CASO A: Lead desde anuncio específico (Meta Ads referral) ────────────
-    if step == "inicio" and referral and (referral.get("source_url") or referral.get("body")):
-        ad_source = referral.get("source_url", "")
-        ad_body = referral.get("body", "")
-        ad_headline = referral.get("headline", "")
-        fuente_detalle = f"ad:{referral.get('source_id', '')}|{ad_headline[:50]}" if referral.get("source_id") else f"referral:{ad_source[:80]}"
+    # ── Timeout de sesión (>30 min) → modo recuperación via LLM ──────────
+    SESSION_TIMEOUT = 30 * 60
+    ultimo_ts = sesion.get("_ultimo_ts", 0)
+    step = sesion.get("step", "inicio")
+    if ultimo_ts and step not in ("inicio",) and (ahora_ts - ultimo_ts) > SESSION_TIMEOUT:
+        sesion["step"] = "recuperacion"
+    if telefono in SESIONES:
+        SESIONES[telefono]["_ultimo_ts"] = ahora_ts
 
+    # ── Guardar referral en sesión si es lead nuevo desde Ads ─────────────
+    if referral and telefono not in SESIONES:
+        fuente_det = (f"ad:{referral.get('source_id','')}|{referral.get('headline','')[:50]}"
+                      if referral.get("source_id") else
+                      f"referral:{referral.get('source_url','')[:80]}")
         SESIONES[telefono] = {
-            "step": "nombre", "_ultimo_ts": ahora_ts,
+            "step": "inicio",
             "subniche": "agencia_inmobiliaria",
             "_referral": referral,
-            "_fuente_detalle": fuente_detalle,
+            "_fuente_detalle": fuente_det,
+            "_ultimo_ts": ahora_ts,
         }
-        # Respuesta contextual con info del anuncio
-        intro = ad_headline or ad_body or "la propiedad que viste"
-        _enviar_texto(telefono,
-            f"¡Hola! 👋 Gracias por tu interés en *{intro}*.\n\n"
-            f"Soy el asistente de *{NOMBRE_EMPRESA}*. "
-            f"Para darte la mejor atención, ¿me decís tu *nombre*?"
-        )
-        return
-
-    # ── INICIO → MENÚ SUBNICHO (Caso B: lead genérico) ───────────────────────
-    if step == "inicio":
-        SESIONES[telefono] = {"step": "subnicho", "_ultimo_ts": ahora_ts}
-        _enviar_texto(telefono, MSG_SUBNICHO.format(empresa=NOMBRE_EMPRESA))
-        return
-
-    # ── SUBNICHO ──────────────────────────────────────────────────────────────
-    if step == "subnicho":
-        cfg = _SUBNICHO_CONFIG.get(texto.strip())
-        if not cfg:
-            _enviar_texto(telefono,
-                "Por favor elige una opción:\n\n"
-                "*1️⃣* Agencia Inmobiliaria\n"
-                "*2️⃣* Agente Independiente\n"
-                "*3️⃣* Desarrolladora / Constructora"
-            )
-            return
-        SESIONES[telefono] = {
-            "step": "nombre",
-            "subniche": cfg["subniche"],
-            "empresa_demo": cfg["empresa"],
-        }
-        empresa_show = cfg["empresa"]
-        _enviar_texto(telefono,
-            cfg["intro"] + f"\n\n"
-            f"Perfecto 🎯 Ahora simulás ser un *cliente real* que escribe a *{empresa_show}*.\n\n"
-            f"¡Empecemos! — ¿cuál es tu nombre? 😊"
-        )
-        return
-
-    # ── Detector de objeción familiar (cualquier paso post-nombre) ───────────
-    _OBJECION_FAMILIAR = (
-        "lo hablo con", "lo consulto con", "lo veo con", "lo comento con",
-        "mi esposa", "mi esposo", "mi marido", "mi pareja", "mi socio", "mi socia",
-        "mi papa", "mi papá", "mi mama", "mi mamá", "mi hijo", "mi hija",
-        "tengo que consultar", "tenemos que ver", "lo decidimos juntos"
-    )
-    if step not in ("inicio", "subnicho", "nombre") and any(p in texto_lower for p in _OBJECION_FAMILIAR):
-        n = nombre_corto or nombre or "estimado/a"
-        _enviar_texto(telefono,
-            f"¡Por supuesto, *{n}*! Es una decisión importante y está muy bien consultarlo. 😊\n\n"
-            f"Le mando la información para que la puedan revisar juntos 👇\n\n"
-            f"¿Le gustaría que *{NOMBRE_ASESOR}* los llame cuando estén los dos disponibles, "
-            f"o prefieren seguir por aquí a su ritmo?"
-        )
-        # No reseteamos sesión — esperamos su respuesta y continuamos
-        SESIONES[telefono] = {**sesion, "step": sesion.get("step", step), "_espera_familiar": True}
-        return
-
-    # Si venía de objeción familiar y responde, retomamos el flujo donde estaba
-    if sesion.get("_espera_familiar"):
-        SESIONES[telefono] = {**{k: v for k, v in sesion.items() if k != "_espera_familiar"}}
         sesion = SESIONES[telefono]
-        step = sesion.get("step", "inicio")
-        n = nombre_corto or nombre
-        if "asesor" in texto_lower or "llame" in texto_lower or "llamada" in texto_lower or texto.strip() in ("1", "si", "sí"):
-            _ir_asesor(telefono, sesion)
-            return
-        _enviar_texto(telefono,
-            f"¡Perfecto, *{n}*! Sin apuro. Seguimos cuando quieran 😊\n\n"
-            f"Retomamos donde lo dejamos — " + _pregunta(step, nombre_corto, subniche)
-        )
-        return
+        print(f"[ROBERT] Lead desde anuncio: {referral.get('headline') or referral.get('body','')}")
 
-    # ── NOMBRE ────────────────────────────────────────────────────────────────
-    if step == "nombre":
-        nombre = texto.title()
-        SESIONES[telefono] = {**sesion, "step": "email", "nombre": nombre}
-        n = nombre.split()[0]
-        _enviar_texto(telefono,
-            f"¡Mucho gusto, *{n}*! 😊\n\n"
-            f"¿Me comparte su *correo electrónico*? Lo usamos para enviarle fichas "
-            f"de propiedades antes de que salgan al público. 📬\n\n"
-            f"_(Escriba *no* si prefiere omitirlo)_"
-        )
-        return
+    # ── Step especiales que NO pasan por LLM (agendamiento) ───────────────
+    step = sesion.get("step", "inicio")
 
-    # ── EMAIL ─────────────────────────────────────────────────────────────────
-    if step == "email":
-        rechazos = ("no", "no gracias", "nop", "nel", "paso", "no quiero", "omitir", "sin email")
-        if texto_lower in rechazos:
-            SESIONES[telefono] = {**sesion, "step": "ciudad", "email": ""}
-            _enviar_texto(telefono,
-                f"Sin problema 😊 ¿Desde qué *ciudad* nos escribe? 📍"
-            )
-        elif "@" in texto and "." in texto:
-            email = texto.strip()
-            threading.Thread(target=_at_guardar_email, args=(telefono, email), daemon=True).start()
-            SESIONES[telefono] = {**sesion, "step": "ciudad", "email": email}
-            _enviar_texto(telefono,
-                f"¡Perfecto! 📬 Anotado.\n\n¿Desde qué *ciudad* nos escribe? 📍"
-            )
-        else:
-            _enviar_texto(telefono,
-                f"Por favor ingrese un email válido (ej: nombre@gmail.com) o escriba *no* para omitir. 😊"
-            )
-        return
-
-    # ── CIUDAD ────────────────────────────────────────────────────────────────
-    if step == "ciudad":
-        ciudad_resp = texto.strip().title()
-        SESIONES[telefono] = {**sesion, "step": "objetivo", "ciudad_resp": ciudad_resp}
-        _enviar_texto(telefono,
-            f"📍 *{ciudad_resp}*, anotado.\n\n" + _pregunta("objetivo", nombre, subniche)
-        )
-        return
-
-    # ── OBJETIVO (comprar/alquilar + para qué) ────────────────────────────────
-    _ACUSE_OBJETIVO = {
-        "1": "Comprar, perfecto. 🏠",
-        "2": "Alquilar, entendido. 🔑",
-        "3": "Invertir, excelente decisión. 📈",
-    }
-    if step == "objetivo":
-        mapa_op = {"1": "comprar", "2": "alquilar", "3": "invertir"}
-        opcion = _interpretar_respuesta(texto, mapa_op)
-        if not opcion:
-            opcion = "1"  # default: comprar
-        operacion_map = {"1": "venta", "2": "alquiler", "3": "venta"}
-        operacion = operacion_map.get(opcion, "venta")
-        acuse = _ACUSE_OBJETIVO.get(opcion, "Entendido. 👍")
-        SESIONES[telefono] = {**sesion, "step": "tipo", "resp_objetivo": texto,
-                              "operacion_at": operacion}
-        _enviar_texto(telefono, acuse + "\n\n" + _pregunta("tipo", nombre_corto, subniche))
-        return
-
-    # ── TIPO DE PROPIEDAD ─────────────────────────────────────────────────────
-    _ACUSE_TIPO = {
-        "1": "Casa, perfecto. 🏡",
-        "2": "Departamento, anotado. 🏢",
-        "3": "Terreno, muy bien. 🌿",
-        "4": "Local comercial, entendido. 🏪",
-        "5": "Oficina, anotado. 💼",
-    }
-    if step == "tipo":
-        mapa_tipo = {"1": "casa", "2": "departamento", "3": "terreno", "4": "local comercial", "5": "oficina"}
-        opcion = _interpretar_respuesta(texto, mapa_tipo)
-        if opcion:
-            tipo_final = {"1": "casa", "2": "departamento", "3": "terreno", "4": "otro", "5": "otro"}.get(opcion, "otro")
-            acuse = _ACUSE_TIPO.get(opcion, "Entendido. 👍")
-        else:
-            tipo_final = _normalizar_tipo(texto) or texto.lower()
-            acuse = "Entendido. 👍"
-        SESIONES[telefono] = {**sesion, "step": "zona", "resp_tipo": tipo_final}
-        _enviar_texto(telefono, acuse + "\n\n" + _pregunta("zona", nombre_corto, subniche))
-        return
-
-    # ── ZONA ──────────────────────────────────────────────────────────────────
-    if step == "zona":
-        zona_detectada = texto
-        zona_label = texto
-        try:
-            idx = int(texto) - 1
-            if 0 <= idx < len(ZONAS_LIST):
-                zona_detectada = ZONAS_LIST[idx]
-                zona_label = ZONAS_LIST[idx]
-            elif idx == len(ZONAS_LIST):
-                zona_detectada = ""
-                zona_label = "cualquier zona"
-        except ValueError:
-            zona_detectada = _normalizar_zona(texto) or texto
-            zona_label = zona_detectada
-        acuse_zona = f"📍 *{zona_label}*, anotado." if zona_label != "cualquier zona" else "Sin zona preferida, le muestro todo lo disponible."
-        SESIONES[telefono] = {**sesion, "step": "presupuesto", "resp_zona": zona_detectada}
-        _enviar_texto(telefono, acuse_zona + "\n\n" + _pregunta("presupuesto", nombre_corto, subniche))
-        return
-
-    # ── PRESUPUESTO ───────────────────────────────────────────────────────────
-    if step == "presupuesto":
-        mapa_presu = {
-            "1": f"menos de 50,000 {MONEDA}",
-            "2": f"50,000 a 100,000 {MONEDA}",
-            "3": f"100,000 a 200,000 {MONEDA}",
-            "4": f"más de 200,000 {MONEDA}",
-            "5": "hablar con asesor",
-        }
-        opcion = _interpretar_respuesta(texto, mapa_presu)
-        if opcion == "5":
-            _ir_asesor(telefono, sesion)
-            return
-        presupuesto_at = _PRESUPUESTO_MAP.get(opcion or texto.strip(), "")
-        SESIONES[telefono] = {**sesion, "step": "urgencia",
-                              "resp_presupuesto": texto, "presupuesto_at": presupuesto_at}
-        _enviar_texto(telefono, _pregunta("urgencia", nombre_corto, subniche))
-        return
-
-    # ── URGENCIA → CALIFICAR → BUSCAR PROPIEDADES ─────────────────────────────
-    if step == "urgencia":
-        sesion_act = {**sesion, "step": "calificado", "resp_urgencia": texto}
-        SESIONES[telefono] = sesion_act
-
-        calificacion = _gemini_calificar(sesion_act)
-        score      = calificacion.get("score", "tibio")
-        derivar    = calificacion.get("derivar_sitio_web", False)
-        tipo       = calificacion.get("tipo") or sesion_act.get("resp_tipo", "")
-        zona       = calificacion.get("zona") or sesion_act.get("resp_zona", "")
-        operacion  = calificacion.get("operacion")
-        nota       = calificacion.get("nota_para_asesor", "")
-
-        # Normalizar nulls de Gemini
-        if tipo in (None, "null", ""):
-            tipo = sesion_act.get("resp_tipo", "")
-        if zona in (None, "null", ""):
-            zona = sesion_act.get("resp_zona", "")
-        if operacion in (None, "null", ""):
-            operacion = sesion_act.get("operacion_at", None)
-
-        presupuesto_at = sesion_act.get("presupuesto_at", "")
-        operacion_at   = sesion_act.get("operacion_at", "")
-        ciudad_at      = sesion_act.get("ciudad_resp", CIUDAD)
-        subniche_at    = sesion_act.get("subniche", "")
-        email          = sesion_act.get("email", "")
-
-        # Registrar lead en Airtable (background)
-        fuente_det = sesion_act.get("_fuente_detalle", "")
-        threading.Thread(
-            target=_at_registrar_lead,
-            args=(telefono, nombre, score, tipo, zona, nota, presupuesto_at,
-                  operacion_at, ciudad_at, subniche_at, fuente_det), daemon=True
-        ).start()
-
-        # Lead frío → derivar a sitio web + activar nurturing automático
-        if derivar or score == "frio":
-            web_line = f"🌐 *{SITIO_WEB}*\n\n" if SITIO_WEB else ""
-            _enviar_texto(telefono, MSG_SITIO_WEB.format(
-                nombre=nombre_corto or nombre, web_line=web_line,
-                asesor=NOMBRE_ASESOR))
-            threading.Thread(
-                target=_notificar_asesor,
-                args=(telefono, sesion_act, calificacion), daemon=True
-            ).start()
-            # Escalar a Chatwoot con score label
-            threading.Thread(
-                target=_chatwoot_escalar,
-                args=(telefono, sesion_act, calificacion), daemon=True
-            ).start()
-            # Activar seguimiento para leads fríos también (nurturing)
-            def _activar_nurturing():
-                from datetime import date, timedelta
-                if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
-                    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
-                    buscar = requests.get(url, headers=AT_HEADERS,
-                        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
-                    records = buscar.json().get("records", []) if buscar.status_code == 200 else []
-                    if records:
-                        requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
-                            json={"fields": {
-                                "Estado_Seguimiento": "activo",
-                                "Cantidad_Seguimientos": 0,
-                                "Proximo_Seguimiento": (date.today() + timedelta(days=3)).isoformat(),
-                            }}, timeout=8)
-            threading.Thread(target=_activar_nurturing, daemon=True).start()
-            SESIONES.pop(telefono, None)
-            return
-
-        # Lead caliente/tibio → buscar propiedades en Airtable
-        props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona,
-                                       presupuesto=presupuesto_at)
-
-        threading.Thread(
-            target=_notificar_asesor,
-            args=(telefono, sesion_act, calificacion), daemon=True
-        ).start()
-        # Actualizar labels en Chatwoot con score
-        threading.Thread(
-            target=_chatwoot_escalar,
-            args=(telefono, sesion_act, calificacion), daemon=True
-        ).start()
-
-        if not props:
-            _enviar_texto(telefono,
-                f"*{nombre_corto or nombre}*, en este momento no tenemos propiedades "
-                f"con exactamente esas características en nuestro portal, "
-                f"pero *{NOMBRE_ASESOR}* trabaja con opciones que no siempre están publicadas. 🏡\n\n"
-                f"Le coordino una reunión rápida para que le cuente lo que hay disponible."
-            )
-            # Ir directo a Cal.com si hay slots
-            if _cal_disponible():
-                email = sesion_act.get("email", "")
-                slots = _cal_obtener_slots()
-                if slots:
-                    SESIONES[telefono] = {**sesion_act, "step": "ofrecer_cita",
-                                          "slots": slots, "email": email}
-                    _enviar_texto(telefono,
-                        f"¿Prefiere ver los horarios disponibles con *{NOMBRE_ASESOR}* "
-                        f"ahora mismo, o que él se contacte con usted?\n\n"
-                        f"*1️⃣* Ver horarios disponibles 📅\n"
-                        f"*0️⃣* Que me contacten a la brevedad"
-                    )
-                    return
-            # Sin Cal.com o sin slots → despedida con asesor
-            _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
-                nombre=nombre_corto or nombre, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
-            pausar_bot(telefono)
-            SESIONES.pop(telefono, None)
-            return
-        else:
-            # Mostrar las 2 mejores propiedades primero (no saturar)
-            props_iniciales = props[:2]
-            props_restantes = props[2:]
-            SESIONES[telefono] = {**sesion_act, "step": "lista", "props": props_iniciales,
-                                  "props_extra": props_restantes,
-                                  "tipo": tipo, "zona": zona, "operacion": operacion}
-            _enviar_texto(telefono,
-                f"*{nombre_corto or nombre}*, encontré opciones que coinciden con lo que busca. "
-                f"Le muestro las *{len(props_iniciales)} mejores* 👇"
-            )
-            _enviar_texto(telefono, _lista_titulos(props_iniciales))
-            if props_restantes:
-                _enviar_texto(telefono,
-                    f"Tengo *{len(props_restantes)} opción{'es' if len(props_restantes) > 1 else ''}* más. "
-                    f"Escriba *+* si desea verlas.")
-            return  # queda en step lista para que elija ficha
-
-        # Ofrecer cita con Cal.com — primero pregunta binaria, luego slots
-        if _cal_disponible():
-            slots = _cal_obtener_slots()
-            if slots:
-                SESIONES[telefono] = {**sesion_act, "step": "ofrecer_cita",
-                                      "slots": slots, "email": email}
-                _enviar_texto(telefono,
-                    f"¿Prefiere que *{NOMBRE_ASESOR}* lo llame *hoy* o *mañana* para "
-                    f"mostrarle opciones personalizadas?\n\n"
-                    f"*1️⃣* Ver horarios disponibles 📅\n"
-                    f"*0️⃣* Que me contacten ellos a la brevedad"
-                )
-                return
-
-        # Sin Cal.com → despedida
-        _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
-            nombre=nombre_corto or nombre,
-            asesor=NOMBRE_ASESOR,
-            empresa=NOMBRE_EMPRESA,
-        ))
-        SESIONES.pop(telefono, None)
-        return
-
-    # ── LISTA → FICHA ─────────────────────────────────────────────────────────
-    if step == "lista":
-        props = sesion.get("props", [])
-        props_extra = sesion.get("props_extra", [])
-
-        # "+" → mostrar más propiedades
-        if texto.strip() == "+" and props_extra:
-            props_todas = props + props_extra
-            SESIONES[telefono] = {**sesion, "step": "lista", "props": props_todas, "props_extra": []}
-            _enviar_texto(telefono, f"Estas son las *{len(props_extra)} opciones adicionales* 👇")
-            _enviar_texto(telefono, _lista_titulos(props_todas))
-            return
-
-        try:
-            idx = int(texto) - 1
-            if 0 <= idx < len(props):
-                prop = props[idx]
-                SESIONES[telefono] = {**sesion, "step": "ficha", "ficha_actual": idx}
-                _enviar_ficha(telefono, prop)
-                # Guardar propiedad de interés en Airtable (async)
-                prop_nombre = f"{prop.get('Tipo', '')} {prop.get('Zona', '')} - {prop.get('Titulo', prop.get('Nombre', ''))}".strip()
-                def _guardar_interes():
-                    if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
-                        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
-                        buscar = requests.get(url, headers=AT_HEADERS,
-                            params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
-                        records = buscar.json().get("records", []) if buscar.status_code == 200 else []
-                        if records:
-                            requests.patch(f"{url}/{records[0]['id']}", headers=AT_HEADERS,
-                                json={"fields": {"Propiedad_Interes": prop_nombre[:200]}}, timeout=8)
-                threading.Thread(target=_guardar_interes, daemon=True).start()
-            else:
-                _enviar_texto(telefono,
-                    f"Por favor elija un número del 1 al {len(props)}, "
-                    f"*+* para ver más, *0* para volver o *#* para hablar con el asesor.")
-        except ValueError:
-            _enviar_texto(telefono,
-                "Responda con el *número* de la propiedad que desea ver, "
-                "*+* para ver más, *0* para volver o *#* para hablar con el asesor. 😊")
-        return
-
-    # ── FICHA → ACCIONES ─────────────────────────────────────────────────────
-    if step == "ficha":
-        props = sesion.get("props", [])
-        if texto == "0":
-            SESIONES[telefono] = {**sesion, "step": "lista"}
-            _enviar_texto(telefono, _lista_titulos(props))
-            return
-        # Cualquier otra respuesta → ofrecer cita
-        _ir_asesor(telefono, sesion)
-        return
-
-    # ── OFRECER CITA — PREGUNTA BINARIA ANTES DE MOSTRAR SLOTS ──────────────
-    if step == "ofrecer_cita":
-        slots = sesion.get("slots", [])
-        if texto.strip() == "1" or texto_lower in ("si", "sí", "ver", "horarios", "dale"):
-            SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
-            _enviar_texto(telefono,
-                f"Estos son los horarios disponibles con *{NOMBRE_ASESOR}* 📅\n\n"
-                f"{_formatear_slots(slots)}\n\n"
-                f"Responda con el *número* del horario que prefiere."
-            )
-        else:
-            _enviar_texto(telefono,
-                f"¡Perfecto! *{NOMBRE_ASESOR}* se pondrá en contacto con usted a la brevedad. 🏡\n\n"
-                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
-            )
-            SESIONES.pop(telefono, None)
-        return
-
-    # ── AGENDAMIENTO — SELECCIÓN DE SLOT ─────────────────────────────────────
     if step == "agendar_slots":
         slots = sesion.get("slots", [])
-        nombre_corto2 = nombre.split()[0] if nombre else ""
         if texto.strip() == "0":
             _enviar_texto(telefono,
-                f"¡De acuerdo, {nombre_corto2}! Nuestro asesor *{NOMBRE_ASESOR}* "
-                f"estará en contacto con usted a la brevedad. 🏡\n\n"
-                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
-            )
+                f"¡Perfecto! *{NOMBRE_ASESOR}* te va a contactar a la brevedad. 🏡\n"
+                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟")
             SESIONES.pop(telefono, None)
             return
         try:
@@ -1595,88 +1290,294 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                     fecha_str = f"{dia_es} {mx.strftime('%d/%m a las %H:%M hs')}"
                 except Exception:
                     fecha_str = slot["time"]
-                # Guardar slot elegido y pedir confirmación
                 SESIONES[telefono] = {**sesion, "step": "confirmar_cita",
                                       "slot_elegido": slot, "fecha_str": fecha_str}
                 _enviar_texto(telefono,
-                    f"📅 Perfecto, *{nombre_corto2}*. Le confirmo:\n\n"
-                    f"📆 *Fecha:* {fecha_str}\n"
-                    f"👤 *Asesor:* {NOMBRE_ASESOR}\n\n"
-                    f"¿Confirmamos esta cita?\n\n"
-                    f"*1️⃣* ✅ Sí, confirmar\n"
-                    f"*2️⃣* 🔄 Elegir otro horario\n"
-                    f"*0️⃣* ❌ No agendar"
-                )
+                    f"📅 Te confirmo:\n\n"
+                    f"📆 *{fecha_str}*\n"
+                    f"👤 Con *{NOMBRE_ASESOR}*\n\n"
+                    f"¿Lo confirmamos? Respondé *sí* o *no*.")
             else:
-                _enviar_texto(telefono,
-                    f"Por favor elija un número del 1 al {len(slots)}, o *0* para omitir. 😊")
+                _enviar_texto(telefono, f"Elegí un número del 1 al {len(slots)}, o *0* para cancelar.")
         except ValueError:
-            _enviar_texto(telefono,
-                f"Responda con el *número* del horario (1-{len(slots)}) o *0* para omitir. 😊")
+            _enviar_texto(telefono, f"Respondé con el número del horario (1-{len(slots)}) o *0*.")
         return
 
-    # ── CONFIRMAR CITA ───────────────────────────────────────────────────────
     if step == "confirmar_cita":
-        email = sesion.get("email", "")
-        nombre_corto2 = nombre.split()[0] if nombre else ""
         slot = sesion.get("slot_elegido", {})
         fecha_str = sesion.get("fecha_str", "")
-        if texto.strip() == "1" or texto_lower in ("si", "sí", "confirmar", "dale", "ok"):
+        email_cita = sesion.get("email", "")
+        if texto_lower in ("si", "sí", "1", "confirmar", "dale", "ok", "yes"):
             notas = (f"Busca: {sesion.get('resp_tipo','')} en {sesion.get('resp_zona','')} "
                      f"— Presupuesto: {sesion.get('resp_presupuesto','')}")
-            resultado = _cal_crear_reserva(nombre, email, telefono, slot.get("time", ""), notas)
+            resultado = _cal_crear_reserva(nombre, email_cita, telefono, slot.get("time", ""), notas)
             if resultado["ok"]:
-                threading.Thread(
-                    target=_at_guardar_cita,
-                    args=(telefono, slot.get("time", "")), daemon=True
-                ).start()
+                threading.Thread(target=_at_guardar_cita, args=(telefono, slot.get("time","")), daemon=True).start()
                 _enviar_texto(telefono,
-                    f"✅ *¡Cita confirmada, {nombre_corto2}!*\n\n"
-                    f"📅 *Fecha:* {fecha_str}\n"
-                    f"👤 *Asesor:* {NOMBRE_ASESOR}\n\n"
-                    f"Recibirá una confirmación por email. "
-                    f"Si necesita reagendar, escríbanos aquí. 😊\n\n"
-                    f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
-                )
+                    f"✅ *¡Cita confirmada{', ' + nombre_corto if nombre_corto else ''}!*\n\n"
+                    f"📅 *{fecha_str}* con *{NOMBRE_ASESOR}*\n\n"
+                    f"Te llega confirmación por email. Si necesitás reagendar, escribime. 😊\n"
+                    f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟")
                 SESIONES.pop(telefono, None)
             else:
                 _enviar_texto(telefono,
-                    f"Lo sentimos, ese horario ya no está disponible. 😔\n\n"
-                    f"Por favor escriba *2* para elegir otro horario o *0* para omitir."
-                )
-        elif texto.strip() == "2" or texto_lower in ("no", "otro", "cambiar"):
+                    f"Ese horario ya no está disponible 😔 ¿Elegimos otro? Escribí *2* o *0* para cancelar.")
+        elif texto_lower in ("no", "2", "otro", "cambiar"):
             slots = sesion.get("slots", [])
-            if slots:
-                SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
-                _enviar_texto(telefono,
-                    f"Sin problema 😊 Elija otro horario:\n\n"
-                    f"{_formatear_slots(slots)}\n\n"
-                    f"Responda con el *número* del horario que prefiere, o *0* para omitir."
-                )
-            else:
-                _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
-                    nombre=nombre_corto2, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
-                SESIONES.pop(telefono, None)
-        elif texto.strip() == "0":
+            SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
             _enviar_texto(telefono,
-                f"¡De acuerdo, {nombre_corto2}! Nuestro asesor *{NOMBRE_ASESOR}* "
-                f"estará en contacto con usted a la brevedad. 🏡\n\n"
-                f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟"
-            )
-            SESIONES.pop(telefono, None)
+                f"Sin problema 😊 Elegí otro horario:\n\n{_formatear_slots(slots)}")
         else:
-            _enviar_texto(telefono,
-                f"Responda *1* para confirmar, *2* para elegir otro horario, o *0* para no agendar. 😊")
+            _enviar_texto(telefono, "Respondé *sí* para confirmar o *no* para elegir otro horario.")
         return
 
-    # ── FALLBACK ──────────────────────────────────────────────────────────────
-    _enviar_texto(telefono,
-        "Disculpe, no entendí su mensaje. 😊\n\n"
-        "Puede usar estas opciones:\n\n"
-        "▪️ Escriba *hola* para iniciar una nueva consulta\n"
-        "▪️ Escriba *#* para hablar directamente con el asesor\n"
-        "▪️ Escriba *0* para volver al menú anterior")
-    SESIONES.pop(telefono, None)
+    # ── NÚCLEO LLM CONVERSACIONAL ─────────────────────────────────────────
+    system_prompt = _build_system_prompt(sesion, referral, telefono)
+
+    respuesta_llm = _llm(texto, system=system_prompt)
+
+    if not respuesta_llm:
+        _enviar_texto(telefono,
+            f"Disculpá, tuve un problema técnico. ¿Podés repetir tu mensaje? 🙏")
+        return
+
+    # ── Extraer ACCIONES del LLM (líneas ocultas al final) ────────────────
+    lineas = respuesta_llm.strip().split("\n")
+    acciones = {}
+    texto_visible = []
+    for linea in lineas:
+        l = linea.strip()
+        if l.startswith("ACCION:"):
+            acciones["accion"] = l.split(":", 1)[1].strip()
+        elif l.startswith("EMAIL:"):
+            acciones["email"] = l.split(":", 1)[1].strip()
+        elif l.startswith("NOMBRE:"):
+            acciones["nombre"] = l.split(":", 1)[1].strip().title()
+        elif l.startswith("SUBNICHE:"):
+            acciones["subniche"] = l.split(":", 1)[1].strip()
+        else:
+            texto_visible.append(linea)
+
+    mensaje_final = "\n".join(texto_visible).strip()
+
+    # ── Actualizar sesión con datos extraídos ──────────────────────────────
+    sesion_nueva = dict(sesion)
+    sesion_nueva["_ultimo_ts"] = ahora_ts
+
+    if "nombre" in acciones and not sesion_nueva.get("nombre"):
+        sesion_nueva["nombre"] = acciones["nombre"]
+        nombre = acciones["nombre"]
+        nombre_corto = nombre.split()[0]
+
+    if "email" in acciones and not sesion_nueva.get("email"):
+        email_val = acciones["email"]
+        sesion_nueva["email"] = email_val
+        threading.Thread(target=_at_guardar_email, args=(telefono, email_val), daemon=True).start()
+
+    if "subniche" in acciones and not sesion_nueva.get("subniche"):
+        sesion_nueva["subniche"] = acciones["subniche"]
+
+    # ── Inferir datos desde el texto del usuario (progresivo) ─────────────
+    # El LLM extrae lo que puede; también inferimos desde el texto directo
+    if not sesion_nueva.get("resp_objetivo"):
+        for kw, val in [("comprar","venta"),("alquiler","alquiler"),("alquilar","alquiler"),("invertir","venta"),("venta","venta")]:
+            if kw in texto_lower:
+                sesion_nueva["resp_objetivo"] = kw
+                sesion_nueva["operacion_at"] = val
+                break
+
+    if not sesion_nueva.get("resp_tipo"):
+        tipo_det = _normalizar_tipo(texto)
+        if tipo_det:
+            sesion_nueva["resp_tipo"] = tipo_det
+
+    if not sesion_nueva.get("resp_zona"):
+        zona_det = _normalizar_zona(texto)
+        if zona_det:
+            sesion_nueva["resp_zona"] = zona_det
+
+    # ── Actualizar step según datos acumulados ─────────────────────────────
+    datos_completos = all([
+        sesion_nueva.get("nombre"),
+        sesion_nueva.get("resp_objetivo") or sesion_nueva.get("operacion_at"),
+        sesion_nueva.get("resp_tipo"),
+        sesion_nueva.get("resp_presupuesto") or sesion_nueva.get("presupuesto_at"),
+        sesion_nueva.get("resp_urgencia"),
+    ])
+
+    SESIONES[telefono] = sesion_nueva
+
+    # ── Ejecutar ACCION ────────────────────────────────────────────────────
+    accion = acciones.get("accion", "")
+
+    if accion == "ir_asesor":
+        if mensaje_final:
+            _enviar_texto(telefono, mensaje_final)
+            _agregar_historial(telefono, "Bot", mensaje_final)
+        _ir_asesor(telefono, sesion_nueva)
+        return
+
+    if accion == "calificar" or datos_completos:
+        # Enviar respuesta del LLM primero (puede ser transición)
+        if mensaje_final:
+            _enviar_texto(telefono, mensaje_final)
+            _agregar_historial(telefono, "Bot", mensaje_final)
+
+        # Calificar con Gemini
+        calificacion = _gemini_calificar(sesion_nueva)
+        score     = calificacion.get("score", "tibio")
+        derivar   = calificacion.get("derivar_sitio_web", False)
+        tipo      = calificacion.get("tipo") or sesion_nueva.get("resp_tipo", "")
+        zona      = calificacion.get("zona") or sesion_nueva.get("resp_zona", "")
+        operacion = calificacion.get("operacion") or sesion_nueva.get("operacion_at", "venta")
+        nota      = calificacion.get("nota_para_asesor", "")
+        if tipo in (None, "null", ""): tipo = sesion_nueva.get("resp_tipo", "")
+        if zona in (None, "null", ""): zona = sesion_nueva.get("resp_zona", "")
+
+        sesion_nueva["score"] = score
+        sesion_nueva["step"]  = "calificado"
+        SESIONES[telefono] = sesion_nueva
+
+        # Registrar lead (background)
+        threading.Thread(target=_at_registrar_lead, args=(
+            telefono, nombre, score, tipo, zona, nota,
+            sesion_nueva.get("presupuesto_at",""),
+            sesion_nueva.get("operacion_at",""),
+            sesion_nueva.get("ciudad_resp", CIUDAD),
+            sesion_nueva.get("subniche",""),
+            sesion_nueva.get("_fuente_detalle",""),
+        ), daemon=True).start()
+
+        threading.Thread(target=_notificar_asesor, args=(telefono, sesion_nueva, calificacion), daemon=True).start()
+        threading.Thread(target=_chatwoot_escalar, args=(telefono, sesion_nueva, calificacion), daemon=True).start()
+
+        if derivar or score == "frio":
+            web_line = f"🌐 *{SITIO_WEB}*\n\n" if SITIO_WEB else ""
+            _enviar_texto(telefono, MSG_SITIO_WEB.format(
+                nombre=nombre_corto or nombre, web_line=web_line, asesor=NOMBRE_ASESOR))
+            def _nurturing():
+                from datetime import date, timedelta
+                if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+                    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+                    r = requests.get(url, headers=AT_HEADERS,
+                        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+                    recs = r.json().get("records", []) if r.status_code == 200 else []
+                    if recs:
+                        requests.patch(f"{url}/{recs[0]['id']}", headers=AT_HEADERS,
+                            json={"fields": {"Estado_Seguimiento": "activo",
+                                "Cantidad_Seguimientos": 0,
+                                "Proximo_Seguimiento": (date.today() + timedelta(days=3)).isoformat()}}, timeout=8)
+            threading.Thread(target=_nurturing, daemon=True).start()
+            SESIONES.pop(telefono, None)
+            return
+
+        # Caliente/tibio → buscar propiedades
+        props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona,
+                                       presupuesto=sesion_nueva.get("presupuesto_at",""))
+        if not props:
+            if _cal_disponible():
+                slots = _cal_obtener_slots()
+                if slots:
+                    SESIONES[telefono] = {**sesion_nueva, "step": "agendar_slots", "slots": slots}
+                    _enviar_texto(telefono,
+                        f"Ahora mismo no tenemos propiedades con esas características publicadas, "
+                        f"pero *{NOMBRE_ASESOR}* maneja opciones exclusivas. 🏡\n\n"
+                        f"Te muestro sus horarios disponibles para una charla rápida:\n\n"
+                        f"{_formatear_slots(slots)}\n\nElegí un número o *0* para que te contactemos.")
+                    return
+            _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+                nombre=nombre_corto or nombre, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
+            pausar_bot(telefono)
+            SESIONES.pop(telefono, None)
+            return
+
+        # Mostrar propiedades
+        props_iniciales = props[:2]
+        props_restantes = props[2:]
+        SESIONES[telefono] = {**sesion_nueva, "step": "lista",
+                              "props": props_iniciales, "props_extra": props_restantes,
+                              "tipo": tipo, "zona": zona, "operacion": operacion}
+        _enviar_texto(telefono,
+            f"Encontré propiedades que coinciden con lo que buscás. Te muestro las mejores 👇")
+        _enviar_texto(telefono, _lista_titulos(props_iniciales))
+        if props_restantes:
+            _enviar_texto(telefono,
+                f"Tengo *{len(props_restantes)}* opción{'es' if len(props_restantes)>1 else ''} más — "
+                f"escribí *+* para verlas o elegí un número para ver el detalle.")
+        return
+
+    # ── Step lista → navegación por propiedades ───────────────────────────
+    if step == "lista":
+        props = sesion.get("props", [])
+        props_extra = sesion.get("props_extra", [])
+        if texto.strip() == "+":
+            if props_extra:
+                props_todas = props + props_extra
+                SESIONES[telefono] = {**sesion_nueva, "props": props_todas, "props_extra": []}
+                _enviar_texto(telefono, _lista_titulos(props_todas))
+            else:
+                _enviar_texto(telefono, "Ya te mostré todas las opciones disponibles. ¿Cuál te interesa?")
+            return
+        try:
+            idx = int(texto) - 1
+            if 0 <= idx < len(props):
+                prop = props[idx]
+                SESIONES[telefono] = {**sesion_nueva, "step": "ficha", "ficha_actual": idx}
+                _enviar_ficha(telefono, prop)
+                prop_nombre = f"{prop.get('Tipo','')} {prop.get('Zona','')} - {prop.get('Titulo', prop.get('Nombre',''))}".strip()
+                def _guardar_interes():
+                    if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+                        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+                        r = requests.get(url, headers=AT_HEADERS,
+                            params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+                        recs = r.json().get("records", []) if r.status_code == 200 else []
+                        if recs:
+                            requests.patch(f"{url}/{recs[0]['id']}", headers=AT_HEADERS,
+                                json={"fields": {"Propiedad_Interes": prop_nombre[:200]}}, timeout=8)
+                threading.Thread(target=_guardar_interes, daemon=True).start()
+                return
+        except ValueError:
+            pass
+        # Si no eligió número → LLM maneja
+        if mensaje_final:
+            _enviar_texto(telefono, mensaje_final)
+            _agregar_historial(telefono, "Bot", mensaje_final)
+        return
+
+    if step == "ficha":
+        if texto.strip() == "0":
+            props = sesion.get("props", [])
+            SESIONES[telefono] = {**sesion_nueva, "step": "lista"}
+            _enviar_texto(telefono, _lista_titulos(props))
+            return
+        # Cualquier respuesta en ficha → LLM decide si ofrecer cita o responder pregunta
+        if mensaje_final:
+            _enviar_texto(telefono, mensaje_final)
+            _agregar_historial(telefono, "Bot", mensaje_final)
+        return
+
+    # ── Respuesta LLM estándar ─────────────────────────────────────────────
+    if mensaje_final:
+        _enviar_texto(telefono, mensaje_final)
+        _agregar_historial(telefono, "Bot", mensaje_final)
+
+    # Actualizar step si el LLM extrajo datos suficientes para avanzar
+    if not sesion_nueva.get("resp_presupuesto") and any(
+        kw in texto_lower for kw in ["50", "100", "200", "presupuesto", "precio", "cuánto", "cuanto"]
+    ):
+        sesion_nueva["resp_presupuesto"] = texto
+        presupuesto_map = {"menos": "hasta_50k", "50": "50k_100k", "100": "100k_200k", "200": "mas_200k"}
+        for k, v in presupuesto_map.items():
+            if k in texto_lower:
+                sesion_nueva["presupuesto_at"] = v
+                break
+        SESIONES[telefono] = sesion_nueva
+
+    if not sesion_nueva.get("resp_urgencia") and any(
+        kw in texto_lower for kw in ["ahora", "urgente", "ya", "meses", "año", "explorando", "viendo"]
+    ):
+        sesion_nueva["resp_urgencia"] = texto
+        SESIONES[telefono] = sesion_nueva
 
 
 def _ir_asesor(telefono: str, sesion: dict) -> None:
