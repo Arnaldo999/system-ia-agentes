@@ -56,19 +56,19 @@ tailwind.config = {
     .user-chip { @apply flex items-center gap-2 bg-surface-2 border border-brd py-1 px-3 pl-1.5 rounded-full text-[13px] cursor-pointer; }
     .avatar { @apply w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold; background:linear-gradient(135deg,#6c63ff,#a78bfa); }
 
-    /* ── LAYOUT ── */
-    .layout { @apply flex h-[calc(100vh-56px)]; }
-    .sidebar { @apply w-[200px] max-md:w-12 bg-surface border-r border-brd py-3 shrink-0 flex flex-col overflow-hidden; }
-    .sidebar-section { @apply px-4 py-2 pb-1 text-txt-2 text-[10px] font-semibold uppercase tracking-wider max-md:hidden; }
-    .nav-item { @apply flex items-center gap-2.5 py-2.5 px-4 text-txt-2 cursor-pointer text-[13px] transition-all border-l-[3px] border-transparent my-px hover:text-txt hover:bg-surface-2; }
-    .nav-item.active { @apply text-txt bg-surface-2 !border-l-accent; }
-    .nav-icon { @apply text-[15px] w-5 text-center; }
-    .nav-badge { @apply ml-auto bg-accent text-white text-[10px] px-1.5 py-px rounded-[10px] max-md:hidden; }
-    .nav-badge.green { @apply bg-[#064e3b] text-ok; }
-    .sidebar-footer { @apply mt-auto px-4 py-3 border-t border-brd; }
-    .plan-chip { @apply rounded-lg px-2.5 py-2 text-[11px] font-semibold text-center; background:linear-gradient(135deg,#6c63ff,#00d4aa); }
-    .plan-chip small { @apply block font-normal opacity-80 mt-0.5 max-md:hidden; }
-    .main { @apply flex-1 overflow-y-auto p-5 md:px-6; }
+    /* ── LAYOUT ── (CSS puro — no depende de Tailwind CDN) */
+    .layout { display: flex !important; height: calc(100vh - 56px); }
+    .sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--brd); padding: 12px 0; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .sidebar-section { padding: 8px 16px 4px; color: var(--text2); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: var(--text2); cursor: pointer; font-size: 13px; transition: all .15s; border-left: 3px solid transparent; margin: 1px 0; }
+    .nav-item:hover { color: var(--text); background: var(--surface-2); }
+    .nav-item.active { color: var(--text); background: var(--surface-2); border-left-color: var(--accent); }
+    .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+    .nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
+    .nav-badge.green { background: #064e3b; color: var(--ok); }
+    .sidebar-footer { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--brd); }
+    .plan-chip { border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: 600; text-align: center; background: linear-gradient(135deg,#6c63ff,#00d4aa); }
+    .main { flex: 1; overflow-y: auto; padding: 20px 24px; }
 
     /* ── PANELS ── */
     .panel { display: none !important; }
