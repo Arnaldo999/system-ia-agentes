@@ -987,21 +987,27 @@ Antes de responder, revisá el historial para saber en qué flujo estás:
 
 ## REGLAS CRÍTICAS
 1. Un dato por turno — no hagas varias preguntas a la vez.
-2. No repitas info que ya sabés.
+2. No repitas info que ya sabés. Si algo ya figura en DATOS CONOCIDOS, no lo preguntes de nuevo.
 3. Si el cliente pide hablar con alguien o usa "#" → ACCION: ir_asesor.
-4. Si da su email → extraerlo exactamente → EMAIL: correo@ejemplo.com.
-5. Si da su nombre → NOMBRE: Nombre Apellido.
-6. Si dice su perfil → SUBNICHE: agencia_inmobiliaria | agente_independiente | desarrolladora.
-7. Cuando tenés todos los datos → ACCION: calificar.
-8. Siempre terminás con UNA sola pregunta o acción clara.
+4. Cuando tenés todos los datos → ACCION: calificar.
+5. Siempre terminás con UNA sola pregunta o acción clara. Nunca dejés un mensaje colgado sin dirección.
 
-## ACCIONES ESPECIALES (al FINAL de tu respuesta, el cliente nunca las ve)
-- ACCION: ir_asesor
-- ACCION: calificar
-- ACCION: cerrar_curioso
-- EMAIL: correo@ejemplo.com
-- NOMBRE: Juan García
-- SUBNICHE: agencia_inmobiliaria | agente_independiente | desarrolladora
+## EXTRACCIÓN DE DATOS (agregar al FINAL de tu respuesta, el cliente NUNCA las ve)
+Cada vez que el cliente revele un dato, extraélo en la línea correspondiente:
+- Nombre → NOMBRE: Juan García
+- Email → EMAIL: correo@ejemplo.com
+- Perfil → SUBNICHE: agencia_inmobiliaria | agente_independiente | desarrolladora
+- Ciudad donde trabaja → CIUDAD: NombreCiudad
+- Qué busca (comprar/alquilar/invertir) → OBJETIVO: comprar
+- Tipo de propiedad → TIPO: casa | departamento | terreno | local | oficina
+- Zona preferida → ZONA: nombre_zona
+- Presupuesto → PRESUPUESTO: descripción del presupuesto que dio
+- Urgencia/timing → URGENCIA: descripción del timing que dio
+- Para derivar al asesor → ACCION: ir_asesor
+- Para calificar cuando tenés todos los datos → ACCION: calificar
+- Para cerrar a un curioso (ya intentaste pedir contexto y sigue evasivo) → ACCION: cerrar_curioso
+
+Solo incluís los que aplican en este turno. Podés incluir varios si el cliente dio varios datos a la vez.
 """
 
 
@@ -1116,6 +1122,18 @@ def _procesar(telefono: str, texto: str) -> None:
             acciones["nombre"] = l.split(":", 1)[1].strip().title()
         elif l.startswith("SUBNICHE:"):
             acciones["subniche"] = l.split(":", 1)[1].strip()
+        elif l.startswith("CIUDAD:"):
+            acciones["ciudad"] = l.split(":", 1)[1].strip().title()
+        elif l.startswith("OBJETIVO:"):
+            acciones["objetivo"] = l.split(":", 1)[1].strip().lower()
+        elif l.startswith("TIPO:"):
+            acciones["tipo"] = l.split(":", 1)[1].strip().lower()
+        elif l.startswith("ZONA:"):
+            acciones["zona"] = l.split(":", 1)[1].strip()
+        elif l.startswith("PRESUPUESTO:"):
+            acciones["presupuesto"] = l.split(":", 1)[1].strip()
+        elif l.startswith("URGENCIA:"):
+            acciones["urgencia"] = l.split(":", 1)[1].strip()
         else:
             texto_visible.append(linea)
     mensaje_final = "\n".join(texto_visible).strip()
@@ -1136,7 +1154,29 @@ def _procesar(telefono: str, texto: str) -> None:
     if "subniche" in acciones and not sesion_nueva.get("subniche"):
         sesion_nueva["subniche"] = acciones["subniche"]
 
-    # Inferencia progresiva desde texto del usuario
+    if "ciudad" in acciones and not sesion_nueva.get("ciudad_resp"):
+        sesion_nueva["ciudad_resp"] = acciones["ciudad"]
+
+    if "objetivo" in acciones and not sesion_nueva.get("resp_objetivo"):
+        sesion_nueva["resp_objetivo"] = acciones["objetivo"]
+        for kw, val in [("comprar","venta"),("alquilar","alquiler"),("invertir","venta")]:
+            if kw in acciones["objetivo"]:
+                sesion_nueva["operacion_at"] = val
+                break
+
+    if "tipo" in acciones and not sesion_nueva.get("resp_tipo"):
+        sesion_nueva["resp_tipo"] = acciones["tipo"]
+
+    if "zona" in acciones and not sesion_nueva.get("resp_zona"):
+        sesion_nueva["resp_zona"] = acciones["zona"]
+
+    if "presupuesto" in acciones and not sesion_nueva.get("resp_presupuesto"):
+        sesion_nueva["resp_presupuesto"] = acciones["presupuesto"]
+
+    if "urgencia" in acciones and not sesion_nueva.get("resp_urgencia"):
+        sesion_nueva["resp_urgencia"] = acciones["urgencia"]
+
+    # Inferencia progresiva desde texto del usuario (backup si LLM no puso directive)
     if not sesion_nueva.get("resp_objetivo"):
         for kw, val in [("comprar","venta"),("alquilar","alquiler"),("invertir","venta"),("venta","venta")]:
             if kw in texto_lower:
