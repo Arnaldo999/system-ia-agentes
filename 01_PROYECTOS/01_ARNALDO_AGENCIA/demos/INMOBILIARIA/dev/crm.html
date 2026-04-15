@@ -1539,9 +1539,11 @@ let activeChat = 0;
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function nav(id, el) {
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>{ p.classList.remove('active'); p.classList.add('hidden'); });
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
+  const target = document.getElementById('panel-'+id);
+  target.classList.remove('hidden');
+  target.classList.add('active');
   if(el) el.classList.add('active');
   if(id==='chat') renderResumenes();
   if(id==='leads') renderLeads();
