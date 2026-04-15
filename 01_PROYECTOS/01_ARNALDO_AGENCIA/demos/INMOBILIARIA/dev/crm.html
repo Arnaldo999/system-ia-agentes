@@ -363,8 +363,8 @@ tailwind.config = {
 <div class="notif-popup" id="notifPopup">
   <div class="np-icon">🔥</div>
   <div class="np-body">
-    <strong id="npTitle">Nuevo lead caliente</strong>
-    <span id="npBody">Carlos M. preguntó por lote via WhatsApp</span>
+    <strong id="npTitle"></strong>
+    <span id="npBody"></span>
   </div>
   <div class="np-close" onclick="hideNotif()">✕</div>
 </div>
@@ -446,8 +446,8 @@ tailwind.config = {
 
       <div class="sh">
         <div>
-          <div class="sh-title">Bienvenido, Arnaldo 👋</div>
-          <div class="sh-sub">Tu bot atendió <strong style="color:var(--green)">3 leads</strong> mientras estabas fuera. Hoy vas bien.</div>
+          <div class="sh-title" id="welcomeTitle">Bienvenido 👋</div>
+          <div class="sh-sub" id="welcomeSub">Panel de control de tu inmobiliaria</div>
         </div>
       </div>
 
@@ -455,39 +455,39 @@ tailwind.config = {
       <div class="kpis">
         <div class="kpi" style="--c:#6c63ff">
           <div class="kpi-icon">👥</div>
-          <div class="kpi-val" id="kpi-total">47</div>
+          <div class="kpi-val" id="kpi-total">—</div>
           <div class="kpi-label">Total Leads</div>
-          <div class="kpi-delta">↑ +5 esta semana</div>
+          <div class="kpi-delta" id="kpi-total-delta">&nbsp;</div>
         </div>
         <div class="kpi" style="--c:#ff6b6b">
           <div class="kpi-icon">🔥</div>
-          <div class="kpi-val" id="kpi-hot">12</div>
+          <div class="kpi-val" id="kpi-hot">—</div>
           <div class="kpi-label">Leads Calientes</div>
-          <div class="kpi-delta">↑ +3 hoy</div>
+          <div class="kpi-delta" id="kpi-hot-delta">&nbsp;</div>
         </div>
         <div class="kpi" style="--c:#00d4aa">
           <div class="kpi-icon">📅</div>
-          <div class="kpi-val" id="kpi-citas">8</div>
+          <div class="kpi-val" id="kpi-citas">—</div>
           <div class="kpi-label">Citas Agendadas</div>
-          <div class="kpi-delta">↑ 100% por el bot</div>
+          <div class="kpi-delta" id="kpi-citas-delta">&nbsp;</div>
         </div>
         <div class="kpi" style="--c:#ffa94d">
           <div class="kpi-icon">🤖</div>
-          <div class="kpi-val">47s</div>
+          <div class="kpi-val" id="kpi-wa">—</div>
           <div class="kpi-label">Tiempo de respuesta</div>
           <div class="kpi-delta">Promedio del bot</div>
         </div>
         <div class="kpi" style="--c:#4d9fff">
           <div class="kpi-icon">📋</div>
-          <div class="kpi-val" id="kpi-form">23</div>
+          <div class="kpi-val" id="kpi-form">—</div>
           <div class="kpi-label">Desde tus formularios</div>
-          <div class="kpi-delta">↑ +7 esta semana</div>
+          <div class="kpi-delta" id="kpi-form-delta">&nbsp;</div>
         </div>
         <div class="kpi" style="--c:#a78bfa">
           <div class="kpi-icon">🏠</div>
-          <div class="kpi-val">34</div>
+          <div class="kpi-val" id="kpi-props">—</div>
           <div class="kpi-label">Propiedades activas</div>
-          <div class="kpi-delta">5 con interés hoy</div>
+          <div class="kpi-delta" id="kpi-props-delta">&nbsp;</div>
         </div>
       </div>
 
@@ -547,30 +547,10 @@ tailwind.config = {
           <span style="color:var(--text2);font-size:11px;font-weight:400">mientras vos hacías otras cosas</span>
         </div>
         <div id="actList">
-          <div class="act-item">
-            <div class="act-dot" style="background:var(--green)"></div>
-            <div class="act-text"><strong>Calificó a Carla R.</strong> — respondió 8 preguntas via WhatsApp, detectó presupuesto $180K, interés confirmado en lote residencial</div>
-            <div class="act-time">hace 3 min</div>
-          </div>
-          <div class="act-item">
-            <div class="act-dot" style="background:var(--accent)"></div>
-            <div class="act-text"><strong>Agendó cita automáticamente</strong> — Marcos V. eligió slot Jue 3 Abr 10:00 AM sin que vos intervinieras</div>
-            <div class="act-time">hace 12 min</div>
-          </div>
-          <div class="act-item">
-            <div class="act-dot" style="background:var(--yellow)"></div>
-            <div class="act-text"><strong>Seguimiento automático</strong> — Andrea G. no respondía hace 4h, el bot envió mensaje de seguimiento y reactivó la conversación</div>
-            <div class="act-time">hace 28 min</div>
-          </div>
-          <div class="act-item">
-            <div class="act-dot" style="background:var(--blue)"></div>
-            <div class="act-text"><strong>Nuevo lead desde tu formulario web</strong> — Lucía M. completó el form, bot inició conversación en 47 segundos</div>
-            <div class="act-time">hace 1h</div>
-          </div>
-          <div class="act-item">
+          <div class="act-item" style="opacity:0.5">
             <div class="act-dot" style="background:var(--s4)"></div>
-            <div class="act-text"><strong>Envió catálogo de propiedades</strong> — Roberto A. pidió opciones, bot le mandó 3 fichas personalizadas según su presupuesto</div>
-            <div class="act-time">hace 2h</div>
+            <div class="act-text">Sin actividad reciente — se irá llenando a medida que el bot trabaje</div>
+            <div class="act-time">—</div>
           </div>
         </div>
       </div>
@@ -593,145 +573,33 @@ tailwind.config = {
         <div class="kanban-col">
           <div class="kanban-head">
             <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s1)"></div>Nuevo</div>
-            <div class="kanban-cnt" id="cnt-n">5</div>
+            <div class="kanban-cnt" id="cnt-n">0</div>
           </div>
-          <div class="kanban-body" id="col-n">
-            <div class="lcard" id="kcard-0">
-              <div class="lcard-name">Carlos Mendoza</div>
-              <div class="lcard-meta">+52 55 1234-5678<br>Lote Fracc. Prados Norte</div>
-              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(0)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(0,'contactado')">→ Contactado</button>
-              </div>
-            </div>
-            <div class="lcard" id="kcard-1">
-              <div class="lcard-name">María González</div>
-              <div class="lcard-meta">Formulario web<br>Casa 3 rec. $150K</div>
-              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(1)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(1,'contactado')">→ Contactado</button>
-              </div>
-            </div>
-            <div class="lcard" id="kcard-2">
-              <div class="lcard-name">Jorge Ramírez</div>
-              <div class="lcard-meta">Referido<br>Depto. centro histórico</div>
-              <div class="lcard-badges"><span class="badge b-ref">🔥 Referido</span><span class="badge b-hot">Caliente</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(2)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(2,'contactado')">→ Contactado</button>
-              </div>
-            </div>
-            <div class="lcard" id="kcard-3">
-              <div class="lcard-name">Ana Torres</div>
-              <div class="lcard-meta">WhatsApp<br>Renta local comercial</div>
-              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(3)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(3,'contactado')">→ Contactado</button>
-              </div>
-            </div>
-            <div class="lcard" id="kcard-4">
-              <div class="lcard-name">Luis Hernández</div>
-              <div class="lcard-meta">Formulario<br>Terreno 300m²</div>
-              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(4)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(4,'contactado')">→ Contactado</button>
-              </div>
-            </div>
-          </div>
+          <div class="kanban-body" id="col-n"></div>
         </div>
         <!-- Contactado -->
         <div class="kanban-col">
           <div class="kanban-head">
             <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s2)"></div>Contactado</div>
-            <div class="kanban-cnt" id="cnt-c">3</div>
+            <div class="kanban-cnt" id="cnt-c">0</div>
           </div>
-          <div class="kanban-body" id="col-c">
-            <div class="lcard" id="kcard-5">
-              <div class="lcard-name">Carla Reyes</div>
-              <div class="lcard-meta">Bot respondió en 2 min<br>Presupuesto $180K</div>
-              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span><span class="badge b-hot">Caliente</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(5)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(5,'calificado')">→ Calificado</button>
-              </div>
-            </div>
-            <div class="lcard" id="kcard-6">
-              <div class="lcard-name">Héctor Castillo</div>
-              <div class="lcard-meta">2 propiedades de interés<br>Zona Polanco</div>
-              <div class="lcard-badges"><span class="badge b-ref">🔥 Referido</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(6)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(6,'calificado')">→ Calificado</button>
-              </div>
-            </div>
-            <div class="lcard" id="kcard-7">
-              <div class="lcard-name">Patricia López</div>
-              <div class="lcard-meta">Requiere financiamiento<br>Casa 2 rec.</div>
-              <div class="lcard-badges"><span class="badge b-web">📋 Web</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(7)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(7,'calificado')">→ Calificado</button>
-              </div>
-            </div>
-          </div>
+          <div class="kanban-body" id="col-c"></div>
         </div>
         <!-- Calificado -->
         <div class="kanban-col">
           <div class="kanban-head">
             <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s3)"></div>Calificado</div>
-            <div class="kanban-cnt" id="cnt-q">2</div>
+            <div class="kanban-cnt" id="cnt-q">0</div>
           </div>
-          <div class="kanban-body" id="col-q">
-            <div class="lcard" id="kcard-8">
-              <div class="lcard-name">Roberto Alvarado</div>
-              <div class="lcard-meta">✅ Presupuesto confirmado<br>Lote #12, $200K</div>
-              <div class="lcard-badges"><span class="badge b-hot">Caliente</span><span class="badge b-cita">📅 Con cita</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(8)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(8,'cita')">→ Cita agendada</button>
-              </div>
-            </div>
-            <div class="lcard" id="kcard-9">
-              <div class="lcard-name">Sandra Ruiz</div>
-              <div class="lcard-meta">3 propiedades en renta<br>Presupuesto $50K/año</div>
-              <div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(9)">Ver</button>
-                <button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();moverLead(9,'cita')">→ Cita agendada</button>
-              </div>
-            </div>
-          </div>
+          <div class="kanban-body" id="col-q"></div>
         </div>
         <!-- Cita -->
         <div class="kanban-col">
           <div class="kanban-head">
             <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s4)"></div>Cita Agendada</div>
-            <div class="kanban-cnt" id="cnt-a">2</div>
+            <div class="kanban-cnt" id="cnt-a">0</div>
           </div>
-          <div class="kanban-body" id="col-a">
-            <div class="lcard" id="kcard-10">
-              <div class="lcard-name">Marcos Vega</div>
-              <div class="lcard-meta">📅 Jue 3 Abr · 10:00 AM<br>Lote #47 Fracc. Norte</div>
-              <div class="lcard-badges"><span class="badge b-cita">📅 Cita</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(10)">Ver</button>
-                <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="event.stopPropagation();moverLead(10,'cerrado')">✅ Cerrar venta</button>
-              </div>
-            </div>
-            <div class="lcard" id="kcard-11">
-              <div class="lcard-name">Diana Flores</div>
-              <div class="lcard-meta">📅 Vie 4 Abr · 3:00 PM<br>Depto 502, Torre B</div>
-              <div class="lcard-badges"><span class="badge b-cita">📅 Cita</span><span class="badge b-hot">Caliente</span></div>
-              <div class="lcard-actions">
-                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(11)">Ver</button>
-                <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="event.stopPropagation();moverLead(11,'cerrado')">✅ Cerrar venta</button>
-              </div>
-            </div>
-          </div>
+          <div class="kanban-body" id="col-a"></div>
         </div>
         <!-- Cerrado -->
         <div class="kanban-col">
@@ -1639,68 +1507,17 @@ const FUENTE_ORIGEN = {
   'whatsapp_directo':          'wa',
 };
 
-const LEADS_FALLBACK = [
-  {id:0,name:"Carlos Mendoza",phone:"+5493764112233",origen:"form",status:"nuevo",interes:"Lote 500m² · San Ignacio",fecha:"2026-04-01",presupuesto:"USD 50k-100k",score:12,subnicho:"desarrolladora",notas:"Interesado en lote de 500m2. Plazo: inmediato."},
-  {id:1,name:"María González",phone:"+5493764220011",origen:"form",status:"nuevo",interes:"Casa 3 dorm · Apóstoles",fecha:"2026-04-01",presupuesto:"USD 100k-200k",score:9,subnicho:"agencia_inmobiliaria",notas:"Busca casa 3 dorm para comprar. Crédito hipotecario."},
-  {id:2,name:"Lucas Romero",phone:"+5493764334455",origen:"form",status:"nuevo",interes:"Dpto 2 dorm alquiler · Roca",fecha:"2026-04-01",presupuesto:"Hasta USD 50k",score:6,subnicho:"agente_independiente",notas:"Alquiler dpto 2 dorm. Presupuesto ajustado."},
-  {id:3,name:"Sofía Fernández",phone:"+5493764556677",origen:"wa",status:"contactado",interes:"Lote residencial · San Ignacio",fecha:"2026-03-31",presupuesto:"USD 50k-100k",score:14,subnicho:"desarrolladora",notas:"Contactada. Pidió fotos del lote B-12."},
-  {id:4,name:"Martín López",phone:"+5493764668899",origen:"form",status:"contactado",interes:"Casa San Ignacio centro",fecha:"2026-03-31",presupuesto:"USD 100k-200k",score:11,subnicho:"agencia_inmobiliaria",notas:"Tiene pre-aprobación bancaria."},
-  {id:5,name:"Ana Pereyra",phone:"+5493764771100",origen:"wa",status:"contactado",interes:"Casa alquiler · Apóstoles",fecha:"2026-03-30",presupuesto:"Hasta USD 50k",score:7,subnicho:"agente_independiente",notas:"Llegó por WhatsApp. Tiene garante."},
-  {id:6,name:"Roberto Acosta",phone:"+5493764882211",origen:"form",status:"calificado",interes:"Lote A-3/B-7 · San Ignacio",fecha:"2026-03-29",presupuesto:"USD 100k-200k",score:16,subnicho:"desarrolladora",notas:"Visitó lotes. Pide reserva. 50% contado."},
-  {id:7,name:"Valeria Ríos",phone:"+5493764993322",origen:"form",status:"calificado",interes:"Casa con piscina · San Ignacio",fecha:"2026-03-29",presupuesto:"Más de USD 200k",score:18,subnicho:"agencia_inmobiliaria",notas:"Cliente premium. Mandó propuesta escrita."},
-  {id:8,name:"Fernanda Aguirre",phone:"+5493765771100",origen:"form",status:"cita",interes:"Lote sector este · San Ignacio",fecha:"2026-03-28",presupuesto:"USD 50k-100k",score:15,subnicho:"desarrolladora",notas:"CITA AGENDADA: 05/04 10:00hs. Viene con pareja.",cita:"Sáb 5 Abr 10:00 AM"},
-  {id:9,name:"Nicolás Herrera",phone:"+5493765882211",origen:"form",status:"cita",interes:"Casa barrio norte · San Ignacio",fecha:"2026-03-28",presupuesto:"USD 100k-200k",score:13,subnicho:"agencia_inmobiliaria",notas:"CITA AGENDADA: 07/04 15:00hs. Trae contador.",cita:"Lun 7 Abr 3:00 PM"},
-  {id:10,name:"Patricia Molina",phone:"+5493765115544",origen:"form",status:"cerrado",interes:"Lote C-5 · San Ignacio",fecha:"2026-03-25",presupuesto:"USD 50k-100k",score:15,subnicho:"desarrolladora",notas:"CERRADO. Compró lote C-5 a USD 62.000. Firmó boleto."},
-  {id:11,name:"Héctor Vargas",phone:"+5493765226655",origen:"form",status:"cerrado",interes:"Casa alquiler · San Ignacio",fecha:"2026-03-24",presupuesto:"Hasta USD 50k",score:10,subnicho:"agencia_inmobiliaria",notas:"CERRADO. Alquiler firmado 2 años. USD 350/mes."},
-];
-
-const PROPS = [
-  {emoji:"🏠",title:"Casa Fracc. Prados Norte",loc:"Zona Norte · 180 m²",price:"$145,000 USD",specs:["3 rec","2 baños","Garage"],status:"disponible"},
-  {emoji:"🏢",title:"Depto 502 Torre B",loc:"Centro · 85 m²",price:"$280,000 USD",specs:["2 rec","2 baños","Terraza"],status:"reservado"},
-  {emoji:"🌿",title:"Lote Residencial #47",loc:"Fracc. Norte · 300 m²",price:"$175,000 USD",specs:["300 m²","Servicios","Escritura"],status:"disponible"},
-  {emoji:"🏬",title:"Local Plaza Sur",loc:"Av. Principal · 120 m²",price:"$3,500/mes",specs:["120 m²","A/C","Bodega"],status:"disponible"},
-  {emoji:"🏡",title:"Casa Colonial Centro",loc:"Col. Centro · 220 m²",price:"$320,000 USD",specs:["4 rec","3 baños","Jardín"],status:"disponible"},
-  {emoji:"🏘️",title:"Lote Industrial #12",loc:"Parque Industrial · 800 m²",price:"$200,000 USD",specs:["800 m²","Nave","Oficinas"],status:"vendido"},
-];
-
-const CHATS = [
-  {id:0,name:"Carlos Mendoza",initials:"CM",color:"#3b82f6",unread:2,lastMsg:"Sí, me interesa el lote de 300m²",time:"2 min"},
-  {id:1,name:"Carla Reyes",initials:"CR",color:"#8b5cf6",unread:1,lastMsg:"¿Cuándo puedo visitar?",time:"15 min"},
-  {id:2,name:"Héctor Castillo",initials:"HC",color:"#f59e0b",unread:0,lastMsg:"Ok, quedo pendiente",time:"1h"},
-  {id:3,name:"Marcos Vega",initials:"MV",color:"#10b981",unread:0,lastMsg:"Perfecto, ahí estaré el jueves 👍",time:"2h"},
-];
-
-const CONV = {
-  0:[
-    {t:"bot",m:"¡Hola Carlos! 👋 Soy el asistente de **Tu Inmobiliaria**. Vi que te interesaron nuestros lotes en Fracc. Prados Norte. ¿Qué tipo de lote buscás?",h:"10:32"},
-    {t:"user",m:"Hola, sí me interesa. ¿Cuánto cuesta un lote de 300m²?",h:"10:33"},
-    {t:"bot",m:"¡Excelente elección! 🌿 Los lotes de 300m² están desde **$175,000 USD**, con:\n✅ Escrituración incluida\n✅ Todos los servicios\n✅ Acceso a amenidades\n\n¿Tu presupuesto está en ese rango?",h:"10:33"},
-    {t:"user",m:"Sí. ¿Tienen financiamiento?",h:"10:35"},
-    {t:"bot",m:"¡Claro! 💳 Opciones disponibles:\n\n1. **Contado** — 5% descuento\n2. **Financiamiento directo** — 24 a 48 meses\n3. **Crédito bancario** — te asesoramos\n\n¿Cuál preferís?",h:"10:35"},
-    {t:"user",m:"Prefiero financiamiento a 36 meses",h:"10:38"},
-    {t:"bot",m:"Perfecto 🎯 Con 36 meses: **~$5,200 USD/mes** con 20% de enganche (~$35,000 USD).\n\n¿Querés agendar una visita para ver el fraccionamiento y revisar el plan de pagos?",h:"10:38"},
-    {t:"user",m:"Sí, me interesa visitar",h:"10:40"},
-    {t:"bot",m:"¡Genial! 📅 Tengo disponibilidad:\n\n• **Jueves 3 Abr** — 10:00 AM o 4:00 PM\n• **Viernes 4 Abr** — 11:00 AM o 3:00 PM\n\n¿Cuál te viene mejor?",h:"10:40"},
-    {t:"user",m:"El jueves a las 10",h:"10:41"},
-    {t:"bot",m:"✅ ¡Cita confirmada! **Jueves 3 de Abril, 10:00 AM**.\n📍 Te envío la dirección exacta.\n📲 Recibirás un recordatorio 24h antes.\n\n¿Algo más en que pueda ayudarte?",h:"10:41"},
-  ],
-  1:[
-    {t:"bot",m:"¡Hola Carla! 👋 Gracias por escribirnos. ¿Qué tipo de propiedad buscás?",h:"09:15"},
-    {t:"user",m:"Hola, vi un lote en su página. ¿Está disponible?",h:"09:16"},
-    {t:"bot",m:"¡Sí! 🌿 Tenemos lotes disponibles. ¿Qué superficie buscás y cuál es tu presupuesto aproximado?",h:"09:16"},
-    {t:"user",m:"Algo de 250-300m² para construir casa. Presupuesto hasta $180K",h:"09:18"},
-    {t:"bot",m:"Tengo opciones perfectas:\n\n🌿 **Lote #47** — 300m², $175K, Fracc. Norte\n🌿 **Lote #23** — 250m², $145K, Fracc. Sur\n\nAmbos con todos los servicios y escrituración. ¿Cuál te llama más?",h:"09:18"},
-    {t:"user",m:"El lote #47. ¿Cuándo puedo visitar?",h:"09:45"},
-    {t:"bot",m:"¡Excelente elección! Buscando disponibilidad para visita... 📅",h:"09:45"},
-  ],
-};
+// Arrays fallback vacíos — se llenan dinámicamente desde backend
+const LEADS_FALLBACK = [];
+const PROPS = [];
+const CHATS = [];
+const CONV = {};
 
 // CITAS se cargan desde Airtable (leads con Fecha_Cita)
 let CITAS = [];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let activeChat = 0;
-let simCount = 0;
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function nav(id, el) {
@@ -1806,6 +1623,13 @@ async function cargarMetricas() {
     el('kpi-hot', m.scores?.caliente || 0);
     el('kpi-citas', m.con_cita || 0);
     el('kpi-form', m.fuentes?.['formulario-agencia'] || m.fuentes?.['formulario-desarrolladora'] || 0);
+    el('kpi-wa', m.tiempo_respuesta_seg ? `${m.tiempo_respuesta_seg}s` : '—');
+
+    // Propiedades activas — consulta el endpoint dedicado
+    fetch(`${API_BASE}/crm/propiedades`).then(r => r.json()).then(d => {
+      const activas = (d.records || []).filter(p => (p.Estado || p.estado || '').toLowerCase() === 'disponible').length;
+      el('kpi-props', activas || (d.total || d.records?.length || 0));
+    }).catch(() => {});
 
     // Actualizar deltas con tasas reales
     const kpiCitas = document.getElementById('kpi-citas');
@@ -2355,6 +2179,12 @@ async function initTenant() {
     if (topAvatar) topAvatar.textContent = t.nombre.substring(0,2).toUpperCase();
     if (t.logo_url) aplicarLogo(t.logo_url);
     if (t.color_primario) document.documentElement.style.setProperty('--accent', t.color_primario);
+
+    // Saludo dinámico en el panel de inicio
+    const welcomeTitle = document.getElementById('welcomeTitle');
+    const welcomeSub = document.getElementById('welcomeSub');
+    if (welcomeTitle) welcomeTitle.innerHTML = `Bienvenido, ${t.nombre} 👋`;
+    if (welcomeSub) welcomeSub.textContent = t.ciudad ? `Panel de control · ${t.ciudad}` : 'Panel de control de tu inmobiliaria';
 
     // Verificar estado de pago
     const estadoPago = t.estado_pago || 'trial';
@@ -2939,20 +2769,8 @@ function recontarKanban() {
 }
 
 // ── RESÚMENES IA ────────────────────────────────────────────────────────────
-const RESUMENES = [
-  {leadId:5,stars:4,duracion:"8 min",mensajes:12,
-   resumen:"Busca lote residencial entre 250-300m² para construir casa familiar. Tiene presupuesto aprobado de $180K USD. Prefiere financiamiento directo a 36 meses. Muy interesado, preguntó por amenidades y vecindario.",
-   datos:{presupuesto:"$180K USD",zona:"Fracc. Sur",urgencia:"Alta — quiere decidir este mes",financiamiento:"36 meses directo"}},
-  {leadId:8,stars:5,duracion:"12 min",mensajes:18,
-   resumen:"Lead caliente. Confirmó presupuesto de $200K USD para Lote #12. Ya visitó el fraccionamiento anteriormente. Está comparando con otra opción. Cita agendada para cerrar trato.",
-   datos:{presupuesto:"$200K USD",zona:"Fracc. Sur · Lote #12",urgencia:"Muy alta — decidiendo esta semana",financiamiento:"Contado"}},
-  {leadId:10,stars:5,duracion:"6 min",mensajes:9,
-   resumen:"Lead altamente calificado. Tiene pre-aprobación bancaria. Solo necesita visitar el lote físicamente para confirmar. Llegará con su esposa a la cita. Muy amigable.",
-   datos:{presupuesto:"$175K USD",zona:"Fracc. Norte · Lote #47",urgencia:"Alta — cita confirmada Jue 3 Abr",financiamiento:"Crédito bancario pre-aprobado"}},
-  {leadId:6,stars:3,duracion:"5 min",mensajes:7,
-   resumen:"Interesado en 2 departamentos en Zona Polanco. Presupuesto alto pero indeciso. Comparando varias opciones. Recomendable hacer seguimiento personal.",
-   datos:{presupuesto:"$400K USD",zona:"Polanco",urgencia:"Media — sin fecha definida",financiamiento:"Por confirmar"}},
-];
+// Vacío por defecto — se genera/carga desde backend cuando haya datos reales
+const RESUMENES = [];
 
 function renderResumenes() {
   const grid = document.getElementById('resumenesGrid');
@@ -3006,35 +2824,8 @@ function renderResumenes() {
   });
 }
 
-// ── SIMULATE NEW LEAD ──────────────────────────────────────────────────────
-function simLead() {
-  const names=["Felipe Morales","Valentina Cruz","Andrés Ramos","Sofía Jiménez","Miguel Díaz","Luciana Pérez"];
-  const interes=["Lote residencial zona norte","Casa 3 rec. con jardín","Depto. torre céntrica","Local comercial av. principal","Terreno 500m² inversión"];
-  const n=names[simCount%names.length];
-  const it=interes[simCount%interes.length];
-  simCount++;
-
-  // Add to kanban col-n
-  const col=document.getElementById('col-n');
-  if(col){
-    const card=document.createElement('div');
-    card.className='lcard fresh';
-    card.innerHTML=`<div class="lcard-name">${n}</div><div class="lcard-meta">💬 WhatsApp · Ahora mismo<br>${it}</div><div class="lcard-badges"><span class="badge b-wa">💬 WhatsApp</span><span class="badge" style="background:#0d2e1a;color:#34d399;border:1px solid #1a5c33">🤖 Bot respondiendo</span></div>`;
-    col.insertBefore(card,col.firstChild);
-    const cnt=document.getElementById('cnt-n');
-    if(cnt) cnt.textContent=parseInt(cnt.textContent)+1;
-  }
-
-  // KPI
-  const kt=document.getElementById('kpi-total');
-  if(kt) kt.textContent=parseInt(kt.textContent)+1;
-
-  // Notif
-  showNotif(`🔔 Nuevo lead: ${n}`,`Llegó via WhatsApp · Bot ya lo está atendiendo`);
-
-  // Activity
-  addAct(`<strong>Nuevo lead atendido por bot</strong> — ${n} escribió por WhatsApp, interés: ${it}`, 'var(--green)', 'ahora mismo');
-}
+// simLead() eliminada — era función de demo con datos ficticios.
+// Los leads reales entran automáticamente por el bot (WhatsApp) o por formularios web.
 
 // ── NOTIF ──────────────────────────────────────────────────────────────────
 function showNotif(title,body) {
@@ -3156,8 +2947,7 @@ function previewForm(type) {
 }
 
 // ── AUTO NOTIFS ─────────────────────────────────────────────────────────────
-setTimeout(()=>showNotif('🔥 Lead caliente detectado','Carlos M. respondió todas las preguntas de calificación. ¡Listo para cita!'),5000);
-setTimeout(()=>showNotif('📅 Cita agendada automáticamente','Carla R. eligió slot Vie 4 Abr 11:00 AM sin intervención tuya'),22000);
+// (Eliminadas notificaciones fake hardcodeadas — se dispararán solo con eventos reales)
 
 // ── BUSCADOR GLOBAL ──────────────────────────────────────────────────────────
 function buscarGlobal(q) {
