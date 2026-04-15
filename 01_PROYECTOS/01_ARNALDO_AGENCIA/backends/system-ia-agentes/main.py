@@ -15,6 +15,43 @@ logger = logging.getLogger("system-ia")
 # Registro global de errores en memoria (últimos 100)
 _error_log: list[dict] = []
 
+# Throttle de alertas Telegram: mismo endpoint+tipo_error no repite en <5 min
+_ALERT_THROTTLE: dict = {}
+_ALERT_COOLDOWN = 300  # segundos
+
+def _enviar_alerta_telegram(endpoint: str, error: Exception, method: str = ""):
+    """Envía alerta a Telegram cuando hay un error 500. Throttle para no spammear."""
+    import time, requests
+    tg_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    tg_chat = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if not tg_token or not tg_chat:
+        return
+
+    # Throttle: mismo endpoint + tipo error no re-envía en cooldown
+    key = f"{endpoint}:{type(error).__name__}"
+    now = time.time()
+    last = _ALERT_THROTTLE.get(key, 0)
+    if now - last < _ALERT_COOLDOWN:
+        return
+    _ALERT_THROTTLE[key] = now
+
+    host = os.environ.get("COOLIFY_URL", "prod")
+    msg = (
+        f"🚨 *Error 500 en producción*\n\n"
+        f"*Host*: {host}\n"
+        f"*{method} {endpoint}*\n"
+        f"*{type(error).__name__}*: {str(error)[:200]}\n\n"
+        f"Ver traceback: `GET /debug/errors`"
+    )
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{tg_token}/sendMessage",
+            json={"chat_id": tg_chat, "text": msg, "parse_mode": "Markdown"},
+            timeout=5,
+        )
+    except Exception:
+        pass  # no queremos que la alerta rompa el flujo principal
+
 def registrar_error(endpoint: str, error: Exception, contexto: dict = {}):
     """Registra un error en el log interno y en stdout para Coolify/Render."""
     import traceback, datetime
@@ -30,6 +67,8 @@ def registrar_error(endpoint: str, error: Exception, contexto: dict = {}):
     if len(_error_log) > 100:
         _error_log.pop(0)
     logger.error(f"[{endpoint}] {type(error).__name__}: {error}")
+    # Alerta Telegram asíncrona (con throttle)
+    _enviar_alerta_telegram(endpoint, error, contexto.get("method", ""))
 
 # ── Clientes Arnaldo ──────────────────────────────────────────────────────────
 from workers.clientes.arnaldo.maicol.worker import router as maicol_router
@@ -423,6 +462,44 @@ async def admin_setup_crm_completo():
     from scripts.setup_postgres_crm_completo import setup
     return setup()
 
+
+
+@app.get("/admin/setup-audit-columns", tags=["Admin"])
+async def admin_setup_audit_columns():
+    """Agrega columnas de auditoría (updated_by, updated_at, created_by) a tablas
+    principales del CRM. Idempotente — se puede correr varias veces sin efecto adverso.
+    """
+    try:
+        import psycopg2
+        dsn = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
+        if not dsn:
+            return {"ok": False, "error": "DATABASE_URL no configurado"}
+        conn = psycopg2.connect(dsn)
+        cur = conn.cursor()
+        tablas = ["leads", "propiedades", "clientes_activos", "asesores",
+                  "propietarios", "loteos", "contratos", "visitas"]
+        resultados = {}
+        for tabla in tablas:
+            try:
+                for col_sql in [
+                    f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS updated_by TEXT",
+                    f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()",
+                    f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS created_by TEXT",
+                ]:
+                    cur.execute(col_sql)
+                resultados[tabla] = "ok"
+            except psycopg2.errors.UndefinedTable:
+                conn.rollback()
+                resultados[tabla] = "no existe (skip)"
+            except Exception as e:
+                conn.rollback()
+                resultados[tabla] = f"error: {e}"
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"ok": True, "resultados": resultados}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 @app.get("/admin/crear-db-cliente", tags=["Admin"])

@@ -5,13 +5,34 @@ POST  /tenant/{slug}/auth   → valida PIN, devuelve token simple
 PATCH /tenant/{slug}/marca  → actualiza branding (nombre, logo, colores, ciudad, moneda)
 """
 import os
+import time
 import hashlib
 import secrets
+from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from supabase import create_client
 
 router = APIRouter(prefix="/tenant", tags=["SaaS Tenants"])
+
+# ── Rate limit in-memory para /auth (evita fuerza bruta PIN) ──────────────────
+# 5 intentos por (slug, IP) en ventana de 300s. Suficiente para tu escala.
+_AUTH_ATTEMPTS: dict = defaultdict(list)  # key=(slug, ip) → [timestamps]
+_AUTH_LIMIT = 5
+_AUTH_WINDOW = 300  # 5 min
+
+def _check_auth_rate_limit(slug: str, ip: str):
+    now = time.time()
+    key = (slug, ip)
+    # limpiar intentos viejos
+    _AUTH_ATTEMPTS[key] = [t for t in _AUTH_ATTEMPTS[key] if now - t < _AUTH_WINDOW]
+    if len(_AUTH_ATTEMPTS[key]) >= _AUTH_LIMIT:
+        retry_in = int(_AUTH_WINDOW - (now - _AUTH_ATTEMPTS[key][0]))
+        raise HTTPException(
+            status_code=429,
+            detail=f"Demasiados intentos. Probá de nuevo en {retry_in}s."
+        )
+    _AUTH_ATTEMPTS[key].append(now)
 
 # ── Versión CRM (el frontend consulta esto para mostrar alerta de actualización)
 _CRM_VERSION = {
@@ -108,8 +129,14 @@ def tenant_config(slug: str):
 
 
 @router.post("/{slug}/auth")
-def tenant_auth(slug: str, body: AuthRequest):
-    """Valida PIN del tenant. Devuelve token de sesión simple."""
+def tenant_auth(slug: str, body: AuthRequest, request: Request):
+    """Valida PIN del tenant. Devuelve token de sesión simple.
+    Rate limit: 5 intentos por (slug, IP) cada 5 min para bloquear fuerza bruta.
+    """
+    # Rate limit antes de tocar BD
+    ip = request.client.host if request.client else "unknown"
+    _check_auth_rate_limit(slug, ip)
+
     t = _get_tenant(slug)
 
     pin_hash = t.get("pin_hash")
