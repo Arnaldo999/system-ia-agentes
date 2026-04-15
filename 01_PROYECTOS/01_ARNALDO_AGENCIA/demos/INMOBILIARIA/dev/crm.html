@@ -1792,7 +1792,7 @@ function renderKanbanFromLeads() {
     };
     const nextInfo = nextMap[l.status];
     const nextBtn = nextInfo
-      ? `<button class="btn ${nextInfo.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${nextInfo.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${l.id},'${nextInfo.next}')">${nextInfo.label}</button>`
+      ? `<button class="btn ${nextInfo.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${nextInfo.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" data-lid="${l.id}" data-next="${nextInfo.next}" onclick="event.stopPropagation();moverLead(this.dataset.lid,this.dataset.next)">${nextInfo.label}</button>`
       : '';
 
     const card = document.createElement('div');
@@ -2099,7 +2099,7 @@ function showUpdateBanner(newVersion, changelog) {
     <div>🔔 <strong>Nueva versión disponible (v${newVersion})</strong>${changelogText}</div>
     <div style="display:flex;gap:8px">
       <button onclick="location.reload(true)" style="background:#fff;color:#1a1d27;border:none;padding:5px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">🔄 Actualizar</button>
-      <button onclick="dismissUpdate('${newVersion}')" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ahora no</button>
+      <button data-ver="${newVersion}" onclick="dismissUpdate(this.dataset.ver)" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ahora no</button>
     </div>`;
   document.body.prepend(banner);
 }
@@ -2333,15 +2333,15 @@ async function renderProps() {
 
       const pid = p.id || p.ID || '';
       g.innerHTML += `
-        <div class="pcard" onclick="verDetalleProp('${pid}')" style="cursor:pointer">
+        <div class="pcard" data-pid="${pid}" onclick="_verProp(this)" style="cursor:pointer">
           <div class="pcard-img" style="position:relative;overflow:hidden">
             🏠${imgTag}
-            <div class="pcard-status ${sc}" id="badge-${pid}" onclick="event.stopPropagation();toggleDispDropdown('${pid}','${sc}',this)" style="position:absolute;top:8px;right:8px">
+            <div class="pcard-status ${sc}" id="badge-${pid}" data-pid="${pid}" data-sc="${sc}" onclick="event.stopPropagation();_dispToggle(this)" style="position:absolute;top:8px;right:8px">
               <span id="lbl-${pid}">${sl}</span> ▾
               <div class="disp-dropdown" id="dd-${pid}" style="display:none" onclick="event.stopPropagation()">
-                <div class="disp-opt opt-disp" onclick="cambiarDisponibilidad('${pid}','✅ Disponible',this)"><span class="disp-icon">✅</span> Disponible</div>
-                <div class="disp-opt opt-res"  onclick="cambiarDisponibilidad('${pid}','⏳ Reservado',this)"><span class="disp-icon">⏳</span> Reservado</div>
-                <div class="disp-opt opt-vend" onclick="cambiarDisponibilidad('${pid}','❌ No disponible',this)"><span class="disp-icon">❌</span> No disponible</div>
+                <div class="disp-opt opt-disp" data-pid="${pid}" data-val="disp" onclick="_dispSet(this)"><span class="disp-icon">✅</span> Disponible</div>
+                <div class="disp-opt opt-res"  data-pid="${pid}" data-val="res"  onclick="_dispSet(this)"><span class="disp-icon">⏳</span> Reservado</div>
+                <div class="disp-opt opt-vend" data-pid="${pid}" data-val="vend" onclick="_dispSet(this)"><span class="disp-icon">❌</span> No disponible</div>
               </div>
             </div>
           </div>
@@ -2356,7 +2356,7 @@ async function renderProps() {
             <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
             <div style="display:flex;gap:5px" onclick="event.stopPropagation()">
               ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺</a>` : ''}
-              <button class="btn btn-primary" style="padding:4px 8px;font-size:11px" onclick="abrirEditorPropiedad('${pid}')">✏️</button>
+              <button class="btn btn-primary" style="padding:4px 8px;font-size:11px" data-pid="${pid}" onclick="abrirEditorPropiedad(this.dataset.pid)">✏️</button>
               <button class="btn" data-pid="${pid}" data-titulo="${titulo.replace(/"/g,'&quot;')}" style="padding:4px 8px;font-size:11px;background:#3b0a0a;border-color:#5c1a1a;color:#f87171" onclick="eliminarPropiedad(this.dataset.pid, this.dataset.titulo)">🗑️</button>
             </div>
           </div>
@@ -2388,6 +2388,15 @@ async function renderProps() {
         </div>`;
     });
   }
+}
+
+// Helpers data-attribute — evitan comillas simples dentro de atributos HTML en template literals
+function _verProp(el) { verDetalleProp(el.dataset.pid); }
+function _avanzarLead(el) {
+  const lid = el.dataset.lid;
+  const st = LEADS[lid] ? LEADS[lid].status : null;
+  const next = st === 'contactado' ? 'calificado' : 'cita';
+  moverLead(lid, next);
 }
 
 // Ocultar imagen rota — función global, sin strings dentro del atributo onerror
@@ -2431,59 +2440,53 @@ function mostrarToast(msg, tipo = 'ok') {
 }
 
 // ── DISPONIBILIDAD INLINE ────────────────────────────────────────────────────
+// Todos los handlers leen desde data-attributes — sin strings en onclick HTML
 
-function toggleDispDropdown(pid, sc, badgeEl) {
-  // Cerrar cualquier otro dropdown abierto
+const _DISP_MAP = {
+  disp: { val: '✅ Disponible',    sc: 'ps-disp', label: 'Disponible'    },
+  res:  { val: '⏳ Reservado',     sc: 'ps-res',  label: 'Reservado'     },
+  vend: { val: '❌ No disponible', sc: 'ps-vend', label: 'No disponible' },
+};
+
+function _dispToggle(badgeEl) {
+  const pid = badgeEl.dataset.pid;
   document.querySelectorAll('.disp-dropdown').forEach(d => {
-    if(d.id !== `dd-${pid}`) d.style.display = 'none';
+    if(d.id !== 'dd-' + pid) d.style.display = 'none';
   });
-  const dd = document.getElementById(`dd-${pid}`);
-  if(!dd) return;
-  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  const dd = document.getElementById('dd-' + pid);
+  if(dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
 }
 
-// Cerrar dropdowns al hacer click fuera
 document.addEventListener('click', () => {
   document.querySelectorAll('.disp-dropdown').forEach(d => d.style.display = 'none');
 });
 
-async function cambiarDisponibilidad(pid, nuevoValor, optEl) {
-  // Cerrar dropdown inmediatamente
-  const dd = document.getElementById(`dd-${pid}`);
+async function _dispSet(optEl) {
+  const pid = optEl.dataset.pid;
+  const key = optEl.dataset.val;
+  const meta = _DISP_MAP[key] || _DISP_MAP.vend;
+
+  const dd = document.getElementById('dd-' + pid);
   if(dd) dd.style.display = 'none';
 
-  const badge = document.getElementById(`badge-${pid}`);
-  if(!badge) return;
-
-  // Mapear valor → clase CSS y label
-  const map = {
-    '✅ Disponible':   { sc:'ps-disp', label:'Disponible' },
-    '⏳ Reservado':    { sc:'ps-res',  label:'Reservado' },
-    '❌ No disponible':{ sc:'ps-vend', label:'No disponible' },
-  };
-  const meta = map[nuevoValor] || { sc:'ps-vend', label:'No disponible' };
-
-  // Actualizar badge visualmente de inmediato
-  badge.className = `pcard-status ${meta.sc}`;
-  const lbl = document.getElementById(`lbl-${pid}`);
+  const badge = document.getElementById('badge-' + pid);
+  if(badge) badge.className = 'pcard-status ' + meta.sc;
+  const lbl = document.getElementById('lbl-' + pid);
   if(lbl) lbl.textContent = meta.label;
 
-  // Actualizar cache local
   const cached = _cachedProps.find(x => (x.id || x.ID || '') == pid);
-  if(cached) { cached.Disponible = nuevoValor; cached.disponible = nuevoValor; }
+  if(cached) { cached.Disponible = meta.val; cached.disponible = meta.val; }
 
-  // Persistir en backend
   try {
-    const r = await fetch(`${API_BASE}/crm/propiedades/${pid}`, {
+    const r = await fetch(API_BASE + '/crm/propiedades/' + pid, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Disponible: nuevoValor }),
+      body: JSON.stringify({ Disponible: meta.val }),
     });
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    mostrarToast(`✅ Disponibilidad → ${meta.label}`);
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    mostrarToast('Disponibilidad → ' + meta.label);
   } catch(e) {
-    mostrarToast(`❌ Error al guardar: ${e.message}`, 'error');
-    // Revertir visual si falló
+    mostrarToast('Error al guardar: ' + e.message, 'error');
     renderProps();
   }
 }
@@ -2786,8 +2789,8 @@ async function renderAgenda() {
           <div style="color:var(--text2);font-size:12px">${c.hora} · ${c.prop}</div>
           <div class="cita-actions">
             <span class="estado-pill ${estadoClass}">${estadoLabel}</span>
-            <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="cambiarEstadoCita(${i},'completada')">✅ Completar</button>
-            <button class="btn" style="font-size:11px;padding:3px 8px;background:#3d0d0d;border-color:#7a1a1a;color:#f87171" onclick="cambiarEstadoCita(${i},'cancelada')">✗ Cancelar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" data-ci="${i}" data-est="completada" onclick="cambiarEstadoCita(+this.dataset.ci,this.dataset.est)">✅ Completar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;background:#3d0d0d;border-color:#7a1a1a;color:#f87171" data-ci="${i}" data-est="cancelada" onclick="cambiarEstadoCita(+this.dataset.ci,this.dataset.est)">✗ Cancelar</button>
             <button class="btn" style="font-size:11px;padding:3px 8px;margin-left:auto" onclick="abrirDetalleCita(${i})">📋 Ver lead</button>
           </div>
         </div>
@@ -2856,7 +2859,7 @@ function moverLead(id, destino) {
 
   card.className='lcard fresh';
   const nextBtn = info.next
-    ? `<button class="btn ${info.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${info.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${id},'${info.next}')">${info.nextLabel}</button>`
+    ? `<button class="btn ${info.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${info.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" data-lid="${id}" data-next="${info.next}" onclick="event.stopPropagation();moverLead(this.dataset.lid,this.dataset.next)">${info.nextLabel}</button>`
     : `<span style="color:var(--green);font-size:11px;font-weight:600">🏆 Venta cerrada</span>`;
 
   card.querySelector('.lcard-actions').innerHTML = `
@@ -2944,7 +2947,7 @@ function renderResumenes() {
         </div>
         <div class="rcard-foot">
           <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openDetalle(${r.leadId})">Ver perfil completo</button>
-          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="moverLead(${r.leadId},'${LEADS[r.leadId].status==='contactado'?'calificado':'cita'}')">Avanzar etapa →</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" data-lid="${r.leadId}" onclick="_avanzarLead(this)">Avanzar etapa →</button>
           <span style="margin-left:auto;color:var(--text2);font-size:11px">Estado: <strong style="color:var(--text)">${LEADS[r.leadId].status}</strong></span>
         </div>
       </div>`;
@@ -3514,9 +3517,9 @@ function _renderTablaActivos(records) {
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn" style="font-size:11px;padding:3px 8px"
-            onclick="abrirModalActivo('${r.id}')">✏️ Editar</button>
+            data-id="${r.id}" onclick="abrirModalActivo(this.dataset.id)">✏️ Editar</button>
           <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red)"
-            onclick="eliminarActivo('${r.id}','${nombre}')">🗑</button>
+            data-id="${r.id}" data-nombre="${nombre}" onclick="eliminarActivo(this.dataset.id,this.dataset.nombre)">🗑</button>
         </div>
       </td>
     </tr>`;
