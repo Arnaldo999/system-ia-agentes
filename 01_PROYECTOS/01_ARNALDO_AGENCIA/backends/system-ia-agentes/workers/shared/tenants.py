@@ -15,8 +15,8 @@ router = APIRouter(prefix="/tenant", tags=["SaaS Tenants"])
 
 # ── Versión CRM (el frontend consulta esto para mostrar alerta de actualización)
 _CRM_VERSION = {
-    "version": "1.2.0",
-    "changelog": "Sync dev→prod con features acumuladas + backend correcto por proyecto",
+    "version": "1.3.0",
+    "changelog": "Datos 100% reales — eliminados placeholders y nombres de demo",
 }
 
 # Endpoint fuera del prefix /tenant para que sea /crm/version
