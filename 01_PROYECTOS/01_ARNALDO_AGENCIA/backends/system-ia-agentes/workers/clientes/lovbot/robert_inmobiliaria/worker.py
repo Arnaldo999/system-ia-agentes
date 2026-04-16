@@ -1104,9 +1104,11 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     import time as _t
 
     # ── Datos extraídos hasta ahora ──
+    # Este bot es para un DESARROLLADOR INMOBILIARIO (vende sus propios
+    # desarrollos: lotes, terrenos, casas en country, etc.).
+    # NO preguntar al lead qué tipo de perfil tiene — eso ya lo sabemos.
     nombre      = sesion.get("nombre", "")
     email       = sesion.get("email", "")
-    subniche    = sesion.get("subniche", "")
     ciudad      = sesion.get("ciudad_resp", "")
     objetivo    = sesion.get("resp_objetivo", "")
     tipo        = sesion.get("resp_tipo", "")
@@ -1145,7 +1147,6 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     datos_conocidos = []
     if nombre:        datos_conocidos.append(f"Nombre: {nombre}")
     if email:         datos_conocidos.append(f"Email: {email}")
-    if subniche:      datos_conocidos.append(f"Perfil: {subniche}")
     if ciudad:        datos_conocidos.append(f"Ciudad: {ciudad}")
     if objetivo:      datos_conocidos.append(f"Objetivo: {objetivo}")
     if tipo:          datos_conocidos.append(f"Tipo de propiedad: {tipo}")
@@ -1158,7 +1159,6 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     # ── Qué falta obtener ──
     faltantes = []
     if not nombre:      faltantes.append("nombre")
-    if not subniche and not tiene_ref: faltantes.append("perfil (agencia/agente independiente/desarrolladora)")
     if not email:       faltantes.append("email (opcional, puede omitir)")
     if not ciudad:      faltantes.append("ciudad")
     if not objetivo:    faltantes.append("qué busca (comprar/alquilar/invertir)")
@@ -1187,12 +1187,16 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     # ── Step actual → instrucción específica ──
     instruccion_step = {
         "inicio": (
-            "Es el PRIMER contacto. " +
-            (f"El cliente llegó desde un anuncio de Meta Ads: '{ad_info}'. Salúdalo mencionando el anuncio, preguntá su nombre de forma cálida."
-             if tiene_ref else
-             "Preguntar qué tipo de perfil tienen (agencia inmobiliaria / agente independiente / desarrolladora). Ser cálido y breve.")
+            f"Es el PRIMER contacto. El cliente llegó desde un anuncio: '{ad_info}'. "
+            "Confirmá la información de la propiedad anunciada (precio, ubicación, "
+            "highlights, disponibilidad). Después preguntá UNA cosa BANT — "
+            "preferentemente '¿es para vivir o invertir?' (Need). NO pidas el nombre primero."
+            if tiene_ref else
+            "Es el PRIMER contacto. Saludo cálido y UNA pregunta abierta de calificación. "
+            "Ej: 'Hola, soy el asistente de Lovbot. ¿Estás buscando para vivir o invertir?' "
+            "NO pidas el nombre todavía. NO muestres propiedades hasta calificar Need + Budget."
         ),
-        "subnicho": "Identificar si es agencia inmobiliaria, agente independiente o desarrolladora. Si ya lo dijo, confirmar y avanzar al nombre.",
+        "subnicho": "DEPRECATED — este bot solo atiende clientes de un desarrollador. Avanzar a 'objetivo' directamente.",
         "nombre": "Obtener el nombre del cliente. Ya tenés el perfil. Ser cálido.",
         "email": "Pedir email. Aclarar que es opcional para enviarle fichas antes que salgan al público.",
         "ciudad": f"Preguntar desde qué ciudad escribe. Contexto: empresa en {CIUDAD}.",
@@ -1321,10 +1325,9 @@ Si después de 2 intentos no hay engagement → ACCION: cerrar_curioso
 Solo incluí las líneas que apliquen en este turno:
 - NOMBRE: Juan García
 - EMAIL: correo@ejemplo.com
-- SUBNICHE: agencia_inmobiliaria | agente_independiente | desarrolladora
 - CIUDAD: NombreCiudad
-- OBJETIVO: comprar | alquilar | invertir
-- TIPO: casa | departamento | terreno | local | oficina
+- OBJETIVO: vivir | invertir | alquilar
+- TIPO: casa | departamento | terreno | lote | local | oficina
 - ZONA: nombre_zona
 - PRESUPUESTO: ej "USD 100k-200k"
 - FORMA_PAGO: contado | credito_aprobado | credito_sin_aprobar | indefinido
