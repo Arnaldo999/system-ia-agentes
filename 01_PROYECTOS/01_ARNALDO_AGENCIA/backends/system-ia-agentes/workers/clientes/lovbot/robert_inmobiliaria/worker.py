@@ -1398,24 +1398,63 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     }.get(step, "Continuar la conversación según el contexto.")
 
     # ── ORIGEN DEL LEAD (Caso A vs Caso B) ──
+    saludo_nombre = nombre.split()[0] if nombre else ""
+    saludo_pers = f", {saludo_nombre}" if saludo_nombre else ""
+    zonas_breve = " · ".join(ZONAS_LIST[:4]) if ZONAS_LIST else ""
+
     if tiene_ref:
         bloque_origen = f"""## 🎯 ORIGEN DEL LEAD: CASO A — VINO DESDE UN ANUNCIO ESPECÍFICO
 Propiedad anunciada: '{ad_info}'
 
 ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
-- Confirmá info de ESA propiedad (precio, ubicación, highlights, disponibilidad)
-- NO empieces preguntando datos personales
-- Después calificá con BANT (Need → Budget → Authority → Timeline)
+
+📝 SALUDO PROFESIONAL Y CÁLIDO (en 2 mensajes cortos o uno mediano):
+- Saludá por nombre si lo tenés.
+- Confirmá la disponibilidad de ESA propiedad (precio, m², ubicación, highlight).
+- Mencioná brevemente {NOMBRE_EMPRESA} ({CIUDAD}, desarrolladora propia).
+- Hacé UNA pregunta abierta para abrir conversación
+  (no listés opciones tipo menú).
+
+Ejemplo de tono:
+"¡Hola{saludo_pers}! 👋 Te confirmo que el {ad_info} sigue disponible.
+Soy el asistente virtual de *{NOMBRE_EMPRESA}*, desarrolladora propia
+en {CIUDAD}. ¿Lo estás viendo para vos / para tu familia, o como inversión?"
+
+REGLAS:
+- NO empieces preguntando datos personales en frío
 - Anclá toda la conversación en LA propiedad anunciada
+- Después calificá con BANT (Need → Budget → Authority → Timeline)
 - Si pide más opciones → ahí sí abrís catálogo filtrado (2-4 máx)"""
     else:
-        bloque_origen = """## 📨 ORIGEN DEL LEAD: CASO B — GENÉRICO (sin anuncio específico)
+        bloque_origen = f"""## 📨 ORIGEN DEL LEAD: CASO B — GENÉRICO (sin anuncio previo)
 
 ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
-- Saludo cálido + UNA pregunta abierta de calificación
-- Ej: "Hola, soy el asistente de Lovbot. ¿Estás buscando para vivir o invertir?"
+
+📝 SALUDO PROFESIONAL DE BIENVENIDA (NO seas seco ni directo):
+1. Saludá por nombre y agradecé el contacto.
+2. Presentate como asistente virtual de *{NOMBRE_EMPRESA}*.
+3. Mencioná brevemente qué es la empresa: una desarrolladora inmobiliaria
+   en {CIUDAD}, con proyectos en {zonas_breve or 'distintas zonas'}.
+4. Mostrá disponibilidad genuina ("estoy para ayudarte / acompañarte").
+5. Cerrá con UNA pregunta abierta y cordial.
+
+Ejemplo de tono cálido (NO copiar literal, adaptá):
+"¡Hola{saludo_pers}! 👋 Bienvenido/a, gracias por escribirnos.
+
+Soy el asistente virtual de *{NOMBRE_EMPRESA}*, desarrolladora inmobiliaria
+en {CIUDAD} con lotes y proyectos en {zonas_breve or 'distintas zonas premium'}.
+Estoy acá para ayudarte a encontrar lo que estás buscando 🏡
+
+Para empezar contame: ¿la propiedad sería para vos / tu familia, o
+buscás más una opción de inversión?"
+
+REGLAS:
+- NO arranques con "Hola, soy el asistente. ¿Vivir o invertir?" (es seco)
+- SÍ presentá la empresa antes de calificar
 - NO mostrés propiedades hasta tener al menos Need + Budget mínimo
-- Una vez calificado → mostrar 2-4 opciones (no más)"""
+- Una vez calificado → mostrar 2-4 opciones (no más)
+- Si el cliente NO da nombre todavía, no se lo pidas en el saludo
+  (esperá a que se presente naturalmente o preguntalo más adelante)"""
 
     # ── Bloque LEAD RECURRENTE (si vuelve a escribir tras tiempo ausente) ──
     bloque_recurrente = ""
