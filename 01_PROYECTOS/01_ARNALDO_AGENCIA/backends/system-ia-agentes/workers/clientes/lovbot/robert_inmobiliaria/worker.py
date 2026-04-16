@@ -169,6 +169,56 @@ def _cargar_sesion_db(telefono: str) -> None:
         print(f"[ROBERT-SESSION] Error carga: {e}")
 
 
+def _restaurar_lead_desde_db(telefono: str) -> bool:
+    """Si el lead ya existe en PostgreSQL `leads` (escribió antes), restaura sus
+    datos como 'lead recurrente' para que el bot lo salude por nombre y no pida
+    datos otra vez.
+
+    Robert usa PostgreSQL `robert_crm` (NO Airtable).
+    Returns True si encontró y restauró el lead.
+    """
+    if not USE_POSTGRES:
+        return False
+    tel = re.sub(r'\D', '', telefono)
+    if tel in SESIONES:
+        return False  # ya tiene sesión activa
+    try:
+        lead = db.get_lead_by_telefono(telefono)
+        if not lead:
+            return False
+
+        nombre_full = f"{lead.get('nombre','')} {lead.get('apellido','')}".strip() or "Cliente"
+
+        sesion_recurrente = {
+            "nombre": nombre_full,
+            "_lead_recurrente": True,
+            "_ultimo_ts": __import__("time").time(),
+            "_lead_id": lead.get("id"),
+        }
+        # Restaurar campos BANT previos si existen
+        if lead.get("email"):           sesion_recurrente["email"] = lead["email"]
+        if lead.get("tipo_propiedad"):  sesion_recurrente["resp_tipo"] = lead["tipo_propiedad"]
+        if lead.get("zona"):            sesion_recurrente["resp_zona"] = lead["zona"]
+        if lead.get("operacion"):       sesion_recurrente["operacion_at"] = lead["operacion"]
+        if lead.get("presupuesto"):     sesion_recurrente["resp_presupuesto"] = str(lead["presupuesto"])
+        if lead.get("score"):           sesion_recurrente["score"] = str(lead["score"]).lower()
+        if lead.get("ciudad"):          sesion_recurrente["ciudad_resp"] = lead["ciudad"]
+        if lead.get("notas_bot"):       sesion_recurrente["_notas_previas"] = str(lead["notas_bot"])[:500]
+        if lead.get("propiedad_interes"): sesion_recurrente["_prop_interes_previa"] = lead["propiedad_interes"]
+        if lead.get("estado"):          sesion_recurrente["_estado_previo"] = lead["estado"]
+        # Si tiene cita agendada previa
+        if lead.get("fecha_cita"):      sesion_recurrente["_fecha_cita_previa"] = str(lead["fecha_cita"])
+
+        SESIONES[telefono] = sesion_recurrente
+        print(f"[ROBERT-RESTORE] Lead recurrente {tel[-4:]}*** restaurado desde PostgreSQL: "
+              f"{nombre_full} | score={lead.get('score','?')} | tipo={lead.get('tipo_propiedad','?')} | "
+              f"zona={lead.get('zona','?')} | estado_previo={lead.get('estado','?')}")
+        return True
+    except Exception as e:
+        print(f"[ROBERT-RESTORE] Error: {e}")
+        return False
+
+
 def _agregar_historial(telefono: str, quien: str, texto: str):
     """Agrega un mensaje al historial del lead."""
     tel = re.sub(r'\D', '', telefono)
@@ -1267,6 +1317,12 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     # ── Zonas disponibles ──
     zonas_str = ", ".join(ZONAS_LIST) if ZONAS_LIST else "sin zonas definidas"
 
+    # ── ¿Es un lead recurrente? (escribió antes, ya está en Airtable) ──
+    es_recurrente = sesion.get("_lead_recurrente", False)
+    estado_previo = sesion.get("_estado_previo", "")
+    notas_previas = sesion.get("_notas_previas", "")
+    prop_interes_previa = sesion.get("_prop_interes_previa", "")
+
     # ── Estado actual de la sesión en lenguaje natural ──
     datos_conocidos = []
     if nombre:        datos_conocidos.append(f"Nombre: {nombre}")
@@ -1361,6 +1417,45 @@ ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
 - NO mostrés propiedades hasta tener al menos Need + Budget mínimo
 - Una vez calificado → mostrar 2-4 opciones (no más)"""
 
+    # ── Bloque LEAD RECURRENTE (si vuelve a escribir tras tiempo ausente) ──
+    bloque_recurrente = ""
+    if es_recurrente:
+        nombre_corto_p = nombre.split()[0] if nombre else ""
+        cita_previa = sesion.get('_fecha_cita_previa', '')
+        info_previa = []
+        if tipo:               info_previa.append(f"buscaba: {tipo}")
+        if zona:               info_previa.append(f"zona: {zona}")
+        if presupuesto:        info_previa.append(f"presupuesto: {presupuesto}")
+        if score:              info_previa.append(f"clasificación previa: {score}")
+        if estado_previo:      info_previa.append(f"estado previo: {estado_previo}")
+        if prop_interes_previa: info_previa.append(f"se interesó por: {prop_interes_previa}")
+        if cita_previa:        info_previa.append(f"cita previa: {cita_previa}")
+        info_str = " · ".join(info_previa) if info_previa else "sin datos previos relevantes"
+        notas_str = f"\nNotas previas del bot: {notas_previas[:300]}" if notas_previas else ""
+        nombre_para_saludo = nombre_corto_p or nombre or "[nombre]"
+        cita_linea = (f"Si el lead ya tenía cita agendada ({cita_previa}), "
+                      "preguntá si está vinculado a esa visita."
+                      if cita_previa else "")
+
+        bloque_recurrente = f"""
+## ⚡ LEAD RECURRENTE — YA TE ESCRIBIÓ ANTES
+
+Este cliente ({nombre or 'sin nombre'}) ya está en la base de datos. Datos previos:
+{info_str}{notas_str}
+
+🔑 INSTRUCCIONES CRÍTICAS PARA LEAD RECURRENTE:
+1. **Saludalo por su nombre** y reconocé que ya hablaron antes.
+   Ej: "Hola {nombre_para_saludo}, ¡qué gusto verte de nuevo!"
+2. **NO le pidas datos que ya diste** (nombre, tipo, zona, presupuesto, etc.)
+3. **Hacé referencia a la búsqueda anterior** si tiene sentido.
+   Ej: "La última vez estabas viendo {tipo or 'propiedades'} en {zona or 'la zona'}.
+        ¿Querés retomar por ahí o cambió algo?"
+4. {cita_linea}
+5. Si era **caliente/tibio** previo y vuelve, asumí intención real → mostrá props
+   actualizadas o ofrecé agendar directo.
+6. Si era **frío** previo, dale otra chance pero estate alerta a señales de curiosidad.
+"""
+
     system = f"""Sos el asistente virtual de *{NOMBRE_EMPRESA}*, una agencia inmobiliaria en {CIUDAD}.
 El asesor humano se llama *{NOMBRE_ASESOR}*.
 
@@ -1372,7 +1467,7 @@ OBJETIVO: identificar 3 tipos de leads:
 🔥 CALIENTE → presupuesto claro + forma de pago definida + urgencia <3m → AGENDAR YA
 🌡️ TIBIO   → presupuesto amplio o urgencia 3-6m → MOSTRAR 2-4 opciones + nurturing
 ❄️ FRÍO    → "solo viendo", sin presupuesto/urgencia → CERRAR amable + nurturing
-
+{bloque_recurrente}
 {bloque_origen}
 
 ## METODOLOGÍA BANT (orden estricto, una pregunta por turno)
@@ -1511,6 +1606,11 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     # ── Restaurar sesión desde PostgreSQL si no está en RAM (post-deploy) ──────
     if telefono not in SESIONES:
         _cargar_sesion_db(telefono)
+
+    # ── Si tampoco hay sesión activa, ver si es lead RECURRENTE en PostgreSQL ──
+    # (Lead que ya escribió antes pero su sesión bot_sessions se borró tras calificar/cerrar)
+    if telefono not in SESIONES:
+        _restaurar_lead_desde_db(telefono)
 
     # Registrar mensaje del lead en historial
     _agregar_historial(telefono, "Lead", texto)

@@ -315,6 +315,29 @@ def buscar_propiedades(tipo: str = None, operacion: str = None,
 
 # ── CRM ENDPOINTS DATA ──────────────────────────────────────────────────────
 
+def get_lead_by_telefono(telefono: str) -> dict | None:
+    """Busca un lead por teléfono. Devuelve dict con todos los campos o None.
+    Usado para detectar 'lead recurrente' que vuelve a escribir tras tiempo
+    ausente o tras haber sido calificado.
+    """
+    if not _available():
+        return None
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            "SELECT * FROM leads WHERE tenant_slug=%s AND telefono=%s LIMIT 1",
+            (TENANT, telefono)
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return dict(row) if row else None
+    except Exception as e:
+        print(f"[DB] Error get_lead_by_telefono ({telefono}): {e}")
+        return None
+
+
 def get_all_leads() -> list[dict]:
     """Retorna todos los leads para el CRM."""
     if not _available():
