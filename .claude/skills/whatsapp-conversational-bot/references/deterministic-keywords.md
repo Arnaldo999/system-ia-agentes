@@ -222,6 +222,30 @@ El prompt del LLM debe encargarse SOLO de lo que:
 - El Python determinista no puede capturar bien
 - Genera texto natural al cliente
 
+## Trampa común: keywords genéricas matchean PREGUNTAS del cliente
+
+Bug histórico Sprint 1 Robert (commit `5dbb8c6`):
+
+```python
+# ❌ MAL — "precio" / "cuánto" / "presupuesto" matchea preguntas
+if any(kw in texto_lower for kw in ["precio", "cuánto", "presupuesto"]):
+    sesion["resp_presupuesto"] = texto  # ← guarda "qué precio tiene?"
+```
+
+Cuando el cliente pregunta "qué precio tiene?", el regex matcheaba "precio" y guardaba la pregunta como si fuera el presupuesto del cliente.
+
+**Fix**: para datos numéricos como presupuesto/edad/cantidad, **requerir que el texto contenga un número + unidad**:
+
+```python
+# ✅ BIEN — solo matchea si hay número real
+m_pres = re.search(r'\b(\d{1,4})\s*(k|mil|000|usd|ars|pesos|\$)', texto_lower)
+if m_pres:
+    sesion["resp_presupuesto"] = texto[:80]
+    # ... extraer número real, mapear a rangos
+```
+
+Regla general: **si el dato es numérico, exigir un número en el texto del cliente**. Si solo hay verbos/adjetivos, dejar al LLM extraerlo (vía línea `PRESUPUESTO: X` en la respuesta).
+
 ## Debugging
 
 Si sospechás que un caso debería matchear pero no lo hace:

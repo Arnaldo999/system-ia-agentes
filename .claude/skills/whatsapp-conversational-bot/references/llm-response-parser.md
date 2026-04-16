@@ -279,6 +279,32 @@ score_calculado = _calcular_score_bant(sesion_nueva)
 sesion_nueva["score"] = score_calculado
 ```
 
+## Bug histórico — Historial duplicado por doble llamada
+
+Síntoma: en `HISTORIAL[telefono]` aparecen 2 entradas idénticas seguidas:
+```
+[19:33] Lead: Hola
+[19:34] Bot: ¡Hola, gracias por escribir!
+[19:34] Bot: ¡Hola, gracias por escribir!  ← DUPLICADO
+```
+
+Y en el siguiente mensaje del cliente, el LLM responde "Disculpá, tuve un problema técnico" porque su `system_prompt` recibió historial confuso.
+
+**Causa**: la función `_enviar_texto()` ya llama internamente a `_agregar_historial(telefono, "Bot", mensaje)`. Cualquier llamada extra es redundante:
+
+```python
+# ❌ MAL — duplica historial
+_enviar_texto(telefono, mensaje_final)
+_agregar_historial(telefono, "Bot", mensaje_final)
+
+# ✅ BIEN — _enviar_texto ya guarda historial
+_enviar_texto(telefono, mensaje_final)
+```
+
+**Fix**: eliminar TODAS las llamadas explícitas a `_agregar_historial(telefono, "Bot", ...)` después de `_enviar_texto()`. Solo llamar `_agregar_historial("Lead", ...)` para mensajes entrantes (que NO pasan por `_enviar_texto`).
+
+**Cómo detectarlo**: si en una sola pasada de `_procesar()` ves entradas idénticas duplicadas en historial, hay doble guardado.
+
 ## Bug histórico — Extracción fugando al cliente
 
 Síntoma: el cliente recibe texto como:
