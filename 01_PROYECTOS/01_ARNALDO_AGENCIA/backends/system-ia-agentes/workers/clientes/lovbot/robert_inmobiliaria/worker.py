@@ -1548,6 +1548,70 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             _enviar_texto(telefono, "Respondé *sí* para confirmar o *no* para elegir otro horario.")
         return
 
+    # ── Step explorando → navegación conversacional (UNA prop a la vez) ─────
+    # DEBE estar ANTES del LLM para no depender de que el LLM responda.
+    if step in ("explorando", "lista"):
+        props = sesion.get("props", [])
+        prop_idx = sesion.get("prop_idx", 0)
+
+        _KEYWORDS_SIGUIENTE = [
+            "otra", "siguiente", "mas", "más", "no me interesa", "no es",
+            "no se adapta", "otra opción", "otra opcion", "ver otra",
+            "siguiente opción", "siguiente opcion", "diferente", "no gracias",
+            "no me convence", "que mas", "qué más", "hay mas", "hay más",
+            "no me adapta", "algo mas", "algo más",
+        ]
+        _KEYWORDS_INTERES = [
+            "me interesa", "quiero info", "más info", "mas info", "info",
+            "detalle", "cuéntame", "cuentame", "saber más", "saber mas",
+            "esta me gusta", "me gusta", "interesante", "quiero verla",
+            "puedo verla", "visita", "agendar", "cuando puedo", "cuanto sale",
+            "cuánto sale", "precio", "cuánto cuesta", "cuanto cuesta",
+        ]
+
+        _pide_siguiente = any(kw in texto_lower for kw in _KEYWORDS_SIGUIENTE)
+        _pide_detalle   = any(kw in texto_lower for kw in _KEYWORDS_INTERES)
+
+        if _pide_siguiente:
+            next_idx = prop_idx + 1
+            if next_idx < len(props):
+                SESIONES[telefono] = {**sesion, "step": "explorando",
+                                      "prop_idx": next_idx, "_ultimo_ts": ahora_ts}
+                _enviar_texto(telefono, _presentar_prop_breve(props[next_idx], next_idx, len(props)))
+                img_field = props[next_idx].get("Imagen_URL", "")
+                img = (img_field[0].get("url","") if isinstance(img_field, list) and img_field
+                       else img_field if isinstance(img_field, str) else "")
+                if img:
+                    _enviar_imagen(telefono, img, caption=props[next_idx].get("Titulo",""))
+            else:
+                _enviar_texto(telefono,
+                    f"Ya te mostré todas las opciones disponibles ahora. "
+                    f"Si querés, {NOMBRE_ASESOR} tiene proyectos que no están publicados todavía. "
+                    f"¿Te contactamos?")
+            return
+
+        if _pide_detalle:
+            prop = props[prop_idx] if prop_idx < len(props) else (props[-1] if props else None)
+            if prop:
+                SESIONES[telefono] = {**sesion, "step": "ficha",
+                                      "ficha_actual": prop_idx, "_ultimo_ts": ahora_ts}
+                _enviar_ficha(telefono, prop)
+                prop_nombre = f"{prop.get('Tipo','')} {prop.get('Zona','')} - {prop.get('Titulo', prop.get('Nombre',''))}".strip()
+                def _guardar_interes_exp():
+                    if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+                        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+                        r = requests.get(url, headers=AT_HEADERS,
+                            params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+                        recs = r.json().get("records", []) if r.status_code == 200 else []
+                        if recs:
+                            requests.patch(f"{url}/{recs[0]['id']}", headers=AT_HEADERS,
+                                json={"fields": {"Propiedad_Interes": prop_nombre[:200]}}, timeout=8)
+                threading.Thread(target=_guardar_interes_exp, daemon=True).start()
+            return
+
+        # Respuesta ambigua en explorando → LLM responde (pasa al bloque de abajo)
+        # No retornamos, dejamos fluir al LLM
+
     # ── ANTI-FRICTION: pedido explícito de opciones → saltear BANT ─────────
     # Si el cliente pide ver opciones/propiedades explícitamente, mostramos
     # inmediatamente sin esperar presupuesto (ancla posterior).
@@ -1896,72 +1960,6 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                    else img_field if isinstance(img_field, str) else "")
             if img:
                 _enviar_imagen(telefono, img, caption=props[0].get("Titulo",""))
-        return
-
-    # ── Step explorando → navegación conversacional (una prop a la vez) ────
-    if step in ("explorando", "lista"):  # "lista" legacy por sesiones viejas en RAM
-        props = sesion.get("props", [])
-        prop_idx = sesion.get("prop_idx", 0)
-
-        # Keywords: ver siguiente / no me interesa / otra
-        _KEYWORDS_SIGUIENTE = [
-            "otra", "siguiente", "mas", "más", "no me interesa", "no es",
-            "no se adapta", "otra opción", "otra opcion", "ver otra",
-            "siguiente opción", "siguiente opcion", "diferente", "no gracias",
-            "no me convence", "que mas", "qué más", "que más tenes", "hay mas",
-            "hay más",
-        ]
-        # Keywords: quiero info / me interesa esta
-        _KEYWORDS_INTERES = [
-            "me interesa", "quiero info", "más info", "mas info", "info",
-            "detalle", "cuéntame", "cuentame", "saber más", "saber mas",
-            "esta me gusta", "me gusta", "interesante", "quiero verla",
-            "puedo verla", "visita", "agendar", "cuando puedo",
-        ]
-
-        _pide_siguiente = any(kw in texto_lower for kw in _KEYWORDS_SIGUIENTE)
-        _pide_detalle  = any(kw in texto_lower for kw in _KEYWORDS_INTERES)
-
-        if _pide_siguiente:
-            next_idx = prop_idx + 1
-            if next_idx < len(props):
-                SESIONES[telefono] = {**sesion_nueva, "step": "explorando",
-                                      "prop_idx": next_idx}
-                _enviar_texto(telefono, _presentar_prop_breve(props[next_idx], next_idx, len(props)))
-                img_field = props[next_idx].get("Imagen_URL", "")
-                img = (img_field[0].get("url","") if isinstance(img_field, list) and img_field
-                       else img_field if isinstance(img_field, str) else "")
-                if img:
-                    _enviar_imagen(telefono, img, caption=props[next_idx].get("Titulo",""))
-            else:
-                _enviar_texto(telefono,
-                    f"Ya te mostré todas las opciones que tenemos disponibles ahora. "
-                    f"Si querés te paso con {NOMBRE_ASESOR} para que te cuente sobre proyectos "
-                    f"que todavía no están publicados. ¿Te parece?")
-            return
-
-        if _pide_detalle:
-            # Mostrar ficha completa de la propiedad actual
-            prop = props[prop_idx] if prop_idx < len(props) else props[-1]
-            SESIONES[telefono] = {**sesion_nueva, "step": "ficha", "ficha_actual": prop_idx}
-            _enviar_ficha(telefono, prop)
-            prop_nombre = f"{prop.get('Tipo','')} {prop.get('Zona','')} - {prop.get('Titulo', prop.get('Nombre',''))}".strip()
-            def _guardar_interes_exp():
-                if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
-                    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
-                    r = requests.get(url, headers=AT_HEADERS,
-                        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
-                    recs = r.json().get("records", []) if r.status_code == 200 else []
-                    if recs:
-                        requests.patch(f"{url}/{recs[0]['id']}", headers=AT_HEADERS,
-                            json={"fields": {"Propiedad_Interes": prop_nombre[:200]}}, timeout=8)
-            threading.Thread(target=_guardar_interes_exp, daemon=True).start()
-            return
-
-        # Respuesta ambigua → LLM decide (puede preguntar, mostrar otra, etc.)
-        if mensaje_final:
-            _enviar_texto(telefono, mensaje_final)
-            _agregar_historial(telefono, "Bot", mensaje_final)
         return
 
     if step == "ficha":
