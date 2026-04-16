@@ -222,6 +222,51 @@ El prompt del LLM debe encargarse SOLO de lo que:
 - El Python determinista no puede capturar bien
 - Genera texto natural al cliente
 
+## Trampa #2: detección DENTRO de oraciones largas vs match exacto
+
+Bug histórico Caso B (commit `019b038`):
+
+```python
+# ❌ MAL — solo match exacto
+def _normalizar_zona(zona):
+    return _ZONA_MAP.get(zona.lower().strip(), "")
+# "busco un lote en San Ignacio" NO matchea "san ignacio" (clave del map)
+
+# ✅ BIEN — busca palabras del map dentro de la oración
+def _normalizar_zona(zona):
+    txt = zona.lower().strip()
+    direct = _ZONA_MAP.get(txt, "")
+    if direct: return direct
+    for kw, val in _ZONA_MAP.items():
+        if re.search(rf'\b{re.escape(kw)}\b', txt):
+            return val
+    return ""
+```
+
+Aplicar a tipos, zonas, y cualquier campo que el cliente pueda mencionar dentro de una oración natural.
+
+## Trampa #3: pedido de "hablar con humano" en lenguaje natural
+
+Bug histórico Caso B (commit `6c83494`):
+
+El cliente dice "quiero hablar con un asesor humano" → el LLM lo interpreta como continuar BANT (porque es "natural") y NO escala. Solo el comando `#` directo funciona.
+
+Fix determinista ANTES del LLM:
+
+```python
+_KEYWORDS_HUMANO = [
+    "hablar con un asesor", "hablar con asesor", "hablar con humano",
+    "hablar con una persona", "hablar con alguien", "atiende alguien",
+    "atiende una persona", "me pasa con", "me deriva", "quiero un humano",
+    "necesito hablar con", "comunicarme con un asesor", "asesor humano",
+    "persona real", "pasame con", "que me llame", "que me llamen",
+]
+if any(kw in texto_lower for kw in _KEYWORDS_HUMANO):
+    _enviar_texto(telefono, f"Te paso con {NOMBRE_ASESOR} ahora mismo. 🙋‍♂️")
+    _ir_asesor(telefono, sesion)
+    return
+```
+
 ## Trampa común: keywords genéricas matchean PREGUNTAS del cliente
 
 Bug histórico Sprint 1 Robert (commit `5dbb8c6`):
