@@ -515,11 +515,37 @@ _ZONA_MAP = {
 
 
 def _normalizar_tipo(tipo: str) -> str:
-    return _TIPO_MAP.get(tipo.lower().strip(), "") if tipo else ""
+    """Detecta tipo en string corto (match exacto) o dentro de oración larga."""
+    if not tipo:
+        return ""
+    txt = tipo.lower().strip()
+    # Match exacto primero
+    direct = _TIPO_MAP.get(txt, "")
+    if direct:
+        return direct
+    # Buscar palabras del map dentro del texto (oración larga)
+    for kw, val in _TIPO_MAP.items():
+        if re.search(rf'\b{re.escape(kw)}\b', txt):
+            return val
+    return ""
 
 
 def _normalizar_zona(zona: str) -> str:
-    return _ZONA_MAP.get(zona.lower().strip(), "") if zona else ""
+    """Detecta zona en string corto (match exacto) o dentro de oración larga."""
+    if not zona:
+        return ""
+    txt = zona.lower().strip()
+    direct = _ZONA_MAP.get(txt, "")
+    if direct:
+        return direct
+    # Buscar palabras del map dentro del texto (acepta tildes/no-tildes)
+    import unicodedata
+    def _norm(s): return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn")
+    txt_norm = _norm(txt)
+    for kw, val in _ZONA_MAP.items():
+        if _norm(kw) in txt_norm:
+            return val
+    return ""
 
 
 def _at_registrar_lead(telefono: str, nombre: str, score: str = "",
@@ -2042,7 +2068,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     if not sesion_nueva.get("resp_presupuesto"):
         m_pres = re.search(r'\b(\d{1,4})\s*(k|mil|000|usd|ars|pesos|dolares|\$)', texto_lower)
         if m_pres:
-            sesion_nueva["resp_presupuesto"] = texto[:80]
+            sesion_nueva["resp_presupuesto"] = m_pres.group(0).upper().strip()
             num = int(m_pres.group(1))
             unidad = m_pres.group(2)
             if unidad in ("mil", "000"):
