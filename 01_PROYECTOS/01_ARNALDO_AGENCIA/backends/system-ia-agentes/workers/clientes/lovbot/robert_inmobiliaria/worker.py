@@ -922,25 +922,56 @@ def _pregunta(paso: str, nombre: str = "", subniche: str = "") -> str:
 
 
 # ─── FORMATEO PROPIEDADES ─────────────────────────────────────────────────────
-def _lista_titulos(props: list[dict]) -> str:
-    lineas = ["🏘️ *PROPIEDADES DISPONIBLES PARA USTED*\n"]
-    for i, p in enumerate(props, 1):
-        precio = p.get("Precio", 0)
-        moneda = p.get("Moneda", MONEDA)
-        precio_str = f"${precio:,.0f} {moneda}" if precio else "Consultar precio"
-        estado = p.get("Disponible", "")
-        tag = " ⏳ _Reservada_" if "Reservado" in str(estado) else " ✅"
-        tipo = p.get("Tipo", "")
-        zona = p.get("Zona", "")
-        tipo_zona = f" · {tipo}" if tipo else ""
-        if zona:
-            tipo_zona += f" · {zona}"
-        lineas.append(f"*{i}.* 🏠 {p.get('Titulo', 'Propiedad')}{tipo_zona}\n    💰 {precio_str}{tag}")
-    lineas.append(
-        "\n📲 Responda con el *número* de la propiedad para ver todos los detalles y fotos.\n\n"
-        "*0* 🔄 Ver otras opciones  |  *#* 👤 Hablar con el asesor"
-    )
+def _presentar_prop_breve(p: dict, idx: int, total: int) -> str:
+    """Presenta UNA propiedad de forma conversacional, sin menú numérico."""
+    precio = p.get("Precio", 0)
+    moneda = p.get("Moneda", MONEDA)
+    precio_str = f"${precio:,.0f} {moneda}" if precio else "a consultar"
+    estado = p.get("Disponible", "")
+    reservado = "Reservado" in str(estado)
+    titulo = p.get("Titulo", "Propiedad")
+    tipo  = p.get("Tipo", "")
+    zona  = p.get("Zona", "")
+    metros_t = p.get("Metros_Terreno", "")
+    metros_c = p.get("Metros_Cubiertos", "")
+    desc  = p.get("Descripcion", "")
+
+    lineas = []
+    if idx == 0:
+        lineas.append("Mirá, tengo esta opción que puede interesarte 👇\n")
+    else:
+        lineas.append("También tengo esta 👇\n")
+
+    lineas.append(f"🏡 *{titulo}*")
+    if reservado:
+        lineas.append("⏳ _(Reservada — podés anotarte por si se libera)_")
+    partes = []
+    if zona:  partes.append(f"📍 {zona}")
+    if tipo:  partes.append(tipo)
+    if metros_t: partes.append(f"{metros_t}m²")
+    elif metros_c: partes.append(f"{metros_c}m² cubiertos")
+    if partes:
+        lineas.append(" · ".join(partes))
+    lineas.append(f"💰 *{precio_str}*")
+    if desc:
+        # Primera oración del desc, máx 80 chars
+        primera = desc.split(".")[0].strip()
+        if primera and len(primera) > 5:
+            lineas.append(f"\n_{primera}._")
+
+    restantes = total - idx - 1
+    if restantes > 0:
+        lineas.append(f"\n¿Querés que te cuente más sobre esta, o te muestro otra opción?")
+    else:
+        lineas.append(f"\n¿Qué te parece esta opción?")
     return "\n".join(lineas)
+
+
+def _lista_titulos(props: list[dict]) -> str:
+    """Compatibilidad legacy — usa presentación conversacional en serie."""
+    if not props:
+        return "No hay propiedades disponibles en este momento."
+    return _presentar_prop_breve(props[0], 0, len(props))
 
 
 def _ficha_propiedad(p: dict) -> str:
@@ -984,8 +1015,7 @@ def _ficha_propiedad(p: dict) -> str:
     if maps:
         lineas.append(f"\n🗺 *Ver en Maps:* {maps}")
     lineas.append(
-        f"\n¿Le interesa esta propiedad? 😊\n\n"
-        f"*#* 👤 Hablar con {NOMBRE_ASESOR}  |  *0* 🔄 Ver otras propiedades"
+        f"\n¿Qué te parece? Si te interesa te puedo gestionar una visita con {NOMBRE_ASESOR}. 😊"
     )
     return "\n".join(lineas)
 
@@ -1531,8 +1561,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     ]
     _pide_opciones_directo = any(kw in texto_lower for kw in _KEYWORDS_PEDIR_OPCIONES)
 
-    if _pide_opciones_directo and step not in ("lista", "ficha", "agendar_slots", "confirmar_cita"):
-        # Mostrar propiedades con filtros parciales (puede no tener zona/presupuesto aún)
+    if _pide_opciones_directo and step not in ("explorando", "lista", "ficha", "agendar_slots", "confirmar_cita"):
         tipo_busq   = sesion.get("resp_tipo", "") or sesion.get("_tipo_ref", "")
         zona_busq   = sesion.get("resp_zona", "")
         operac_busq = sesion.get("operacion_at", "venta")
@@ -1540,29 +1569,21 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         props_d = _at_buscar_propiedades(tipo=tipo_busq, operacion=operac_busq,
                                           zona=zona_busq, presupuesto=presp_busq)
         if props_d:
-            props_ini = props_d[:3]
-            props_rst = props_d[3:]
-            sesion_nueva = {**sesion, "step": "lista",
-                            "props": props_ini, "props_extra": props_rst,
+            sesion_nueva = {**sesion, "step": "explorando",
+                            "props": props_d, "prop_idx": 0,
                             "tipo": tipo_busq, "zona": zona_busq,
                             "operacion": operac_busq, "_ultimo_ts": ahora_ts}
             SESIONES[telefono] = sesion_nueva
-            _enviar_texto(telefono,
-                f"¡Con gusto! Estas son las opciones disponibles ahora mismo 👇")
-            _enviar_texto(telefono, _lista_titulos(props_ini))
-            if props_rst:
-                _enviar_texto(telefono,
-                    f"Tengo *{len(props_rst)}* opción{'es' if len(props_rst)>1 else ''} más. "
-                    f"Escribí *+* para verlas o elegí un número.\n\n"
-                    f"¿Cuál se acerca más a lo que buscás?")
-            else:
-                _enviar_texto(telefono,
-                    "Elegí un número para ver el detalle. ¿Cuál se acerca a tu rango?")
+            _enviar_texto(telefono, _presentar_prop_breve(props_d[0], 0, len(props_d)))
+            img_field = props_d[0].get("Imagen_URL", "")
+            img = (img_field[0].get("url","") if isinstance(img_field, list) and img_field
+                   else img_field if isinstance(img_field, str) else "")
+            if img:
+                _enviar_imagen(telefono, img, caption=props_d[0].get("Titulo",""))
         else:
             _enviar_texto(telefono,
                 f"En este momento no tenemos propiedades publicadas que coincidan. "
-                f"¿Querés que *{NOMBRE_ASESOR}* te contacte para mostrarte opciones exclusivas? "
-                f"Escribí *#* para hablar con él directamente.")
+                f"Si querés, {NOMBRE_ASESOR} puede mostrarte opciones exclusivas — ¿te contactamos?")
         return
 
     # ── NÚCLEO LLM CONVERSACIONAL ─────────────────────────────────────────
@@ -1746,14 +1767,15 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         props_mp  = _at_buscar_propiedades(tipo=tipo_mp, operacion=oper_mp,
                                             zona=zona_mp, presupuesto=presp_mp)
         if props_mp:
-            pi, pr = props_mp[:3], props_mp[3:]
-            SESIONES[telefono] = {**sesion_nueva, "step": "lista",
-                                   "props": pi, "props_extra": pr,
+            SESIONES[telefono] = {**sesion_nueva, "step": "explorando",
+                                   "props": props_mp, "prop_idx": 0,
                                    "tipo": tipo_mp, "zona": zona_mp, "operacion": oper_mp}
-            _enviar_texto(telefono, _lista_titulos(pi))
-            if pr:
-                _enviar_texto(telefono,
-                    f"Tengo *{len(pr)}* opción{'es' if len(pr)>1 else ''} más — escribí *+* o elegí un número.")
+            _enviar_texto(telefono, _presentar_prop_breve(props_mp[0], 0, len(props_mp)))
+            img_field = props_mp[0].get("Imagen_URL", "")
+            img = (img_field[0].get("url","") if isinstance(img_field, list) and img_field
+                   else img_field if isinstance(img_field, str) else "")
+            if img:
+                _enviar_imagen(telefono, img, caption=props_mp[0].get("Titulo",""))
         else:
             _enviar_texto(telefono,
                 f"Por ahora no hay propiedades publicadas con esas características. "
@@ -1863,66 +1885,87 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             SESIONES.pop(telefono, None)
             return
 
-        # Mostrar propiedades
-        props_iniciales = props[:2]
-        props_restantes = props[2:]
-        SESIONES[telefono] = {**sesion_nueva, "step": "lista",
-                              "props": props_iniciales, "props_extra": props_restantes,
+        # Mostrar propiedades — una a la vez, conversacional
+        SESIONES[telefono] = {**sesion_nueva, "step": "explorando",
+                              "props": props, "prop_idx": 0,
                               "tipo": tipo, "zona": zona, "operacion": operacion}
-        _enviar_texto(telefono,
-            f"Encontré propiedades que coinciden con lo que buscás. Te muestro las mejores 👇")
-        _enviar_texto(telefono, _lista_titulos(props_iniciales))
-        if props_restantes:
-            _enviar_texto(telefono,
-                f"Tengo *{len(props_restantes)}* opción{'es' if len(props_restantes)>1 else ''} más — "
-                f"escribí *+* para verlas o elegí un número para ver el detalle.")
+        _enviar_texto(telefono, _presentar_prop_breve(props[0], 0, len(props)))
+        if len(props) > 1:
+            img_field = props[0].get("Imagen_URL", "")
+            img = (img_field[0].get("url","") if isinstance(img_field, list) and img_field
+                   else img_field if isinstance(img_field, str) else "")
+            if img:
+                _enviar_imagen(telefono, img, caption=props[0].get("Titulo",""))
         return
 
-    # ── Step lista → navegación por propiedades ───────────────────────────
-    if step == "lista":
+    # ── Step explorando → navegación conversacional (una prop a la vez) ────
+    if step in ("explorando", "lista"):  # "lista" legacy por sesiones viejas en RAM
         props = sesion.get("props", [])
-        props_extra = sesion.get("props_extra", [])
-        if texto.strip() == "+":
-            if props_extra:
-                props_todas = props + props_extra
-                SESIONES[telefono] = {**sesion_nueva, "props": props_todas, "props_extra": []}
-                _enviar_texto(telefono, _lista_titulos(props_todas))
+        prop_idx = sesion.get("prop_idx", 0)
+
+        # Keywords: ver siguiente / no me interesa / otra
+        _KEYWORDS_SIGUIENTE = [
+            "otra", "siguiente", "mas", "más", "no me interesa", "no es",
+            "no se adapta", "otra opción", "otra opcion", "ver otra",
+            "siguiente opción", "siguiente opcion", "diferente", "no gracias",
+            "no me convence", "que mas", "qué más", "que más tenes", "hay mas",
+            "hay más",
+        ]
+        # Keywords: quiero info / me interesa esta
+        _KEYWORDS_INTERES = [
+            "me interesa", "quiero info", "más info", "mas info", "info",
+            "detalle", "cuéntame", "cuentame", "saber más", "saber mas",
+            "esta me gusta", "me gusta", "interesante", "quiero verla",
+            "puedo verla", "visita", "agendar", "cuando puedo",
+        ]
+
+        _pide_siguiente = any(kw in texto_lower for kw in _KEYWORDS_SIGUIENTE)
+        _pide_detalle  = any(kw in texto_lower for kw in _KEYWORDS_INTERES)
+
+        if _pide_siguiente:
+            next_idx = prop_idx + 1
+            if next_idx < len(props):
+                SESIONES[telefono] = {**sesion_nueva, "step": "explorando",
+                                      "prop_idx": next_idx}
+                _enviar_texto(telefono, _presentar_prop_breve(props[next_idx], next_idx, len(props)))
+                img_field = props[next_idx].get("Imagen_URL", "")
+                img = (img_field[0].get("url","") if isinstance(img_field, list) and img_field
+                       else img_field if isinstance(img_field, str) else "")
+                if img:
+                    _enviar_imagen(telefono, img, caption=props[next_idx].get("Titulo",""))
             else:
-                _enviar_texto(telefono, "Ya te mostré todas las opciones disponibles. ¿Cuál te interesa?")
+                _enviar_texto(telefono,
+                    f"Ya te mostré todas las opciones que tenemos disponibles ahora. "
+                    f"Si querés te paso con {NOMBRE_ASESOR} para que te cuente sobre proyectos "
+                    f"que todavía no están publicados. ¿Te parece?")
             return
-        try:
-            idx = int(texto) - 1
-            if 0 <= idx < len(props):
-                prop = props[idx]
-                SESIONES[telefono] = {**sesion_nueva, "step": "ficha", "ficha_actual": idx}
-                _enviar_ficha(telefono, prop)
-                prop_nombre = f"{prop.get('Tipo','')} {prop.get('Zona','')} - {prop.get('Titulo', prop.get('Nombre',''))}".strip()
-                def _guardar_interes():
-                    if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
-                        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
-                        r = requests.get(url, headers=AT_HEADERS,
-                            params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
-                        recs = r.json().get("records", []) if r.status_code == 200 else []
-                        if recs:
-                            requests.patch(f"{url}/{recs[0]['id']}", headers=AT_HEADERS,
-                                json={"fields": {"Propiedad_Interes": prop_nombre[:200]}}, timeout=8)
-                threading.Thread(target=_guardar_interes, daemon=True).start()
-                return
-        except ValueError:
-            pass
-        # Si no eligió número → LLM maneja
+
+        if _pide_detalle:
+            # Mostrar ficha completa de la propiedad actual
+            prop = props[prop_idx] if prop_idx < len(props) else props[-1]
+            SESIONES[telefono] = {**sesion_nueva, "step": "ficha", "ficha_actual": prop_idx}
+            _enviar_ficha(telefono, prop)
+            prop_nombre = f"{prop.get('Tipo','')} {prop.get('Zona','')} - {prop.get('Titulo', prop.get('Nombre',''))}".strip()
+            def _guardar_interes_exp():
+                if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+                    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
+                    r = requests.get(url, headers=AT_HEADERS,
+                        params={"filterByFormula": f"{{Telefono}}='{telefono}'", "maxRecords": 1}, timeout=8)
+                    recs = r.json().get("records", []) if r.status_code == 200 else []
+                    if recs:
+                        requests.patch(f"{url}/{recs[0]['id']}", headers=AT_HEADERS,
+                            json={"fields": {"Propiedad_Interes": prop_nombre[:200]}}, timeout=8)
+            threading.Thread(target=_guardar_interes_exp, daemon=True).start()
+            return
+
+        # Respuesta ambigua → LLM decide (puede preguntar, mostrar otra, etc.)
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
             _agregar_historial(telefono, "Bot", mensaje_final)
         return
 
     if step == "ficha":
-        if texto.strip() == "0":
-            props = sesion.get("props", [])
-            SESIONES[telefono] = {**sesion_nueva, "step": "lista"}
-            _enviar_texto(telefono, _lista_titulos(props))
-            return
-        # Cualquier respuesta en ficha → LLM decide si ofrecer cita o responder pregunta
+        # Cualquier respuesta en ficha → LLM decide (ofrecer cita, responder pregunta, etc.)
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
             _agregar_historial(telefono, "Bot", mensaje_final)
