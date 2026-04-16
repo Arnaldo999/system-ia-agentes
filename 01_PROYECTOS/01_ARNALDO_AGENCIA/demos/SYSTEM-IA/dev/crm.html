@@ -68,6 +68,132 @@ tailwind.config = {
     .nav-badge.green { background: #064e3b; color: var(--ok); }
     .sidebar-footer { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--brd); }
     .plan-chip { border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: 600; text-align: center; background: linear-gradient(135deg,#6c63ff,#00d4aa); }
+
+    /* ── CHAT IA ── */
+    .ia-chat-btn {
+      width: 100%; border: none; border-radius: 10px; padding: 10px 12px;
+      background: linear-gradient(135deg,#6c63ff,#00d4aa);
+      cursor: pointer; display: flex; align-items: center; gap: 10px;
+      text-align: left; position: relative; overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .ia-chat-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(108,99,255,0.4); }
+    .ia-chat-btn:active { transform: translateY(0); }
+    .ia-chat-btn-robot {
+      font-size: 22px; flex-shrink: 0;
+      animation: robotFloat 2.5s ease-in-out infinite;
+    }
+    @keyframes robotFloat {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .ia-chat-btn-text { flex: 1; }
+    .ia-chat-btn-title { font-size: 11px; font-weight: 700; color: #fff; line-height: 1.2; }
+    .ia-chat-btn-sub { font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 2px; line-height: 1.3; }
+    .ia-chat-btn-pulse {
+      width: 8px; height: 8px; border-radius: 50%; background: #fff;
+      flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* Panel chat flotante */
+    .ia-chat-panel {
+      position: fixed; bottom: 20px; left: 230px; width: 360px;
+      background: var(--surface); border: 1px solid var(--brd);
+      border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      display: none; flex-direction: column; z-index: 1000;
+      max-height: 520px; overflow: hidden;
+      animation: slideUp 0.25s ease-out;
+    }
+    .ia-chat-panel.open { display: flex; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .ia-chat-header {
+      padding: 12px 16px; border-bottom: 1px solid var(--brd);
+      display: flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg,rgba(108,99,255,0.15),rgba(0,212,170,0.1));
+    }
+    .ia-chat-header-icon { font-size: 20px; animation: robotFloat 2.5s ease-in-out infinite; }
+    .ia-chat-header-info { flex: 1; }
+    .ia-chat-header-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .ia-chat-header-status { font-size: 10px; color: var(--ok); display: flex; align-items: center; gap: 4px; }
+    .ia-chat-header-status::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--ok); display:inline-block; }
+    .ia-chat-close {
+      background: none; border: none; color: var(--text2); cursor: pointer;
+      font-size: 18px; padding: 4px; border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .ia-chat-close:hover { background: var(--surface-2); color: var(--text); }
+    .ia-chat-messages {
+      flex: 1; overflow-y: auto; padding: 14px; display: flex;
+      flex-direction: column; gap: 10px; min-height: 200px; max-height: 340px;
+    }
+    .ia-chat-messages::-webkit-scrollbar { width: 4px; }
+    .ia-chat-messages::-webkit-scrollbar-thumb { background: var(--brd); border-radius: 4px; }
+    .ia-msg {
+      max-width: 85%; padding: 9px 12px; border-radius: 10px;
+      font-size: 12.5px; line-height: 1.5; word-wrap: break-word;
+    }
+    .ia-msg.bot {
+      background: var(--surface-2); color: var(--text);
+      border-bottom-left-radius: 3px; align-self: flex-start;
+    }
+    .ia-msg.user {
+      background: linear-gradient(135deg,#6c63ff,#5a52d5);
+      color: #fff; border-bottom-right-radius: 3px; align-self: flex-end;
+    }
+    .ia-msg-typing {
+      display: flex; gap: 4px; align-items: center; padding: 10px 14px;
+      background: var(--surface-2); border-radius: 10px; border-bottom-left-radius: 3px;
+      align-self: flex-start; width: fit-content;
+    }
+    .ia-msg-typing span {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--text2);
+      animation: typing 1.2s ease-in-out infinite;
+    }
+    .ia-msg-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .ia-msg-typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+    .ia-chat-suggestions {
+      display: flex; gap: 6px; flex-wrap: wrap; padding: 0 14px 10px;
+    }
+    .ia-suggestion {
+      background: var(--surface-2); border: 1px solid var(--brd);
+      border-radius: 20px; padding: 4px 10px; font-size: 11px;
+      color: var(--text2); cursor: pointer; transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .ia-suggestion:hover { border-color: var(--accent); color: var(--text); background: rgba(108,99,255,0.1); }
+    .ia-chat-input-row {
+      padding: 10px 14px; border-top: 1px solid var(--brd);
+      display: flex; gap: 8px; align-items: center;
+    }
+    .ia-chat-input {
+      flex: 1; background: var(--surface-2); border: 1px solid var(--brd);
+      border-radius: 8px; padding: 8px 12px; font-size: 12.5px;
+      color: var(--text); outline: none; resize: none; height: 36px;
+      font-family: inherit; transition: border-color 0.15s;
+    }
+    .ia-chat-input:focus { border-color: var(--accent); }
+    .ia-chat-input::placeholder { color: var(--text2); }
+    .ia-send-btn {
+      width: 34px; height: 34px; border-radius: 8px; border: none;
+      background: var(--accent); color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .ia-send-btn:hover { background: #5a52d5; }
+    .ia-send-btn:active { transform: scale(0.93); }
+    .ia-send-btn:disabled { background: var(--brd); cursor: not-allowed; }
     .main { flex: 1; overflow-y: auto; padding: 20px 24px; }
 
     /* ── PANELS ── */
@@ -452,8 +578,42 @@ tailwind.config = {
         🤖 IA activa
         <small>Bot respondiendo leads</small>
       </div>
+      <button class="ia-chat-btn" onclick="toggleChatIA()" title="Consultá con la IA" style="margin-top:10px;">
+        <span class="ia-chat-btn-robot">🤖</span>
+        <div class="ia-chat-btn-text">
+          <div class="ia-chat-btn-title">Consultá con la IA</div>
+          <div class="ia-chat-btn-sub">Preguntá sobre tus datos o el mercado</div>
+        </div>
+        <span class="ia-chat-btn-pulse"></span>
+      </button>
       <button onclick="cerrarSesion()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:7px;cursor:pointer;">🔒 Cerrar sesión</button>
     </div>
+
+  <!-- PANEL CHAT IA (fuera del sidebar) -->
+  <div class="ia-chat-panel" id="iaChatPanel">
+    <div class="ia-chat-header">
+      <span class="ia-chat-header-icon">🤖</span>
+      <div class="ia-chat-header-info">
+        <div class="ia-chat-header-title">Asistente IA</div>
+        <div class="ia-chat-header-status">Listo para ayudarte</div>
+      </div>
+      <button class="ia-chat-close" onclick="toggleChatIA()">✕</button>
+    </div>
+    <div class="ia-chat-messages" id="iaChatMessages">
+      <div class="ia-msg bot">¡Hola! Soy tu asistente IA. Podés preguntarme sobre tus leads, propiedades, clientes o cualquier tema del rubro inmobiliario.</div>
+    </div>
+    <div class="ia-chat-suggestions" id="iaChatSuggestions">
+      <span class="ia-suggestion" onclick="enviarSugerencia(this)">¿Cuántos leads tengo?</span>
+      <span class="ia-suggestion" onclick="enviarSugerencia(this)">Propiedades disponibles</span>
+      <span class="ia-suggestion" onclick="enviarSugerencia(this)">Leads calientes</span>
+      <span class="ia-suggestion" onclick="enviarSugerencia(this)">Clientes con pago vencido</span>
+    </div>
+    <div class="ia-chat-input-row">
+      <textarea class="ia-chat-input" id="iaChatInput" placeholder="Preguntá sobre tus datos o el mercado..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMensajeIA();}"></textarea>
+      <button class="ia-send-btn" id="iaSendBtn" onclick="enviarMensajeIA()">➤</button>
+    </div>
+  </div>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -3608,6 +3768,97 @@ async function eliminarActivo(id, nombre) {
     showNotif('🗑 Cliente eliminado', nombre);
   } catch(e) {
     alert('Error al eliminar: ' + e.message);
+  }
+}
+
+// ── CHAT IA ─────────────────────────────────────────────────────────────────
+const IA_WEBHOOK = 'https://n8n.arnaldoayalaestratega.cloud/webhook/crm-ia-chat-mica';
+let iaChatOpen = false;
+let iaSessionId = 'session_' + Date.now();
+
+function toggleChatIA() {
+  const panel = document.getElementById('iaChatPanel');
+  iaChatOpen = !iaChatOpen;
+  if (iaChatOpen) {
+    panel.classList.add('open');
+    document.getElementById('iaChatInput').focus();
+  } else {
+    panel.classList.remove('open');
+  }
+}
+
+function enviarSugerencia(el) {
+  const texto = el.textContent;
+  document.getElementById('iaChatInput').value = texto;
+  // Ocultar sugerencias después de usar una
+  document.getElementById('iaChatSuggestions').style.display = 'none';
+  enviarMensajeIA();
+}
+
+function agregarMensaje(texto, tipo) {
+  const container = document.getElementById('iaChatMessages');
+  const msg = document.createElement('div');
+  msg.className = `ia-msg ${tipo}`;
+  msg.textContent = texto;
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+  return msg;
+}
+
+function mostrarTyping() {
+  const container = document.getElementById('iaChatMessages');
+  const typing = document.createElement('div');
+  typing.className = 'ia-msg-typing';
+  typing.id = 'iaTyping';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  container.appendChild(typing);
+  container.scrollTop = container.scrollHeight;
+}
+
+function quitarTyping() {
+  const t = document.getElementById('iaTyping');
+  if (t) t.remove();
+}
+
+async function enviarMensajeIA() {
+  const input = document.getElementById('iaChatInput');
+  const sendBtn = document.getElementById('iaSendBtn');
+  const mensaje = input.value.trim();
+  if (!mensaje) return;
+
+  agregarMensaje(mensaje, 'user');
+  input.value = '';
+  input.style.height = '36px';
+  sendBtn.disabled = true;
+  mostrarTyping();
+
+  try {
+    const res = await fetch(IA_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: mensaje,
+        tenant_slug: TENANT_SLUG || 'demo',
+        session_id: iaSessionId
+      }),
+      signal: AbortSignal.timeout(30000)
+    });
+
+    quitarTyping();
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const respuesta = data.respuesta || data.output || 'Sin respuesta del asistente.';
+    agregarMensaje(respuesta, 'bot');
+  } catch (e) {
+    quitarTyping();
+    const msg = e.name === 'TimeoutError'
+      ? 'La consulta tardó demasiado. Intentá de nuevo.'
+      : 'Error al conectar con el asistente. Verificá tu conexión.';
+    agregarMensaje(msg, 'bot');
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
   }
 }
 
