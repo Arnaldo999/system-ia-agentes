@@ -319,15 +319,25 @@ def get_lead_by_telefono(telefono: str) -> dict | None:
     """Busca un lead por teléfono. Devuelve dict con todos los campos o None.
     Usado para detectar 'lead recurrente' que vuelve a escribir tras tiempo
     ausente o tras haber sido calificado.
+
+    Tolerante a + al inicio (algunos leads tienen '+5493...' otros '5493...').
+    Match por sufijo: usa los últimos 10 dígitos para evitar problemas con
+    código de país inconsistente.
     """
     if not _available():
         return None
+    import re as _re
+    tel_solo_digitos = _re.sub(r'\D', '', telefono)
+    if not tel_solo_digitos:
+        return None
+    sufijo = tel_solo_digitos[-10:]  # últimos 10 dígitos = número local
     try:
         conn = _conn()
         cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Match por sufijo (cubre +549... vs 549... vs 9...)
         cur.execute(
-            "SELECT * FROM leads WHERE tenant_slug=%s AND telefono=%s LIMIT 1",
-            (TENANT, telefono)
+            "SELECT * FROM leads WHERE tenant_slug=%s AND telefono LIKE %s ORDER BY fecha_ultimo_contacto DESC NULLS LAST LIMIT 1",
+            (TENANT, f"%{sufijo}")
         )
         row = cur.fetchone()
         cur.close()
