@@ -760,8 +760,8 @@ def _llm(prompt: str, system: str = "") -> str:
                 r = requests.post(
                     "https://api.openai.com/v1/chat/completions",
                     headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                    json={"model": "gpt-5-mini", "messages": messages, "max_completion_tokens": 1200},
-                    timeout=30,
+                    json={"model": "gpt-4o-mini", "messages": messages, "max_tokens": 1200, "temperature": 0.7},
+                    timeout=20,
                 )
                 if r.status_code == 200:
                     return r.json()["choices"][0]["message"]["content"].strip()
