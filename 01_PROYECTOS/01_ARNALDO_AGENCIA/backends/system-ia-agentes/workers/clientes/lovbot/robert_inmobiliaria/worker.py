@@ -1823,7 +1823,6 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         # LLM decidió mostrar propiedades (anti-friction o calificación suficiente)
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
-            _agregar_historial(telefono, "Bot", mensaje_final)
         tipo_mp   = sesion_nueva.get("resp_tipo", "") or sesion_nueva.get("_tipo_ref", "")
         zona_mp   = sesion_nueva.get("resp_zona", "")
         oper_mp   = sesion_nueva.get("operacion_at", "venta")
@@ -1849,7 +1848,6 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     if accion == "ir_asesor":
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
-            _agregar_historial(telefono, "Bot", mensaje_final)
         _ir_asesor(telefono, sesion_nueva)
         return
 
@@ -1858,7 +1856,6 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         # Se registra como frío en Airtable para métrica, pero no notifica al asesor.
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
-            _agregar_historial(telefono, "Bot", mensaje_final)
         sesion_nueva["score"] = "frio"
         sesion_nueva["step"]  = "cerrado_curioso"
         threading.Thread(target=_at_registrar_lead, args=(
@@ -1879,7 +1876,6 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         # Enviar respuesta del LLM primero (puede ser transición)
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
-            _agregar_historial(telefono, "Bot", mensaje_final)
 
         # Calificar con Gemini
         calificacion = _gemini_calificar(sesion_nueva)
@@ -1966,13 +1962,11 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         # Cualquier respuesta en ficha → LLM decide (ofrecer cita, responder pregunta, etc.)
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
-            _agregar_historial(telefono, "Bot", mensaje_final)
         return
 
     # ── Respuesta LLM estándar ─────────────────────────────────────────────
     if mensaje_final:
         _enviar_texto(telefono, mensaje_final)
-        _agregar_historial(telefono, "Bot", mensaje_final)
 
     # Actualizar step si el LLM extrajo datos suficientes para avanzar
     if not sesion_nueva.get("resp_presupuesto") and any(
