@@ -1321,21 +1321,41 @@ Si después de 2 intentos no hay engagement → ACCION: cerrar_curioso
 {props_txt}
 {slots_txt}
 
-## EXTRACCIÓN DE DATOS (al final de tu respuesta, el cliente NUNCA las ve)
-Solo incluí las líneas que apliquen en este turno:
-- NOMBRE: Juan García
-- EMAIL: correo@ejemplo.com
-- CIUDAD: NombreCiudad
-- OBJETIVO: vivir | invertir | alquilar
-- TIPO: casa | departamento | terreno | lote | local | oficina
-- ZONA: nombre_zona
-- PRESUPUESTO: ej "USD 100k-200k"
-- FORMA_PAGO: contado | credito_aprobado | credito_sin_aprobar | indefinido
-- AUTORIDAD: solo | pareja | socios | familia
-- URGENCIA: inmediata | 1_3_meses | 3_6_meses | explorando
-- MOTIVO: ej "se muda a Posadas por trabajo nuevo"
-- SCORE: caliente | tibio | frio
-- ACCION: continuar | mostrar_props | agendar | ir_asesor | cerrar_curioso | nurturing
+## EXTRACCIÓN DE DATOS (formato ESTRICTO)
+
+⚠️ REGLAS CRÍTICAS DE FORMATO — el cliente NUNCA debe ver estas líneas:
+1. NO uses headers tipo "EXTRACCIÓN DE DATOS:", "ACCIONES:" o similares
+2. NO uses bullets (• - * ▪) antes de las líneas
+3. NO uses ** ** alrededor de las KEYS
+4. NO uses separadores --- ni ===
+5. NUNCA pongas estas líneas en medio del mensaje, SIEMPRE al final
+6. Cada línea debe ser EXACTAMENTE: KEY: valor (sin nada más)
+7. Solo incluí las líneas que apliquen en ESTE turno
+
+Formato CORRECTO (ejemplo):
+NOMBRE: Juan García
+OBJETIVO: vivir
+ACCION: continuar
+
+Formato INCORRECTO (NO hagas esto):
+EXTRACCIÓN DE DATOS:
+  • OBJETIVO: vivir
+  • ACCION: continuar
+
+Lista de KEYS válidas (usar EXACTAMENTE estas):
+NOMBRE: Juan García
+EMAIL: correo@ejemplo.com
+CIUDAD: NombreCiudad
+OBJETIVO: vivir | invertir | alquilar
+TIPO: casa | departamento | terreno | lote | local | oficina
+ZONA: nombre_zona
+PRESUPUESTO: ej USD 100k-200k
+FORMA_PAGO: contado | credito_aprobado | credito_sin_aprobar | indefinido
+AUTORIDAD: solo | pareja | socios | familia
+URGENCIA: inmediata | 1_3_meses | 3_6_meses | explorando
+MOTIVO: ej se muda a Posadas por trabajo nuevo
+SCORE: caliente | tibio | frio
+ACCION: continuar | mostrar_props | agendar | ir_asesor | cerrar_curioso | nurturing
 """
     return system
 
@@ -1492,35 +1512,82 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         return
 
     # ── Extraer ACCIONES del LLM (líneas ocultas al final) ────────────────
+    # Parser tolerante: detecta keys aunque vengan con bullets, espacios, ** o emojis
+    KEYS_INTERNAS = {
+        "ACCION", "EMAIL", "NOMBRE", "SUBNICHE", "CIUDAD", "OBJETIVO", "TIPO",
+        "ZONA", "PRESUPUESTO", "URGENCIA", "FORMA_PAGO", "AUTORIDAD", "MOTIVO", "SCORE"
+    }
+    HEADERS_INTERNOS = {
+        "EXTRACCIÓN DE DATOS", "EXTRACCION DE DATOS", "ACCIONES", "DATOS EXTRAÍDOS",
+        "DATOS EXTRAIDOS", "---", "===",
+    }
+
+    def _normalizar_linea_extraccion(linea_raw):
+        """Devuelve (key, value) si la línea es de extracción, sino None."""
+        # Limpia bullets, *, espacios, emojis comunes al inicio
+        cleaned = re.sub(r'^[\s\-•*·▪►◦●◾▶➤→\u2022\u2023]+', '', linea_raw).strip()
+        # Quita ** ** alrededor de la KEY (markdown)
+        cleaned = re.sub(r'^\*+\s*', '', cleaned)
+        # Match KEY: VALUE (case-insensitive)
+        m = re.match(r'^([A-ZÁÉÍÓÚÑ_]+)\s*:\s*(.*)$', cleaned)
+        if not m:
+            return None
+        key_upper = m.group(1).upper().strip("*").strip()
+        if key_upper in KEYS_INTERNAS:
+            return key_upper, m.group(2).strip()
+        return None
+
+    def _es_header_interno(linea_raw):
+        cleaned = re.sub(r'^[\s\-•*·#=]+', '', linea_raw).strip().rstrip(':').strip()
+        cleaned_upper = cleaned.upper()
+        return any(h in cleaned_upper for h in HEADERS_INTERNOS)
+
     lineas = respuesta_llm.strip().split("\n")
     acciones = {}
     texto_visible = []
     for linea in lineas:
-        l = linea.strip()
-        if l.startswith("ACCION:"):
-            acciones["accion"] = l.split(":", 1)[1].strip()
-        elif l.startswith("EMAIL:"):
-            acciones["email"] = l.split(":", 1)[1].strip()
-        elif l.startswith("NOMBRE:"):
-            acciones["nombre"] = l.split(":", 1)[1].strip().title()
-        elif l.startswith("SUBNICHE:"):
-            acciones["subniche"] = l.split(":", 1)[1].strip()
-        elif l.startswith("CIUDAD:"):
-            acciones["ciudad"] = l.split(":", 1)[1].strip().title()
-        elif l.startswith("OBJETIVO:"):
-            acciones["objetivo"] = l.split(":", 1)[1].strip().lower()
-        elif l.startswith("TIPO:"):
-            acciones["tipo"] = l.split(":", 1)[1].strip().lower()
-        elif l.startswith("ZONA:"):
-            acciones["zona"] = l.split(":", 1)[1].strip()
-        elif l.startswith("PRESUPUESTO:"):
-            acciones["presupuesto"] = l.split(":", 1)[1].strip()
-        elif l.startswith("URGENCIA:"):
-            acciones["urgencia"] = l.split(":", 1)[1].strip()
-        else:
-            texto_visible.append(linea)
+        # Headers tipo "EXTRACCIÓN DE DATOS:" o "===" → ocultar
+        if _es_header_interno(linea):
+            continue
+        # Línea KEY: VALUE → extraer y ocultar
+        parsed = _normalizar_linea_extraccion(linea)
+        if parsed:
+            key, value = parsed
+            if key == "ACCION":
+                acciones["accion"] = value
+            elif key == "EMAIL":
+                acciones["email"] = value
+            elif key == "NOMBRE":
+                acciones["nombre"] = value.title()
+            elif key == "SUBNICHE":
+                acciones["subniche"] = value.lower()
+            elif key == "CIUDAD":
+                acciones["ciudad"] = value.title()
+            elif key == "OBJETIVO":
+                acciones["objetivo"] = value.lower()
+            elif key == "TIPO":
+                acciones["tipo"] = value.lower()
+            elif key == "ZONA":
+                acciones["zona"] = value
+            elif key == "PRESUPUESTO":
+                acciones["presupuesto"] = value
+            elif key == "URGENCIA":
+                acciones["urgencia"] = value.lower()
+            elif key == "FORMA_PAGO":
+                acciones["forma_pago"] = value.lower()
+            elif key == "AUTORIDAD":
+                acciones["autoridad"] = value.lower()
+            elif key == "MOTIVO":
+                acciones["motivo"] = value
+            elif key == "SCORE":
+                acciones["score"] = value.lower()
+            continue
+        texto_visible.append(linea)
 
     mensaje_final = "\n".join(texto_visible).strip()
+    # Cleanup final: quitar líneas vacías repetidas y separadores residuales
+    mensaje_final = re.sub(r'\n\s*\n\s*\n+', '\n\n', mensaje_final).strip()
+    mensaje_final = re.sub(r'^\s*[-=]{3,}\s*$', '', mensaje_final, flags=re.MULTILINE).strip()
 
     # ── Actualizar sesión con datos extraídos ──────────────────────────────
     sesion_nueva = dict(sesion)
@@ -1560,6 +1627,16 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
 
     if "urgencia" in acciones and not sesion_nueva.get("resp_urgencia"):
         sesion_nueva["resp_urgencia"] = acciones["urgencia"]
+
+    # ── Campos BANT ampliados (Sprint 1) ────────────────────────────────────
+    if "forma_pago" in acciones:
+        sesion_nueva["forma_pago"] = acciones["forma_pago"]
+    if "autoridad" in acciones:
+        sesion_nueva["autoridad"] = acciones["autoridad"]
+    if "motivo" in acciones:
+        sesion_nueva["motivo"] = acciones["motivo"]
+    if "score" in acciones:
+        sesion_nueva["score"] = acciones["score"]
 
     # ── Inferir datos desde el texto del usuario (backup si LLM no puso directive) ──
     if not sesion_nueva.get("resp_objetivo"):
