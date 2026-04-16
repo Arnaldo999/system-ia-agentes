@@ -748,35 +748,46 @@ def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
 # ─── LLM (OpenAI principal → Gemini fallback) ───────────────────────────────
 
 def _llm(prompt: str, system: str = "") -> str:
-    """Llama a GPT-5-mini (principal) → Gemini 2.5 Flash (fallback)."""
-    # ── OpenAI (principal) ──
+    """Llama a GPT-5-mini (principal con retry) → Gemini fallback (2.0 → 2.5)."""
+    # ── OpenAI (principal) con retry ──
     if OPENAI_API_KEY:
-        try:
-            messages = []
-            if system:
-                messages.append({"role": "system", "content": system})
-            messages.append({"role": "user", "content": prompt})
-            r = requests.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "gpt-5-mini", "messages": messages, "max_completion_tokens": 1500},
-                timeout=15,
-            )
-            if r.status_code == 200:
-                return r.json()["choices"][0]["message"]["content"].strip()
-            print(f"[ROBERT-LLM] OpenAI error {r.status_code}: {r.text[:200]}")
-        except Exception as e:
-            print(f"[ROBERT-LLM] OpenAI excepción: {e}")
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        for attempt in range(2):  # 1 intento + 1 retry
+            try:
+                r = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
+                    json={"model": "gpt-5-mini", "messages": messages, "max_completion_tokens": 1200},
+                    timeout=30,
+                )
+                if r.status_code == 200:
+                    return r.json()["choices"][0]["message"]["content"].strip()
+                print(f"[ROBERT-LLM] OpenAI error {r.status_code} (attempt {attempt+1}): {r.text[:200]}")
+                if r.status_code in (429, 500, 502, 503, 504) and attempt == 0:
+                    import time as _t; _t.sleep(1.5)
+                    continue
+                break
+            except requests.exceptions.Timeout:
+                print(f"[ROBERT-LLM] OpenAI timeout (attempt {attempt+1})")
+                if attempt == 0:
+                    continue
+            except Exception as e:
+                print(f"[ROBERT-LLM] OpenAI excepción (attempt {attempt+1}): {e}")
+                break
 
-    # ── Gemini (fallback) ──
+    # ── Gemini (fallback) — probar 2.0 (más estable) → 2.5 ──
     if _gemini_client:
-        try:
-            full_prompt = f"{system}\n\n{prompt}" if system else prompt
-            resp = _gemini_client.models.generate_content(
-                model="gemini-2.5-flash", contents=full_prompt)
-            return resp.text.strip()
-        except Exception as e:
-            print(f"[ROBERT-LLM] Gemini fallback error: {e}")
+        full_prompt = f"{system}\n\n{prompt}" if system else prompt
+        for model in ("gemini-2.0-flash", "gemini-2.5-flash"):
+            try:
+                resp = _gemini_client.models.generate_content(model=model, contents=full_prompt)
+                return resp.text.strip()
+            except Exception as e:
+                print(f"[ROBERT-LLM] Gemini {model} error: {str(e)[:200]}")
+                continue
 
     return ""
 
