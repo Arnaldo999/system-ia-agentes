@@ -56,23 +56,149 @@ tailwind.config = {
     .user-chip { @apply flex items-center gap-2 bg-surface-2 border border-brd py-1 px-3 pl-1.5 rounded-full text-[13px] cursor-pointer; }
     .avatar { @apply w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold; background:linear-gradient(135deg,#6c63ff,#a78bfa); }
 
-    /* ── LAYOUT ── */
-    .layout { @apply flex h-[calc(100vh-56px)]; }
-    .sidebar { @apply w-[200px] max-md:w-12 bg-surface border-r border-brd py-3 shrink-0 flex flex-col overflow-hidden; }
-    .sidebar-section { @apply px-4 py-2 pb-1 text-txt-2 text-[10px] font-semibold uppercase tracking-wider max-md:hidden; }
-    .nav-item { @apply flex items-center gap-2.5 py-2.5 px-4 text-txt-2 cursor-pointer text-[13px] transition-all border-l-[3px] border-transparent my-px hover:text-txt hover:bg-surface-2; }
-    .nav-item.active { @apply text-txt bg-surface-2 !border-l-accent; }
-    .nav-icon { @apply text-[15px] w-5 text-center; }
-    .nav-badge { @apply ml-auto bg-accent text-white text-[10px] px-1.5 py-px rounded-[10px] max-md:hidden; }
-    .nav-badge.green { @apply bg-[#064e3b] text-ok; }
-    .sidebar-footer { @apply mt-auto px-4 py-3 border-t border-brd; }
-    .plan-chip { @apply rounded-lg px-2.5 py-2 text-[11px] font-semibold text-center; background:linear-gradient(135deg,#6c63ff,#00d4aa); }
-    .plan-chip small { @apply block font-normal opacity-80 mt-0.5 max-md:hidden; }
-    .main { @apply flex-1 overflow-y-auto p-5 md:px-6; }
+    /* ── LAYOUT ── (CSS puro — no depende de Tailwind CDN) */
+    .layout { display: flex !important; height: calc(100vh - 56px); }
+    .sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--brd); padding: 12px 0; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .sidebar-section { padding: 8px 16px 4px; color: var(--text2); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: var(--text2); cursor: pointer; font-size: 13px; transition: all .15s; border-left: 3px solid transparent; margin: 1px 0; }
+    .nav-item:hover { color: var(--text); background: var(--surface-2); }
+    .nav-item.active { color: var(--text); background: var(--surface-2); border-left-color: var(--accent); }
+    .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+    .nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
+    .nav-badge.green { background: #064e3b; color: var(--ok); }
+    .sidebar-footer { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--brd); }
+    .plan-chip { border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: 600; text-align: center; background: linear-gradient(135deg,#6c63ff,#00d4aa); }
+
+    /* ── CHAT IA ── */
+    .ia-chat-btn {
+      width: 100%; border: none; border-radius: 10px; padding: 10px 12px;
+      background: linear-gradient(135deg,#6c63ff,#00d4aa);
+      cursor: pointer; display: flex; align-items: center; gap: 10px;
+      text-align: left; position: relative; overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .ia-chat-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(108,99,255,0.4); }
+    .ia-chat-btn:active { transform: translateY(0); }
+    .ia-chat-btn-robot {
+      font-size: 22px; flex-shrink: 0;
+      animation: robotFloat 2.5s ease-in-out infinite;
+    }
+    @keyframes robotFloat {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .ia-chat-btn-text { flex: 1; }
+    .ia-chat-btn-title { font-size: 11px; font-weight: 700; color: #fff; line-height: 1.2; }
+    .ia-chat-btn-sub { font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 2px; line-height: 1.3; }
+    .ia-chat-btn-pulse {
+      width: 8px; height: 8px; border-radius: 50%; background: #fff;
+      flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* Panel chat flotante */
+    .ia-chat-panel {
+      position: fixed; bottom: 20px; left: 230px; width: 360px;
+      background: var(--surface); border: 1px solid var(--brd);
+      border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      display: none; flex-direction: column; z-index: 1000;
+      max-height: 520px; overflow: hidden;
+      animation: slideUp 0.25s ease-out;
+    }
+    .ia-chat-panel.open { display: flex; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .ia-chat-header {
+      padding: 12px 16px; border-bottom: 1px solid var(--brd);
+      display: flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg,rgba(108,99,255,0.15),rgba(0,212,170,0.1));
+    }
+    .ia-chat-header-icon { font-size: 20px; animation: robotFloat 2.5s ease-in-out infinite; }
+    .ia-chat-header-info { flex: 1; }
+    .ia-chat-header-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .ia-chat-header-status { font-size: 10px; color: var(--ok); display: flex; align-items: center; gap: 4px; }
+    .ia-chat-header-status::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--ok); display:inline-block; }
+    .ia-chat-close {
+      background: none; border: none; color: var(--text2); cursor: pointer;
+      font-size: 18px; padding: 4px; border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .ia-chat-close:hover { background: var(--surface-2); color: var(--text); }
+    .ia-chat-messages {
+      flex: 1; overflow-y: auto; padding: 14px; display: flex;
+      flex-direction: column; gap: 10px; min-height: 200px; max-height: 340px;
+    }
+    .ia-chat-messages::-webkit-scrollbar { width: 4px; }
+    .ia-chat-messages::-webkit-scrollbar-thumb { background: var(--brd); border-radius: 4px; }
+    .ia-msg {
+      max-width: 85%; padding: 9px 12px; border-radius: 10px;
+      font-size: 12.5px; line-height: 1.5; word-wrap: break-word;
+    }
+    .ia-msg.bot {
+      background: var(--surface-2); color: var(--text);
+      border-bottom-left-radius: 3px; align-self: flex-start;
+    }
+    .ia-msg.user {
+      background: linear-gradient(135deg,#6c63ff,#5a52d5);
+      color: #fff; border-bottom-right-radius: 3px; align-self: flex-end;
+    }
+    .ia-msg-typing {
+      display: flex; gap: 4px; align-items: center; padding: 10px 14px;
+      background: var(--surface-2); border-radius: 10px; border-bottom-left-radius: 3px;
+      align-self: flex-start; width: fit-content;
+    }
+    .ia-msg-typing span {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--text2);
+      animation: typing 1.2s ease-in-out infinite;
+    }
+    .ia-msg-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .ia-msg-typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+    .ia-chat-suggestions {
+      display: flex; gap: 6px; flex-wrap: wrap; padding: 0 14px 10px;
+    }
+    .ia-suggestion {
+      background: var(--surface-2); border: 1px solid var(--brd);
+      border-radius: 20px; padding: 4px 10px; font-size: 11px;
+      color: var(--text2); cursor: pointer; transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .ia-suggestion:hover { border-color: var(--accent); color: var(--text); background: rgba(108,99,255,0.1); }
+    .ia-chat-input-row {
+      padding: 10px 14px; border-top: 1px solid var(--brd);
+      display: flex; gap: 8px; align-items: center;
+    }
+    .ia-chat-input {
+      flex: 1; background: var(--surface-2); border: 1px solid var(--brd);
+      border-radius: 8px; padding: 8px 12px; font-size: 12.5px;
+      color: var(--text); outline: none; resize: none; height: 36px;
+      font-family: inherit; transition: border-color 0.15s;
+    }
+    .ia-chat-input:focus { border-color: var(--accent); }
+    .ia-chat-input::placeholder { color: var(--text2); }
+    .ia-send-btn {
+      width: 34px; height: 34px; border-radius: 8px; border: none;
+      background: var(--accent); color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .ia-send-btn:hover { background: #5a52d5; }
+    .ia-send-btn:active { transform: scale(0.93); }
+    .ia-send-btn:disabled { background: var(--brd); cursor: not-allowed; }
+    .main { flex: 1; overflow-y: auto; padding: 20px 24px; }
 
     /* ── PANELS ── */
-    .panel { @apply hidden; }
-    .panel.active { @apply block; }
+    .panel { display: none !important; }
+    .panel.active { display: block !important; }
 
     /* ── KPIs ── */
     .kpis { @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-5; }
@@ -190,10 +316,28 @@ tailwind.config = {
     .props-grid { @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5; }
     .pcard { @apply bg-surface border border-brd rounded-xl overflow-hidden transition-all cursor-pointer hover:-translate-y-[3px] hover:border-accent; }
     .pcard-img { @apply h-[130px] flex items-center justify-center text-[46px] relative; background:linear-gradient(135deg,#1a2a4a,#2a1a4a); }
-    .pcard-status { @apply absolute top-2 right-2 text-[11px] px-2.5 py-[3px] rounded-lg font-semibold; }
+    .pcard-status { @apply absolute top-2 right-2 text-[11px] px-2.5 py-[3px] rounded-lg font-semibold cursor-pointer select-none; transition:filter .15s; }
+    .pcard-status:hover { filter: brightness(1.25); }
     .ps-disp { @apply bg-[#064e3b] text-[#34d399]; }
-    .ps-res { @apply bg-[#451a03] text-[#fbbf24]; }
+    .ps-res  { @apply bg-[#451a03] text-[#fbbf24]; }
     .ps-vend { @apply bg-[#3d0d0d] text-[#f87171]; }
+    /* Dropdown disponibilidad inline */
+    .disp-dropdown {
+      position:absolute; top:calc(100% + 4px); right:0; z-index:50;
+      background:#1a2235; border:1px solid #334155; border-radius:10px;
+      overflow:hidden; min-width:155px; box-shadow:0 8px 24px rgba(0,0,0,.5);
+      animation: fadeInDown .12s ease;
+    }
+    @keyframes fadeInDown { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+    .disp-opt {
+      display:flex; align-items:center; gap:8px; padding:9px 14px;
+      font-size:12px; font-weight:600; cursor:pointer; transition:background .12s;
+    }
+    .disp-opt:hover { background:#243044; }
+    .disp-opt .disp-icon { font-size:15px; }
+    .disp-opt.opt-disp { color:#34d399; }
+    .disp-opt.opt-res  { color:#fbbf24; }
+    .disp-opt.opt-vend { color:#f87171; }
     .pcard-body { @apply p-3; }
     .pcard-title { @apply font-semibold text-[13px] mb-[3px]; }
     .pcard-loc { @apply text-txt-2 text-xs mb-[7px]; }
@@ -430,12 +574,42 @@ tailwind.config = {
     </div>
     <!-- footer siempre visible -->
     <div class="sidebar-footer">
-      <div class="plan-chip">
-        🤖 IA activa
-        <small>Bot respondiendo leads</small>
-      </div>
-      <button onclick="cerrarSesion()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:7px;cursor:pointer;">🔒 Cerrar sesión</button>
+      <button class="ia-chat-btn" onclick="toggleChatIA()" title="Consultá con la IA">
+        <span class="ia-chat-btn-robot">🤖</span>
+        <div class="ia-chat-btn-text">
+          <div class="ia-chat-btn-title">Consultá con la IA</div>
+          <div class="ia-chat-btn-sub">Preguntá sobre tus datos o el mercado</div>
+        </div>
+        <span class="ia-chat-btn-pulse"></span>
+      </button>
+      <button onclick="cerrarSesion()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--brd);border-radius:8px;color:var(--text2);font-size:12px;padding:7px;cursor:pointer;">🔒 Cerrar sesión</button>
     </div>
+
+  <!-- PANEL CHAT IA (fuera del sidebar) -->
+  <div class="ia-chat-panel" id="iaChatPanel">
+    <div class="ia-chat-header">
+      <span class="ia-chat-header-icon">🤖</span>
+      <div class="ia-chat-header-info">
+        <div class="ia-chat-header-title">Asistente IA</div>
+        <div class="ia-chat-header-status">Listo para ayudarte</div>
+      </div>
+      <button class="ia-chat-close" onclick="toggleChatIA()">✕</button>
+    </div>
+    <div class="ia-chat-messages" id="iaChatMessages">
+      <div class="ia-msg bot">¡Hola! Soy tu asistente IA. Podés preguntarme sobre tus leads, propiedades, clientes o cualquier tema del rubro inmobiliario.</div>
+    </div>
+    <div class="ia-chat-suggestions" id="iaChatSuggestions">
+      <span class="ia-suggestion" onclick="enviarSugerencia(this)">¿Cuántos leads tengo?</span>
+      <span class="ia-suggestion" onclick="enviarSugerencia(this)">Propiedades disponibles</span>
+      <span class="ia-suggestion" onclick="enviarSugerencia(this)">Leads calientes</span>
+      <span class="ia-suggestion" onclick="enviarSugerencia(this)">Clientes con pago vencido</span>
+    </div>
+    <div class="ia-chat-input-row">
+      <textarea class="ia-chat-input" id="iaChatInput" placeholder="Preguntá sobre tus datos o el mercado..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMensajeIA();}"></textarea>
+      <button class="ia-send-btn" id="iaSendBtn" onclick="enviarMensajeIA()">➤</button>
+    </div>
+  </div>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -1774,7 +1948,7 @@ function renderKanbanFromLeads() {
     };
     const nextInfo = nextMap[l.status];
     const nextBtn = nextInfo
-      ? `<button class="btn ${nextInfo.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${nextInfo.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${l.id},'${nextInfo.next}')">${nextInfo.label}</button>`
+      ? `<button class="btn ${nextInfo.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${nextInfo.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" data-lid="${l.id}" data-next="${nextInfo.next}" onclick="event.stopPropagation();moverLead(this.dataset.lid,this.dataset.next)">${nextInfo.label}</button>`
       : '';
 
     const card = document.createElement('div');
@@ -2050,7 +2224,7 @@ async function guardarEstado(id) {
 }
 
 // ── VERSIONADO ──────────────────────────────────────────────────────────────
-const CRM_VERSION = '1.3.0';
+const CRM_VERSION = '1.3.1-dev';
 const CRM_VERSION_KEY = 'crm_version_dismissed';
 
 async function checkVersion() {
@@ -2081,7 +2255,7 @@ function showUpdateBanner(newVersion, changelog) {
     <div>🔔 <strong>Nueva versión disponible (v${newVersion})</strong>${changelogText}</div>
     <div style="display:flex;gap:8px">
       <button onclick="location.reload(true)" style="background:#fff;color:#1a1d27;border:none;padding:5px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">🔄 Actualizar</button>
-      <button onclick="dismissUpdate('${newVersion}')" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ahora no</button>
+      <button data-ver="${newVersion}" onclick="dismissUpdate(this.dataset.ver)" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ahora no</button>
     </div>`;
   document.body.prepend(banner);
 }
@@ -2294,8 +2468,8 @@ async function renderProps() {
       }
 
       // Status
-      const isDisp = disponible.includes('Disponible') || disponible.includes('disponible');
       const isRes  = disponible.includes('Reservado') || disponible.includes('reservado');
+      const isDisp = !isRes && (disponible.includes('✅') || (disponible.toLowerCase().includes('disponible') && !disponible.includes('No') && !disponible.includes('no')));
       const sc = isDisp ? 'ps-disp' : isRes ? 'ps-res' : 'ps-vend';
       const sl = isDisp ? 'Disponible' : isRes ? 'Reservado' : 'No disponible';
 
@@ -2307,15 +2481,25 @@ async function renderProps() {
       if(tipo) specs.push(tipo);
       if(operacion) specs.push(operacion);
 
-      // Imagen o emoji fallback
-      const imgContent = imgUrl
-        ? `<img src="${imgUrl}" alt="${titulo}" style="width:100%;height:100%;object-fit:cover;border-radius:0" onerror="this.parentElement.innerHTML='🏠'">`
-        : '🏠';
-
       const pid = p.id || p.ID || '';
+
+      // Imagen: siempre hay emoji de fondo; la img va encima absoluta
+      const imgTag = imgUrl
+        ? `<img src="${imgUrl}" alt="${titulo}" data-pid="${pid}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0" onerror="_imgErr(this)">`
+        : '';
       g.innerHTML += `
-        <div class="pcard" onclick="verDetalleProp('${pid}')" style="cursor:pointer">
-          <div class="pcard-img" style="${imgUrl?'padding:0;overflow:hidden':''}">${imgContent}<span class="pcard-status ${sc}">${sl}</span></div>
+        <div class="pcard" data-pid="${pid}" onclick="_verProp(this)" style="cursor:pointer">
+          <div class="pcard-img" style="position:relative;overflow:hidden">
+            🏠${imgTag}
+            <div class="pcard-status ${sc}" id="badge-${pid}" data-pid="${pid}" data-sc="${sc}" onclick="event.stopPropagation();_dispToggle(this)" style="position:absolute;top:8px;right:8px">
+              <span id="lbl-${pid}">${sl}</span> ▾
+              <div class="disp-dropdown" id="dd-${pid}" style="display:none" onclick="event.stopPropagation()">
+                <div class="disp-opt opt-disp" data-pid="${pid}" data-val="disp" onclick="_dispSet(this)"><span class="disp-icon">✅</span> Disponible</div>
+                <div class="disp-opt opt-res"  data-pid="${pid}" data-val="res"  onclick="_dispSet(this)"><span class="disp-icon">⏳</span> Reservado</div>
+                <div class="disp-opt opt-vend" data-pid="${pid}" data-val="vend" onclick="_dispSet(this)"><span class="disp-icon">❌</span> No disponible</div>
+              </div>
+            </div>
+          </div>
           <div class="pcard-body">
             <div class="pcard-title">${titulo}</div>
             ${zona ? `<div class="pcard-loc">📍 ${zona}</div>` : ''}
@@ -2327,7 +2511,7 @@ async function renderProps() {
             <span style="color:var(--text2);font-size:11px">🤖 Bot la ofrece automáticamente</span>
             <div style="display:flex;gap:5px" onclick="event.stopPropagation()">
               ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="btn" style="padding:4px 8px;font-size:11px">🗺</a>` : ''}
-              <button class="btn btn-primary" style="padding:4px 8px;font-size:11px" onclick="abrirEditorPropiedad('${pid}')">✏️</button>
+              <button class="btn btn-primary" style="padding:4px 8px;font-size:11px" data-pid="${pid}" onclick="abrirEditorPropiedad(this.dataset.pid)">✏️</button>
               <button class="btn" data-pid="${pid}" data-titulo="${titulo.replace(/"/g,'&quot;')}" style="padding:4px 8px;font-size:11px;background:#3b0a0a;border-color:#5c1a1a;color:#f87171" onclick="eliminarPropiedad(this.dataset.pid, this.dataset.titulo)">🗑️</button>
             </div>
           </div>
@@ -2358,6 +2542,107 @@ async function renderProps() {
           </div>
         </div>`;
     });
+  }
+}
+
+// Helpers data-attribute — evitan comillas simples dentro de atributos HTML en template literals
+function _verProp(el) { verDetalleProp(el.dataset.pid); }
+function _avanzarLead(el) {
+  const lid = el.dataset.lid;
+  const st = LEADS[lid] ? LEADS[lid].status : null;
+  const next = st === 'contactado' ? 'calificado' : 'cita';
+  moverLead(lid, next);
+}
+
+// Ocultar imagen rota — función global, sin strings dentro del atributo onerror
+function _imgErr(imgEl) {
+  imgEl.style.display = 'none';
+  // Si el padre solo tenía la img (previews de logo/icono), mostrar emoji fallback
+  const p = imgEl.parentElement;
+  if(p && p.children.length === 1) p.textContent = '🏠';
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────────
+let _toastTimer = null;
+function mostrarToast(msg, tipo = 'ok') {
+  let el = document.getElementById('_crm_toast');
+  if(!el) {
+    el = document.createElement('div');
+    el.id = '_crm_toast';
+    el.style.cssText = `
+      position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px);
+      padding:10px 20px; border-radius:10px; font-size:13px; font-weight:600;
+      z-index:9999; pointer-events:none; opacity:0;
+      transition: opacity .2s, transform .2s;
+      box-shadow: 0 4px 18px rgba(0,0,0,.5);
+    `;
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = tipo === 'error' ? '#3b0a0a' : '#064e3b';
+  el.style.color      = tipo === 'error' ? '#f87171' : '#34d399';
+  el.style.border     = `1px solid ${tipo === 'error' ? '#5c1a1a' : '#065f46'}`;
+  // Animate in
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(10px)';
+  }, 2500);
+}
+
+// ── DISPONIBILIDAD INLINE ────────────────────────────────────────────────────
+// Todos los handlers leen desde data-attributes — sin strings en onclick HTML
+
+const _DISP_MAP = {
+  disp: { val: '✅ Disponible',    sc: 'ps-disp', label: 'Disponible'    },
+  res:  { val: '⏳ Reservado',     sc: 'ps-res',  label: 'Reservado'     },
+  vend: { val: '❌ No disponible', sc: 'ps-vend', label: 'No disponible' },
+};
+
+function _dispToggle(badgeEl) {
+  const pid = badgeEl.dataset.pid;
+  document.querySelectorAll('.disp-dropdown').forEach(d => {
+    if(d.id !== 'dd-' + pid) d.style.display = 'none';
+  });
+  const dd = document.getElementById('dd-' + pid);
+  if(dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.disp-dropdown').forEach(d => d.style.display = 'none');
+});
+
+async function _dispSet(optEl) {
+  const pid = optEl.dataset.pid;
+  const key = optEl.dataset.val;
+  const meta = _DISP_MAP[key] || _DISP_MAP.vend;
+
+  const dd = document.getElementById('dd-' + pid);
+  if(dd) dd.style.display = 'none';
+
+  const badge = document.getElementById('badge-' + pid);
+  if(badge) badge.className = 'pcard-status ' + meta.sc;
+  const lbl = document.getElementById('lbl-' + pid);
+  if(lbl) lbl.textContent = meta.label;
+
+  const cached = _cachedProps.find(x => (x.id || x.ID || '') == pid);
+  if(cached) { cached.Disponible = meta.val; cached.disponible = meta.val; }
+
+  try {
+    const r = await fetch(API_BASE + '/crm/propiedades/' + pid, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Disponible: meta.val }),
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    mostrarToast('Disponibilidad → ' + meta.label);
+  } catch(e) {
+    mostrarToast('Error al guardar: ' + e.message, 'error');
+    renderProps();
   }
 }
 
@@ -2530,8 +2815,8 @@ async function eliminarPropiedadDesdeModal() {
 
 function _renderModalProp(titulo, zona, precio, moneda, tipo, operacion, disponible, desc, dorms, metros, metrosTerr, imgUrl, mapsUrl, videoUrl) {
   const precioStr = precio ? `${moneda === 'ARS' ? '$' : 'USD '}${Number(precio).toLocaleString('es-AR')}` : 'Consultar';
-  const isDisp = (disponible||'').toLowerCase().includes('disponible');
   const isRes  = (disponible||'').toLowerCase().includes('reservado');
+  const isDisp = !isRes && (disponible||'').includes('✅');
   const badgeColor = isDisp ? '#00d4aa' : isRes ? '#ffa94d' : '#ff6b6b';
   const badgeLabel = isDisp ? '✅ Disponible' : isRes ? '⏳ Reservado' : '❌ No disponible';
 
@@ -2552,7 +2837,7 @@ function _renderModalProp(titulo, zona, precio, moneda, tipo, operacion, disponi
   })() : '';
 
   document.getElementById('modalPropBody').innerHTML = `
-    ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:220px;object-fit:cover;border-radius:12px;margin-bottom:16px" onerror="this.style.display='none'">` : ''}
+    ${imgUrl ? `<img src="${imgUrl}" style="width:100%;height:220px;object-fit:cover;border-radius:12px;margin-bottom:16px" onerror="_imgErr(this)">` : ''}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
       <h3 style="font-size:18px;font-weight:700;color:#e8eaf0;line-height:1.3">${titulo || 'Sin título'}</h3>
       <span style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}44;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;white-space:nowrap">${badgeLabel}</span>
@@ -2659,8 +2944,8 @@ async function renderAgenda() {
           <div style="color:var(--text2);font-size:12px">${c.hora} · ${c.prop}</div>
           <div class="cita-actions">
             <span class="estado-pill ${estadoClass}">${estadoLabel}</span>
-            <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" onclick="cambiarEstadoCita(${i},'completada')">✅ Completar</button>
-            <button class="btn" style="font-size:11px;padding:3px 8px;background:#3d0d0d;border-color:#7a1a1a;color:#f87171" onclick="cambiarEstadoCita(${i},'cancelada')">✗ Cancelar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;background:#064e3b;border-color:#1a5c33;color:#34d399" data-ci="${i}" data-est="completada" onclick="cambiarEstadoCita(+this.dataset.ci,this.dataset.est)">✅ Completar</button>
+            <button class="btn" style="font-size:11px;padding:3px 8px;background:#3d0d0d;border-color:#7a1a1a;color:#f87171" data-ci="${i}" data-est="cancelada" onclick="cambiarEstadoCita(+this.dataset.ci,this.dataset.est)">✗ Cancelar</button>
             <button class="btn" style="font-size:11px;padding:3px 8px;margin-left:auto" onclick="abrirDetalleCita(${i})">📋 Ver lead</button>
           </div>
         </div>
@@ -2729,7 +3014,7 @@ function moverLead(id, destino) {
 
   card.className='lcard fresh';
   const nextBtn = info.next
-    ? `<button class="btn ${info.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${info.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" onclick="event.stopPropagation();moverLead(${id},'${info.next}')">${info.nextLabel}</button>`
+    ? `<button class="btn ${info.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${info.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" data-lid="${id}" data-next="${info.next}" onclick="event.stopPropagation();moverLead(this.dataset.lid,this.dataset.next)">${info.nextLabel}</button>`
     : `<span style="color:var(--green);font-size:11px;font-weight:600">🏆 Venta cerrada</span>`;
 
   card.querySelector('.lcard-actions').innerHTML = `
@@ -2817,7 +3102,7 @@ function renderResumenes() {
         </div>
         <div class="rcard-foot">
           <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openDetalle(${r.leadId})">Ver perfil completo</button>
-          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="moverLead(${r.leadId},'${LEADS[r.leadId].status==='contactado'?'calificado':'cita'}')">Avanzar etapa →</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" data-lid="${r.leadId}" onclick="_avanzarLead(this)">Avanzar etapa →</button>
           <span style="margin-left:auto;color:var(--text2);font-size:11px">Estado: <strong style="color:var(--text)">${LEADS[r.leadId].status}</strong></span>
         </div>
       </div>`;
@@ -3004,7 +3289,7 @@ function aplicarLogo(val) {
   const icon = document.getElementById('topLogoIcon');
   if (!val) return;
   if (val.startsWith('http') || val.startsWith('data:')) {
-    icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+    icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="_imgErr(this)">`;
   } else {
     icon.textContent = val;
   }
@@ -3064,7 +3349,7 @@ function previewLogo(val) {
   const prev = document.getElementById('perfilLogoPreview');
   if (!val) { prev.innerHTML = '🏠'; return; }
   if (val.startsWith('http') || val.startsWith('data:')) {
-    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" onerror="this.parentElement.textContent='🏠'">`;
+    prev.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" onerror="_imgErr(this)">`;
   } else {
     prev.textContent = val;
   }
@@ -3111,7 +3396,7 @@ function previewCfgLogo(url) {
   const el = document.getElementById('cfg-logo-preview');
   const prev = document.getElementById('cfg-prev-logo');
   if (url && (url.startsWith('http') || url.startsWith('data:'))) {
-    const img = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.parentElement.textContent='🏠'">`;
+    const img = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="_imgErr(this)">`;
     el.innerHTML = img;
     prev.innerHTML = img;
   } else {
@@ -3387,9 +3672,9 @@ function _renderTablaActivos(records) {
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn" style="font-size:11px;padding:3px 8px"
-            onclick="abrirModalActivo('${r.id}')">✏️ Editar</button>
+            data-id="${r.id}" onclick="abrirModalActivo(this.dataset.id)">✏️ Editar</button>
           <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red)"
-            onclick="eliminarActivo('${r.id}','${nombre}')">🗑</button>
+            data-id="${r.id}" data-nombre="${nombre}" onclick="eliminarActivo(this.dataset.id,this.dataset.nombre)">🗑</button>
         </div>
       </td>
     </tr>`;
@@ -3479,6 +3764,97 @@ async function eliminarActivo(id, nombre) {
     showNotif('🗑 Cliente eliminado', nombre);
   } catch(e) {
     alert('Error al eliminar: ' + e.message);
+  }
+}
+
+// ── CHAT IA ─────────────────────────────────────────────────────────────────
+const IA_WEBHOOK = 'https://n8n.lovbot.ai/webhook/crm-ia-chat';
+let iaChatOpen = false;
+let iaSessionId = 'session_' + Date.now();
+
+function toggleChatIA() {
+  const panel = document.getElementById('iaChatPanel');
+  iaChatOpen = !iaChatOpen;
+  if (iaChatOpen) {
+    panel.classList.add('open');
+    document.getElementById('iaChatInput').focus();
+  } else {
+    panel.classList.remove('open');
+  }
+}
+
+function enviarSugerencia(el) {
+  const texto = el.textContent;
+  document.getElementById('iaChatInput').value = texto;
+  // Ocultar sugerencias después de usar una
+  document.getElementById('iaChatSuggestions').style.display = 'none';
+  enviarMensajeIA();
+}
+
+function agregarMensaje(texto, tipo) {
+  const container = document.getElementById('iaChatMessages');
+  const msg = document.createElement('div');
+  msg.className = `ia-msg ${tipo}`;
+  msg.textContent = texto;
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+  return msg;
+}
+
+function mostrarTyping() {
+  const container = document.getElementById('iaChatMessages');
+  const typing = document.createElement('div');
+  typing.className = 'ia-msg-typing';
+  typing.id = 'iaTyping';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  container.appendChild(typing);
+  container.scrollTop = container.scrollHeight;
+}
+
+function quitarTyping() {
+  const t = document.getElementById('iaTyping');
+  if (t) t.remove();
+}
+
+async function enviarMensajeIA() {
+  const input = document.getElementById('iaChatInput');
+  const sendBtn = document.getElementById('iaSendBtn');
+  const mensaje = input.value.trim();
+  if (!mensaje) return;
+
+  agregarMensaje(mensaje, 'user');
+  input.value = '';
+  input.style.height = '36px';
+  sendBtn.disabled = true;
+  mostrarTyping();
+
+  try {
+    const res = await fetch(IA_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: mensaje,
+        tenant_slug: TENANT_SLUG || 'demo',
+        session_id: iaSessionId
+      }),
+      signal: AbortSignal.timeout(30000)
+    });
+
+    quitarTyping();
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const respuesta = data.respuesta || data.output || 'Sin respuesta del asistente.';
+    agregarMensaje(respuesta, 'bot');
+  } catch (e) {
+    quitarTyping();
+    const msg = e.name === 'TimeoutError'
+      ? 'La consulta tardó demasiado. Intentá de nuevo.'
+      : 'Error al conectar con el asistente. Verificá tu conexión.';
+    agregarMensaje(msg, 'bot');
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
   }
 }
 
