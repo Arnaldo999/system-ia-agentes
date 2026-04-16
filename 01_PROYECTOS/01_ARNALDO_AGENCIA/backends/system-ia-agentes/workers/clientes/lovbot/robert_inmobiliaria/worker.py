@@ -1462,40 +1462,47 @@ REGLAS:
 - Después calificá con BANT (Need → Budget → Authority → Timeline)
 - Si pide más opciones → ahí sí abrís catálogo filtrado (2-4 máx)"""
     else:
-        # Si tiene nombre del profile WhatsApp, lo confirmamos. Si no, lo pedimos.
-        instruccion_nombre = (
-            f"Ya tenés el nombre del cliente desde su perfil de WhatsApp ({nombre}). "
-            f"NO se lo preguntés de nuevo, usalo directo en el saludo."
-            if nombre else
-            "El cliente NO se identificó todavía. PEDÍ su nombre con cortesía: "
-            "'¿Con quién tengo el gusto de conversar?'"
-        )
-        ejemplo_saludo = (
-            f"""Ejemplo de tono cálido (NO copiar literal, adaptá):
-"¡Hola{saludo_pers}! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
-
-Somos una desarrolladora inmobiliaria en {CIUDAD} con lotes y proyectos
-en {zonas_breve or 'distintas zonas premium'}. Estoy acá para ayudarte a
-encontrar lo que estás buscando 🏡
-
-Contame: ¿la propiedad sería para vos / tu familia, o buscás
-más una opción de inversión?"
-"""
-            if nombre else
-            f"""Ejemplo de tono cálido (NO copiar literal, adaptá):
+        # Caso B: SIEMPRE pedimos el nombre al cliente. El nombre del perfil de
+        # WhatsApp es poco confiable (puede ser apodo, nombre de empresa, etc.)
+        # Si tenemos nombre del perfil, lo usamos como sugerencia para confirmar.
+        if nombre:
+            instruccion_nombre = (
+                f"Tenés '{nombre}' del perfil de WhatsApp del cliente, pero IGUAL DEBÉS CONFIRMAR "
+                f"su nombre preguntando: '¿Hablo con {nombre.split()[0]}, verdad? 😊' o "
+                f"'¿Con quién tengo el gusto de conversar?' — el nombre del perfil puede ser "
+                f"incorrecto o un apodo. Una vez que confirme, usalo en toda la conversación."
+            )
+            ejemplo_saludo = f"""Ejemplo de tono cálido (NO copiar literal, adaptá):
 "¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
 
-Somos una desarrolladora inmobiliaria en {CIUDAD} con lotes y proyectos
+Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos
+en {zonas_breve or 'distintas zonas premium'}. Estoy acá para acompañarte
+en lo que necesités 🏡
+
+¿Hablo con {nombre.split()[0]}, correcto?"
+
+→ Cuando confirme su nombre, saludalo por su nombre y preguntá Need:
+"¡Perfecto, [nombre]! Contame, ¿la propiedad sería para vos / tu familia,
+o buscás más una opción de inversión?"
+"""
+        else:
+            instruccion_nombre = (
+                "El cliente NO se identificó todavía. PEDÍ su nombre con cortesía SIEMPRE: "
+                "'¿Con quién tengo el gusto de conversar?'"
+            )
+            ejemplo_saludo = f"""Ejemplo de tono cálido (NO copiar literal, adaptá):
+"¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
+
+Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos
 en {zonas_breve or 'distintas zonas premium'}. Estoy acá para ayudarte a
 encontrar lo que estás buscando 🏡
 
 Antes de seguir, *¿con quién tengo el gusto de conversar?* 😊"
 
-→ Cuando responda con su nombre, SALUDALO POR SU NOMBRE y recién ahí
-preguntá Need: "¡Genial [nombre]! Contame, ¿la propiedad sería para
+→ Cuando responda con su nombre, saludalo por su nombre y preguntá Need:
+"¡Genial [nombre]! Contame, ¿la propiedad sería para
 vos / tu familia, o buscás más una opción de inversión?"
 """
-        )
 
         bloque_origen = f"""## 📨 ORIGEN DEL LEAD: CASO B — GENÉRICO (sin anuncio previo)
 
@@ -1507,9 +1514,9 @@ ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
 3. Mencioná brevemente qué es la empresa: una desarrolladora inmobiliaria
    en {CIUDAD}, con proyectos en {zonas_breve or 'distintas zonas'}.
 4. Mostrá disponibilidad genuina ("estoy para ayudarte / acompañarte").
-5. **Pedí el nombre del cliente** (si no lo tenés todavía).
+5. **SIEMPRE pedí o confirmá el nombre del cliente** — es OBLIGATORIO.
 
-🔑 NOMBRE DEL CLIENTE:
+🔑 NOMBRE DEL CLIENTE (OBLIGATORIO ANTES DE CONTINUAR):
 {instruccion_nombre}
 
 {ejemplo_saludo}
@@ -1517,10 +1524,10 @@ ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
 REGLAS:
 - NO arranques con "Hola, soy el asistente. ¿Vivir o invertir?" (es seco)
 - SÍ presentá la empresa antes de calificar
-- SÍ pedí el nombre cordialmente si no lo tenés
+- SÍ pedí o confirmá el nombre SIEMPRE — es el primer paso del BANT
 - NO mostrés propiedades hasta tener al menos Need + Budget mínimo
 - Una vez calificado → mostrar 2-4 opciones (no más)
-- Después de que dé su nombre → SALUDALO POR SU NOMBRE en el siguiente turno"""
+- Después de que confirme su nombre → SALUDALO POR SU NOMBRE y seguí el flujo"""
 
     # ── Bloque LEAD RECURRENTE (si vuelve a escribir tras tiempo ausente) ──
     bloque_recurrente = ""
