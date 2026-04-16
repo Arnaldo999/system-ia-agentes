@@ -1696,14 +1696,17 @@ const ESTADO_MAP = {
   'cerrado_perdido': 'cerrado',
   'descartado':      'cerrado',
 };
-// Mapeo columna kanban → estado BD para enviar al backend al arrastrar
+// Mapeo columna kanban → estado BD válido en el backend
+// (debe coincidir con ESTADOS_VALIDOS del worker: no_contactado, contactado,
+// calificado, visita_agendada, visito, en_negociacion, seguimiento,
+// cerrado_ganado, cerrado_perdido)
 const ESTADO_REVERSE = {
   'nuevo':        'no_contactado',
   'conversacion': 'contactado',
-  'cita':         'cita_agendada',
+  'cita':         'visita_agendada',
   'negociacion':  'en_negociacion',
-  'cerrado_ganado':  'cerrado',
-  'cerrado_perdido': 'descartado',
+  'cerrado_ganado':  'cerrado_ganado',
+  'cerrado_perdido': 'cerrado_perdido',
 };
 // Si las notas dicen "CITA AGENDADA" y tiene Fecha_Cita → se muestra como "cita"
 
