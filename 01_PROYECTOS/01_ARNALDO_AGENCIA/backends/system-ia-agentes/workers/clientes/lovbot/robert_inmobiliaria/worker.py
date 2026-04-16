@@ -1840,12 +1840,45 @@ async def api_estado_bot(telefono: str):
 
 
 # ─── ENDPOINT WEBHOOK ─────────────────────────────────────────────────────────
+META_VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "lovbot_webhook_2026")
+
+@router.get("/whatsapp")
+async def verificar_webhook_meta(request: Request):
+    """Handshake de verificación de Meta (GET con hub.challenge)."""
+    from fastapi.responses import PlainTextResponse, Response
+    params = dict(request.query_params)
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge", "")
+    if mode == "subscribe" and token == META_VERIFY_TOKEN:
+        return PlainTextResponse(content=challenge, status_code=200)
+    return Response(status_code=403)
+
+
 @router.post("/whatsapp")
 async def webhook_whatsapp(request: Request):
-    """Recibe mensajes desde /meta/webhook (main.py lo redirige aquí)."""
+    """Recibe mensajes — soporta tanto formato Meta crudo como bridge interno."""
     data = await request.json()
+
+    # Caso 1: payload directo del bridge interno {from, text}
     telefono = data.get("from", "")
     texto    = data.get("text", "")
+
+    # Caso 2: payload crudo de Meta Graph API {entry: [{changes: [...]}]}
+    if not telefono and "entry" in data:
+        try:
+            entry = data["entry"][0]
+            change = entry["changes"][0]
+            value = change["value"]
+            messages = value.get("messages", [])
+            if messages:
+                msg = messages[0]
+                telefono = msg.get("from", "")
+                if msg.get("type") == "text":
+                    texto = msg.get("text", {}).get("body", "")
+        except (KeyError, IndexError, TypeError):
+            return {"status": "ignored", "reason": "payload no reconocido"}
+
     if not telefono or not texto:
         return {"status": "ignored"}
     threading.Thread(target=_procesar, args=(telefono, texto), daemon=True).start()
