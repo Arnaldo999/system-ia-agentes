@@ -1518,6 +1518,53 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             _enviar_texto(telefono, "Respondé *sí* para confirmar o *no* para elegir otro horario.")
         return
 
+    # ── ANTI-FRICTION: pedido explícito de opciones → saltear BANT ─────────
+    # Si el cliente pide ver opciones/propiedades explícitamente, mostramos
+    # inmediatamente sin esperar presupuesto (ancla posterior).
+    _KEYWORDS_PEDIR_OPCIONES = [
+        "que opciones", "qué opciones", "que tienen", "qué tienen",
+        "mostrame", "muéstrame", "muéstrame", "muestrame",
+        "quiero ver", "quisiera ver", "mandame", "mandame opciones",
+        "que hay disponible", "qué hay disponible", "que propiedades",
+        "qué propiedades", "opciones para", "ver opciones", "ver propiedades",
+        "quiero opciones", "tenés opciones", "tienen opciones",
+    ]
+    _pide_opciones_directo = any(kw in texto_lower for kw in _KEYWORDS_PEDIR_OPCIONES)
+
+    if _pide_opciones_directo and step not in ("lista", "ficha", "agendar_slots", "confirmar_cita"):
+        # Mostrar propiedades con filtros parciales (puede no tener zona/presupuesto aún)
+        tipo_busq   = sesion.get("resp_tipo", "") or sesion.get("_tipo_ref", "")
+        zona_busq   = sesion.get("resp_zona", "")
+        operac_busq = sesion.get("operacion_at", "venta")
+        presp_busq  = sesion.get("presupuesto_at", "")
+        props_d = _at_buscar_propiedades(tipo=tipo_busq, operacion=operac_busq,
+                                          zona=zona_busq, presupuesto=presp_busq)
+        if props_d:
+            props_ini = props_d[:3]
+            props_rst = props_d[3:]
+            sesion_nueva = {**sesion, "step": "lista",
+                            "props": props_ini, "props_extra": props_rst,
+                            "tipo": tipo_busq, "zona": zona_busq,
+                            "operacion": operac_busq, "_ultimo_ts": ahora_ts}
+            SESIONES[telefono] = sesion_nueva
+            _enviar_texto(telefono,
+                f"¡Con gusto! Estas son las opciones disponibles ahora mismo 👇")
+            _enviar_texto(telefono, _lista_titulos(props_ini))
+            if props_rst:
+                _enviar_texto(telefono,
+                    f"Tengo *{len(props_rst)}* opción{'es' if len(props_rst)>1 else ''} más. "
+                    f"Escribí *+* para verlas o elegí un número.\n\n"
+                    f"¿Cuál se acerca más a lo que buscás?")
+            else:
+                _enviar_texto(telefono,
+                    "Elegí un número para ver el detalle. ¿Cuál se acerca a tu rango?")
+        else:
+            _enviar_texto(telefono,
+                f"En este momento no tenemos propiedades publicadas que coincidan. "
+                f"¿Querés que *{NOMBRE_ASESOR}* te contacte para mostrarte opciones exclusivas? "
+                f"Escribí *#* para hablar con él directamente.")
+        return
+
     # ── NÚCLEO LLM CONVERSACIONAL ─────────────────────────────────────────
     system_prompt = _build_system_prompt(sesion, referral, telefono)
 
@@ -1686,6 +1733,32 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
 
     # ── Ejecutar ACCION ────────────────────────────────────────────────────
     accion = acciones.get("accion", "")
+
+    if accion == "mostrar_props":
+        # LLM decidió mostrar propiedades (anti-friction o calificación suficiente)
+        if mensaje_final:
+            _enviar_texto(telefono, mensaje_final)
+            _agregar_historial(telefono, "Bot", mensaje_final)
+        tipo_mp   = sesion_nueva.get("resp_tipo", "") or sesion_nueva.get("_tipo_ref", "")
+        zona_mp   = sesion_nueva.get("resp_zona", "")
+        oper_mp   = sesion_nueva.get("operacion_at", "venta")
+        presp_mp  = sesion_nueva.get("presupuesto_at", "")
+        props_mp  = _at_buscar_propiedades(tipo=tipo_mp, operacion=oper_mp,
+                                            zona=zona_mp, presupuesto=presp_mp)
+        if props_mp:
+            pi, pr = props_mp[:3], props_mp[3:]
+            SESIONES[telefono] = {**sesion_nueva, "step": "lista",
+                                   "props": pi, "props_extra": pr,
+                                   "tipo": tipo_mp, "zona": zona_mp, "operacion": oper_mp}
+            _enviar_texto(telefono, _lista_titulos(pi))
+            if pr:
+                _enviar_texto(telefono,
+                    f"Tengo *{len(pr)}* opción{'es' if len(pr)>1 else ''} más — escribí *+* o elegí un número.")
+        else:
+            _enviar_texto(telefono,
+                f"Por ahora no hay propiedades publicadas con esas características. "
+                f"Escribí *#* para hablar con *{NOMBRE_ASESOR}* directamente.")
+        return
 
     if accion == "ir_asesor":
         if mensaje_final:
