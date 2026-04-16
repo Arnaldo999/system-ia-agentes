@@ -742,58 +742,51 @@ tailwind.config = {
         </div>
       </div>
 
-      <div class="kanban" id="kanban">
-        <!-- Nuevo -->
-        <div class="kanban-col">
-          <div class="kanban-head">
-            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s1)"></div>Nuevo</div>
-            <div class="kanban-cnt" id="cnt-n">0</div>
+      <div class="kanban" id="kanban" style="min-height:480px">
+        <!-- 📥 Nuevo -->
+        <div class="kanban-col" data-status="nuevo" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event,'nuevo')">
+          <div class="kanban-head" title="Lead acaba de entrar pero aún no respondió. El bot envía primer mensaje automático.">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:#60a5fa"></div>📥 Nuevo</div>
+            <div class="kanban-cnt" id="cnt-nuevo">0</div>
           </div>
-          <div class="kanban-body" id="col-n"></div>
+          <div style="font-size:10.5px;color:var(--text2);padding:0 12px 8px;line-height:1.4">Entró al sistema, sin respuesta aún. Bot envía primer mensaje.</div>
+          <div class="kanban-body" id="col-nuevo"></div>
         </div>
-        <!-- Contactado -->
-        <div class="kanban-col">
-          <div class="kanban-head">
-            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s2)"></div>Contactado</div>
-            <div class="kanban-cnt" id="cnt-c">0</div>
+        <!-- 💬 En conversación -->
+        <div class="kanban-col" data-status="conversacion" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event,'conversacion')">
+          <div class="kanban-head" title="Bot está calificando al lead vía WhatsApp. Recopila zona, presupuesto, urgencia.">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:#fbbf24"></div>💬 En conversación</div>
+            <div class="kanban-cnt" id="cnt-conversacion">0</div>
           </div>
-          <div class="kanban-body" id="col-c"></div>
+          <div style="font-size:10.5px;color:var(--text2);padding:0 12px 8px;line-height:1.4">Bot calificando vía WhatsApp. Recopila datos del cliente.</div>
+          <div class="kanban-body" id="col-conversacion"></div>
         </div>
-        <!-- Calificado -->
-        <div class="kanban-col">
-          <div class="kanban-head">
-            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s3)"></div>Calificado</div>
-            <div class="kanban-cnt" id="cnt-q">0</div>
+        <!-- 📅 Cita agendada -->
+        <div class="kanban-col" data-status="cita" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event,'cita')">
+          <div class="kanban-head" title="Lead alto valor: agendó visita a propiedad. Llegás preparado con el resumen IA.">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:#34d399"></div>📅 Cita agendada</div>
+            <div class="kanban-cnt" id="cnt-cita">0</div>
           </div>
-          <div class="kanban-body" id="col-q"></div>
+          <div style="font-size:10.5px;color:var(--text2);padding:0 12px 8px;line-height:1.4">Hay visita programada. Alto valor — preparate con el resumen IA.</div>
+          <div class="kanban-body" id="col-cita"></div>
         </div>
-        <!-- Cita -->
-        <div class="kanban-col">
-          <div class="kanban-head">
-            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s4)"></div>Cita Agendada</div>
-            <div class="kanban-cnt" id="cnt-a">0</div>
+        <!-- 🤝 En negociación -->
+        <div class="kanban-col" data-status="negociacion" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event,'negociacion')">
+          <div class="kanban-head" title="Visitó la propiedad. Está decidiendo. Aquí intervenís vos como comercial.">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:#a78bfa"></div>🤝 En negociación</div>
+            <div class="kanban-cnt" id="cnt-negociacion">0</div>
           </div>
-          <div class="kanban-body" id="col-a"></div>
+          <div style="font-size:10.5px;color:var(--text2);padding:0 12px 8px;line-height:1.4">Visitó propiedad, está decidiendo. Acción del comercial.</div>
+          <div class="kanban-body" id="col-negociacion"></div>
         </div>
-        <!-- Cerrado -->
-        <div class="kanban-col">
-          <div class="kanban-head">
-            <div class="kanban-head-left"><div class="stage-dot" style="background:#00d4aa"></div>Cerrado 🏆</div>
-            <div class="kanban-cnt" id="cnt-z">0</div>
+        <!-- ✅/❌ Cerrado / Perdido -->
+        <div class="kanban-col" data-status="cerrado" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event,'cerrado')">
+          <div class="kanban-head" title="Final del proceso: compró/alquiló (verde) o no concretó (rojo). Al arrastrar acá te pregunta cuál.">
+            <div class="kanban-head-left"><div class="stage-dot" style="background:#00d4aa"></div>✅ Cerrado / ❌ Perdido</div>
+            <div class="kanban-cnt" id="cnt-cerrado">0</div>
           </div>
-          <div class="kanban-body" id="col-z">
-            <div style="color:var(--text2);font-size:12px;text-align:center;padding:18px 0">Las ventas cerradas aparecen aquí 🏆</div>
-          </div>
-        </div>
-        <!-- Perdido -->
-        <div class="kanban-col">
-          <div class="kanban-head">
-            <div class="kanban-head-left"><div class="stage-dot" style="background:var(--s5)"></div>Perdido</div>
-            <div class="kanban-cnt" id="cnt-p">0</div>
-          </div>
-          <div class="kanban-body" id="col-p">
-            <div style="color:var(--text2);font-size:12px;text-align:center;padding:18px 0">Sin leads perdidos esta semana 🎉</div>
-          </div>
+          <div style="font-size:10.5px;color:var(--text2);padding:0 12px 8px;line-height:1.4">Final del proceso. Verde = compró. Rojo = no concretó.</div>
+          <div class="kanban-body" id="col-cerrado"></div>
         </div>
       </div>
     </div>
@@ -1687,19 +1680,30 @@ tailwind.config = {
 // LEADS se carga desde Airtable al iniciar. Fallback a datos demo si el backend no responde.
 let LEADS = [];
 
-// Mapeo estado Airtable → estado visual del pipeline
+// Mapeo estado BD → columna kanban (5 columnas: nuevo / conversacion / cita / negociacion / cerrado)
 const ESTADO_MAP = {
+  'nuevo':           'nuevo',
   'no_contactado':   'nuevo',
-  'contactado':      'contactado',
-  'calificado':      'calificado',
+  'contactado':      'conversacion',
+  'seguimiento':     'conversacion',
+  'calificado':      'negociacion',
+  'cita_agendada':   'cita',
   'visita_agendada': 'cita',
-  'visito':          'cita',
-  'en_negociacion':  'calificado',
-  'seguimiento':     'contactado',
-  'cerrado_ganado':  'cerrado',
-  'cerrado_perdido': 'perdido',
+  'visito':          'negociacion',
+  'en_negociacion':  'negociacion',
   'cerrado':         'cerrado',
-  'descartado':      'perdido',
+  'cerrado_ganado':  'cerrado',
+  'cerrado_perdido': 'cerrado',
+  'descartado':      'cerrado',
+};
+// Mapeo columna kanban → estado BD para enviar al backend al arrastrar
+const ESTADO_REVERSE = {
+  'nuevo':        'no_contactado',
+  'conversacion': 'contactado',
+  'cita':         'cita_agendada',
+  'negociacion':  'en_negociacion',
+  'cerrado_ganado':  'cerrado',
+  'cerrado_perdido': 'descartado',
 };
 // Si las notas dicen "CITA AGENDADA" y tiene Fecha_Cita → se muestra como "cita"
 
@@ -1783,6 +1787,7 @@ async function cargarLeads() {
         email: f.Email || '',
         origen: FUENTE_ORIGEN[f.Fuente] || (f.Llego_WhatsApp ? 'wa' : 'form'),
         status,
+        estadoCrudo: estadoAirtable,
         interes: [operLabel[f.Operacion] || f.Operacion, f.Tipo_Propiedad, f.Zona].filter(Boolean).join(' · ') || 'Sin especificar',
         fecha: f.Fecha_WhatsApp || (r.createdTime ? r.createdTime.slice(0,10) : ''),
         presupuesto: presupuestoLabel[f.Presupuesto] || f.Presupuesto || '',
@@ -1942,17 +1947,10 @@ function aplicarFiltros() {
 
 // ── KANBAN DESDE LEADS ─────────────────────────────────────────────────────
 function renderKanbanFromLeads() {
-  const cols = {
-    nuevo: 'col-n', contactado: 'col-c', calificado: 'col-q',
-    cita: 'col-a', cerrado: 'col-z', perdido: 'col-p'
-  };
-  const cnts = {
-    nuevo: 'cnt-n', contactado: 'cnt-c', calificado: 'cnt-q',
-    cita: 'cnt-a', cerrado: 'cnt-z', perdido: 'cnt-p'
-  };
+  const STATUSES = ['nuevo', 'conversacion', 'cita', 'negociacion', 'cerrado'];
   // Limpiar columnas
-  Object.values(cols).forEach(id => {
-    const el = document.getElementById(id);
+  STATUSES.forEach(s => {
+    const el = document.getElementById('col-' + s);
     if (el) el.innerHTML = '';
   });
 
@@ -1960,55 +1958,122 @@ function renderKanbanFromLeads() {
   const scoreLabel = s => s >= 12 ? '🔥 Caliente' : s >= 7 ? '🌡️ Tibio' : '❄️ Frío';
 
   LEADS.forEach(l => {
-    const colId = cols[l.status];
-    const col = document.getElementById(colId);
+    const col = document.getElementById('col-' + l.status);
     if (!col) return;
 
     const origenBadge = l.origen === 'wa'
       ? '<span class="badge b-wa">💬 WhatsApp</span>'
       : '<span class="badge b-web">📋 Formulario</span>';
 
-    // Botón de avance según estado
-    const nextMap = {
-      nuevo:     {next:'contactado', label:'→ Contactado'},
-      contactado:{next:'calificado', label:'→ Calificado'},
-      calificado:{next:'cita',       label:'📅 Agendar visita'},
-      cita:      {next:'cerrado',    label:'🏆 Cerrar venta'},
-    };
-    const nextInfo = nextMap[l.status];
-    const nextBtn = nextInfo
-      ? `<button class="btn ${nextInfo.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${nextInfo.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" data-lid="${l.id}" data-next="${nextInfo.next}" onclick="event.stopPropagation();moverLead(this.dataset.lid,this.dataset.next)">${nextInfo.label}</button>`
-      : '';
+    // Indicador visual extra para "cerrado": verde si ganó, rojo si perdió
+    let cerradoBadge = '';
+    if (l.status === 'cerrado') {
+      const estadoBd = (l.estadoCrudo || '').toLowerCase();
+      const esPerdido = estadoBd.includes('descart') || estadoBd.includes('perdido');
+      cerradoBadge = esPerdido
+        ? '<span class="badge" style="background:#3d0d0d;color:#f87171;border:1px solid #7a1a1a">❌ Perdido</span>'
+        : '<span class="badge" style="background:#0d2e1a;color:#34d399;border:1px solid #1a5c33">✅ Cerrado</span>';
+    }
 
     const card = document.createElement('div');
     card.className = 'lcard';
     card.id = `kcard-${l.id}`;
+    card.draggable = true;
+    card.dataset.leadId = l.id;
+    card.dataset.atId = l.atId || '';
+    card.ondragstart = kanbanDragStart;
+    card.ondragend = kanbanDragEnd;
     card.onclick = () => openDetalle(l.id);
-    card.style.cursor = 'pointer';
+    card.style.cursor = 'grab';
     card.innerHTML = `
       <div class="lcard-name">${l.name}</div>
       <div class="lcard-meta">${l.interes}</div>
       <div class="lcard-badges">${origenBadge}
         ${l.score ? `<span class="badge" style="background:#0d1a0d;color:${scoreColor(l.score)};border:1px solid ${scoreColor(l.score)}44">${scoreLabel(l.score)}</span>` : ''}
+        ${cerradoBadge}
       </div>
       ${l.cita ? `<div style="font-size:11px;color:#34d399;margin-top:4px">📅 Cita: ${l.cita}</div>` : ''}
       <div class="lcard-actions">
         <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button>
-        ${nextBtn}
       </div>`;
     col.appendChild(card);
   });
 
   // Actualizar contadores
-  Object.entries(cnts).forEach(([status, cntId]) => {
-    const cnt = document.getElementById(cntId);
-    const col = document.getElementById(cols[status]);
+  STATUSES.forEach(s => {
+    const cnt = document.getElementById('cnt-' + s);
+    const col = document.getElementById('col-' + s);
     if (cnt && col) cnt.textContent = col.querySelectorAll('.lcard').length;
   });
 
   // Actualizar badge nav pipeline
   const badge = document.getElementById('pipelineBadge');
   if (badge) badge.textContent = LEADS.length;
+}
+
+// ── Drag & drop kanban ──────────────────────────────────────────────────────
+let _kbDragLeadId = null;
+
+function kanbanDragStart(e) {
+  _kbDragLeadId = e.currentTarget.dataset.leadId;
+  e.currentTarget.style.opacity = '0.4';
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function kanbanDragEnd(e) {
+  e.currentTarget.style.opacity = '';
+}
+
+function kanbanDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.background = 'rgba(108,99,255,0.08)';
+}
+
+function kanbanDragLeave(e) {
+  e.currentTarget.style.background = '';
+}
+
+async function kanbanDrop(e, targetStatus) {
+  e.preventDefault();
+  e.currentTarget.style.background = '';
+  if (_kbDragLeadId === null) return;
+  const leadId = parseInt(_kbDragLeadId);
+  _kbDragLeadId = null;
+  const lead = LEADS.find(l => l.id === leadId);
+  if (!lead) return;
+  if (lead.status === targetStatus) return; // sin cambio
+
+  // Caso especial: columna "cerrado" pregunta si fue ganado o perdido
+  let estadoBd;
+  if (targetStatus === 'cerrado') {
+    const opcion = confirm('¿El lead CERRÓ la venta?\n\n✅ OK = Cerrado ganado (compró/alquiló)\n❌ Cancelar = Perdido (no concretó)');
+    estadoBd = opcion ? ESTADO_REVERSE['cerrado_ganado'] : ESTADO_REVERSE['cerrado_perdido'];
+  } else {
+    estadoBd = ESTADO_REVERSE[targetStatus];
+  }
+  if (!estadoBd) return;
+
+  // Optimistic update
+  const statusOriginal = lead.status;
+  const estadoCrudoOriginal = lead.estadoCrudo;
+  lead.status = targetStatus;
+  lead.estadoCrudo = estadoBd;
+  renderKanbanFromLeads();
+
+  try {
+    const res = await fetch(`${API_BASE}/crm/clientes/${lead.atId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Estado: estadoBd })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    alert('No se pudo actualizar el estado en la BD. Reintentá.');
+    lead.status = statusOriginal;
+    lead.estadoCrudo = estadoCrudoOriginal;
+    renderKanbanFromLeads();
+  }
 }
 
 // ── LEAD DETAIL ────────────────────────────────────────────────────────────
