@@ -533,7 +533,7 @@ tailwind.config = {
       </div>
       <div class="nav-item" onclick="nav('chat',this)">
         <span class="nav-icon">🤖</span><span>Resúmenes IA</span>
-        <span class="nav-badge green" id="chatBadge">4 leads</span>
+        <span class="nav-badge green" id="chatBadge">—</span>
       </div>
       <div class="nav-item" onclick="nav('propiedades',this)">
         <span class="nav-icon">🏘️</span><span>Propiedades</span>
@@ -2343,6 +2343,7 @@ async function submitPin() {
       renderProps();
       cargarActivos();
       renderAgenda();
+      cargarResumenes();
     } else {
       pinBuffer = '';
       for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).style.background = '#f87171';
@@ -3122,6 +3123,8 @@ async function cargarResumenes() {
     const data = await res.json();
     RESUMENES = data.records || [];
     status.textContent = `${RESUMENES.length} resúmenes`;
+    const badge = document.getElementById('chatBadge');
+    if (badge) badge.textContent = RESUMENES.length;
     renderResumenes();
   } catch (e) {
     grid.innerHTML = '';
