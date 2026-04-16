@@ -2114,17 +2114,17 @@ async function kanbanDrop(e, targetStatus) {
 
 // ── LEAD DETAIL ────────────────────────────────────────────────────────────
 // Mapeo visual status → valor Airtable
+// Mapeo columna kanban → valor BD por defecto (para preseleccionar en el select del modal)
 const STATUS_TO_AT = {
-  nuevo:'no_contactado', contactado:'contactado', calificado:'calificado',
-  cita:'visita_agendada', cerrado:'cerrado_ganado', perdido:'cerrado_perdido'
+  nuevo:'no_contactado',
+  conversacion:'contactado',
+  cita:'visita_agendada',
+  negociacion:'en_negociacion',
+  cerrado:'cerrado_ganado'
 };
 // Mapeo Airtable → visual (para re-render tras guardar)
-const AT_TO_STATUS = {
-  no_contactado:'nuevo', contactado:'contactado', calificado:'calificado',
-  visita_agendada:'cita', visito:'cita', en_negociacion:'calificado',
-  seguimiento:'contactado', cerrado_ganado:'cerrado', cerrado_perdido:'perdido',
-  cerrado:'cerrado', descartado:'perdido'
-};
+// Reusa ESTADO_MAP (5 columnas: nuevo/conversacion/cita/negociacion/cerrado)
+const AT_TO_STATUS = ESTADO_MAP;
 
 function openDetalle(id) {
   const l = LEADS[id] || LEADS[0];
