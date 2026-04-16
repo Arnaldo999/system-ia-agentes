@@ -1969,21 +1969,34 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         _enviar_texto(telefono, mensaje_final)
 
     # Actualizar step si el LLM extrajo datos suficientes para avanzar
-    if not sesion_nueva.get("resp_presupuesto") and any(
-        kw in texto_lower for kw in ["50", "100", "200", "presupuesto", "precio", "cuánto", "cuanto"]
-    ):
-        sesion_nueva["resp_presupuesto"] = texto
-        presupuesto_map = {"menos": "hasta_50k", "50": "50k_100k", "100": "100k_200k", "200": "mas_200k"}
-        for k, v in presupuesto_map.items():
-            if k in texto_lower:
-                sesion_nueva["presupuesto_at"] = v
-                break
-        SESIONES[telefono] = sesion_nueva
+    # Inferencia de presupuesto: requiere NÚMERO + (k|mil|usd|ars|pesos|$)
+    # No matchear "precio"/"cuánto" solos (eso es PREGUNTA del cliente, no su presupuesto)
+    if not sesion_nueva.get("resp_presupuesto"):
+        m_pres = re.search(r'\b(\d{1,4})\s*(k|mil|000|usd|ars|pesos|dolares|\$)', texto_lower)
+        if m_pres:
+            sesion_nueva["resp_presupuesto"] = texto[:80]
+            num = int(m_pres.group(1))
+            unidad = m_pres.group(2)
+            if unidad in ("mil", "000"):
+                num_real = num * 1000
+            elif unidad == "k":
+                num_real = num * 1000
+            else:
+                num_real = num
+            if num_real < 50000:
+                sesion_nueva["presupuesto_at"] = "hasta_50k"
+            elif num_real < 100000:
+                sesion_nueva["presupuesto_at"] = "50k_100k"
+            elif num_real < 200000:
+                sesion_nueva["presupuesto_at"] = "100k_200k"
+            else:
+                sesion_nueva["presupuesto_at"] = "mas_200k"
+            SESIONES[telefono] = sesion_nueva
 
     if not sesion_nueva.get("resp_urgencia") and any(
-        kw in texto_lower for kw in ["ahora", "urgente", "ya", "meses", "año", "explorando", "viendo"]
+        kw in texto_lower for kw in ["ahora mismo", "urgente", "ya tengo", "este mes", "esta semana", "explorando", "tranquilo"]
     ):
-        sesion_nueva["resp_urgencia"] = texto
+        sesion_nueva["resp_urgencia"] = texto[:80]
         SESIONES[telefono] = sesion_nueva
 
 
