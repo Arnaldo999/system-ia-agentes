@@ -230,8 +230,8 @@ tailwind.config = {
     .bar-num { @apply w-7 text-xs font-semibold text-right text-txt-2; }
 
     /* ── KANBAN ── */
-    .kanban { @apply flex gap-3 overflow-x-auto pb-2; }
-    .kanban-col { @apply min-w-[205px] bg-surface-2 rounded-xl border border-brd shrink-0; }
+    .kanban { @apply flex gap-2 overflow-x-auto pb-2; }
+    .kanban-col { background:var(--surface2); border:1px solid var(--brd); border-radius:12px; flex:1 1 0; min-width:0; }
     .kanban-head { @apply px-3 py-2.5 border-b border-brd flex items-center justify-between; }
     .kanban-head-left { @apply flex items-center gap-[7px] text-[13px] font-semibold; }
     .stage-dot { @apply w-2 h-2 rounded-full; }
