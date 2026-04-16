@@ -1997,31 +1997,86 @@ async def verificar_webhook_meta(request: Request):
 
 @router.post("/whatsapp")
 async def webhook_whatsapp(request: Request):
-    """Recibe mensajes — soporta tanto formato Meta crudo como bridge interno."""
+    """Recibe mensajes — soporta payload bridge interno y Meta Graph API completo.
+
+    Si viene de Meta extrae automáticamente:
+    - Teléfono del cliente (msg.from)
+    - Nombre del contacto (contacts[0].profile.name) → precarga en sesión
+    - Texto del mensaje
+    - Referral del anuncio (msg.referral) si vino de un Click-to-WhatsApp ad
+      → headline, body, source_url, source_id, image_url, etc.
+    """
     data = await request.json()
 
-    # Caso 1: payload directo del bridge interno {from, text}
+    # Caso 1: payload directo del bridge interno {from, text, referral?, nombre?}
     telefono = data.get("from", "")
     texto    = data.get("text", "")
+    referral = data.get("referral", {}) or {}
+    nombre_meta = data.get("nombre", "")
 
-    # Caso 2: payload crudo de Meta Graph API {entry: [{changes: [...]}]}
+    # Caso 2: payload crudo de Meta Graph API
     if not telefono and "entry" in data:
         try:
             entry = data["entry"][0]
             change = entry["changes"][0]
             value = change["value"]
             messages = value.get("messages", [])
+            contacts = value.get("contacts", [])
+
             if messages:
                 msg = messages[0]
                 telefono = msg.get("from", "")
-                if msg.get("type") == "text":
+                # Soportar varios tipos de mensaje
+                msg_type = msg.get("type", "")
+                if msg_type == "text":
                     texto = msg.get("text", {}).get("body", "")
-        except (KeyError, IndexError, TypeError):
+                elif msg_type == "button":
+                    texto = msg.get("button", {}).get("text", "")
+                elif msg_type == "interactive":
+                    inter = msg.get("interactive", {})
+                    if inter.get("type") == "button_reply":
+                        texto = inter.get("button_reply", {}).get("title", "")
+                    elif inter.get("type") == "list_reply":
+                        texto = inter.get("list_reply", {}).get("title", "")
+
+                # Referral del anuncio (CRÍTICO para Caso A)
+                if "referral" in msg:
+                    ref = msg["referral"]
+                    referral = {
+                        "source_url": ref.get("source_url", ""),
+                        "source_id": ref.get("source_id", ""),
+                        "source_type": ref.get("source_type", ""),
+                        "headline": ref.get("headline", ""),
+                        "body": ref.get("body", ""),
+                        "media_type": ref.get("media_type", ""),
+                        "image_url": ref.get("image_url", ""),
+                        "thumbnail_url": ref.get("thumbnail_url", ""),
+                    }
+
+            # Nombre del contacto (Meta lo trae aunque no sea Lead Ads form)
+            if contacts:
+                profile = contacts[0].get("profile", {})
+                nombre_meta = profile.get("name", "")
+        except (KeyError, IndexError, TypeError) as e:
+            print(f"[WEBHOOK] Error parseando Meta payload: {e}")
             return {"status": "ignored", "reason": "payload no reconocido"}
 
     if not telefono or not texto:
         return {"status": "ignored"}
-    threading.Thread(target=_procesar, args=(telefono, texto), daemon=True).start()
+
+    # Pre-cargar nombre en sesión si vino del payload y no está ya guardado
+    tel_clean = re.sub(r'\D', '', telefono)
+    if nombre_meta:
+        sesion_pre = SESIONES.get(tel_clean, {})
+        if not sesion_pre.get("nombre"):
+            sesion_pre["nombre"] = nombre_meta.title()
+            SESIONES[tel_clean] = sesion_pre
+            print(f"[WEBHOOK] Nombre precargado desde Meta: {nombre_meta} → {tel_clean}")
+
+    if referral and (referral.get("headline") or referral.get("source_url")):
+        print(f"[WEBHOOK] Lead vino de ad: {referral.get('headline', '')[:60]}")
+
+    threading.Thread(target=_procesar, args=(tel_clean, texto, referral), daemon=True).start()
     return {"status": "processing"}
 
 
