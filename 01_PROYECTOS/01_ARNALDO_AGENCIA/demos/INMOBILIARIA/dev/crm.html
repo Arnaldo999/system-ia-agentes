@@ -2331,25 +2331,28 @@ async function guardarEstado(id) {
     });
     const data = await res.json();
     if (res.ok && data.status === 'ok') {
-      fb.textContent = '✅ Guardado en Airtable';
+      fb.textContent = '✅ Guardado';
       fb.style.color = 'var(--green)';
-      // Actualizar estado local
       const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
       LEADS[id].status = nuevoStatus;
+      LEADS[id].estadoCrudo = nuevoAt;
       renderLeads();
       renderKanbanFromLeads();
       addAct(`<strong>${l.name}</strong> — estado actualizado a <em>${nuevoAt.replace('_',' ')}</em>`, 'var(--accent)', 'ahora mismo');
+      showNotif('✅ Estado actualizado', `${l.name} → ${nuevoAt.replace('_',' ')}`);
+      setTimeout(() => closeModal('modalDetalle'), 400);
     } else {
       throw new Error(data.detalle || 'Error desconocido');
     }
   } catch (err) {
-    // Demo: actualizar localmente aunque falle el backend
     const nuevoStatus = AT_TO_STATUS[nuevoAt] || 'nuevo';
     LEADS[id].status = nuevoStatus;
+    LEADS[id].estadoCrudo = nuevoAt;
     renderLeads();
     renderKanbanFromLeads();
     fb.textContent = '⚠ Actualizado localmente (backend offline)';
     fb.style.color = 'var(--yellow)';
+    setTimeout(() => closeModal('modalDetalle'), 800);
   }
 }
 
