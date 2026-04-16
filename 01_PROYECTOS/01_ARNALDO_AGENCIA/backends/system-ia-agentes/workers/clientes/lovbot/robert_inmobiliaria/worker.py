@@ -2095,6 +2095,18 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         if zona_det:
             sesion_nueva["resp_zona"] = zona_det
 
+    # Inferir nombre desde frases tipo "soy X / me llamo X / mi nombre es X"
+    # Solo si el bot le acaba de preguntar el nombre (último msg del bot tiene
+    # frase "con quién tengo el gusto" o equivalente) Y todavía no hay nombre.
+    if not sesion_nueva.get("nombre"):
+        m_nombre = re.match(
+            r'^(?:soy|me\s+llamo|mi\s+nombre\s+es|llamame|llamame\s+)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]{2,20}(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]{2,20})?)',
+            texto.strip(), re.IGNORECASE
+        )
+        if m_nombre:
+            nombre_det = m_nombre.group(1).strip().title()
+            sesion_nueva["nombre"] = nombre_det
+
     # ── Actualizar step según datos acumulados ─────────────────────────────
     datos_completos = all([
         sesion_nueva.get("nombre"),
