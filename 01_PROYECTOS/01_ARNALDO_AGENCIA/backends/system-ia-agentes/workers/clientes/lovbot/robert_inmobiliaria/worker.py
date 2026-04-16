@@ -1357,7 +1357,7 @@ ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
 
 ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
 - Saludo cálido + UNA pregunta abierta de calificación
-- Ej: "Hola, soy el asistente de Lovbot. ¿Estás buscando para vivir, invertir o alquilar?"
+- Ej: "Hola, soy el asistente de Lovbot. ¿Estás buscando para vivir o invertir?"
 - NO mostrés propiedades hasta tener al menos Need + Budget mínimo
 - Una vez calificado → mostrar 2-4 opciones (no más)"""
 
@@ -1378,7 +1378,7 @@ OBJETIVO: identificar 3 tipos de leads:
 ## METODOLOGÍA BANT (orden estricto, una pregunta por turno)
 
 1. **NEED** (qué busca)
-   - "¿Es para vivir, invertir o alquilar?"
+   - "¿Es para vivir o invertir?"
    - "¿Qué tipo de propiedad? (casa, departamento, terreno…)"
    - "¿En qué zona te imaginás?"
 
@@ -1551,6 +1551,21 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
 
     # ── Comando # → asesor inmediato ─────────────────────────────────────
     if texto_lower == "#":
+        _ir_asesor(telefono, sesion)
+        return
+
+    # ── Pedido natural de hablar con humano (anti-bot frustration) ────────
+    _KEYWORDS_HUMANO = [
+        "hablar con un asesor", "hablar con asesor", "hablar con humano",
+        "hablar con una persona", "hablar con alguien", "atiende alguien",
+        "atiende una persona", "me pasa con", "me deriva", "quiero un humano",
+        "necesito hablar con", "comunicarme con un asesor", "asesor humano",
+        "persona real", "pasame con", "que me llame", "que me llamen",
+    ]
+    if any(kw in texto_lower for kw in _KEYWORDS_HUMANO):
+        _enviar_texto(telefono,
+            f"Por supuesto. Te paso con *{NOMBRE_ASESOR}* ahora mismo. 🙋‍♂️\n"
+            f"En unos minutos te va a contactar.")
         _ir_asesor(telefono, sesion)
         return
 
