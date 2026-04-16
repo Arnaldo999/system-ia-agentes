@@ -2445,6 +2445,7 @@ async function submitPin() {
       cargarActivos();
       renderAgenda();
       cargarResumenes();
+      iniciarAutoRefresh();
     } else {
       pinBuffer = '';
       for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).style.background = '#f87171';
@@ -4087,9 +4088,44 @@ initTenant().then(ok => {
     renderProps();
     cargarActivos();
     renderAgenda();
+    iniciarAutoRefresh();
   }
   // Si ok=false → login screen visible, datos se cargan desde submitPin()
   checkVersion();
+});
+
+// ── AUTO-REFRESH cada 30s (pausa si la pestaña no está visible) ────────────
+let _autoRefreshTimer = null;
+const AUTO_REFRESH_MS = 30000;
+
+function iniciarAutoRefresh() {
+  if (_autoRefreshTimer) return;
+  _autoRefreshTimer = setInterval(() => {
+    if (document.hidden) return; // no refresca si la pestaña está en background
+    // Detectar qué panel está activo y refrescarlo
+    const panelActivo = document.querySelector('.panel.active');
+    if (!panelActivo) return;
+    const id = panelActivo.id.replace('panel-', '');
+    if (id === 'leads' || id === 'pipeline' || id === 'inicio') cargarLeads();
+    if (id === 'propiedades') renderProps();
+    if (id === 'activos') cargarActivos();
+    if (id === 'agenda') renderAgenda();
+    if (id === 'chat') cargarResumenes();
+  }, AUTO_REFRESH_MS);
+}
+
+// Refresh inmediato al volver a la pestaña tras estar en background
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const panelActivo = document.querySelector('.panel.active');
+    if (!panelActivo) return;
+    const id = panelActivo.id.replace('panel-', '');
+    if (id === 'leads' || id === 'pipeline' || id === 'inicio') cargarLeads();
+    if (id === 'propiedades') renderProps();
+    if (id === 'activos') cargarActivos();
+    if (id === 'agenda') renderAgenda();
+    if (id === 'chat') cargarResumenes();
+  }
 });
 </script>
 </body>
