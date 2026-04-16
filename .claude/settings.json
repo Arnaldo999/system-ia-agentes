@@ -554,7 +554,19 @@
       "Bash(curl -s -w \"\\\\n%{http_code}\\\\n\" \"https://agentes.lovbot.ai/health\")",
       "Bash(curl -s -w \"\\\\n%{http_code}\\\\n\" \"https://agentes.lovbot.ai/\")",
       "Bash(curl -s -w \"\\\\n%{http_code}\\\\n\" \"https://agentes.lovbot.ai/docs\")",
-      "Bash(curl -s \"https://agentes.lovbot.ai/\")"
+      "Bash(curl -s \"https://agentes.lovbot.ai/\")",
+      "Bash(curl -s -X POST -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8' https://coolify.lovbot.ai/api/v1/applications/ywg48w0gswwk0skokow48o8k/redeploy)",
+      "Bash(curl -s -X POST -H 'Authorization: Bearer 1|ltGnDDHKbFeXRUcLgZ1GZ7t5EoifWyk1PZMvG3r0f41a7bd8' 'https://coolify.lovbot.ai/api/v1/deploy?uuid=ywg48w0gswwk0skokow48o8k&force=false')",
+      "Bash(curl -s \"https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/admin/ver-sesion/5493765384843\")",
+      "Bash(curl -s -X POST https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/whatsapp -H 'Content-Type: application/json' -d '{\"object\":\"whatsapp_business_account\",\"entry\":[{\"id\":\"1\",\"changes\":[{\"value\":{\"messaging_product\":\"whatsapp\",\"metadata\":{\"display_phone_number\":\"15550001234\",\"phone_number_id\":\"123456\"},\"contacts\":[{\"profile\":{\"name\":\"Arnaldo\"},\"wa_id\":\"5493765384843\"}],\"messages\":[{\"from\":\"5493765384843\",\"id\":\"wamid.t2\",\"timestamp\":\"1713320000\",\"type\":\"text\",\"text\":{\"body\":\"que opciones tienen\"}}]},\"field\":\"messages\"}]}]}')",
+      "Bash(curl -s -X POST https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/whatsapp -H 'Content-Type: application/json' -d '{\"object\":\"whatsapp_business_account\",\"entry\":[{\"id\":\"1\",\"changes\":[{\"value\":{\"messaging_product\":\"whatsapp\",\"metadata\":{\"display_phone_number\":\"15550001234\",\"phone_number_id\":\"123456\"},\"contacts\":[{\"profile\":{\"name\":\"Arnaldo\"},\"wa_id\":\"5493765384843\"}],\"messages\":[{\"from\":\"5493765384843\",\"id\":\"wamid.t3\",\"timestamp\":\"1713330000\",\"type\":\"text\",\"text\":{\"body\":\"que opciones tienen\"}}]},\"field\":\"messages\"}]}]}')",
+      "Bash(grep -iE \"whatsapp|wsp|conversation|bot|chat\" echo \"---\" ls -la \"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.agents/skills/\")",
+      "Bash(grep -iE \"whatsapp|wsp|conversation|bot|chat|skill-creator\" echo \"---\")",
+      "Bash(mkdir -p \"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.claude/skills/whatsapp-conversational-bot/references\")",
+      "Bash(mkdir -p \"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.claude/skills/whatsapp-conversational-bot/scripts\")",
+      "Edit(/.claude/skills/whatsapp-conversational-bot/**)",
+      "Bash(mkdir -p providers)",
+      "Bash(mv meta-webhook-parser.md providers/meta-graph-api.md)"
     ],
     "deny": [
       "Edit(**/demos/SYSTEM-IA/crm.html)",
