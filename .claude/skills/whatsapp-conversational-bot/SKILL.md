@@ -19,14 +19,32 @@ Skill maestra para diseñar, implementar y probar bots WhatsApp profesionales en
 - Deploy + test cycle en Coolify Hetzner / Hostinger
 - Integrar con Chatwoot (bridge común para los 3 proveedores)
 
+## 🔒 MATRIZ INFRAESTRUCTURA POR CLIENTE (LEER PRIMERO — IRROMPIBLE)
+
+| Recurso | **Robert (Lovbot)** | **Mica (System IA)** | **Arnaldo / Maicol** |
+|---------|---------------------|----------------------|----------------------|
+| VPS / Orquestador | Hetzner / Coolify `coolify.lovbot.ai` | Easypanel propio | Hostinger / Coolify Arnaldo |
+| Backend FastAPI | `agentes.lovbot.ai` | `agentes.arnaldoayalaestratega.cloud` | `agentes.arnaldoayalaestratega.cloud` |
+| **DB del bot** | 🔒 **PostgreSQL `robert_crm`** (de Robert) | 🔒 **Airtable `appA8QxIhBYYAHw0F`** (de Mica) | 🔒 **Airtable** (de Arnaldo) |
+| Cal.com | de Arnaldo (compartido) | de Arnaldo (compartido) | de Arnaldo |
+| Supabase | de Arnaldo (compartido) | de Arnaldo (compartido) | — |
+| **OpenAI** | 🔒 **Cuenta Robert** (`LOVBOT_OPENAI_API_KEY`) | de Arnaldo | de Arnaldo |
+| Gemini | de Arnaldo (compartido) | de Arnaldo | de Arnaldo |
+| **WhatsApp provider** | Meta Graph API | Evolution API | YCloud |
+| Chatwoot | `chatwoot.lovbot.ai` | `chatwoot.arnaldoayalaestratega.cloud` | idem |
+| n8n | `n8n.lovbot.ai` | `n8n.arnaldoayalaestratega.cloud` | idem |
+
+**Detalle completo en `memory/feedback_REGLA_infraestructura_clientes.md`.**
+
 ## Reglas irrompibles (de memoria de producción)
 
 1. **NUNCA modificar `workers/clientes/*/` directo** — primero sandbox en `workers/demos/[vertical]/worker.py`, probar, después copiar al cliente
-2. **Confirmar destino**: "¿esto va a Robert (Hetzner) / Arnaldo (Hostinger) / Mica / otro?" antes de cualquier curl/MCP
-3. **Modelo LLM actual**: `gpt-5-mini` (OpenAI) principal, `gemini-2.5-flash` fallback
-4. **Database Robert**: PostgreSQL `robert_crm` (NO `lovbot_crm` — bug histórico)
-5. **Modelo Mica Airtable**: `appA8QxIhBYYAHw0F` (NO el que está en .env desactualizado)
+2. **Confirmar destino**: "¿esto va a Robert / Mica / Arnaldo?" antes de cualquier curl/MCP/código
+3. **Modelo LLM actual**: `gpt-4o-mini` (OpenAI) principal, `gemini-2.0-flash` → `gemini-2.5-flash` fallback. (gpt-5-mini era muy lento → timeout)
+4. **Robert NO usa Airtable** — usa PostgreSQL `robert_crm` (NO `lovbot_crm` — bug histórico). Solo Mica y Arnaldo usan Airtable
+5. **Mica Airtable**: base correcta `appA8QxIhBYYAHw0F` (NO la del .env desactualizado)
 6. **Meta webhook**: necesita GET y POST en la misma URL (sino falla el handshake)
+7. **Lead recurrente Robert**: query a PostgreSQL `leads` por sufijo (últimos 10 dígitos, tolerante a `+`). Mica: query a Airtable `filterByFormula`
 
 ## Estructura de la skill
 

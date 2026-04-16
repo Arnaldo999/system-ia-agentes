@@ -1607,9 +1607,21 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     if telefono not in SESIONES:
         _cargar_sesion_db(telefono)
 
-    # ── Si tampoco hay sesión activa, ver si es lead RECURRENTE en PostgreSQL ──
-    # (Lead que ya escribió antes pero su sesión bot_sessions se borró tras calificar/cerrar)
-    if telefono not in SESIONES:
+    # ── Detectar lead RECURRENTE en tabla `leads` PostgreSQL ─────────────────
+    # IMPORTANTE: el webhook puede haber creado una sesión "vacía" con solo el
+    # nombre del Meta profile. En ese caso TAMBIÉN buscamos en leads, porque
+    # la sesión efectiva está vacía pero el lead ya existe.
+    sesion_actual = SESIONES.get(telefono, {})
+    sesion_es_minima = (
+        not sesion_actual or
+        # Sesión solo con nombre (precargado del webhook) sin datos BANT
+        (set(sesion_actual.keys()) - {"nombre", "_ultimo_ts", "origen_lead"}) == set()
+    )
+    no_es_recurrente_aun = not sesion_actual.get("_lead_recurrente", False)
+    if sesion_es_minima and no_es_recurrente_aun:
+        # Borrar sesión mínima si existe, para que _restaurar pueda crear la full
+        if telefono in SESIONES and sesion_es_minima:
+            super(_SessionStore, SESIONES).__delitem__(telefono)
         _restaurar_lead_desde_db(telefono)
 
     # Registrar mensaje del lead en historial
