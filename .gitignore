@@ -11,3 +11,4 @@ build/
 *.log
 .gemini/
 /home/arna/.gemini/antigravity/brain/
+.vercel

@@ -4,9 +4,9 @@
     "Arnaldo Ayala",
     "Micaela Colmenares"
   ],
-  "timestamp_ultima_actualizacion": "2026-04-10T13:00:00",
+  "timestamp_ultima_actualizacion": "2026-04-16T13:51:00",
   "agente_activo": "dev",
-  "ultimo_modelo": "claude-sonnet-4-6",
+  "ultimo_modelo": "gemini-3.1-pro",
 
   "infraestructura_por_proyecto": {
     "arnaldo_proyectos_propios": {
@@ -98,7 +98,7 @@
       "carpeta": "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/01_PROYECTOS/03_LOVBOT_ROBERT/clientes/",
       "estado": "en-construccion",
       "entorno": "robert",
-      "proximo_paso": "Esperar acceso VPS Robert. Preparar workflows exportables basados en Maicol."
+      "proximo_paso": "Prompt BANT para Lovbot Inmobiliaria guardado. Esperando que Arnaldo (Dev) lo implemente en n8n/flujos."
     }
   },
   "alianza_robert_bazan": {

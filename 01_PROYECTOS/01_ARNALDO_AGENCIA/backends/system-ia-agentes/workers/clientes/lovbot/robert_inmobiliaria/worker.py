@@ -2464,6 +2464,20 @@ async def simular_lead_anuncio(telefono: str, request: Request):
     }
 
 
+@router.get("/admin/ver-sesion/{telefono}")
+def ver_sesion_bot(telefono: str):
+    """Devuelve el estado actual de la sesión en RAM (útil para testing)."""
+    tel = re.sub(r'\D', '', telefono)
+    sesion = SESIONES.get(tel, {})
+    historial = HISTORIAL.get(tel, [])
+    return {
+        "telefono": tel,
+        "sesion": sesion,
+        "historial_ultimos_10": historial[-10:] if historial else [],
+        "en_memoria": tel in SESIONES,
+    }
+
+
 def _generar_resumen_lead(lead: dict) -> dict:
     """Llama a GPT con los datos del lead para generar resumen sintético."""
     nombre = f"{lead.get('nombre', '')} {lead.get('apellido', '')}".strip() or "Lead sin nombre"
