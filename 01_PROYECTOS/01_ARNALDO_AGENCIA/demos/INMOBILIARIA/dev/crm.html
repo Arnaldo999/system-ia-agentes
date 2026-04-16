@@ -844,11 +844,40 @@ tailwind.config = {
         </div>
         <span class="ia-chip">🤖 Generados automáticamente por IA</span>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:center">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:12px;display:flex;gap:12px;align-items:center">
         <span style="font-size:20px">💡</span>
-        <div style="font-size:13px;color:var(--text2);line-height:1.5">Las conversaciones de WhatsApp quedan en el celular del lead y en el tuyo — son privadas. Acá tu bot te deja un resumen inteligente de cada charla para que llegués preparado a cada cita.</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">Las conversaciones de WhatsApp quedan en el celular del lead y en el tuyo — son privadas. Acá tu bot te deja un resumen inteligente de cada charla (solo de leads que agendaron cita) para que llegués preparado.</div>
+      </div>
+      <!-- Filtros y acciones -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
+        <select id="resFiltroLimit" onchange="cargarResumenes()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+          <option value="20">Últimos 20</option>
+          <option value="10">Últimos 10</option>
+          <option value="50">Últimos 50</option>
+          <option value="100">Últimos 100</option>
+        </select>
+        <select id="resFiltroFecha" onchange="cargarResumenes()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+          <option value="">Cualquier fecha</option>
+          <option value="hoy">Hoy</option>
+          <option value="semana">Esta semana</option>
+          <option value="mes">Este mes</option>
+        </select>
+        <select id="resFiltroScore" onchange="cargarResumenes()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+          <option value="">Cualquier score</option>
+          <option value="4">⭐⭐⭐⭐ y +</option>
+          <option value="3">⭐⭐⭐ y +</option>
+          <option value="2">⭐⭐ y +</option>
+        </select>
+        <input id="resBuscar" placeholder="Buscar por nombre, zona..." oninput="resBusquedaDebounced()" style="flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+        <button class="btn btn-primary" onclick="generarTodosLosResumenes()" style="font-size:11px;padding:6px 12px">🔄 Generar pendientes</button>
+        <span id="resStatus" style="margin-left:auto;font-size:11px;color:var(--text2)"></span>
       </div>
       <div id="resumenesGrid" style="display:flex;flex-direction:column;gap:12px"></div>
+      <div id="resumenesEmpty" style="display:none;text-align:center;padding:40px;color:var(--text2)">
+        <div style="font-size:32px;margin-bottom:8px">📋</div>
+        <div>Aún no hay resúmenes generados.</div>
+        <div style="font-size:12px;margin-top:6px">Cuando tengas leads con cita agendada, hacé clic en "Generar pendientes".</div>
+      </div>
     </div>
 
     <!-- ══════════ PROPIEDADES ══════════ -->
@@ -1699,7 +1728,7 @@ function nav(id, el) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(el) el.classList.add('active');
-  if(id==='chat') renderResumenes();
+  if(id==='chat') cargarResumenes();
   if(id==='leads') renderLeads();
   if(id==='pipeline') renderKanbanFromLeads();
   if(id==='propiedades') renderProps();
@@ -3054,59 +3083,147 @@ function recontarKanban() {
 }
 
 // ── RESÚMENES IA ────────────────────────────────────────────────────────────
-// Vacío por defecto — se genera/carga desde backend cuando haya datos reales
-const RESUMENES = [];
+let RESUMENES = [];
+let _resBusquedaTimer = null;
+
+function resBusquedaDebounced() {
+  clearTimeout(_resBusquedaTimer);
+  _resBusquedaTimer = setTimeout(cargarResumenes, 400);
+}
+
+async function cargarResumenes() {
+  const grid = document.getElementById('resumenesGrid');
+  const empty = document.getElementById('resumenesEmpty');
+  const status = document.getElementById('resStatus');
+  if (!grid) return;
+  status.textContent = 'Cargando...';
+
+  const limit = document.getElementById('resFiltroLimit')?.value || '20';
+  const fechaSel = document.getElementById('resFiltroFecha')?.value || '';
+  const scoreSel = document.getElementById('resFiltroScore')?.value || '';
+  const search = (document.getElementById('resBuscar')?.value || '').trim();
+
+  const params = new URLSearchParams({ limit });
+  if (scoreSel) params.set('score_min', scoreSel);
+  if (search) params.set('search', search);
+  if (fechaSel === 'hoy') {
+    params.set('desde', new Date().toISOString().slice(0, 10));
+  } else if (fechaSel === 'semana') {
+    const d = new Date(); d.setDate(d.getDate() - 7);
+    params.set('desde', d.toISOString().slice(0, 10));
+  } else if (fechaSel === 'mes') {
+    const d = new Date(); d.setDate(d.getDate() - 30);
+    params.set('desde', d.toISOString().slice(0, 10));
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/crm/resumenes?${params}`, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    RESUMENES = data.records || [];
+    status.textContent = `${RESUMENES.length} resúmenes`;
+    renderResumenes();
+  } catch (e) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    empty.querySelector('div:nth-child(2)').textContent = 'Error al cargar resúmenes.';
+    status.textContent = '';
+  }
+}
 
 function renderResumenes() {
   const grid = document.getElementById('resumenesGrid');
-  if(!grid) return;
-  grid.innerHTML='';
-  RESUMENES.forEach(r=>{
-    const l = LEADS[r.leadId];
-    const ini = l.name.split(' ').map(x=>x[0]).join('').substring(0,2);
-    const stars = '⭐'.repeat(r.stars) + '☆'.repeat(5-r.stars);
-    grid.innerHTML+=`
+  const empty = document.getElementById('resumenesEmpty');
+  if (!grid) return;
+  if (RESUMENES.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = RESUMENES.map(r => {
+    const nombre = r.nombre || 'Lead';
+    const ini = nombre.split(' ').map(x => x[0]).join('').substring(0, 2).toUpperCase();
+    const score = Math.max(1, Math.min(5, parseInt(r.score) || 3));
+    const stars = '⭐'.repeat(score) + '☆'.repeat(5 - score);
+    const fecha = r.fecha_conversacion ? new Date(r.fecha_conversacion).toLocaleDateString('es-AR') : '';
+    return `
       <div class="rcard">
         <div class="rcard-head">
           <div class="rcard-av" style="background:linear-gradient(135deg,#6c63ff,#a78bfa)">${ini}</div>
           <div class="rcard-info">
-            <div class="rcard-name">${l.name}</div>
-            <div class="rcard-sub">🤖 Bot conversó ${r.duracion} · ${r.mensajes} mensajes · ${l.fecha}</div>
+            <div class="rcard-name">${nombre}</div>
+            <div class="rcard-sub">🤖 ${r.telefono || ''} · ${fecha}</div>
           </div>
           <div style="text-align:right">
             <div class="stars">${stars}</div>
-            <div style="color:var(--text2);font-size:11px;margin-top:2px">Calificación del bot</div>
+            <div style="color:var(--text2);font-size:11px;margin-top:2px">Calificación IA</div>
           </div>
         </div>
         <div class="rcard-body">
           <div class="rcard-field">
             <div class="rcard-field-label">💰 Presupuesto</div>
-            <div class="rcard-field-val" style="color:var(--accent2);font-weight:700">${r.datos.presupuesto}</div>
+            <div class="rcard-field-val" style="color:var(--accent2);font-weight:700">${r.presupuesto || '—'}</div>
           </div>
           <div class="rcard-field">
             <div class="rcard-field-label">📍 Zona de interés</div>
-            <div class="rcard-field-val">${r.datos.zona}</div>
+            <div class="rcard-field-val">${r.zona || '—'}</div>
           </div>
           <div class="rcard-field">
             <div class="rcard-field-label">⚡ Urgencia</div>
-            <div class="rcard-field-val">${r.datos.urgencia}</div>
+            <div class="rcard-field-val">${r.urgencia || '—'}</div>
           </div>
           <div class="rcard-field">
             <div class="rcard-field-label">🏦 Financiamiento</div>
-            <div class="rcard-field-val">${r.datos.financiamiento}</div>
+            <div class="rcard-field-val">${r.financiamiento || '—'}</div>
           </div>
           <div style="grid-column:1/-1;background:var(--surface2);border-radius:8px;padding:10px">
-            <div style="color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">📝 Resumen generado por bot</div>
-            <div style="font-size:13px;line-height:1.6;color:var(--text)">${r.resumen}</div>
+            <div style="color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">📝 Resumen generado por IA</div>
+            <div style="font-size:13px;line-height:1.6;color:var(--text)">${r.resumen || ''}</div>
           </div>
         </div>
         <div class="rcard-foot">
-          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openDetalle(${r.leadId})">Ver perfil completo</button>
-          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" data-lid="${r.leadId}" onclick="_avanzarLead(this)">Avanzar etapa →</button>
-          <span style="margin-left:auto;color:var(--text2);font-size:11px">Estado: <strong style="color:var(--text)">${LEADS[r.leadId].status}</strong></span>
+          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="regenerarResumen('${r.telefono}')">🔄 Regenerar</button>
+          <span style="margin-left:auto;color:var(--text2);font-size:11px">Generado el ${fecha}</span>
         </div>
       </div>`;
-  });
+  }).join('');
+}
+
+async function generarTodosLosResumenes() {
+  const status = document.getElementById('resStatus');
+  status.textContent = 'Generando resúmenes con IA... (puede tardar 30s)';
+  try {
+    const res = await fetch(`${API_BASE}/crm/resumenes/generar-todos?solo_pendientes=true`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(120000)
+    });
+    const data = await res.json();
+    status.textContent = `✅ Generados: ${data.ok || 0} | Errores: ${(data.errores || []).length}`;
+    cargarResumenes();
+  } catch (e) {
+    status.textContent = `Error: ${e.message}`;
+  }
+}
+
+async function regenerarResumen(telefono) {
+  const status = document.getElementById('resStatus');
+  status.textContent = 'Regenerando...';
+  try {
+    const res = await fetch(`${API_BASE}/crm/resumenes/generar/${encodeURIComponent(telefono)}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(30000)
+    });
+    const data = await res.json();
+    if (data.error) {
+      status.textContent = `Error: ${data.error}`;
+    } else {
+      status.textContent = '✅ Regenerado';
+      cargarResumenes();
+    }
+  } catch (e) {
+    status.textContent = `Error: ${e.message}`;
+  }
 }
 
 // simLead() eliminada — era función de demo con datos ficticios.

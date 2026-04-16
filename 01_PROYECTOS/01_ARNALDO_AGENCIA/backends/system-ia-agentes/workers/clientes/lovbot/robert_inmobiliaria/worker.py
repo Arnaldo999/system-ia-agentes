@@ -2156,6 +2156,120 @@ async def crm_upload_imagen(request: Request):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# RESÚMENES DE CONVERSACIÓN — IA
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.post("/admin/setup-resumenes")
+def setup_resumenes():
+    """Crea la tabla resumenes_conversacion en PostgreSQL."""
+    _check_pg()
+    return db.crear_tabla_resumenes()
+
+
+def _generar_resumen_lead(lead: dict) -> dict:
+    """Llama a GPT con los datos del lead para generar resumen sintético."""
+    nombre = f"{lead.get('nombre', '')} {lead.get('apellido', '')}".strip() or "Lead sin nombre"
+    presupuesto = lead.get("presupuesto") or "no informado"
+    zona = lead.get("zona") or "no informada"
+    tipo = lead.get("tipo_propiedad") or "no especificado"
+    operacion = lead.get("operacion") or "no especificada"
+    score_str = lead.get("score") or ""
+    notas = lead.get("notas_bot") or ""
+    fecha_cita = lead.get("fecha_cita")
+    estado = lead.get("estado") or ""
+    ciudad = lead.get("ciudad") or ""
+
+    contexto = f"""Lead: {nombre}
+Telefono: {lead.get('telefono', '')}
+Operacion: {operacion}
+Tipo de propiedad: {tipo}
+Zona/Ciudad: {zona} {ciudad}
+Presupuesto: {presupuesto}
+Score: {score_str}
+Estado: {estado}
+Fecha de cita: {fecha_cita}
+Notas del bot: {notas}"""
+
+    system = "Sos un asistente comercial. Generá resúmenes claros, profesionales y concisos para que el comercial llegue preparado a la cita."
+    prompt = f"""Datos del lead que tuvo conversación con el bot y agendó una cita:
+
+{contexto}
+
+Devolvé SOLO un JSON válido con esta estructura exacta (sin markdown, sin explicaciones):
+{{
+  "resumen": "Resumen ejecutivo de 2-3 oraciones para el comercial. Mencionar interés principal, presupuesto y notas relevantes.",
+  "presupuesto": "Texto corto del presupuesto (ej: 'USD 100k-200k')",
+  "zona": "Zona de interés",
+  "urgencia": "Alta / Media / Baja según las notas",
+  "financiamiento": "Tipo de pago si aparece en notas (ej: 'Contado', 'Crédito', 'No especificado')",
+  "score": 1-5 según calidad del lead (5 = muy caliente, 1 = frío)
+}}"""
+    try:
+        respuesta = _llm(prompt, system)
+        import re as _re
+        match = _re.search(r'\{[\s\S]*\}', respuesta)
+        if not match:
+            return {"error": "GPT no devolvió JSON válido", "raw": respuesta[:200]}
+        data = json.loads(match.group(0))
+        data["telefono"] = lead.get("telefono")
+        data["nombre"] = nombre
+        data["lead_id"] = lead.get("id")
+        return {"ok": True, "data": data}
+    except Exception as e:
+        return {"error": f"Error generando resumen: {e}"}
+
+
+@router.post("/crm/resumenes/generar/{telefono}")
+def generar_resumen_telefono(telefono: str):
+    """Genera resumen para un lead específico (debe tener fecha_cita)."""
+    _check_pg()
+    leads = db.get_leads_con_cita(solo_sin_resumen=False)
+    lead = next((l for l in leads if l.get("telefono") == telefono), None)
+    if not lead:
+        return {"error": "Lead no encontrado o sin cita agendada"}
+    res = _generar_resumen_lead(lead)
+    if "error" in res:
+        return res
+    saved = db.guardar_resumen(res["data"])
+    return {"ok": True, "resumen": res["data"], "saved": saved}
+
+
+@router.post("/crm/resumenes/generar-todos")
+def generar_resumenes_todos(solo_pendientes: bool = True):
+    """Itera sobre leads con cita y genera resúmenes."""
+    _check_pg()
+    leads = db.get_leads_con_cita(solo_sin_resumen=solo_pendientes)
+    if not leads:
+        return {"ok": True, "procesados": 0, "mensaje": "No hay leads pendientes de resumen"}
+    resultados = {"procesados": 0, "ok": 0, "errores": []}
+    for lead in leads:
+        resultados["procesados"] += 1
+        res = _generar_resumen_lead(lead)
+        if "error" in res:
+            resultados["errores"].append({"telefono": lead.get("telefono"), "error": res["error"]})
+            continue
+        saved = db.guardar_resumen(res["data"])
+        if "error" in saved:
+            resultados["errores"].append({"telefono": lead.get("telefono"), "error": saved["error"]})
+        else:
+            resultados["ok"] += 1
+    return {"ok": True, **resultados}
+
+
+@router.get("/crm/resumenes")
+def crm_resumenes(limit: int = 20, score_min: int = None,
+                   desde: str = None, search: str = None):
+    """Lista resúmenes con filtros: limit, score_min, desde (YYYY-MM-DD), search (texto libre)."""
+    _check_pg()
+    rows = db.listar_resumenes(limit=limit, score_min=score_min, desde=desde, search=search)
+    for r in rows:
+        for k in ("fecha_conversacion", "created_at"):
+            if r.get(k):
+                r[k] = r[k].isoformat()
+    return {"total": len(rows), "records": rows}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # CRM COMPLETO MULTI-SUBNICHO — Endpoints Sprints 3-8
 # Asesores / Propietarios / Loteos / Lotes_Mapa / Contratos / Visitas / Reportes
 # ═══════════════════════════════════════════════════════════════════════════

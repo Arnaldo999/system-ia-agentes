@@ -1163,3 +1163,152 @@ def delete_bot_session(telefono: str) -> None:
         conn.close()
     except Exception as e:
         print(f"[DB] Error delete_bot_session ({telefono}): {e}")
+
+
+# ── RESÚMENES DE CONVERSACIÓN ────────────────────────────────────────────────
+
+def crear_tabla_resumenes() -> dict:
+    """Crea la tabla resumenes_conversacion si no existe."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS resumenes_conversacion (
+                id SERIAL PRIMARY KEY,
+                tenant_slug VARCHAR(50) NOT NULL,
+                lead_id INT,
+                telefono VARCHAR(50) NOT NULL,
+                nombre VARCHAR(200),
+                resumen TEXT,
+                presupuesto VARCHAR(100),
+                zona VARCHAR(100),
+                urgencia VARCHAR(50),
+                financiamiento VARCHAR(100),
+                score INT DEFAULT 3,
+                cantidad_mensajes INT DEFAULT 0,
+                duracion_minutos INT DEFAULT 0,
+                fecha_conversacion TIMESTAMP DEFAULT NOW(),
+                created_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(tenant_slug, telefono)
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_resumenes_tenant_fecha ON resumenes_conversacion(tenant_slug, fecha_conversacion DESC)")
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"ok": True, "mensaje": "Tabla resumenes_conversacion creada"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def get_leads_con_cita(solo_sin_resumen: bool = False) -> list[dict]:
+    """Devuelve leads con fecha_cita, opcionalmente solo los que no tienen resumen aún."""
+    if not _available():
+        return []
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if solo_sin_resumen:
+            cur.execute("""
+                SELECT l.* FROM leads l
+                LEFT JOIN resumenes_conversacion r
+                    ON r.tenant_slug = l.tenant_slug AND r.telefono = l.telefono
+                WHERE l.tenant_slug = %s AND l.fecha_cita IS NOT NULL AND r.id IS NULL
+            """, (TENANT,))
+        else:
+            cur.execute("""
+                SELECT * FROM leads
+                WHERE tenant_slug = %s AND fecha_cita IS NOT NULL
+                ORDER BY fecha_cita DESC
+            """, (TENANT,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"[DB] Error get_leads_con_cita: {e}")
+        return []
+
+
+def guardar_resumen(data: dict) -> dict:
+    """Guarda o actualiza un resumen (upsert por tenant+telefono)."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO resumenes_conversacion (
+                tenant_slug, lead_id, telefono, nombre, resumen,
+                presupuesto, zona, urgencia, financiamiento,
+                score, cantidad_mensajes, duracion_minutos, fecha_conversacion
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,COALESCE(%s, NOW()))
+            ON CONFLICT (tenant_slug, telefono) DO UPDATE SET
+                lead_id = EXCLUDED.lead_id,
+                nombre = EXCLUDED.nombre,
+                resumen = EXCLUDED.resumen,
+                presupuesto = EXCLUDED.presupuesto,
+                zona = EXCLUDED.zona,
+                urgencia = EXCLUDED.urgencia,
+                financiamiento = EXCLUDED.financiamiento,
+                score = EXCLUDED.score,
+                cantidad_mensajes = EXCLUDED.cantidad_mensajes,
+                duracion_minutos = EXCLUDED.duracion_minutos,
+                fecha_conversacion = COALESCE(EXCLUDED.fecha_conversacion, resumenes_conversacion.fecha_conversacion)
+            RETURNING id
+        """, (
+            TENANT,
+            data.get("lead_id"),
+            data.get("telefono"),
+            data.get("nombre"),
+            data.get("resumen"),
+            data.get("presupuesto"),
+            data.get("zona"),
+            data.get("urgencia"),
+            data.get("financiamiento"),
+            data.get("score") or 3,
+            data.get("cantidad_mensajes") or 0,
+            data.get("duracion_minutos") or 0,
+            data.get("fecha_conversacion"),
+        ))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"ok": True, "id": new_id}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def listar_resumenes(limit: int = 20, score_min: int = None,
+                      desde: str = None, search: str = None) -> list[dict]:
+    """Lista resúmenes con filtros opcionales."""
+    if not _available():
+        return []
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        sql = "SELECT * FROM resumenes_conversacion WHERE tenant_slug = %s"
+        params = [TENANT]
+        if score_min is not None:
+            sql += " AND score >= %s"
+            params.append(score_min)
+        if desde:
+            sql += " AND fecha_conversacion >= %s"
+            params.append(desde)
+        if search:
+            sql += " AND (nombre ILIKE %s OR resumen ILIKE %s OR zona ILIKE %s)"
+            wildcard = f"%{search}%"
+            params.extend([wildcard, wildcard, wildcard])
+        sql += " ORDER BY fecha_conversacion DESC LIMIT %s"
+        params.append(min(limit, 100))
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"[DB] Error listar_resumenes: {e}")
+        return []
