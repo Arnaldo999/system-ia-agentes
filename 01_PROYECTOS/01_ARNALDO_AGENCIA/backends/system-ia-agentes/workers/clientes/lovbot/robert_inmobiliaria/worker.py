@@ -2256,6 +2256,38 @@ def setup_resumenes():
     return db.crear_tabla_resumenes()
 
 
+@router.post("/admin/reset-sesion/{telefono}")
+def reset_sesion_bot(telefono: str):
+    """Borra la sesión del bot para empezar fresh (útil para testing)."""
+    tel = re.sub(r'\D', '', telefono)
+    if tel in SESIONES:
+        del SESIONES[tel]
+    if tel in HISTORIAL:
+        del HISTORIAL[tel]
+    if USE_POSTGRES:
+        try:
+            db.delete_bot_session(tel)
+        except Exception as e:
+            return {"status": "partial", "ram": "ok", "db_error": str(e)}
+    return {"status": "ok", "telefono": tel, "mensaje": "Sesión y historial borrados"}
+
+
+@router.post("/admin/simular-lead-anuncio/{telefono}")
+async def simular_lead_anuncio(telefono: str, request: Request):
+    """Simula un lead llegando desde un anuncio Meta Ads (para testing Caso A).
+    Body: {"headline": "Casa 3 dorm en San Ignacio - USD 145k", "body": "..."}"""
+    tel = re.sub(r'\D', '', telefono)
+    body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
+    referral = {
+        "headline": body.get("headline", "Casa 3 dorm en San Ignacio - USD 145k"),
+        "body": body.get("body", "Hermosa casa con piscina"),
+        "source_url": body.get("source_url", "fb.com/ad/123"),
+    }
+    primer_mensaje = body.get("mensaje", "Hola, me interesa la casa que vi en el anuncio")
+    threading.Thread(target=_procesar, args=(tel, primer_mensaje, referral), daemon=True).start()
+    return {"status": "processing", "telefono": tel, "referral": referral, "mensaje": primer_mensaje}
+
+
 def _generar_resumen_lead(lead: dict) -> dict:
     """Llama a GPT con los datos del lead para generar resumen sintético."""
     nombre = f"{lead.get('nombre', '')} {lead.get('apellido', '')}".strip() or "Lead sin nombre"
