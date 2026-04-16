@@ -474,7 +474,19 @@ def _transcribir_audio_meta(media_id: str) -> str:
                 resp = requests.post(
                     "https://api.openai.com/v1/audio/transcriptions",
                     headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
-                    data={"model": "whisper-1", "language": "es"},
+                    data={
+                        "model": "whisper-1",
+                        "language": "es",
+                        # Hint para audios cortos donde el lead suele decir nombre,
+                        # objetivo, presupuesto, zona, urgencia.
+                        "prompt": (
+                            "Conversación inmobiliaria en español rioplatense. "
+                            "El usuario puede decir su nombre, presupuesto en USD/ARS, "
+                            "tipo (lote, casa, departamento), zona "
+                            "(San Ignacio, Apóstoles, Gdor Roca), urgencia."
+                        ),
+                        "temperature": "0",
+                    },
                     files={"file": ("audio.ogg", f, "audio/ogg")},
                     timeout=30,
                 )
@@ -1299,6 +1311,7 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     # ── Historial de la conversación (últimos 10 turnos) ──
     historial = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
     historial_txt = ""
+    bot_ya_saludo = False  # Se calcula a partir del historial
     if historial:
         # El historial guarda strings tipo "[14:32] Lead: mensaje"
         # Normalizamos para el system prompt
@@ -1313,6 +1326,8 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
                 h2 = h.replace("] Lead:", "] Cliente:").replace("] Bot:", "] Vos (bot):")
                 lineas.append(h2)
         historial_txt = "\n".join(lineas)
+        # Detectar si el bot ya saludó antes (cualquier turno previo del bot)
+        bot_ya_saludo = any("Bot:" in h or "(bot)" in h for h in historial)
 
     # ── Zonas disponibles ──
     zonas_str = ", ".join(ZONAS_LIST) if ZONAS_LIST else "sin zonas definidas"
@@ -1402,7 +1417,28 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     saludo_pers = f", {saludo_nombre}" if saludo_nombre else ""
     zonas_breve = " · ".join(ZONAS_LIST[:4]) if ZONAS_LIST else ""
 
-    if tiene_ref:
+    # 🚨 Si el bot YA saludó en turnos anteriores, NO repetir el saludo.
+    # Esto evita el bug de "bot saluda 2 veces" cuando el cliente manda audio
+    # corto, audio mal transcrito, o un mensaje raro como "ok" / "ah".
+    if bot_ya_saludo:
+        bloque_origen = f"""## 🔄 CONVERSACIÓN EN CURSO — NO VUELVAS A SALUDAR
+
+⚠️ IMPORTANTE: Vos YA saludaste antes (mirá el historial). NO repitas el saludo
+de bienvenida ("Hola, bienvenido a Lovbot..."). NO te presentes de nuevo.
+
+Continuá la conversación natural desde donde quedó. Mirá el ÚLTIMO mensaje
+del cliente y respondé lo que corresponda según el flujo BANT.
+
+Si el último mensaje del cliente NO se entiende bien (audio mal transcrito,
+texto raro, "ok" suelto, "gracias", "muchas gracias"):
+- NO vuelvas a saludar
+- Asumí que es respuesta a tu última pregunta
+- Si era una pregunta de nombre y respondió raro → preguntá amablemente:
+  "Disculpá, no logré escuchar tu nombre. ¿Me lo podés escribir, por favor?"
+- Si era una pregunta de objetivo y respondió raro → preguntá amable de nuevo
+- Si no es claro qué preguntaste, hacé la siguiente pregunta del BANT
+"""
+    elif tiene_ref:
         bloque_origen = f"""## 🎯 ORIGEN DEL LEAD: CASO A — VINO DESDE UN ANUNCIO ESPECÍFICO
 Propiedad anunciada: '{ad_info}'
 
