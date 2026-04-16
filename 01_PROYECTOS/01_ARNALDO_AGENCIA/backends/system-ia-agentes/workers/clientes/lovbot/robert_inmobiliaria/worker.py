@@ -387,6 +387,63 @@ def _cw_mirror_msg(telefono: str, contenido: str, es_bot: bool) -> None:
 
 
 # ─── META GRAPH API ───────────────────────────────────────────────────────────
+def _transcribir_audio_meta(media_id: str) -> str:
+    """Descarga audio de Meta Graph API y transcribe con Whisper (OpenAI Robert)."""
+    import tempfile
+    if not META_ACCESS_TOKEN or not OPENAI_API_KEY:
+        print("[ROBERT-AUDIO] Faltan META_ACCESS_TOKEN o OPENAI_API_KEY")
+        return ""
+    try:
+        # Paso 1: obtener URL del media
+        r = requests.get(
+            f"https://graph.facebook.com/v21.0/{media_id}",
+            headers={"Authorization": f"Bearer {META_ACCESS_TOKEN}"},
+            timeout=10,
+        )
+        if r.status_code != 200:
+            print(f"[ROBERT-AUDIO] Error obteniendo URL media: {r.status_code} {r.text[:200]}")
+            return ""
+        media_url = r.json().get("url", "")
+        if not media_url:
+            return ""
+        # Paso 2: descargar audio
+        r2 = requests.get(
+            media_url,
+            headers={"Authorization": f"Bearer {META_ACCESS_TOKEN}"},
+            timeout=30,
+        )
+        if r2.status_code != 200:
+            print(f"[ROBERT-AUDIO] Error descargando audio: {r2.status_code}")
+            return ""
+        # Paso 3: Whisper
+        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
+            tmp.write(r2.content)
+            tmp_path = tmp.name
+        try:
+            with open(tmp_path, "rb") as f:
+                resp = requests.post(
+                    "https://api.openai.com/v1/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                    data={"model": "whisper-1", "language": "es"},
+                    files={"file": ("audio.ogg", f, "audio/ogg")},
+                    timeout=30,
+                )
+            if resp.status_code == 200:
+                texto = resp.json().get("text", "").strip()
+                print(f"[ROBERT-AUDIO] Transcripción: '{texto[:100]}'")
+                return texto
+            print(f"[ROBERT-AUDIO] Whisper error: {resp.status_code} {resp.text[:200]}")
+            return ""
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[ROBERT-AUDIO] Excepción: {e}")
+        return ""
+
+
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
     _agregar_historial(telefono, "Bot", mensaje)
     if not META_ACCESS_TOKEN or not META_PHONE_ID:
@@ -2173,6 +2230,18 @@ async def webhook_whatsapp(request: Request):
                         texto = inter.get("button_reply", {}).get("title", "")
                     elif inter.get("type") == "list_reply":
                         texto = inter.get("list_reply", {}).get("title", "")
+                elif msg_type == "audio":
+                    media_id = msg.get("audio", {}).get("id", "")
+                    if media_id:
+                        texto = _transcribir_audio_meta(media_id)
+                        if not texto:
+                            tel_tmp = re.sub(r'\D', '', msg.get("from", ""))
+                            if tel_tmp:
+                                _enviar_texto(tel_tmp,
+                                    "No pude escuchar bien el audio 😔. ¿Me lo escribís o lo grabás de nuevo?")
+                            return {"status": "ignored", "reason": "audio-no-transcrito"}
+                elif msg_type == "image":
+                    texto = msg.get("image", {}).get("caption", "") or "[imagen recibida]"
 
                 # Referral del anuncio (CRÍTICO para Caso A)
                 if "referral" in msg:
