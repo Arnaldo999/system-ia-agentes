@@ -1188,13 +1188,16 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     instruccion_step = {
         "inicio": (
             f"Es el PRIMER contacto. El cliente llegó desde un anuncio: '{ad_info}'. "
+            f"{'Ya tenemos su nombre (' + nombre + ') — saludalo por su nombre. ' if nombre else 'NO pidas el nombre todavía — vino de un ad. '}"
             "Confirmá la información de la propiedad anunciada (precio, ubicación, "
             "highlights, disponibilidad). Después preguntá UNA cosa BANT — "
-            "preferentemente '¿es para vivir o invertir?' (Need). NO pidas el nombre primero."
+            "preferentemente '¿es para vivir o invertir?' (Need)."
             if tiene_ref else
-            "Es el PRIMER contacto. Saludo cálido y UNA pregunta abierta de calificación. "
+            f"Es el PRIMER contacto. {'Ya tenemos su nombre (' + nombre + ') — saludalo por su nombre. ' if nombre else ''}"
+            f"Saludo cálido y UNA pregunta abierta de calificación. "
             "Ej: 'Hola, soy el asistente de Lovbot. ¿Estás buscando para vivir o invertir?' "
-            "NO pidas el nombre todavía. NO muestres propiedades hasta calificar Need + Budget."
+            f"{'' if nombre else 'NO pidas el nombre todavía — primero entendé qué busca. '}"
+            "NO muestres propiedades hasta calificar Need + Budget."
         ),
         "subnicho": "DEPRECATED — este bot solo atiende clientes de un desarrollador. Avanzar a 'objetivo' directamente.",
         "nombre": "Obtener el nombre del cliente. Ya tenés el perfil. Ser cálido.",
@@ -2355,7 +2358,12 @@ def reset_sesion_bot(telefono: str):
 @router.post("/admin/simular-lead-anuncio/{telefono}")
 async def simular_lead_anuncio(telefono: str, request: Request):
     """Simula un lead llegando desde un anuncio Meta Ads (para testing Caso A).
-    Body: {"headline": "Casa 3 dorm en San Ignacio - USD 145k", "body": "..."}"""
+    Body: {
+      "headline": "Casa 3 dorm en San Ignacio - USD 145k",
+      "body": "...",
+      "nombre": "Arnaldo Ayala",   # opcional — simula Lead Ads form
+      "email": "arnaldo@gmail.com" # opcional — simula Lead Ads form
+    }"""
     tel = re.sub(r'\D', '', telefono)
     body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
     referral = {
@@ -2363,9 +2371,28 @@ async def simular_lead_anuncio(telefono: str, request: Request):
         "body": body.get("body", "Hermosa casa con piscina"),
         "source_url": body.get("source_url", "fb.com/ad/123"),
     }
-    primer_mensaje = body.get("mensaje", "Hola, me interesa la casa que vi en el anuncio")
+
+    # Si el ad es "Lead Ads" (form), Meta nos pasa nombre y email — los pre-cargamos
+    nombre_ads = body.get("nombre", "").strip()
+    email_ads = body.get("email", "").strip()
+    if nombre_ads or email_ads:
+        sesion_pre = SESIONES.get(tel, {})
+        if nombre_ads:
+            sesion_pre["nombre"] = nombre_ads.title()
+        if email_ads:
+            sesion_pre["email"] = email_ads
+        sesion_pre["origen_lead"] = "meta_ads_form"
+        SESIONES[tel] = sesion_pre
+
+    primer_mensaje = body.get("mensaje", "Hola, me interesa la propiedad que vi en el anuncio")
     threading.Thread(target=_procesar, args=(tel, primer_mensaje, referral), daemon=True).start()
-    return {"status": "processing", "telefono": tel, "referral": referral, "mensaje": primer_mensaje}
+    return {
+        "status": "processing",
+        "telefono": tel,
+        "referral": referral,
+        "mensaje": primer_mensaje,
+        "datos_precargados": {"nombre": nombre_ads, "email": email_ads} if (nombre_ads or email_ads) else None
+    }
 
 
 def _generar_resumen_lead(lead: dict) -> dict:
