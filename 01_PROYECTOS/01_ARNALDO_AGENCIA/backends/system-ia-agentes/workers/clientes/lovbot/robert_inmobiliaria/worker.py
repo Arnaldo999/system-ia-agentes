@@ -2420,7 +2420,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             _enviar_texto(telefono, mensaje_final)
         sesion_nueva["score"] = "frio"
         sesion_nueva["step"]  = "cerrado_curioso"
-        threading.Thread(target=_at_registrar_lead, args=(
+        _args_reg = (
             telefono, nombre or "Sin nombre", "frio",
             sesion_nueva.get("resp_tipo",""),
             sesion_nueva.get("resp_zona",""),
@@ -2430,7 +2430,12 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             sesion_nueva.get("ciudad_resp", CIUDAD),
             sesion_nueva.get("subniche",""),
             sesion_nueva.get("_fuente_detalle",""),
-        ), daemon=True).start()
+        )
+        # PostgreSQL (Robert usa PG, no Airtable)
+        threading.Thread(target=db.registrar_lead, args=_args_reg, daemon=True).start()
+        # Airtable fallback solo si está configurado
+        if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+            threading.Thread(target=_at_registrar_lead, args=_args_reg, daemon=True).start()
         SESIONES.pop(telefono, None)
         return
 
@@ -2457,15 +2462,18 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         sesion_nueva["step"]  = "calificado"
         SESIONES[telefono] = sesion_nueva
 
-        # Registrar lead (background)
-        threading.Thread(target=_at_registrar_lead, args=(
+        # Registrar lead (background) — PostgreSQL principal + Airtable fallback
+        _args_reg = (
             telefono, nombre, score, tipo, zona, nota,
             sesion_nueva.get("presupuesto_at",""),
             sesion_nueva.get("operacion_at",""),
             sesion_nueva.get("ciudad_resp", CIUDAD),
             sesion_nueva.get("subniche",""),
             sesion_nueva.get("_fuente_detalle",""),
-        ), daemon=True).start()
+        )
+        threading.Thread(target=db.registrar_lead, args=_args_reg, daemon=True).start()
+        if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+            threading.Thread(target=_at_registrar_lead, args=_args_reg, daemon=True).start()
 
         threading.Thread(target=_notificar_asesor, args=(telefono, sesion_nueva, calificacion), daemon=True).start()
         threading.Thread(target=_chatwoot_escalar, args=(telefono, sesion_nueva, calificacion), daemon=True).start()
