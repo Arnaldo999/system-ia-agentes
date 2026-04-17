@@ -3665,6 +3665,7 @@ def waba_setup_table(request: Request):
     return db.setup_waba_clients_table()
 
 
+@router.post("/public/waba/onboarding")
 @router.post("/admin/waba/onboarding")
 async def waba_onboarding(request: Request):
     """Procesa el onboarding de un cliente nuevo via Meta Embedded Signup.
@@ -3678,18 +3679,23 @@ async def waba_onboarding(request: Request):
         display_phone   (str, opcional) numero legible ej "+52 998 123 4567"
 
     Flujo:
-        1. Valida token admin
-        2. Intercambia code -> access_token permanente (GET graph.facebook.com)
-        3. Suscribe la app a esa WABA (POST subscribed_apps)
-        4. Guarda en PostgreSQL waba_clients
-        5. Marca webhook_subscrito si (3) fue OK
+        1. Intercambia code -> access_token permanente (GET graph.facebook.com)
+        2. Suscribe la app a esa WABA (POST subscribed_apps)
+        3. Guarda en PostgreSQL waba_clients
+        4. Marca webhook_subscrito si (2) fue OK
 
-    Requiere header X-Admin-Token.
+    Dual-route:
+        - /public/waba/onboarding  → sin token, usado por HTML Vercel (cliente real).
+          La seguridad viene del code OAuth: solo Meta lo emite y el intercambio
+          requiere APP_SECRET (server-side). Un atacante no puede forjarlo.
+        - /admin/waba/onboarding   → requiere X-Admin-Token (uso interno/testing).
     """
     from fastapi import HTTPException
     import re as _re
 
-    _check_admin_token(request)
+    # Admin token solo se valida en la ruta /admin/...
+    if request.url.path.startswith("/clientes/lovbot/inmobiliaria/admin/"):
+        _check_admin_token(request)
     _check_pg()
 
     body = await request.json()

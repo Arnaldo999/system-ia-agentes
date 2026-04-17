@@ -291,16 +291,18 @@
       APP_ID   = tu Meta App ID (de developers.facebook.com)
       CONFIG_ID = tu Embedded Signup Config ID (puede quedar vacío)
   -->
-  <meta name="meta-app-id"     content="{{APP_ID}}">
-  <meta name="meta-config-id"  content="{{CONFIG_ID}}">
+  <meta name="meta-app-id"     content="704986485248523">
+  <meta name="meta-config-id"  content="1264527552112117">
 
   <script>
     // ── CONFIG leída de meta tags (no hardcodeada) ──────────────────
     const META_APP_ID = document.querySelector('meta[name="meta-app-id"]').content;
     const CONFIG_ID   = document.querySelector('meta[name="meta-config-id"]').content;
 
-    // URL del endpoint FastAPI de onboarding (centralizado en Python)
-    const ONBOARDING_URL = 'https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/admin/waba/onboarding';
+    // URL del endpoint FastAPI de onboarding (ruta publica — no requiere token)
+    // Seguridad: el OAuth code que envia Meta solo puede intercambiarse por token
+    // con el APP_SECRET server-side. Un atacante no puede forjarlo.
+    const ONBOARDING_URL = 'https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/public/waba/onboarding';
 
     // Leer nombre del cliente desde ?client=NombreCliente y normalizar a slug
     const urlParams  = new URLSearchParams(window.location.search);
@@ -387,12 +389,7 @@
 
       fetch(ONBOARDING_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // El token de admin se inyecta en build via reemplazo de placeholder.
-          // Si no está disponible, el endpoint rechazará con 401 — eso es correcto.
-          'X-Admin-Token': '{{ADMIN_TOKEN}}'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
       .then(function(r) {
