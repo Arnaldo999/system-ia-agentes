@@ -191,10 +191,19 @@ def _yaml_list_to_python_list(items) -> str:
 def aplicar_variables(dest: Path, data: dict, dry_run: bool = False):
     """
     Reemplaza variables de configuracion en el worker.py clonado.
+    En dry_run, si el worker no existe en dest (porque no se copio), usa el
+    template original como referencia para simular los reemplazos.
     """
     worker_py = dest / "worker.py"
     if not worker_py.exists():
-        raise FileNotFoundError(f"No encontre worker.py en {dest}")
+        if dry_run:
+            worker_py = TEMPLATE_WORKER / "worker.py"
+            if not worker_py.exists():
+                raise FileNotFoundError(
+                    f"No encontre worker.py ni en dest ni en template: {TEMPLATE_WORKER}"
+                )
+        else:
+            raise FileNotFoundError(f"No encontre worker.py en {dest}")
 
     content = worker_py.read_text(encoding="utf-8")
     original = content
