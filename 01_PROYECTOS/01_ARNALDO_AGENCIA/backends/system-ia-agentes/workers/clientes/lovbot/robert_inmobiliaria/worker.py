@@ -2183,6 +2183,20 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 if m_nombre_solo:
                     sesion_nueva["nombre"] = m_nombre_solo.group(1).strip().title()
 
+    # Backup ciudad: si el bot preguntó ciudad y el LLM no emitió CIUDAD:,
+    # capturar el texto completo del mensaje como ciudad (respuestas simples tipo "San Ignacio")
+    if not sesion_nueva.get("ciudad_resp"):
+        _hist_local = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
+        ultimo_msg_bot = ""
+        for h in reversed(_hist_local):
+            if h.startswith("Bot:") or "(bot)" in h.lower():
+                ultimo_msg_bot = h.lower()
+                break
+        if any(p in ultimo_msg_bot for p in ["qué ciudad", "que ciudad", "qué ciudad", "desde dónde", "desde donde", "ciudad nos escribís", "ciudad sos"]):
+            ciudad_candidata = texto.strip().title()
+            if 2 <= len(ciudad_candidata) <= 50 and not any(c.isdigit() for c in ciudad_candidata):
+                sesion_nueva["ciudad_resp"] = ciudad_candidata
+
     # ── Actualizar step según datos acumulados ─────────────────────────────
     datos_completos = all([
         sesion_nueva.get("nombre"),
