@@ -1439,3 +1439,168 @@ def listar_resumenes(limit: int = 20, score_min: int = None,
     except Exception as e:
         print(f"[DB] Error listar_resumenes: {e}")
         return []
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# WABA CLIENTS — Tech Provider onboarding (Fase 1)
+# Tabla global (sin tenant_slug): un registro por cliente externo de Robert
+# ═══════════════════════════════════════════════════════════════════════════
+
+def setup_waba_clients_table() -> dict:
+    """Crea la tabla waba_clients si no existe. Idempotente."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS waba_clients (
+                id                  SERIAL PRIMARY KEY,
+                client_name         TEXT NOT NULL,
+                client_slug         TEXT UNIQUE NOT NULL,
+                waba_id             TEXT UNIQUE NOT NULL,
+                phone_number_id     TEXT UNIQUE NOT NULL,
+                display_phone_number TEXT,
+                access_token        TEXT NOT NULL,
+                worker_url          TEXT,
+                estado              TEXT DEFAULT 'onboarded',
+                webhook_subscrito   BOOLEAN DEFAULT FALSE,
+                created_at          TIMESTAMPTZ DEFAULT NOW(),
+                updated_at          TIMESTAMPTZ DEFAULT NOW(),
+                metadata            JSONB DEFAULT '{}'::jsonb
+            )
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_waba_phone_id
+            ON waba_clients(phone_number_id)
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_waba_slug
+            ON waba_clients(client_slug)
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("[DB] Tabla waba_clients lista.")
+        return {"ok": True, "mensaje": "Tabla waba_clients verificada/creada"}
+    except Exception as e:
+        print(f"[DB] Error setup_waba_clients_table: {e}")
+        return {"error": str(e)}
+
+
+def registrar_waba_client(
+    client_name: str,
+    client_slug: str,
+    waba_id: str,
+    phone_number_id: str,
+    access_token: str,
+    worker_url: str = None,
+    display_phone: str = None,
+) -> dict:
+    """UPSERT de cliente WABA por phone_number_id."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO waba_clients
+                (client_name, client_slug, waba_id, phone_number_id,
+                 display_phone_number, access_token, worker_url, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (phone_number_id) DO UPDATE SET
+                client_name          = EXCLUDED.client_name,
+                client_slug          = EXCLUDED.client_slug,
+                waba_id              = EXCLUDED.waba_id,
+                display_phone_number = COALESCE(EXCLUDED.display_phone_number, waba_clients.display_phone_number),
+                access_token         = EXCLUDED.access_token,
+                worker_url           = COALESCE(EXCLUDED.worker_url, waba_clients.worker_url),
+                updated_at           = NOW()
+            RETURNING id, client_slug, phone_number_id
+        """, (
+            client_name, client_slug, waba_id, phone_number_id,
+            display_phone, access_token, worker_url,
+        ))
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"ok": True, "id": row["id"], "client_slug": row["client_slug"],
+                "phone_number_id": row["phone_number_id"]}
+    except Exception as e:
+        print(f"[DB] Error registrar_waba_client: {e}")
+        return {"error": str(e)}
+
+
+def obtener_waba_client_por_phone(phone_number_id: str) -> dict | None:
+    """SELECT de un cliente WABA por phone_number_id. Retorna dict o None."""
+    if not _available():
+        return None
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            "SELECT * FROM waba_clients WHERE phone_number_id = %s",
+            (phone_number_id,),
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if not row:
+            return None
+        result = dict(row)
+        for k, v in result.items():
+            if hasattr(v, "isoformat"):
+                result[k] = v.isoformat()
+        return result
+    except Exception as e:
+        print(f"[DB] Error obtener_waba_client_por_phone: {e}")
+        return None
+
+
+def marcar_webhook_subscrito(phone_number_id: str) -> bool:
+    """Marca webhook_subscrito=TRUE para un cliente WABA."""
+    if not _available():
+        return False
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE waba_clients
+            SET webhook_subscrito = TRUE, updated_at = NOW()
+            WHERE phone_number_id = %s
+        """, (phone_number_id,))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        if ok:
+            print(f"[DB] webhook_subscrito marcado para phone_id={phone_number_id}")
+        return ok
+    except Exception as e:
+        print(f"[DB] Error marcar_webhook_subscrito: {e}")
+        return False
+
+
+def listar_waba_clients() -> list[dict]:
+    """SELECT todos los waba_clients (para admin/debug)."""
+    if not _available():
+        return []
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM waba_clients ORDER BY created_at DESC")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        result = []
+        for r in rows:
+            row = dict(r)
+            for k, v in row.items():
+                if hasattr(v, "isoformat"):
+                    row[k] = v.isoformat()
+            result.append(row)
+        return result
+    except Exception as e:
+        print(f"[DB] Error listar_waba_clients: {e}")
+        return []

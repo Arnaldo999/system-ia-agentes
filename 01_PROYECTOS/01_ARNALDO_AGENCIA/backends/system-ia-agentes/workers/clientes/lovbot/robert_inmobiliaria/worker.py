@@ -3632,3 +3632,200 @@ async def crm_upload_pdf(request: Request):
         raise HTTPException(status_code=r.status_code, detail=r.text[:300])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TECH PROVIDER — WABA ONBOARDING (Fase 1)
+# Endpoints admin para onboarding de clientes externos de Robert via
+# Meta Embedded Signup. Requieren header X-Admin-Token.
+# ═══════════════════════════════════════════════════════════════════════════
+
+LOVBOT_ADMIN_TOKEN = os.environ.get("LOVBOT_ADMIN_TOKEN", "") or os.environ.get("ADMIN_TOKEN", "")
+LOVBOT_META_APP_ID = os.environ.get("LOVBOT_META_APP_ID", "") or os.environ.get("META_APP_ID", "")
+LOVBOT_META_APP_SECRET = os.environ.get("LOVBOT_META_APP_SECRET", "") or os.environ.get("META_APP_SECRET", "")
+
+
+def _check_admin_token(request: Request):
+    """Valida X-Admin-Token. Lanza 401 si es invalido o no esta configurado."""
+    from fastapi import HTTPException
+    token = request.headers.get("X-Admin-Token", "")
+    if not LOVBOT_ADMIN_TOKEN:
+        raise HTTPException(status_code=500, detail="LOVBOT_ADMIN_TOKEN no configurado en servidor")
+    if token != LOVBOT_ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="X-Admin-Token invalido")
+
+
+@router.post("/admin/waba/setup-table")
+def waba_setup_table(request: Request):
+    """Crea la tabla waba_clients en PostgreSQL. Idempotente.
+    Requiere header X-Admin-Token.
+    """
+    _check_admin_token(request)
+    _check_pg()
+    return db.setup_waba_clients_table()
+
+
+@router.post("/admin/waba/onboarding")
+async def waba_onboarding(request: Request):
+    """Procesa el onboarding de un cliente nuevo via Meta Embedded Signup.
+
+    Body JSON:
+        client_name     (str) nombre del cliente
+        client_slug     (str) slug unico (se normaliza a lowercase-dashes)
+        waba_id         (str) WABA ID devuelto por Meta
+        phone_number_id (str) Phone Number ID devuelto por Meta
+        code            (str) code devuelto por FB.login
+        display_phone   (str, opcional) numero legible ej "+52 998 123 4567"
+
+    Flujo:
+        1. Valida token admin
+        2. Intercambia code -> access_token permanente (GET graph.facebook.com)
+        3. Suscribe la app a esa WABA (POST subscribed_apps)
+        4. Guarda en PostgreSQL waba_clients
+        5. Marca webhook_subscrito si (3) fue OK
+
+    Requiere header X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    import re as _re
+
+    _check_admin_token(request)
+    _check_pg()
+
+    body = await request.json()
+    client_name     = (body.get("client_name") or "").strip()
+    client_slug_raw = (body.get("client_slug") or "").strip()
+    waba_id         = (body.get("waba_id") or "").strip()
+    phone_number_id = (body.get("phone_number_id") or "").strip()
+    code            = (body.get("code") or "").strip()
+    display_phone   = (body.get("display_phone") or "").strip() or None
+
+    # Validaciones
+    if not client_name:
+        raise HTTPException(status_code=400, detail="Falta client_name")
+    if not waba_id:
+        raise HTTPException(status_code=400, detail="Falta waba_id")
+    if not phone_number_id:
+        raise HTTPException(status_code=400, detail="Falta phone_number_id")
+    if not code:
+        raise HTTPException(status_code=400, detail="Falta code (del FB.login)")
+    if not LOVBOT_META_APP_ID or not LOVBOT_META_APP_SECRET:
+        raise HTTPException(status_code=500,
+                            detail="LOVBOT_META_APP_ID / LOVBOT_META_APP_SECRET no configurados")
+
+    # Normalizar slug: lowercase, espacios -> guiones, sin chars especiales
+    client_slug = _re.sub(r'[^a-z0-9-]', '',
+                          client_slug_raw.lower().replace(" ", "-"))
+    if not client_slug:
+        client_slug = _re.sub(r'[^a-z0-9-]', '',
+                               client_name.lower().replace(" ", "-"))
+
+    # 1. Intercambiar code -> access_token permanente
+    print(f"[WABA] Intercambiando code -> access_token para {client_name} ({client_slug})")
+    try:
+        token_resp = requests.get(
+            "https://graph.facebook.com/v21.0/oauth/access_token",
+            params={
+                "client_id": LOVBOT_META_APP_ID,
+                "client_secret": LOVBOT_META_APP_SECRET,
+                "code": code,
+            },
+            timeout=15,
+        )
+        if token_resp.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Meta rechazo el code: {token_resp.text[:300]}"
+            )
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token", "")
+        if not access_token:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Meta no devolvio access_token: {token_data}"
+            )
+        print(f"[WABA] access_token obtenido para {client_slug}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error llamando a Meta OAuth: {e}")
+
+    # 2. Suscribir la app a esa WABA (webhooks del cliente)
+    webhook_ok = False
+    webhook_detail = ""
+    try:
+        sub_resp = requests.post(
+            f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=15,
+        )
+        if sub_resp.status_code == 200:
+            webhook_ok = True
+            print(f"[WABA] Webhook suscrito para waba_id={waba_id}")
+        else:
+            webhook_detail = sub_resp.text[:300]
+            print(f"[WABA] Advertencia — webhook no suscrito: {webhook_detail}")
+    except Exception as e:
+        webhook_detail = str(e)
+        print(f"[WABA] Advertencia — excepcion al suscribir webhook: {e}")
+
+    # 3. Guardar en PostgreSQL
+    worker_url = f"https://agentes.lovbot.ai/clientes/lovbot/{client_slug}/whatsapp"
+    reg = db.registrar_waba_client(
+        client_name=client_name,
+        client_slug=client_slug,
+        waba_id=waba_id,
+        phone_number_id=phone_number_id,
+        access_token=access_token,
+        worker_url=worker_url,
+        display_phone=display_phone,
+    )
+    if "error" in reg:
+        raise HTTPException(status_code=500, detail=f"Error guardando en DB: {reg['error']}")
+
+    # 4. Marcar webhook_subscrito si la suscripcion fue exitosa
+    if webhook_ok:
+        db.marcar_webhook_subscrito(phone_number_id)
+
+    return {
+        "status": "ok",
+        "client_slug": client_slug,
+        "phone_number_id": phone_number_id,
+        "waba_id": waba_id,
+        "worker_url": worker_url,
+        "webhook_subscrito": webhook_ok,
+        "webhook_detail": webhook_detail if not webhook_ok else None,
+        "db_id": reg.get("id"),
+    }
+
+
+@router.get("/admin/waba/clients")
+def waba_list_clients(request: Request):
+    """Lista todos los clientes WABA onboarded. Omite access_token.
+    Requiere header X-Admin-Token.
+    """
+    _check_admin_token(request)
+    _check_pg()
+    clients = db.listar_waba_clients()
+    for c in clients:
+        c.pop("access_token", None)
+    return {"total": len(clients), "clients": clients}
+
+
+@router.get("/admin/waba/client/{phone_number_id}")
+def waba_get_client(phone_number_id: str, request: Request):
+    """Detalle de un cliente WABA por phone_number_id.
+    Usado por el Router n8n para obtener worker_url y routear mensajes.
+    Omite access_token. Requiere header X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+    _check_pg()
+    client = db.obtener_waba_client_por_phone(phone_number_id)
+    if not client:
+        raise HTTPException(
+            status_code=404,
+            detail=f"phone_number_id={phone_number_id} no encontrado"
+        )
+    client.pop("access_token", None)
+    return client
