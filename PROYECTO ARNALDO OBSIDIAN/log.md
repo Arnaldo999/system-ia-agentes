@@ -29,6 +29,17 @@
 - Reescrita sección "Estructura de sus proyectos" en `arnaldo-ayala.md` con 3 categorías: Producción propia · Alianza técnica · Sociedad comercial.
 - Actualizado mapa mental en `index.md` para reflejar la jerarquía real.
 
+## [2026-04-17] ingest | Pasada 1a — 12 fuentes desde memory/ Mission Control
+Arquitectura de silos aplicada (CLAUDE.md REGLA #0bis). Se copiaron archivos de `memory/` (silo 3) a `raw/[agencia]/` (silo 2) para que se puedan ingerir con llm-wiki.
+
+Fuentes copiadas:
+- `raw/arnaldo/` (1): crm-apostoles-mapa
+- `raw/robert/` (1): robert-bazan-alianza-brief
+- `raw/mica/` (1): guia-ventas-micaela
+- `raw/compartido/` (9): gastronomia-subnichos, restaurante-gastronomico, onboarding-redes-sociales, nuevo-cliente-redes-sociales, social-publicaciones, wordpress-elementor-sitios-web, membresia-app, rag-sistema-google-embeddings, historial-crewai-saas-agencias
+
+Pendiente: ingerir con skill llm-wiki + eliminar originales de memory/ una vez validado.
+
 ## [2026-04-17] update | Regla: aislamiento total entre las 3 agencias
 Refinamiento conceptual confirmado por Arnaldo: las 3 agencias son **paralelas y nunca se cruzan entre sí**. Arnaldo es el centro, asociado individualmente con Robert y con Mica (2 sociedades separadas), pero Robert y Mica no tienen relación comercial entre sí.
 

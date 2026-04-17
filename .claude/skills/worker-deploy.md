@@ -1,6 +1,6 @@
 ---
 name: worker-deploy
-description: Deploy de un worker FastAPI a Coolify o Render. Uso: /worker-deploy [proyecto] [entorno]. Proyectos: maicol, prueba, lovbot-robert, social. Entornos: arnaldo (Coolify Hostinger), robert (Coolify Hetzner), render (backup).
+description: Deploy de un worker FastAPI a Coolify. Uso: /worker-deploy [proyecto] [entorno]. Proyectos: maicol, prueba, lovbot-robert, social, lau. Entornos: arnaldo (Coolify Hostinger), robert (Coolify Hetzner).
 ---
 
 # /worker-deploy — Deploy Worker FastAPI
@@ -11,7 +11,7 @@ Ejecutá este flujo completo al recibir `/worker-deploy [proyecto] [entorno]`:
 
 Parsear los argumentos:
 - **proyecto**: maicol | prueba | social | lovbot-robert | (nombre custom)
-- **entorno**: arnaldo | robert | render
+- **entorno**: arnaldo | robert
 
 Si faltan argumentos, preguntar antes de continuar.
 
@@ -64,12 +64,6 @@ curl -s -X POST "https://coolify.lovbot.ai/api/v1/deploy" \
 ```
 Token en `.env`: variable `COOLIFY_TOKEN_LOVBOT` (o leer de .env)
 
-### Entorno: render
-```bash
-# Render deploya automático con el push a main
-# Solo verificar que el push fue exitoso
-```
-
 ## Paso 6 — Verificar health post-deploy
 
 Esperar ~30 segundos y verificar:
@@ -82,11 +76,6 @@ curl -s "https://agentes.arnaldoayalaestratega.cloud/health"
 ### Robert
 ```bash
 curl -s "https://agentes.lovbot.ai/health"
-```
-
-### Render (backup)
-```bash
-curl -s "https://system-ia-agentes.onrender.com/health"
 ```
 
 Respuesta esperada: `{"status": "ok"}` o similar.
@@ -107,6 +96,5 @@ Si algo falla en cualquier paso → mostrar error claro y detener. No hacer depl
 ## Reglas críticas
 - NUNCA hacer deploy sin validar Python primero
 - NUNCA compartir tokens en el output
-- Si el proyecto es `maicol` → advertir que es PRODUCCIÓN LIVE con clientes reales
-- Si el entorno es `render` → el deploy es automático por push, no hay API call adicional
+- Si el proyecto es `maicol` o `lau` → advertir que es PRODUCCIÓN LIVE con clientes reales
 - Leer tokens desde `.env` en `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/.env`

@@ -273,7 +273,7 @@ async function testAnthropicAPI(apiKey) {
     // Test with a minimal API call to check authentication
     const result = await new Promise((resolve, reject) => {
       const postData = JSON.stringify({
-        model: "claude-3-haiku-20240307",
+        model: "claude-haiku-4-5",
         max_tokens: 1,
         messages: [{ role: "user", content: "test" }],
       });

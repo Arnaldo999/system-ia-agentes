@@ -41,7 +41,7 @@ Archivos existentes y cuándo usarlos:
 1. Duplicar base Airtable `appdA5rJOmtVvpDrx` → renombrar `WORKSPACE [Cliente]`
 2. Completar pestaña `Branding-Marca` con datos del cliente
 3. Insertar fila en Supabase tabla `clientes` con `cliente_id`, `nombre_negocio`, `estado: activo`
-4. Configurar env vars en Render/Easypanel para el nuevo cliente
+4. Configurar env vars en Coolify/Easypanel para el nuevo cliente
 5. Documentar el cliente en `memory/` con su propio archivo si tiene particularidades
 
 ### Para redes sociales (IG/FB)
@@ -55,7 +55,7 @@ Seguir exactamente `memory/nuevo-cliente-redes-sociales.md` — 7 pasos document
 □ Meta: token System User generado (nunca expira)
 □ Facebook Page ID obtenido
 □ Instagram Business Account ID obtenido
-□ Variables de entorno cargadas en Render/Easypanel
+□ Variables de entorno cargadas en Coolify/Easypanel
 □ Webhook Meta suscrito (POST /{page_id}/subscribed_apps)
 □ Test de integración exitoso
 □ Documentación guardada en memory/
@@ -123,7 +123,7 @@ Leer `ai.context.json` y `handoff/` para generar:
 
 | Componente | URL/Servicio | Notas |
 |------------|-------------|-------|
-| FastAPI backend | Render (`system-ia-agentes`) | Repo: github.com/Arnaldo999/system-ia-agentes |
+| FastAPI backend | Coolify Hostinger (`agentes.arnaldoayalaestratega.cloud`) | Repo: github.com/Arnaldo999/system-ia-agentes |
 | n8n | Easypanel (`sytem_ia_pruebas`) | Typo intencional en "sytem" |
 | Airtable | Por cliente | Un base por cliente |
 | Supabase | Centralizado | Tabla `clientes` con todas las credenciales |

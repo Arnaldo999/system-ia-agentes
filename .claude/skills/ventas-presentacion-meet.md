@@ -107,7 +107,7 @@ Siempre proponer un próximo paso concreto:
 ---
 
 ## Lo que NO hacer nunca en la presentación
-- Mencionar: n8n, FastAPI, Render, Easypanel, webhook, API, token, servidor, Python, JavaScript
+- Mencionar: n8n, FastAPI, Coolify, Easypanel, webhook, API, token, servidor, Python, JavaScript
 - Hablar más de 3 minutos seguidos sin hacer una pregunta
 - Mostrar capturas de código o paneles técnicos
 - Dar precio antes de que el lead entienda el valor

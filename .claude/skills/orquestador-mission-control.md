@@ -73,7 +73,7 @@ Orquestador (tú, Mission Control)
 - Automotriz (lead captura + seguimiento)
 - Servicios con turnos (peluquerías, talleres, estética)
 
-**Stack técnico:** n8n + FastAPI (Render/Easypanel) + Airtable + Supabase + Evolution API + Gemini + Cloudinary
+**Stack técnico:** n8n + FastAPI (Coolify Hostinger/Hetzner) + Easypanel (Mica) + Airtable + Supabase + Evolution API + Gemini + Cloudinary
 
 **Pipeline de un proyecto nuevo:**
 1. Ventas → califica lead, genera brief en `handoff/`

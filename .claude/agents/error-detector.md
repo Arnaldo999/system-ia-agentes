@@ -33,8 +33,7 @@ Sos un especialista en diagnóstico de errores del backend FastAPI de System IA.
 
 1. **Token Meta expirado** — META_ACCESS_TOKEN dura ~60 días. Síntoma: 401 en llamadas a graph.facebook.com
 2. **Airtable singleSelect** — No se puede crear/editar choices via API sin scope `schema.bases:write`
-3. **Render durmiendo** — tier free duerme tras 15min. Keep-alive en n8n `kjmQdyTGFzMSfzov` lo evita
-4. **Import error en startup** — Si un worker tiene error de sintaxis, FastAPI no arranca y TODOS los endpoints caen
+3. **Import error en startup** — Si un worker tiene error de sintaxis, FastAPI no arranca y TODOS los endpoints caen
 5. **Threading sin manejo de excepciones** — Los threads del meta_webhook no tienen try/except → errores silenciosos
 6. **Variables de entorno faltantes** — Worker arranca pero falla en runtime cuando intenta usar una key no configurada
 7. **Cal.com slots** — Bugs conocidos con timezone en disponibilidad
@@ -104,7 +103,7 @@ curl -s "https://graph.facebook.com/me?access_token=TOKEN" | python3 -c "import 
 
 ### 🟢 Performance lenta
 - Llamadas síncronas a APIs externas dentro de endpoints (usar async/await o threading)
-- Render durmiendo (keep-alive caído)
+- Latencia Coolify Arnaldo → Evolution API Mica (~12s) — mitigar con BackgroundTasks FastAPI
 
 ## Cómo reportar hallazgos
 

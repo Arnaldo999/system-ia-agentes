@@ -184,7 +184,7 @@ el usuario debe detenerme y recordarme esta regla.
 |----------|---------|-----|
 | Arnaldo | Coolify Hostinger → `agentes.arnaldoayalaestratega.cloud` | `n8n.arnaldoayalaestratega.cloud` |
 | Robert/lovbot | Coolify Hetzner → `agentes.lovbot.ai` | `n8n.lovbot.ai` |
-| Backup | Render → `system-ia-agentes.onrender.com` | — |
+| Mica/System IA | Backend compartido vía paths `/mica/*` | Easypanel `sytem-ia-pruebas-n8n.6g0gdj.easypanel.host` |
 | Demos | Vercel → `lovbot-demos.vercel.app` | — |
 
 **Regla crítica**: confirmar "¿Arnaldo / Robert / Mica?" antes de cualquier operación MCP, Coolify o Airtable.
@@ -253,7 +253,7 @@ npx skills add <owner/repo> -y
 
 | Directiva | Cuándo usar |
 |-----------|-------------|
-| `directives/deploy_worker.md` | Deploy a Coolify/Render |
+| `directives/deploy_worker.md` | Deploy a Coolify (Hostinger Arnaldo / Hetzner Robert) o Easypanel (Mica) |
 | `directives/debug_worker.md` | Error, falla, comportamiento inesperado |
 | `directives/onboard_client.md` | Cliente nuevo, implementación completa |
 

@@ -13,7 +13,6 @@ Ejecutá este chequeo completo en orden. No te saltes pasos — los errores sile
 |----------|-----------|------------|
 | FastAPI Arnaldo (principal) | `https://agentes.arnaldoayalaestratega.cloud/health` | 🔴 CRÍTICO |
 | FastAPI Robert (lovbot) | `https://agentes.lovbot.ai/health` | 🔴 CRÍTICO |
-| FastAPI Render (backup) | `https://system-ia-agentes.onrender.com/health` | 🟡 BACKUP |
 | n8n Arnaldo | `https://n8n.arnaldoayalaestratega.cloud/healthz` | 🔴 CRÍTICO |
 | n8n Robert | `https://n8n.lovbot.ai/healthz` | 🟡 IMPORTANTE |
 | Worker Maicol (bot WhatsApp) | `https://agentes.arnaldoayalaestratega.cloud/clientes/arnaldo/maicol/health` | 🔴 CRÍTICO — cliente real |
@@ -28,7 +27,6 @@ Corré estos curl en paralelo:
 ```bash
 echo "=== FastAPI Arnaldo ===" && curl -s --max-time 10 "https://agentes.arnaldoayalaestratega.cloud/health"
 echo "=== FastAPI Robert ===" && curl -s --max-time 10 "https://agentes.lovbot.ai/health"
-echo "=== Render backup ===" && curl -s --max-time 15 "https://system-ia-agentes.onrender.com/health"
 ```
 
 **Interpretar respuesta:**
@@ -56,7 +54,6 @@ Consultá las últimas ejecuciones fallidas en ambas instancias n8n.
 - Error messages repetidos (pueden indicar un problema sistémico)
 
 Workflows críticos a verificar en n8n Arnaldo:
-- Keep-alive Render (pinga /health cada 14min) — si falla, Render duerme
 - Alertas vencimientos Maicol (Schedule 8am ARG)
 - Redes sociales Arnaldo (`aJILcfjRoKDFvGWY`)
 
@@ -106,7 +103,6 @@ Después de correr todos los checks, generá este reporte exacto:
 ║ SERVICIOS FASTAPI                        ║
 ║  [✅/⚠️/❌] FastAPI Arnaldo (principal)  ║
 ║  [✅/⚠️/❌] FastAPI Robert (lovbot)      ║
-║  [✅/⚠️/❌] Render (backup)             ║
 ╠══════════════════════════════════════════╣
 ║ N8N WORKFLOWS                            ║
 ║  [✅/⚠️/❌] n8n Arnaldo — X workflows   ║
@@ -140,14 +136,12 @@ Por cada ❌ o ⚠️ encontrado, seguí esta lógica:
 ### n8n workflow fallido
 - Leer el error message del MCP
 - Si es credencial expirada (típico en Meta tokens) → avisar a Arnaldo con el workflow específico
-- Si es timeout → puede ser que Render estaba durmiendo, verificar keep-alive
 
 ### Worker Social caído (redes sociales)
 - Este fue el caso de hoy — verificar primero si el token de Meta/Instagram expiró
 - Chequear: `curl https://graph.facebook.com/me?access_token=TOKEN`
 - Si expiró → proceso de renovación de token largo (avisar a Arnaldo)
 
-### Render durmiendo
 - Pingar manualmente: `curl https://system-ia-agentes.onrender.com/health`
 - Puede tardar 30-60s en despertar (tier free)
 - Verificar que el workflow keep-alive `kjmQdyTGFzMSfzov` esté activo en n8n

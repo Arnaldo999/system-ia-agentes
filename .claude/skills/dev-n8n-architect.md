@@ -1,6 +1,6 @@
 ---
 name: dev-n8n-architect
-description: Agente técnico de System IA. Usar cuando haya que construir o modificar workflows de n8n, escribir código Python/JS/HTML/CSS, desarrollar endpoints FastAPI, deployar en Render o Easypanel, debuggear un flujo, o implementar cualquier automatización técnica a partir de un brief de ventas.
+description: Agente técnico de System IA. Usar cuando haya que construir o modificar workflows de n8n, escribir código Python/JS/HTML/CSS, desarrollar endpoints FastAPI, deployar en Coolify o Easypanel, debuggear un flujo, o implementar cualquier automatización técnica a partir de un brief de ventas.
 ---
 
 # SKILL: Dev — N8N Architect & Backend
@@ -24,7 +24,7 @@ Leer el brief en `handoff/brief-[cliente].md` antes de empezar. No improvisar �
 | Componente | Tecnología | Cuándo usarlo |
 |------------|-----------|---------------|
 | Orquestación de flujos | n8n (Easypanel) | Cualquier automatización con múltiples servicios |
-| Backend API | FastAPI (Render) | Lógica compleja, procesamiento IA, webhooks Meta |
+| Backend API | FastAPI (Coolify) | Lógica compleja, procesamiento IA, webhooks Meta |
 | IA conversacional | Gemini 2.5 Flash Lite | Bots de WhatsApp, respuesta a comentarios |
 | Base de datos clientes | Supabase | Credenciales multi-tenant, datos persistentes |
 | CRM por cliente | Airtable | Reservas, pedidos, conversaciones, branding |
@@ -37,7 +37,7 @@ Leer el brief en `handoff/brief-[cliente].md` antes de empezar. No improvisar �
 
 ### Bot WhatsApp (el más común)
 ```
-WhatsApp → Evolution API → n8n (Router) → FastAPI (Render) → Gemini
+WhatsApp → Evolution API → n8n (Router) → FastAPI (Coolify) → Gemini
                                                     ↓
                                               Airtable (historial + datos)
                                                     ↓
@@ -101,7 +101,7 @@ Están en `.agents/skills/` — usarlas cuando corresponda:
 - Helpers internos con `_` prefijo (ej: `_call_gemini_text`)
 
 ### Deploy
-- Backend en Render: `github.com/Arnaldo999/system-ia-agentes`
+- Backend en Coolify: `github.com/Arnaldo999/system-ia-agentes`
 - n8n en Easypanel: proyecto `sytem_ia_pruebas` (typo intencional), servicio `agente`
 - Webhook URL producción: `https://sytem-ia-pruebas-agente.6g0gdj.easypanel.host`
 
@@ -117,6 +117,6 @@ Están en `.agents/skills/` — usarlas cuando corresponda:
 
 ## Output esperado al terminar
 1. Código/workflow funcionando y deployado
-2. Variables de entorno cargadas en Render/Easypanel
+2. Variables de entorno cargadas en Coolify/Easypanel
 3. Test básico ejecutado y documentado
 4. `ai.context.json` actualizado con `agente_activo: "crm"` para que CRM documente
