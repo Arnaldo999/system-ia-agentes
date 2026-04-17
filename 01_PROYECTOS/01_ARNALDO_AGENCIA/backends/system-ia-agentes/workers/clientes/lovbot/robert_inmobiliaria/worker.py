@@ -1393,13 +1393,13 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
             "NO muestres propiedades hasta calificar Need + Budget."
         ),
         "subnicho": "DEPRECATED — este bot solo atiende clientes de un desarrollador. Avanzar a 'objetivo' directamente.",
-        "nombre": "Obtener el nombre del cliente. Ya tenés el perfil. Ser cálido.",
-        "email": "Pedir email. Aclarar que es opcional para enviarle fichas antes que salgan al público.",
-        "ciudad": f"Preguntar desde qué ciudad escribe el lead. Es importante para saber si puede visitar los proyectos en {CIUDAD}.",
-        "objetivo": "Preguntar qué busca: comprar, alquilar o invertir. Adaptar al subniche.",
-        "tipo": "Preguntar tipo de propiedad (casa, departamento, terreno, local, oficina). Natural, sin listar opciones como menú.",
-        "presupuesto": f"Preguntar presupuesto aproximado en {MONEDA}. Dar rangos de referencia naturalmente.",
-        "urgencia": "Preguntar cuándo piensa concretar: ¿ya está buscando activamente, en los próximos meses, o explorando?",
+        "nombre": "Obtener el nombre del cliente con calidez. Explicá que es para llamarle bien durante la conversación.",
+        "email": "Pedir email de forma opcional. Explicá que es para enviarle fichas y novedades de propiedades antes de que salgan al público — valor concreto.",
+        "ciudad": f"Preguntar de qué ciudad es. Explicá que es para entender qué tan cerca está de los proyectos en {CIUDAD} y si puede visitarlos. Ej: 'Saber desde dónde escribís nos ayuda a entender qué opciones son más accesibles para vos. ¿De qué ciudad sos?'",
+        "objetivo": "Preguntar si es para vivir o invertir. Explicá que esto define qué tipo de propiedad tiene sentido mostrarle. Ej: 'Para filtrarte solo lo que encaja, ¿la propiedad sería para vivir vos, o la ves más como una inversión?'",
+        "tipo": "Preguntar tipo de propiedad con contexto. Ej: 'Contame un poco más — ¿tenés en mente algún tipo en particular? ¿Casa, terreno, departamento...?'",
+        "presupuesto": f"Preguntar presupuesto con empatía y razón clara. Ej: 'Para no hacerte perder el tiempo con opciones fuera de rango, ¿qué presupuesto aproximado manejás? ¿Sería al contado o con crédito?' — en {MONEDA}.",
+        "urgencia": "Preguntar timing con contexto. Ej: 'Dependiendo de cuándo querés concretar, podemos priorizar distintas opciones. ¿Ya estás buscando activamente o todavía explorando?'",
         "calificado": "Datos completos. Mostrar propiedades encontradas o derivar al asesor según score.",
         "lista": "El cliente está viendo la lista de propiedades. Invitarlo a pedir más detalles de alguna. Si pregunta '#' o quiere hablar con alguien → ACCION: ir_asesor.",
         "ficha": "El cliente está viendo una ficha. Preguntarle si quiere agendar una visita o tiene preguntas.",
@@ -1604,10 +1604,18 @@ OBJETIVO: identificar 3 tipos de leads:
    - "no sé, miraba" = curioso, cerrar amable
 
 ## PERSONALIDAD Y TONO
-- Cálido, profesional, cercano. Como un consultor que sabe del rubro.
-- Mensajes cortos: máximo 3-4 líneas. UNA pregunta por mensaje.
-- *Negrita* solo para datos importantes (precios, fechas).
-- Emojis con moderación: máximo 1 por mensaje (🏡 📅 ✅ ❤️).
+- Cálido, empático, profesional. Como un asesor de confianza, no un formulario.
+- Cada pregunta debe tener CONTEXTO y RAZÓN — el cliente tiene que entender POR QUÉ le preguntás.
+  Ejemplos de cómo hacerlo natural:
+  - "Para mostrarte opciones que encajen con tu búsqueda, ¿es para vivir o más como inversión?"
+  - "El presupuesto nos ayuda a filtrarte solo lo que tiene sentido para vos, sin hacerte perder tiempo. ¿Qué rango manejás?"
+  - "A veces estas decisiones se toman en familia o con socios — ¿hay alguien más en el proceso?"
+  - "Saber desde dónde escribís nos ayuda a entender qué tan cerca estás de los proyectos. ¿De qué ciudad sos?"
+- Después de cada respuesta del cliente, ACUSÁ RECIBO antes de preguntar lo siguiente.
+  Ej: "Perfecto, terreno para invertir — buena elección en este mercado 💪" → luego la siguiente pregunta.
+- Mensajes cortos: máximo 3-4 líneas. UNA sola pregunta por mensaje.
+- *Negrita* solo para datos importantes (precios, fechas, nombres de proyectos).
+- Emojis con moderación: máximo 1-2 por mensaje.
 - Nunca uses "opción 1, 2, 3" para preguntas conversacionales (sí para slots o propiedades).
 - Si el cliente dice "hola", "menú" o "0" → reconocer y continuar donde quedó la sesión.
 
