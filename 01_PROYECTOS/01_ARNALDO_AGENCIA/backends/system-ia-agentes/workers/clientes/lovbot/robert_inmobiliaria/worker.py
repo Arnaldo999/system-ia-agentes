@@ -3726,6 +3726,28 @@ async def waba_onboarding(request: Request):
         client_slug = _re.sub(r'[^a-z0-9-]', '',
                                client_name.lower().replace(" ", "-"))
 
+    # 0. Validar que el worker del cliente EXISTA antes de proceder.
+    # Evita registrar clientes cuyos mensajes caerian al vacio por falta de worker.
+    # Flow correcto: agencia clona el worker ANTES de mandar la URL al cliente.
+    # Excepcion: permitir "robert-inmobiliaria" (tenant inicial/testing).
+    if client_slug != "robert-inmobiliaria":
+        worker_path = (
+            f"/app/workers/clientes/lovbot/{client_slug.replace('-', '_')}/worker.py"
+        )
+        # Fallback: buscar tambien con guiones en el path (por si la carpeta usa guiones)
+        worker_path_alt = f"/app/workers/clientes/lovbot/{client_slug}/worker.py"
+        if not (os.path.exists(worker_path) or os.path.exists(worker_path_alt)):
+            print(f"[WABA] Worker no existe para slug={client_slug}")
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"El bot para '{client_name}' todavia no esta listo. "
+                    "Contactanos por WhatsApp y te enviaremos un nuevo link "
+                    "cuando este configurado."
+                )
+            )
+        print(f"[WABA] Worker encontrado para slug={client_slug}")
+
     # 1. Intercambiar code -> access_token permanente
     print(f"[WABA] Intercambiando code -> access_token para {client_name} ({client_slug})")
     try:
