@@ -2107,9 +2107,18 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     lineas = respuesta_llm.strip().split("\n")
     acciones = {}
     texto_visible = []
+    # Patrón para detectar leak de keys internas del prompt (ej: "CIUDAD ya lo tengo: X")
+    _LEAK_KEYS = ("NOMBRE", "CIUDAD", "OBJETIVO", "TIPO", "ZONA", "PRESUPUESTO",
+                  "URGENCIA", "AUTORIDAD", "FORMA_PAGO", "ACCION", "SCORE",
+                  "MOTIVO", "SUBNICHE", "EMAIL")
     for linea in lineas:
         # Headers tipo "EXTRACCIÓN DE DATOS:" o "===" → ocultar
         if _es_header_interno(linea):
+            continue
+        # Líneas que empiezan con una KEY interna (leak del prompt) → ocultar
+        linea_strip = linea.strip()
+        linea_upper = linea_strip.upper()
+        if any(linea_upper.startswith(k) for k in _LEAK_KEYS):
             continue
         # Línea KEY: VALUE → extraer y ocultar
         parsed = _normalizar_linea_extraccion(linea)
@@ -2233,12 +2242,14 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             sesion_nueva["nombre"] = nombre_det
 
         # Backup 2: nombre solo (1-2 palabras capitalizadas) cuando el bot preguntó el nombre
+        # FIX: HISTORIAL guarda formato "[HH:MM] Bot: ..." — startswith('Bot:') no matcheaba
         if not sesion_nueva.get("nombre"):
             ultimo_msg_bot = ""
             _hist_local = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
             for h in reversed(_hist_local):
-                if h.startswith("Bot:") or "(bot)" in h.lower():
-                    ultimo_msg_bot = h.lower()
+                h_lower = h.lower() if isinstance(h, str) else ""
+                if "] bot:" in h_lower or h_lower.startswith("bot:"):
+                    ultimo_msg_bot = h_lower
                     break
             if any(p in ultimo_msg_bot for p in ["con quién", "con quien", "tu nombre", "cómo te llamás", "como te llamas", "el gusto"]):
                 m_nombre_solo = re.match(
@@ -2248,16 +2259,34 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 if m_nombre_solo:
                     sesion_nueva["nombre"] = m_nombre_solo.group(1).strip().title()
 
+    # Sanitizar nombre inválido capturado por cualquier vía (ej: "@Rn@Ldo" → "Rnldo" sería raro)
+    # Si el nombre actual tiene vocales muy escasas o longitud <3, descartarlo y volver a pedir
+    if sesion_nueva.get("nombre"):
+        n_val = sesion_nueva["nombre"]
+        vocales = sum(1 for c in n_val.lower() if c in "aeiouáéíóú")
+        if len(n_val) < 3 or vocales == 0:
+            # Nombre inválido (probablemente del perfil de WhatsApp con símbolos)
+            # Lo descartamos para que el bot vuelva a preguntarlo
+            sesion_nueva.pop("nombre", None)
+
     # Backup ciudad: si el bot preguntó ciudad y el LLM no emitió CIUDAD:,
     # capturar el texto completo del mensaje como ciudad (respuestas simples tipo "San Ignacio")
+    # FIX: HISTORIAL guarda formato "[HH:MM] Bot: ..." — startswith('Bot:') no matcheaba
     if not sesion_nueva.get("ciudad_resp"):
         _hist_local = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
         ultimo_msg_bot = ""
         for h in reversed(_hist_local):
-            if h.startswith("Bot:") or "(bot)" in h.lower():
-                ultimo_msg_bot = h.lower()
+            h_lower = h.lower() if isinstance(h, str) else ""
+            if "] bot:" in h_lower or h_lower.startswith("bot:"):
+                ultimo_msg_bot = h_lower
                 break
-        if any(p in ultimo_msg_bot for p in ["qué ciudad", "que ciudad", "qué ciudad", "desde dónde", "desde donde", "ciudad nos escribís", "ciudad sos"]):
+        _FRASES_PREGUNTA_CIUDAD = [
+            "qué ciudad", "que ciudad", "desde dónde", "desde donde",
+            "ciudad nos escribís", "ciudad sos", "de dónde sos", "de donde sos",
+            "de dónde escribís", "de donde escribis", "dónde vivís", "donde vivis",
+            "en qué ciudad", "en que ciudad",
+        ]
+        if any(p in ultimo_msg_bot for p in _FRASES_PREGUNTA_CIUDAD):
             ciudad_candidata = texto.strip().title()
             if 2 <= len(ciudad_candidata) <= 50 and not any(c.isdigit() for c in ciudad_candidata):
                 sesion_nueva["ciudad_resp"] = ciudad_candidata
