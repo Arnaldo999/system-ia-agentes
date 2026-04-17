@@ -37,7 +37,7 @@ from fastapi import APIRouter, Request
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
-OPENAI_API_KEY    = os.environ.get("LOVBOT_OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+OPENAI_API_KEY    = os.environ.get("LOVBOT_OPENAI_API_KEY", "")
 META_ACCESS_TOKEN = os.environ.get("META_ACCESS_TOKEN", "")
 META_PHONE_ID     = os.environ.get("META_PHONE_NUMBER_ID", "")
 
@@ -1433,8 +1433,10 @@ Si el último mensaje del cliente NO se entiende bien (audio mal transcrito,
 texto raro, "ok" suelto, "gracias", "muchas gracias"):
 - NO vuelvas a saludar
 - Asumí que es respuesta a tu última pregunta
-- Si era una pregunta de nombre y respondió raro → preguntá amablemente:
-  "Disculpá, no logré escuchar tu nombre. ¿Me lo podés escribir, por favor?"
+- Si era una pregunta de nombre:
+  - Si el cliente respondió con 1-2 palabras que parecen un nombre propio (ej: "Arnaldo", "Juan Carlos", "María") → ESE ES EL NOMBRE. Emití `NOMBRE: <valor>` y seguí el flujo normalmente.
+  - Solo activá el fallback si el mensaje es claramente no-nombre ("ok", "si", "no", "gracias", emojis solos, números).
+  - Fallback: "Disculpá, no logré escuchar tu nombre. ¿Me lo podés escribir, por favor?"
 - Si era una pregunta de objetivo y respondió raro → preguntá amable de nuevo
 - Si no es claro qué preguntaste, hacé la siguiente pregunta del BANT
 """
@@ -2149,6 +2151,22 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         if m_nombre:
             nombre_det = m_nombre.group(1).strip().title()
             sesion_nueva["nombre"] = nombre_det
+
+        # Backup 2: nombre solo (1-2 palabras capitalizadas) cuando el bot preguntó el nombre
+        if not sesion_nueva.get("nombre"):
+            ultimo_msg_bot = ""
+            _hist_local = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
+            for h in reversed(_hist_local):
+                if h.startswith("Bot:") or "(bot)" in h.lower():
+                    ultimo_msg_bot = h.lower()
+                    break
+            if any(p in ultimo_msg_bot for p in ["con quién", "con quien", "tu nombre", "cómo te llamás", "como te llamas", "el gusto"]):
+                m_nombre_solo = re.match(
+                    r'^([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,19}(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,19})?)[\s\.,!?]*$',
+                    texto.strip()
+                )
+                if m_nombre_solo:
+                    sesion_nueva["nombre"] = m_nombre_solo.group(1).strip().title()
 
     # ── Actualizar step según datos acumulados ─────────────────────────────
     datos_completos = all([
