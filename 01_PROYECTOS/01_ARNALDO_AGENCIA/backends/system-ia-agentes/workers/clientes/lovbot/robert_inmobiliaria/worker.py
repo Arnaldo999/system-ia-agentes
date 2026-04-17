@@ -1354,9 +1354,9 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     # ── Qué falta obtener ──
     faltantes = []
     if not nombre:      faltantes.append("nombre")
+    if not ciudad:      faltantes.append("ciudad (de dónde es el lead)")
     if not objetivo:    faltantes.append("qué busca (comprar/alquilar/invertir)")
     if not tipo:        faltantes.append("tipo de propiedad")
-    if not zona:        faltantes.append(f"zona preferida (opciones: {zonas_str})")
     if not presupuesto: faltantes.append("presupuesto aproximado")
     if not urgencia:    faltantes.append("urgencia / timing de compra")
     faltantes_txt = ", ".join(faltantes) if faltantes else "TODOS los datos ya obtenidos — proceder a calificar"
@@ -1395,9 +1395,9 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
         "subnicho": "DEPRECATED — este bot solo atiende clientes de un desarrollador. Avanzar a 'objetivo' directamente.",
         "nombre": "Obtener el nombre del cliente. Ya tenés el perfil. Ser cálido.",
         "email": "Pedir email. Aclarar que es opcional para enviarle fichas antes que salgan al público.",
+        "ciudad": f"Preguntar desde qué ciudad escribe el lead. Es importante para saber si puede visitar los proyectos en {CIUDAD}.",
         "objetivo": "Preguntar qué busca: comprar, alquilar o invertir. Adaptar al subniche.",
         "tipo": "Preguntar tipo de propiedad (casa, departamento, terreno, local, oficina). Natural, sin listar opciones como menú.",
-        "zona": f"Preguntar zona preferida. Zonas disponibles: {zonas_str}. Si no tiene preferencia, también es válido.",
         "presupuesto": f"Preguntar presupuesto aproximado en {MONEDA}. Dar rangos de referencia naturalmente.",
         "urgencia": "Preguntar cuándo piensa concretar: ¿ya está buscando activamente, en los próximos meses, o explorando?",
         "calificado": "Datos completos. Mostrar propiedades encontradas o derivar al asesor según score.",
@@ -1581,10 +1581,10 @@ OBJETIVO: identificar 3 tipos de leads:
 ## METODOLOGÍA BANT (orden estricto, una pregunta por turno)
 
 1. **NEED** (qué busca)
+   - "¿De qué ciudad nos escribís?" ← importante para saber si puede visitar
    - "¿Es para vivir o invertir?"
    - "¿Qué tipo de propiedad? (casa, departamento, terreno…)"
-   - "¿En qué zona de nuestros proyectos te imaginás? ({zonas_str})"
-   - ⚠️ NO preguntes "¿de qué ciudad sos?" — no es relevante para el proceso
+   - ⚠️ NO preguntes por zona interna de los proyectos — el lead no conoce las zonas
 
 2. **BUDGET** (filtro #1 de curiosos)
    - "¿Qué presupuesto manejás aproximadamente?"
