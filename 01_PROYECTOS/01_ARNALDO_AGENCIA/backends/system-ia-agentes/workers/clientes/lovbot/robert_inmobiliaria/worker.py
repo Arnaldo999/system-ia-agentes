@@ -2326,37 +2326,23 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 _enviar_texto(telefono, mensaje_final)
             return
 
-        # Buscar propiedades
-        props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona,
-                                       presupuesto=sesion_nueva.get("presupuesto_at",""))
-        if not props:
-            if _cal_disponible():
-                slots = _cal_obtener_slots()
-                if slots:
-                    SESIONES[telefono] = {**sesion_nueva, "step": "agendar_slots", "slots": slots}
-                    _enviar_texto(telefono,
-                        f"Ahora mismo no tenemos propiedades con esas características publicadas, "
-                        f"pero *{NOMBRE_ASESOR}* maneja opciones exclusivas. 🏡\n\n"
-                        f"Te muestro sus horarios disponibles para una charla rápida:\n\n"
-                        f"{_formatear_slots(slots)}\n\nElegí un número o *0* para que te contactemos.")
-                    return
-            _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
-                nombre=nombre_corto or nombre, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
-            pausar_bot(telefono)
-            SESIONES.pop(telefono, None)
-            return
-
-        # Mostrar propiedades — una a la vez, conversacional
-        SESIONES[telefono] = {**sesion_nueva, "step": "explorando",
-                              "props": props, "prop_idx": 0,
-                              "tipo": tipo, "zona": zona, "operacion": operacion}
-        _enviar_texto(telefono, _presentar_prop_breve(props[0], 0, len(props)))
-        if len(props) > 1:
-            img_field = props[0].get("Imagen_URL", "")
-            img = (img_field[0].get("url","") if isinstance(img_field, list) and img_field
-                   else img_field if isinstance(img_field, str) else "")
-            if img:
-                _enviar_imagen(telefono, img, caption=props[0].get("Titulo",""))
+        # Caliente/tibio → objetivo es conseguir la CITA, no mostrar catálogo
+        # Las propiedades solo se muestran si el lead las pide explícitamente
+        # Ofrecer cita directamente
+        if _cal_disponible():
+            slots = _cal_obtener_slots()
+            if slots:
+                SESIONES[telefono] = {**sesion_nueva, "step": "agendar_slots", "slots": slots}
+                _enviar_texto(telefono,
+                    f"Perfecto, {nombre_corto or nombre}. Con lo que me contaste, "
+                    f"*{NOMBRE_ASESOR}* puede mostrarte opciones que encajan justo con lo que buscás. 🏡\n\n"
+                    f"¿Cuándo te viene bien una charla rápida? Estos son los horarios disponibles:\n\n"
+                    f"{_formatear_slots(slots)}\n\nElegí un número o escribí *0* para que te contactemos.")
+                return
+        # Sin Cal.com → derivar al asesor
+        SESIONES[telefono] = {**sesion_nueva, "step": "ofrecer_cita"}
+        if mensaje_final:
+            _enviar_texto(telefono, mensaje_final)
         return
 
     if step == "ficha":
