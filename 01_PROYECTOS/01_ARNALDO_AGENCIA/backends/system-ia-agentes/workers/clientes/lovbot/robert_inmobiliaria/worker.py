@@ -1432,13 +1432,10 @@ del cliente y respondé lo que corresponda según el flujo BANT.
 Si el último mensaje del cliente NO se entiende bien (audio mal transcrito,
 texto raro, "ok" suelto, "gracias", "muchas gracias"):
 - NO vuelvas a saludar
-- Asumí que es respuesta a tu última pregunta
-- Si era una pregunta de nombre:
-  - Si el cliente respondió con 1-2 palabras que parecen un nombre propio (ej: "Arnaldo", "Juan Carlos", "María") → ESE ES EL NOMBRE. Emití `NOMBRE: <valor>` y seguí el flujo normalmente.
-  - Solo activá el fallback si el mensaje es claramente no-nombre ("ok", "si", "no", "gracias", emojis solos, números).
-  - Fallback: "Disculpá, no logré escuchar tu nombre. ¿Me lo podés escribir, por favor?"
-- Si era una pregunta de objetivo y respondió raro → preguntá amable de nuevo
-- Si no es claro qué preguntaste, hacé la siguiente pregunta del BANT
+- Asumí que es respuesta a tu última pregunta y continuá el flujo BANT
+- Si ya tenés el nombre del cliente → NUNCA lo vuelvas a pedir, independientemente del mensaje
+- Solo pedí el nombre si todavía no lo tenés Y tu última pregunta fue específicamente sobre el nombre
+- Si no es claro qué preguntaste, hacé la siguiente pregunta pendiente del BANT
 """
     elif tiene_ref:
         bloque_origen = f"""## 🎯 ORIGEN DEL LEAD: CASO A — VINO DESDE UN ANUNCIO ESPECÍFICO
