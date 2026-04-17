@@ -2518,6 +2518,27 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             _enviar_texto(telefono, mensaje_final)
         return
 
+    # ── Step calificado → si ya tenemos autoridad, disparar slots Cal.com ─────
+    # Cubre el caso donde el BANT se completa con autoridad al último turno:
+    # en el turno anterior ya se marcó _ya_calificado=True pero faltaba autoridad.
+    # Ahora que el lead respondió autoridad, forzamos ofrecer slots.
+    if step == "calificado" and sesion_nueva.get("autoridad") and sesion_nueva.get("score") in ("caliente", "tibio"):
+        if _cal_disponible():
+            slots = _cal_obtener_slots()
+            if slots:
+                SESIONES[telefono] = {**sesion_nueva, "step": "agendar_slots", "slots": slots}
+                _enviar_texto(telefono,
+                    f"Perfecto, {nombre_corto or nombre}. Con lo que me contaste, "
+                    f"*{NOMBRE_ASESOR}* puede mostrarte opciones que encajan justo con lo que buscás. 🏡\n\n"
+                    f"¿Cuándo te viene bien una charla rápida? Estos son los horarios disponibles:\n\n"
+                    f"{_formatear_slots(slots)}\n\nElegí un número o escribí *0* para que te contactemos.")
+                return
+        # Sin Cal.com → derivar al asesor
+        _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+            nombre=nombre_corto or nombre, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
+        SESIONES.pop(telefono, None)
+        return
+
     # ── Step ofrecer_cita → si confirma o pregunta por horarios, mostrar slots ─
     if step == "ofrecer_cita":
         _KEYWORDS_CONFIRMA = ["si", "sí", "dale", "bueno", "ok", "perfecto", "claro", "quiero", "adelante", "genial", "va"]
