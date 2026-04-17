@@ -1408,7 +1408,7 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
         "calificado": "Datos completos. Mostrar propiedades encontradas o derivar al asesor según score.",
         "lista": "El cliente está viendo la lista de propiedades. Invitarlo a pedir más detalles de alguna. Si pregunta '#' o quiere hablar con alguien → ACCION: ir_asesor.",
         "ficha": "El cliente está viendo una ficha. Preguntarle si quiere agendar una visita o tiene preguntas.",
-        "ofrecer_cita": f"Ofrecer ver horarios disponibles con {NOMBRE_ASESOR} o que el asesor lo contacte. Natural, sin opciones numeradas.",
+        "ofrecer_cita": f"El lead ya calificó. Tu ÚNICO objetivo es conseguir la cita. Ofrecé ver horarios con {NOMBRE_ASESOR}. Si el lead dice 'sí', 'dale', 'bueno', 'perfecto' → emitir ACCION: agendar. NO hacer más preguntas.",
         "agendar_slots": f"Mostrar horarios disponibles y pedir que elija. Slots: {slots_txt}",
         "confirmar_cita": "Confirmar la cita elegida. Pedir que confirme o cambie.",
         "recuperacion": f"El cliente volvió después de un tiempo. Saludarlo por nombre ({nombre}) y preguntar si quiere retomar donde estaban o empezar de nuevo.",
@@ -1629,9 +1629,16 @@ OBJETIVO: identificar 3 tipos de leads:
 ✅ HACER:
 - Una pregunta por mensaje (NUNCA dos a la vez)
 - Si Caso A: anclar conversación en LA propiedad anunciada
-- Mostrar máximo 2-4 propiedades (NO 10)
+- Mostrar máximo 2-4 propiedades (NO 10) y SOLO si el lead las pide explícitamente
 - Forma de pago es PREGUNTA OBLIGATORIA antes de agendar visita
 - Después de agendar, ofrecer UNA sola cosa más (no agenda + info juntos)
+- Cuando el lead confirma interés o dice "sí" → ir directo a ofrecer la cita, no hacer más preguntas
+
+🚫 REGLA IRROMPIBLE — NUNCA REPETIR:
+- Si ya preguntaste algo en este turno o en turnos anteriores → NO lo vuelvas a preguntar
+- Si el lead dijo "sí" o confirmó algo → NO reformular la misma pregunta con otras palabras
+- Revisá el HISTORIAL antes de cada respuesta — si ya preguntaste "¿querés agendar?" no lo vuelvas a preguntar
+- Una confirmación ("sí", "dale", "perfecto") = avanzar al siguiente paso, nunca repetir
 
 🟡 EXCEPCIÓN IMPORTANTE — PEDIDOS EXPLÍCITOS DEL CLIENTE:
 Si el cliente pide explícitamente ver opciones con frases como:
@@ -2341,6 +2348,27 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 return
         # Sin Cal.com → derivar al asesor
         SESIONES[telefono] = {**sesion_nueva, "step": "ofrecer_cita"}
+        if mensaje_final:
+            _enviar_texto(telefono, mensaje_final)
+        return
+
+    # ── Step ofrecer_cita → si confirma, mostrar slots ───────────────────────
+    if step == "ofrecer_cita":
+        _KEYWORDS_CONFIRMA = ["si", "sí", "dale", "bueno", "ok", "perfecto", "claro", "quiero", "adelante", "genial", "va"]
+        if any(kw == texto_lower.strip().rstrip(".,!?") or texto_lower.startswith(kw) for kw in _KEYWORDS_CONFIRMA):
+            if _cal_disponible():
+                slots = _cal_obtener_slots()
+                if slots:
+                    SESIONES[telefono] = {**sesion_nueva, "step": "agendar_slots", "slots": slots}
+                    _enviar_texto(telefono,
+                        f"Perfecto. Estos son los horarios disponibles con *{NOMBRE_ASESOR}*:\n\n"
+                        f"{_formatear_slots(slots)}\n\nElegí un número.")
+                    return
+            _enviar_texto(telefono, MSG_ASESOR_CONTACTO.format(
+                nombre=nombre_corto or nombre, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
+            SESIONES.pop(telefono, None)
+            return
+        # Otra respuesta → LLM maneja
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
         return
