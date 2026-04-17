@@ -1941,7 +1941,11 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                      f"— Presupuesto: {sesion.get('resp_presupuesto','')}")
             resultado = _cal_crear_reserva(nombre, email_cita, telefono, slot.get("time", ""), notas)
             if resultado["ok"]:
-                threading.Thread(target=_at_guardar_cita, args=(telefono, slot.get("time","")), daemon=True).start()
+                # Guardar cita en PostgreSQL (robert_crm) — Robert NO usa Airtable
+                threading.Thread(target=db.guardar_cita, args=(telefono, slot.get("time","")), daemon=True).start()
+                # Legacy Airtable — fallback por si el tenant tiene Airtable configurado
+                if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
+                    threading.Thread(target=_at_guardar_cita, args=(telefono, slot.get("time","")), daemon=True).start()
                 _enviar_texto(telefono,
                     f"✅ *¡Cita confirmada{', ' + nombre_corto if nombre_corto else ''}!*\n\n"
                     f"📅 *{fecha_str}* con *{NOMBRE_ASESOR}*\n\n"
