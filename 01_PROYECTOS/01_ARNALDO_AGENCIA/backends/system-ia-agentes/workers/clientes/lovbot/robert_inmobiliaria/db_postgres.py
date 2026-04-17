@@ -1582,6 +1582,31 @@ def marcar_webhook_subscrito(phone_number_id: str) -> bool:
         return False
 
 
+def actualizar_waba_worker_url(phone_number_id: str, nuevo_url: str) -> bool:
+    """Actualiza worker_url de un cliente WABA. Usado para mover clientes
+    a un worker dedicado despues del onboarding inicial."""
+    if not _available():
+        return False
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE waba_clients
+            SET worker_url = %s, updated_at = NOW()
+            WHERE phone_number_id = %s
+        """, (nuevo_url, phone_number_id))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        if ok:
+            print(f"[DB] worker_url actualizado para phone_id={phone_number_id} -> {nuevo_url}")
+        return ok
+    except Exception as e:
+        print(f"[DB] Error actualizar_waba_worker_url: {e}")
+        return False
+
+
 def listar_waba_clients() -> list[dict]:
     """SELECT todos los waba_clients (para admin/debug)."""
     if not _available():

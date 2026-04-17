@@ -3776,10 +3776,16 @@ async def waba_onboarding(request: Request):
         print(f"[WABA] Advertencia — excepcion al suscribir webhook: {e}")
 
     # 3. Guardar en PostgreSQL.
-    # worker_url: por ahora TODOS los clientes nuevos comparten el worker
-    # inmobiliaria (Fase 1 — validar flow con clientes reales). Cuando haya
-    # workers dedicados por vertical se override manualmente desde /admin.
-    worker_url = "https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/whatsapp"
+    # worker_url: cada cliente tiene su propio worker dedicado siguiendo el slug.
+    # IMPORTANTE: el worker debe existir en el monorepo ANTES de mandar la URL
+    # de onboarding al cliente. Flow correcto:
+    #   1. Cliente paga / decide contratar
+    #   2. Agencia clona workers/clientes/lovbot/{otro-cliente}/ -> .../{nuevo-slug}/
+    #   3. Ajusta prompt/config, deploy a Coolify
+    #   4. Recién ahí manda la URL de onboarding al cliente con ?client=NuevoSlug
+    # Si hace falta corregir el worker_url despues del registro, usar el endpoint
+    # POST /admin/waba/client/{phone_id}/update-worker-url
+    worker_url = f"https://agentes.lovbot.ai/clientes/lovbot/{client_slug}/whatsapp"
     reg = db.registrar_waba_client(
         client_name=client_name,
         client_slug=client_slug,
@@ -3889,7 +3895,7 @@ def waba_list_clients(request: Request):
 @router.get("/admin/waba/client/{phone_number_id}")
 def waba_get_client(phone_number_id: str, request: Request):
     """Detalle de un cliente WABA por phone_number_id.
-    Usado por el Router n8n para obtener worker_url y routear mensajes.
+    Usado por el router Meta para obtener worker_url y routear mensajes.
     Omite access_token. Requiere header X-Admin-Token.
     """
     from fastapi import HTTPException
@@ -3903,3 +3909,40 @@ def waba_get_client(phone_number_id: str, request: Request):
         )
     client.pop("access_token", None)
     return client
+
+
+@router.post("/admin/waba/client/{phone_number_id}/update-worker-url")
+async def waba_update_worker_url(phone_number_id: str, request: Request):
+    """Actualiza el worker_url de un tenant WABA ya registrado.
+
+    Caso de uso: el cliente completo el onboarding antes de que clonaramos
+    su worker dedicado, o hay que mover un cliente a otro worker.
+
+    Body JSON: {"worker_url": "https://agentes.lovbot.ai/clientes/lovbot/X/whatsapp"}
+
+    Requiere header X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+    _check_pg()
+
+    body = await request.json()
+    nuevo_url = (body.get("worker_url") or "").strip()
+    if not nuevo_url.startswith("https://"):
+        raise HTTPException(400, "worker_url debe empezar con https://")
+
+    client = db.obtener_waba_client_por_phone(phone_number_id)
+    if not client:
+        raise HTTPException(404, f"phone_number_id={phone_number_id} no encontrado")
+
+    ok = db.actualizar_waba_worker_url(phone_number_id, nuevo_url)
+    if not ok:
+        raise HTTPException(500, "Error actualizando worker_url en DB")
+
+    return {
+        "status": "ok",
+        "phone_number_id": phone_number_id,
+        "client_slug": client.get("client_slug"),
+        "worker_url_anterior": client.get("worker_url"),
+        "worker_url_nuevo": nuevo_url,
+    }
