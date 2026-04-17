@@ -1369,17 +1369,37 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
             "sin NINGÚN texto conversacional adicional. El sistema se encarga de ofrecer los slots."
         )
     elif tiene_ref and step == "inicio":
-        tarea = (
-            f"PRIMER CONTACTO desde anuncio: '{ad_info}'. "
-            f"Confirmá brevemente la propiedad (precio/ubicación/highlight) "
-            f"{'y saludá por nombre (' + nombre_corto + ')' if nombre_corto else ''}. "
-            f"DESPUÉS preguntá UNA sola cosa: **{siguiente_ejemplo}**"
-        )
+        tarea = f"""PRIMER CONTACTO desde anuncio: '{ad_info}'.
+
+ACCIÓN OBLIGATORIA — saludo cálido en 2-3 líneas:
+1. Saludá {'por nombre (' + nombre_corto + ')' if nombre_corto else 'con calidez'}.
+2. Confirmá que la propiedad del anuncio sigue disponible + 1 dato clave (precio/ubicación).
+3. Mencioná brevemente que sos el asistente de *{NOMBRE_EMPRESA}* en {CIUDAD}.
+4. Hacé UNA sola pregunta abierta de calificación: **{siguiente_ejemplo}**
+
+Ejemplo de tono (NO copiar literal, adaptá):
+"¡Hola{', ' + nombre_corto if nombre_corto else ''}! 👋 Te confirmo que el {ad_info[:50]} sigue disponible.
+Soy el asistente de *{NOMBRE_EMPRESA}*, desarrolladora en {CIUDAD}.
+{siguiente_ejemplo}"
+"""
     elif step == "inicio":
-        tarea = (
-            f"PRIMER CONTACTO genérico. Saludo cálido breve de *{NOMBRE_EMPRESA}* en {CIUDAD}. "
-            f"Hacé UNA sola pregunta: **{siguiente_ejemplo}**"
-        )
+        zonas_breve = " · ".join(ZONAS_LIST[:3]) if ZONAS_LIST else "distintas zonas premium"
+        tarea = f"""PRIMER CONTACTO genérico (sin anuncio previo).
+
+ACCIÓN OBLIGATORIA — saludo cálido de bienvenida en 3-4 líneas:
+1. "¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos."
+2. Presentarte: "Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos en {zonas_breve}."
+3. Línea de cercanía: "Estoy acá para ayudarte a encontrar lo que estás buscando 🏡"
+4. UNA sola pregunta: **{siguiente_ejemplo}**
+
+Ejemplo de tono (adaptá, no copies literal):
+"¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
+
+Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos en {zonas_breve}.
+Estoy acá para ayudarte a encontrar lo que estás buscando 🏡
+
+{siguiente_ejemplo}"
+"""
     else:
         tarea = (
             f"El lead ya está en conversación. Tu única tarea este turno es: "
