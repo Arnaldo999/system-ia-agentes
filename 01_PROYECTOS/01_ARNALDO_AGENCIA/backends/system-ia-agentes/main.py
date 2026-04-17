@@ -77,6 +77,7 @@ from workers.clientes.arnaldo.prueba.worker import router as prueba_router
 # ── Clientes Lovbot ───────────────────────────────────────────────────────────
 from workers.clientes.lovbot.robert_inmobiliaria.worker import router as robert_inmo_router
 from workers.clientes.lovbot.robert_inmobiliaria.worker import _procesar as robert_inmo_procesar
+from workers.clientes.lovbot.test_arnaldo.worker import router as test_arnaldo_router
 
 # ── Tech Provider Lovbot — Meta Webhooks (reemplaza n8n workflows) ────────────
 from workers.clientes.lovbot.tech_provider.webhook_meta import router as meta_tp_router
@@ -134,6 +135,7 @@ app.include_router(admin_router)
 app.include_router(maicol_router)
 app.include_router(prueba_router)
 app.include_router(robert_inmo_router)
+app.include_router(test_arnaldo_router)
 app.include_router(demo_inmobiliaria_router)
 app.include_router(demo_gastronomico_router)
 app.include_router(lau_router)
