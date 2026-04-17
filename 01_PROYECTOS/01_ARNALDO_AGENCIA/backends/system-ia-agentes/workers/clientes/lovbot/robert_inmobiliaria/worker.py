@@ -1354,8 +1354,6 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     # ── Qué falta obtener ──
     faltantes = []
     if not nombre:      faltantes.append("nombre")
-    if not email:       faltantes.append("email (opcional, puede omitir)")
-    if not ciudad:      faltantes.append("ciudad")
     if not objetivo:    faltantes.append("qué busca (comprar/alquilar/invertir)")
     if not tipo:        faltantes.append("tipo de propiedad")
     if not zona:        faltantes.append(f"zona preferida (opciones: {zonas_str})")
@@ -1397,7 +1395,6 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
         "subnicho": "DEPRECATED — este bot solo atiende clientes de un desarrollador. Avanzar a 'objetivo' directamente.",
         "nombre": "Obtener el nombre del cliente. Ya tenés el perfil. Ser cálido.",
         "email": "Pedir email. Aclarar que es opcional para enviarle fichas antes que salgan al público.",
-        "ciudad": f"Preguntar desde qué ciudad escribe. Contexto: empresa en {CIUDAD}.",
         "objetivo": "Preguntar qué busca: comprar, alquilar o invertir. Adaptar al subniche.",
         "tipo": "Preguntar tipo de propiedad (casa, departamento, terreno, local, oficina). Natural, sin listar opciones como menú.",
         "zona": f"Preguntar zona preferida. Zonas disponibles: {zonas_str}. Si no tiene preferencia, también es válido.",
@@ -1586,7 +1583,8 @@ OBJETIVO: identificar 3 tipos de leads:
 1. **NEED** (qué busca)
    - "¿Es para vivir o invertir?"
    - "¿Qué tipo de propiedad? (casa, departamento, terreno…)"
-   - "¿En qué zona te imaginás?"
+   - "¿En qué zona de nuestros proyectos te imaginás? ({zonas_str})"
+   - ⚠️ NO preguntes "¿de qué ciudad sos?" — no es relevante para el proceso
 
 2. **BUDGET** (filtro #1 de curiosos)
    - "¿Qué presupuesto manejás aproximadamente?"
@@ -2039,7 +2037,9 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             elif key == "EMAIL":
                 acciones["email"] = value
             elif key == "NOMBRE":
-                acciones["nombre"] = value.title()
+                # Limpiar caracteres especiales (@, números, símbolos) del nombre
+                nombre_limpio = re.sub(r'[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]', '', value).strip()
+                acciones["nombre"] = nombre_limpio.title() if nombre_limpio else value.title()
             elif key == "SUBNICHE":
                 acciones["subniche"] = value.lower()
             elif key == "CIUDAD":
