@@ -1366,6 +1366,29 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     if not urgencia:    faltantes.append("urgencia / timing de compra")
     faltantes_txt = ", ".join(faltantes) if faltantes else "TODOS los datos ya obtenidos — proceder a calificar"
 
+    # ── SIGUIENTE PREGUNTA DETERMINISTA (orden fijo BANT) ─────────────────
+    # Python decide cuál es LA ÚNICA pregunta que el LLM puede hacer este turno.
+    # Esto elimina la repetición: el LLM no puede "elegir" otra cosa.
+    autoridad_actual = sesion.get("autoridad", "")
+    forma_pago_actual = sesion.get("forma_pago", "")
+    orden_bant = [
+        ("nombre",      nombre,           "¿Con quién tengo el gusto de conversar?"),
+        ("ciudad",      ciudad,           f"¿De qué ciudad nos escribís? (saber la distancia a {CIUDAD} nos ayuda a filtrar opciones accesibles)"),
+        ("objetivo",    objetivo,         "¿La propiedad sería para vivir o más como inversión?"),
+        ("tipo",        tipo,             "¿Qué tipo de propiedad tenés en mente: casa, terreno, departamento...?"),
+        ("presupuesto", presupuesto,      f"¿Qué presupuesto aproximado manejás? (en {MONEDA}) ¿Contado o con crédito?"),
+        ("autoridad",   autoridad_actual, "¿La decisión la tomás vos o lo definís con pareja/socio/familia?"),
+        ("urgencia",    urgencia,         "¿Ya estás buscando activamente o todavía explorando?"),
+    ]
+    siguiente_campo = None
+    siguiente_pregunta_ejemplo = ""
+    for campo, valor, ejemplo in orden_bant:
+        if not valor:
+            siguiente_campo = campo
+            siguiente_pregunta_ejemplo = ejemplo
+            break
+    bant_completo = siguiente_campo is None
+
     # ── Propiedades disponibles para mostrar ──
     props_txt = ""
     if props:
@@ -1569,6 +1592,31 @@ Este cliente ({nombre or 'sin nombre'}) ya está en la base de datos. Datos prev
 6. Si era **frío** previo, dale otra chance pero estate alerta a señales de curiosidad.
 """
 
+    # ── Bloque SIGUIENTE PREGUNTA — determinista, elimina repetición ──────
+    if bant_completo:
+        bloque_siguiente = """## 🎯 SIGUIENTE ACCIÓN (determinista)
+
+✅ BANT COMPLETO — ya tenés todos los datos del lead.
+→ NO hagas más preguntas BANT.
+→ Emití `ACCION: agendar` para conseguir la cita, sin texto conversacional adicional.
+"""
+    else:
+        bloque_siguiente = f"""## 🎯 SIGUIENTE PREGUNTA (única permitida este turno)
+
+Campo a capturar: **{siguiente_campo}**
+Ejemplo de cómo formularla (adaptá con tu tono, NO copies literal):
+  "{siguiente_pregunta_ejemplo}"
+
+🚫 REGLAS IRROMPIBLES DE ESTE TURNO:
+1. SOLO podés preguntar por **{siguiente_campo}**. Cualquier otra pregunta está PROHIBIDA.
+2. Si el lead ya respondió `{siguiente_campo}` en un turno anterior (ver DATOS YA CAPTURADOS),
+   NO vuelvas a preguntarlo — avanzá al siguiente campo pendiente.
+3. Si el lead te pregunta algo (precio, ubicación, horario), respondé brevemente Y DESPUÉS
+   hacé la pregunta de **{siguiente_campo}** — una sola vez, sin reformular.
+4. Si ya preguntaste **{siguiente_campo}** en el turno anterior del historial y el lead no
+   respondió claramente, NO insistas — emití `ACCION: ir_asesor` o `ACCION: cerrar_curioso`.
+"""
+
     system = f"""Sos el asistente virtual de *{NOMBRE_EMPRESA}*, una agencia inmobiliaria en {CIUDAD}.
 El asesor humano se llama *{NOMBRE_ASESOR}*.
 
@@ -1582,6 +1630,8 @@ OBJETIVO: identificar 3 tipos de leads:
 ❄️ FRÍO    → "solo viendo", sin presupuesto/urgencia → CERRAR amable + nurturing
 {bloque_recurrente}
 {bloque_origen}
+
+{bloque_siguiente}
 
 ## METODOLOGÍA BANT (orden estricto, una pregunta por turno)
 
