@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Solicitud Advanced Access — Lovbot Tech Provider</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --primary: #1a56db;
+    --primary-hover: #1e40af;
+    --primary-light: #60a5fa;
+    --green: #10b981;
+    --green-bg: rgba(16, 185, 129, 0.1);
+    --orange: #f59e0b;
+    --orange-bg: rgba(245, 158, 11, 0.1);
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1a2744 60%, #0f172a 100%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+    line-height: 1.6;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 32px; }
+  .header h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+  .header p { color: var(--muted); font-size: 0.95rem; }
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--orange-bg);
+    border: 1px solid var(--orange);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: var(--orange);
+    font-weight: 600;
+    margin-top: 8px;
+  }
+
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-number {
+    width: 36px;
+    height: 36px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-header h2 { font-size: 1.15rem; font-weight: 700; flex: 1; }
+  .step-time {
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: rgba(255,255,255,0.05);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .step p { margin-bottom: 12px; color: var(--text); font-size: 0.92rem; }
+  .step p.muted { color: var(--muted); font-size: 0.85rem; }
+
+  .copy-box {
+    position: relative;
+    background: #0a0f1c;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 12px 0;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+  }
+  .copy-box.text-content {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    white-space: pre-wrap;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background: var(--primary-hover); }
+  .copy-btn.copied { background: var(--green); }
+
+  .url-link {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    padding: 12px 22px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .url-link:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+  .checklist { margin: 12px 0; }
+  .checklist li {
+    list-style: none;
+    padding: 8px 0;
+    padding-left: 28px;
+    position: relative;
+    font-size: 0.9rem;
+  }
+  .checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    color: var(--primary-light);
+    font-size: 1.1rem;
+  }
+
+  .info-box {
+    background: rgba(96, 165, 250, 0.08);
+    border-left: 3px solid var(--primary-light);
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.86rem;
+  }
+  .warning-box {
+    background: var(--orange-bg);
+    border-left: 3px solid var(--orange);
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.86rem;
+  }
+  .success-box {
+    background: var(--green-bg);
+    border-left: 3px solid var(--green);
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.86rem;
+  }
+
+  .video-script {
+    background: #0a0f1c;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin: 12px 0;
+    font-size: 0.85rem;
+  }
+  .video-script .timing {
+    color: var(--primary-light);
+    font-weight: 600;
+    font-family: monospace;
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+  .video-script .voz {
+    background: rgba(16, 185, 129, 0.05);
+    border-left: 2px solid var(--green);
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-radius: 4px;
+  }
+  .video-script .pantalla {
+    background: rgba(96, 165, 250, 0.05);
+    border-left: 2px solid var(--primary-light);
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-radius: 4px;
+  }
+  .video-script .voz strong, .video-script .pantalla strong {
+    color: var(--text);
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  h3 { margin-top: 16px; margin-bottom: 8px; font-size: 1rem; color: var(--primary-light); }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 16px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    color: var(--primary-light);
+    border-bottom-color: var(--primary-light);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Solicitud de Advanced Access en Meta</h1>
+    <p>Guía paso a paso para Robert — Lovbot Tech Provider</p>
+    <span class="badge">Tiempo total estimado: ~1 hora</span>
+  </div>
+
+  <!-- ── PASO 1 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <h2>Entrar a Meta Developers</h2>
+      <span class="step-time">2 min</span>
+    </div>
+    <p>Iniciá sesión con tu cuenta Facebook (Robert Bazán) y entrá directo al panel de revisión de la app:</p>
+    <a class="url-link" href="https://developers.facebook.com/apps/704986485248523/app-review/permissions/" target="_blank">
+      Abrir Revisión de App →
+    </a>
+    <div class="info-box">
+      <strong>App:</strong> APP WorkFlow Whats Lovbot V2 (ID 704986485248523)<br>
+      <strong>Negocio:</strong> Lovbot Marketing
+    </div>
+  </div>
+
+  <!-- ── PASO 2 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <h2>Solicitar acceso avanzado a los 2 permisos</h2>
+      <span class="step-time">5 min</span>
+    </div>
+    <p>En la lista de permisos, buscá estos 2 y clic en <strong>"Solicitar acceso avanzado"</strong> en cada uno:</p>
+    <ul class="checklist">
+      <li><code>whatsapp_business_management</code></li>
+      <li><code>whatsapp_business_messaging</code></li>
+    </ul>
+    <div class="warning-box">
+      Ambos están actualmente en <strong>Standard access</strong>. Por eso los clientes nuevos no pueden conectar su WhatsApp vía Embedded Signup. Esta solicitud lo desbloquea.
+    </div>
+  </div>
+
+  <!-- ── PASO 3 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">3</div>
+      <h2>Pegar las justificaciones (textos listos)</h2>
+      <span class="step-time">5 min</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab(event, 'just-mgmt')">whatsapp_business_management</button>
+      <button class="tab" onclick="showTab(event, 'just-msg')">whatsapp_business_messaging</button>
+    </div>
+
+    <div id="just-mgmt" class="tab-content active">
+      <p class="muted">Pegá este texto en el campo "Describe cómo tu app utilizará este permiso":</p>
+      <div class="copy-box text-content">
+        <button class="copy-btn" onclick="copy(this, 'just-mgmt-text')">Copiar</button>
+        <div id="just-mgmt-text">Lovbot es una agencia de automatización con WhatsApp Business operando como Tech Provider verificado de Meta. Utilizamos el permiso whatsapp_business_management para gestionar los activos comerciales de WhatsApp de nuestros clientes (cuentas de WhatsApp Business, números de teléfono, plantillas de mensajes y suscripciones a webhooks).
+
+Específicamente:
+1. Cuando un cliente nuevo se registra en nuestra plataforma vía Embedded Signup, suscribimos su WhatsApp Business Account (WABA) a nuestra app para recibir los eventos de mensajes (POST a /{waba_id}/subscribed_apps).
+2. Creamos y administramos plantillas de mensajes en nombre de nuestros clientes para campañas de re-engagement, recordatorios de citas y notificaciones transaccionales (GET/POST a /{waba_id}/message_templates).
+3. Consultamos los números de teléfono asociados a cada WABA del cliente para configurar correctamente el routing de mensajes en nuestro backend (GET a /{waba_id}/phone_numbers).
+4. Administramos la suscripción y desuscripción de webhooks por cliente para garantizar el correcto enrutamiento multi-tenant de eventos.
+
+Todos los activos pertenecen al portafolio comercial del cliente final. Lovbot solo opera en nombre del cliente con su autorización explícita otorgada durante el flujo de Embedded Signup. Cada cliente mantiene control total sobre sus datos y puede revocar el acceso en cualquier momento desde su Business Manager.</div>
+      </div>
+    </div>
+
+    <div id="just-msg" class="tab-content">
+      <p class="muted">Pegá este texto en el campo "Describe cómo tu app utilizará este permiso":</p>
+      <div class="copy-box text-content">
+        <button class="copy-btn" onclick="copy(this, 'just-msg-text')">Copiar</button>
+        <div id="just-msg-text">Lovbot utiliza el permiso whatsapp_business_messaging para enviar mensajes de WhatsApp en nombre de nuestros clientes a través de la API en la nube de WhatsApp Business. Esto permite que nuestros bots automatizados respondan a los leads y clientes finales de cada negocio que contrata nuestros servicios.
+
+Casos de uso específicos:
+1. Respuesta automática a mensajes entrantes: cuando un lead escribe al WhatsApp Business de un cliente, nuestro bot procesa el mensaje con un modelo de IA y envía una respuesta inteligente vía POST a /{phone_number_id}/messages.
+2. Envío de imágenes y archivos multimedia: cuando el lead solicita información de productos (propiedades, menú, catálogo), el bot envía las imágenes correspondientes con tipo "image" en la API.
+3. Envío de plantillas pre-aprobadas para nurturing: a leads que completaron calificación pero no agendaron cita, enviamos plantillas de seguimiento a los 3, 15 y 30 días.
+4. Confirmación de citas y notificaciones de actualización de estado.
+
+Todos los mensajes se envían exclusivamente desde el número de WhatsApp Business del cliente que nos otorgó el acceso vía Embedded Signup. Respetamos la ventana de servicio al cliente de 24 horas y solo enviamos plantillas pre-aprobadas fuera de esa ventana, en cumplimiento total con las políticas de Meta.
+
+No usamos este permiso para mensajería no solicitada, spam, ni para fines distintos a los servicios de automatización contratados por cada cliente.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PASO 4 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">4</div>
+      <h2>Pegar instrucciones para el revisor de Meta</h2>
+      <span class="step-time">2 min</span>
+    </div>
+    <p class="muted">En el campo "Step-by-step instructions for our reviewers" pegá esto (en inglés, como pide Meta):</p>
+    <div class="copy-box text-content">
+      <button class="copy-btn" onclick="copy(this, 'review-text')">Copiar</button>
+      <div id="review-text">Test environment URL: https://lovbot-onboarding.vercel.app/?client=test-arnaldo
+
+Step-by-step:
+
+1. Open the URL above in a browser. You will see the Lovbot landing page with a "Conectar mi WhatsApp" button.
+
+2. Click "Conectar mi WhatsApp" → Embedded Signup popup will open.
+
+3. Sign in with your test Facebook account that has Business Manager access.
+
+4. Select a verified business portfolio and connect a test WhatsApp Business Account (you can use Coexistence with an existing WhatsApp Business app).
+
+5. After successful onboarding, our backend will automatically:
+   - Exchange the OAuth code for a permanent access token (server-side call to graph.facebook.com/v21.0/oauth/access_token)
+   - Subscribe the WABA to our app (POST to graph.facebook.com/v21.0/{waba_id}/subscribed_apps)
+   - Store the tenant in our PostgreSQL database
+
+6. To verify message reception works: Send any WhatsApp message from another number to the connected WhatsApp Business number.
+
+7. The bot will automatically reply within 2-3 seconds with a test message confirming the full pipeline works end-to-end.
+
+Production webhook URL: https://agentes.lovbot.ai/webhook/meta/events
+Production verify token: contact arnaldo@lovbot.ai for test credentials
+For technical questions: https://lovbot.mx</div>
+    </div>
+  </div>
+
+  <!-- ── PASO 5 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">5</div>
+      <h2>Grabar Video 1 — Envío de mensaje vía API</h2>
+      <span class="step-time">10 min</span>
+    </div>
+
+    <div class="info-box">
+      <strong>Setup:</strong> grabación de pantalla con voz, sin cara. Resolución 1080p, formato MP4.<br>
+      <strong>Herramienta sugerida:</strong> OBS Studio, SimpleScreenRecorder, Loom o lo que tengas.
+    </div>
+
+    <h3>Antes de grabar — preparar comando curl</h3>
+    <p class="muted">Reemplazá los 3 valores entre llaves antes de pegarlo en la terminal:</p>
+    <div class="copy-box">
+      <button class="copy-btn" onclick="copy(this, 'curl-text')">Copiar</button>
+      <div id="curl-text">curl -X POST https://graph.facebook.com/v21.0/735319949657644/messages \
+  -H "Authorization: Bearer {ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messaging_product": "whatsapp",
+    "to": "{TU_WHATSAPP_PERSONAL}",
+    "type": "text",
+    "text": {
+      "body": "Hola! Mensaje de prueba desde el backend de Lovbot via Meta Graph API. Demostracion para revision de app de Meta."
+    }
+  }'</div>
+    </div>
+    <div class="warning-box">
+      <strong>Donde dice {ACCESS_TOKEN}:</strong> tomalo de Coolify Hetzner — variable <code>META_ACCESS_TOKEN</code> del servicio agentes.lovbot.ai<br>
+      <strong>Donde dice {TU_WHATSAPP_PERSONAL}:</strong> tu nro WhatsApp en formato <code>5491130000000</code> (sin + ni espacios)
+    </div>
+
+    <h3>Guion del video (2 min)</h3>
+    <div class="video-script">
+      <div class="timing">[0:00 - 0:15] PRESENTACIÓN</div>
+      <div class="voz"><strong>VOZ:</strong> "Hola, soy el equipo de Lovbot, una agencia verificada como Tech Provider de Meta. En este video voy a demostrar cómo enviamos mensajes de WhatsApp en nombre de nuestros clientes usando el permiso whatsapp_business_messaging."</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> mostrá tu landing pública o el dashboard de Lovbot mientras hablás.</div>
+
+      <div class="timing">[0:15 - 0:45] CONTEXTO TÉCNICO</div>
+      <div class="voz"><strong>VOZ:</strong> "Tenemos un backend en FastAPI corriendo en agentes.lovbot.ai que recibe los webhooks de Meta y responde automáticamente. Cada cliente tiene su propio número de WhatsApp Business conectado vía Embedded Signup."</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> cambiá a tu Business Manager (business.facebook.com), entrá a WhatsApp Manager y mostrá el número conectado del cliente que vas a usar de demo.</div>
+
+      <div class="timing">[0:45 - 1:30] ENVÍO DEL MENSAJE</div>
+      <div class="voz"><strong>VOZ:</strong> "Voy a ejecutar una llamada a la API de Meta Graph para enviar un mensaje de prueba. Esta es la misma llamada que ejecuta nuestro backend cuando un lead escribe al cliente."</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> abrí terminal y pegá el curl. Ejecutalo. Mostrá la respuesta JSON exitosa de Meta (debe incluir message_id).</div>
+
+      <div class="timing">[1:30 - 1:55] CONFIRMACIÓN EN WHATSAPP</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> cambiá a WhatsApp Web (o tu celular) y mostrá el mensaje recién enviado en el chat.</div>
+      <div class="voz"><strong>VOZ:</strong> "Como pueden ver, el mensaje llegó al destinatario. Esto demuestra el uso correcto del permiso whatsapp_business_messaging para enviar mensajes en nombre del cliente, dentro de su ventana de servicio de 24 horas."</div>
+
+      <div class="timing">[1:55 - 2:00] CIERRE</div>
+      <div class="voz"><strong>VOZ:</strong> "Gracias por la revisión. Para cualquier consulta técnica, contactanos en arnaldo@lovbot.ai."</div>
+    </div>
+  </div>
+
+  <!-- ── PASO 6 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">6</div>
+      <h2>Grabar Video 2 — Creación de Template</h2>
+      <span class="step-time">10 min</span>
+    </div>
+
+    <h3>Guion del video (2 min)</h3>
+    <div class="video-script">
+      <div class="timing">[0:00 - 0:20] PRESENTACIÓN</div>
+      <div class="voz"><strong>VOZ:</strong> "Continuando con la revisión de Lovbot, ahora voy a demostrar cómo creamos plantillas de mensajes pre-aprobadas en nombre de nuestros clientes, usando el permiso whatsapp_business_management."</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> Business Manager → WhatsApp Manager.</div>
+
+      <div class="timing">[0:20 - 1:00] NAVEGACIÓN A TEMPLATES</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> clic en "Plantillas de mensaje" en el menú izquierdo. Se ve la lista de templates existentes (vas a crear uno nuevo).</div>
+      <div class="voz"><strong>VOZ:</strong> "Aquí están las plantillas que ya tenemos creadas. Vamos a crear una nueva plantilla de seguimiento para nurturing de leads que no agendaron cita."</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> clic en "Crear nueva plantilla".</div>
+
+      <div class="timing">[1:00 - 1:40] CREACIÓN DEL TEMPLATE</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> llenás el formulario:<br>• Categoría: Marketing<br>• Nombre: nurturing_3_dias_demo<br>• Idioma: Español (Argentina)<br>• Cuerpo: "Hola {{1}}, soy el asistente de {{2}}. Vi que estuviste consultando propiedades en {{3}}. ¿Pudiste tomar una decisión? Si necesitás más info estoy acá 🏡"</div>
+      <div class="voz"><strong>VOZ:</strong> "Esta plantilla tiene 3 variables: nombre del lead, nombre del negocio, y zona de interés. Cumple con las políticas de marketing de Meta."</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> clic en "Enviar a aprobación".</div>
+
+      <div class="timing">[1:40 - 2:00] CIERRE</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> mostrá la lista con la nueva plantilla en estado "En revisión".</div>
+      <div class="voz"><strong>VOZ:</strong> "La plantilla queda en revisión de Meta. Una vez aprobada, podremos enviarla via API a los leads. Esto demuestra el uso del permiso whatsapp_business_management para gestionar templates en nombre del cliente. Gracias."</div>
+    </div>
+  </div>
+
+  <!-- ── PASO 7 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">7</div>
+      <h2>Subir videos y enviar a revisión</h2>
+      <span class="step-time">5 min</span>
+    </div>
+    <p>Volvé al panel de revisión de Meta:</p>
+    <ul class="checklist">
+      <li>Subí Video 1 al permiso <code>whatsapp_business_messaging</code></li>
+      <li>Subí Video 2 al permiso <code>whatsapp_business_management</code></li>
+      <li>Verificá que las justificaciones estén pegadas en cada permiso</li>
+      <li>Verificá que las instrucciones para revisor estén en ambos</li>
+      <li>Clic en <strong>"Enviar"</strong> al final</li>
+    </ul>
+    <div class="success-box">
+      Una vez enviado, Meta responde en <strong>2 a 10 días hábiles</strong>. Te llega notificación a tu email + en developers.facebook.com.<br><br>
+      Si <strong>aprueba</strong> → cualquier cliente nuestro puede conectar su WhatsApp por la landing y arrancar el bot el mismo día.<br>
+      Si <strong>rechaza</strong> → te dice qué falta, lo corregís y reenviás (sin penalización).
+    </div>
+  </div>
+
+  <!-- ── INFO LEGAL ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">⚠</div>
+      <h2>Pendientes ANTES de enviar (Arnaldo se ocupa)</h2>
+      <span class="step-time">N/A</span>
+    </div>
+    <p>Estas 2 URLs Meta las pide en el formulario y todavía no las tenemos publicadas. Yo las preparo y las subo a lovbot.mx antes de que envíes.</p>
+    <ul class="checklist">
+      <li><strong>Términos de Servicio</strong> → URL: https://lovbot.mx/terminos-de-servicio (pendiente)</li>
+      <li><strong>URL de eliminación de datos de usuario</strong> → URL: https://lovbot.mx/eliminacion-datos (pendiente)</li>
+    </ul>
+    <div class="info-box">
+      Avisame cuando estés por arrancar y te confirmo que esas 2 URLs estén live.
+    </div>
+  </div>
+
+  <div class="footer">
+    Cualquier duda durante el proceso, escribime por WhatsApp.<br>
+    — Arnaldo (Lovbot Tech Lead)
+  </div>
+
+</div>
+
+<script>
+  function copy(btn, targetId) {
+    const el = document.getElementById(targetId);
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const old = btn.textContent;
+      btn.textContent = '✓ Copiado';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = old;
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  function showTab(event, tabId) {
+    event.target.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    event.target.parentElement.parentElement.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+  }
+</script>
+
+</body>
+</html>
