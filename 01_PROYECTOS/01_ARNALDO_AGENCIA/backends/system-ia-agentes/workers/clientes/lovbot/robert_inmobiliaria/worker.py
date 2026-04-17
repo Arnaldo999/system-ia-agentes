@@ -1189,6 +1189,11 @@ def _enviar_ficha(telefono: str, p: dict) -> None:
     _enviar_texto(telefono, _ficha_propiedad(p))
 
 
+def _enviar_ficha_sin_imagen(telefono: str, p: dict) -> None:
+    """Envía solo el texto de la ficha, sin imagen — para cuando ya se mostró antes."""
+    _enviar_texto(telefono, _ficha_propiedad(p))
+
+
 # ─── NOTIFICACIONES ──────────────────────────────────────────────────────────
 def _notificar_asesor(telefono: str, sesion: dict, calificacion: dict) -> None:
     if not NUMERO_ASESOR:
@@ -1931,9 +1936,10 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         if _pide_detalle:
             prop = props[prop_idx] if prop_idx < len(props) else (props[-1] if props else None)
             if prop:
+                # Si la prop ya fue mostrada con breve+imagen, no repetir la imagen — ir a ficha solo texto
                 SESIONES[telefono] = {**sesion, "step": "ficha",
                                       "ficha_actual": prop_idx, "_ultimo_ts": ahora_ts}
-                _enviar_ficha(telefono, prop)
+                _enviar_ficha_sin_imagen(telefono, prop)
                 prop_nombre = f"{prop.get('Tipo','')} {prop.get('Zona','')} - {prop.get('Titulo', prop.get('Nombre',''))}".strip()
                 def _guardar_interes_exp():
                     if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
