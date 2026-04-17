@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brief de Onboarding — Lovbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-alt: #162032;
+      --border: #334155;
+      --border-focus: #1a56db;
+      --primary: #1a56db;
+      --primary-hover: #1e40af;
+      --primary-light: #60a5fa;
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.1);
+      --green-border: rgba(16, 185, 129, 0.3);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --muted-2: #64748b;
+      --whatsapp: #25d366;
+      --whatsapp-hover: #1fba59;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.08);
+      --error-border: rgba(239, 68, 68, 0.3);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1a2744 60%, #0f172a 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* ── Brand ── */
+    .brand {
+      text-align: center;
+      padding: 32px 0 28px;
+    }
+    .brand-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      object-fit: contain;
+      margin-bottom: 12px;
+    }
+    .brand h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .brand p {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+      padding: 0 4px;
+    }
+    .progress-track {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--whatsapp));
+      border-radius: 99px;
+      transition: width 0.4s ease;
+      width: 12.5%;
+    }
+    .progress-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    /* ── Section card ── */
+    .section {
+      display: none;
+      animation: fadeIn 0.25s ease;
+    }
+    .section.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 28px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      background: rgba(26, 86, 219, 0.12);
+      border: 1px solid rgba(26, 86, 219, 0.2);
+    }
+    .section-title h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .section-title p {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* ── Form fields ── */
+    .field {
+      margin-bottom: 20px;
+    }
+    .field:last-child {
+      margin-bottom: 0;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    label .req {
+      color: var(--whatsapp);
+      margin-left: 2px;
+    }
+    label .hint {
+      font-weight: 400;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-left: 6px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.15);
+    }
+    input.error,
+    select.error,
+    textarea.error {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px var(--error-bg);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+    select option {
+      background: #1e293b;
+      color: var(--text);
+    }
+    ::placeholder { color: var(--muted-2); }
+
+    .field-error {
+      display: none;
+      font-size: 0.78rem;
+      color: var(--error);
+      margin-top: 5px;
+    }
+    .field-error.visible {
+      display: block;
+    }
+
+    /* ── Checkbox & Radio ── */
+    .check-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .check-item:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: var(--muted-2);
+    }
+    .check-item input[type="checkbox"],
+    .check-item input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      padding: 0;
+      accent-color: var(--whatsapp);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .check-item span {
+      font-size: 0.875rem;
+      color: var(--text);
+    }
+    .check-item small {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: block;
+    }
+
+    .radio-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    @media (max-width: 480px) {
+      .radio-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Conditional field ── */
+    .conditional {
+      display: none;
+      margin-top: 14px;
+      padding: 14px;
+      background: var(--card-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .conditional.visible {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+    .conditional .field:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ── Two col ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 500px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* ── Navigation buttons ── */
+    .nav-btns {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 24px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      flex: 1;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(26, 86, 219, 0.3);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      min-width: 100px;
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text);
+    }
+    .btn-download {
+      background: var(--whatsapp);
+      color: #fff;
+      flex: 1;
+      font-size: 0.95rem;
+    }
+    .btn-download:hover {
+      background: var(--whatsapp-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
+    }
+    .btn-disabled {
+      background: rgba(255,255,255,0.05);
+      color: var(--muted-2);
+      border: 1px dashed var(--border);
+      cursor: not-allowed;
+      min-width: 160px;
+      position: relative;
+    }
+    .btn-disabled:hover .tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+    .tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+
+    /* ── Success card ── */
+    #successCard {
+      display: none;
+    }
+    #successCard.visible {
+      display: block;
+      animation: fadeIn 0.35s ease;
+    }
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--green-bg);
+      border: 2px solid var(--green-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 28px;
+    }
+    .success-filename {
+      font-family: 'Courier New', monospace;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      color: var(--primary-light);
+      display: inline-block;
+      margin: 12px 0 16px;
+    }
+    .instructions-list {
+      text-align: left;
+      margin: 16px 0;
+    }
+    .instructions-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .instructions-list li:last-child { border-bottom: none; }
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(26, 86, 219, 0.15);
+      border: 1px solid rgba(26, 86, 219, 0.3);
+      color: var(--primary-light);
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 24px;
+      background: var(--whatsapp);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 10px;
+      text-decoration: none;
+      width: 100%;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn-whatsapp:hover {
+      background: var(--whatsapp-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.3);
+    }
+    .btn-restart {
+      display: block;
+      width: 100%;
+      padding: 11px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      margin-top: 12px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .btn-restart:hover { color: var(--text); }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.75rem;
+      color: var(--muted-2);
+    }
+    .footer a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+
+    /* ── Info tag ── */
+    .info-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-top: 5px;
+    }
+
+    /* ── Slug preview ── */
+    #slugPreview {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    #slugPreview code {
+      color: var(--primary-light);
+      background: rgba(26, 86, 219, 0.1);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Brand -->
+  <div class="brand">
+    <img src="https://lovbot-demos.vercel.app/lovbot-logo_blanco.png" alt="Lovbot" class="brand-logo"
+         onerror="this.style.display='none'" />
+    <h1>Lovbot</h1>
+    <p>Configurá tu bot de WhatsApp en minutos</p>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">1 / 8</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 1 — Identidad del negocio                          -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section active" id="sec1">
+    <div class="card">
+      <div class="section-header">
+        <div class="section-icon">🏢</div>
+        <div class="section-title">
+          <h2>Identidad del negocio</h2>
+          <p>Datos principales de tu empresa</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="nombre_empresa">Nombre del negocio <span class="req">*</span></label>
+        <input type="text" id="nombre_empresa" placeholder="ej: Inmobiliaria García" />
+        <div class="field-error" id="err_nombre_empresa">Este campo es requerido.</div>
+      </div>
+
+      <div class="field">
+        <label for="slug">Slug / identificador <span class="req">*</span>
+          <span class="hint">Se auto-genera, podés editarlo</span>
+        </label>
+        <input type="text" id="slug" placeholder="ej: inmobiliaria-garcia" />
+        <div id="slugPreview"></div>
+        <div class="field-error" id="err_slug">Solo letras minúsculas y guiones (ej: mi-empresa).</div>
+      </div>
+
+      <div class="field">
+        <label for="ciudad">Ciudad / zona principal <span class="req">*</span></label>
+        <input type="text" id="ciudad" placeholder="ej: Posadas, Misiones" />
+        <div class="field-error" id="err_ciudad">Este campo es requerido.</div>
+      </div>
+
+      <div class="field">
+        <label for="sitio_web">Sitio web <span class="hint">opcional</span></label>
+        <input type="url" id="sitio_web" placeholder="https://tu-sitio.com" />
+      </div>
+
+      <div class="field">
+        <label for="descripcion">Descripción corta del negocio <span class="hint">2-3 líneas</span></label>
+        <textarea id="descripcion" placeholder="ej: Desarrolladora inmobiliaria con 15 años en la zona, especializada en lotes y casas en barrios privados."></textarea>
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-primary" onclick="goNext(1)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 2 — Equipo                                         -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec2">
+    <div class="card">
+      <div class="section-header">
+        <div class="section-icon">👤</div>
+        <div class="section-title">
+          <h2>Equipo</h2>
+          <p>Asesor que recibe los leads calificados</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="asesor_nombre">Nombre del asesor <span class="req">*</span></label>
+        <input type="text" id="asesor_nombre" placeholder="ej: Juan García" />
+        <div class="field-error" id="err_asesor_nombre">Este campo es requerido.</div>
+      </div>
+
+      <div class="field">
+        <label for="asesor_telefono">Teléfono del asesor <span class="req">*</span>
+          <span class="hint">Formato internacional sin + ni espacios</span>
+        </label>
+        <input type="text" id="asesor_telefono" placeholder="ej: 549376XXXXXXX" />
+        <div class="info-tag">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          El bot enviará notificaciones de leads calientes a este número
+        </div>
+        <div class="field-error" id="err_asesor_telefono">Este campo es requerido. Solo números sin espacios ni +.</div>
+      </div>
+
+      <div class="field">
+        <label for="asesor_email">Email del asesor <span class="hint">opcional</span></label>
+        <input type="email" id="asesor_email" placeholder="juan@tu-empresa.com" />
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-secondary" onclick="goPrev(2)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goNext(2)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 3 — Vertical y productos                           -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec3">
+    <div class="card">
+      <div class="section-header">
+        <div class="section-icon">🏷️</div>
+        <div class="section-title">
+          <h2>Vertical y productos</h2>
+          <p>Qué vende o ofrece tu negocio</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="vertical">Vertical (rubro)</label>
+        <select id="vertical">
+          <option value="inmobiliaria">Inmobiliaria</option>
+          <option value="gastronomia">Gastronomía</option>
+          <option value="automotriz">Automotriz</option>
+          <option value="salud_dental">Salud / Dental</option>
+          <option value="educacion">Educación</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="productos">Qué vende / ofrece
+          <span class="hint">Una línea por producto o servicio</span>
+        </label>
+        <textarea id="productos" rows="4" placeholder="Lotes en barrios cerrados&#10;Casas 2-4 ambientes&#10;Terrenos para inversión"></textarea>
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label for="rango_precios">Rango de precios</label>
+          <input type="text" id="rango_precios" placeholder="ej: USD 30.000 - 150.000" />
+        </div>
+        <div class="field">
+          <label for="moneda">Moneda principal</label>
+          <select id="moneda">
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+            <option value="PYG">PYG</option>
+            <option value="BRL">BRL</option>
+            <option value="MXN">MXN</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="diferenciales">Diferenciales / ventajas competitivas</label>
+        <textarea id="diferenciales" placeholder="ej: 15 años de experiencia, financiación propia, entrega inmediata"></textarea>
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-secondary" onclick="goPrev(3)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goNext(3)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 4 — Público objetivo                               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec4">
+    <div class="card">
+      <div class="section-header">
+        <div class="section-icon">🎯</div>
+        <div class="section-title">
+          <h2>Público objetivo</h2>
+          <p>Perfil del cliente ideal y dónde viene</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="publico_objetivo">¿Quién es tu cliente ideal?
+          <span class="hint">2-3 líneas</span>
+        </label>
+        <textarea id="publico_objetivo" placeholder="ej: Profesionales 30-55 años buscando inversión o primera vivienda. Familias que quieren salir del alquiler. Inversores de ciudades grandes."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="zonas_leads">Ciudades / zonas de donde vienen los leads habituales</label>
+        <input type="text" id="zonas_leads" placeholder="ej: Posadas, Encarnación, Buenos Aires, Córdoba" />
+      </div>
+
+      <div class="field">
+        <label for="objeciones_comunes">Objeciones comunes que reciben
+          <span class="hint">El bot las manejará con argumentos</span>
+        </label>
+        <textarea id="objeciones_comunes" placeholder="ej: Es muy caro / Prefiero esperar / No tengo toda la plata / No conozco la zona"></textarea>
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-secondary" onclick="goPrev(4)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goNext(4)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 5 — Calificación BANT                              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec5">
+    <div class="card">
+      <div class="section-header">
+        <div class="section-icon">✅</div>
+        <div class="section-title">
+          <h2>Calificación BANT</h2>
+          <p>Criterios para filtrar leads de calidad</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>El bot calificará por:</label>
+        <div class="check-group">
+          <label class="check-item">
+            <input type="checkbox" id="bant_presupuesto" checked />
+            <span>
+              Presupuesto
+              <small>¿Cuánto puede invertir el lead?</small>
+            </span>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="bant_urgencia" checked />
+            <span>
+              Urgencia
+              <small>¿Qué tan pronto necesita comprar / contratar?</small>
+            </span>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="bant_autoridad" checked />
+            <span>
+              Autoridad de decisión
+              <small>¿Es quien decide la compra?</small>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="preguntas_extra">Preguntas adicionales específicas del negocio
+          <span class="hint">opcional</span>
+        </label>
+        <textarea id="preguntas_extra" placeholder="ej: ¿Para vivir o invertir? / ¿Tiene vehículo? / ¿Cuántos integrantes tiene la familia?"></textarea>
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-secondary" onclick="goPrev(5)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goNext(5)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 6 — Agenda y cierre                                -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec6">
+    <div class="card">
+      <div class="section-header">
+        <div class="section-icon">📅</div>
+        <div class="section-title">
+          <h2>Agenda y cierre</h2>
+          <p>Configuración de citas con Cal.com</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="check-item" style="margin-bottom:0;cursor:pointer;">
+          <input type="checkbox" id="cal_activo" onchange="toggleCalFields()" />
+          <span>
+            Usar Cal.com para agendar citas automáticamente
+            <small>El bot mostrará slots disponibles y agendará sin intervención humana</small>
+          </span>
+        </label>
+
+        <div class="conditional" id="calFields">
+          <div class="field">
+            <label for="cal_username">Cal.com username <span class="req">*</span></label>
+            <input type="text" id="cal_username" placeholder="ej: inmobiliaria-garcia" />
+          </div>
+          <div class="field">
+            <label for="cal_event_slug">Event type slug <span class="req">*</span></label>
+            <input type="text" id="cal_event_slug" placeholder="ej: reunion-30min" />
+          </div>
+          <div class="field">
+            <label for="cal_duracion">Duración típica de cita (minutos)</label>
+            <input type="number" id="cal_duracion" value="30" min="15" max="180" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="horarios">Horarios de atención</label>
+        <input type="text" id="horarios" placeholder="ej: Lunes a Viernes 9-18hs, Sábado 9-13hs" />
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-secondary" onclick="goPrev(6)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goNext(6)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 7 — Comunicación                                   -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec7">
+    <div class="card">
+      <div class="section-header">
+        <div class="section-icon">💬</div>
+        <div class="section-title">
+          <h2>Comunicación</h2>
+          <p>Personalidad y tono del bot</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Tono del bot</label>
+        <div class="check-group radio-grid">
+          <label class="check-item">
+            <input type="radio" name="tono" value="formal_profesional" />
+            <span>
+              Formal profesional
+              <small>Corporativo, sin modismos</small>
+            </span>
+          </label>
+          <label class="check-item">
+            <input type="radio" name="tono" value="calido_rioplatense" checked />
+            <span>
+              Cálido rioplatense
+              <small>Cercano, vos/ustedes, AR/UY</small>
+            </span>
+          </label>
+          <label class="check-item">
+            <input type="radio" name="tono" value="neutro_latam" />
+            <span>
+              Neutro LATAM
+              <small>Tú/usted, universal</small>
+            </span>
+          </label>
+          <label class="check-item">
+            <input type="radio" name="tono" value="casual_joven" />
+            <span>
+              Casual joven
+              <small>Informal, descontracturado</small>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Uso de emojis</label>
+        <div class="check-group">
+          <label class="check-item">
+            <input type="radio" name="emojis" value="moderados" checked />
+            <span>Sí, con moderación</span>
+          </label>
+          <label class="check-item">
+            <input type="radio" name="emojis" value="no" />
+            <span>No usar emojis</span>
+          </label>
+          <label class="check-item">
+            <input type="radio" name="emojis" value="momentos_clave" />
+            <span>Solo en momentos clave (saludo, cierre)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Idioma</label>
+        <div class="check-group">
+          <label class="check-item">
+            <input type="radio" name="idioma" value="es" checked />
+            <span>Español</span>
+          </label>
+          <label class="check-item">
+            <input type="radio" name="idioma" value="pt" />
+            <span>Portugués</span>
+          </label>
+          <label class="check-item">
+            <input type="radio" name="idioma" value="en" />
+            <span>Inglés</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="saludo_custom">Mensaje de saludo inicial personalizado
+          <span class="hint">Opcional — si no completás, el bot usa su saludo inteligente</span>
+        </label>
+        <textarea id="saludo_custom" placeholder="ej: ¡Hola! 👋 Bienvenido a Inmobiliaria García. Soy tu asistente virtual y estoy acá para ayudarte a encontrar el lote o casa ideal. ¿En qué puedo ayudarte?"></textarea>
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-secondary" onclick="goPrev(7)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goNext(7)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 8 — Integraciones                                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec8">
+    <div class="card">
+      <div class="section-header">
+        <div class="section-icon">🔌</div>
+        <div class="section-title">
+          <h2>Integraciones</h2>
+          <p>CRM y notificaciones</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>¿Qué CRM usarás?</label>
+        <div class="check-group">
+          <label class="check-item">
+            <input type="radio" name="crm_tipo" value="compartido" checked onchange="toggleCrmFields()" />
+            <span>
+              CRM compartido Lovbot
+              <small>Recomendado — listo para usar, sin configuración extra</small>
+            </span>
+          </label>
+          <label class="check-item">
+            <input type="radio" name="crm_tipo" value="propio" onchange="toggleCrmFields()" />
+            <span>
+              CRM propio (PostgreSQL)
+              <small>Tenés tu propia base de datos</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="conditional" id="crmPropioFields">
+          <div class="field">
+            <label for="database_url">DATABASE_URL</label>
+            <input type="text" id="database_url" placeholder="postgresql://user:pass@host:5432/dbname" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="check-item" style="cursor:pointer;">
+          <input type="checkbox" id="telegram_notifs" onchange="toggleTelegramField()" />
+          <span>
+            Recibir notificaciones Telegram de leads calientes
+            <small>Cada vez que el bot detecta un lead calificado, te avisamos por Telegram</small>
+          </span>
+        </label>
+
+        <div class="conditional" id="telegramField">
+          <div class="field" style="margin-bottom:0;">
+            <label for="telegram_chat_id">Telegram chat_id</label>
+            <input type="text" id="telegram_chat_id" placeholder="ej: -100123456789 o 5XXXXXXXX" />
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-btns" style="flex-wrap:wrap;gap:10px;">
+        <button class="btn btn-secondary" onclick="goPrev(8)" style="min-width:100px;">← Atrás</button>
+        <button class="btn btn-download" onclick="descargarBrief()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar Brief YAML
+        </button>
+        <button class="btn btn-disabled" style="width:100%;" disabled>
+          Enviar por email
+          <span class="tooltip">Próximamente</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SUCCESS CARD                                               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div id="successCard">
+    <div class="card" style="text-align:center;">
+      <div class="success-icon">✅</div>
+      <h2 style="font-size:1.2rem;margin-bottom:8px;">Brief descargado</h2>
+      <div class="success-filename" id="successFilename">inmobiliaria-garcia.yaml</div>
+      <p style="font-size:0.875rem;color:var(--muted);margin-bottom:4px;">
+        Enviá este archivo a tu agencia para activar el bot.
+      </p>
+
+      <ul class="instructions-list">
+        <li>
+          <div class="step-num">1</div>
+          <span>Localizá el archivo <strong id="filenameStep">slug.yaml</strong> en tu carpeta de Descargas.</span>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <span>Mandáselo por WhatsApp a Lovbot usando el botón de abajo. En menos de 24 hs tu bot estará listo.</span>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <span>Recibirás un link para conectar tu WhatsApp Business al bot (proceso oficial Meta, 2 minutos).</span>
+        </li>
+      </ul>
+
+      <a id="btnWa" href="#" target="_blank" class="btn-whatsapp">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Contactar a Lovbot por WhatsApp
+      </a>
+
+      <button class="btn-restart" onclick="reiniciar()">Completar otro formulario</button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Lovbot — Automatización inteligente para tu negocio</p>
+    <p style="margin-top:4px;"><a href="https://lovbot.ai" target="_blank">lovbot.ai</a></p>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// ESTADO
+// ──────────────────────────────────────────────────────────────
+const TOTAL_SECS = 8;
+let currentSec = 1;
+
+// ──────────────────────────────────────────────────────────────
+// PROGRESO
+// ──────────────────────────────────────────────────────────────
+function updateProgress(sec) {
+  const pct = (sec / TOTAL_SECS) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = sec + ' / ' + TOTAL_SECS;
+}
+
+// ──────────────────────────────────────────────────────────────
+// NAVEGACIÓN
+// ──────────────────────────────────────────────────────────────
+function showSection(n) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('sec' + n);
+  if (el) {
+    el.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  currentSec = n;
+  updateProgress(n);
+}
+
+function goNext(from) {
+  if (!validateSection(from)) return;
+  showSection(from + 1);
+}
+
+function goPrev(from) {
+  showSection(from - 1);
+}
+
+// ──────────────────────────────────────────────────────────────
+// SLUG AUTO-GENERACIÓN
+// ──────────────────────────────────────────────────────────────
+document.getElementById('nombre_empresa').addEventListener('input', function() {
+  const nombre = this.value;
+  const slug = nombre
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+  const slugEl = document.getElementById('slug');
+  slugEl.value = slug;
+  updateSlugPreview(slug);
+});
+
+document.getElementById('slug').addEventListener('input', function() {
+  updateSlugPreview(this.value);
+});
+
+function updateSlugPreview(slug) {
+  const el = document.getElementById('slugPreview');
+  if (slug) {
+    el.innerHTML = 'Worker: <code>' + slug.replace(/-/g, '_') + '</code>';
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// CONDICIONALES
+// ──────────────────────────────────────────────────────────────
+function toggleCalFields() {
+  const active = document.getElementById('cal_activo').checked;
+  const el = document.getElementById('calFields');
+  el.classList.toggle('visible', active);
+}
+
+function toggleCrmFields() {
+  const tipo = document.querySelector('input[name="crm_tipo"]:checked').value;
+  document.getElementById('crmPropioFields').classList.toggle('visible', tipo === 'propio');
+}
+
+function toggleTelegramField() {
+  const active = document.getElementById('telegram_notifs').checked;
+  document.getElementById('telegramField').classList.toggle('visible', active);
+}
+
+// ──────────────────────────────────────────────────────────────
+// VALIDACIÓN
+// ──────────────────────────────────────────────────────────────
+function showError(id, msg) {
+  const el = document.getElementById('err_' + id);
+  const input = document.getElementById(id);
+  if (el) { el.textContent = msg || el.textContent; el.classList.add('visible'); }
+  if (input) input.classList.add('error');
+}
+
+function clearError(id) {
+  const el = document.getElementById('err_' + id);
+  const input = document.getElementById(id);
+  if (el) el.classList.remove('visible');
+  if (input) input.classList.remove('error');
+}
+
+function validateSection(sec) {
+  let ok = true;
+
+  if (sec === 1) {
+    const nombre = document.getElementById('nombre_empresa').value.trim();
+    const slug = document.getElementById('slug').value.trim();
+    const ciudad = document.getElementById('ciudad').value.trim();
+
+    clearError('nombre_empresa'); clearError('slug'); clearError('ciudad');
+
+    if (!nombre) { showError('nombre_empresa'); ok = false; }
+    if (!slug) {
+      showError('slug', 'El slug es requerido.');
+      ok = false;
+    } else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
+      showError('slug', 'Solo letras minúsculas y guiones (ej: mi-empresa).');
+      ok = false;
+    }
+    if (!ciudad) { showError('ciudad'); ok = false; }
+  }
+
+  if (sec === 2) {
+    const nombre = document.getElementById('asesor_nombre').value.trim();
+    const tel = document.getElementById('asesor_telefono').value.trim();
+
+    clearError('asesor_nombre'); clearError('asesor_telefono');
+
+    if (!nombre) { showError('asesor_nombre'); ok = false; }
+    if (!tel) {
+      showError('asesor_telefono', 'Este campo es requerido. Solo números sin espacios ni +.');
+      ok = false;
+    } else if (!/^\d{7,20}$/.test(tel)) {
+      showError('asesor_telefono', 'Solo números sin +, espacios ni guiones. Ej: 549376XXXXXXX');
+      ok = false;
+    }
+  }
+
+  if (!ok) {
+    const firstError = document.querySelector('.error, .field-error.visible');
+    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return ok;
+}
+
+// ──────────────────────────────────────────────────────────────
+// GENERAR YAML
+// ──────────────────────────────────────────────────────────────
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function checked(id) {
+  const el = document.getElementById(id);
+  return el ? el.checked : false;
+}
+
+function radio(name) {
+  const el = document.querySelector('input[name="' + name + '"]:checked');
+  return el ? el.value : '';
+}
+
+function yamlStr(v) {
+  if (!v) return '""';
+  // Escape double quotes
+  const escaped = v.replace(/"/g, '\\"');
+  // Multi-line: use block scalar if contains newlines
+  if (v.includes('\n')) {
+    const lines = v.split('\n').map(l => '  ' + l).join('\n');
+    return '|-\n' + lines;
+  }
+  return '"' + escaped + '"';
+}
+
+function yamlList(raw) {
+  if (!raw) return '  - ""';
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return '  - ""';
+  return lines.map(l => '  - ' + yamlStr(l)).join('\n');
+}
+
+function buildYaml() {
+  const slug          = val('slug');
+  const nombre        = val('nombre_empresa');
+  const ciudad        = val('ciudad');
+  const sitio_web     = val('sitio_web');
+  const descripcion   = val('descripcion');
+
+  const as_nombre     = val('asesor_nombre');
+  const as_tel        = val('asesor_telefono');
+  const as_email      = val('asesor_email');
+
+  const vertical      = val('vertical');
+  const productos_raw = val('productos');
+  const rango_precios = val('rango_precios');
+  const moneda        = val('moneda');
+  const diferenciales = val('diferenciales');
+
+  const publico       = val('publico_objetivo');
+  const zonas_leads   = val('zonas_leads');
+  const objeciones    = val('objeciones_comunes');
+
+  const bant_pres     = checked('bant_presupuesto');
+  const bant_urg      = checked('bant_urgencia');
+  const bant_aut      = checked('bant_autoridad');
+  const preg_extra    = val('preguntas_extra');
+
+  const cal_activo    = checked('cal_activo');
+  const cal_user      = val('cal_username');
+  const cal_event     = val('cal_event_slug');
+  const cal_dur       = val('cal_duracion') || '30';
+  const horarios      = val('horarios');
+
+  const tono          = radio('tono') || 'calido_rioplatense';
+  const emojis        = radio('emojis') || 'moderados';
+  const idioma        = radio('idioma') || 'es';
+  const saludo        = val('saludo_custom');
+
+  const crm_tipo      = radio('crm_tipo') || 'compartido';
+  const database_url  = val('database_url');
+  const tg_notifs     = checked('telegram_notifs');
+  const tg_chat_id    = val('telegram_chat_id');
+
+  let yaml = `# Brief cliente Lovbot — generado desde el formulario de onboarding
+# Fecha: ${new Date().toISOString().slice(0,10)}
+slug: ${slug}
+nombre_empresa: ${yamlStr(nombre)}
+ciudad: ${yamlStr(ciudad)}
+sitio_web: ${sitio_web ? yamlStr(sitio_web) : '""'}
+descripcion: ${yamlStr(descripcion)}
+
+asesor:
+  nombre: ${yamlStr(as_nombre)}
+  telefono: "${as_tel}"
+  email: ${as_email ? yamlStr(as_email) : '""'}
+
+vertical: ${vertical}
+productos:
+${yamlList(productos_raw)}
+rango_precios: ${yamlStr(rango_precios)}
+moneda: ${moneda}
+diferenciales: ${yamlStr(diferenciales)}
+
+publico_objetivo: ${yamlStr(publico)}
+zonas_leads: ${yamlStr(zonas_leads)}
+objeciones_comunes: ${yamlStr(objeciones)}
+
+bant:
+  califica_presupuesto: ${bant_pres}
+  califica_urgencia: ${bant_urg}
+  califica_autoridad: ${bant_aut}
+  preguntas_extra: ${yamlStr(preg_extra)}
+
+agenda:
+  cal_com_activo: ${cal_activo}
+  cal_com_username: ${yamlStr(cal_user)}
+  cal_com_event_slug: ${yamlStr(cal_event)}
+  duracion_cita_min: ${parseInt(cal_dur) || 30}
+  horarios: ${yamlStr(horarios)}
+
+comunicacion:
+  tono: "${tono}"
+  emojis: "${emojis}"
+  idioma: "${idioma}"
+  saludo_custom: ${yamlStr(saludo)}
+
+integraciones:
+  crm_compartido: ${crm_tipo === 'compartido'}
+  database_url_propio: ${crm_tipo === 'propio' && database_url ? yamlStr(database_url) : '""'}
+  telegram_notifs: ${tg_notifs}
+  telegram_chat_id: ${tg_chat_id ? yamlStr(tg_chat_id) : '""'}
+`;
+  return yaml;
+}
+
+// ──────────────────────────────────────────────────────────────
+// DESCARGAR
+// ──────────────────────────────────────────────────────────────
+function descargarBrief() {
+  if (!validateSection(8)) return;
+
+  const slug = val('slug') || 'cliente';
+  const yaml = buildYaml();
+  const filename = slug + '.yaml';
+
+  const blob = new Blob([yaml], { type: 'text/yaml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Mostrar success card
+  const nombre = val('nombre_empresa');
+  document.getElementById('successFilename').textContent = filename;
+  document.getElementById('filenameStep').textContent = filename;
+
+  const waText = encodeURIComponent(
+    'Hola Lovbot! Te envío el brief de mi negocio para activar el bot: ' + nombre
+  );
+  // Numero de Robert/Lovbot — placeholder, Arnaldo debe reemplazarlo
+  document.getElementById('btnWa').href = 'https://wa.me/5493765XXXXXX?text=' + waText;
+
+  // Ocultar formulario, mostrar success
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('progressLabel').textContent = '✓';
+  document.getElementById('successCard').classList.add('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ──────────────────────────────────────────────────────────────
+// REINICIAR
+// ──────────────────────────────────────────────────────────────
+function reiniciar() {
+  document.querySelector('form') && document.querySelector('form').reset();
+  // Limpiar inputs manualmente
+  document.querySelectorAll('input[type="text"],input[type="email"],input[type="url"],input[type="number"],textarea').forEach(el => {
+    if (el.id !== 'cal_duracion') el.value = '';
+  });
+  document.getElementById('cal_duracion').value = '30';
+  document.getElementById('bant_presupuesto').checked = true;
+  document.getElementById('bant_urgencia').checked = true;
+  document.getElementById('bant_autoridad').checked = true;
+  document.getElementById('cal_activo').checked = false;
+  document.getElementById('telegram_notifs').checked = false;
+  document.querySelector('input[name="tono"][value="calido_rioplatense"]').checked = true;
+  document.querySelector('input[name="emojis"][value="moderados"]').checked = true;
+  document.querySelector('input[name="idioma"][value="es"]').checked = true;
+  document.querySelector('input[name="crm_tipo"][value="compartido"]').checked = true;
+  document.getElementById('calFields').classList.remove('visible');
+  document.getElementById('crmPropioFields').classList.remove('visible');
+  document.getElementById('telegramField').classList.remove('visible');
+  document.getElementById('successCard').classList.remove('visible');
+  document.getElementById('slugPreview').innerHTML = '';
+  document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('visible'));
+  showSection(1);
+}
+
+// Init
+updateProgress(1);
+</script>
+</body>
+</html>
