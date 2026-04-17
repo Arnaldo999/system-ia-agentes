@@ -2285,7 +2285,16 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             SESIONES.pop(telefono, None)
             return
 
-        # Caliente/tibio → buscar propiedades
+        # Caliente/tibio → mostrar propiedades solo si ya se preguntó Authority (quién decide)
+        # Si no tenemos autoridad aún, el LLM debe preguntar antes de mostrar opciones
+        autoridad = sesion_nueva.get("autoridad", "")
+        if not autoridad:
+            SESIONES[telefono] = {**sesion_nueva, "step": "calificado"}
+            if mensaje_final:
+                _enviar_texto(telefono, mensaje_final)
+            return
+
+        # Buscar propiedades
         props = _at_buscar_propiedades(tipo=tipo, operacion=operacion, zona=zona,
                                        presupuesto=sesion_nueva.get("presupuesto_at",""))
         if not props:
