@@ -608,6 +608,12 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.claude/hooks/detect-project-context.sh\"",
+            "timeout": 10,
+            "statusMessage": "Detectando proyecto (Arnaldo/Robert/Mica)..."
+          },
+          {
+            "type": "command",
             "command": "\"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.claude/hooks/warn-production-edit.sh\"",
             "timeout": 10,
             "statusMessage": "Verificando si es producción..."

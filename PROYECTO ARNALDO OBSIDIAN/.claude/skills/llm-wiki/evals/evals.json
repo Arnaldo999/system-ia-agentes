@@ -1,0 +1,23 @@
+{
+  "skill_name": "llm-wiki",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Quiero inicializar mi wiki de segundo cerebro en el directorio actual (c:/Users/josem/Downloads/claude code/obsidian/mi-wiki-ia/). El tema principal es 'Inteligencia Artificial aplicada a negocios y productividad'. Quiero ingestas supervisadas y usar frontmatter YAML compatible con Dataview.",
+      "expected_output": "El agente debe crear la estructura de carpetas (wiki/, raw/, con subcarpetas), un CLAUDE.md con el esquema del dominio IA+negocios, un index.md vacío con las secciones correctas (Fuentes, Entidades, Conceptos, Síntesis), y un log.md con la entrada de inicialización. Todo con naming correcto y frontmatter YAML.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Ingesta esta fuente en mi wiki (en c:/Users/josem/Downloads/claude code/obsidian/mi-wiki-ia/):\n\n---\nTítulo: 'Agentes de IA: De los Chatbots a los Sistemas Autónomos'\nFuente: articulo-agentes-ia.md\n\nLos agentes de IA representan una evolución fundamental respecto a los chatbots. Mientras un chatbot responde preguntas en bucles conversacionales, un agente puede tomar acciones autónomas, usar herramientas, recordar contexto entre sesiones y planificar secuencias de pasos para alcanzar objetivos.\n\nLas empresas como OpenAI (con GPT-4o y su API de Assistants), Anthropic (con Claude y su sistema de herramientas), y Google (con Gemini y Project Astra) están compitiendo para definir el estándar de los agentes.\n\nEl modelo ReAct (Reasoning + Acting) propuesto por Yao et al. en 2022 es el paradigma dominante: el agente razona sobre qué hacer, ejecuta una acción, observa el resultado, y vuelve a razonar. Este ciclo permite resolver tareas que requieren múltiples pasos.\n\nUn reto central es la alucinación: los agentes pueden tomar acciones basadas en información incorrecta. Otro reto es el coste: los agentes consumen muchos más tokens que los chatbots simples, lo que eleva el coste operativo.\n\nEl impacto en negocios es enorme: automatización de workflows complejos, atención al cliente de segunda generación, análisis de datos sin intervención humana constante.\n---",
+      "expected_output": "El agente debe crear wiki/fuentes/agentes-ia-de-chatbots-a-sistemas-autonomos.md con frontmatter YAML, resumen, ideas clave, entidades (OpenAI, Anthropic, Google, Yao et al.), conceptos (agentes-ia, modelo-react, alucinacion). Debe crear o actualizar páginas de entidades y conceptos. Debe actualizar index.md y añadir entrada en log.md. Naming en kebab-case sin tildes en filenames.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Mi wiki está en c:/Users/josem/Downloads/claude code/obsidian/mi-wiki-ia/. Tengo ya dos fuentes ingestadas. Quiero hacer un lint del wiki — dime qué está bien y qué necesita mejorar, qué conceptos deberían tener su propia página pero no la tienen, y qué fuentes me sugieres buscar a continuación.",
+      "expected_output": "El agente debe leer index.md, revisar páginas existentes, y producir un reporte de lint con: hallazgos críticos (páginas huérfanas, wikilinks rotos, frontmatter faltante), mejoras sugeridas (conceptos sin página, conexiones faltantes), y fuentes sugeridas para llenar gaps de conocimiento.",
+      "files": []
+    }
+  ]
+}

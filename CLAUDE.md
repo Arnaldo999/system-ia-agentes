@@ -2,6 +2,100 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## 🚨 REGLA #0 (LA MÁS IMPORTANTE) — Router de proyectos obligatorio
+
+Este Mission Control orquesta **3 proyectos físicamente separados** que NO comparten stack:
+
+| Proyecto | Carpeta del proyecto | Workers (monorepo) | Stack EXCLUSIVO |
+|----------|----------------------|---------------------|-----------------|
+| **Arnaldo Ayala** (agencia propia) | `01_PROYECTOS/01_ARNALDO_AGENCIA/` | `workers/clientes/arnaldo/` | Airtable + YCloud + Coolify Hostinger + OpenAI Arnaldo |
+| **Micaela Colmenares** (System IA) | `01_PROYECTOS/02_SYSTEM_IA_MICAELA/` | `workers/clientes/system_ia/` | Airtable `appA8QxIhBYYAHw0F` + Evolution API + Easypanel + OpenAI Arnaldo |
+| **Robert Bazán** (Lovbot) | `01_PROYECTOS/03_LOVBOT_ROBERT/` | `workers/clientes/lovbot/` | **PostgreSQL `robert_crm`** + Meta Graph API + Coolify Hetzner + **OpenAI propio Robert** |
+
+> El monorepo FastAPI físicamente vive en `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/` pero los workers DENTRO se asignan lógicamente a cada proyecto según su subcarpeta `workers/clientes/[arnaldo|lovbot|system_ia]/`.
+
+### Disparadores OBLIGATORIOS de subagente por proyecto
+
+**ANTES de leer/editar cualquier archivo o ejecutar cualquier acción, identificar el proyecto y delegar al subagente correcto:**
+
+| Si la tarea menciona o el path contiene… | Delegar SIEMPRE a subagente |
+|-------------------------------------------|------------------------------|
+| `arnaldo`, `maicol`, `back urbanizaciones`, `workers/clientes/arnaldo/*`, `demos/back-urbanizaciones/`, `01_PROYECTOS/01_ARNALDO_AGENCIA/` (excepto si es código compartido del backend) | `proyecto-arnaldo` |
+| `robert`, `lovbot`, `lovbot.ai`, `robert_crm`, `workers/clientes/lovbot/*`, `demos/INMOBILIARIA/`, `01_PROYECTOS/03_LOVBOT_ROBERT/`, `coolify.lovbot.ai`, `agentes.lovbot.ai`, Meta Graph WABA Robert | `proyecto-robert` |
+| `mica`, `micaela`, `system ia` (la marca), `lau`, `workers/clientes/system_ia/*`, `demos/SYSTEM-IA/`, `01_PROYECTOS/02_SYSTEM_IA_MICAELA/`, base Airtable `appA8QxIhBYYAHw0F`, Evolution API, Easypanel | `proyecto-mica` |
+
+**Si la tarea menciona 2 proyectos** (ej: "compará el bot de Robert con el de Mica"), invocar los 2 subagentes en paralelo, nunca trabajar mezclando contexto.
+
+**Si la tarea es genuinamente compartida** (infra global, scripts en `02_OPERACION_COMPARTIDA/`, hooks, skills) → mantener trabajo en agente principal.
+
+### Errores típicos a evitar (ya pasaron muchas veces)
+
+- ❌ Editar Airtable mientras trabajás en código de Robert (Robert NO usa Airtable, usa PostgreSQL)
+- ❌ Usar `OPENAI_API_KEY` en código de Robert (es `LOVBOT_OPENAI_API_KEY`)
+- ❌ Asumir Coolify Hostinger para deploy de Robert (es Coolify Hetzner)
+- ❌ Mezclar `demos/INMOBILIARIA/` (Robert) con `demos/SYSTEM-IA/` (Mica) o `demos/back-urbanizaciones/` (Arnaldo)
+- ❌ Usar Evolution API en código Arnaldo (es YCloud) o YCloud en código Robert (es Meta Graph)
+
+> **Memoria detallada**: `feedback_REGLA_infraestructura_clientes.md` en `~/.claude/projects/.../memory/` — leer antes de operar si hay duda.
+
+---
+
+## 🗂️ REGLA #0bis — Arquitectura de silos (dónde va cada cosa)
+
+El ecosistema tiene **4 silos separados** con roles no solapados. Cada información vive en **UN solo silo**. Si duplicás entre silos, uno va a mentirle al otro.
+
+### Los 4 silos
+
+| # | Silo | Path | Rol |
+|---|------|------|-----|
+| 1 | **Auto-memory global** | `~/.claude/projects/-home-arna-PROYECTOS-SYSTEM-IA-SYSTEM-IA-MISSION-CONTROL/memory/` | Preferencias y reglas IRROMPIBLES del usuario (feedback personal). Claude lo inyecta automáticamente en cada sesión. |
+| 2 | **Wiki Obsidian** | `PROYECTO ARNALDO OBSIDIAN/` | Base de conocimiento permanente del ecosistema: entidades, conceptos, fuentes, síntesis. **Verdad única** sobre estructura. |
+| 3 | **Mission Control operativo** | `memory/` (raíz) + `ai.context.json` | Estado operativo **efímero** (cambia frecuentemente): TODOs de sesión, ESTADO_ACTUAL, debug-log, handoffs entre agentes. |
+| 4 | **Código y archivos físicos** | `01_PROYECTOS/*/backends,clientes,demos,workflows` | Código ejecutable + docs específicos por cliente (briefs, contratos, contextos). |
+
+### Matriz "dónde guardo X"
+
+| Tipo de información | Silo | Ejemplo de path |
+|---------------------|------|------------------|
+| Preferencia del usuario ("Arnaldo quiere respuestas cortas") | 1 | `~/.claude/.../memory/feedback_tono.md` |
+| Regla irrompible de comportamiento ("nunca mezclar stacks") | 1 | `~/.claude/.../memory/feedback_REGLA_*.md` |
+| Datos de agencia (VPS, DB, provider, dueños) | 2 | `PROYECTO ARNALDO OBSIDIAN/wiki/entidades/*.md` |
+| Conceptos técnicos compartidos (Airtable, PostgreSQL, Meta Graph) | 2 | `PROYECTO ARNALDO OBSIDIAN/wiki/conceptos/*.md` |
+| Brief/doc oficial de un cliente (fuente original) | 2 + 4 | `raw/[agencia]/brief-X.pdf` + archivo físico en `01_PROYECTOS/[agencia]/clientes/X/` |
+| Exploración guardada / análisis cruzado | 2 | `PROYECTO ARNALDO OBSIDIAN/wiki/sintesis/*.md` |
+| Qué se hizo hoy / TODO en curso | 3 | `memory/ESTADO_ACTUAL.md` |
+| Bug a medias, fix aplicado hoy | 3 | `memory/debug-log.md` |
+| Cuál agente está activo + handoff | 3 | `ai.context.json` |
+| Worker del bot | 4 | `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/.../workers/clientes/[agencia]/[cliente]/` |
+| Landing HTML / CRM frontend | 4 | `01_PROYECTOS/[agencia]/demos/[vertical]/` |
+| Workflow n8n exportado | 4 | `01_PROYECTOS/[agencia]/workflows/` |
+
+### 2 reglas irrompibles de los silos
+
+1. **Regla de no-duplicación** — Una información vive en UN solo silo.
+   - Si un dato está en wiki (silo 2), **NO** está en `memory/` (silo 3) ni en auto-memory (silo 1).
+   - Si hay una regla en auto-memory (silo 1), **NO** se repiten sus datos en wiki.
+   - Cuando detectes duplicación: elegí el silo correcto según la matriz y eliminá del otro.
+
+2. **Regla de flujo efímero → duradero** — La info se promociona, no se duplica.
+   - Arranca como estado (silo 3): "bug del día", "decisión tomada hoy".
+   - Si estabiliza como conocimiento estructural (cambió el stack, regla nueva), **se mueve** al silo 2 (wiki) o silo 1 (auto-memory) y se elimina del silo 3.
+
+### Flujo de trabajo por sesión
+
+1. Al arrancar: auto-memory (silo 1) ya está cargado. Leo `CLAUDE.md` (router) + `ai.context.json` (silo 3) para saber estado actual.
+2. Si la tarea toca una agencia específica: invoco subagente `proyecto-[arnaldo|robert|mica]`, que consulta la wiki (silo 2) para cargar stack.
+3. Para estado operativo del día (qué falta, qué quedó a medias): leo `memory/ESTADO_ACTUAL.md` (silo 3).
+4. Trabajo en el código (silo 4).
+5. Al terminar:
+   - Decisión durable / conocimiento nuevo → ingestar a wiki (silo 2) vía `raw/[agencia]/sesion-YYYY-MM-DD.md`.
+   - Estado efímero del día → actualizar `memory/ESTADO_ACTUAL.md` o `debug-log.md` (silo 3).
+   - Preferencia nueva del usuario → auto-memory (silo 1).
+
+---
+
 ## 1. Rol Activo — Leer Primero
 
 **Al iniciar cualquier sesión, lee `ai.context.json` para saber qué agente encarnar:**
@@ -186,7 +280,66 @@ npx skills add <owner/repo> -y
 
 ---
 
-## 5. Skills del Proyecto
+## 5bis. Wiki Obsidian — Memoria persistente del ecosistema
+
+**Bóveda Obsidian**: `PROYECTO ARNALDO OBSIDIAN/` en la raíz del Mission Control. Es la **memoria persistente compartida** entre sesiones, complementaria a `memory/`.
+
+### Estructura
+
+```
+PROYECTO ARNALDO OBSIDIAN/
+├── CLAUDE.md              ← esquema de la wiki (reglas, convenciones, naming)
+├── index.md               ← catálogo de todas las páginas
+├── log.md                 ← registro cronológico append-only
+├── raw/                   ← fuentes originales INMUTABLES
+│   ├── arnaldo/ robert/ mica/ compartido/ assets/
+└── wiki/                  ← páginas sintetizadas por Claude
+    ├── entidades/ conceptos/ fuentes/ sintesis/
+```
+
+### Skill obligatoria
+
+`.claude/skills/llm-wiki/` (Método Karpathy) — se activa cuando el usuario dice "ingerí esta fuente", "qué dice mi wiki sobre X", "hacé lint de la wiki", "guardá como síntesis", etc.
+
+### Regla de ingesta — qué va a la wiki
+
+Ingerir a la wiki cuando:
+- El usuario comparte un **PDF, transcripción, artículo o URL** que agrega conocimiento duradero al ecosistema.
+- Termina una **sesión importante con Claude** con decisiones o fixes relevantes → proponer archivar el resumen como `sesion-claude` en `raw/[proyecto]/sesion-YYYY-MM-DD.md`.
+- Se define una **nueva entidad** (cliente nuevo, stack nuevo, persona nueva del equipo) → crear `wiki/entidades/[nombre].md`.
+- Se descubre un **concepto/patrón reutilizable** (técnica de BANT, pattern de parsing LLM, bug recurrente) → `wiki/conceptos/[nombre].md`.
+
+NO ingerir a la wiki:
+- Errores efímeros (eso va a `memory/debug-log.md`).
+- Estado de sesión en curso (eso va a `ai.context.json` o `memory/ESTADO_ACTUAL`).
+- Tokens, secrets, credenciales (JAMÁS en la wiki — son datos sensibles).
+
+### Regla de consulta
+
+Antes de responder preguntas del usuario sobre stack, cliente, decisiones pasadas o integraciones, **considerá consultar la wiki**:
+1. Leé `PROYECTO ARNALDO OBSIDIAN/index.md`.
+2. Si hay una página relevante, leela antes de responder.
+3. Citá páginas con `[[wiki/conceptos/X]]` o `[[wiki/entidades/Y]]`.
+
+### Etiquetado obligatorio
+
+Cada página de la wiki DEBE tener `proyecto:` en frontmatter (`arnaldo`/`robert`/`mica`/`compartido`/`global`). Sin esta etiqueta la página es inválida — corregirla al detectarla.
+
+### Relación con `memory/`
+
+| Uso | `memory/` | Wiki Obsidian |
+|-----|-----------|---------------|
+| Estado en vivo (sesión actual, TODOs, bugs del día) | ✅ | ❌ |
+| Convenciones ya decididas, reglas irrompibles | ✅ (feedback_*) | ✅ (conceptos/) |
+| Brief de clientes, transcripciones, PDFs | ❌ | ✅ (raw/) |
+| Infraestructura (URLs, UUIDs) | ✅ (infraestructura.md) | ✅ (conceptos/matriz-infraestructura) |
+| Exploraciones/comparaciones guardadas | ❌ | ✅ (sintesis/) |
+
+**Principio**: `memory/` es memoria **operativa** (cambia frecuentemente); la Wiki es memoria **de conocimiento** (acumula para siempre).
+
+---
+
+## 6. Skills del Proyecto
 
 ### Propias (`.claude/skills/`) — conocimiento de System IA
 

@@ -1,0 +1,218 @@
+{
+  "main": {
+    "id": "405b9d054fe0d041",
+    "type": "split",
+    "children": [
+      {
+        "id": "84c1455a11b5a8f1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e05ff86ee29aad07",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Vista gráfica"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "0772f510f02fcff7",
+    "type": "split",
+    "children": [
+      {
+        "id": "7e334a6b0ce37189",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "53eb50fd717def98",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "405e1a507a925a93",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "47cc6cca2a84ea4e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "350fdc34581eb0f2",
+    "type": "split",
+    "children": [
+      {
+        "id": "eb61a4ebe640c1ef",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e2c39d18ec7197a0",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes"
+            }
+          },
+          {
+            "id": "fd826b0d7403fbcf",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes"
+            }
+          },
+          {
+            "id": "d97d3eb441f8c187",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "f5e897cc7d88a8e4",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "8b188499573e52a1",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
+    }
+  },
+  "active": "e05ff86ee29aad07",
+  "lastOpenFiles": [
+    "log.md.tmp.7778.1776419478039",
+    "index.md.tmp.7778.1776419467908",
+    "index.md.tmp.7778.1776419457412",
+    "index.md.tmp.7778.1776419448341",
+    "wiki/conceptos/aislamiento-entre-agencias.md",
+    "wiki/conceptos/aislamiento-entre-agencias.md.tmp.7778.1776419442039",
+    "log.md.tmp.7778.1776419388661",
+    "index.md.tmp.7778.1776419375003",
+    "index.md.tmp.7778.1776419358541",
+    "index.md.tmp.7778.1776419350616",
+    "index.md.tmp.7778.1776419332932",
+    "index.md.tmp.7778.1776419320539",
+    "wiki/conceptos/regla-de-atribucion.md",
+    "wiki/entidades/lovbot-ai.md",
+    "wiki/entidades/agencia-arnaldo-ayala.md",
+    "wiki/conceptos/n8n.md",
+    "wiki/conceptos/ycloud.md",
+    "wiki/conceptos/evolution-api.md",
+    "wiki/conceptos/meta-graph-api.md",
+    "wiki/conceptos/postgresql.md",
+    "wiki/conceptos/airtable.md",
+    "wiki/entidades/system-ia.md",
+    "wiki/entidades/back-urbanizaciones.md",
+    "wiki/entidades/easypanel-mica.md",
+    "wiki/entidades/coolify-robert.md",
+    "wiki/entidades/coolify-arnaldo.md",
+    "wiki/entidades/vps-hostinger-mica.md",
+    "wiki/entidades/vps-hetzner-robert.md",
+    "wiki/entidades/vps-hostinger-arnaldo.md",
+    "wiki/entidades/maicol.md",
+    "wiki/entidades/lau.md",
+    "Bienvenido.md",
+    "wiki/entidades/micaela-colmenares.md",
+    "wiki/entidades/robert-bazan.md",
+    "wiki/entidades/arnaldo-ayala.md",
+    "wiki/conceptos/matriz-infraestructura.md"
+  ]
+}
