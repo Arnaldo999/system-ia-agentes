@@ -2291,6 +2291,78 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             if 2 <= len(ciudad_candidata) <= 50 and not any(c.isdigit() for c in ciudad_candidata):
                 sesion_nueva["ciudad_resp"] = ciudad_candidata
 
+    # ── Backups deterministas por palabras clave en el texto del lead ─────
+    # Si el LLM no emitió la directiva, Python captura la respuesta por regex simple
+    texto_low = texto.lower().strip()
+
+    # OBJETIVO: "vivir", "invertir", "alquilar"
+    if not sesion_nueva.get("resp_objetivo"):
+        if any(kw in texto_low for kw in ["invertir", "inversión", "inversion"]):
+            sesion_nueva["resp_objetivo"] = "invertir"
+            sesion_nueva["operacion_at"] = "venta"
+        elif any(kw in texto_low for kw in ["vivir", "para mí", "para mi", "para la familia", "para mudarme"]):
+            sesion_nueva["resp_objetivo"] = "vivir"
+            sesion_nueva["operacion_at"] = "venta"
+        elif "alquilar" in texto_low or "renta" in texto_low:
+            sesion_nueva["resp_objetivo"] = "alquilar"
+            sesion_nueva["operacion_at"] = "alquiler"
+
+    # TIPO: casa / departamento / terreno / lote / local / oficina
+    if not sesion_nueva.get("resp_tipo"):
+        _tipos = {
+            "casa": ["casa"],
+            "departamento": ["departamento", "depto", "depa", "apartamento"],
+            "terreno": ["terreno", "lote"],
+            "local": ["local", "local comercial"],
+            "oficina": ["oficina"],
+        }
+        for tipo_key, kws in _tipos.items():
+            if any(f" {kw} " in f" {texto_low} " or texto_low == kw for kw in kws):
+                sesion_nueva["resp_tipo"] = tipo_key
+                break
+
+    # PRESUPUESTO: números + unidad
+    if not sesion_nueva.get("resp_presupuesto"):
+        m_pres = re.search(r'\b(\d{1,4}(?:[.,]\d{3})?)\s*(k|mil|000|usd|dólares|dolares|\$|ars|pesos)\b', texto_low)
+        if m_pres:
+            sesion_nueva["resp_presupuesto"] = m_pres.group(0).upper().strip()
+
+    # URGENCIA: palabras clave temporales
+    if not sesion_nueva.get("resp_urgencia"):
+        if any(kw in texto_low for kw in ["ahora", "ya", "inmediato", "urgente", "este mes", "esta semana"]):
+            sesion_nueva["resp_urgencia"] = "inmediata"
+        elif any(kw in texto_low for kw in ["1 mes", "2 meses", "3 meses", "próximo mes", "proximo mes", "corto plazo"]):
+            sesion_nueva["resp_urgencia"] = "1_3_meses"
+        elif any(kw in texto_low for kw in ["6 meses", "medio año", "medio ano", "mediano plazo"]):
+            sesion_nueva["resp_urgencia"] = "3_6_meses"
+        elif any(kw in texto_low for kw in ["explorando", "viendo", "mirando", "sin apuro", "sin prisa"]):
+            sesion_nueva["resp_urgencia"] = "explorando"
+
+    # AUTORIDAD: quién decide
+    if not sesion_nueva.get("autoridad"):
+        if any(kw in texto_low for kw in ["yo solo", "yo sola", "yo nomás", "yo nomas", "soy yo", "decido yo"]):
+            sesion_nueva["autoridad"] = "solo"
+        elif any(kw in texto_low for kw in ["mi pareja", "con mi esposa", "con mi esposo", "con mi marido", "con mi mujer"]):
+            sesion_nueva["autoridad"] = "pareja"
+        elif any(kw in texto_low for kw in ["mi socio", "mis socios", "con socios"]):
+            sesion_nueva["autoridad"] = "socios"
+        elif any(kw in texto_low for kw in ["familia", "mis padres", "mis hijos"]):
+            sesion_nueva["autoridad"] = "familia"
+
+    # FORMA DE PAGO
+    if not sesion_nueva.get("forma_pago"):
+        if "contado" in texto_low:
+            sesion_nueva["forma_pago"] = "contado"
+        elif any(kw in texto_low for kw in ["crédito aprobado", "credito aprobado", "con aprobación", "pre-aprobado", "preaprobado"]):
+            sesion_nueva["forma_pago"] = "credito_aprobado"
+        elif any(kw in texto_low for kw in ["crédito", "credito", "hipotecario", "préstamo", "prestamo"]):
+            sesion_nueva["forma_pago"] = "credito_sin_aprobar"
+
+    # NOMBRE: si quedó igual a la ciudad, descartarlo (bug detectado: "nombre=San Ignacio")
+    if sesion_nueva.get("nombre") and sesion_nueva.get("ciudad_resp"):
+        if sesion_nueva["nombre"].lower() == sesion_nueva["ciudad_resp"].lower():
+            sesion_nueva.pop("nombre", None)
+
     # ── Actualizar step según datos acumulados ─────────────────────────────
     datos_completos = all([
         sesion_nueva.get("nombre"),
