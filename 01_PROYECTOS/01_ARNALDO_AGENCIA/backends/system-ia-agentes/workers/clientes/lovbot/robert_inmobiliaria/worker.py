@@ -1946,6 +1946,11 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 # Legacy Airtable — fallback por si el tenant tiene Airtable configurado
                 if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
                     threading.Thread(target=_at_guardar_cita, args=(telefono, slot.get("time","")), daemon=True).start()
+                # Notificar al asesor SOLO cuando la cita está confirmada
+                # (antes se hacía en la calificación — ahora se espera a la confirmación real)
+                _cal_guardada = sesion.get("_calificacion", {})
+                _sesion_con_cita = {**sesion, "fecha_str": fecha_str, "fecha_cita": slot.get("time", "")}
+                threading.Thread(target=_notificar_asesor, args=(telefono, _sesion_con_cita, _cal_guardada), daemon=True).start()
                 _enviar_texto(telefono,
                     f"✅ *¡Cita confirmada{', ' + nombre_corto if nombre_corto else ''}!*\n\n"
                     f"📅 *{fecha_str}* con *{NOMBRE_ASESOR}*\n\n"
@@ -2475,7 +2480,12 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         if AIRTABLE_BASE_ID and AIRTABLE_TABLE_LEADS:
             threading.Thread(target=_at_registrar_lead, args=_args_reg, daemon=True).start()
 
-        threading.Thread(target=_notificar_asesor, args=(telefono, sesion_nueva, calificacion), daemon=True).start()
+        # NOTA: _notificar_asesor se mueve al handler de confirmar_cita.
+        # El asesor solo debe recibir el aviso "🔥 Nuevo Lead" cuando el lead CONFIRMA
+        # la cita agendada, no cuando termina el BANT. Guardamos la calificación en
+        # sesión para que el handler post-confirmación tenga los datos a mano.
+        sesion_nueva["_calificacion"] = calificacion
+        SESIONES[telefono] = sesion_nueva
         threading.Thread(target=_chatwoot_escalar, args=(telefono, sesion_nueva, calificacion), daemon=True).start()
 
         if derivar or score == "frio":
