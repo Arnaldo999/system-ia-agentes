@@ -2336,7 +2336,18 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         return
 
     if step == "ficha":
-        # Cualquier respuesta en ficha → LLM decide (ofrecer cita, responder pregunta, etc.)
+        # Si el lead expresa interés → ir a ofrecer_cita directamente (no re-enviar ficha)
+        _KEYWORDS_INTERES_FICHA = [
+            "me interesa", "me gusta", "quiero verla", "quiero visitarla",
+            "agendar", "visita", "cuando puedo", "cómo la veo", "como la veo",
+            "me interesa ese", "quiero ese", "ese me gusta", "perfecto",
+        ]
+        if any(kw in texto_lower for kw in _KEYWORDS_INTERES_FICHA):
+            SESIONES[telefono] = {**sesion_nueva, "step": "ofrecer_cita", "_ultimo_ts": ahora_ts}
+            if mensaje_final:
+                _enviar_texto(telefono, mensaje_final)
+            return
+        # Cualquier otra respuesta en ficha → LLM decide
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
         return
