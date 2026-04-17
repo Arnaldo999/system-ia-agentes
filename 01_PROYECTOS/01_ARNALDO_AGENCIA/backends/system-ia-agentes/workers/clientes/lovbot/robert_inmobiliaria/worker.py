@@ -1668,6 +1668,10 @@ Si después de 2 intentos no hay engagement → ACCION: cerrar_curioso
 ## DATOS YA CONOCIDOS DEL CLIENTE
 {datos_txt}
 
+⚠️ REGLA CRÍTICA — NO REPETIR: Si un dato ya aparece en "DATOS YA CONOCIDOS", NUNCA vuelvas a preguntarlo.
+Esto incluye nombre, ciudad, objetivo, tipo, presupuesto, urgencia, forma de pago y autoridad.
+Si el cliente acaba de responder algo, ese dato ya está guardado — pasá al siguiente faltante.
+
 ## DATOS QUE TODAVÍA FALTAN
 {faltantes_txt}
 
