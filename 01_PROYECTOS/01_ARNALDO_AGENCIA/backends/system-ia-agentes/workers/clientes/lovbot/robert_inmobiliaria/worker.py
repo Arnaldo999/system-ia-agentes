@@ -3251,6 +3251,93 @@ def ver_sesion_bot(telefono: str):
     }
 
 
+# ── NURTURING 24H ─────────────────────────────────────────────────────────────
+
+@router.post("/admin/setup-nurturing")
+def setup_nurturing():
+    """Agrega las columnas nurturing_24h_enviado / nurturing_24h_fecha a la tabla leads.
+    Idempotente — llamar una sola vez después del deploy, o volver a llamar sin riesgo.
+    """
+    _check_pg()
+    return db.setup_nurturing_columns()
+
+
+@router.post("/admin/nurturing/24h")
+def nurturing_24h():
+    """Envía mensajes de seguimiento a leads calificados que NO agendaron cita
+    en las últimas 24 horas.
+
+    Comportamiento:
+    - Consulta PostgreSQL: estado IN ('calificado','contactado') + fecha_cita IS NULL
+      + fecha_ultimo_contacto < NOW() - 24h + nurturing_24h_enviado = FALSE
+    - Para cada lead: arma mensaje personalizado y lo envía via Meta Graph API
+    - Marca nurturing_24h_enviado = TRUE (idempotente — no reenvía en llamadas siguientes)
+    - Retorna resumen con contadores de enviados / fallidos / elegibles
+
+    Uso desde n8n: Schedule node cada hora → HTTP POST a este endpoint.
+    Header recomendado: Authorization: Bearer {LOVBOT_ADMIN_TOKEN}
+    """
+    _check_pg()
+
+    leads = db.obtener_leads_sin_cita_24h()
+    if not leads:
+        return {"status": "ok", "elegibles": 0, "enviados": 0, "fallidos": 0, "detalle": []}
+
+    enviados = []
+    fallidos = []
+
+    for lead in leads:
+        lead_id  = lead["id"]
+        telefono = lead.get("telefono", "")
+        if not telefono:
+            fallidos.append({"lead_id": lead_id, "razon": "sin telefono"})
+            continue
+
+        nombre   = lead.get("nombre") or "amigo"
+        ciudad   = lead.get("ciudad") or CIUDAD
+        tipo     = lead.get("tipo_propiedad") or "propiedad"
+        operacion = lead.get("operacion") or ""
+
+        # Construir descripción de búsqueda ("comprar una casa", "invertir en un lote", etc.)
+        if operacion and operacion.lower() not in ("", "no sé", "no se"):
+            descripcion_busqueda = f"{operacion} {tipo}".strip().lower()
+        else:
+            descripcion_busqueda = tipo.lower() if tipo else "una propiedad"
+
+        mensaje = (
+            f"Hola {nombre.title()} 👋 Soy el asistente de {NOMBRE_EMPRESA}.\n\n"
+            f"Vi que estuviste consultando sobre {descripcion_busqueda} en {ciudad}. "
+            f"Quería saber si pudiste charlarlo y si hay algo que te falta para dar el siguiente paso 🏡\n\n"
+            f"Cuando quieras, puedo mostrarte algunas opciones o coordinar una reunión rápida con nuestro asesor {NOMBRE_ASESOR}."
+        )
+
+        ok = _enviar_texto(telefono, mensaje)
+        if ok:
+            db.marcar_nurturing_enviado(lead_id)
+            enviados.append({
+                "lead_id": lead_id,
+                "telefono": telefono,
+                "nombre": nombre,
+            })
+            print(f"[NURTURING-24H] Enviado → tel={telefono} nombre={nombre}")
+        else:
+            fallidos.append({
+                "lead_id": lead_id,
+                "telefono": telefono,
+                "razon": "error Meta Graph API",
+            })
+            print(f"[NURTURING-24H] Fallo envío → tel={telefono}")
+
+    return {
+        "status": "ok",
+        "elegibles": len(leads),
+        "enviados": len(enviados),
+        "fallidos": len(fallidos),
+        "detalle_enviados": enviados,
+        "detalle_fallidos": fallidos,
+    }
+
+
 def _generar_resumen_lead(lead: dict) -> dict:
     """Llama a GPT con los datos del lead para generar resumen sintético."""
     nombre = f"{lead.get('nombre', '')} {lead.get('apellido', '')}".strip() or "Lead sin nombre"

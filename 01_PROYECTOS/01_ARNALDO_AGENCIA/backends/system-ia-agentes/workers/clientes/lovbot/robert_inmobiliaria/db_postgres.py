@@ -1315,6 +1315,100 @@ def guardar_resumen(data: dict) -> dict:
         return {"error": str(e)}
 
 
+# ── NURTURING 24H ────────────────────────────────────────────────────────────
+
+def obtener_leads_sin_cita_24h() -> list[dict]:
+    """Devuelve leads calificados (BANT completo) que:
+    - estado IN ('calificado', 'contactado')
+    - fecha_cita IS NULL
+    - fecha_ultimo_contacto < NOW() - INTERVAL '24 hours' (o updated_at si no hay fecha_ultimo_contacto)
+    - nurturing_24h_enviado IS NOT TRUE
+    Solo para el tenant activo.
+    """
+    if not _available():
+        return []
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, telefono, nombre, apellido, ciudad,
+                   tipo_propiedad, operacion, presupuesto,
+                   score, estado, fecha_ultimo_contacto, updated_at
+            FROM leads
+            WHERE tenant_slug = %s
+              AND estado IN ('calificado', 'contactado')
+              AND fecha_cita IS NULL
+              AND COALESCE(nurturing_24h_enviado, FALSE) = FALSE
+              AND COALESCE(fecha_ultimo_contacto, updated_at, created_at) < NOW() - INTERVAL '24 hours'
+            ORDER BY COALESCE(fecha_ultimo_contacto, updated_at) ASC
+        """, (TENANT,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        result = []
+        for r in rows:
+            row = dict(r)
+            for k, v in row.items():
+                if hasattr(v, 'isoformat'):
+                    row[k] = v.isoformat()
+            result.append(row)
+        print(f"[DB] Nurturing 24h: {len(result)} leads elegibles")
+        return result
+    except Exception as e:
+        print(f"[DB] Error obtener_leads_sin_cita_24h: {e}")
+        return []
+
+
+def marcar_nurturing_enviado(lead_id: int) -> bool:
+    """Marca el flag nurturing_24h_enviado=TRUE para evitar reenvíos.
+    Idempotente: si ya estaba marcado, no falla.
+    """
+    if not _available():
+        return False
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE leads
+            SET nurturing_24h_enviado = TRUE,
+                nurturing_24h_fecha = NOW()
+            WHERE id = %s AND tenant_slug = %s
+        """, (lead_id, TENANT))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        if ok:
+            print(f"[DB] Nurturing marcado: lead_id={lead_id}")
+        return ok
+    except Exception as e:
+        print(f"[DB] Error marcar_nurturing_enviado (id={lead_id}): {e}")
+        return False
+
+
+def setup_nurturing_columns() -> dict:
+    """Agrega las columnas nurturing_24h_enviado y nurturing_24h_fecha a la tabla leads
+    si no existen. Idempotente — seguro llamar múltiples veces.
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            ALTER TABLE leads
+            ADD COLUMN IF NOT EXISTS nurturing_24h_enviado BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS nurturing_24h_fecha   TIMESTAMPTZ
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"ok": True, "mensaje": "Columnas nurturing_24h_enviado y nurturing_24h_fecha verificadas"}
+    except Exception as e:
+        print(f"[DB] Error setup_nurturing_columns: {e}")
+        return {"error": str(e)}
+
+
 def listar_resumenes(limit: int = 20, score_min: int = None,
                       desde: str = None, search: str = None) -> list[dict]:
     """Lista resúmenes con filtros opcionales."""
