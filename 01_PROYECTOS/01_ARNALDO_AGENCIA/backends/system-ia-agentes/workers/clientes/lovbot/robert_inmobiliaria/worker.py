@@ -3775,8 +3775,11 @@ async def waba_onboarding(request: Request):
         webhook_detail = str(e)
         print(f"[WABA] Advertencia — excepcion al suscribir webhook: {e}")
 
-    # 3. Guardar en PostgreSQL
-    worker_url = f"https://agentes.lovbot.ai/clientes/lovbot/{client_slug}/whatsapp"
+    # 3. Guardar en PostgreSQL.
+    # worker_url: por ahora TODOS los clientes nuevos comparten el worker
+    # inmobiliaria (Fase 1 — validar flow con clientes reales). Cuando haya
+    # workers dedicados por vertical se override manualmente desde /admin.
+    worker_url = "https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/whatsapp"
     reg = db.registrar_waba_client(
         client_name=client_name,
         client_slug=client_slug,
