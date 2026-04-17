@@ -250,6 +250,15 @@ def _procesar_events_background(payload: dict) -> None:
         "Meta EXIGE texto plano — no JSON."
     ),
 )
+@router.get(
+    "/events",
+    response_class=PlainTextResponse,
+    summary="Handshake inicial Meta — en la misma URL que POST events",
+    description=(
+        "Meta usa la misma URL (/webhook/meta/events) tanto para el handshake GET "
+        "como para los POST de eventos. Este alias hace que ambos funcionen."
+    ),
+)
 async def meta_verify(request: Request):
     """
     GET /webhook/meta/verify
