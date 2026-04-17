@@ -1,14 +1,29 @@
+# ── Secrets / variables de entorno ───────────────────────────────────────────
+# .env local centralizado (tenés todas las keys de las 3 agencias en uno solo)
+# Coolify / Easypanel tienen su propio .env por agencia — nunca subir ninguno
 .env
+.env.*
+!.env.example
+!.env.ejemplo
+
+# ── Entornos virtuales Python ────────────────────────────────────────────────
 .venv
 venv
+venv_bot
+
+# ── Cache / build ────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 .ruff_cache/
 node_modules/
 dist/
 build/
+
+# ── Sistema operativo ────────────────────────────────────────────────────────
 .DS_Store
 *.log
+
+# ── Plataformas ──────────────────────────────────────────────────────────────
 .gemini/
 /home/arna/.gemini/antigravity/brain/
 .vercel

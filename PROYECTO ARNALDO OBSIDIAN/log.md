@@ -29,6 +29,17 @@
 - Reescrita sección "Estructura de sus proyectos" en `arnaldo-ayala.md` con 3 categorías: Producción propia · Alianza técnica · Sociedad comercial.
 - Actualizado mapa mental en `index.md` para reflejar la jerarquía real.
 
+## [2026-04-17] ingest | Pasada 2 — 18 fuentes desde auto-memory global
+Copiados `project_*` y `reference_*` de `~/.claude/projects/*/memory/` a `raw/[agencia]/` clasificados por ownership.
+
+Por agencia:
+- `raw/arnaldo/` (7): project-maicol, project-lau, project-demo-pack, project-social-publishing, project-verticales, project-auditoria-agencia, project-auto-reparador
+- `raw/robert/` (5): project-robert-alianza, project-robert-bot-sprint1, project-lovbot-crm, project-postgres-migration, project-crm-completo
+- `raw/mica/` (1): project-mica-demo-inmo
+- `raw/compartido/` (5): project-claude-code-infra, project-crm-ia-chat, project-sesion-2026-04-13, reference-infra, reference-skill-whatsapp-bot
+
+Originales del auto-memory siguen intactos — se eliminarán en pasada 3 tras validación.
+
 ## [2026-04-17] ingest | Pasada 1a — 12 fuentes desde memory/ Mission Control
 Arquitectura de silos aplicada (CLAUDE.md REGLA #0bis). Se copiaron archivos de `memory/` (silo 3) a `raw/[agencia]/` (silo 2) para que se puedan ingerir con llm-wiki.
 

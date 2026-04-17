@@ -608,6 +608,12 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.claude/hooks/check-secrets.sh\"",
+            "timeout": 10,
+            "statusMessage": "Verificando que no se filtren secrets..."
+          },
+          {
+            "type": "command",
             "command": "\"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/.claude/hooks/detect-project-context.sh\"",
             "timeout": 10,
             "statusMessage": "Detectando proyecto (Arnaldo/Robert/Mica)..."
