@@ -1663,6 +1663,14 @@ opciones para mi bolsillo / mostrame / quiero ver"
 - Ofrecer "alquilar" como opción cuando el ad es de un LOTE/TERRENO
   (los lotes solo se venden, no se alquilan — adaptá al tipo de propiedad)
 
+🚫 REGLA CRÍTICA — HORARIOS DE CITA:
+- NUNCA inventes horarios de cita (ej: "tengo a las 16:00 o 18:00").
+- Los horarios reales los maneja el sistema vía Cal.com automáticamente.
+- Si el lead pregunta por horarios disponibles, respondé SOLO con:
+  "Dejame chequear los horarios disponibles con {NOMBRE_ASESOR}"
+  y NO listes horarios concretos — el sistema los envía después.
+- Si el lead dice "sí quiero agendar" → emitir ACCION: agendar (nada más).
+
 ## DETECCIÓN DE CAÍDA
 Si el lead deja de responder, da monosílabos repetidos, o evade calificación
 → cambiar a modo recuperación con UNA frase tipo:
@@ -2271,10 +2279,13 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         SESIONES.pop(telefono, None)
         return
 
-    if accion == "calificar" or datos_completos:
-        # Enviar respuesta del LLM primero (puede ser transición)
-        if mensaje_final:
-            _enviar_texto(telefono, mensaje_final)
+    if (accion == "calificar" or datos_completos) and not sesion_nueva.get("_ya_calificado"):
+        # NO enviar mensaje_final del LLM acá — el handler de calificado/ofrecer_cita
+        # envía los slots reales de Cal.com. Si mandamos el LLM, duplicamos/contradecimos
+        # (el LLM suele inventar horarios como "16:00 o 18:00" que no existen).
+
+        # Marcar como calificado ANTES de disparar threads, para evitar re-ejecución
+        sesion_nueva["_ya_calificado"] = True
 
         # Calificar con Gemini
         calificacion = _gemini_calificar(sesion_nueva)
@@ -2352,10 +2363,13 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             _enviar_texto(telefono, mensaje_final)
         return
 
-    # ── Step ofrecer_cita → si confirma, mostrar slots ───────────────────────
+    # ── Step ofrecer_cita → si confirma o pregunta por horarios, mostrar slots ─
     if step == "ofrecer_cita":
         _KEYWORDS_CONFIRMA = ["si", "sí", "dale", "bueno", "ok", "perfecto", "claro", "quiero", "adelante", "genial", "va"]
-        if any(kw == texto_lower.strip().rstrip(".,!?") or texto_lower.startswith(kw) for kw in _KEYWORDS_CONFIRMA):
+        _KEYWORDS_HORARIO = ["hora", "horario", "cuando", "cuándo", "disponib", "agenda", "visita", "cita", "dia", "día", "turno"]
+        confirma = any(kw == texto_lower.strip().rstrip(".,!?") or texto_lower.startswith(kw) for kw in _KEYWORDS_CONFIRMA)
+        pregunta_horario = any(kw in texto_lower for kw in _KEYWORDS_HORARIO)
+        if confirma or pregunta_horario:
             if _cal_disponible():
                 slots = _cal_obtener_slots()
                 if slots:
@@ -2368,7 +2382,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 nombre=nombre_corto or nombre, asesor=NOMBRE_ASESOR, empresa=NOMBRE_EMPRESA))
             SESIONES.pop(telefono, None)
             return
-        # Otra respuesta → LLM maneja
+        # Otra respuesta → LLM maneja, pero SIN inventar horarios
         if mensaje_final:
             _enviar_texto(telefono, mensaje_final)
         return
@@ -2642,9 +2656,13 @@ async def webhook_whatsapp(request: Request):
     if nombre_meta:
         sesion_pre = SESIONES.get(tel_clean, {})
         if not sesion_pre.get("nombre"):
-            sesion_pre["nombre"] = nombre_meta.title()
-            SESIONES[tel_clean] = sesion_pre
-            print(f"[WEBHOOK] Nombre precargado desde Meta: {nombre_meta} → {tel_clean}")
+            nombre_limpio = re.sub(r'[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]', '', nombre_meta).strip()
+            if nombre_limpio and len(nombre_limpio) >= 2:
+                sesion_pre["nombre"] = nombre_limpio.title()
+                SESIONES[tel_clean] = sesion_pre
+                print(f"[WEBHOOK] Nombre precargado desde Meta: {nombre_meta} → {nombre_limpio} → {tel_clean}")
+            else:
+                print(f"[WEBHOOK] Nombre Meta descartado por caracteres inválidos: {nombre_meta}")
 
     if referral and (referral.get("headline") or referral.get("source_url")):
         print(f"[WEBHOOK] Lead vino de ad: {referral.get('headline', '')[:60]}")
@@ -3006,7 +3024,9 @@ async def simular_lead_anuncio(telefono: str, request: Request):
     if nombre_ads or email_ads:
         sesion_pre = SESIONES.get(tel, {})
         if nombre_ads:
-            sesion_pre["nombre"] = nombre_ads.title()
+            nombre_ads_limpio = re.sub(r'[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]', '', nombre_ads).strip()
+            if nombre_ads_limpio and len(nombre_ads_limpio) >= 2:
+                sesion_pre["nombre"] = nombre_ads_limpio.title()
         if email_ads:
             sesion_pre["email"] = email_ads
         sesion_pre["origen_lead"] = "meta_ads_form"
