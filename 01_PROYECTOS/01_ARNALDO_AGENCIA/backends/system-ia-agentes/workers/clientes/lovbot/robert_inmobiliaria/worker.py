@@ -3799,6 +3799,71 @@ async def waba_onboarding(request: Request):
     }
 
 
+@router.post("/admin/waba/register-existing")
+async def waba_register_existing(request: Request):
+    """Registra un cliente WABA con access_token YA obtenido (no via FB.login).
+    Caso de uso: bot propio de la agencia (Robert) o clientes migrados desde
+    otro proveedor que ya tienen token permanente.
+
+    Body JSON:
+        client_name, client_slug, waba_id, phone_number_id,
+        access_token, worker_url (opcional), display_phone (opcional)
+
+    Requiere header X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    import re as _re
+
+    _check_admin_token(request)
+    _check_pg()
+
+    body = await request.json()
+    client_name     = (body.get("client_name") or "").strip()
+    client_slug_raw = (body.get("client_slug") or "").strip()
+    waba_id         = (body.get("waba_id") or "").strip()
+    phone_number_id = (body.get("phone_number_id") or "").strip()
+    access_token    = (body.get("access_token") or "").strip()
+    worker_url      = (body.get("worker_url") or "").strip() or None
+    display_phone   = (body.get("display_phone") or "").strip() or None
+
+    if not client_name:       raise HTTPException(400, "Falta client_name")
+    if not waba_id:           raise HTTPException(400, "Falta waba_id")
+    if not phone_number_id:   raise HTTPException(400, "Falta phone_number_id")
+    if not access_token:      raise HTTPException(400, "Falta access_token")
+
+    client_slug = _re.sub(r'[^a-z0-9-]', '',
+                          client_slug_raw.lower().replace(" ", "-"))
+    if not client_slug:
+        client_slug = _re.sub(r'[^a-z0-9-]', '',
+                               client_name.lower().replace(" ", "-"))
+
+    if not worker_url:
+        worker_url = f"https://agentes.lovbot.ai/clientes/lovbot/{client_slug}/whatsapp"
+
+    reg = db.registrar_waba_client(
+        client_name=client_name,
+        client_slug=client_slug,
+        waba_id=waba_id,
+        phone_number_id=phone_number_id,
+        access_token=access_token,
+        worker_url=worker_url,
+        display_phone=display_phone,
+    )
+    if "error" in reg:
+        raise HTTPException(500, f"Error guardando en DB: {reg['error']}")
+
+    db.marcar_webhook_subscrito(phone_number_id)
+
+    return {
+        "status": "ok",
+        "client_slug": client_slug,
+        "phone_number_id": phone_number_id,
+        "waba_id": waba_id,
+        "worker_url": worker_url,
+        "db_id": reg.get("id"),
+    }
+
+
 @router.get("/admin/waba/clients")
 def waba_list_clients(request: Request):
     """Lista todos los clientes WABA onboarded. Omite access_token.
