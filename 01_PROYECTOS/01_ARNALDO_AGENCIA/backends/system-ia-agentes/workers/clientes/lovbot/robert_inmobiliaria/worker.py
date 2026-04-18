@@ -4102,3 +4102,55 @@ async def test_send_template(request: Request):
         }
     except Exception as e:
         raise HTTPException(502, f"Error enviando: {e}")
+
+
+@router.post("/admin/meta/templates/create")
+async def create_meta_template(request: Request):
+    """Crea un template de WhatsApp en la WABA propia (Robert).
+    Body JSON:
+      name: nombre snake_case (ej: "nurturing_3_dias")
+      category: "MARKETING" | "UTILITY" | "AUTHENTICATION"
+      language: codigo (default "es_MX")
+      body_text: texto del cuerpo, con {{1}} {{2}} para variables
+      example_vars: lista opcional de valores ejemplo para las variables
+    Requiere X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    category = (body.get("category") or "MARKETING").strip().upper()
+    language = (body.get("language") or "es_MX").strip()
+    body_text = (body.get("body_text") or "").strip()
+    example_vars = body.get("example_vars") or []
+
+    if not name or not body_text:
+        raise HTTPException(400, "Faltan name o body_text")
+
+    waba_id = os.getenv("LOVBOT_META_WABA_ID") or os.getenv("META_WABA_ID")
+    token = os.getenv("LOVBOT_META_ACCESS_TOKEN") or os.getenv("META_ACCESS_TOKEN")
+    if not waba_id or not token:
+        raise HTTPException(500, "Faltan WABA_ID o ACCESS_TOKEN")
+
+    components = [{"type": "BODY", "text": body_text}]
+    if example_vars:
+        components[0]["example"] = {"body_text": [example_vars]}
+
+    payload = {"name": name, "category": category, "language": language, "components": components}
+
+    try:
+        r = requests.post(
+            f"https://graph.facebook.com/v22.0/{waba_id}/message_templates",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=15,
+        )
+        return {
+            "status_code": r.status_code,
+            "ok": r.status_code in (200, 201),
+            "response": r.json() if r.headers.get("content-type", "").startswith("application/json") else r.text[:300],
+            "template_name": name,
+        }
+    except Exception as e:
+        raise HTTPException(502, f"Error creando template: {e}")
