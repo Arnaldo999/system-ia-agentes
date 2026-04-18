@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Solicitud Advanced Access — Lovbot Tech Provider</title>
+<link rel="icon" type="image/png" href="/CORAZON-LOVBOT.png">
+<meta name="description" content="Guía paso a paso: solicitar Advanced Access en Meta y completar el proceso Tech Provider de Lovbot.">
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --primary: #1a56db;
+    --primary-hover: #1e40af;
+    --primary-light: #60a5fa;
+    --green: #10b981;
+    --green-bg: rgba(16, 185, 129, 0.1);
+    --orange: #f59e0b;
+    --orange-bg: rgba(245, 158, 11, 0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.1);
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1a2744 60%, #0f172a 100%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+    line-height: 1.6;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 32px; }
+  .header h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+  .header p { color: var(--muted); font-size: 0.95rem; }
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--orange-bg);
+    border: 1px solid var(--orange);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: var(--orange);
+    font-weight: 600;
+    margin-top: 8px;
+  }
+
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-number {
+    width: 36px;
+    height: 36px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-header h2 { font-size: 1.15rem; font-weight: 700; flex: 1; }
+  .step-time {
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: rgba(255,255,255,0.05);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .step p { margin-bottom: 12px; color: var(--text); font-size: 0.92rem; }
+  .step p.muted { color: var(--muted); font-size: 0.85rem; }
+
+  .copy-box {
+    position: relative;
+    background: #0a0f1c;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 12px 0;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+  }
+  .copy-box.text-content {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    white-space: pre-wrap;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background: var(--primary-hover); }
+  .copy-btn.copied { background: var(--green); }
+
+  .url-link {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    padding: 12px 22px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .url-link:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+  .download-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--green);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 6px;
+    margin-right: 8px;
+    transition: all 0.2s;
+    font-size: 0.88rem;
+  }
+  .download-link:hover { background: #0ea96d; }
+
+  .checklist { margin: 12px 0; }
+  .checklist li {
+    list-style: none;
+    padding: 8px 0;
+    padding-left: 28px;
+    position: relative;
+    font-size: 0.9rem;
+  }
+  .checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    color: var(--primary-light);
+    font-size: 1.1rem;
+  }
+  .checklist li.done::before { content: "✓"; color: var(--green); }
+
+  .info-box {
+    background: rgba(96, 165, 250, 0.08);
+    border-left: 3px solid var(--primary-light);
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.86rem;
+  }
+  .warning-box {
+    background: var(--orange-bg);
+    border-left: 3px solid var(--orange);
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.86rem;
+  }
+  .success-box {
+    background: var(--green-bg);
+    border-left: 3px solid var(--green);
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.86rem;
+  }
+  .danger-box {
+    background: var(--red-bg);
+    border-left: 3px solid var(--red);
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.86rem;
+  }
+
+  .video-script {
+    background: #0a0f1c;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin: 12px 0;
+    font-size: 0.85rem;
+  }
+  .video-script .scene {
+    color: var(--primary-light);
+    font-weight: 700;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+  }
+  .video-script .voz {
+    background: rgba(16, 185, 129, 0.05);
+    border-left: 2px solid var(--green);
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-radius: 4px;
+  }
+  .video-script .pantalla {
+    background: rgba(96, 165, 250, 0.05);
+    border-left: 2px solid var(--primary-light);
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-radius: 4px;
+  }
+  .video-script .voz strong, .video-script .pantalla strong {
+    color: var(--text);
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  h3 { margin-top: 16px; margin-bottom: 8px; font-size: 1rem; color: var(--primary-light); }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 16px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    color: var(--primary-light);
+    border-bottom-color: var(--primary-light);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .resources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .resource-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .resource-card-icon { font-size: 2rem; margin-bottom: 6px; }
+  .resource-card h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; }
+  .resource-card p { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+  .resource-card a {
+    display: block;
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .resource-card a:hover { background: var(--primary-hover); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Solicitud de Advanced Access en Meta</h1>
+    <p>Guía paso a paso — Lovbot Tech Provider · Método validado</p>
+    <span class="badge">Tiempo total: ~1 hora · Aprobación Meta: 2-10 días</span>
+  </div>
+
+  <!-- ── INTRO ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">📋</div>
+      <h2>Resumen de lo que vas a hacer</h2>
+    </div>
+    <p>Vamos a solicitar a Meta acceso avanzado a 2 permisos para que cualquier cliente pueda conectar su WhatsApp en nuestra plataforma sin pasar por verificación de negocio:</p>
+    <ul class="checklist">
+      <li><strong>whatsapp_business_messaging</strong> — para enviar mensajes en nombre del cliente</li>
+      <li><strong>whatsapp_business_management</strong> — para gestionar plantillas, números y webhooks del cliente</li>
+    </ul>
+    <div class="info-box">
+      <strong>Lo que Meta exige (por cada permiso):</strong>
+      <ol style="margin: 6px 0 0 18px; font-size: 0.86rem;">
+        <li>Una justificación de cómo se usa</li>
+        <li>Un video corto demostrando el uso real (~1-2 min)</li>
+        <li>Marcar checkbox de cumplimiento de políticas</li>
+      </ol>
+      <strong style="display:block; margin-top:10px;">Y ANTES del envío final:</strong>
+      <ol style="margin: 6px 0 0 18px; font-size: 0.86rem;" start="4">
+        <li><strong>Pantalla de Gestión de Datos</strong> — 5 campos legales que hay que responder bien (acá rechazan a la mayoría)</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ── PASO 1 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <h2>Entrar a Revisión de la app</h2>
+      <span class="step-time">2 min</span>
+    </div>
+    <p>Iniciá sesión en Meta for Developers con tu cuenta admin y entrá directo:</p>
+    <a class="url-link" href="https://developers.facebook.com/apps/704986485248523/app-review/permissions/" target="_blank">
+      Abrir Revisión de App →
+    </a>
+    <div class="info-box">
+      <strong>App:</strong> APP WorkFlow Whats Lovbot V2 (ID 704986485248523)<br>
+      <strong>Negocio:</strong> Lovbot Marketing
+    </div>
+  </div>
+
+  <!-- ── PASO 2 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <h2>Preparar n8n con la plantilla de demo</h2>
+      <span class="step-time">5 min</span>
+    </div>
+    <p>Vamos a usar n8n como backend de demostración (es el método estándar y Meta lo aprueba sin problemas). Necesitás importar este workflow:</p>
+
+    <div class="resources-grid">
+      <div class="resource-card">
+        <div class="resource-card-icon">📥</div>
+        <h4>Workflow n8n</h4>
+        <p>Plantilla lista para importar en tu n8n</p>
+        <a href="https://drive.google.com/file/d/1_7T3S9ev8oHjbZkLZTg7DpboT5i4gZr9/view?usp=sharing" target="_blank">Descargar JSON</a>
+      </div>
+      <div class="resource-card">
+        <div class="resource-card-icon">🎬</div>
+        <h4>OBS Studio</h4>
+        <p>Grabación de pantalla recomendada</p>
+        <a href="https://obsproject.com" target="_blank">Descargar OBS</a>
+      </div>
+    </div>
+
+    <h3>Cómo importar el workflow en n8n</h3>
+    <ol style="margin-left: 18px; font-size: 0.9rem;">
+      <li>Abrí <code>n8n.lovbot.ai</code> con tu cuenta</li>
+      <li>Botón <strong>"+ Add workflow"</strong> → menú ⋮ → <strong>Import from file</strong></li>
+      <li>Subí el JSON descargado</li>
+      <li>En el nodo <strong>"Enviar mensaje whatsapp"</strong> reemplazá:
+        <ul style="margin: 6px 0 0 18px; font-size: 0.85rem;">
+          <li><code>PHONE_NUMBER_ID</code> en la URL → tu Phone Number ID real</li>
+          <li><code>TOKEN DE TU APP</code> en headers → tu access token de Meta</li>
+          <li><code>"to": "524621349768"</code> en el body → tu número personal de WhatsApp (con código país, sin +)</li>
+        </ul>
+      </li>
+      <li>Probalo manualmente una vez antes de grabar para confirmar que llega el mensaje</li>
+    </ol>
+
+    <div class="info-box">
+      El workflow envía un template <code>hello_world</code> (un template estándar que Meta tiene preaprobado en todas las apps). Esto es importante: usar <code>hello_world</code> garantiza que el envío funciona sin necesidad de tener templates propios aprobados.
+    </div>
+  </div>
+
+  <!-- ── PASO 3 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">3</div>
+      <h2>Configurar OBS para grabar</h2>
+      <span class="step-time">3 min</span>
+    </div>
+    <p>Configuración recomendada (la que aprueba Meta sin problemas):</p>
+    <ul class="checklist">
+      <li>Resolución: <strong>1280×720</strong></li>
+      <li>FPS: <strong>30</strong></li>
+      <li>Formato: <strong>MP4</strong> (H.264 + AAC)</li>
+      <li>Audio: <strong>micrófono activado</strong> (vas a narrar en español)</li>
+      <li>Sin cámara web — solo pantalla + voz</li>
+    </ul>
+    <div class="info-box">
+      <strong>Tip:</strong> abrí 3 ventanas/pestañas antes de grabar:
+      <ul style="margin: 6px 0 0 18px; font-size: 0.85rem;">
+        <li>Meta Developers (sección WhatsApp → API Setup)</li>
+        <li>n8n con el workflow importado</li>
+        <li>WhatsApp Web logueado con tu número de prueba</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── PASO 4 — VIDEO 1 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">4</div>
+      <h2>VIDEO 1 — Envío de mensaje (Messaging)</h2>
+      <span class="step-time">15 min</span>
+    </div>
+
+    <a class="download-link" href="https://drive.google.com/file/d/11I_HLDN8tP6KvHOS9fbKaELfh75fZ1Jw/view?usp=sharing" target="_blank">
+      🎥 Ver video de referencia
+    </a>
+
+    <div class="warning-box" style="border-left-color: var(--red); background: rgba(239,68,68,0.08);">
+      <strong>⚠️ CRÍTICO — esto es lo que valida Meta:</strong>
+      <p style="margin: 8px 0 6px;">
+        En el mismo video TIENEN que aparecer SÍ O SÍ las 2 cosas:
+      </p>
+      <ol style="margin: 0 0 8px 18px;">
+        <li>
+          <strong>Pantalla de n8n</strong> — para que Meta vea que tu APP llamó al endpoint
+          <code>graph.facebook.com/.../messages</code>. Sin esto, Meta dice "no demostraste
+          uso de la API" y rechaza.
+        </li>
+        <li>
+          <strong>Pantalla de WhatsApp Web</strong> — para que Meta vea que el mensaje
+          realmente llegó al destinatario. Sin esto, Meta dice "no demostraste entrega"
+          y rechaza.
+        </li>
+      </ol>
+      <p style="margin: 8px 0 0;">
+        <strong>Si solo mostrás una de las dos → rechazo automático.</strong>
+        Razón típica de Meta: <em>"Insufficient demonstration of permission usage"</em>.
+      </p>
+    </div>
+
+    <div class="info-box">
+      <strong>Tip de oro para grabar sin trabarte:</strong>
+      <p style="margin: 8px 0 6px;">
+        Antes de iniciar OBS, abrí 3 pestañas/ventanas en este orden exacto:
+      </p>
+      <ol style="margin: 0; padding-left: 18px;">
+        <li>Pestaña 1: <strong>Meta Developers</strong> (panel WhatsApp → API Setup, donde se ve el cURL oficial)</li>
+        <li>Pestaña 2: <strong>n8n</strong> con el workflow ya cargado (URL: n8n.lovbot.ai/workflow/fo2SJPKESCCOPDLY)</li>
+        <li>Pestaña 3: <strong>WhatsApp Web</strong> logueado con tu número personal +1 226</li>
+      </ol>
+      <p style="margin: 8px 0 0;">
+        Durante la grabación cambiá entre pestañas con <code>Ctrl+Tab</code> y narrá.
+        No tenés que buscar nada, todo está abierto y listo.
+      </p>
+    </div>
+
+    <h3>Qué tiene que mostrar el video</h3>
+    <div class="video-script">
+      <div class="scene">Escena 1 — Panel de Meta</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> abrí Meta Developers → WhatsApp → API Setup. Mostrá el comando cURL oficial que Meta provee.</div>
+      <div class="voz"><strong>VOZ:</strong> "Soy del equipo de Lovbot, agencia verificada como Tech Provider de Meta. Voy a demostrar cómo nuestra app envía mensajes de WhatsApp usando el permiso whatsapp_business_messaging."</div>
+
+      <div class="scene">Escena 2 — n8n configurado</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> abrí n8n con el workflow importado. Mostrá la estructura: Manual Trigger → HTTP Request hacia <code>graph.facebook.com/v22.0/{PHONE_ID}/messages</code></div>
+      <div class="voz"><strong>VOZ:</strong> "Tenemos un backend en n8n que recibe el cURL oficial de Meta y lo envía al endpoint /messages usando el template hello_world."</div>
+
+      <div class="scene">Escena 3 — Ejecución del envío</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> clic en <strong>"Execute Workflow"</strong>. Mostrá la respuesta JSON exitosa del nodo HTTP Request (status 200, message_id devuelto por Meta).</div>
+      <div class="voz"><strong>VOZ:</strong> "Acá ejecuto el flujo. Meta responde con código 200 y un message_id, lo que confirma que el mensaje fue aceptado por la API."</div>
+
+      <div class="scene">Escena 4 — Mensaje recibido en WhatsApp</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> cambiá a WhatsApp Web. Mostrá el chat con el mensaje "hello_world" recién recibido.</div>
+      <div class="voz"><strong>VOZ:</strong> "Como pueden ver, el mensaje llegó al destinatario. Esto demuestra el uso correcto del permiso whatsapp_business_messaging para enviar mensajes en nombre del cliente."</div>
+
+      <div class="scene">Escena 5 — Cierre</div>
+      <div class="voz"><strong>VOZ:</strong> "Gracias por la revisión."</div>
+    </div>
+
+    <h3>Justificación para pegar (Video 1)</h3>
+    <p class="muted">En el campo de descripción del permiso <code>whatsapp_business_messaging</code>:</p>
+    <div class="copy-box text-content">
+      <button class="copy-btn" onclick="copy(this, 'just-msg')">Copiar</button>
+      <div id="just-msg">Nuestra aplicación permite a empresas automatizar la gestión de su canal de WhatsApp mediante flujos personalizados desarrollados en infraestructura propia.
+
+Usamos el permiso whatsapp_business_messaging para enviar mensajes iniciados por la empresa como recordatorios, confirmaciones y respuestas automatizadas, utilizando plantillas aprobadas por Meta.
+
+Cada cliente opera su propio número de WhatsApp Business y mantiene control total de sus datos.
+
+En el video adjunto se demuestra el envío real de un mensaje desde la API y su recepción en WhatsApp Web.</div>
+    </div>
+
+    <div class="success-box">
+      Después de subir el video y pegar la justificación: marcá el checkbox de confirmación y clic en <strong>Guardar</strong>.
+    </div>
+  </div>
+
+  <!-- ── PASO 5 — VIDEO 2 ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">5</div>
+      <h2>VIDEO 2 — Gestión de plantillas (Management)</h2>
+      <span class="step-time">10 min</span>
+    </div>
+
+    <a class="download-link" href="https://drive.google.com/file/d/1OPCUMuqWHDQWvHmNzfjuAVlqZjQGj4mA/view?usp=sharing" target="_blank">
+      🎥 Ver video de referencia
+    </a>
+
+    <div class="warning-box" style="border-left-color: var(--red); background: rgba(239,68,68,0.08);">
+      <strong>⚠️ CRÍTICO — esto es lo que valida Meta:</strong>
+      <p style="margin: 8px 0 6px;">
+        En el video TIENE que aparecer SÍ O SÍ:
+      </p>
+      <ul style="margin: 0 0 8px 18px;">
+        <li>
+          <strong>Pantalla de Meta Business / WhatsApp Manager</strong> — el panel real
+          de gestión, no developers.facebook.com.
+        </li>
+        <li>
+          <strong>El acto de crear el template en vivo</strong> — llenando los campos
+          (categoría, nombre, idioma, cuerpo). No basta con mostrar uno ya creado.
+        </li>
+        <li>
+          <strong>El template asociado al WABA</strong> — al final, mostrar la lista
+          con la plantilla nueva en estado "En revisión".
+        </li>
+      </ul>
+      <p style="margin: 8px 0 0;">
+        Sin estos 3 elementos, Meta dice <em>"No demostraste gestión activa de
+        templates"</em> y rechaza.
+      </p>
+    </div>
+
+    <div class="info-box">
+      <strong>Tip importante:</strong>
+      <p style="margin: 8px 0 0;">
+        Usá un <strong>nombre nuevo</strong> de template para crear (ej:
+        <code>nurturing_3_dias_demo</code>) — no usés uno que ya tengas creado, porque
+        Meta podría detectar que es un template viejo y rechazar.
+      </p>
+    </div>
+
+    <h3>Qué tiene que mostrar el video</h3>
+    <div class="video-script">
+      <div class="scene">Escena 1 — Acceso a WhatsApp Manager</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> abrí Meta Business → <strong>WhatsApp Manager</strong>. Mostrá el panel principal donde se ven los números y la sección de Plantillas.</div>
+      <div class="voz"><strong>VOZ:</strong> "Continuando con la revisión de Lovbot, ahora demostramos cómo creamos y gestionamos plantillas de mensajes pre-aprobadas en nombre de nuestros clientes, usando el permiso whatsapp_business_management."</div>
+
+      <div class="scene">Escena 2 — Crear plantilla nueva</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> clic en <strong>Plantillas de mensaje</strong> → <strong>Crear nueva plantilla</strong>. Llenás:
+        <ul style="margin: 6px 0 0 14px;">
+          <li>Categoría: <strong>Marketing</strong></li>
+          <li>Nombre: <code>nurturing_3_dias_demo</code></li>
+          <li>Idioma: Español (Argentina)</li>
+          <li>Cuerpo: "Hola {{1}}, soy el asistente de {{2}}. Vi que estuviste consultando propiedades en {{3}}. ¿Pudiste tomar una decisión? Si necesitás más info estoy acá 🏡"</li>
+        </ul>
+      </div>
+      <div class="voz"><strong>VOZ:</strong> "Esta plantilla la usamos para reactivar leads inactivos. Tiene 3 variables: nombre del lead, nombre del negocio, y zona de interés. Cumple con las políticas de marketing de Meta."</div>
+
+      <div class="scene">Escena 3 — Asociación con WABA</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> clic en <strong>Enviar a aprobación</strong>. Mostrá la lista de templates con la nueva en estado <strong>"En revisión"</strong>, asociada al WABA del cliente.</div>
+      <div class="voz"><strong>VOZ:</strong> "La plantilla queda asociada al WABA del cliente y entra en revisión de Meta. Una vez aprobada, podemos enviarla via API en flujos automatizados."</div>
+
+      <div class="scene">Escena 4 — Cierre</div>
+      <div class="voz"><strong>VOZ:</strong> "Esto demuestra el uso del permiso whatsapp_business_management para gestionar templates en nombre del cliente. Gracias por la revisión."</div>
+    </div>
+
+    <h3>Justificación para pegar (Video 2)</h3>
+    <p class="muted">En el campo de descripción del permiso <code>whatsapp_business_management</code>:</p>
+    <div class="copy-box text-content">
+      <button class="copy-btn" onclick="copy(this, 'just-mgmt')">Copiar</button>
+      <div id="just-mgmt">Nuestra aplicación permite a empresas clientes configurar y administrar sus activos comerciales de WhatsApp, incluyendo números, plantillas de mensajes y suscripciones a webhooks.
+
+Usamos el permiso whatsapp_business_management para crear y gestionar plantillas que luego se utilizan en flujos automatizados (por ejemplo, confirmaciones, recordatorios y mensajes estructurados).
+
+En el video adjunto se demuestra la creación de una plantilla desde el panel de Meta Business/WhatsApp Manager y su asociación a los activos de WhatsApp que administra el cliente.</div>
+    </div>
+
+    <div class="success-box">
+      Después de subir el video y pegar la justificación: marcá el checkbox de confirmación y clic en <strong>Guardar</strong>.
+    </div>
+  </div>
+
+  <!-- ── PASO 6 — GESTIÓN DE DATOS (CRÍTICO) ────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">6</div>
+      <h2>Gestión de Datos (¡acá rechazan a la mayoría!)</h2>
+      <span class="step-time">10 min</span>
+    </div>
+
+    <div class="warning-box">
+      <strong>Atención:</strong> después de subir los 2 videos, Meta te lleva a una pantalla
+      llamada <strong>"Gestión de datos"</strong>. Acá es donde la mayoría de las apps son
+      rechazadas porque la gente responde mal o deja campos en blanco. Seguí estos
+      pasos al pie de la letra.
+    </div>
+
+    <h3>Pregunta 1 — Encargados del tratamiento</h3>
+    <p class="muted">
+      Meta pregunta:
+      <em>"¿Hay encargados del tratamiento de los datos o proveedores de servicios
+      (en tus propias empresas o fuera de ellas) que tendrán acceso a los datos de
+      la plataforma que Meta te proporcione?"</em>
+    </p>
+    <div class="info-box">
+      <strong>Respuesta correcta: NO</strong><br>
+      Razón: actuamos como Tech Provider. Cada cliente controla sus datos en su
+      propia infraestructura — no centralizamos nada.
+    </div>
+
+    <h3>Pregunta 2 — Persona o entidad responsable</h3>
+    <p class="muted">
+      Meta pregunta:
+      <em>"¿Qué persona o entidad será responsable de todos los datos de la
+      plataforma que Meta comparta contigo?"</em>
+    </p>
+    <p class="muted">Pegá este texto en el campo:</p>
+    <div class="copy-box text-content">
+      <button class="copy-btn" onclick="copy(this, 'rol-techprov')">Copiar</button>
+      <div id="rol-techprov">Nuestra agencia actúa como proveedor técnico (Tech Provider) para empresas que desean automatizar su canal de WhatsApp. No centralizamos ni almacenamos datos personales de los usuarios finales en infraestructura propia. En su lugar, desplegamos instancias dedicadas en servidores propiedad de cada cliente, lo que garantiza el aislamiento técnico y el control total por parte del cliente sobre sus activos y datos.
+
+Cada cliente mantiene la titularidad y el control de su número de WhatsApp, su cuenta de Meta Business y su infraestructura de procesamiento. Lovbot únicamente proporciona soporte técnico, configuración inicial y mantenimiento de los flujos automatizados, sin acceder ni conservar datos personales de forma persistente.
+
+Por tanto, Lovbot es responsable únicamente del tratamiento técnico necesario para habilitar la funcionalidad de la aplicación, mientras que cada cliente es responsable del tratamiento de los datos que se generan y gestionan dentro de su propia infraestructura.</div>
+    </div>
+
+    <h3>Pregunta 3 — País del responsable</h3>
+    <p class="muted">
+      Meta pregunta: <em>"Selecciona el país donde se encuentra esta persona o entidad."</em>
+    </p>
+    <div class="info-box">
+      <strong>Seleccioná: México (MX)</strong><br>
+      Razón: es el país donde estás registrado como Lovbot Marketing.
+    </div>
+
+    <h3>Pregunta 4 — Compartición con autoridades</h3>
+    <p class="muted">
+      Meta pregunta:
+      <em>"¿Has proporcionado información o datos personales de los usuarios a las
+      autoridades públicas en respuesta a solicitudes de seguridad nacional en los
+      últimos 12 meses?"</em>
+    </p>
+    <div class="info-box">
+      <strong>Respuesta correcta: NO</strong>
+    </div>
+
+    <h3>Pregunta 5 — Compromisos obligatorios (4 checkboxes)</h3>
+    <p class="muted">
+      Meta pregunta: <em>"¿Cuál de las siguientes políticas o procesos has implementado
+      en relación con las solicitudes de autoridades públicas de información o datos
+      personales de los usuarios? Marca todas las opciones que correspondan."</em>
+    </p>
+    <p>Marcá <strong>las 4 primeras opciones</strong>:</p>
+    <ul class="checklist">
+      <li class="done">Revisión obligatoria de la legalidad de estas solicitudes</li>
+      <li class="done">Disposiciones para impugnar estas solicitudes si se consideran ilegales</li>
+      <li class="done">Política de minimización de datos: la capacidad de divulgar la mínima información necesaria</li>
+      <li class="done">Documentación de estas solicitudes, lo que incluye tus respuestas a estas y el razonamiento jurídico y las partes involucradas</li>
+    </ul>
+    <div class="warning-box">
+      <strong>NO marcar:</strong>
+      <ul style="margin: 6px 0 0 18px; font-size: 0.85rem;">
+        <li>"Ninguna de las opciones anteriores"</li>
+        <li>"La legislación o la política de la empresa nos prohíben responder a esta pregunta"</li>
+      </ul>
+      Esos 2 son trampa. Si los marcás, Meta te rechaza.
+    </div>
+
+    <h3>Verificación final antes de continuar</h3>
+    <p>Antes de pasar al siguiente paso, confirmá que:</p>
+    <ul class="checklist">
+      <li>Los 5 campos de Gestión de Datos tienen respuesta</li>
+      <li>No hay alertas rojas en la pantalla</li>
+      <li>El texto del rol Tech Provider está pegado completo (no se cortó)</li>
+      <li>Las 4 casillas de compromisos están marcadas</li>
+    </ul>
+  </div>
+
+  <!-- ── PASO 7 — ENVIAR A REVISIÓN ────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">7</div>
+      <h2>Enviar a revisión</h2>
+      <span class="step-time">2 min</span>
+    </div>
+    <p>Una vez completada la Gestión de Datos, te aparece la pantalla final
+       "Enviar a la revisión de la aplicación" con 4 secciones marcadas en verde:</p>
+    <ul class="checklist">
+      <li class="done">✓ Verificación</li>
+      <li class="done">✓ Configuración de la aplicación</li>
+      <li class="done">✓ Uso permitido</li>
+      <li class="done">✓ Gestión de datos</li>
+    </ul>
+    <p>Si las 4 están en verde → clic en el botón <strong>"Enviar a revisión"</strong>
+       (azul, abajo a la derecha).</p>
+
+    <div class="success-box">
+      <strong>Resultado esperado:</strong><br><br>
+      Tus 2 permisos quedan en estado:
+      <ul style="margin: 6px 0; padding-left: 24px;">
+        <li><code>whatsapp_business_messaging</code> → ⏳ <strong>En revisión</strong></li>
+        <li><code>whatsapp_business_management</code> → ⏳ <strong>En revisión</strong></li>
+      </ul>
+      <strong>Tiempos de respuesta de Meta:</strong>
+      <ul style="margin: 6px 0; padding-left: 24px;">
+        <li>Promedio: 2-4 días hábiles</li>
+        <li>Algunas veces: 24-48 horas</li>
+        <li>Máximo: 10 días hábiles</li>
+      </ul>
+      Te llega notificación por email + en developers.facebook.com.<br><br>
+      Si <strong>aprueba</strong> → cualquier cliente puede conectar su WhatsApp por la
+      landing y arrancar el bot el mismo día. La app pasa automáticamente al estado
+      <em>"Tu negocio se verificó como proveedor de tecnología"</em>.<br><br>
+      Si <strong>rechaza</strong> → Meta indica exactamente qué falta. Corregís y reenviás
+      sin penalización.
+    </div>
+
+    <div class="info-box">
+      <strong>Después de la aprobación</strong> vas a poder ver en el menú lateral de
+      WhatsApp un nuevo recurso de <strong>"Incorporación de clientes"</strong> con
+      el progreso "2 de 2 pasos completados". Ahí Meta te ofrece la URI de página de
+      destino del registro insertado, lista para usar con clientes reales.
+    </div>
+  </div>
+
+  <!-- ── INFO LEGAL ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">📑</div>
+      <h2>URLs legales — todas publicadas y cargadas en Meta</h2>
+    </div>
+    <p>Las 3 URLs legales que Meta valida al revisar la app ya están publicadas
+       y cargadas en la Configuración Básica de la app:</p>
+    <ul class="checklist">
+      <li class="done">
+        <strong>Política de Privacidad</strong> →
+        <a href="https://lovbot.mx/politica-de-privacidad" target="_blank" style="color: var(--green);">lovbot.mx/politica-de-privacidad</a>
+      </li>
+      <li class="done">
+        <strong>Términos de Servicio</strong> →
+        <a href="https://lovbot-legal.vercel.app/terminos-de-servicio" target="_blank" style="color: var(--green);">lovbot-legal.vercel.app/terminos-de-servicio</a>
+      </li>
+      <li class="done">
+        <strong>URL de Eliminación de Datos</strong> →
+        <a href="https://lovbot-legal.vercel.app/eliminacion-datos" target="_blank" style="color: var(--green);">lovbot-legal.vercel.app/eliminacion-datos</a>
+      </li>
+    </ul>
+    <div class="success-box">
+      Las 3 páginas están live, responden HTTP 200 y tienen el branding completo
+      de Lovbot. No hay nada que hacer acá — solo está como referencia por si
+      Meta consulta.
+    </div>
+  </div>
+
+  <!-- ── RESUMEN FINAL ────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">✅</div>
+      <h2>Resumen de lo que necesitás tener listo</h2>
+    </div>
+    <h3>Antes de empezar a grabar</h3>
+    <ul class="checklist">
+      <li>OBS Studio instalado</li>
+      <li>n8n con el workflow importado y testeado funcionando</li>
+      <li>WhatsApp Web logueado con un número de prueba</li>
+      <li>Las 2 URLs legales publicadas en lovbot.mx</li>
+    </ul>
+    <h3>Durante la grabación</h3>
+    <ul class="checklist">
+      <li>Video 1 (~1-2 min) — envío de mensaje hello_world via n8n</li>
+      <li>Video 2 (~1-2 min) — creación de template en WhatsApp Manager</li>
+      <li>Ambos en 1280×720, MP4, con voz en español</li>
+    </ul>
+    <h3>Después de grabar</h3>
+    <ul class="checklist">
+      <li>Subir Video 1 al permiso whatsapp_business_messaging + pegar justificación</li>
+      <li>Subir Video 2 al permiso whatsapp_business_management + pegar justificación</li>
+      <li>Completar Gestión de Datos (Paso 6 — los 5 campos)</li>
+      <li>Clic en Enviar a revisión</li>
+      <li>Esperar 2-10 días la respuesta de Meta</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Cualquier duda durante el proceso, escribime por WhatsApp.<br>
+    — Lovbot Tech Lead
+  </div>
+
+</div>
+
+<script>
+  function copy(btn, targetId) {
+    const el = document.getElementById(targetId);
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const old = btn.textContent;
+      btn.textContent = '✓ Copiado';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = old;
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
