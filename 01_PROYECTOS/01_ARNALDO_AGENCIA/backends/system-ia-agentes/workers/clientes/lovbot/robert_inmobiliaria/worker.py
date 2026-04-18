@@ -4154,3 +4154,17 @@ async def create_meta_template(request: Request):
         }
     except Exception as e:
         raise HTTPException(502, f"Error creando template: {e}")
+
+
+@router.delete("/admin/waba/client/{phone_number_id}")
+def waba_delete_client(phone_number_id: str, request: Request):
+    """Elimina un cliente WABA por phone_number_id (solo limpieza/testing).
+    Requiere X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+    _check_pg()
+    ok = db.eliminar_waba_client(phone_number_id)
+    if not ok:
+        raise HTTPException(404, f"phone_number_id={phone_number_id} no encontrado o no se pudo eliminar")
+    return {"status": "ok", "deleted": phone_number_id}
