@@ -437,6 +437,45 @@
       🎥 Ver video de referencia
     </a>
 
+    <div class="warning-box" style="border-left-color: var(--red); background: rgba(239,68,68,0.08);">
+      <strong>⚠️ CRÍTICO — esto es lo que valida Meta:</strong>
+      <p style="margin: 8px 0 6px;">
+        En el mismo video TIENEN que aparecer SÍ O SÍ las 2 cosas:
+      </p>
+      <ol style="margin: 0 0 8px 18px;">
+        <li>
+          <strong>Pantalla de n8n</strong> — para que Meta vea que tu APP llamó al endpoint
+          <code>graph.facebook.com/.../messages</code>. Sin esto, Meta dice "no demostraste
+          uso de la API" y rechaza.
+        </li>
+        <li>
+          <strong>Pantalla de WhatsApp Web</strong> — para que Meta vea que el mensaje
+          realmente llegó al destinatario. Sin esto, Meta dice "no demostraste entrega"
+          y rechaza.
+        </li>
+      </ol>
+      <p style="margin: 8px 0 0;">
+        <strong>Si solo mostrás una de las dos → rechazo automático.</strong>
+        Razón típica de Meta: <em>"Insufficient demonstration of permission usage"</em>.
+      </p>
+    </div>
+
+    <div class="info-box">
+      <strong>Tip de oro para grabar sin trabarte:</strong>
+      <p style="margin: 8px 0 6px;">
+        Antes de iniciar OBS, abrí 3 pestañas/ventanas en este orden exacto:
+      </p>
+      <ol style="margin: 0; padding-left: 18px;">
+        <li>Pestaña 1: <strong>Meta Developers</strong> (panel WhatsApp → API Setup, donde se ve el cURL oficial)</li>
+        <li>Pestaña 2: <strong>n8n</strong> con el workflow ya cargado (URL: n8n.lovbot.ai/workflow/fo2SJPKESCCOPDLY)</li>
+        <li>Pestaña 3: <strong>WhatsApp Web</strong> logueado con tu número personal +1 226</li>
+      </ol>
+      <p style="margin: 8px 0 0;">
+        Durante la grabación cambiá entre pestañas con <code>Ctrl+Tab</code> y narrá.
+        No tenés que buscar nada, todo está abierto y listo.
+      </p>
+    </div>
+
     <h3>Qué tiene que mostrar el video</h3>
     <div class="video-script">
       <div class="scene">Escena 1 — Panel de Meta</div>
@@ -489,6 +528,40 @@ En el video adjunto se demuestra el envío real de un mensaje desde la API y su 
       🎥 Ver video de referencia
     </a>
 
+    <div class="warning-box" style="border-left-color: var(--red); background: rgba(239,68,68,0.08);">
+      <strong>⚠️ CRÍTICO — esto es lo que valida Meta:</strong>
+      <p style="margin: 8px 0 6px;">
+        En el video TIENE que aparecer SÍ O SÍ:
+      </p>
+      <ul style="margin: 0 0 8px 18px;">
+        <li>
+          <strong>Pantalla de Meta Business / WhatsApp Manager</strong> — el panel real
+          de gestión, no developers.facebook.com.
+        </li>
+        <li>
+          <strong>El acto de crear el template en vivo</strong> — llenando los campos
+          (categoría, nombre, idioma, cuerpo). No basta con mostrar uno ya creado.
+        </li>
+        <li>
+          <strong>El template asociado al WABA</strong> — al final, mostrar la lista
+          con la plantilla nueva en estado "En revisión".
+        </li>
+      </ul>
+      <p style="margin: 8px 0 0;">
+        Sin estos 3 elementos, Meta dice <em>"No demostraste gestión activa de
+        templates"</em> y rechaza.
+      </p>
+    </div>
+
+    <div class="info-box">
+      <strong>Tip importante:</strong>
+      <p style="margin: 8px 0 0;">
+        Usá un <strong>nombre nuevo</strong> de template para crear (ej:
+        <code>nurturing_3_dias_demo</code>) — no usés uno que ya tengas creado, porque
+        Meta podría detectar que es un template viejo y rechazar.
+      </p>
+    </div>
+
     <h3>Qué tiene que mostrar el video</h3>
     <div class="video-script">
       <div class="scene">Escena 1 — Acceso a WhatsApp Manager</div>
@@ -499,7 +572,7 @@ En el video adjunto se demuestra el envío real de un mensaje desde la API y su 
       <div class="pantalla"><strong>PANTALLA:</strong> clic en <strong>Plantillas de mensaje</strong> → <strong>Crear nueva plantilla</strong>. Llenás:
         <ul style="margin: 6px 0 0 14px;">
           <li>Categoría: <strong>Marketing</strong></li>
-          <li>Nombre: <code>nurturing_3_dias</code></li>
+          <li>Nombre: <code>nurturing_3_dias_demo</code></li>
           <li>Idioma: Español (Argentina)</li>
           <li>Cuerpo: "Hola {{1}}, soy el asistente de {{2}}. Vi que estuviste consultando propiedades en {{3}}. ¿Pudiste tomar una decisión? Si necesitás más info estoy acá 🏡"</li>
         </ul>
