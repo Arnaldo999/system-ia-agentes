@@ -15,14 +15,16 @@ Variables de entorno requeridas:
     TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
     (las variables de cada auditor se cargan desde sus propios módulos)
 
-Auditores activos (Fase 2.4):
-    - auditor_infra          → n8n Mica + Lovbot health
-    - auditor_workflows      → workflows críticos × 3 instancias
-    - auditor_ycloud         → número WhatsApp Maicol (YCloud)
-    - auditor_tokens         → LinkedIn Arnaldo/Mica, Gemini, Airtable
-    - auditor_evolution      → instancias WhatsApp Mica (Evolution API)
-    - auditor_meta_provider  → WABA + token Robert (Meta Graph API)
-    - auditor_crm            → Supabase tenants + Airtable Maicol/Lau/Robert
+Auditores activos (Fase 2.5):
+    - auditor_infra             → n8n Mica + Lovbot health
+    - auditor_workflows         → workflows críticos × 3 instancias
+    - auditor_ycloud            → número WhatsApp Maicol (YCloud)
+    - auditor_tokens            → LinkedIn Arnaldo/Mica, Gemini, Airtable
+    - auditor_evolution         → instancias WhatsApp Mica (Evolution API)
+    - auditor_meta_provider     → WABA + token Robert (Meta Graph API)
+    - auditor_crm               → Supabase tenants + Airtable Maicol/Lau/Robert
+    - auditor_social            → workers redes sociales
+    - auditor_lovbot_ecosystem  → backend Hetzner + Resend + Chatwoot + Vercel (Tech Provider)
 """
 
 import os
@@ -48,6 +50,9 @@ import auditor_tokens
 import auditor_evolution
 import auditor_meta_provider
 import auditor_crm
+import auditor_social
+import auditor_lovbot_ecosystem
+import auto_reparador
 
 AUDITORES = [
     auditor_infra,
@@ -57,6 +62,8 @@ AUDITORES = [
     auditor_evolution,
     auditor_meta_provider,
     auditor_crm,
+    auditor_social,
+    auditor_lovbot_ecosystem,
 ]
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
@@ -83,13 +90,15 @@ ICONOS_TIPO = {
 }
 
 TITULOS_AUDITOR = {
-    "infra":     "🏗️ Infraestructura",
-    "workflows": "📋 Workflows",
-    "ycloud":    "📡 YCloud",
-    "tokens":    "🔐 Tokens",
-    "evolution": "💬 Evolution API",
-    "meta":      "🌐 Meta Tech Provider",
-    "crm":       "🗄️ CRM / Tenants",
+    "infra":              "🏗️ Infraestructura",
+    "workflows":          "📋 Workflows",
+    "ycloud":             "📡 YCloud",
+    "tokens":             "🔐 Tokens",
+    "evolution":          "💬 Evolution API",
+    "meta":               "🌐 Meta Tech Provider",
+    "crm":                "🗄️ CRM / Tenants",
+    "social":             "📱 Redes Sociales",
+    "lovbot_ecosystem":   "🟠 Lovbot Ecosystem",
 }
 
 def _formatear_reporte(resultados: list[dict], fecha: str) -> str:
@@ -151,9 +160,17 @@ def main():
         print("[runner] Todo OK — sin alertas, no se envía Telegram")
         return
 
+    # ── Auto-reparación ──────────────────────────────────────────────────────
+    print(f"[runner] {total_alertas} alertas detectadas — ejecutando auto-reparador...")
+    acciones = auto_reparador.reparar(resultados)
+    texto_reparacion = auto_reparador.formatear_acciones(acciones)
+
     reporte = _formatear_reporte(resultados, fecha)
+    if texto_reparacion:
+        reporte += texto_reparacion
+
     _enviar_telegram(reporte)
-    print(f"[runner] Reporte enviado — {total_alertas} alertas, {errores_runner} errores runner")
+    print(f"[runner] Reporte enviado — {total_alertas} alertas, {len(acciones)} reparaciones, {errores_runner} errores runner")
 
 
 if __name__ == "__main__":
