@@ -397,10 +397,13 @@ def enviar_bienvenida_whatsapp(
         return {"ok": False, "error": str(e)}
 
 
-# ── 9. Email de bienvenida via Resend ────────────────────────────────────────
+# ── 9. Email de bienvenida via SMTP cPanel (lovbot.ai) ───────────────────────
 
-RESEND_API_KEY = os.environ.get("LOVBOT_RESEND_API_KEY", "") or os.environ.get("RESEND_API_KEY", "")
-RESEND_FROM = os.environ.get("LOVBOT_RESEND_FROM", "Lovbot <onboarding@lovbot.mx>")
+SMTP_HOST = os.environ.get("LOVBOT_SMTP_HOST", "mail.lovbot.ai")
+SMTP_PORT = int(os.environ.get("LOVBOT_SMTP_PORT", "465"))
+SMTP_USER = os.environ.get("LOVBOT_SMTP_USER", "onboarding@lovbot.ai")
+SMTP_PASSWORD = os.environ.get("LOVBOT_SMTP_PASSWORD", "")
+SMTP_FROM_NAME = os.environ.get("LOVBOT_SMTP_FROM_NAME", "Lovbot Onboarding")
 
 
 def enviar_bienvenida_email(
@@ -412,11 +415,11 @@ def enviar_bienvenida_email(
     """Envia email de bienvenida al cliente con todos los accesos.
     Backup permanente de las credenciales en caso de que se pierda el WhatsApp.
 
-    Requiere LOVBOT_RESEND_API_KEY (Resend.com — 3000 emails/mes free).
-    El dominio FROM debe estar verificado en Resend (ej: lovbot.mx).
+    Usa SMTP directo de cPanel (mail.lovbot.ai puerto 465 SSL).
+    Requiere LOVBOT_SMTP_PASSWORD en env vars.
     """
-    if not RESEND_API_KEY:
-        return {"ok": False, "error": "LOVBOT_RESEND_API_KEY no configurado"}
+    if not SMTP_PASSWORD:
+        return {"ok": False, "error": "LOVBOT_SMTP_PASSWORD no configurado"}
 
     chatwoot_url = accesos.get("chatwoot_url", "")
     chatwoot_email = accesos.get("chatwoot_email", "")
@@ -525,30 +528,25 @@ Cualquier duda: hola@lovbot.mx
 """
 
     try:
-        r = requests.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "from": RESEND_FROM,
-                "to": [to_email],
-                "subject": subject,
-                "html": html_body,
-                "text": text_body,
-                "tags": [
-                    {"name": "category", "value": "onboarding"},
-                    {"name": "client", "value": nombre_empresa[:50]},
-                ],
-            },
-            timeout=REQUEST_TIMEOUT,
-        )
-        if r.status_code in (200, 201):
-            return {"ok": True, "email_id": r.json().get("id"), "sent_to": to_email}
-        return {"ok": False, "error": f"Resend HTTP {r.status_code}: {r.text[:200]}"}
+        import smtplib
+        from email.message import EmailMessage
+
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        msg["From"] = f"{SMTP_FROM_NAME} <{SMTP_USER}>"
+        msg["To"] = to_email
+        msg["Reply-To"] = "hola@lovbot.mx"
+        msg.set_content(text_body)
+        msg.add_alternative(html_body, subtype="html")
+
+        # Conexion SSL (puerto 465) — recomendado por cPanel
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=REQUEST_TIMEOUT) as server:
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+
+        return {"ok": True, "sent_to": to_email, "from": SMTP_USER, "via": f"{SMTP_HOST}:{SMTP_PORT}"}
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        return {"ok": False, "error": f"SMTP error: {type(e).__name__}: {str(e)[:200]}"}
 
 
 # ── Orquestador principal ────────────────────────────────────────────────────
