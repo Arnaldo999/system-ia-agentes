@@ -540,12 +540,19 @@ En el video adjunto se demuestra el envío real de un mensaje desde la API y su 
       </p>
     </div>
 
-    <div class="info-box">
-      <strong>Tip importante:</strong>
-      <p style="margin: 8px 0 0;">
-        Usá un <strong>nombre nuevo</strong> de template para crear (ej:
-        <code>nurturing_3_dias_demo</code>) — no usés uno que ya tengas creado, porque
-        Meta podría detectar que es un template viejo y rechazar.
+    <div class="success-box">
+      <strong>✓ 2 de 3 templates ya creados desde el backend.</strong>
+      <p style="margin: 8px 0;">
+        Ya están en estado <code>PENDING</code> esperando aprobación Meta (~30 min - 2h):
+      </p>
+      <ul style="margin: 0 0 8px 18px;">
+        <li><code>nurturing_15_dias</code> ✓</li>
+        <li><code>nurturing_30_dias</code> ✓</li>
+      </ul>
+      <p style="margin: 0;">
+        <strong>Tu única tarea en este video:</strong> crear el template
+        <code>nurturing_3_dias</code> EN VIVO desde WhatsApp Manager. Eso es lo que
+        Meta necesita ver para aprobar el permiso <code>whatsapp_business_management</code>.
       </p>
     </div>
 
@@ -555,24 +562,39 @@ En el video adjunto se demuestra el envío real de un mensaje desde la API y su 
       <div class="pantalla"><strong>PANTALLA:</strong> abrí Meta Business → <strong>WhatsApp Manager</strong>. Mostrá el panel principal donde se ven los números y la sección de Plantillas.</div>
       <div class="voz"><strong>VOZ:</strong> "Continuando con la revisión de Lovbot, ahora demostramos cómo creamos y gestionamos plantillas de mensajes pre-aprobadas en nombre de nuestros clientes, usando el permiso whatsapp_business_management."</div>
 
-      <div class="scene">Escena 2 — Crear plantilla nueva</div>
+      <div class="scene">Escena 2 — Crear plantilla nueva (nurturing_3_dias)</div>
       <div class="pantalla"><strong>PANTALLA:</strong> clic en <strong>Plantillas de mensaje</strong> → <strong>Crear nueva plantilla</strong>. Llenás:
         <ul style="margin: 6px 0 0 14px;">
           <li>Categoría: <strong>Marketing</strong></li>
-          <li>Nombre: <code>nurturing_3_dias_demo</code></li>
-          <li>Idioma: Español (Argentina)</li>
-          <li>Cuerpo: "Hola {{1}}, soy el asistente de {{2}}. Vi que estuviste consultando propiedades en {{3}}. ¿Pudiste tomar una decisión? Si necesitás más info estoy acá 🏡"</li>
+          <li>Nombre: <code>nurturing_3_dias</code></li>
+          <li>Idioma: <strong>Español (México)</strong> — es_MX</li>
+          <li>Cuerpo: ver bloque copiable abajo</li>
         </ul>
       </div>
-      <div class="voz"><strong>VOZ:</strong> "Esta plantilla la usamos para reactivar leads inactivos. Tiene 3 variables: nombre del lead, nombre del negocio, y zona de interés. Cumple con las políticas de marketing de Meta."</div>
+      <div class="voz"><strong>VOZ:</strong> "Esta plantilla la usamos para reactivar leads que consultaron pero no agendaron cita después de 3 días. Tiene 3 variables: nombre del lead, nombre del negocio, y zona de interés. Cumple con las políticas de marketing de Meta."</div>
 
-      <div class="scene">Escena 3 — Asociación con WABA</div>
-      <div class="pantalla"><strong>PANTALLA:</strong> clic en <strong>Enviar a aprobación</strong>. Mostrá la lista de templates con la nueva en estado <strong>"En revisión"</strong>, asociada al WABA del cliente.</div>
-      <div class="voz"><strong>VOZ:</strong> "La plantilla queda asociada al WABA del cliente y entra en revisión de Meta. Una vez aprobada, podemos enviarla via API en flujos automatizados."</div>
+      <div class="scene">Escena 3 — Enviar a aprobación</div>
+      <div class="pantalla"><strong>PANTALLA:</strong> clic en <strong>Enviar a aprobación</strong>. Mostrá la lista de templates con <code>nurturing_3_dias</code> en estado <strong>"En revisión"</strong>, junto con <code>nurturing_15_dias</code> y <code>nurturing_30_dias</code> que ya están ahí.</div>
+      <div class="voz"><strong>VOZ:</strong> "La plantilla queda asociada al WABA del cliente y entra en revisión de Meta. Como ven, ya tenemos otras 2 plantillas similares de nuestro flujo de nurturing (15 y 30 días). Una vez aprobada, podemos enviarla via API en flujos automatizados."</div>
 
       <div class="scene">Escena 4 — Cierre</div>
       <div class="voz"><strong>VOZ:</strong> "Esto demuestra el uso del permiso whatsapp_business_management para gestionar templates en nombre del cliente. Gracias por la revisión."</div>
     </div>
+
+    <h3>Cuerpo del template para copiar/pegar (Escena 2)</h3>
+    <p class="muted">En el campo <strong>Cuerpo del mensaje</strong> al crear la plantilla, pegá esto:</p>
+    <div class="copy-box text-content">
+      <button class="copy-btn" onclick="copy(this, 'tpl-3dias')">Copiar</button>
+      <div id="tpl-3dias">Hola {{1}} 👋 Soy el asistente de {{2}}.
+
+Hace unos días estuviste consultando sobre propiedades en {{3}}. ¿Pudiste pensarlo?
+
+Si querés, puedo acercarte opciones actualizadas o coordinar una charla breve con nuestro asesor. Estoy acá cuando quieras 🏡</div>
+    </div>
+    <p class="muted" style="margin-top: 8px;">
+      <strong>Variables ejemplo</strong> que pide Meta para validar (poner cuando aparezca):
+      <code>Juan</code>, <code>Lovbot Inmobiliaria</code>, <code>Cancún</code>
+    </p>
 
     <h3>Justificación para pegar (Video 2)</h3>
     <p class="muted">En el campo de descripción del permiso <code>whatsapp_business_management</code>:</p>
