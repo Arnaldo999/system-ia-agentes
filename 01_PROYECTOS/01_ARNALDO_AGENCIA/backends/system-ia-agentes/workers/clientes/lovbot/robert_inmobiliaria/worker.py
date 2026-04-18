@@ -3995,3 +3995,51 @@ async def waba_update_worker_url(phone_number_id: str, request: Request):
         "worker_url_anterior": client.get("worker_url"),
         "worker_url_nuevo": nuevo_url,
     }
+
+
+# ── ADMIN: Templates Meta (helper para no exponer access_token) ──────────────
+
+@router.get("/admin/meta/templates")
+def list_meta_templates(request: Request):
+    """Lista templates Meta de la WABA propia (Robert).
+    Usa META_ACCESS_TOKEN del backend (que esta vigente) sin exponerlo.
+    Requiere X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+
+    waba_id = os.getenv("LOVBOT_META_WABA_ID") or os.getenv("META_WABA_ID")
+    token = os.getenv("LOVBOT_META_ACCESS_TOKEN") or os.getenv("META_ACCESS_TOKEN")
+    if not waba_id or not token:
+        raise HTTPException(500, "Faltan META_WABA_ID o META_ACCESS_TOKEN en env")
+
+    try:
+        r = requests.get(
+            f"https://graph.facebook.com/v22.0/{waba_id}/message_templates",
+            params={"fields": "name,status,language,category,components"},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=15,
+        )
+        if r.status_code != 200:
+            raise HTTPException(502, f"Meta error: {r.status_code} {r.text[:300]}")
+        data = r.json()
+        # Resumir para no inundar response
+        templates = data.get("data", [])
+        summary = [
+            {
+                "name": t.get("name"),
+                "status": t.get("status"),
+                "language": t.get("language"),
+                "category": t.get("category"),
+            }
+            for t in templates
+        ]
+        return {
+            "total": len(summary),
+            "waba_id": waba_id,
+            "templates": summary,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(502, f"Error consultando Meta: {e}")
