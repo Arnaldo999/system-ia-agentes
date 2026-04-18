@@ -363,43 +363,27 @@
   <div class="step">
     <div class="step-header">
       <div class="step-number">2</div>
-      <h2>Preparar n8n con la plantilla de demo</h2>
-      <span class="step-time">5 min</span>
-    </div>
-    <p>Vamos a usar n8n como backend de demostración (es el método estándar y Meta lo aprueba sin problemas). Necesitás importar este workflow:</p>
-
-    <div class="resources-grid">
-      <div class="resource-card">
-        <div class="resource-card-icon">📥</div>
-        <h4>Workflow n8n</h4>
-        <p>Plantilla lista para importar en tu n8n</p>
-        <a href="https://drive.google.com/file/d/1_7T3S9ev8oHjbZkLZTg7DpboT5i4gZr9/view?usp=sharing" target="_blank">Descargar JSON</a>
-      </div>
-      <div class="resource-card">
-        <div class="resource-card-icon">🎬</div>
-        <h4>OBS Studio</h4>
-        <p>Grabación de pantalla recomendada</p>
-        <a href="https://obsproject.com" target="_blank">Descargar OBS</a>
-      </div>
+      <h2>Abrir el workflow n8n (ya está listo)</h2>
+      <span class="step-time">10 seg</span>
     </div>
 
-    <h3>Cómo importar el workflow en n8n</h3>
-    <ol style="margin-left: 18px; font-size: 0.9rem;">
-      <li>Abrí <code>n8n.lovbot.ai</code> con tu cuenta</li>
-      <li>Botón <strong>"+ Add workflow"</strong> → menú ⋮ → <strong>Import from file</strong></li>
-      <li>Subí el JSON descargado</li>
-      <li>En el nodo <strong>"Enviar mensaje whatsapp"</strong> reemplazá:
-        <ul style="margin: 6px 0 0 18px; font-size: 0.85rem;">
-          <li><code>PHONE_NUMBER_ID</code> en la URL → tu Phone Number ID real</li>
-          <li><code>TOKEN DE TU APP</code> en headers → tu access token de Meta</li>
-          <li><code>"to": "524621349768"</code> en el body → tu número personal de WhatsApp (con código país, sin +)</li>
-        </ul>
-      </li>
-      <li>Probalo manualmente una vez antes de grabar para confirmar que llega el mensaje</li>
-    </ol>
+    <div class="success-box">
+      <strong>✓ Workflow ya creado, configurado y testeado.</strong> Solo abrilo y dejalo en una pestaña para usarlo durante la grabación del Video 1.
+    </div>
 
-    <div class="info-box">
-      El workflow envía un template <code>hello_world</code> (un template estándar que Meta tiene preaprobado en todas las apps). Esto es importante: usar <code>hello_world</code> garantiza que el envío funciona sin necesidad de tener templates propios aprobados.
+    <a class="url-link" href="https://n8n.lovbot.ai/workflow/fo2SJPKESCCOPDLY" target="_blank">
+      Abrir workflow n8n →
+    </a>
+
+    <p style="margin-top: 14px; font-size: 0.85rem; color: var(--muted);">
+      <code>https://n8n.lovbot.ai/workflow/fo2SJPKESCCOPDLY</code>
+    </p>
+
+    <div class="info-box" style="margin-top: 16px;">
+      El workflow envía un template <code>hello_world</code> (preaprobado por Meta en todas las apps) al WhatsApp +1 226 de Robert. Phone Number ID, credencial Bearer y destinatario ya están configurados — no toques nada, solo Execute.
+      <br><br>
+      <strong>Antes de grabar también instalá OBS Studio si no lo tenés:</strong>
+      <a href="https://obsproject.com" target="_blank" style="color: var(--primary-light);">obsproject.com</a> (gratis, recomendación de Kevin del video).
     </div>
   </div>
 
@@ -787,7 +771,7 @@ Por tanto, Lovbot es responsable únicamente del tratamiento técnico necesario 
     <h3>Antes de empezar a grabar</h3>
     <ul class="checklist">
       <li>OBS Studio instalado</li>
-      <li>n8n con el workflow importado y testeado funcionando</li>
+      <li>Workflow n8n abierto en una pestaña: <a href="https://n8n.lovbot.ai/workflow/fo2SJPKESCCOPDLY" target="_blank" style="color: var(--primary-light);">n8n.lovbot.ai/workflow/fo2SJPKESCCOPDLY</a></li>
       <li>WhatsApp Web logueado con un número de prueba</li>
       <li>Las 2 URLs legales publicadas en lovbot.mx</li>
     </ul>
