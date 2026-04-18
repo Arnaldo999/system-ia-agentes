@@ -21,7 +21,6 @@ import os
 import re
 import json
 import hashlib
-import datetime
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
@@ -70,22 +69,24 @@ def generar_pin() -> str:
 # ── 1. Supabase — Crear tenant ───────────────────────────────────────────────
 
 def crear_tenant_supabase(nombre: str, slug: str, pin: str, config: dict) -> dict:
-    """Crea tenant en Supabase para el CRM SaaS."""
+    """Crea tenant en Supabase para el CRM SaaS.
+    Mapea los datos del config a las columnas reales de la tabla tenants.
+    """
     if not SUPABASE_URL or not SUPABASE_KEY:
         return {"ok": False, "error": "Supabase no configurado"}
 
     pin_hash = hashlib.sha256(pin.encode()).hexdigest()
-    hoy = datetime.date.today()
-    vence = hoy + datetime.timedelta(days=365)
 
+    # Mapeo al schema real de Supabase (ver tenant "demo" como referencia)
     payload = {
         "slug": slug,
         "nombre": nombre,
         "pin_hash": pin_hash,
-        "estado_pago": "activo",
-        "fecha_inicio": hoy.isoformat(),
-        "fecha_vence": vence.isoformat(),
-        "config": json.dumps(config),
+        "activo": True,
+        "subniche": config.get("vertical", "inmobiliaria"),
+        "api_prefix": f"/clientes/lovbot/{slug}",
+        "ciudad": config.get("ciudad", ""),
+        "moneda": config.get("moneda", "USD"),
     }
 
     try:
@@ -252,28 +253,46 @@ def crear_agent_chatwoot(
         return {"ok": False, "error": "CHATWOOT_TOKEN no configurado"}
 
     headers = {"api_access_token": CHATWOOT_TOKEN, "Content-Type": "application/json"}
+    user_id = None
+    reused = False
 
-    # 1. Crear el agent vía API de cuenta (POST /api/v1/accounts/{id}/agents)
-    payload = {"name": name, "email": email, "role": role}
-    # Chatwoot envia el password de invitacion automaticamente al email
-    # del agent. Si pasas "password" no lo usa — el agent setea su propio
-    # password al hacer clic en el link del email.
-    if password:
-        payload["password"] = password
-
+    # 0. Verificar si el agent con ese email ya existe (evita HTTP 422 duplicado)
     try:
-        r1 = requests.post(
+        r_list = requests.get(
             f"{CHATWOOT_URL}/api/v1/accounts/{account_id}/agents",
             headers=headers,
-            json=payload,
             timeout=REQUEST_TIMEOUT,
         )
-        if r1.status_code not in (200, 201):
-            return {"ok": False, "error": f"Agent create HTTP {r1.status_code}: {r1.text[:200]}"}
-        agent_data = r1.json()
-        user_id = agent_data.get("id")
-    except Exception as e:
-        return {"ok": False, "error": f"Excepcion creando agent: {e}"}
+        if r_list.status_code == 200:
+            agents = r_list.json()
+            if isinstance(agents, dict):
+                agents = agents.get("payload", [])
+            for a in agents:
+                if (a.get("email") or "").lower() == email.lower():
+                    user_id = a.get("id")
+                    reused = True
+                    break
+    except Exception:
+        pass  # si falla la verificacion, seguimos y dejamos que el POST falle explicitamente
+
+    # 1. Si NO existe, crear el agent (POST /api/v1/accounts/{id}/agents)
+    if not user_id:
+        payload = {"name": name, "email": email, "role": role}
+        if password:
+            payload["password"] = password
+        try:
+            r1 = requests.post(
+                f"{CHATWOOT_URL}/api/v1/accounts/{account_id}/agents",
+                headers=headers,
+                json=payload,
+                timeout=REQUEST_TIMEOUT,
+            )
+            if r1.status_code not in (200, 201):
+                return {"ok": False, "error": f"Agent create HTTP {r1.status_code}: {r1.text[:200]}"}
+            agent_data = r1.json()
+            user_id = agent_data.get("id")
+        except Exception as e:
+            return {"ok": False, "error": f"Excepcion creando agent: {e}"}
 
     # 2. Asignar inboxes si se especificaron
     inbox_assigns = []
@@ -287,6 +306,7 @@ def crear_agent_chatwoot(
         "user_id": user_id,
         "email": email,
         "role": role,
+        "reused_existing_agent": reused,
         "inboxes_assigned": inbox_assigns,
     }
 
