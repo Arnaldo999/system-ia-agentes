@@ -35,9 +35,11 @@ def _check_auth_rate_limit(slug: str, ip: str):
     _AUTH_ATTEMPTS[key].append(now)
 
 # ── Versión CRM (el frontend consulta esto para mostrar alerta de actualización)
+# IMPORTANTE: esta version DEBE coincidir con CRM_VERSION en demo-crm-mvp.html y dev/crm.html
+# Bump version aqui SOLO cuando deployes una version nueva del HTML que requiera invalidar cache
 _CRM_VERSION = {
-    "version": "1.3.0",
-    "changelog": "Datos 100% reales — eliminados placeholders y nombres de demo",
+    "version": "1.4.0",
+    "changelog": "Multi-tenant Tech Provider + provisión auto Chatwoot/CRM + email Resend",
 }
 
 # Endpoint fuera del prefix /tenant para que sea /crm/version

@@ -2371,6 +2371,17 @@ async function guardarEstado(id) {
 const CRM_VERSION = '1.4.0';
 const CRM_VERSION_KEY = 'crm_version_dismissed';
 
+// Compara versiones semver: devuelve > 0 si a > b, < 0 si a < b, 0 si iguales
+function _compareSemver(a, b) {
+  const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const da = pa[i] || 0, db = pb[i] || 0;
+    if (da !== db) return da - db;
+  }
+  return 0;
+}
+
 async function checkVersion() {
   // No mostrar banner en DEV — solo en producción
   if (CRM_VERSION.includes('-dev') || location.pathname.includes('/dev/') || location.host.includes('lovbot-demos.vercel.app')) {
@@ -2380,7 +2391,8 @@ async function checkVersion() {
     const res = await fetch(`${SAAS_API}/crm/version`, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return;
     const data = await res.json();
-    if (data.version && data.version !== CRM_VERSION) {
+    // Solo mostrar banner si el BACKEND tiene una version MAYOR a la del HTML actual
+    if (data.version && _compareSemver(data.version, CRM_VERSION) > 0) {
       const dismissed = localStorage.getItem(CRM_VERSION_KEY);
       if (dismissed === data.version) return;
       showUpdateBanner(data.version, data.changelog || '');
