@@ -2564,7 +2564,37 @@ async function initTenant() {
       }
     }
   } catch(err) {
-    console.warn('[Tenant] Usando config por defecto:', err.message);
+    console.warn('[Tenant] No encontrado o sin conexión:', err.message);
+
+    // SLUG 'demo' es el público para presentaciones — permitir cargar como fallback
+    if (TENANT_SLUG === 'demo') {
+      console.log('[Tenant] Usando config demo por defecto');
+      return true;
+    }
+
+    // Cualquier otro slug que NO existe → bloquear acceso
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f1117;font-family:Inter,sans-serif;color:#e8eaf0;text-align:center;padding:20px">
+        <div style="max-width:480px">
+          <div style="font-size:64px;margin-bottom:16px">🔍</div>
+          <h1 style="font-size:1.6rem;margin-bottom:12px">CRM no encontrado</h1>
+          <p style="color:#8b92a5;font-size:0.95rem;line-height:1.5;margin-bottom:6px">
+            El CRM <strong>"${TENANT_SLUG}"</strong> no existe o fue dado de baja.
+          </p>
+          <p style="color:#8b92a5;font-size:0.85rem;line-height:1.5;margin-bottom:24px">
+            Si sos cliente nuevo, todavía no se completó tu activación.<br>
+            Si ya estabas usando el CRM, contactá a soporte.
+          </p>
+          <a href="https://wa.me/5219987434234?text=Hola, no puedo acceder a mi CRM (${TENANT_SLUG})"
+             style="display:inline-block;padding:12px 24px;background:#1a56db;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem">
+            📱 Contactar soporte
+          </a>
+          <div style="margin-top:32px;font-size:0.75rem;color:#5a6178">
+            Lovbot CRM · <a href="https://lovbot.ai" style="color:#5a6178;text-decoration:none">lovbot.ai</a>
+          </div>
+        </div>
+      </div>`;
+    return false;
   }
   return true; // continuar cargando datos
 }
