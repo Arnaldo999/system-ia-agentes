@@ -546,21 +546,29 @@ tailwind.config = {
         <span class="nav-icon">📅</span><span>Mi Agenda</span>
       </div>
       <div class="sidebar-section" style="margin-top:8px">Gestión</div>
+      <!-- OCULTO 2026-04-17 — Equipo, Propietarios y Visitas removidos del menú
+           para simplificar UX del CRM modelo. Las páginas internas siguen
+           funcionando si se accede via JS nav('asesores'/'propietarios'/'visitas').
+           Para reactivar: descomentar los 3 nav-items de abajo.
+
       <div class="nav-item" onclick="nav('asesores',this)">
         <span class="nav-icon">👨‍💼</span><span>Equipo</span>
       </div>
       <div class="nav-item" onclick="nav('propietarios',this)">
         <span class="nav-icon">📑</span><span>Propietarios</span>
       </div>
+      -->
       <div class="nav-item" onclick="nav('loteos',this)">
         <span class="nav-icon">📍</span><span>Loteos</span>
       </div>
       <div class="nav-item" onclick="nav('contratos',this)">
         <span class="nav-icon">📄</span><span>Contratos</span>
       </div>
+      <!-- OCULTO 2026-04-17 — Visitas removido del menú (ver comentario arriba)
       <div class="nav-item" onclick="nav('visitas',this)">
         <span class="nav-icon">🗓️</span><span>Visitas</span>
       </div>
+      -->
       <div class="nav-item" onclick="nav('reportes',this)">
         <span class="nav-icon">📈</span><span>Reportes</span>
       </div>
