@@ -3824,6 +3824,32 @@ async def waba_onboarding(request: Request):
     if webhook_ok:
         db.marcar_webhook_subscrito(phone_number_id)
 
+    # 5. Provisión asíncrona Chatwoot + CRM (en background, no bloquea el response)
+    # Solo se dispara si vienen los datos opcionales del brief del cliente.
+    nombre_asesor = (body.get("nombre_asesor") or "").strip() or client_name
+    email_asesor  = (body.get("email_asesor") or "").strip()
+    if email_asesor:  # solo si tenemos email
+        def _bg_provisionar():
+            try:
+                import sys
+                sys.path.insert(0, "/app")
+                from scripts.onboard_inmobiliaria import onboard as _onboard_full
+                resultado = _onboard_full(
+                    nombre_empresa=client_name,
+                    nombre_asesor=nombre_asesor,
+                    email_asesor=email_asesor,
+                    telefono_whatsapp=display_phone or phone_number_id,
+                    waba_id=waba_id,
+                    phone_number_id=phone_number_id,
+                    access_token=access_token,
+                    enviar_bienvenida=True,
+                )
+                print(f"[WABA-PROVISION] {client_slug}: {resultado.get('resumen')}")
+            except Exception as e:
+                print(f"[WABA-PROVISION] Error provisionando {client_slug}: {e}")
+
+        threading.Thread(target=_bg_provisionar, daemon=True).start()
+
     return {
         "status": "ok",
         "client_slug": client_slug,
@@ -3833,6 +3859,7 @@ async def waba_onboarding(request: Request):
         "webhook_subscrito": webhook_ok,
         "webhook_detail": webhook_detail if not webhook_ok else None,
         "db_id": reg.get("id"),
+        "provision_started": bool(email_asesor),
     }
 
 
