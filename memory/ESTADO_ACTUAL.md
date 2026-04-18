@@ -1,7 +1,55 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-10 18:30
-Responsable última actualización: Claude Sonnet 4.6 / Arnaldo
+Fecha: 2026-04-17 19:55
+Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## Sesión 2026-04-17 — Tech Provider Meta WABA Onboarding Fase 1 COMPLETADA ✅
+
+**Arquitectura final** (después de pivote n8n → Python consolidado):
+- 5 workflows n8n reemplazados por módulo Python: `workers/clientes/lovbot/tech_provider/webhook_meta.py`
+- Webhook Meta apunta a `https://agentes.lovbot.ai/webhook/meta/events` (NO n8n)
+- Multi-tenant router dinámico por `phone_number_id` consulta PG `waba_clients`
+- Los 5 workflows n8n (OyTCUWbtnigfu5Oh, vF3bMbCzFz3D2W9z, zEyLpnNJeapT9auj, r7xmihHdyTDYRQyA, Sc2DO2ernl4MnkqA) quedan de backup pero YA NO SE USAN
+
+**Completado**:
+- ✅ Nurturing 24h endpoint `/admin/nurturing/24h` + columnas `nurturing_24h_enviado` en leads Robert
+- ✅ Tabla `waba_clients` creada en PG `robert_crm` (1 tenant: Robert db_id=1)
+- ✅ Endpoints Tech Provider: `/admin/waba/setup-table`, `/public/waba/onboarding`, `/admin/waba/onboarding`, `/admin/waba/register-existing`, `/admin/waba/clients`, `/admin/waba/client/{phone_id}`
+- ✅ Módulo consolidado Python: `/webhook/meta/verify`, `/webhook/meta/events` (GET+POST), `/webhook/meta/subscribe-webhooks`, `/webhook/meta/override`
+- ✅ Env var `LOVBOT_ADMIN_TOKEN` en Coolify Hetzner (valor: e55b1340d6a3ddb6c2e96a874402767e362ba5ab53bacdc359af2fca9b9caf13)
+- ✅ HTML embedded signup en Vercel: **https://lovbot-onboarding.vercel.app**
+  - APP_ID: 704986485248523 | CONFIG_ID: 1264527552112117
+- ✅ Meta Developers — permisos whatsapp_business_management + whatsapp_business_messaging, dominio lovbot-onboarding.vercel.app autorizado, webhook apuntado a FastAPI, campo `messages` suscripto
+- ✅ **Prueba real end-to-end exitosa**: mensaje de WhatsApp de Arnaldo → Meta → Python webhook → PG router → worker Robert → respuesta GPT-4.1-mini con memoria persistente
+- ✅ Fase transitoria: clientes nuevos vía `/public/waba/onboarding` comparten worker `/clientes/lovbot/inmobiliaria/whatsapp` hasta que se armen workers dedicados por vertical
+
+**URL operativa para registrar clientes**:
+```
+https://lovbot-onboarding.vercel.app/?client=NombreDelCliente
+```
+
+**Commits hoy**:
+- `99f9ccd` feat(robert-bot): sistema de nurturing 24h
+- `421997e` feat(robert-bot): Tech Provider WABA onboarding Fase 1
+- `e38f9ed` feat(robert-bot): endpoint /admin/waba/register-existing
+- `df2693d` feat(robert-bot): ruta /public/waba/onboarding sin admin token + HTML Vercel listo
+- `df48ba9` feat(robert-bot): módulo Python `webhook_meta.py` consolidando 5 workflows n8n
+- `7807ab2` fix(robert-bot): aceptar GET en /webhook/meta/events para handshake Meta
+- `c67bad7` feat(robert-bot): clientes nuevos comparten worker inmobiliaria por default (revertido luego)
+- `8f1a8f7` revert: worker_url dinamico + endpoint admin update-worker-url
+- `9cecb25` feat(robert-bot): validar que worker exista antes de onboarding (409 si no)
+- `76e7a28` feat(lovbot): formulario brief HTML + script clonar_worker_lovbot.py
+- `c7e6866` fix(clonar-worker): dry-run usa template cuando dest no existe
+
+**Pendientes para mañana / sprint 2**:
+- 🟡 Deploy Vercel del form-brief (hoy rate-limited en plan free — 100/día)
+- Reemplazar placeholder `5493765XXXXXX` en form-brief con nro WhatsApp real de Lovbot
+- Templates Meta aprobados para nurturing 3d/15d/30d
+- Cuando llegue primer cliente real: probar flow completo (form → YAML → script → URL → onboarding)
+- Eventualmente: desactivar oficialmente los 5 workflows n8n (hoy son backup)
+
+---
+
 
 ## Resumen ejecutivo
 Fase 1 de estabilización operativa completada. 4 pendientes críticos resueltos:
@@ -16,8 +64,8 @@ Producción de Maicol intacta — sin redeploy ni cambios en runtime.
 - Coolify Robert (Hetzner): ✅ OK — firewall configurado
 
 ## Proyectos
-- Arnaldo: ✅ Estable — Maicol live, redes sociales activas, CRM operativo
-- System IA Micaela: 🟡 En desarrollo — worker Lau pendiente deploy, n8n activo, monitor LinkedIn creado
+- Arnaldo: ✅ Estable — Maicol live, Lau pendiente deploy (proyecto propio "Creaciones Lau"), redes sociales activas, CRM operativo
+- System IA Micaela: 🟡 En desarrollo — n8n activo, monitor LinkedIn creado
 - Lovbot Robert: 🟡 En desarrollo — bot live en Coolify, CRM SaaS dev/prod separados
 
 ## Últimos cambios importantes (Fase 1 — 2026-04-10)
@@ -34,7 +82,7 @@ Producción de Maicol intacta — sin redeploy ni cambios en runtime.
 - `crm.backurbanizaciones.com` — CRM Maicol con datos reales de clientes
 
 ## Pendientes prioritarios
-- Deploy worker Lau (Mica) — confirmar detalles del negocio con Mica
+- Deploy worker Lau (proyecto propio Arnaldo, NO Mica — negocio "Creaciones Lau" de su esposa)
 - DNS Arnaldo: agregar A record `agentes → 187.77.254.33` en Hostinger panel
 - n8n Mica: actualizar a 2.47.5 desde Easypanel (verificar N8N_ENCRYPTION_KEY antes)
 - Cuando Mica renueve token LinkedIn: actualizar `FECHA_VENCIMIENTO` en nodo `🧮 Calcular días restantes`
