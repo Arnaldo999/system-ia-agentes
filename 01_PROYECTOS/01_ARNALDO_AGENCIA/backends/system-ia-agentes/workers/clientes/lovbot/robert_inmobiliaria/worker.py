@@ -4168,3 +4168,43 @@ def waba_delete_client(phone_number_id: str, request: Request):
     if not ok:
         raise HTTPException(404, f"phone_number_id={phone_number_id} no encontrado o no se pudo eliminar")
     return {"status": "ok", "deleted": phone_number_id}
+
+
+@router.post("/admin/onboard/test-completo")
+async def test_onboard_completo(request: Request):
+    """Ejecuta el orquestador onboard() completo desde el backend (donde sí están
+    las env vars como LOVBOT_SMTP_PASSWORD).
+    Útil para testear el flow end-to-end sin que llegue un cliente real.
+
+    Body JSON:
+      nombre_empresa, nombre_asesor, email_asesor, telefono_whatsapp,
+      ciudad, zonas, moneda
+
+    Requiere X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+
+    body = await request.json()
+    try:
+        # Import diferido para no fallar si hay error en script
+        import sys as _sys
+        _sys.path.insert(0, "/app")
+        from scripts.onboard_inmobiliaria import onboard as _onboard
+
+        resultado = _onboard(
+            nombre_empresa=body.get("nombre_empresa", "Test"),
+            nombre_asesor=body.get("nombre_asesor", "Test"),
+            email_asesor=body.get("email_asesor", ""),
+            telefono_whatsapp=body.get("telefono_whatsapp", ""),
+            ciudad=body.get("ciudad", ""),
+            zonas=body.get("zonas", ""),
+            moneda=body.get("moneda", "USD"),
+            waba_id=body.get("waba_id", ""),
+            phone_number_id=body.get("phone_number_id", ""),
+            access_token=body.get("access_token", ""),
+            enviar_bienvenida=body.get("enviar_bienvenida", False),
+        )
+        return resultado
+    except Exception as e:
+        raise HTTPException(500, f"Error orquestando: {e}")
