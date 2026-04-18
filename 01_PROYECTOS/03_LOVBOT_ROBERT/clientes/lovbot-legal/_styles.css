@@ -35,14 +35,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Header */
+/* Header — fondo blanco fijo para que el logo Lovbot se vea siempre bien */
 .site-header {
-  background: var(--bg-alt);
-  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
   padding: 16px 0;
   position: sticky;
   top: 0;
   z-index: 10;
+}
+.site-header .nav-legal a {
+  color: #475569;
+}
+.site-header .nav-legal a:hover {
+  color: #1a56db;
+}
+.site-header .nav-legal a.active {
+  color: #1a56db;
+  font-weight: 600;
+}
+.site-header .brand-link {
+  color: #0f172a;
 }
 .site-header-inner {
   max-width: 880px;
@@ -57,23 +70,16 @@ body {
 .brand-link {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-decoration: none;
   color: var(--text);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
-.brand-link span.logo-circle {
-  width: 32px;
-  height: 32px;
-  background: var(--primary);
-  color: white;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  font-weight: 800;
+.brand-logo {
+  height: 38px;
+  width: auto;
+  display: block;
 }
 .nav-legal {
   display: flex;
