@@ -326,11 +326,15 @@
       <li><strong>whatsapp_business_management</strong> — para gestionar plantillas, números y webhooks del cliente</li>
     </ul>
     <div class="info-box">
-      <strong>Lo que Meta exige por cada permiso:</strong>
+      <strong>Lo que Meta exige (por cada permiso):</strong>
       <ol style="margin: 6px 0 0 18px; font-size: 0.86rem;">
         <li>Una justificación de cómo se usa</li>
         <li>Un video corto demostrando el uso real (~1-2 min)</li>
         <li>Marcar checkbox de cumplimiento de políticas</li>
+      </ol>
+      <strong style="display:block; margin-top:10px;">Y ANTES del envío final:</strong>
+      <ol style="margin: 6px 0 0 18px; font-size: 0.86rem;" start="4">
+        <li><strong>Pantalla de Gestión de Datos</strong> — 5 campos legales que hay que responder bien (acá rechazan a la mayoría)</li>
       </ol>
     </div>
   </div>
@@ -526,41 +530,175 @@ En el video adjunto se demuestra la creación de una plantilla desde el panel de
     </div>
   </div>
 
-  <!-- ── PASO 6 ────────────────────────────────────────────── -->
+  <!-- ── PASO 6 — GESTIÓN DE DATOS (CRÍTICO) ────────────────────── -->
   <div class="step">
     <div class="step-header">
       <div class="step-number">6</div>
+      <h2>Gestión de Datos (¡acá rechazan a la mayoría!)</h2>
+      <span class="step-time">10 min</span>
+    </div>
+
+    <div class="warning-box">
+      <strong>Atención:</strong> después de subir los 2 videos, Meta te lleva a una pantalla
+      llamada <strong>"Gestión de datos"</strong>. Acá es donde la mayoría de las apps son
+      rechazadas porque la gente responde mal o deja campos en blanco. Seguí estos
+      pasos al pie de la letra.
+    </div>
+
+    <h3>Pregunta 1 — Encargados del tratamiento</h3>
+    <p class="muted">
+      Meta pregunta:
+      <em>"¿Hay encargados del tratamiento de los datos o proveedores de servicios
+      (en tus propias empresas o fuera de ellas) que tendrán acceso a los datos de
+      la plataforma que Meta te proporcione?"</em>
+    </p>
+    <div class="info-box">
+      <strong>Respuesta correcta: NO</strong><br>
+      Razón: actuamos como Tech Provider. Cada cliente controla sus datos en su
+      propia infraestructura — no centralizamos nada.
+    </div>
+
+    <h3>Pregunta 2 — Persona o entidad responsable</h3>
+    <p class="muted">
+      Meta pregunta:
+      <em>"¿Qué persona o entidad será responsable de todos los datos de la
+      plataforma que Meta comparta contigo?"</em>
+    </p>
+    <p class="muted">Pegá este texto en el campo:</p>
+    <div class="copy-box text-content">
+      <button class="copy-btn" onclick="copy(this, 'rol-techprov')">Copiar</button>
+      <div id="rol-techprov">Nuestra agencia actúa como proveedor técnico (Tech Provider) para empresas que desean automatizar su canal de WhatsApp. No centralizamos ni almacenamos datos personales de los usuarios finales en infraestructura propia. En su lugar, desplegamos instancias dedicadas en servidores propiedad de cada cliente, lo que garantiza el aislamiento técnico y el control total por parte del cliente sobre sus activos y datos.
+
+Cada cliente mantiene la titularidad y el control de su número de WhatsApp, su cuenta de Meta Business y su infraestructura de procesamiento. Lovbot únicamente proporciona soporte técnico, configuración inicial y mantenimiento de los flujos automatizados, sin acceder ni conservar datos personales de forma persistente.
+
+Por tanto, Lovbot es responsable únicamente del tratamiento técnico necesario para habilitar la funcionalidad de la aplicación, mientras que cada cliente es responsable del tratamiento de los datos que se generan y gestionan dentro de su propia infraestructura.</div>
+    </div>
+
+    <h3>Pregunta 3 — País del responsable</h3>
+    <p class="muted">
+      Meta pregunta: <em>"Selecciona el país donde se encuentra esta persona o entidad."</em>
+    </p>
+    <div class="info-box">
+      <strong>Seleccioná: México (MX)</strong><br>
+      Razón: es el país donde estás registrado como Lovbot Marketing.
+    </div>
+
+    <h3>Pregunta 4 — Compartición con autoridades</h3>
+    <p class="muted">
+      Meta pregunta:
+      <em>"¿Has proporcionado información o datos personales de los usuarios a las
+      autoridades públicas en respuesta a solicitudes de seguridad nacional en los
+      últimos 12 meses?"</em>
+    </p>
+    <div class="info-box">
+      <strong>Respuesta correcta: NO</strong>
+    </div>
+
+    <h3>Pregunta 5 — Compromisos obligatorios (4 checkboxes)</h3>
+    <p class="muted">
+      Meta pregunta: <em>"¿Cuál de las siguientes políticas o procesos has implementado
+      en relación con las solicitudes de autoridades públicas de información o datos
+      personales de los usuarios? Marca todas las opciones que correspondan."</em>
+    </p>
+    <p>Marcá <strong>las 4 primeras opciones</strong>:</p>
+    <ul class="checklist">
+      <li class="done">Revisión obligatoria de la legalidad de estas solicitudes</li>
+      <li class="done">Disposiciones para impugnar estas solicitudes si se consideran ilegales</li>
+      <li class="done">Política de minimización de datos: la capacidad de divulgar la mínima información necesaria</li>
+      <li class="done">Documentación de estas solicitudes, lo que incluye tus respuestas a estas y el razonamiento jurídico y las partes involucradas</li>
+    </ul>
+    <div class="warning-box">
+      <strong>NO marcar:</strong>
+      <ul style="margin: 6px 0 0 18px; font-size: 0.85rem;">
+        <li>"Ninguna de las opciones anteriores"</li>
+        <li>"La legislación o la política de la empresa nos prohíben responder a esta pregunta"</li>
+      </ul>
+      Esos 2 son trampa. Si los marcás, Meta te rechaza.
+    </div>
+
+    <h3>Verificación final antes de continuar</h3>
+    <p>Antes de pasar al siguiente paso, confirmá que:</p>
+    <ul class="checklist">
+      <li>Los 5 campos de Gestión de Datos tienen respuesta</li>
+      <li>No hay alertas rojas en la pantalla</li>
+      <li>El texto del rol Tech Provider está pegado completo (no se cortó)</li>
+      <li>Las 4 casillas de compromisos están marcadas</li>
+    </ul>
+  </div>
+
+  <!-- ── PASO 7 — ENVIAR A REVISIÓN ────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">7</div>
       <h2>Enviar a revisión</h2>
       <span class="step-time">2 min</span>
     </div>
-    <p>Volvé al panel de revisión de Meta. Si los 2 permisos están con check verde / listos:</p>
+    <p>Una vez completada la Gestión de Datos, te aparece la pantalla final
+       "Enviar a la revisión de la aplicación" con 4 secciones marcadas en verde:</p>
     <ul class="checklist">
-      <li>Clic en <strong>"Siguiente"</strong> al pie de la lista de permisos</li>
-      <li>Completá los datos de tratamiento de datos si te los pide (todo en valores estándar)</li>
-      <li>Clic en <strong>"Enviar a revisión"</strong> al final</li>
+      <li class="done">✓ Verificación</li>
+      <li class="done">✓ Configuración de la aplicación</li>
+      <li class="done">✓ Uso permitido</li>
+      <li class="done">✓ Gestión de datos</li>
     </ul>
+    <p>Si las 4 están en verde → clic en el botón <strong>"Enviar a revisión"</strong>
+       (azul, abajo a la derecha).</p>
 
     <div class="success-box">
-      <strong>Resultado esperado:</strong> Meta responde en <strong>2 a 10 días hábiles</strong>. Te llega notificación por email + en developers.facebook.com.<br><br>
-      Si <strong>aprueba</strong> → cualquier cliente puede conectar su WhatsApp por la landing y arrancar el bot el mismo día.<br>
-      Si <strong>rechaza</strong> → Meta indica qué falta, lo corregís y reenviás (sin penalización).
+      <strong>Resultado esperado:</strong><br><br>
+      Tus 2 permisos quedan en estado:
+      <ul style="margin: 6px 0; padding-left: 24px;">
+        <li><code>whatsapp_business_messaging</code> → ⏳ <strong>En revisión</strong></li>
+        <li><code>whatsapp_business_management</code> → ⏳ <strong>En revisión</strong></li>
+      </ul>
+      <strong>Tiempos de respuesta de Meta:</strong>
+      <ul style="margin: 6px 0; padding-left: 24px;">
+        <li>Promedio: 2-4 días hábiles</li>
+        <li>Algunas veces: 24-48 horas</li>
+        <li>Máximo: 10 días hábiles</li>
+      </ul>
+      Te llega notificación por email + en developers.facebook.com.<br><br>
+      Si <strong>aprueba</strong> → cualquier cliente puede conectar su WhatsApp por la
+      landing y arrancar el bot el mismo día. La app pasa automáticamente al estado
+      <em>"Tu negocio se verificó como proveedor de tecnología"</em>.<br><br>
+      Si <strong>rechaza</strong> → Meta indica exactamente qué falta. Corregís y reenviás
+      sin penalización.
+    </div>
+
+    <div class="info-box">
+      <strong>Después de la aprobación</strong> vas a poder ver en el menú lateral de
+      WhatsApp un nuevo recurso de <strong>"Incorporación de clientes"</strong> con
+      el progreso "2 de 2 pasos completados". Ahí Meta te ofrece la URI de página de
+      destino del registro insertado, lista para usar con clientes reales.
     </div>
   </div>
 
   <!-- ── INFO LEGAL ────────────────────────────────────────────── -->
   <div class="step">
     <div class="step-header">
-      <div class="step-number">⚠</div>
-      <h2>Pendientes ANTES de enviar (lado del equipo técnico)</h2>
+      <div class="step-number">📑</div>
+      <h2>URLs legales — todas publicadas y cargadas en Meta</h2>
     </div>
-    <p>Estas 2 URLs Meta las pide en el formulario y las publicamos en <code>lovbot.mx</code>:</p>
+    <p>Las 3 URLs legales que Meta valida al revisar la app ya están publicadas
+       y cargadas en la Configuración Básica de la app:</p>
     <ul class="checklist">
-      <li><strong>Política de Privacidad</strong> → <a href="https://lovbot.mx/politica-de-privacidad" target="_blank" style="color: var(--green);">lovbot.mx/politica-de-privacidad</a> ✓ ya publicada</li>
-      <li><strong>Términos de Servicio</strong> → publicar en lovbot.mx/terminos-de-servicio</li>
-      <li><strong>URL de eliminación de datos</strong> → publicar en lovbot.mx/eliminacion-datos</li>
+      <li class="done">
+        <strong>Política de Privacidad</strong> →
+        <a href="https://lovbot.mx/politica-de-privacidad" target="_blank" style="color: var(--green);">lovbot.mx/politica-de-privacidad</a>
+      </li>
+      <li class="done">
+        <strong>Términos de Servicio</strong> →
+        <a href="https://lovbot-legal.vercel.app/terminos-de-servicio" target="_blank" style="color: var(--green);">lovbot-legal.vercel.app/terminos-de-servicio</a>
+      </li>
+      <li class="done">
+        <strong>URL de Eliminación de Datos</strong> →
+        <a href="https://lovbot-legal.vercel.app/eliminacion-datos" target="_blank" style="color: var(--green);">lovbot-legal.vercel.app/eliminacion-datos</a>
+      </li>
     </ul>
-    <div class="warning-box">
-      Avisame antes de arrancar la grabación de los videos para confirmarte que las 2 URLs nuevas estén live. Si Meta entra y no las encuentra, rechaza la review.
+    <div class="success-box">
+      Las 3 páginas están live, responden HTTP 200 y tienen el branding completo
+      de Lovbot. No hay nada que hacer acá — solo está como referencia por si
+      Meta consulta.
     </div>
   </div>
 
@@ -587,6 +725,7 @@ En el video adjunto se demuestra la creación de una plantilla desde el panel de
     <ul class="checklist">
       <li>Subir Video 1 al permiso whatsapp_business_messaging + pegar justificación</li>
       <li>Subir Video 2 al permiso whatsapp_business_management + pegar justificación</li>
+      <li>Completar Gestión de Datos (Paso 6 — los 5 campos)</li>
       <li>Clic en Enviar a revisión</li>
       <li>Esperar 2-10 días la respuesta de Meta</li>
     </ul>
