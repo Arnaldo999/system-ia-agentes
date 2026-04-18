@@ -397,6 +397,160 @@ def enviar_bienvenida_whatsapp(
         return {"ok": False, "error": str(e)}
 
 
+# ── 9. Email de bienvenida via Resend ────────────────────────────────────────
+
+RESEND_API_KEY = os.environ.get("LOVBOT_RESEND_API_KEY", "") or os.environ.get("RESEND_API_KEY", "")
+RESEND_FROM = os.environ.get("LOVBOT_RESEND_FROM", "Lovbot <onboarding@lovbot.mx>")
+
+
+def enviar_bienvenida_email(
+    to_email: str,
+    nombre_empresa: str,
+    nombre_asesor: str,
+    accesos: dict,
+) -> dict:
+    """Envia email de bienvenida al cliente con todos los accesos.
+    Backup permanente de las credenciales en caso de que se pierda el WhatsApp.
+
+    Requiere LOVBOT_RESEND_API_KEY (Resend.com — 3000 emails/mes free).
+    El dominio FROM debe estar verificado en Resend (ej: lovbot.mx).
+    """
+    if not RESEND_API_KEY:
+        return {"ok": False, "error": "LOVBOT_RESEND_API_KEY no configurado"}
+
+    chatwoot_url = accesos.get("chatwoot_url", "")
+    chatwoot_email = accesos.get("chatwoot_email", "")
+    chatwoot_password = accesos.get("chatwoot_password", "")
+    crm_url = accesos.get("crm_url", "")
+    crm_pin = accesos.get("crm_pin", "")
+
+    subject = f"🎉 Tu bot Lovbot está activo — {nombre_empresa}"
+
+    # HTML email con branding Lovbot
+    html_body = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>{subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="background:#0f172a;padding:32px;text-align:center;">
+              <h1 style="color:#fff;font-size:24px;margin:0;">🎉 ¡Bienvenido a Lovbot!</h1>
+              <p style="color:#94a3b8;font-size:14px;margin:8px 0 0;">{nombre_empresa}</p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <p style="font-size:16px;color:#0f172a;margin:0 0 16px;">Hola <strong>{nombre_asesor}</strong>,</p>
+              <p style="font-size:15px;color:#475569;line-height:1.6;margin:0 0 24px;">
+                Tu bot de WhatsApp ya está conectado y respondiendo automáticamente.
+                Acá te dejamos todos los accesos a tus paneles de gestión.
+                Guardá este email en lugar seguro — son tus credenciales permanentes.
+              </p>
+
+              <!-- Chatwoot card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;border-radius:10px;padding:20px;margin-bottom:16px;">
+                <tr><td>
+                  <p style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;font-weight:600;">📊 Panel Chatwoot — Chats en vivo</p>
+                  <p style="margin:4px 0;font-size:14px;color:#0f172a;"><strong>URL:</strong> <a href="{chatwoot_url}" style="color:#1a56db;">{chatwoot_url}</a></p>
+                  <p style="margin:4px 0;font-size:14px;color:#0f172a;"><strong>Email:</strong> {chatwoot_email}</p>
+                  <p style="margin:4px 0;font-size:14px;color:#0f172a;"><strong>Clave:</strong> <code style="background:#fff;padding:2px 8px;border-radius:4px;border:1px solid #e2e8f0;">{chatwoot_password}</code></p>
+                </td></tr>
+              </table>
+
+              <!-- CRM card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;border-radius:10px;padding:20px;margin-bottom:24px;">
+                <tr><td>
+                  <p style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;font-weight:600;">📈 Tu CRM</p>
+                  <p style="margin:4px 0;font-size:14px;color:#0f172a;"><strong>URL:</strong> <a href="{crm_url}" style="color:#1a56db;">{crm_url}</a></p>
+                  <p style="margin:4px 0;font-size:14px;color:#0f172a;"><strong>PIN:</strong> <code style="background:#fff;padding:2px 8px;border-radius:4px;border:1px solid #e2e8f0;font-size:16px;">{crm_pin}</code></p>
+                </td></tr>
+              </table>
+
+              <p style="font-size:14px;color:#475569;line-height:1.6;margin:0 0 16px;">
+                <strong>Tutorial 5 minutos:</strong>
+                <a href="https://lovbot.mx/tutorial-onboarding" style="color:#1a56db;">lovbot.mx/tutorial-onboarding</a>
+              </p>
+
+              <p style="font-size:14px;color:#475569;line-height:1.6;margin:0;">
+                Cualquier duda escribinos a
+                <a href="mailto:hola@lovbot.mx" style="color:#1a56db;">hola@lovbot.mx</a>.
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f8fafc;padding:24px;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="font-size:12px;color:#94a3b8;margin:0;">© 2026 LOVBOT · Robert Bazán · Cancún, México</p>
+              <p style="font-size:12px;color:#94a3b8;margin:6px 0 0;">
+                <a href="https://lovbot-legal.vercel.app/terminos-de-servicio" style="color:#94a3b8;">Términos</a> ·
+                <a href="https://lovbot.mx/politica-de-privacidad" style="color:#94a3b8;">Privacidad</a> ·
+                <a href="https://lovbot-legal.vercel.app/eliminacion-datos" style="color:#94a3b8;">Eliminación de datos</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+    # Versión texto plano (fallback)
+    text_body = f"""Hola {nombre_asesor},
+
+Tu bot de WhatsApp ya está activo. Estos son tus accesos:
+
+PANEL CHATWOOT (chats en vivo)
+URL: {chatwoot_url}
+Email: {chatwoot_email}
+Clave: {chatwoot_password}
+
+TU CRM
+URL: {crm_url}
+PIN: {crm_pin}
+
+Tutorial 5 min: https://lovbot.mx/tutorial-onboarding
+
+Cualquier duda: hola@lovbot.mx
+
+— Equipo Lovbot
+"""
+
+    try:
+        r = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": RESEND_FROM,
+                "to": [to_email],
+                "subject": subject,
+                "html": html_body,
+                "text": text_body,
+                "tags": [
+                    {"name": "category", "value": "onboarding"},
+                    {"name": "client", "value": nombre_empresa[:50]},
+                ],
+            },
+            timeout=REQUEST_TIMEOUT,
+        )
+        if r.status_code in (200, 201):
+            return {"ok": True, "email_id": r.json().get("id"), "sent_to": to_email}
+        return {"ok": False, "error": f"Resend HTTP {r.status_code}: {r.text[:200]}"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 # ── Orquestador principal ────────────────────────────────────────────────────
 
 def onboard(
@@ -485,15 +639,17 @@ def onboard(
     # r_webhook = crear_webhook_chatwoot(chatwoot_account_id, webhook_url)
     # resultados["pasos"]["chatwoot_webhook"] = r_webhook
 
-    # 5. Enviar mensaje de bienvenida via WhatsApp al cliente
+    # 5. Notificar al cliente con sus accesos por DOS canales (WhatsApp + Email)
+    accesos = {
+        "chatwoot_url": CHATWOOT_URL,
+        "chatwoot_email": email_asesor,
+        "chatwoot_password": password_chatwoot,
+        "crm_url": f"https://crm.lovbot.ai?tenant={slug}",
+        "crm_pin": pin,
+    }
+
+    # 5a. WhatsApp (canal inmediato)
     if enviar_bienvenida and access_token and phone_number_id and telefono_whatsapp:
-        accesos = {
-            "chatwoot_url": CHATWOOT_URL,
-            "chatwoot_email": email_asesor,
-            "chatwoot_password": password_chatwoot,
-            "crm_url": f"https://crm.lovbot.ai?tenant={slug}",
-            "crm_pin": pin,
-        }
         r_welcome = enviar_bienvenida_whatsapp(
             phone_number_id=phone_number_id,
             access_token=access_token,
@@ -502,6 +658,16 @@ def onboard(
             accesos=accesos,
         )
         resultados["pasos"]["whatsapp_welcome"] = r_welcome
+
+    # 5b. Email (backup permanente — funciona aunque no haya WhatsApp)
+    if email_asesor:
+        r_email = enviar_bienvenida_email(
+            to_email=email_asesor,
+            nombre_empresa=nombre_empresa,
+            nombre_asesor=nombre_asesor,
+            accesos=accesos,
+        )
+        resultados["pasos"]["email_welcome"] = r_email
 
     # Resumen
     ok_count = sum(1 for p in resultados["pasos"].values() if p.get("ok"))
