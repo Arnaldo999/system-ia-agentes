@@ -15,14 +15,14 @@ Agencia comercial de [[robert-bazan]]. **Una de las 3 agencias del ecosistema** 
 
 Bots WhatsApp, CRMs, automatizaciones — enfocada inicialmente en nicho inmobiliario (Robert es desarrollador inmobiliario y conoce el vertical).
 
-## Estado (2026-04-17)
+## Estado (2026-04-18)
 
-- 🟠 En construcción / Sprint 1 BANT terminado
+- 🟢 Tech Provider Meta: Fase 1 completada, pendiente solicitud Advanced Access (lunes 2026-04-21)
 - Bot demo inmobiliaria LIVE en `+52 1 998 743 4234` (Meta Graph API)
-- CRM demo: `lovbot-demos.vercel.app/dev/crm?tenant=robert`
-- CRM producción: `crm.lovbot.ai?tenant=robert`
-- Admin panel: `admin.lovbot.ai`
-- Clientes externos: pendiente documentar (Robert trae prospectos del mercado inmobiliario).
+- CRM demo: `crm.lovbot.ai/?tenant=demo` (único tenant Supabase Lovbot)
+- Admin panel: `lovbot-demos.vercel.app/dev/admin` con `LOVBOT_ADMIN_TOKEN`
+- Clientes externos: **NINGUNO productivo aún**. Robert es alianza técnica, no cliente pagando.
+- NOTA arquitectural 2026-04-18: eliminado tenant `robert` de Supabase (era duplicado funcional con `demo`). Ahora solo hay 1 tenant demo por agencia. Los clientes reales se crean vía `/public/waba/onboarding` cuando se apruebe Meta Advanced Access.
 
 ## Infraestructura propia
 

@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-17 | Total páginas: 24 (15 entidades + 9 conceptos)
+Última actualización: 2026-04-18 | Total páginas: 26 (15 entidades + 10 conceptos + 1 síntesis)
 
 ## Fuentes (0)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -71,12 +71,12 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | Página | Resumen breve | Proyectos |
 |--------|--------------|-----------|
 | [[wiki/conceptos/n8n]] | 3 instancias independientes (una por proyecto) | arnaldo, robert, mica |
+| [[wiki/conceptos/sistema-auditoria]] | Auditoría diaria 8am ARG — 7 auditores + auto-reparación + Telegram | arnaldo, robert, mica |
 
 ## Síntesis (0)
 | Página | Origen | Fecha | Proyecto |
 |--------|--------|-------|----------|
-
-_Aún no hay síntesis guardadas._
+| [[wiki/sintesis/2026-04-18-limpieza-tenants-supabase]] | Decisión arquitectural: 1 tenant demo por agencia | 2026-04-18 | compartido |
 
 ---
 

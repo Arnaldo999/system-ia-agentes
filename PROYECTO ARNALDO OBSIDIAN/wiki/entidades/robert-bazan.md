@@ -53,7 +53,8 @@ _Pendiente ingestar fuentes (brief-robert-bazan-reunion-24marzo.md, context-robe
 ## Notas
 
 - Domain: `lovbot.ai`
-- Admin panel: `admin.lovbot.ai` (token: `LOVBOT_ADMIN_TOKEN`)
-- CRM cliente: `crm.lovbot.ai?tenant=robert`
+- Admin panel: `lovbot-demos.vercel.app/dev/admin` (token: `LOVBOT_ADMIN_TOKEN`)
+- CRM demo Lovbot: `crm.lovbot.ai/?tenant=demo` (único tenant Supabase agencia=lovbot desde 2026-04-18)
 - Asesor humano configurado: "Roberto" (nombre asesor del bot = `INMO_DEMO_ASESOR`)
-- Email/teléfono personal: pendiente documentar al ingestar fuentes del brief.
+- Email/teléfono personal: `robert@lovbotagency.ca` (Chatwoot user id=2)
+- Cambio 2026-04-18: eliminado tenant Supabase `robert` (duplicado con `demo`). El bot productivo en PG `robert_crm` / `waba_clients db_id=1` sigue intacto.

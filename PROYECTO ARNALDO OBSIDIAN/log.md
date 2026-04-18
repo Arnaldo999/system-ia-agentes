@@ -4,6 +4,27 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-18] update | Eliminado tenant Supabase 'robert' (duplicado funcional con 'demo')
+- Decisión: dejar UN solo tenant demo por agencia en Supabase (antes había `demo` + `robert` ambos agencia=lovbot mostrando datos demo idénticos).
+- Eliminado: `DELETE FROM tenants WHERE slug='robert'` en Supabase compartido.
+- Estado final Supabase: 2 tenants (`demo` lovbot + `mica-demo` system-ia).
+- NO afectado: tabla `waba_clients` en PG `robert_crm` (bot productivo +52 998 743 4234 sigue vivo con db_id=1). Worker `robert_inmobiliaria/` activo.
+- Razón: `robert` en Supabase era una "producción simulada" con mismos datos demo que `demo`, no aportaba valor real. Se prestaba a confusión ("¿es cliente real pagando? no, es demo igual que los otros").
+- Sincronización: silo 3 (`memory/ESTADO_ACTUAL.md`) actualizado con nueva sesión 2026-04-18 que documenta esta decisión.
+
+## [2026-04-18] update | Sincronización Lau — es Arnaldo, NO Mica
+- Detectado: silo 1 (auto-memory `feedback_REGLA_infraestructura_clientes.md:58`) y silo 3 (`memory/ESTADO_ACTUAL.md`) decían incorrectamente que Lau era cliente de Mica.
+- Wiki (silo 2) ya lo tenía correcto: Lau = proyecto propio de Arnaldo (negocio "Creaciones Lau" de su esposa).
+- Corregidos ambos silos. Path legacy `workers/clientes/system_ia/lau/` es engañoso pero dueño real = Arnaldo.
+- Regla aplicada: wiki es fuente de verdad — silos 1 y 3 se sincronizan con ella.
+
+## [2026-04-17] update | Sistema de auditoría diaria documentado y limpiado
+- Verificado: n8n Arnaldo `IuHJLy2hQhOIDlYK` activo con Schedule 8am ARG → `/auditor/fase2` ✅
+- Verificado: n8n Mica `jUBWVBMR6t3iPF7l` Monitor LinkedIn activo ✅
+- Eliminado: `heartbeat.log` (1 línea vieja de 2026-03-13, obsoleto)
+- Consolidado: `auditor_runner.py` — fuente de verdad = `02_OPERACION_COMPARTIDA/scripts/`. Copia en `backends/` sincronizada (tenía versión sin auto_reparador ni auditor_social).
+- Creada: `wiki/conceptos/sistema-auditoria.md` con arquitectura completa, 7 auditores, Remote Triggers, tabla "qué pasa si falla".
+
 ## [2026-04-17] init | Wiki inicializada
 - Estructura de carpetas creada: `raw/{arnaldo,robert,mica,compartido,assets}` + `wiki/{entidades,conceptos,fuentes,sintesis}`
 - Esquema `CLAUDE.md` configurado para 3 proyectos físicamente separados (Arnaldo, Robert, Mica) + stacks compartidos (Cal.com, Supabase, OpenAI Arnaldo)

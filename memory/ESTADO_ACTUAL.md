@@ -1,7 +1,35 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-17 19:55
+Fecha: 2026-04-18 10:45
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## Sesión 2026-04-18 — Limpieza Supabase tenants + sincronización silos
+
+**Decisión arquitectural**: eliminado tenant `robert` de Supabase porque era
+duplicado funcional con `demo` (ambos mostraban datos demo). Dejar solo 1 tenant
+demo por agencia es más limpio y se presta menos a confusión.
+
+**Estado final Supabase tenants** (2 agencias):
+- `demo` (agencia=lovbot) — Demo presentación Robert
+- `mica-demo` (agencia=system-ia) — Demo presentación Mica
+
+**NO se tocó**:
+- `waba_clients` en PG robert_crm (bot productivo +52 998 sigue vivo)
+- Worker `robert_inmobiliaria/` (activo en producción)
+- Ningún proyecto Vercel (todos siguen en uso)
+
+**Aclaración Lau**: corregida en los 3 silos (auto-memory + ESTADO_ACTUAL + wiki
+ya lo decía bien). Lau = proyecto propio Arnaldo (Creaciones Lau), NO de Mica.
+Path legacy `workers/clientes/system_ia/lau/` es engañoso pero el dueño real
+es Arnaldo.
+
+**Clientes productivos documentados** (solo 2 confirmados 100%):
+- Maicol (Back Urbanizaciones) — Arnaldo
+- Lau (Creaciones Lau) — Arnaldo
+- Robert = alianza técnica (no cliente pagando)
+- Mica = sociedad comercial (sin clientes productivos aún)
+
+---
 
 ## Sesión 2026-04-17 — Tech Provider Meta WABA Onboarding Fase 1 COMPLETADA ✅
 
