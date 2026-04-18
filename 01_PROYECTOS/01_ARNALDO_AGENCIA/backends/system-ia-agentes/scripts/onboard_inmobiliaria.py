@@ -164,39 +164,17 @@ def crear_webhook_chatwoot(account_id: int, webhook_url: str) -> dict:
         return {"ok": False, "error": str(e)}
 
 
-# ── 4. Chatwoot — Crear CUENTA nueva (multi-account) ─────────────────────────
+# ── Multi-inbox Mode ─────────────────────────────────────────────────────────
+# En vez de crear una cuenta Chatwoot por cliente (Multi-account, requiere
+# Platform Token), creamos UN inbox WhatsApp por cliente DENTRO de la unica
+# cuenta "Lovbot AI" (account_id = LOVBOT_CHATWOOT_ACCOUNT_ID).
+#
+# Cada cliente recibe un agent con role="agent" y solo el inbox que le
+# corresponde. Asi no ve chats de otros clientes pero la agencia (admins)
+# ve todo desde una sola vista.
 
 CHATWOOT_PLATFORM_TOKEN = os.environ.get("LOVBOT_CHATWOOT_PLATFORM_TOKEN", "")
-
-
-def crear_cuenta_chatwoot(nombre: str) -> dict:
-    """Crea una NUEVA cuenta (account) en Chatwoot.
-    Requiere CHATWOOT_PLATFORM_TOKEN (super admin token, distinto al api_access_token).
-    Devuelve {ok, account_id, account_name}.
-    """
-    if not CHATWOOT_PLATFORM_TOKEN:
-        return {"ok": False, "error": "LOVBOT_CHATWOOT_PLATFORM_TOKEN no configurado"}
-
-    try:
-        r = requests.post(
-            f"{CHATWOOT_URL}/platform/api/v1/accounts",
-            headers={
-                "api_access_token": CHATWOOT_PLATFORM_TOKEN,
-                "Content-Type": "application/json",
-            },
-            json={"name": nombre},
-            timeout=REQUEST_TIMEOUT,
-        )
-        if r.status_code in (200, 201):
-            data = r.json()
-            return {
-                "ok": True,
-                "account_id": data.get("id"),
-                "account_name": data.get("name"),
-            }
-        return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:300]}"}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+CHATWOOT_ACCOUNT_ID = int(os.environ.get("LOVBOT_CHATWOOT_ACCOUNT_ID", "2"))
 
 
 # ── 5. Chatwoot — Crear inbox WhatsApp Cloud API ─────────────────────────────
@@ -249,55 +227,88 @@ def crear_inbox_whatsapp(
         return {"ok": False, "error": str(e)}
 
 
-# ── 6. Chatwoot — Crear agent admin para el cliente ──────────────────────────
+# ── 6. Chatwoot — Crear agent y asignar inbox (Multi-inbox mode) ─────────────
 
 def crear_agent_chatwoot(
     account_id: int,
     email: str,
     name: str,
-    password: str,
-    role: str = "administrator",
+    password: str = "",
+    role: str = "agent",
+    inbox_ids: list = None,
 ) -> dict:
-    """Crea un user (agent o administrator) en una cuenta Chatwoot.
-    El cliente usa estas credenciales para entrar a su panel y atender chats.
-    """
-    if not CHATWOOT_PLATFORM_TOKEN:
-        return {"ok": False, "error": "LOVBOT_CHATWOOT_PLATFORM_TOKEN no configurado"}
+    """Crea un agent en una cuenta Chatwoot usando la API de cuenta normal
+    (no requiere Platform Token).
 
-    # 1. Crear el user a nivel platform
+    role:
+      - "agent" (default): solo ve inboxes asignados — IDEAL PARA CLIENTES
+      - "administrator": ve toda la cuenta — para vos/Robert internamente
+
+    inbox_ids: lista de IDs de inboxes a los que el agent tendra acceso.
+    Si se omite, el agent no tiene acceso a ningun inbox (hay que asignar
+    despues con asignar_inbox_a_agent).
+    """
+    if not CHATWOOT_TOKEN:
+        return {"ok": False, "error": "CHATWOOT_TOKEN no configurado"}
+
+    headers = {"api_access_token": CHATWOOT_TOKEN, "Content-Type": "application/json"}
+
+    # 1. Crear el agent vía API de cuenta (POST /api/v1/accounts/{id}/agents)
+    payload = {"name": name, "email": email, "role": role}
+    # Chatwoot envia el password de invitacion automaticamente al email
+    # del agent. Si pasas "password" no lo usa — el agent setea su propio
+    # password al hacer clic en el link del email.
+    if password:
+        payload["password"] = password
+
     try:
         r1 = requests.post(
-            f"{CHATWOOT_URL}/platform/api/v1/users",
-            headers={
-                "api_access_token": CHATWOOT_PLATFORM_TOKEN,
-                "Content-Type": "application/json",
-            },
-            json={"name": name, "email": email, "password": password},
+            f"{CHATWOOT_URL}/api/v1/accounts/{account_id}/agents",
+            headers=headers,
+            json=payload,
             timeout=REQUEST_TIMEOUT,
         )
         if r1.status_code not in (200, 201):
-            # Si ya existe, intentamos buscarlo
-            return {"ok": False, "error": f"User create HTTP {r1.status_code}: {r1.text[:200]}"}
-        user_id = r1.json().get("id")
+            return {"ok": False, "error": f"Agent create HTTP {r1.status_code}: {r1.text[:200]}"}
+        agent_data = r1.json()
+        user_id = agent_data.get("id")
     except Exception as e:
-        return {"ok": False, "error": f"Excepcion creando user: {e}"}
+        return {"ok": False, "error": f"Excepcion creando agent: {e}"}
 
-    # 2. Asignar el user a la cuenta como administrator/agent
+    # 2. Asignar inboxes si se especificaron
+    inbox_assigns = []
+    if inbox_ids:
+        for inbox_id in inbox_ids:
+            r_assign = asignar_inbox_a_agent(account_id, inbox_id, user_id)
+            inbox_assigns.append({"inbox_id": inbox_id, "ok": r_assign.get("ok")})
+
+    return {
+        "ok": True,
+        "user_id": user_id,
+        "email": email,
+        "role": role,
+        "inboxes_assigned": inbox_assigns,
+    }
+
+
+def asignar_inbox_a_agent(account_id: int, inbox_id: int, user_id: int) -> dict:
+    """Asigna un agent a un inbox especifico (le da permiso de verlo)."""
+    if not CHATWOOT_TOKEN:
+        return {"ok": False, "error": "CHATWOOT_TOKEN no configurado"}
+
+    headers = {"api_access_token": CHATWOOT_TOKEN, "Content-Type": "application/json"}
     try:
-        r2 = requests.post(
-            f"{CHATWOOT_URL}/platform/api/v1/accounts/{account_id}/account_users",
-            headers={
-                "api_access_token": CHATWOOT_PLATFORM_TOKEN,
-                "Content-Type": "application/json",
-            },
-            json={"user_id": user_id, "role": role},
+        r = requests.post(
+            f"{CHATWOOT_URL}/api/v1/accounts/{account_id}/inbox_members",
+            headers=headers,
+            json={"inbox_id": inbox_id, "user_ids": [user_id]},
             timeout=REQUEST_TIMEOUT,
         )
-        if r2.status_code in (200, 201):
-            return {"ok": True, "user_id": user_id, "email": email, "role": role}
-        return {"ok": False, "error": f"Account assign HTTP {r2.status_code}: {r2.text[:200]}"}
+        if r.status_code in (200, 201):
+            return {"ok": True}
+        return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:200]}"}
     except Exception as e:
-        return {"ok": False, "error": f"Excepcion asignando user: {e}"}
+        return {"ok": False, "error": str(e)}
 
 
 # ── 7. Generar password seguro ────────────────────────────────────────────────
@@ -400,6 +411,11 @@ def onboard(
     password_chatwoot = generar_password()
     resultados = {"slug": slug, "pin": pin, "pasos": {}}
 
+    # Multi-inbox mode: usamos siempre la cuenta global "Lovbot AI"
+    # (a menos que se pase explicitamente otra)
+    if not chatwoot_account_id:
+        chatwoot_account_id = CHATWOOT_ACCOUNT_ID
+
     # 1. Supabase tenant
     config = {
         "nombre_empresa": nombre_empresa,
@@ -413,48 +429,43 @@ def onboard(
     r1 = crear_tenant_supabase(nombre_empresa, slug, pin, config)
     resultados["pasos"]["supabase"] = r1
 
-    # 2. Chatwoot — crear cuenta si no se provee account_id
-    if not chatwoot_account_id:
-        r_cuenta = crear_cuenta_chatwoot(f"{nombre_empresa} (Lovbot)")
-        resultados["pasos"]["chatwoot_cuenta"] = r_cuenta
-        if r_cuenta.get("ok"):
-            chatwoot_account_id = r_cuenta["account_id"]
+    # 2. Crear inbox WhatsApp Cloud API en la cuenta Lovbot (necesita datos WABA)
+    inbox_id = None
+    if waba_id and phone_number_id and access_token:
+        r_inbox = crear_inbox_whatsapp(
+            account_id=chatwoot_account_id,
+            nombre_inbox=f"WhatsApp {nombre_empresa}",
+            phone_number=telefono_whatsapp,
+            phone_number_id=phone_number_id,
+            waba_id=waba_id,
+            access_token=access_token,
+        )
+        resultados["pasos"]["chatwoot_inbox"] = r_inbox
+        if r_inbox.get("ok"):
+            inbox_id = r_inbox.get("inbox_id")
 
-    # 3. Si tenemos account_id (provisto o recién creado), seguimos
-    if chatwoot_account_id:
-        # 3a. Labels estándar
-        r2 = crear_labels_chatwoot(chatwoot_account_id)
-        resultados["pasos"]["chatwoot_labels"] = r2
+    # 3. Crear agent del cliente (role=agent) y asignarle SOLO su inbox.
+    # Asi solo ve sus chats (no los de otros clientes de Lovbot).
+    if email_asesor:
+        inbox_ids = [inbox_id] if inbox_id else None
+        r_agent = crear_agent_chatwoot(
+            account_id=chatwoot_account_id,
+            email=email_asesor,
+            name=nombre_asesor,
+            password=password_chatwoot,
+            role="agent",  # NO administrator — para aislar al cliente
+            inbox_ids=inbox_ids,
+        )
+        resultados["pasos"]["chatwoot_agent"] = r_agent
 
-        # 3b. Webhook bot pausa/retoma
-        webhook_url = f"https://agentes.lovbot.ai/clientes/lovbot/{slug}/chatwoot/webhook"
-        r3 = crear_webhook_chatwoot(chatwoot_account_id, webhook_url)
-        resultados["pasos"]["chatwoot_webhook"] = r3
+    # 4. Webhook bot pausa/retoma (compartido a nivel cuenta, ya configurado
+    # para el bot Robert. No re-creamos por cliente para evitar duplicados.)
+    # Si necesitas un webhook por cliente, descomentar:
+    # webhook_url = f"https://agentes.lovbot.ai/clientes/lovbot/{slug}/chatwoot/webhook"
+    # r_webhook = crear_webhook_chatwoot(chatwoot_account_id, webhook_url)
+    # resultados["pasos"]["chatwoot_webhook"] = r_webhook
 
-        # 3c. Inbox WhatsApp Cloud API (solo si tenemos credenciales WABA del cliente)
-        if waba_id and phone_number_id and access_token:
-            r_inbox = crear_inbox_whatsapp(
-                account_id=chatwoot_account_id,
-                nombre_inbox=f"WhatsApp {nombre_empresa}",
-                phone_number=telefono_whatsapp,
-                phone_number_id=phone_number_id,
-                waba_id=waba_id,
-                access_token=access_token,
-            )
-            resultados["pasos"]["chatwoot_inbox"] = r_inbox
-
-        # 3d. Crear agent admin para que el cliente entre a Chatwoot
-        if email_asesor:
-            r_agent = crear_agent_chatwoot(
-                account_id=chatwoot_account_id,
-                email=email_asesor,
-                name=nombre_asesor,
-                password=password_chatwoot,
-                role="administrator",
-            )
-            resultados["pasos"]["chatwoot_agent"] = r_agent
-
-    # 4. Enviar mensaje de bienvenida via WhatsApp (opcional)
+    # 5. Enviar mensaje de bienvenida via WhatsApp al cliente
     if enviar_bienvenida and access_token and phone_number_id and telefono_whatsapp:
         accesos = {
             "chatwoot_url": CHATWOOT_URL,
@@ -483,8 +494,10 @@ def onboard(
             "crm_pin": pin,
             "chatwoot_url": CHATWOOT_URL,
             "chatwoot_account_id": chatwoot_account_id,
+            "chatwoot_inbox_id": inbox_id,
             "chatwoot_email": email_asesor,
             "chatwoot_password": password_chatwoot,
+            "chatwoot_role": "agent (solo ve su inbox)",
         },
     }
 
