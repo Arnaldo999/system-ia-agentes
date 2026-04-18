@@ -4043,3 +4043,62 @@ def list_meta_templates(request: Request):
         raise
     except Exception as e:
         raise HTTPException(502, f"Error consultando Meta: {e}")
+
+
+@router.post("/admin/meta/test-send-template")
+async def test_send_template(request: Request):
+    """Envia un template a un destinatario para hacer pruebas.
+    Solo para verificar que el token + WABA + templates funcionan.
+
+    Body JSON:
+      to       (str) numero destino formato Meta (ej: "12268996991")
+      template (str, opcional) nombre template (default: "hello_world")
+      lang     (str, opcional) codigo idioma (default: "en_US")
+
+    Requiere X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+
+    body = await request.json()
+    to = (body.get("to") or "").strip()
+    if not to:
+        raise HTTPException(400, "Falta 'to'")
+
+    template = body.get("template", "hello_world")
+    lang = body.get("lang", "en_US")
+
+    phone_id = os.getenv("LOVBOT_META_PHONE_NUMBER_ID") or os.getenv("META_PHONE_NUMBER_ID")
+    token = os.getenv("LOVBOT_META_ACCESS_TOKEN") or os.getenv("META_ACCESS_TOKEN")
+    if not phone_id or not token:
+        raise HTTPException(500, "Faltan PHONE_NUMBER_ID o ACCESS_TOKEN en env")
+
+    try:
+        r = requests.post(
+            f"https://graph.facebook.com/v22.0/{phone_id}/messages",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "messaging_product": "whatsapp",
+                "to": to,
+                "type": "template",
+                "template": {
+                    "name": template,
+                    "language": {"code": lang},
+                },
+            },
+            timeout=15,
+        )
+        return {
+            "status_code": r.status_code,
+            "ok": r.status_code == 200,
+            "response": r.json() if r.headers.get("content-type", "").startswith("application/json") else r.text[:300],
+            "phone_number_id_used": phone_id,
+            "to": to,
+            "template": template,
+            "lang": lang,
+        }
+    except Exception as e:
+        raise HTTPException(502, f"Error enviando: {e}")
