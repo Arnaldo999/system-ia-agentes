@@ -34,6 +34,16 @@ except ImportError:
 
 EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "")
 EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
+
+AIRTABLE_API_KEY   = os.getenv("AIRTABLE_API_KEY", "") or os.getenv("AIRTABLE_TOKEN", "")
+AIRTABLE_BASE_MICA = os.getenv("MICA_AIRTABLE_BASE_ID", "") or os.getenv("MICA_DEMO_AIRTABLE_BASE", "") or "appA8QxIhBYYAHw0F"
+TABLE_CLIENTES_AGENCIA = os.getenv("MICA_AIRTABLE_TABLE_CLIENTES_AGENCIA", "Clientes_Agencia")
+
+MICA_WHATSAPP = os.getenv("MICA_WHATSAPP_CONTACTO", "5493XXXXXXXXX")
+ONBOARDING_URL = os.getenv("MICA_ONBOARDING_URL", "https://systemia-onboarding.vercel.app")
+CRM_BASE_URL = os.getenv("MICA_CRM_BASE_URL", "https://lovbot-demos.vercel.app")
+CHATWOOT_BASE_URL = os.getenv("MICA_CHATWOOT_URL", "")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MICA_CLIENTES_DIR = REPO_ROOT / "01_PROYECTOS" / "02_SYSTEM_IA_MICAELA" / "clientes"
 
@@ -132,6 +142,87 @@ def _guardar_brief(brief: dict, slug: str) -> Path:
     return dest
 
 
+def _registrar_airtable(brief: dict) -> dict:
+    """Upsert del cliente en tabla Clientes_Agencia de base Mica.
+    Retorna dict con ok, detalle, chatwoot_url, crm_url, onboarding_url.
+    """
+    if not AIRTABLE_API_KEY:
+        return {"ok": False, "detalle": "AIRTABLE_API_KEY no configurada — skip"}
+
+    slug = brief["slug"]
+    asesor = brief.get("asesor", {})
+    integraciones = brief.get("integraciones", {})
+
+    crm_url = f"{CRM_BASE_URL}/?tenant={slug}" if CRM_BASE_URL else ""
+    chatwoot_url = f"{CHATWOOT_BASE_URL}?cliente={slug}" if CHATWOOT_BASE_URL else ""
+    onboarding_url = f"{ONBOARDING_URL}/?slug={slug}"
+
+    fields = {
+        "Slug": slug,
+        "Nombre_Empresa": brief.get("nombre_empresa", ""),
+        "Vertical": brief.get("vertical", "inmobiliaria"),
+        "Numero_WhatsApp": str(asesor.get("telefono", "")),
+        "Evolution_Instance": integraciones.get("evolution_instance", "") or slug,
+        "Provider": "evolution",
+        "Chatwoot_Url": chatwoot_url,
+        "CRM_Url": crm_url,
+        "Asesor_Nombre": asesor.get("nombre", ""),
+        "Asesor_Telefono": str(asesor.get("telefono", "")),
+        "Asesor_Email": asesor.get("email", ""),
+        "Ciudad": brief.get("ciudad", ""),
+        "Estado": "pendiente",
+        "Fecha_Alta": datetime.now().strftime("%Y-%m-%d"),
+    }
+    # Eliminar vacíos
+    fields = {k: v for k, v in fields.items() if v not in (None, "", "0")}
+
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_MICA}/{TABLE_CLIENTES_AGENCIA}"
+    headers = {"Authorization": f"Bearer {AIRTABLE_API_KEY}", "Content-Type": "application/json"}
+    try:
+        r = requests.patch(url, headers=headers, json={
+            "performUpsert": {"fieldsToMergeOn": ["Slug"]},
+            "records": [{"fields": fields}],
+        }, timeout=15)
+        if r.status_code >= 400:
+            return {"ok": False, "detalle": f"Airtable HTTP {r.status_code}: {r.text[:200]}"}
+        rec = (r.json().get("records") or [{}])[0]
+        return {
+            "ok": True,
+            "detalle": f"Cliente '{slug}' registrado en {TABLE_CLIENTES_AGENCIA} (id={rec.get('id','?')})",
+            "chatwoot_url": chatwoot_url,
+            "crm_url": crm_url,
+            "onboarding_url": onboarding_url,
+        }
+    except Exception as e:
+        return {"ok": False, "detalle": f"Error Airtable: {e}"}
+
+
+def _generar_mensaje_cliente(brief: dict, registro: dict) -> str:
+    """Genera el mensaje de WhatsApp listo para copiar y enviar al cliente."""
+    nombre_empresa = brief.get("nombre_empresa", "")
+    asesor = brief.get("asesor", {}).get("nombre", "").split()[0] or ""
+    onboarding_url = registro.get("onboarding_url", "")
+
+    return f"""¡Hola {asesor}! 👋
+
+Ya tenemos lista tu integración de *{nombre_empresa}* con System IA.
+
+Para activar tu bot de WhatsApp solo tenés que:
+
+1️⃣ Entrar a este link desde la PC o celular:
+{onboarding_url}
+
+2️⃣ Escanear el código QR con el WhatsApp Business que vas a usar para el bot (desde tu celular: menú → Dispositivos vinculados → Vincular nuevo)
+
+3️⃣ Listo. La página te muestra automáticamente:
+ • Link a tu CRM (donde vas a ver todos tus leads y propiedades)
+ • Link a Chatwoot (para atender manualmente cuando haga falta)
+
+Si tenés cualquier duda, escribime por acá. 🙌
+
+— Micaela | System IA"""
+
+
 def _imprimir_env_vars(env_vars: dict):
     print("\n" + "="*60)
     print("  ENV VARS para Easypanel / Coolify")
@@ -163,13 +254,15 @@ def _imprimir_checklist(brief: dict, env_vars: dict, instance_check: dict):
     else:
         print(f"\n  [!] Evolution API — instancia '{instance_name}': {instance_check.get('detalle')}")
 
-    # Easypanel
-    print(f"\n  [ ] Easypanel — agregar env vars al servicio 'system-ia-agentes'")
-    print(f"       (ver bloque ENV VARS arriba)")
+    # Easypanel / Coolify
+    if env_vars:
+        print(f"\n  [ ] Coolify/Easypanel — agregar env vars al servicio 'system-ia-agentes'")
+        print(f"       (ver bloque ENV VARS arriba)")
+    else:
+        print(f"\n  [✓] ENV vars — no hay vars especiales (cliente usa config por defecto)")
 
     # Airtable
-    print(f"\n  [ ] Airtable — verificar acceso a base appA8QxIhBYYAHw0F")
-    print(f"       El cliente usará la base compartida de Mica")
+    print(f"\n  [✓] Airtable — registro automatico en {TABLE_CLIENTES_AGENCIA}")
 
     # Cal.com
     agenda = brief.get("agenda", {})
@@ -179,14 +272,12 @@ def _imprimir_checklist(brief: dict, env_vars: dict, instance_check: dict):
         print(f"\n  [ ] Cal.com — verificar cuenta '{cal_user}' con event '{cal_event}'")
         print(f"       Asegurar que el usuario tenga slots disponibles")
 
-    # WhatsApp connection
-    print(f"\n  [ ] WhatsApp — enviar link de conexión al cliente")
-    print(f"       (requiere instancia Evolution conectada con QR)")
+    # Chatwoot
+    print(f"\n  [ ] Chatwoot — crear inbox para '{slug}'")
+    print(f"       Opcion recomendada: inbox tipo 'API' con webhook a un endpoint del backend")
 
-    # Test
-    print(f"\n  [ ] Test final — enviar mensaje de prueba al número del asesor:")
-    asesor_tel = brief.get("asesor", {}).get("telefono", "?")
-    print(f"       python probar_worker.sh <phone_id> mica-demo")
+    # WhatsApp connection — ahora automatico
+    print(f"\n  [→] Enviar mensaje al cliente (ver abajo)")
 
     print("\n" + "="*60 + "\n")
 
@@ -234,15 +325,35 @@ def main():
     env_vars = _generar_env_vars(brief)
     _imprimir_env_vars(env_vars)
 
-    # 5. Guardar brief (si no es dry-run)
+    # 5. Guardar brief + registrar en Airtable Clientes_Agencia (si no es dry-run)
+    registro = {}
     if not args.dry_run:
         dest = _guardar_brief(brief, slug)
         print(f"\n[onboard_mica] Brief guardado en: {dest}")
+
+        print(f"[onboard_mica] Registrando cliente en Airtable {TABLE_CLIENTES_AGENCIA}...")
+        registro = _registrar_airtable(brief)
+        print(f"[onboard_mica] Airtable: {registro['detalle']}")
     else:
-        print(f"\n[onboard_mica] Dry-run: no se guardan archivos")
+        print(f"\n[onboard_mica] Dry-run: no se guardan archivos ni se registra en Airtable")
 
     # 6. Checklist
     _imprimir_checklist(brief, env_vars, instance_check)
+
+    # 7. Mensaje WhatsApp listo para copiar y enviar al cliente
+    if registro.get("ok"):
+        mensaje = _generar_mensaje_cliente(brief, registro)
+        print("\n" + "="*60)
+        print("  MENSAJE LISTO PARA ENVIAR AL CLIENTE POR WHATSAPP")
+        print("="*60)
+        print(mensaje)
+        print("="*60)
+        print(f"\n  Link onboarding: {registro['onboarding_url']}")
+        if registro.get('crm_url'):
+            print(f"  Link CRM:        {registro['crm_url']}")
+        if registro.get('chatwoot_url'):
+            print(f"  Link Chatwoot:   {registro['chatwoot_url']}")
+        print()
 
 
 if __name__ == "__main__":
