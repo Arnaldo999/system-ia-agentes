@@ -180,9 +180,18 @@ def _meta_send_image(tel: str, url_imagen: str, caption: str) -> bool:
 def _evolution_send_text(tel: str, mensaje: str) -> bool:
     url = _env("EVOLUTION_API_URL")
     key = _env("EVOLUTION_API_KEY")
-    instance = _env("EVOLUTION_INSTANCE")
+    # Instance name: probar EVOLUTION_INSTANCE generico (Arnaldo) →
+    # MICA_DEMO_EVOLUTION_INSTANCE (Mica demo) → LAU_EVOLUTION_INSTANCE (Lau)
+    instance = (
+        _env("EVOLUTION_INSTANCE")
+        or _env("MICA_DEMO_EVOLUTION_INSTANCE")
+        or _env("LAU_EVOLUTION_INSTANCE")
+    )
     if not (url and key and instance):
-        logger.warning(f"[WA-EVO] Sin config. Msg: {mensaje[:60]}")
+        logger.warning(
+            f"[WA-EVO] Sin config (url={bool(url)} key={bool(key)} inst={bool(instance)}). "
+            f"Msg: {mensaje[:60]}"
+        )
         return False
     try:
         r = requests.post(
@@ -203,7 +212,11 @@ def _evolution_send_text(tel: str, mensaje: str) -> bool:
 def _evolution_send_image(tel: str, url_imagen: str, caption: str) -> bool:
     url = _env("EVOLUTION_API_URL")
     key = _env("EVOLUTION_API_KEY")
-    instance = _env("EVOLUTION_INSTANCE")
+    instance = (
+        _env("EVOLUTION_INSTANCE")
+        or _env("MICA_DEMO_EVOLUTION_INSTANCE")
+        or _env("LAU_EVOLUTION_INSTANCE")
+    )
     if not (url and key and instance):
         return False
     try:
