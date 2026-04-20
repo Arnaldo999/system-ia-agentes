@@ -260,16 +260,19 @@
     let tarjetas = '';
     for (let i = 1; i <= total; i++) {
       const lote = lotesPorPos[i];
+      const baseStyle = 'aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;font-weight:600;padding:0';
       if (lote) {
-        const color = lote.estado === 'vendido' ? 'bg-red-500/80 hover:bg-red-500 border-red-400'
-                   : lote.estado === 'reservado' ? 'bg-yellow-500/80 hover:bg-yellow-500 border-yellow-400'
-                   : 'bg-green-500/80 hover:bg-green-500 border-green-400';
-        tarjetas += `<button onclick="abrirModalLote(${lote.id}, ${i})" class="relative aspect-square ${color} border text-white rounded transition font-semibold flex items-center justify-center p-0.5" title="Lote ${lote.numero_lote} — ${lote.estado}">
-          <span class="text-[11px] leading-tight truncate max-w-full">${lote.numero_lote}</span>
+        const bg = lote.estado === 'vendido' ? '#dc2626'
+                 : lote.estado === 'reservado' ? '#eab308'
+                 : '#16a34a';
+        tarjetas += `<button onclick="abrirModalLote(${lote.id}, ${i})" title="Lote ${lote.numero_lote} — ${lote.estado}"
+          style="${baseStyle};background:${bg};border:1px solid ${bg};color:#fff;font-size:10px;line-height:1">
+          <span style="padding:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${lote.numero_lote}</span>
         </button>`;
       } else {
-        tarjetas += `<button onclick="abrirModalLote(null, ${i})" class="relative aspect-square bg-surface-alt/40 hover:bg-surface-alt border border-dashed border-brd hover:border-primary text-txt-2 hover:text-primary rounded transition flex items-center justify-center" title="Posición #${i}">
-          <span class="text-base leading-none">+</span>
+        tarjetas += `<button onclick="abrirModalLote(null, ${i})" title="Posición #${i}"
+          style="${baseStyle};background:rgba(34,38,54,0.4);border:1px dashed var(--brd);color:var(--text2);font-size:14px;line-height:1">
+          +
         </button>`;
       }
     }
@@ -282,8 +285,8 @@
         <span class="flex items-center gap-2"><span class="w-4 h-4 bg-red-500 rounded"></span> Vendidos: ${counts.vendidos}</span>
         <span class="flex items-center gap-2 text-txt-2"><span class="w-4 h-4 border-2 border-dashed border-brd rounded"></span> Sin configurar</span>
       </div>
-      <div class="bg-surface-alt/30 border border-brd rounded-lg p-3 overflow-auto" style="max-height:72vh">
-        <div class="grid gap-1.5" style="grid-template-columns: repeat(${cols}, minmax(44px, 1fr))">
+      <div style="background:rgba(34,38,54,0.3);border:1px solid var(--brd);border-radius:8px;padding:12px;overflow:auto;max-height:72vh">
+        <div style="display:grid;gap:6px;grid-template-columns: repeat(${cols}, minmax(44px, 56px));justify-content:start">
           ${tarjetas}
         </div>
       </div>
