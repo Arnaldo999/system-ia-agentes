@@ -1,7 +1,82 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-18 10:45
+Fecha: 2026-04-20 07:30
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## Sesión 2026-04-20 — Número test Tech Provider + Fase 1 ecosistema Mica
+
+**Objetivo de la sesión**: aprovechar que Robert es Tech Provider Meta para:
+1. Que Arnaldo tenga un número WhatsApp oficial testeable que rutee a cualquier
+   worker del ecosistema (demos de las 3 agencias) via la app Meta de Robert.
+2. Replicar el ecosistema CRM de Robert para Mica (Fase 1 — CRM actualizado).
+
+### Parte A — Número test via Tech Provider Robert
+**Implementado**:
+- `workers/shared/wa_provider.py` — capa abstracción Meta/Evolution/YCloud (send + parse).
+- `workers/demos/inmobiliaria/worker.py` (Arnaldo) adaptado provider-agnostic. Default YCloud, Meta si `WHATSAPP_PROVIDER=meta`.
+- `workers/clientes/system_ia/demos/inmobiliaria/worker.py` (Mica) adaptado provider-agnostic. Default Evolution, Meta si `WHATSAPP_PROVIDER=meta`.
+- `02_OPERACION_COMPARTIDA/scripts/probar_worker.sh` — CLI switch rápido con aliases (arnaldo-demo, mica-demo, robert-demo).
+- Wiki: `wiki/conceptos/numero-test-tech-provider.md` documentando el patrón.
+
+**Intactos (producción)**: `arnaldo/maicol/`, `system_ia/lau/`, `lovbot/robert_inmobiliaria/`.
+
+**Pendiente**: Meta App Review aprobado (Embedded Signup bloqueado hasta aprobación — screenshot 06:46 confirmó "app no está disponible"). Tiempo espera 2-10 días desde 2026-04-19.
+
+### Parte B — CRM Mica Fase 1 (actualización v1.1.1 → v1.4.0)
+**Problema detectado**: el CRM Mica productivo (`system-ia-agencia.vercel.app/system-ia/crm`) tenía v1.1.1 con branding "LovBot IA" y bugs críticos que ya estaban arreglados en Robert pero nunca se propagaron.
+
+**Aplicado**:
+- `demos/SYSTEM-IA/dev/crm.html` + `demos/SYSTEM-IA/crm.html` bumped a v1.4.0 (dev: v1.4.0-dev).
+- Fix seguridad `initTenant()`: bloquea acceso si tenant no existe (excepto slugs públicos `demo` y `mica-demo`).
+- Fix banner versión: agregado `_compareSemver()` para comparación real (antes comparaba con `!==` causando loop infinito).
+- Dev sincronizado con prod (ambos 3918 líneas, idénticos salvo versión).
+
+**Stack confirmado para ecosistema Mica**:
+- DB bot: Airtable `appA8QxIhBYYAHw0F` (sigue)
+- WhatsApp clientes reales: Evolution API (hasta que Mica sea TP propio)
+- WhatsApp tests internos: Meta via Tech Provider Robert + `WHATSAPP_PROVIDER=meta`
+- Chatwoot: el de Arnaldo (compartido, worker Mica vive en VPS Arnaldo)
+- Backend: `agentes.arnaldoayalaestratega.cloud/mica/*`
+- Supabase tenant: `mica-demo` (reutilizar, no crear nuevo)
+- Cotizador: n8n Arnaldo (ya adapta por tono/voz/logo del brief)
+- Form brief: separado en `systemia-brief-form.vercel.app` (pendiente, Fase 2)
+- Email welcome cliente: ❌ NO habilitado (Mica no tiene SMTP) — solo WhatsApp
+
+### TAREAS PENDIENTES IDENTIFICADAS
+
+#### ⏳ Mover worker Lau de system_ia/ → arnaldo/ (trampa del path)
+El worker de Lau vive físicamente en `workers/clientes/system_ia/lau/` por error
+histórico de organización. Lau es proyecto propio de Arnaldo (negocio "Creaciones
+Lau" de su esposa), NO de Mica. La documentación en los 3 silos ya está correcta,
+pero el código físico nunca se movió porque:
+- Mover carpeta rompe imports
+- Requiere cambiar config Coolify (working directory)
+- Cambiar webhook Evolution API
+- Redeploy con downtime ~2 min
+
+**Decisión Arnaldo 2026-04-20**: dejar la trampa pendiente como tarea separada.
+Hacer en una sesión dedicada, no mezclar con otro trabajo. Plan:
+1. Nueva branch `refactor/lau-move-to-arnaldo`.
+2. `mv workers/clientes/system_ia/lau workers/clientes/arnaldo/lau`.
+3. Ajustar imports (`from workers.clientes.system_ia.lau` → `.arnaldo.lau`).
+4. Ajustar rutas FastAPI si existen.
+5. Cambiar working_directory en Coolify.
+6. Actualizar webhook Evolution.
+7. Redeploy controlado.
+8. Eliminar "Trampa del path" de `wiki/entidades/lau.md` y memory silo 1.
+
+#### ⏳ Fase 2 ecosistema Mica (próxima sesión)
+- Form brief Mica (`systemia-brief-form.vercel.app`) clonado del de Robert.
+- Script `onboard_mica_cliente.py` adaptado: Evolution en vez de Meta, Airtable, solo WhatsApp (sin email).
+- Provisioning Evolution API automático por cliente.
+
+#### ⏳ Cambios pendientes en lau/worker.py no relacionados
+Hay cambios de otra sesión anterior en `workers/clientes/system_ia/lau/worker.py`
+(fix Airtable singleSelect para CATEGORIAS_AIRTABLE = {Escolar, Eventos, Diseños,
+Papelería, Invitaciones digitales}). NO commiteados hoy porque no son del alcance.
+Revisar y commitear por separado cuando Arnaldo decida.
+
+---
 
 ## Sesión 2026-04-18 — Limpieza Supabase tenants + sincronización silos
 

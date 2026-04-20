@@ -4,6 +4,15 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-20] update | Patrón "numero test via Tech Provider Robert" implementado
+- Creado: `workers/shared/wa_provider.py` — capa abstracción Meta/Evolution/YCloud (send + parse unificados).
+- Adaptados: 2 workers demo inmobiliaria (Arnaldo `workers/demos/inmobiliaria/` + Mica `workers/clientes/system_ia/demos/inmobiliaria/`) para switch via env var `WHATSAPP_PROVIDER=meta`.
+- Intactos (producción): `arnaldo/maicol/`, `system_ia/lau/`, `lovbot/robert_inmobiliaria/`.
+- Creado: `02_OPERACION_COMPARTIDA/scripts/probar_worker.sh` — CLI switch rápido con aliases (arnaldo-demo, mica-demo, robert-demo, gastronomia) que llama `/admin/waba/client/{phone_id}/update-worker-url`.
+- Creada: `wiki/conceptos/numero-test-tech-provider.md` — doc completa del patrón.
+- Uso: 1 nro conectado via Embedded Signup a app Meta Robert → routeable a cualquier worker solo cambiando el worker_url en PG `waba_clients` (sin desconectar nro de Meta).
+- Motivación: aprovechar que Robert es el único Tech Provider del ecosistema para darle a Arnaldo (socio técnico de las 3 agencias) nro WhatsApp oficial testeable cross-agencia sin depender de Evolution/YCloud.
+
 ## [2026-04-18] update | Eliminado tenant Supabase 'robert' (duplicado funcional con 'demo')
 - Decisión: dejar UN solo tenant demo por agencia en Supabase (antes había `demo` + `robert` ambos agencia=lovbot mostrando datos demo idénticos).
 - Eliminado: `DELETE FROM tenants WHERE slug='robert'` en Supabase compartido.

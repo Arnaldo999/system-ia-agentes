@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-18 | Total páginas: 26 (15 entidades + 10 conceptos + 1 síntesis)
+Última actualización: 2026-04-20 | Total páginas: 27 (15 entidades + 11 conceptos + 1 síntesis)
 
 ## Fuentes (0)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -45,7 +45,7 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | [[wiki/entidades/coolify-robert]] | orquestador | robert |
 | [[wiki/entidades/easypanel-mica]] | orquestador | mica |
 
-## Conceptos (9)
+## Conceptos (11)
 
 ### Reglas transversales (leer PRIMERO)
 | Página | Resumen breve | Proyectos |
@@ -72,6 +72,11 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 |--------|--------------|-----------|
 | [[wiki/conceptos/n8n]] | 3 instancias independientes (una por proyecto) | arnaldo, robert, mica |
 | [[wiki/conceptos/sistema-auditoria]] | Auditoría diaria 8am ARG — 7 auditores + auto-reparación + Telegram | arnaldo, robert, mica |
+
+### Testing cross-agencia
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/numero-test-tech-provider]] | 1 nro conectado a WABA Robert → routeable a cualquier worker (demo Arnaldo/Mica/Robert) vía `probar_worker.sh` | compartido |
 
 ## Síntesis (0)
 | Página | Origen | Fecha | Proyecto |

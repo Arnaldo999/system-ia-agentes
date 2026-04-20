@@ -2224,19 +2224,31 @@ async function guardarEstado(id) {
 }
 
 // ── VERSIONADO ──────────────────────────────────────────────────────────────
-const CRM_VERSION = '1.3.1-dev';
+const CRM_VERSION = '1.4.0-dev';
 const CRM_VERSION_KEY = 'crm_version_dismissed';
+
+// Compara versiones semver: devuelve > 0 si a > b, < 0 si a < b, 0 si iguales
+function _compareSemver(a, b) {
+  const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const da = pa[i] || 0, db = pb[i] || 0;
+    if (da !== db) return da - db;
+  }
+  return 0;
+}
 
 async function checkVersion() {
   // No mostrar banner en DEV — solo en producción
-  if (CRM_VERSION.includes('-dev') || location.pathname.includes('/dev/') || location.host.includes('lovbot-demos.vercel.app')) {
+  if (CRM_VERSION.includes('-dev') || location.pathname.includes('/dev/') || location.host.includes('system-ia-agencia.vercel.app/system-ia/dev')) {
     return;
   }
   try {
     const res = await fetch(`${SAAS_API}/crm/version`, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return;
     const data = await res.json();
-    if (data.version && data.version !== CRM_VERSION) {
+    // Solo mostrar banner si el BACKEND tiene una version MAYOR a la del HTML actual
+    if (data.version && _compareSemver(data.version, CRM_VERSION) > 0) {
       const dismissed = localStorage.getItem(CRM_VERSION_KEY);
       if (dismissed === data.version) return;
       showUpdateBanner(data.version, data.changelog || '');
@@ -2406,7 +2418,38 @@ async function initTenant() {
       }
     }
   } catch(err) {
-    console.warn('[Tenant] Usando config por defecto:', err.message);
+    console.warn('[Tenant] No encontrado o sin conexión:', err.message);
+
+    // SLUGS publicos de Mica ('mica-demo', 'demo') son los demos de presentacion
+    // — permitir cargar como fallback sin bloquear
+    if (TENANT_SLUG === 'mica-demo' || TENANT_SLUG === 'demo') {
+      console.log('[Tenant] Usando config demo por defecto');
+      return true;
+    }
+
+    // Cualquier otro slug que NO existe → bloquear acceso (fix seguridad 2026-04-20)
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f1117;font-family:Inter,sans-serif;color:#e8eaf0;text-align:center;padding:20px">
+        <div style="max-width:480px">
+          <div style="font-size:64px;margin-bottom:16px">🔍</div>
+          <h1 style="font-size:1.6rem;margin-bottom:12px">CRM no encontrado</h1>
+          <p style="color:#8b92a5;font-size:0.95rem;line-height:1.5;margin-bottom:6px">
+            El CRM <strong>"${TENANT_SLUG}"</strong> no existe o fue dado de baja.
+          </p>
+          <p style="color:#8b92a5;font-size:0.85rem;line-height:1.5;margin-bottom:24px">
+            Si sos cliente nuevo, todavía no se completó tu activación.<br>
+            Si ya estabas usando el CRM, contactá a soporte.
+          </p>
+          <a href="https://wa.me/5493764123456?text=Hola, no puedo acceder a mi CRM (${TENANT_SLUG})"
+             style="display:inline-block;padding:12px 24px;background:#6c63ff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem">
+            📱 Contactar soporte
+          </a>
+          <div style="margin-top:32px;font-size:0.75rem;color:#5a6178">
+            System IA · <a href="https://system-ia-agencia.vercel.app" style="color:#5a6178;text-decoration:none">system-ia</a>
+          </div>
+        </div>
+      </div>`;
+    return false;
   }
   return true; // continuar cargando datos
 }
