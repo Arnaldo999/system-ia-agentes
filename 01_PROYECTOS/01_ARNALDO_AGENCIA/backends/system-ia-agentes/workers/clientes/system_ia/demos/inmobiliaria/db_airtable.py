@@ -541,35 +541,31 @@ def get_bot_session(telefono: str) -> dict:
 
 
 def save_bot_session(telefono: str, sesion: dict, historial: list) -> None:
-    """Guarda o actualiza la sesion en Airtable. Upsert por Telefono."""
+    """Guarda o actualiza la sesion en Airtable via upsert atomico.
+
+    Usa performUpsert de Airtable para evitar duplicados cuando 2 saves
+    concurrentes (threads background) corren casi a la vez sobre el mismo tel.
+    """
     if not _available():
         return
     tel = _clean_phone(telefono)
     if not tel:
         return
     try:
-        payload_fields = {
-            "Telefono": tel,
-            "Sesion": _json.dumps(sesion, ensure_ascii=False, default=str)[:99000],
-            "Historial": _json.dumps(historial, ensure_ascii=False, default=str)[:99000],
-            "Updated": datetime.now(timezone.utc).isoformat(),
+        payload = {
+            "performUpsert": {"fieldsToMergeOn": ["Telefono"]},
+            "records": [{
+                "fields": {
+                    "Telefono": tel,
+                    "Sesion": _json.dumps(sesion, ensure_ascii=False, default=str)[:99000],
+                    "Historial": _json.dumps(historial, ensure_ascii=False, default=str)[:99000],
+                    "Updated": datetime.now(timezone.utc).isoformat(),
+                }
+            }],
         }
-        existing = _buscar_session_raw(tel)
-        if existing:
-            rid = existing["id"]
-            requests.patch(
-                f"{_sessions_url()}/{rid}",
-                headers=AT_HEADERS,
-                json={"fields": payload_fields},
-                timeout=10,
-            )
-        else:
-            requests.post(
-                _sessions_url(),
-                headers=AT_HEADERS,
-                json={"fields": payload_fields},
-                timeout=10,
-            )
+        r = requests.patch(_sessions_url(), headers=AT_HEADERS, json=payload, timeout=10)
+        if r.status_code >= 400:
+            logger.warning("[MICA-SESSION] save HTTP %s tel=%s: %s", r.status_code, tel[-4:], r.text[:200])
     except Exception as e:
         logger.warning("[MICA-SESSION] save error tel=%s: %s", tel[-4:], e)
 
