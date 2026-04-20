@@ -469,3 +469,355 @@ def get_all_propiedades() -> list[dict]:
     except Exception as e:
         logger.warning(f"[MICA-DB] get_all_propiedades exc: {e}")
         return results
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BOT SESSIONS — almacenadas in-memory en el worker (no en Airtable)
+# ═══════════════════════════════════════════════════════════════════════════════
+# El worker Robert persiste sesiones bot en una tabla PG dedicada `bot_sessions`.
+# Para Mica usamos almacenamiento in-memory (dict SESIONES en el worker).
+# Razon: las sesiones BANT son cortas (~5 min), si el worker reinicia el lead
+# vuelve a arrancar el flow desde cero o desde get_lead_by_telefono que SI lee
+# datos persistentes (nombre, ciudad, score) de la tabla Clientes.
+# Si en el futuro Mica quiere persistencia real, crear una tabla Sessiones en
+# Airtable y reemplazar estos no-op con PATCH/POST a esa tabla.
+
+def setup_bot_sessions() -> None:
+    """No-op para Mica (sesiones in-memory). Se mantiene para compat con worker Robert."""
+    pass
+
+
+def get_bot_session(telefono: str) -> dict:
+    """Retorna {} (siempre arranca de cero o usa get_lead_by_telefono para recovery)."""
+    return {}
+
+
+def save_bot_session(telefono: str, sesion: dict, historial: list) -> None:
+    """No-op (sesion vive en SESIONES dict del worker, no se persiste en Airtable)."""
+    pass
+
+
+def delete_bot_session(telefono: str) -> None:
+    """No-op (limpieza es responsabilidad del SESIONES dict del worker)."""
+    pass
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RESUMENES + NURTURING — stubs no-op (no usados en Mica)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def crear_tabla_resumenes() -> None:
+    pass
+
+
+def setup_nurturing_columns() -> None:
+    pass
+
+
+def guardar_resumen(telefono: str, resumen: str) -> None:
+    pass
+
+
+def listar_resumenes() -> list[dict]:
+    return []
+
+
+def marcar_nurturing_enviado(telefono: str, tipo: str = "24h") -> None:
+    """Mica usa solo nurturing in-window 24hs (no templates). No-op por ahora."""
+    pass
+
+
+def obtener_leads_sin_cita_24h() -> list[dict]:
+    """Retorna leads calificados sin cita agendada con +24hs sin contacto.
+    Usado por el endpoint /admin/nurturing/24h del worker.
+
+    Filtros Airtable:
+    - Estado in (contactado, en_negociacion)
+    - Fecha_Cita esta vacio
+    - fecha_ultimo_contacto > 24hs
+    """
+    if not _available():
+        return []
+    try:
+        leads = get_all_leads()
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(hours=24)
+        result = []
+        for lead in leads:
+            estado = lead.get("Estado", "")
+            if estado not in ("contactado", "en_negociacion"):
+                continue
+            if lead.get("Fecha_Cita"):
+                continue
+            ultimo = lead.get("fecha_ultimo_contacto", "")
+            if ultimo:
+                try:
+                    ts = datetime.fromisoformat(ultimo.replace("Z", "+00:00"))
+                    if ts > cutoff:
+                        continue
+                except Exception:
+                    pass
+            result.append(lead)
+        return result
+    except Exception as e:
+        logger.warning(f"[MICA-DB] obtener_leads_sin_cita_24h exc: {e}")
+        return []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METRICAS — calculadas sobre Airtable Clientes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_metricas() -> dict:
+    """Retorna metricas basicas del pipeline calculadas sobre tabla Clientes."""
+    if not _available():
+        return {"error": "Airtable Mica no configurado"}
+    try:
+        leads = get_all_leads()
+        total = len(leads)
+        por_estado = {}
+        por_score = {"caliente": 0, "tibio": 0, "frio": 0}
+        for lead in leads:
+            est = lead.get("Estado", "no_contactado")
+            por_estado[est] = por_estado.get(est, 0) + 1
+            if est == "en_negociacion":
+                por_score["caliente"] += 1
+            elif est == "contactado":
+                por_score["tibio"] += 1
+            else:
+                por_score["frio"] += 1
+        return {
+            "total_leads": total,
+            "por_estado": por_estado,
+            "por_score": por_score,
+        }
+    except Exception as e:
+        logger.warning(f"[MICA-DB] get_metricas exc: {e}")
+        return {"error": str(e)}
+
+
+def get_reportes() -> dict:
+    """Stub — Mica no tiene tabla reportes separada todavia."""
+    return get_metricas()
+
+
+def get_leads_con_cita() -> list[dict]:
+    """Retorna leads con Fecha_Cita populated."""
+    if not _available():
+        return []
+    try:
+        leads = get_all_leads()
+        return [l for l in leads if l.get("Fecha_Cita")]
+    except Exception as e:
+        logger.warning(f"[MICA-DB] get_leads_con_cita exc: {e}")
+        return []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CRUD LEADS (para endpoints CRM /crm/clientes)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def create_lead(campos: dict) -> dict:
+    if not _available():
+        return {"error": "Airtable no configurado"}
+    new_id = _post_lead(campos)
+    return {"id": new_id, **campos} if new_id else {"error": "fallo al crear"}
+
+
+def update_lead(record_id: str, campos: dict) -> bool:
+    if not _available() or not record_id:
+        return False
+    return _patch_lead(record_id, campos)
+
+
+def delete_lead(record_id: str) -> bool:
+    if not _available() or not record_id:
+        return False
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_CLIENTES}/{record_id}"
+    try:
+        r = requests.delete(url, headers=AT_HEADERS, timeout=8)
+        return r.status_code in (200, 204)
+    except Exception as e:
+        logger.warning(f"[MICA-DB] delete_lead exc: {e}")
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CRUD PROPIEDADES (para endpoints CRM /crm/propiedades)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def create_propiedad(campos: dict) -> dict:
+    if not _available() or not TABLE_PROPS:
+        return {"error": "Airtable no configurado"}
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_PROPS}"
+    try:
+        r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        if r.status_code in (200, 201):
+            return {"id": r.json().get("id", ""), **campos}
+        return {"error": f"HTTP {r.status_code}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def update_propiedad(record_id: str, campos: dict) -> bool:
+    if not _available() or not TABLE_PROPS or not record_id:
+        return False
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_PROPS}/{record_id}"
+    try:
+        r = requests.patch(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        return r.status_code in (200, 201)
+    except Exception:
+        return False
+
+
+def delete_propiedad(record_id: str) -> bool:
+    if not _available() or not TABLE_PROPS or not record_id:
+        return False
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_PROPS}/{record_id}"
+    try:
+        r = requests.delete(url, headers=AT_HEADERS, timeout=8)
+        return r.status_code in (200, 204)
+    except Exception:
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CRUD ACTIVOS (CLIENTES_ACTIVOS table)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+TABLE_ACTIVOS = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_ACTIVOS", "")
+
+
+def get_all_activos() -> list[dict]:
+    if not _available() or not TABLE_ACTIVOS:
+        return []
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_ACTIVOS}"
+    results, offset = [], None
+    try:
+        while True:
+            params = {"pageSize": 100}
+            if offset:
+                params["offset"] = offset
+            r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
+            if r.status_code != 200:
+                break
+            data = r.json()
+            for rec in data.get("records", []):
+                results.append({"id": rec["id"], **rec.get("fields", {})})
+            offset = data.get("offset")
+            if not offset:
+                break
+        return results
+    except Exception:
+        return results
+
+
+def create_activo(campos: dict) -> dict:
+    if not _available() or not TABLE_ACTIVOS:
+        return {"error": "Airtable no configurado"}
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_ACTIVOS}"
+    try:
+        r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        if r.status_code in (200, 201):
+            return {"id": r.json().get("id", ""), **campos}
+        return {"error": f"HTTP {r.status_code}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def update_activo(record_id: str, campos: dict) -> bool:
+    if not _available() or not TABLE_ACTIVOS or not record_id:
+        return False
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_ACTIVOS}/{record_id}"
+    try:
+        r = requests.patch(url, headers=AT_HEADERS, json={"fields": campos}, timeout=8)
+        return r.status_code in (200, 201)
+    except Exception:
+        return False
+
+
+def delete_activo(record_id: str) -> bool:
+    if not _available() or not TABLE_ACTIVOS or not record_id:
+        return False
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_ACTIVOS}/{record_id}"
+    try:
+        r = requests.delete(url, headers=AT_HEADERS, timeout=8)
+        return r.status_code in (200, 204)
+    except Exception:
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STUBS no-op para tablas que Mica no tiene aun (asesores, propietarios, etc)
+# Endpoints CRM responden con [] o {} hasta que Mica cree esas tablas en Airtable.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Asesores
+def get_all_asesores() -> list[dict]: return []
+def create_asesor(campos: dict) -> dict: return {"error": "Tabla Asesores no existe en base Mica"}
+def update_asesor(record_id: str, campos: dict) -> bool: return False
+def delete_asesor(record_id: str) -> bool: return False
+
+# Propietarios
+def get_all_propietarios() -> list[dict]: return []
+def create_propietario(campos: dict) -> dict: return {"error": "Tabla Propietarios no existe en base Mica"}
+def update_propietario(record_id: str, campos: dict) -> bool: return False
+def delete_propietario(record_id: str) -> bool: return False
+
+# Loteos
+def get_all_loteos() -> list[dict]: return []
+def create_loteo(campos: dict) -> dict: return {"error": "Tabla Loteos no existe en base Mica"}
+def update_loteo(record_id: str, campos: dict) -> bool: return False
+def delete_loteo(record_id: str) -> bool: return False
+
+# Lotes mapa
+def get_lotes_mapa(loteo_id: str = None) -> list[dict]: return []
+def create_lote_mapa(campos: dict) -> dict: return {"error": "Tabla LotesMapa no existe en base Mica"}
+def update_lote_mapa(record_id: str, campos: dict) -> bool: return False
+def delete_lote_mapa(record_id: str) -> bool: return False
+
+# Contratos
+def get_all_contratos() -> list[dict]: return []
+def create_contrato(campos: dict) -> dict: return {"error": "Tabla Contratos no existe en base Mica"}
+def update_contrato(record_id: str, campos: dict) -> bool: return False
+def delete_contrato(record_id: str) -> bool: return False
+
+# Visitas
+def get_all_visitas() -> list[dict]: return []
+def create_visita(campos: dict) -> dict: return {"error": "Tabla Visitas no existe en base Mica"}
+def update_visita(record_id: str, campos: dict) -> bool: return False
+def delete_visita(record_id: str) -> bool: return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TECH PROVIDER WABA — stubs no-op (Mica no es Tech Provider Meta)
+# Si Mica algun dia se vuelve TP, implementar contra una tabla WABA_Clients en Airtable.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def setup_waba_clients_table() -> None:
+    pass
+
+
+def listar_waba_clients() -> list[dict]:
+    return []
+
+
+def obtener_waba_client_por_phone(phone_number_id: str) -> dict:
+    return {}
+
+
+def registrar_waba_client(client_slug: str, phone_number_id: str, waba_id: str,
+                          access_token: str, worker_url: str) -> dict:
+    return {"error": "Mica no es Tech Provider Meta — usa Evolution API"}
+
+
+def actualizar_waba_worker_url(phone_number_id: str, nuevo_url: str) -> bool:
+    return False
+
+
+def marcar_webhook_subscrito(phone_number_id: str) -> bool:
+    return False
+
+
+def eliminar_waba_client(phone_number_id: str) -> bool:
+    return False
