@@ -1537,7 +1537,10 @@ tailwind.config = {
     <div class="mb-3"><label class="text-xs text-txt-2">Ubicación o URL de Google Maps</label><input id="loteoUbicacion" class="w-full p-2 bg-surface-alt border border-brd rounded" placeholder="Av. Principal 123 o https://maps.google.com/..."/></div>
     <div class="mb-3"><label class="text-xs text-txt-2">Descripción (opcional)</label><textarea id="loteoDescripcion" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2" placeholder="Club de campo premium con amenities..."></textarea></div>
     <input type="hidden" id="loteoSlug"/>
-    <button onclick="guardarLoteo()" class="w-full btn-primary">💾 Guardar loteo</button>
+    <div class="flex gap-2">
+      <button onclick="guardarLoteo()" class="flex-1 btn-primary">💾 Guardar datos</button>
+      <button onclick="guardarYCargarLotes()" id="btnCargarLotesDesdeLoteo" class="flex-1 px-3 py-2 bg-primary/20 text-primary rounded hover:bg-primary/30 font-medium">🗺️ Guardar y cargar lotes</button>
+    </div>
   </div>
 </div>
 

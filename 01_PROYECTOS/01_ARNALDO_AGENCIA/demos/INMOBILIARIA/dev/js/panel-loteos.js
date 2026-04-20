@@ -99,7 +99,8 @@
               <div class="text-xs text-txt-2 mt-1">${ubicLabel}</div>
             </div>
             <div class="flex gap-1 ml-2" onclick="event.stopPropagation()">
-              <button onclick='abrirModalLoteo(${JSON.stringify(l).replace(/'/g, "&apos;")})' title="Editar loteo" class="text-xs p-2 bg-surface-alt/70 rounded hover:bg-surface-alt">✏️</button>
+              <button onclick='abrirModalLoteo(${JSON.stringify(l).replace(/'/g, "&apos;")})' title="Editar datos del loteo" class="text-xs p-2 bg-surface-alt/70 rounded hover:bg-surface-alt">✏️</button>
+              <button onclick="verMapaLoteo(${l.id})" title="Cargar lotes" class="text-xs px-3 py-2 bg-primary/20 text-primary rounded hover:bg-primary/30 font-medium">🗺️ Cargar lotes</button>
               <button onclick="eliminarLoteo(${l.id})" title="Eliminar" class="text-xs p-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30">🗑</button>
             </div>
           </div>
@@ -127,7 +128,7 @@
               <div class="text-[10px] uppercase tracking-wide">Vendidos</div>
             </div>
           </div>
-          <button class="w-full text-sm px-3 py-2 bg-primary/20 text-primary rounded hover:bg-primary/30">🗺️ Abrir mapa del loteo</button>
+          <div class="text-xs text-txt-2 text-center">Hacé clic en la tarjeta para ver el mapa del loteo</div>
         </div>
       </div>
     `;
@@ -179,6 +180,36 @@
       if (LOTE_ACTUAL && id && Number(id) === LOTE_ACTUAL.id) {
         setTimeout(() => verMapaLoteo(LOTE_ACTUAL.id), 300);
       }
+    } catch (e) { notif('❌ Error', e.message); }
+  };
+
+  window.guardarYCargarLotes = async function() {
+    const id = document.getElementById('loteoId').value;
+    const nombre = document.getElementById('loteoNombre').value.trim();
+    const total = parseInt(document.getElementById('loteoTotal').value) || 0;
+    if (!nombre) { notif('❌ Falta el nombre del loteo'); return; }
+    if (total <= 0) { notif('❌ La cantidad de lotes debe ser mayor a 0'); return; }
+    const slugActual = document.getElementById('loteoSlug').value.trim();
+    const campos = {
+      nombre,
+      slug: slugActual || nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      total_lotes: total,
+      ciudad: document.getElementById('loteoCiudad').value.trim(),
+      ubicacion: document.getElementById('loteoUbicacion').value.trim(),
+      descripcion: document.getElementById('loteoDescripcion').value.trim(),
+    };
+    try {
+      let loteoId = id ? parseInt(id) : null;
+      if (id) {
+        await crmUpdate('loteos', id, campos);
+      } else {
+        const res = await crmCreate('loteos', campos);
+        loteoId = res.id;
+      }
+      cerrarModal('modalLoteo');
+      notif('✅ Loteo guardado', campos.nombre);
+      await cargarLoteos();
+      if (loteoId) verMapaLoteo(loteoId);
     } catch (e) { notif('❌ Error', e.message); }
   };
 
