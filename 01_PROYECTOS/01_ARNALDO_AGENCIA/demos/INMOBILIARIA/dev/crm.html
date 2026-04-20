@@ -1552,10 +1552,7 @@ tailwind.config = {
       <textarea id="loteoDescripcion" rows="2" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text);font-family:inherit;resize:vertical" placeholder="Club de campo premium con amenities..."></textarea>
     </div>
     <input type="hidden" id="loteoSlug"/>
-    <div style="display:flex;gap:8px">
-      <button onclick="guardarLoteo()" class="btn btn-primary" style="flex:1">💾 Guardar datos</button>
-      <button onclick="guardarYCargarLotes()" id="btnCargarLotesDesdeLoteo" class="btn" style="flex:1;background:rgba(139,153,250,0.2);color:var(--accent)">🗺️ Guardar y cargar lotes</button>
-    </div>
+    <button onclick="guardarLoteo()" class="btn btn-primary" style="width:100%">💾 Guardar datos del loteo</button>
   </div>
 </div>
 
@@ -1576,38 +1573,12 @@ tailwind.config = {
 <div class="modal-bg hidden" id="modalLote">
   <div class="modal" style="max-width:480px">
     <button class="mc" onclick="cerrarModal('modalLote')">✕</button>
-    <h3 id="loteTitulo" style="font-size:1.125rem;font-weight:700;margin-bottom:4px">🏷️ Lote</h3>
+    <h3 id="loteTitulo" style="font-size:1.125rem;font-weight:700;margin-bottom:4px">👤 Cliente</h3>
     <div id="loteSubtitulo" style="font-size:12px;color:var(--text2);margin-bottom:16px"></div>
-    <input type="hidden" id="loteId"/>
-    <input type="hidden" id="loteLoteoId"/>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div>
-        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Nro de lote</label>
-        <input id="loteNumero" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)" placeholder="Mz17-L5"/>
-      </div>
-      <div>
-        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Precio (USD)</label>
-        <input id="lotePrecio" type="number" step="0.01" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)"/>
-      </div>
-    </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Estado</label>
-      <select id="loteEstado" onchange="toggleClienteLote()" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)">
-        <option value="disponible">🟢 Disponible</option>
-        <option value="reservado">🟡 Reservado</option>
-        <option value="vendido">🔴 Vendido</option>
-      </select>
-    </div>
-    <div id="loteClienteWrap" class="hidden" style="margin-bottom:12px">
-      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Cliente asignado</label>
-      <select id="loteCliente" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)">
-        <option value="">— Sin asignar —</option>
-      </select>
-      <div id="loteClienteInfo" class="hidden" style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:6px;font-size:12px"></div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button onclick="guardarLote()" class="btn btn-primary" style="flex:1">💾 Guardar</button>
-      <button onclick="eliminarLote()" id="btnEliminarLote" class="btn hidden" style="background:rgba(239,68,68,0.2);color:#f87171">🗑 Eliminar</button>
+    <div id="loteClienteInfoContent" style="font-size:13px;color:var(--text);line-height:1.5"></div>
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button onclick="cerrarModal('modalLote')" class="btn" style="flex:1;background:var(--surface2);color:var(--text)">Cerrar</button>
+      <button onclick="nav('activos', document.querySelector('[onclick*=\\'activos\\']')); cerrarModal('modalLote'); cerrarModal('modalMapa');" class="btn btn-primary" style="flex:1">👥 Ir a Clientes Activos</button>
     </div>
   </div>
 </div>
