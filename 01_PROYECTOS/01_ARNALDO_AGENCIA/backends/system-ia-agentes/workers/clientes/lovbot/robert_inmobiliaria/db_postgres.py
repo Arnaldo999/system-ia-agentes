@@ -1053,45 +1053,135 @@ def _recalc_contadores_loteo(loteo_id: int):
         print(f"[DB] Error _recalc_contadores_loteo({loteo_id}): {e}")
 
 
+def _sincronizar_propiedad_cliente(cliente_id: int, loteo_id: int, numero_lote: str, estado: str):
+    """Actualiza el campo `propiedad` de clientes_activos cuando un lote se asigna.
+
+    Si estado in (reservado, vendido) → escribe "{Nombre loteo} · {numero_lote}".
+    Si estado == disponible → limpia la propiedad.
+
+    Espejo inverso del flujo Maicol/Airtable donde el campo `propiedad` del
+    cliente refleja la unidad asignada.
+    """
+    if not _available() or not cliente_id:
+        return
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        if estado in ("reservado", "vendido"):
+            cur.execute("SELECT nombre FROM loteos WHERE id=%s AND tenant_slug=%s",
+                        (loteo_id, TENANT))
+            row = cur.fetchone()
+            nombre_loteo = row[0] if row else f"Loteo #{loteo_id}"
+            propiedad = f"{nombre_loteo} · {numero_lote}"
+            cur.execute(
+                "UPDATE clientes_activos SET propiedad=%s, updated_at=CURRENT_TIMESTAMP "
+                "WHERE id=%s AND tenant_slug=%s",
+                (propiedad, cliente_id, TENANT),
+            )
+        else:
+            # estado disponible → liberar cliente (opcional, solo si el cliente
+            # tenía exactamente ese lote asignado, para no borrar otra propiedad)
+            pass
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"[DB] Error _sincronizar_propiedad_cliente(c={cliente_id}, l={loteo_id}): {e}")
+
+
+def _liberar_cliente_anterior_si_hay(record_id: int, nuevo_cliente_id):
+    """Si el lote cambió de cliente, limpia el campo propiedad del cliente anterior."""
+    if not _available():
+        return
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("SELECT cliente_id FROM lotes_mapa WHERE id=%s AND tenant_slug=%s",
+                    (record_id, TENANT))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            anterior = row[0]
+            if anterior and anterior != nuevo_cliente_id:
+                conn2 = _conn()
+                cur2 = conn2.cursor()
+                cur2.execute(
+                    "UPDATE clientes_activos SET propiedad=NULL, updated_at=CURRENT_TIMESTAMP "
+                    "WHERE id=%s AND tenant_slug=%s",
+                    (anterior, TENANT),
+                )
+                conn2.commit()
+                cur2.close()
+                conn2.close()
+    except Exception as e:
+        print(f"[DB] Error _liberar_cliente_anterior_si_hay: {e}")
+
+
 def create_lote_mapa(campos: dict):
     loteo_id = campos.get("loteo_id")
     result = _crud_generico("lotes_mapa", "create", campos=campos)
     if result.get("ok") and loteo_id:
         _recalc_contadores_loteo(int(loteo_id))
+        # Sincronizar propiedad del cliente si se asignó
+        cliente_id = campos.get("cliente_id")
+        if cliente_id:
+            _sincronizar_propiedad_cliente(
+                int(cliente_id), int(loteo_id),
+                campos.get("numero_lote", ""),
+                campos.get("estado", "disponible"),
+            )
     return result
 
 def update_lote_mapa(record_id: int, campos: dict):
+    # Guardar cliente anterior antes de update (para liberarlo si cambió)
+    nuevo_cliente_id = campos.get("cliente_id")
+    if "cliente_id" in campos:
+        _liberar_cliente_anterior_si_hay(record_id, nuevo_cliente_id)
+
     result = _crud_generico("lotes_mapa", "update", campos=campos, record_id=record_id)
     # Buscar loteo_id del registro (puede venir en campos o consultarlo)
     loteo_id = campos.get("loteo_id")
-    if not loteo_id:
+    numero_lote = campos.get("numero_lote")
+    estado = campos.get("estado")
+    if not loteo_id or not numero_lote or not estado:
         try:
             conn = _conn()
             cur = conn.cursor()
-            cur.execute("SELECT loteo_id FROM lotes_mapa WHERE id=%s AND tenant_slug=%s",
+            cur.execute("SELECT loteo_id, numero_lote, estado FROM lotes_mapa WHERE id=%s AND tenant_slug=%s",
                         (record_id, TENANT))
             row = cur.fetchone()
             if row:
-                loteo_id = row[0]
+                loteo_id = loteo_id or row[0]
+                numero_lote = numero_lote or row[1]
+                estado = estado or row[2]
             cur.close()
             conn.close()
         except Exception:
             pass
     if loteo_id:
         _recalc_contadores_loteo(int(loteo_id))
+        # Sincronizar propiedad del cliente si hay asignación
+        if nuevo_cliente_id:
+            _sincronizar_propiedad_cliente(
+                int(nuevo_cliente_id), int(loteo_id),
+                numero_lote or "", estado or "disponible",
+            )
     return result
 
 def delete_lote_mapa(record_id: int):
-    # Consultar loteo_id antes de eliminar
+    # Consultar loteo_id + cliente_id antes de eliminar
     loteo_id = None
+    cliente_id = None
     try:
         conn = _conn()
         cur = conn.cursor()
-        cur.execute("SELECT loteo_id FROM lotes_mapa WHERE id=%s AND tenant_slug=%s",
+        cur.execute("SELECT loteo_id, cliente_id FROM lotes_mapa WHERE id=%s AND tenant_slug=%s",
                     (record_id, TENANT))
         row = cur.fetchone()
         if row:
             loteo_id = row[0]
+            cliente_id = row[1]
         cur.close()
         conn.close()
     except Exception:
@@ -1099,6 +1189,21 @@ def delete_lote_mapa(record_id: int):
     result = _crud_generico("lotes_mapa", "delete", record_id=record_id)
     if loteo_id:
         _recalc_contadores_loteo(int(loteo_id))
+    # Si el lote tenía cliente asignado, liberar su campo propiedad
+    if cliente_id:
+        try:
+            conn = _conn()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE clientes_activos SET propiedad=NULL, updated_at=CURRENT_TIMESTAMP "
+                "WHERE id=%s AND tenant_slug=%s",
+                (cliente_id, TENANT),
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"[DB] Error liberando cliente tras delete lote: {e}")
     return result
 
 
