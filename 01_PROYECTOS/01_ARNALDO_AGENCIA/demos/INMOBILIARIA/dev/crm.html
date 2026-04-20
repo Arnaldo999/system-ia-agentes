@@ -1775,6 +1775,20 @@ let CITAS = [];
 // ── STATE ──────────────────────────────────────────────────────────────────
 let activeChat = 0;
 
+// ── Reparentear paneles huérfanos del Sprint CRM Completo al .main ─────────
+// Los paneles asesores/propietarios/loteos/contratos/visitas/reportes nacen
+// fuera del contenedor .main scrolleable, por eso quedan pegados abajo del DOM.
+// Los movemos al .main una sola vez al cargar para que funcione el scroll.
+(function reparentearPanelesSprintCRM(){
+  const main = document.querySelector('.main');
+  if (!main) return;
+  const ids = ['panel-asesores','panel-propietarios','panel-loteos','panel-contratos','panel-visitas','panel-reportes'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.parentElement !== main) main.appendChild(el);
+  });
+})();
+
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function nav(id, el) {
   document.querySelectorAll('.panel').forEach(p=>{
