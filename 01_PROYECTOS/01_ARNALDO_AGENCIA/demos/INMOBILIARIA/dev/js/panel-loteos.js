@@ -54,17 +54,28 @@
     const cont = document.getElementById('loteosLista');
     if (!cont) return;
     if (LOTEOS.length === 0) {
-      cont.innerHTML = `<div class="p-10 text-center text-txt-2 border border-dashed border-brd rounded-lg">
-        <div class="text-5xl mb-3">📍</div>
-        <p class="text-base mb-1">Aún no cargaste ningún loteo</p>
-        <p class="text-xs mb-4">Creá tu primer loteo para empezar a cargar lotes individuales.</p>
-        <button onclick="abrirModalLoteo()" class="btn-primary">+ Crear primer loteo</button>
+      cont.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        ${renderAddCard()}
       </div>`;
       return;
     }
     cont.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       ${LOTEOS.map(renderLoteoCard).join('')}
+      ${renderAddCard()}
     </div>`;
+  }
+
+  function renderAddCard() {
+    return `
+      <button onclick="abrirModalLoteo()"
+              class="group bg-surface/40 border-2 border-dashed border-brd hover:border-primary hover:bg-primary/5 rounded-xl overflow-hidden transition flex flex-col items-center justify-center p-10 min-h-[340px] cursor-pointer">
+        <div class="w-16 h-16 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center mb-3 transition">
+          <span class="text-4xl text-primary leading-none">+</span>
+        </div>
+        <div class="text-base font-semibold text-txt">Agregar nuevo loteo</div>
+        <div class="text-xs text-txt-2 mt-1 text-center">Creá un loteo nuevo con su cantidad de lotes</div>
+      </button>
+    `;
   }
 
   function renderLoteoCard(l) {
