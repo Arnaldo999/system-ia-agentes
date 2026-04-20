@@ -99,6 +99,7 @@ from workers.clientes.system_ia.demos.inmobiliaria.worker import (
     router as mica_demo_inmo_router,
     router_v2 as mica_demo_inmo_router_v2,
 )
+from workers.clientes.system_ia.onboarding.router import router as mica_onboarding_router
 
 # ── System IA ─────────────────────────────────────────────────────────────────
 from workers.social.worker import router as social_router
@@ -149,6 +150,7 @@ app.include_router(demo_gastronomico_router)
 app.include_router(lau_router)
 app.include_router(mica_demo_inmo_router)
 app.include_router(mica_demo_inmo_router_v2)
+app.include_router(mica_onboarding_router)
 app.include_router(social_router)
 app.include_router(meta_tp_router)
 

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conectá tu WhatsApp — System IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --card-alt: #12121f;
+      --border: #2d2d4e;
+      --primary: #7c3aed;
+      --primary-hover: #6d28d9;
+      --primary-light: #a78bfa;
+      --accent: #06b6d4;
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.1);
+      --green-border: rgba(16, 185, 129, 0.3);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --muted-2: #64748b;
+      --whatsapp: #25d366;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.08);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 60%, #0f0f1a 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    .container { max-width: 520px; margin: 0 auto; }
+
+    /* Brand */
+    .brand {
+      text-align: center;
+      padding: 32px 0 28px;
+    }
+    .brand-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      font-size: 26px;
+    }
+    .brand h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, var(--primary-light), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand p { font-size: 0.875rem; color: var(--muted); }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      margin-bottom: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    .section-title h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .section-title p {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* Input slug */
+    .field {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 13px 24px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+    }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* QR box */
+    .qr-wrap {
+      text-align: center;
+      padding: 20px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .qr-img {
+      width: 256px;
+      height: 256px;
+      max-width: 100%;
+      border-radius: 10px;
+      background: #fff;
+      padding: 12px;
+      margin: 0 auto 16px;
+      display: block;
+    }
+    .qr-loading {
+      width: 256px;
+      height: 256px;
+      max-width: 100%;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* Status pill */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .status.connecting {
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: #fbbf24;
+    }
+    .status.open {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+    }
+    .status.close {
+      background: var(--error-bg);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+    .status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .status.open .dot { animation: none; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Instructions */
+    .instructions {
+      margin: 16px 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .instructions ol {
+      padding-left: 20px;
+      margin-top: 8px;
+    }
+    .instructions li { margin-bottom: 6px; }
+    .instructions strong { color: var(--text); }
+
+    /* Success card */
+    .success-card {
+      display: none;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(124, 58, 237, 0.05) 100%);
+      border: 1px solid var(--green-border);
+    }
+    .success-card.visible {
+      display: block;
+    }
+    .success-icon-lg {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--green-bg);
+      border: 2px solid var(--green-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 28px;
+    }
+    .credentials-list {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+    .credentials-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      text-decoration: none;
+      color: var(--text);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .credentials-list li:hover {
+      background: rgba(124, 58, 237, 0.06);
+      border-color: rgba(124, 58, 237, 0.3);
+    }
+    .credentials-list .cred-icon {
+      font-size: 20px;
+      width: 32px;
+      text-align: center;
+    }
+    .credentials-list .cred-body {
+      flex: 1;
+    }
+    .credentials-list .cred-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .credentials-list .cred-subtitle {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* Error banner */
+    .error-banner {
+      display: none;
+      padding: 12px 14px;
+      background: var(--error-bg);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 10px;
+      color: var(--error);
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+    }
+    .error-banner.visible { display: block; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.75rem;
+      color: var(--muted-2);
+    }
+    .footer a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="brand">
+    <div class="brand-icon">🤖</div>
+    <h1>System IA</h1>
+    <p>Conectá tu WhatsApp en 30 segundos</p>
+  </div>
+
+  <!-- Step 1: Slug input -->
+  <div id="stepSlug" class="card">
+    <div class="section-header">
+      <div class="section-icon">🔗</div>
+      <div class="section-title">
+        <h2>Identificá tu cuenta</h2>
+        <p>Ingresá el slug que te dimos en el brief</p>
+      </div>
+    </div>
+
+    <div class="error-banner" id="errorBanner"></div>
+
+    <div class="field">
+      <label for="slug">Tu identificador</label>
+      <input type="text" id="slug" placeholder="ej: inmobiliaria-garcia" autocomplete="off" />
+    </div>
+
+    <button class="btn" id="btnIniciar" onclick="iniciarConexion()">
+      Comenzar conexión
+    </button>
+  </div>
+
+  <!-- Step 2: QR -->
+  <div id="stepQr" class="card" style="display:none;">
+    <div class="section-header">
+      <div class="section-icon">📱</div>
+      <div class="section-title">
+        <h2>Escaneá el código QR</h2>
+        <p id="qrClientName">Conectando tu cuenta...</p>
+      </div>
+    </div>
+
+    <div class="qr-wrap">
+      <div id="qrLoading" class="qr-loading">Generando QR...</div>
+      <img id="qrImage" class="qr-img" style="display:none;" alt="QR WhatsApp" />
+
+      <div id="qrStatus" class="status connecting">
+        <span class="dot"></span>
+        <span id="qrStatusText">Esperando escaneo...</span>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <strong>Cómo escanear:</strong>
+      <ol>
+        <li>Abrí <strong>WhatsApp Business</strong> en tu celular</li>
+        <li>Tocá los 3 puntos (arriba a la derecha) → <strong>Dispositivos vinculados</strong></li>
+        <li>Tocá <strong>Vincular un dispositivo</strong> y escaneá este QR</li>
+        <li>Listo. Esta página detecta la conexión automáticamente.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Step 3: Success -->
+  <div id="stepSuccess" class="card success-card">
+    <div style="text-align:center;">
+      <div class="success-icon-lg">✅</div>
+      <h2 style="font-size:1.2rem;margin-bottom:6px;">¡Tu bot está activo!</h2>
+      <p style="font-size:0.875rem;color:var(--muted);">
+        El bot ya está recibiendo y respondiendo mensajes en tu WhatsApp.
+      </p>
+    </div>
+
+    <ul class="credentials-list" id="credList">
+      <!-- Se llena dinámicamente via JS -->
+    </ul>
+
+    <div class="instructions" style="text-align:center;">
+      <p>Guardá esta página o los links. Siempre podés volver a entrar desde tu slug.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>System IA — Automatización inteligente para tu negocio</p>
+    <p style="margin-top:4px;"><a href="https://systemia.ai" target="_blank">systemia.ai</a></p>
+  </div>
+
+</div>
+
+<script>
+// ────────────────────────────────────────────────────────────
+// CONFIG
+// ────────────────────────────────────────────────────────────
+// Base URL del backend de System IA (Mica) — endpoint proxy que habla con Evolution API
+const API_BASE = "https://agentes.arnaldoayalaestratega.cloud";
+
+// Endpoints del backend (hay que crearlos en el FastAPI — ver plan)
+const ENDPOINT_INIT    = `${API_BASE}/clientes/system_ia/onboarding/iniciar`;
+const ENDPOINT_QR      = `${API_BASE}/clientes/system_ia/onboarding/qr`;
+const ENDPOINT_STATUS  = `${API_BASE}/clientes/system_ia/onboarding/estado`;
+
+let pollInterval = null;
+let currentSlug = null;
+let currentClientData = null;
+
+// ────────────────────────────────────────────────────────────
+// UI HELPERS
+// ────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function clearError() {
+  document.getElementById('errorBanner').classList.remove('visible');
+}
+
+function setStatus(state, text) {
+  const pill = document.getElementById('qrStatus');
+  const label = document.getElementById('qrStatusText');
+  pill.classList.remove('connecting', 'open', 'close');
+  pill.classList.add(state);
+  label.textContent = text;
+}
+
+function showStep(step) {
+  document.getElementById('stepSlug').style.display = (step === 'slug') ? 'block' : 'none';
+  document.getElementById('stepQr').style.display = (step === 'qr') ? 'block' : 'none';
+  document.getElementById('stepSuccess').classList.toggle('visible', step === 'success');
+}
+
+// ────────────────────────────────────────────────────────────
+// FLUJO
+// ────────────────────────────────────────────────────────────
+async function iniciarConexion() {
+  clearError();
+  const slug = document.getElementById('slug').value.trim().toLowerCase();
+  if (!slug) { showError('Ingresá tu slug.'); return; }
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
+    showError('Slug inválido (solo letras minúsculas, números y guiones).');
+    return;
+  }
+
+  currentSlug = slug;
+  const btn = document.getElementById('btnIniciar');
+  btn.disabled = true;
+  btn.textContent = 'Conectando...';
+
+  try {
+    const r = await fetch(`${ENDPOINT_INIT}?slug=${encodeURIComponent(slug)}`, {
+      method: 'POST',
+    });
+    if (!r.ok) {
+      const errData = await r.json().catch(() => ({}));
+      throw new Error(errData.detail || `Error ${r.status}`);
+    }
+    const data = await r.json();
+    currentClientData = data;
+
+    // Pasar a pantalla QR
+    showStep('qr');
+    document.getElementById('qrClientName').textContent = `Conectando: ${data.nombre_empresa || slug}`;
+
+    // Cargar QR
+    await cargarQr();
+
+    // Empezar a pollear estado
+    pollInterval = setInterval(chequearEstado, 3000);
+
+  } catch (e) {
+    showError(e.message);
+    btn.disabled = false;
+    btn.textContent = 'Comenzar conexión';
+  }
+}
+
+async function cargarQr() {
+  try {
+    const r = await fetch(`${ENDPOINT_QR}?slug=${encodeURIComponent(currentSlug)}`);
+    if (!r.ok) throw new Error(`QR error ${r.status}`);
+    const data = await r.json();
+    const qrB64 = data.qrcode || data.base64 || data.qr;
+    if (!qrB64) {
+      document.getElementById('qrLoading').textContent = 'Tu cuenta ya está conectada o el QR no está disponible.';
+      return;
+    }
+    const img = document.getElementById('qrImage');
+    img.src = qrB64.startsWith('data:') ? qrB64 : `data:image/png;base64,${qrB64}`;
+    img.style.display = 'block';
+    document.getElementById('qrLoading').style.display = 'none';
+  } catch (e) {
+    document.getElementById('qrLoading').textContent = 'No se pudo cargar el QR. Refrescá la página.';
+  }
+}
+
+async function chequearEstado() {
+  if (!currentSlug) return;
+  try {
+    const r = await fetch(`${ENDPOINT_STATUS}?slug=${encodeURIComponent(currentSlug)}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const state = data.state || data.status || 'connecting';
+
+    if (state === 'open' || state === 'connected') {
+      clearInterval(pollInterval);
+      setStatus('open', '✓ Conectado');
+      setTimeout(() => mostrarExito(), 1200);
+    } else if (state === 'close' || state === 'disconnected' || state === 'refused') {
+      setStatus('close', 'Desconectado — refrescá la página');
+    } else if (state === 'qrcode' || state === 'connecting') {
+      setStatus('connecting', 'Esperando escaneo...');
+    }
+  } catch (e) {
+    // Silencioso — seguir polleando
+  }
+}
+
+function mostrarExito() {
+  showStep('success');
+  const data = currentClientData || {};
+  const slug = currentSlug;
+
+  const links = [
+    {
+      icon: '💬',
+      title: 'Chatwoot — atender manual',
+      subtitle: data.chatwoot_url || 'Panel de conversaciones con tus clientes',
+      href: data.chatwoot_url || '#',
+    },
+    {
+      icon: '📊',
+      title: 'CRM — tus leads y propiedades',
+      subtitle: data.crm_url || `Panel de leads, propiedades y citas`,
+      href: data.crm_url || '#',
+    },
+    {
+      icon: '📱',
+      title: 'Tu número conectado',
+      subtitle: data.numero || 'Ya podés recibir mensajes',
+      href: null,
+    },
+  ];
+
+  const listEl = document.getElementById('credList');
+  listEl.innerHTML = '';
+  links.forEach(l => {
+    const row = document.createElement(l.href ? 'a' : 'li');
+    if (l.href) { row.href = l.href; row.target = '_blank'; row.rel = 'noopener'; }
+    row.innerHTML = `
+      <span class="cred-icon">${l.icon}</span>
+      <div class="cred-body">
+        <div class="cred-title">${l.title}</div>
+        <div class="cred-subtitle">${l.subtitle}</div>
+      </div>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+// Leer slug de la URL si viene como ?slug=xxx
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('slug')) {
+  document.getElementById('slug').value = urlParams.get('slug');
+}
+</script>
+</body>
+</html>
