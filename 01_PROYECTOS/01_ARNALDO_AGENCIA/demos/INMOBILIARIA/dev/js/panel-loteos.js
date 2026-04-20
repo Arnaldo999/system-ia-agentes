@@ -25,6 +25,24 @@
     return { cols, rows };
   }
 
+  // Agrupa N lotes en "manzanas" de ~8 lotes cada una para visual tipo urbanización
+  function dividirEnManzanas(total) {
+    const t = parseInt(total) || 0;
+    if (t <= 0) return [];
+    // Manzanas de 8 lotes (2 filas x 4 cols) idealmente
+    const lotesPorManzana = t <= 16 ? 4 : t <= 40 ? 6 : 8;
+    const manzanas = [];
+    let contador = 1;
+    while (contador <= t) {
+      const hasta = Math.min(contador + lotesPorManzana - 1, t);
+      const lotes = [];
+      for (let i = contador; i <= hasta; i++) lotes.push(i);
+      manzanas.push(lotes);
+      contador = hasta + 1;
+    }
+    return manzanas;
+  }
+
   // Parsea propiedad "San Ignacio Golf & Resort · L-5" → { loteo: "...", nro: "L-5" }
   function parsePropiedad(propiedad) {
     if (!propiedad) return null;
@@ -227,12 +245,38 @@
     abrirModal('modalMapa');
   };
 
+  function renderLoteTarjeta(nroLoteNum, clientesPorLote) {
+    const nroLote = `L-${nroLoteNum}`;
+    const asignado = clientesPorLote[nroLote];
+    const base = 'position:relative;aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;font-weight:700;padding:4px;color:#fff;font-size:11px;line-height:1;box-shadow:0 2px 4px rgba(0,0,0,0.2);overflow:hidden';
+    const hover = 'onmouseover="this.style.transform=\'scale(1.08)\';this.style.zIndex=\'10\';this.style.boxShadow=\'0 6px 16px rgba(0,0,0,0.5)\'" onmouseout="this.style.transform=\'scale(1)\';this.style.zIndex=\'1\';this.style.boxShadow=\'0 2px 4px rgba(0,0,0,0.2)\'"';
+    if (asignado) {
+      const bg = asignado.estado === 'vendido'
+        ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)'
+        : 'linear-gradient(135deg, #eab308 0%, #a16207 100%)';
+      const border = asignado.estado === 'vendido' ? '#fca5a5' : '#fde047';
+      const icono = asignado.estado === 'vendido' ? '🏡' : '⏳';
+      const nombre = `${asignado.cliente.nombre || ''} ${asignado.cliente.apellido || ''}`.trim() || 'Cliente';
+      return `<button onclick="verInfoClienteLote(${asignado.cliente.id})" title="${nroLote} — ${nombre} (${asignado.estado})"
+        style="${base};background:${bg};border:1.5px solid ${border}" ${hover}>
+        <span style="font-size:13px;margin-bottom:2px">${icono}</span>
+        <span style="font-size:10px;font-weight:800">${nroLote}</span>
+      </button>`;
+    } else {
+      return `<button title="${nroLote} — disponible"
+        style="${base};background:linear-gradient(135deg, #22c55e 0%, #15803d 100%);border:1.5px solid #86efac" ${hover}>
+        <span style="font-size:13px;margin-bottom:2px">🌳</span>
+        <span style="font-size:10px;font-weight:800">${nroLote}</span>
+      </button>`;
+    }
+  }
+
   function renderMapaLoteo() {
     const loteo = LOTE_ACTUAL;
     const total = loteo.total_lotes || 0;
-    const { cols } = calcularGrilla(total);
     const clientesPorLote = indexarClientesPorLote(loteo.nombre);
     const { libres, reservados, vendidos } = contarEstados(total, clientesPorLote);
+    const manzanas = dividirEnManzanas(total);
 
     document.getElementById('mapaTitulo').textContent = `🗺️ ${loteo.nombre}`;
     const ubic = loteo.ubicacion || loteo.ciudad || '';
@@ -241,41 +285,45 @@
       : (ubic || 'Sin ubicación');
     document.getElementById('mapaSubtitulo').innerHTML = `${total} lotes · ${ubicLabel}`;
 
-    let tarjetas = '';
-    for (let i = 1; i <= total; i++) {
-      const nroLote = `L-${i}`;
-      const asignado = clientesPorLote[nroLote];
-      const baseStyle = 'aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;font-weight:600;padding:0;color:#fff;font-size:10px;line-height:1';
-      if (asignado) {
-        const bg = asignado.estado === 'vendido' ? '#dc2626' : '#eab308';
-        const nombre = `${asignado.cliente.nombre || ''} ${asignado.cliente.apellido || ''}`.trim() || 'Cliente';
-        tarjetas += `<button onclick="verInfoClienteLote(${asignado.cliente.id})" title="${nroLote} — ${nombre} (${asignado.estado})"
-          style="${baseStyle};background:${bg};border:1px solid ${bg}">
-          <span style="padding:2px">${nroLote}</span>
-        </button>`;
-      } else {
-        tarjetas += `<button title="${nroLote} — disponible"
-          style="${baseStyle};background:#16a34a;border:1px solid #16a34a">
-          <span style="padding:2px">${nroLote}</span>
-        </button>`;
-      }
-    }
+    // Render manzanas (bloques) con calles virtuales entre ellas
+    const manzanasHtml = manzanas.map((lotes, idx) => {
+      const letra = String.fromCharCode(65 + idx);  // A, B, C...
+      const colsManzana = lotes.length <= 4 ? lotes.length : Math.ceil(lotes.length / 2);
+      return `
+        <div style="position:relative;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 12px 10px;box-shadow:inset 0 0 40px rgba(0,0,0,0.15)">
+          <div style="position:absolute;top:-10px;left:14px;background:var(--surface);color:var(--text2);font-size:10px;font-weight:700;padding:2px 10px;border-radius:10px;border:1px solid var(--brd);letter-spacing:0.1em">MANZANA ${letra}</div>
+          <div style="display:grid;gap:6px;grid-template-columns:repeat(${colsManzana}, minmax(48px, 70px));justify-content:center;margin-top:6px">
+            ${lotes.map(n => renderLoteTarjeta(n, clientesPorLote)).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Ícono decorativo de "centro" entre manzanas si hay >= 4 manzanas
+    const ambientacion = manzanas.length >= 4 ? `
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:0.06;font-size:180px">🏞️</div>
+    ` : '';
 
     const cont = document.getElementById('mapaContenido');
     cont.innerHTML = `
-      <div style="display:flex;gap:16px;font-size:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:#16a34a;border-radius:3px"></span>Libres: ${libres}</span>
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:#eab308;border-radius:3px"></span>Reservados (atrasados): ${reservados}</span>
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:#dc2626;border-radius:3px"></span>Vendidos (al día): ${vendidos}</span>
+      <div style="display:flex;gap:16px;font-size:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:10px">
+        <span style="display:flex;align-items:center;gap:8px"><span style="font-size:14px">🌳</span><span style="color:#86efac;font-weight:700">${libres}</span>Libres</span>
+        <span style="display:flex;align-items:center;gap:8px"><span style="font-size:14px">⏳</span><span style="color:#fde047;font-weight:700">${reservados}</span>Atrasados</span>
+        <span style="display:flex;align-items:center;gap:8px"><span style="font-size:14px">🏡</span><span style="color:#fca5a5;font-weight:700">${vendidos}</span>Vendidos</span>
       </div>
-      <div style="background:rgba(34,38,54,0.3);border:1px solid var(--brd);border-radius:8px;padding:12px;overflow:auto;max-height:72vh">
-        <div style="display:grid;gap:6px;grid-template-columns: repeat(${cols}, minmax(44px, 56px));justify-content:start">
-          ${tarjetas}
+      <div style="position:relative;background:
+          radial-gradient(ellipse at 20% 30%, rgba(34,197,94,0.08) 0%, transparent 50%),
+          radial-gradient(ellipse at 80% 70%, rgba(59,130,246,0.06) 0%, transparent 50%),
+          linear-gradient(135deg, #0f1f14 0%, #0a1410 100%);
+          border:1px solid rgba(134,239,172,0.15);border-radius:14px;padding:24px;overflow:auto;max-height:68vh;box-shadow:inset 0 0 60px rgba(0,0,0,0.4)">
+        ${ambientacion}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;position:relative;z-index:2">
+          ${manzanasHtml}
         </div>
       </div>
-      <p style="font-size:12px;color:var(--text2);margin-top:12px">
-        💡 Los estados se sincronizan automáticamente desde <strong>Clientes Activos</strong>.
-        Para asignar un lote a un cliente, escribí en su campo <em>Propiedad</em>: <code>${loteo.nombre} · L-N</code>
+      <p style="font-size:12px;color:var(--text2);margin-top:12px;text-align:center">
+        💡 Los estados se sincronizan desde <strong>Clientes Activos</strong>.
+        Asignás un lote escribiendo en <em>Propiedad</em>: <code style="background:var(--surface2);padding:2px 6px;border-radius:4px">${loteo.nombre} · L-N</code>
       </p>
     `;
   }
