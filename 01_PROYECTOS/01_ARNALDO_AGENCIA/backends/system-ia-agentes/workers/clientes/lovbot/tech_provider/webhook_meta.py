@@ -928,3 +928,126 @@ async def deletion_status(code: str = ""):
     except Exception as e:
         logger.error(f"[COMPLIANCE-STATUS] Error: {e}")
         return PlainTextResponse(f"Error consultando estado: {e}", status_code=500)
+
+
+# ── Data Deletion Form (RGPD — solicitud pública por email) ──────────────────
+
+_DATA_DELETION_FORM_HTML = """<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Solicitar eliminación de datos — Lovbot</title>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;
+         display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box}
+    .card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px 32px;max-width:480px;width:100%}
+    h1{font-size:1.3rem;margin:0 0 8px}
+    p{color:#94a3b8;font-size:.88rem;line-height:1.5;margin:0 0 24px}
+    label{display:block;font-size:.82rem;font-weight:600;margin-bottom:6px}
+    input[type=email]{width:100%;padding:12px 14px;background:rgba(255,255,255,.04);
+      border:1px solid #334155;border-radius:8px;color:#f1f5f9;font-size:.92rem;box-sizing:border-box}
+    input[type=email]:focus{outline:none;border-color:#60a5fa}
+    button{margin-top:16px;width:100%;padding:14px;background:#1a56db;color:#fff;
+      border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer}
+    button:hover{background:#1e40af}
+    .msg{margin-top:16px;padding:12px 14px;border-radius:8px;font-size:.85rem;display:none}
+    .msg.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981;display:block}
+    .msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;display:block}
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Solicitud de eliminación de datos</h1>
+  <p>Ingresá el email con el que te registraste. Procesaremos tu solicitud y eliminaremos
+     tus datos de nuestros sistemas en un plazo de 30 días, conforme al RGPD.</p>
+  <form id="form">
+    <label for="email">Tu email</label>
+    <input type="email" id="email" name="email" placeholder="tu@email.com" required/>
+    <button type="submit">Solicitar eliminación</button>
+  </form>
+  <div class="msg" id="msg"></div>
+</div>
+<script>
+  document.getElementById('form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const msg   = document.getElementById('msg');
+    msg.className = 'msg'; msg.textContent = '';
+    try {
+      const r = await fetch('/webhook/meta/data-deletion-form', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({email})
+      });
+      const data = await r.json();
+      if (r.ok) {
+        msg.className = 'msg ok';
+        msg.textContent = data.message || 'Solicitud recibida. Te confirmaremos por email.';
+        document.querySelector('button').disabled = true;
+      } else {
+        msg.className = 'msg err';
+        msg.textContent = data.detail || 'Error al procesar la solicitud.';
+      }
+    } catch(err) {
+      msg.className = 'msg err';
+      msg.textContent = 'Error de conexión. Intentá de nuevo.';
+    }
+  });
+</script>
+</body>
+</html>"""
+
+
+@router.get(
+    "/data-deletion-form",
+    summary="Formulario público de solicitud de eliminación de datos (RGPD)",
+    response_class=PlainTextResponse,
+)
+async def data_deletion_form_page():
+    """Sirve el formulario HTML público para que usuarios soliciten eliminar sus datos."""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=_DATA_DELETION_FORM_HTML, status_code=200)
+
+
+@router.post(
+    "/data-deletion-form",
+    summary="Procesa solicitud de eliminación por email (RGPD)",
+)
+async def data_deletion_form_submit(request: Request):
+    """
+    POST /webhook/meta/data-deletion-form
+    Body JSON: { "email": "user@example.com" }
+
+    Registra la solicitud en meta_compliance_logs y retorna confirmación.
+    El admin debe luego procesar manualmente (o via tarea background) la eliminación.
+    """
+    import re as _re
+    body = await request.json()
+    email = (body.get("email") or "").strip().lower()
+
+    if not email or not _re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+        raise HTTPException(status_code=400, detail="Email inválido o faltante")
+
+    confirmation_code = secrets.token_hex(16)
+
+    try:
+        db.log_meta_compliance_event(
+            event_type="data_deletion_request_email",
+            user_id=email,
+            action_taken=f"solicitud_email confirmation_code={confirmation_code}",
+            raw_payload={"email": email, "source": "data_deletion_form"},
+        )
+    except Exception as e:
+        logger.error(f"[DATA-DELETION-FORM] Error logueando: {e}")
+
+    logger.info(f"[DATA-DELETION-FORM] Solicitud de eliminación por email={email} code={confirmation_code}")
+
+    return JSONResponse({
+        "ok": True,
+        "message": (
+            "Solicitud recibida. Procesaremos la eliminación de tus datos en un "
+            "plazo de 30 días. Guardá este código de referencia: " + confirmation_code
+        ),
+        "confirmation_code": confirmation_code,
+    })

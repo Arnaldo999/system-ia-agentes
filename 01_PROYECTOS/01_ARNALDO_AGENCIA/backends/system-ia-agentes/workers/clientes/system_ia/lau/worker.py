@@ -72,14 +72,9 @@ CATEGORIAS = {
     "5": "Invitaciones digitales",
 }
 
-# Mapeo display → Airtable singleSelect (nombres exactos de Airtable)
-CATEGORIAS_DISPLAY = {
-    "Escolar": "Manualidades escolares",
-    "Eventos": "Fiestas y eventos",
-    "Papelería": "Papelería creativa",
-    "Diseños": "Diseños e Impresiones",
-    "Invitaciones digitales": "Invitaciones digitales",
-}
+# Choices exactos del singleSelect "Categoria" en Airtable (tblhCGfMLhaOZaXqe)
+# Escolar | Eventos | Diseños | Papelería | Invitaciones digitales
+CATEGORIAS_AIRTABLE = {"Escolar", "Eventos", "Diseños", "Papelería", "Invitaciones digitales"}
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  MENSAJES
@@ -301,22 +296,40 @@ def _obtener_productos_por_categoria(categoria: str) -> list[dict]:
 
 
 def _guardar_producto(nombre: str, descripcion: str, categoria: str, url_cloudinary: str) -> bool:
-    """Crea un registro nuevo en Productos/Trabajos."""
+    """Crea un registro nuevo en Productos/Trabajos.
+
+    Campo Fotos (multipleAttachments) se alimenta con [{"url": url_cloudinary}].
+    Campo URL_Cloudinary (url) guarda la URL plana como backup.
+    typecast=true para tolerar variantes menores en singleSelect con tildes.
+    """
+    payload = {
+        "fields": {
+            "Nombre": nombre,
+            "Descripcion": descripcion,
+            "Categoria": categoria,
+            "Fotos": [{"url": url_cloudinary}],
+            "URL_Cloudinary": url_cloudinary,
+        },
+        "typecast": True,
+    }
     try:
         r = requests.post(
             _at_base_url(TABLE_PRODUCTOS),
             headers=_at_headers(),
-            json={"fields": {
-                "Nombre": nombre,
-                "Descripcion": descripcion,
-                "Categoria": categoria,
-                "URL_Cloudinary": url_cloudinary,
-            }},
+            json=payload,
             timeout=10,
         )
-        return r.status_code in (200, 201)
+        if r.status_code in (200, 201):
+            logger.info("[Lau] Producto guardado OK: %s | cat=%s", nombre, categoria)
+            return True
+        logger.error(
+            "[Lau] Error Airtable guardar_producto: HTTP %s — %s",
+            r.status_code,
+            r.text[:500],
+        )
+        return False
     except Exception as e:
-        logger.warning("[Lau] Error Airtable guardar_producto: %s", e)
+        logger.warning("[Lau] Error Airtable guardar_producto (excepcion): %s", e)
         return False
 
 

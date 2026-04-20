@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-20 | Total páginas: 27 (15 entidades + 11 conceptos + 1 síntesis)
+Última actualización: 2026-04-20 | Total páginas: 30 (15 entidades + 14 conceptos + 1 síntesis)
 
 ## Fuentes (0)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -45,7 +45,7 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | [[wiki/entidades/coolify-robert]] | orquestador | robert |
 | [[wiki/entidades/easypanel-mica]] | orquestador | mica |
 
-## Conceptos (11)
+## Conceptos (14)
 
 ### Reglas transversales (leer PRIMERO)
 | Página | Resumen breve | Proyectos |
@@ -77,6 +77,13 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | Página | Resumen breve | Proyectos |
 |--------|--------------|-----------|
 | [[wiki/conceptos/numero-test-tech-provider]] | 1 nro conectado a WABA Robert → routeable a cualquier worker (demo Arnaldo/Mica/Robert) vía `probar_worker.sh` | compartido |
+
+### Meta / WhatsApp (Tech Provider)
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/meta-business-portfolio-verificacion]] | SOP verificación Business Portfolio (paso 0 antes de Tech Provider) | robert, arnaldo, mica |
+| [[wiki/conceptos/meta-tech-provider-onboarding]] | Embedded Signup + Coexistence + App Review — URLs oficiales Meta verificadas + checklist completo | robert |
+| [[wiki/conceptos/meta-webhooks-compliance]] | Deauthorize + Data Deletion webhooks (n8n + Cloudflare Worker verify HMAC) | robert |
 
 ## Síntesis (0)
 | Página | Origen | Fecha | Proyecto |

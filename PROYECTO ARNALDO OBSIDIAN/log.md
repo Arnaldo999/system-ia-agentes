@@ -4,6 +4,106 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-20] ingest | Kevin curso "Tech Provider SaaS" — Intro
+- Nuevo curso de Kevin sobre convertir el TP en un SaaS multi-tenant (distinto al curso general de TP que ya completamos).
+- Distinción clave SaaS vs Agencia: SaaS = tú eres responsable de datos, multi-tenant en 1 infra, MÁS restricciones Meta. Agencia = cliente maneja sus datos, no escala.
+- Robert está operando modelo SaaS aunque lo venda como "agencia": multi-tenant backend + almacena datos clientes + compliance responsable. Confirmación de que todo lo que implementamos hoy (agencia_origen, compliance webhooks, meta_user_id) es exactamente el patrón SaaS que Kevin enseña.
+- Estructura del curso: 9 lecciones (1-4 setup + 5-7 App Review + 8 skills bonus + 9 Data Handling).
+- Primeras 7 lecciones ya están cubiertas en Robert por el curso anterior. Lecciones 8 (skills bonus) y 9 (Data Handling) pueden aportar info nueva.
+
+## [2026-04-20] feat | Multi-agencia en infra Tech Provider Robert
+- Decisión Arnaldo: usar app TP de Robert como tránsito técnico para onboardear clientes propios hasta verificar portfolio Arnaldo y sacar TP propio.
+- Implementado commit `ec33418`:
+  - PG `waba_clients`: columnas `agencia_origen` + `meta_user_id` (ALTER idempotente).
+  - Helpers DB: `listar_waba_clients_por_agencia`, `actualizar_agencia_origen`.
+  - Endpoints admin FastAPI: `GET /tenants-por-agencia` + `POST /reclasificar-agencia`.
+  - `access_token` siempre REDACTED en responses admin.
+- Documentado SOP de migración futura en `meta-tech-provider-onboarding.md` (cuando Arnaldo saque su propio TP, cliente hace 1 click y migra sin pérdida de datos).
+- Arnaldo comunicará a Robert via WhatsApp — mensaje simple: "voy a onboardear clientes míos via tu app TP, es tránsito técnico, cuando tenga TP propio los migro". Sin mencionar a Mica (decisión de Mica será propia cuando llegue el momento).
+
+## [2026-04-20] ingest | Kevin Ber video "Cómo Verificar Negocio en Meta" — SOP portfolio
+- Video de Kevin Ber (otro mentor, canal AISH Automation) sobre paso 0 absoluto: verificar Business Portfolio en business.facebook.com.
+- Creada `wiki/conceptos/meta-business-portfolio-verificacion.md` con SOP 12 pasos + 8 errores comunes ordenados por frecuencia + casos de uso por agencia del ecosistema.
+- Aplicabilidad: Robert ya verificado (es TP). Arnaldo y Mica: por confirmar si tienen portfolio propio o dependen de BSP (YCloud/Evolution).
+- Oportunidad estratégica documentada: Robert puede ofrecer "WhatsApp oficial llave en mano" a clientes sin TP propio, cobrar premium (Kevin menciona que agencias cobran miles de USD por asesoría TP).
+- Diferenciado de ruta BSP: Kevin desaconseja Evolution API explícitamente por inestabilidad + riesgo de baneo.
+
+## [2026-04-20] wrap-up | Curso Kevin "Tech Provider + Embedded Signup" COMPLETADO
+- 12 clases Kevin validadas contra Robert (2 submódulos al 100%).
+- Arquitectura Robert SUPERA lo que Kevin enseña (FastAPI multi-tenant auto vs workflows n8n manuales clickeados).
+- Todo el trabajo práctico del día consolidado en `wiki/conceptos/meta-tech-provider-onboarding.md` + `meta-webhooks-compliance.md`.
+- Estado Robert: Tech Provider 100% funcional a nivel infra. Solo espera aprobación Meta (8 días restantes).
+
+## [2026-04-20] ingest + feat | Clase Kevin #8 — Override callback URI por cliente
+- Validación: Robert YA tenía `POST /webhook/meta/override` por WABA en `webhook_meta.py:414`.
+- Gap detectado: Kevin también cubre override por `phone_number_id` (para separar varios números de la misma WABA, caso ventas vs soporte).
+- Implementado `POST /webhook/meta/override-phone` (commit `b940288`) con mismo patrón admin auth.
+- Nota arquitectural: Robert NO necesita override_callback para multi-tenant normal — ya tiene router FastAPI que forwardea por `phone_number_id` a `worker_url` del tenant en `waba_clients`. El override solo sirve para casos enterprise donde cliente exige SU propia infra separada.
+- Endpoints disponibles ahora:
+  - `POST /webhook/meta/override` (por WABA entera) — ya existía
+  - `POST /webhook/meta/override-phone` (por número específico) — agregado hoy
+
+## [2026-04-20] ingest | Clase Kevin #7 — Envío de mensajes via Graph API
+- Validación cross-check: YA IMPLEMENTADO LIVE en `robert_inmobiliaria/worker.py` hace meses.
+- Tipos cubiertos: texto (`_enviar_texto` línea 510), imagen (`_enviar_imagen` línea 540), templates (`_enviar_template` línea ~4070).
+- Ventana de 24h: enforced por diseño — el bot solo envía libres en respuesta a mensajes entrantes. Templates pre-aprobados (`nurturing_3_dias/15/30`) para fuera de ventana, ya justificados ante Meta en App Review.
+- Robert tiene ventajas vs Kevin: (a) 3 tipos de mensaje vs solo texto, (b) automatico vs manual Set Datos, (c) mirror a Chatwoot para que dueño vea el chat, (d) templates para nurturing fuera de 24h.
+- Sin cambios requeridos — stack 100% alineado + superado. Versiones Graph API: webhook_meta.py=v24.0, worker.py=v21.0/v22.0 (no tocar sin testing, hay conversaciones reales).
+
+## [2026-04-20] ingest | Clase Kevin #6 — Configuración webhook eventos mensaje
+- Validación cross-check: YA IMPLEMENTADO en `webhook_meta.py` LIVE desde antes de esta sesión.
+- Tests corridos: GET /verify + /events con token incorrecto → 403 ✅, POST con `object: page` → 400 ✅, POST con WABA válido → 200 ✅.
+- Robert tiene 5 features BONUS que Kevin no cubre: (1) multi-tenant routing por phone_number_id, (2) dedup de reintentos Meta, (3) background processing <5s, (4) descarte mensajes viejos (>30s), (5) separación statuses vs messages.
+- Arquitectura ventajosa: 1 endpoint FastAPI multi-tenant vs 1 workflow n8n por cliente que propone Kevin.
+- Sin cambios de código requeridos — solo confirmación que el stack actual está alineado 100% + supera en varios aspectos.
+
+## [2026-04-20] update | Vercel auto-deploy activado para lovbot-onboarding
+- Detectado que proyecto Vercel `lovbot-onboarding` NO estaba conectado a Git (creado via `vercel deploy` CLI hace 3 días).
+- Conectado repo `Arnaldo999/system-ia-agentes` + Root Directory `01_PROYECTOS/03_LOVBOT_ROBERT/clientes/onboarding-vercel`.
+- Commit `b21305e` trigger primer auto-deploy → confirmado: HTML productivo ahora sirve `featureType` correcto (Coexistence ACTIVO).
+- Documentada trampa en `meta-tech-provider-onboarding.md` sección "Trampa Vercel".
+- Beneficio durable: cero deploys manuales desde ahora.
+
+## [2026-04-20] ingest | Clase Kevin #5 — Webhook recepción onboarding + Coexistence
+- Validación: `lovbot-onboarding.vercel.app/?client=slug` ya tenía implementado el flow Embedded Signup pero con bug en `extras` que NO activaba Coexistence.
+- Fix aplicado en `01_PROYECTOS/03_LOVBOT_ROBERT/clientes/onboarding-vercel/index.html`:
+  - `extras.feature` → `extras.featureType` (clave correcta)
+  - `'whatsapp_embedded_signup'` → `'whatsapp_business_app_onboarding'` (valor correcto)
+  - `sessionInfoVersion: 3` → `'3'` (string, no número)
+  - SDK FB version `v21.0` → `v24.0`
+- Commit `52a7fad` push → Vercel auto-deploy.
+- Memorizado en `meta-tech-provider-onboarding.md` sección "Frontend Embedded Signup" con código completo y 3 trampas comunes (`featureType` vs `feature`, string vs número, requisito CONFIG_ID).
+- Clarificado por qué Robert NO usa el patrón Kevin de n8n + 2 webhooks + Header Auth: tiene backend FastAPI propio con APP_SECRET server-side, más seguro y simple.
+- Riesgo cero para App Review en curso: el cambio mejora el flow para clientes finales, Meta usa cuentas test que aceptan ambos formatos.
+
+## [2026-04-20] ingest | Clase Kevin #4 — Webhooks de compliance (deauthorize + data_deletion)
+- Creada: `wiki/conceptos/meta-webhooks-compliance.md` con arquitectura completa Meta → n8n → Cloudflare Worker → data table.
+- Incluye código completo del Cloudflare Worker `/verify` (HMAC SHA-256 sobre encodedPayload, timingSafeEqual, base64url decoder).
+- Documentado: Meta exige 2 campos opcionales en panel Facebook Login → sección "Cancelar autorización" (deauthorize + data_deletion URL).
+- 3 links Drive con plantillas n8n de Kevin (son privados, hay que pedírselos).
+- **Gap detectado en Robert**: ninguno de los 2 webhooks está configurado, no existe Cloudflare Worker, no hay workflows n8n. Webhook de mensajes SÍ existe (FastAPI `webhook_meta.py`, no n8n).
+- Riesgo medio-alto: Meta puede pedir completarlo como condición post-review para advanced access.
+- Decisión pragmática: si Robert no opera con datos UE/Brasil, se puede completar después del review. Pero conviene hacerlo antes para reducir observaciones.
+
+## [2026-04-20] ingest | Clase Kevin #3 — Configuración Facebook Login para Embedded Signup
+- Agregada sección "Configuración de Facebook Login para Embedded Signup" en `meta-tech-provider-onboarding.md`.
+- Tabla con los 7 toggles correctos del panel `/fb-login/settings/` + los 2 campos de texto críticos (redirect URIs + domains SDK).
+- URL `/docs/facebook-login/business/` que Kevin recomienda devuelve 404 — la canónica vigente es `/docs/facebook-login/facebook-login-for-business` (actualizada 25 mar 2026).
+- URL `/docs/facebook-login/security/` vigente pero sin updates desde oct 2024.
+- Pendiente de verificación: los 7 toggles en el panel real de Robert (screenshot no solicitado aún).
+
+## [2026-04-20] ingest | Clases de Kevin sobre Embedded Signup + Coexistence + public_profile advanced access
+- Fuente: 2 clases de texto del mentor Kevin enviadas por Arnaldo durante sesión Claude.
+- Creada: `wiki/conceptos/meta-tech-provider-onboarding.md` consolidando:
+  - Los 4 pilares técnicos (App Meta, permisos, Embedded Signup, Coexistence).
+  - URLs oficiales Meta verificadas contra developers.facebook.com (status 200 + fechas de última actualización capturadas).
+  - Checklist de 9 ítems para App Review obligatoria.
+  - Secuencia correcta para onboarding de un nuevo Tech Provider (10 pasos).
+  - Trampas comunes (modo Desarrollo bloquea flow externo, `lovbot.mx` devuelve 403 a curl pero 200 a navegadores y Meta-ExternalAgent).
+- URLs clave documentadas: Overview, Implementation v4, Coexistence, Postman collection oficial, Tech Providers, Access Verification, Permissions Reference, Migrate existing number.
+- Estado App Review Robert (2026-04-20 08:58): `whatsapp_business_management` + `whatsapp_business_messaging` en revisión con 2 videos enviados. `public_profile` en Advanced access (Meta lo otorga automático).
+- Validación cross-checklist paquete: todos los ítems del `PAQUETE-COMPLETO.md` están cubiertos y enviados a Meta.
+
 ## [2026-04-20] update | Patrón "numero test via Tech Provider Robert" implementado
 - Creado: `workers/shared/wa_provider.py` — capa abstracción Meta/Evolution/YCloud (send + parse unificados).
 - Adaptados: 2 workers demo inmobiliaria (Arnaldo `workers/demos/inmobiliaria/` + Mica `workers/clientes/system_ia/demos/inmobiliaria/`) para switch via env var `WHATSAPP_PROVIDER=meta`.

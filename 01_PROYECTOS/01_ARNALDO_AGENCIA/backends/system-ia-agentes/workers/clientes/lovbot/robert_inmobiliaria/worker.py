@@ -3705,6 +3705,7 @@ async def waba_onboarding(request: Request):
     phone_number_id = (body.get("phone_number_id") or "").strip()
     code            = (body.get("code") or "").strip()
     display_phone   = (body.get("display_phone") or "").strip() or None
+    meta_user_id    = (body.get("meta_user_id") or "").strip() or None
 
     # Validaciones
     if not client_name:
@@ -3816,6 +3817,7 @@ async def waba_onboarding(request: Request):
         access_token=access_token,
         worker_url=worker_url,
         display_phone=display_phone,
+        meta_user_id=meta_user_id,
     )
     if "error" in reg:
         raise HTTPException(status_code=500, detail=f"Error guardando en DB: {reg['error']}")

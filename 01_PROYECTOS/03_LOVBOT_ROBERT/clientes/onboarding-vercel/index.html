@@ -363,10 +363,11 @@
     // ── FIN CONFIG ───────────────────────────────────────────────────
 
     // Variables de estado entre FB.login y el evento FINISH
-    let _pendingCode       = '';
-    let _pendingWabaId     = '';
-    let _pendingPhoneId    = '';
+    let _pendingCode        = '';
+    let _pendingWabaId      = '';
+    let _pendingPhoneId     = '';
     let _pendingDisplayPhone = '';
+    let _pendingMetaUserId  = '';
 
     // Cargar Facebook SDK
     window.fbAsyncInit = function() {
@@ -442,7 +443,8 @@
         code:            _pendingCode,
         display_phone:   _pendingDisplayPhone || null,
         nombre_asesor:   nombreAsesor,
-        email_asesor:    emailAsesor
+        email_asesor:    emailAsesor,
+        meta_user_id:    _pendingMetaUserId || null
       };
 
       fetch(ONBOARDING_URL, {
@@ -513,7 +515,8 @@
 
       FB.login(function(response) {
         if (response.authResponse && response.authResponse.code) {
-          _pendingCode = response.authResponse.code;
+          _pendingCode       = response.authResponse.code;
+          _pendingMetaUserId = response.authResponse.userID || '';
 
           // Si ya tenemos waba_id + phone_number_id del evento FINISH, enviar ahora
           if (_pendingWabaId && _pendingPhoneId) {
