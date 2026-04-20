@@ -65,10 +65,12 @@ AIRTABLE_TABLE_PROPS   = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_PROPS", "")
 AIRTABLE_TABLE_LEADS   = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_CLIENTES", "")
 AIRTABLE_TABLE_ACTIVOS = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_ACTIVOS", "")
 
-NOMBRE_EMPRESA = os.environ.get("INMO_DEMO_NOMBRE",  "Inmobiliaria Demo Mica")
-CIUDAD         = os.environ.get("INMO_DEMO_CIUDAD",  "Apóstoles")
-NOMBRE_ASESOR  = os.environ.get("INMO_DEMO_ASESOR",  "el asesor")
-NUMERO_ASESOR  = os.environ.get("INMO_DEMO_NUMERO_ASESOR", "")
+# Branding: prioridad MICA_DEMO_* (especifico Mica) → INMO_DEMO_* (legacy compartido)
+# Asi Mica puede tener sus propias env vars sin pisar las de Arnaldo en el mismo backend.
+NOMBRE_EMPRESA = os.environ.get("MICA_DEMO_NOMBRE")  or os.environ.get("INMO_DEMO_NOMBRE",  "Inmobiliaria Demo Mica")
+CIUDAD         = os.environ.get("MICA_DEMO_CIUDAD")  or os.environ.get("INMO_DEMO_CIUDAD",  "Apóstoles")
+NOMBRE_ASESOR  = os.environ.get("MICA_DEMO_ASESOR")  or os.environ.get("INMO_DEMO_ASESOR",  "el asesor")
+NUMERO_ASESOR  = os.environ.get("MICA_DEMO_NUMERO_ASESOR") or os.environ.get("INMO_DEMO_NUMERO_ASESOR", "")
 MONEDA         = os.environ.get("INMO_DEMO_MONEDA",  "USD")
 SITIO_WEB      = os.environ.get("INMO_DEMO_SITIO_WEB", "")
 CAL_API_KEY    = os.environ.get("INMO_DEMO_CAL_API_KEY", "")
@@ -126,6 +128,29 @@ TENANT_SLUG = os.environ.get("MICA_TENANT_SLUG", "mica-demo")
 
 HISTORIAL: dict[str, list[str]] = {}
 MAX_HISTORIAL = 20
+
+
+def _sanitizar_nombre(raw: str) -> str:
+    """Limpia el nombre del perfil de WhatsApp.
+
+    Trampa comun: usuarios usan '@' como ofuscacion del nombre real para evitar
+    spam (ej: '@rn@ldo' = 'Arnaldo'). Antes el regex eliminaba el '@' dejando
+    'rnldo' (sin la primera A). Ahora mapeamos '@' → 'a' y luego limpiamos
+    el resto de caracteres especiales.
+
+    Tambien normaliza otros leetspeak comunes:
+      4 → a, 3 → e, 1 → i, 0 → o (cuando no hay otros digitos cerca)
+    """
+    if not raw:
+        return ""
+    s = raw.strip()
+    # Mapear leetspeak basico ANTES de eliminar caracteres no-alfa
+    s = s.replace("@", "a").replace("@", "a")  # @ unicode + ascii
+    # Eliminar todo lo que no sea letra o espacio
+    import re as _re
+    s = _re.sub(r"[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]", "", s).strip()
+    # Title case
+    return s.title() if s else ""
 
 
 def _bg_save_session(telefono: str, sesion: dict) -> None:
@@ -1427,7 +1452,7 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
         ),
         "subnicho": "DEPRECATED — este bot solo atiende clientes de un desarrollador. Avanzar a 'objetivo' directamente.",
         "nombre": "Obtener el nombre del cliente con calidez. Explicá que es para llamarle bien durante la conversación.",
-        "email": "Pedir email de forma opcional. Explicá que es para enviarle fichas y novedades de propiedades antes de que salgan al público — valor concreto.",
+        "email": "Pedir email de forma opcional. Explicá que es para tener un canal alternativo si no podés contactarlo por WhatsApp. NO prometas envíos por email — todo se gestiona por acá.",
         "ciudad": f"Preguntar de qué ciudad es. Explicá que es para entender qué tan cerca está de los proyectos en {CIUDAD} y si puede visitarlos. Ej: 'Saber desde dónde escribís nos ayuda a entender qué opciones son más accesibles para vos. ¿De qué ciudad sos?'",
         "objetivo": "Preguntar si es para vivir o invertir. Explicá que esto define qué tipo de propiedad tiene sentido mostrarle. Ej: 'Para filtrarte solo lo que encaja, ¿la propiedad sería para vivir vos, o la ves más como una inversión?'",
         "tipo": "Preguntar tipo de propiedad con contexto. Ej: 'Contame un poco más — ¿tenés en mente algún tipo en particular? ¿Casa, terreno, departamento...?'",
@@ -1992,7 +2017,8 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 _enviar_texto(telefono,
                     f"✅ *¡Cita confirmada{', ' + nombre_corto if nombre_corto else ''}!*\n\n"
                     f"📅 *{fecha_str}* con *{NOMBRE_ASESOR}*\n\n"
-                    f"Te llega confirmación por email. Si necesitás reagendar, escribime. 😊\n"
+                    f"Te vamos a contactar por acá unos minutos antes para confirmar. "
+                    f"Si necesitás reagendar, escribime. 😊\n"
                     f"¡Gracias por confiar en *{NOMBRE_EMPRESA}*! 🌟")
                 SESIONES.pop(telefono, None)
             else:
@@ -2176,9 +2202,9 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             elif key == "EMAIL":
                 acciones["email"] = value
             elif key == "NOMBRE":
-                # Limpiar caracteres especiales (@, números, símbolos) del nombre
-                nombre_limpio = re.sub(r'[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]', '', value).strip()
-                acciones["nombre"] = nombre_limpio.title() if nombre_limpio else value.title()
+                # Sanitiza nombre (mapea '@' → 'a' antes de limpiar simbolos)
+                nombre_limpio = _sanitizar_nombre(value)
+                acciones["nombre"] = nombre_limpio if nombre_limpio else value.title()
             elif key == "SUBNICHE":
                 acciones["subniche"] = value.lower()
             elif key == "CIUDAD":
@@ -2839,9 +2865,9 @@ async def _webhook_handler(request: Request, provider_forzado: str = ""):
     if nombre_meta:
         sesion_pre = SESIONES.get(tel_clean, {})
         if not sesion_pre.get("nombre"):
-            nombre_limpio = re.sub(r'[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]', '', nombre_meta).strip()
+            nombre_limpio = _sanitizar_nombre(nombre_meta)
             if nombre_limpio and len(nombre_limpio) >= 2:
-                sesion_pre["nombre"] = nombre_limpio.title()
+                sesion_pre["nombre"] = nombre_limpio
                 SESIONES[tel_clean] = sesion_pre
                 print(f"[MICA-WEBHOOK] Nombre precargado: {nombre_meta} → {nombre_limpio} → {tel_clean}")
 
@@ -3253,9 +3279,9 @@ async def simular_lead_anuncio(telefono: str, request: Request):
     if nombre_ads or email_ads:
         sesion_pre = SESIONES.get(tel, {})
         if nombre_ads:
-            nombre_ads_limpio = re.sub(r'[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]', '', nombre_ads).strip()
+            nombre_ads_limpio = _sanitizar_nombre(nombre_ads)
             if nombre_ads_limpio and len(nombre_ads_limpio) >= 2:
-                sesion_pre["nombre"] = nombre_ads_limpio.title()
+                sesion_pre["nombre"] = nombre_ads_limpio
         if email_ads:
             sesion_pre["email"] = email_ads
         sesion_pre["origen_lead"] = "meta_ads_form"
