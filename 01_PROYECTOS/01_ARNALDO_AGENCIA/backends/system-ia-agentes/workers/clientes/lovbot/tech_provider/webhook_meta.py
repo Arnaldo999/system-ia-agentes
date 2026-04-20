@@ -124,6 +124,12 @@ class OverrideBody(BaseModel):
     verify_token: str
 
 
+class OverridePhoneBody(BaseModel):
+    phone_number_id: str
+    override_callback_uri: str
+    verify_token: str
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _dedup_msg(msg_id: str) -> bool:
@@ -477,6 +483,77 @@ async def override_webhook(body: OverrideBody):
     return {
         "ok": True,
         "waba_id": waba_id,
+        "nuevo_callback_uri": body.override_callback_uri,
+        "graph_status": resp.status_code,
+        "graph_response": resp.json() if resp.text else {},
+    }
+
+
+@router.post(
+    "/override-phone",
+    summary="Override callback URI por phone_number_id (admin)",
+    description=(
+        "Cambia la URL del webhook para UN NUMERO especifico (no toda la WABA). "
+        "Util cuando un cliente tiene 1 WABA con varios numeros con usos distintos "
+        "(ej: ventas vs soporte). Requiere X-Admin-Token."
+    ),
+    dependencies=[Depends(_require_admin)],
+)
+async def override_webhook_phone(body: OverridePhoneBody):
+    """
+    POST /webhook/meta/override-phone
+    Header: X-Admin-Token: <LOVBOT_ADMIN_TOKEN>
+    Body:
+    {
+      "phone_number_id": "...",
+      "override_callback_uri": "https://otra-instancia.com/webhook/xyz",
+      "verify_token": "<nuevo_token>"
+    }
+
+    Hace POST a Graph API /{phone_number_id}/subscribed_apps.
+    El handshake GET del nuevo webhook debe responder hub.challenge como texto plano.
+    """
+    phone_number_id = body.phone_number_id.strip()
+    if not phone_number_id:
+        raise HTTPException(status_code=422, detail="phone_number_id es requerido")
+    if not body.override_callback_uri.startswith("https://"):
+        raise HTTPException(status_code=422, detail="override_callback_uri debe ser HTTPS")
+
+    tenant = db.obtener_waba_client_por_phone(phone_number_id)
+    access_token = (tenant.get("access_token") if tenant else None) or META_ACCESS_TOKEN
+
+    if not access_token:
+        raise HTTPException(status_code=500, detail="access_token no disponible para este phone_number_id")
+
+    url = f"{GRAPH_BASE}/{phone_number_id}/subscribed_apps"
+    payload_graph = {
+        "override_callback_uri": body.override_callback_uri,
+        "verify_token": body.verify_token,
+    }
+    try:
+        resp = _requests.post(
+            url,
+            headers={"Authorization": f"Bearer {access_token}"},
+            json=payload_graph,
+            timeout=15,
+        )
+    except Exception as e:
+        logger.error(f"[META-OVERRIDE-PHONE] Error llamando Graph API: {e}")
+        raise HTTPException(status_code=502, detail=f"Error llamando Graph API: {e}")
+
+    if resp.status_code not in (200, 201):
+        logger.error(f"[META-OVERRIDE-PHONE] Graph API error {resp.status_code}: {resp.text[:300]}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Graph API respondio {resp.status_code}: {resp.text[:300]}"
+        )
+
+    logger.info(
+        f"[META-OVERRIDE-PHONE] phone_number_id={phone_number_id} override aplicado → {body.override_callback_uri}"
+    )
+    return {
+        "ok": True,
+        "phone_number_id": phone_number_id,
         "nuevo_callback_uri": body.override_callback_uri,
         "graph_status": resp.status_code,
         "graph_response": resp.json() if resp.text else {},
