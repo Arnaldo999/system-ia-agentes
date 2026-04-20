@@ -25,6 +25,7 @@ Auditores activos (Fase 2.5):
     - auditor_crm               → Supabase tenants + Airtable Maicol/Lau/Robert
     - auditor_social            → workers redes sociales
     - auditor_lovbot_ecosystem  → backend Hetzner + Resend + Chatwoot + Vercel (Tech Provider)
+    - auditor_mica_ecosystem    → backend Easypanel + Airtable Mica + Vercel frontends Mica
 """
 
 import os
@@ -52,6 +53,7 @@ import auditor_meta_provider
 import auditor_crm
 import auditor_social
 import auditor_lovbot_ecosystem
+import auditor_mica_ecosystem
 import auto_reparador
 
 AUDITORES = [
@@ -64,6 +66,7 @@ AUDITORES = [
     auditor_crm,
     auditor_social,
     auditor_lovbot_ecosystem,
+    auditor_mica_ecosystem,
 ]
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
