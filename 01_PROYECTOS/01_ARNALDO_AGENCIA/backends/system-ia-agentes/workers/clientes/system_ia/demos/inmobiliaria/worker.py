@@ -1842,23 +1842,43 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         print(f"[MICA] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
         return
 
-    # ── Restaurar sesión desde PostgreSQL si no está en RAM (post-deploy) ──────
-    if telefono not in SESIONES:
-        _cargar_sesion_db(telefono)
+    # ── Restaurar sesión desde BotSessions si no está en RAM (post-deploy) ──
+    # o si la sesión en RAM es solo el nombre precargado por el webhook.
+    # El webhook pasa nombre_meta y provider_forzado via referral (keys con _ prefix)
+    # para aplicarlos DESPUES de cargar la sesion persistida.
+    _nombre_meta_from_hook = referral.pop("_nombre_meta", "") if isinstance(referral, dict) else ""
+    _provider_forzado_from_hook = referral.pop("_provider_forzado", "") if isinstance(referral, dict) else ""
 
-    # ── Detectar lead RECURRENTE en tabla `leads` PostgreSQL ─────────────────
-    # IMPORTANTE: el webhook puede haber creado una sesión "vacía" con solo el
-    # nombre del Meta profile. En ese caso TAMBIÉN buscamos en leads, porque
-    # la sesión efectiva está vacía pero el lead ya existe.
     sesion_actual = SESIONES.get(telefono, {})
     sesion_es_minima = (
         not sesion_actual or
-        # Sesión solo con nombre (precargado del webhook) sin datos BANT
+        (set(sesion_actual.keys()) - {"nombre", "_ultimo_ts", "origen_lead"}) == set()
+    )
+    if sesion_es_minima:
+        if telefono in SESIONES:
+            super(_SessionStore, SESIONES).__delitem__(telefono)
+        _cargar_sesion_db(telefono)
+
+    # Aplicar nombre/provider del webhook si corresponde (SIN triggear save todavia —
+    # se va a guardar al final cuando el flow asigne SESIONES[tel] = ...)
+    _s_actual = SESIONES.get(telefono, {})
+    if _s_actual:
+        if _nombre_meta_from_hook and not _s_actual.get("nombre"):
+            nombre_limpio = _sanitizar_nombre(_nombre_meta_from_hook)
+            if nombre_limpio and len(nombre_limpio) >= 2:
+                _s_actual["nombre"] = nombre_limpio
+                print(f"[MICA] Nombre aplicado post-load: {_nombre_meta_from_hook} → {nombre_limpio}")
+        if _provider_forzado_from_hook:
+            _s_actual["_provider_forzado"] = _provider_forzado_from_hook
+
+    # ── Detectar lead RECURRENTE en tabla `leads` (fallback si no hay BotSession) ──
+    sesion_actual = SESIONES.get(telefono, {})
+    sesion_es_minima = (
+        not sesion_actual or
         (set(sesion_actual.keys()) - {"nombre", "_ultimo_ts", "origen_lead"}) == set()
     )
     no_es_recurrente_aun = not sesion_actual.get("_lead_recurrente", False)
     if sesion_es_minima and no_es_recurrente_aun:
-        # Borrar sesión mínima si existe, para que _restaurar pueda crear la full
         if telefono in SESIONES and sesion_es_minima:
             super(_SessionStore, SESIONES).__delitem__(telefono)
         _restaurar_lead_desde_db(telefono)
@@ -2862,7 +2882,9 @@ async def _webhook_handler(request: Request, provider_forzado: str = ""):
 
     # Pre-cargar nombre desde perfil WhatsApp (Meta trae "contacts.profile.name",
     # Evolution trae "pushName") — ambos normalizados por wa_provider
-    if nombre_meta:
+    # IMPORTANTE: si la sesion no esta en RAM, NO la pisamos con solo {nombre}.
+    # Dejamos que _procesar la cargue desde Airtable BotSessions primero.
+    if nombre_meta and tel_clean in SESIONES:
         sesion_pre = SESIONES.get(tel_clean, {})
         if not sesion_pre.get("nombre"):
             nombre_limpio = _sanitizar_nombre(nombre_meta)
@@ -2875,10 +2897,19 @@ async def _webhook_handler(request: Request, provider_forzado: str = ""):
         print(f"[MICA-WEBHOOK] Lead vino de ad: {referral.get('headline', '')[:60]}")
 
     # Si se fuerza un provider (router v2 → meta), setear para esta sesion
-    if provider_forzado:
+    # provider_forzado: mismo cuidado que con nombre_meta — no pisar sesion completa
+    # con sesion minima si el tel no esta en RAM.
+    if provider_forzado and tel_clean in SESIONES:
         sesion_pre = SESIONES.get(tel_clean, {})
         sesion_pre["_provider_forzado"] = provider_forzado
         SESIONES[tel_clean] = sesion_pre
+
+    # Pasar nombre_meta y provider_forzado a _procesar para que los use despues
+    # de cargar la sesion persistida.
+    if nombre_meta:
+        referral = {**referral, "_nombre_meta": nombre_meta}
+    if provider_forzado:
+        referral = {**referral, "_provider_forzado": provider_forzado}
 
     threading.Thread(target=_procesar_safe, args=(tel_clean, texto, referral), daemon=True).start()
     return {"status": "processing", "provider_detectado": parsed.get("provider", "?")}
