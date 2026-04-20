@@ -69,7 +69,7 @@ import threading
 import time
 
 import requests as _requests
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -92,7 +92,7 @@ META_APP_SECRET   = _env("META_APP_SECRET")
 META_ACCESS_TOKEN = _env("META_ACCESS_TOKEN")
 ADMIN_TOKEN       = os.environ.get("LOVBOT_ADMIN_TOKEN", "")
 
-GRAPH_BASE = "https://graph.facebook.com/v21.0"
+GRAPH_BASE = "https://graph.facebook.com/v24.0"
 
 # Deduplicacion de reintentos Meta (en memoria, reset cada 1000 msgs)
 _MSG_IDS_PROCESADOS: set[str] = set()
@@ -353,7 +353,7 @@ async def subscribe_webhooks(body: SubscribeWebhooksBody):
     Body:   {"waba_id": "..."}
 
     Hace POST a:
-      https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps
+      https://graph.facebook.com/v24.0/{waba_id}/subscribed_apps
     con Authorization: Bearer <access_token del tenant>
 
     Luego marca webhook_subscrito=TRUE en waba_clients para ese WABA.
