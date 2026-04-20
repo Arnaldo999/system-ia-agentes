@@ -1931,7 +1931,8 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         }
         sesion = SESIONES[telefono]
         nombre_pre = sesion.get("nombre", "")
-        print(f"[MICA] Lead nuevo directo (sin referral): tel={re.sub(r'\\D','',telefono)[-4:]}*** nombre_pre={nombre_pre or '?'}")
+        tel_masked = re.sub(r"\D", "", telefono)[-4:]
+        print(f"[MICA] Lead nuevo directo (sin referral): tel={tel_masked}*** nombre_pre={nombre_pre or '?'}")
 
     # ── Step especiales que NO pasan por LLM (agendamiento) ───────────────
     step = sesion.get("step", "inicio")
