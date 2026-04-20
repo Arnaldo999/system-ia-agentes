@@ -317,7 +317,9 @@ def _chatwoot_buscar_conversacion(contacto_id: int) -> dict | None:
         if r.status_code == 200:
             convs = r.json().get("payload", [])
             for c in convs:
-                if c.get("inbox_id") == int(CHATWOOT_INBOX_ID) and c.get("status") == "open":
+                # Mica puede no tener inbox configurado — permitir matchear cualquier inbox abierto
+                inbox_match = (str(c.get("inbox_id", "")) == str(CHATWOOT_INBOX_ID)) if CHATWOOT_INBOX_ID else True
+                if inbox_match and c.get("status") == "open":
                     return c
     except Exception as e:
         print(f"[CHATWOOT] Error buscando conversación: {e}")
@@ -1790,11 +1792,29 @@ ACCION: continuar | mostrar_props | agendar | ir_asesor | cerrar_curioso | nurtu
     return system
 
 
+def _procesar_safe(telefono: str, texto: str, referral: dict = None) -> None:
+    """Wrapper que ejecuta _procesar y captura cualquier excepcion para que el
+    background thread no muera silenciosamente. Critico para debug en produccion."""
+    try:
+        _procesar(telefono, texto, referral)
+    except Exception as e:
+        import traceback
+        print(f"[MICA-CRASH] tel={telefono} exc={type(e).__name__}: {e}")
+        print(f"[MICA-CRASH] traceback:\n{traceback.format_exc()}")
+        # Intentar mandar mensaje de error al user para que sepa que algo paso
+        try:
+            _enviar_texto(telefono,
+                "Disculpá, tuve un problema técnico procesando tu mensaje. "
+                "Probá de nuevo en un momento o escribime '#' para hablar con un asesor.")
+        except Exception:
+            pass
+
+
 def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     referral = referral or {}
     # Si el asesor tomó control, el bot NO responde
     if bot_pausado(telefono):
-        print(f"[ROBERT] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
+        print(f"[MICA] Bot pausado para {telefono} — asesor activo, ignorando mensaje")
         return
 
     # ── Restaurar sesión desde PostgreSQL si no está en RAM (post-deploy) ──────
@@ -1897,7 +1917,21 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             "_ultimo_ts": ahora_ts,
         }
         sesion = SESIONES[telefono]
-        print(f"[ROBERT] Lead desde anuncio: {referral.get('headline') or referral.get('body','')}")
+        print(f"[MICA] Lead desde anuncio: {referral.get('headline') or referral.get('body','')}")
+
+    # ── Crear sesion minima si NO existe (lead directo sin referral) ──────
+    # Critico para Mica: la mayoria de leads llegan por Evolution sin venir de ad,
+    # entonces necesitan una sesion inicial para que el flow BANT funcione.
+    if telefono not in SESIONES:
+        SESIONES[telefono] = {
+            "step": "inicio",
+            "subniche": "agencia_inmobiliaria",
+            "_fuente_detalle": "whatsapp_directo",
+            "_ultimo_ts": ahora_ts,
+        }
+        sesion = SESIONES[telefono]
+        nombre_pre = sesion.get("nombre", "")
+        print(f"[MICA] Lead nuevo directo (sin referral): tel={re.sub(r'\\D','',telefono)[-4:]}*** nombre_pre={nombre_pre or '?'}")
 
     # ── Step especiales que NO pasan por LLM (agendamiento) ───────────────
     step = sesion.get("step", "inicio")
@@ -2819,7 +2853,7 @@ async def _webhook_handler(request: Request, provider_forzado: str = ""):
         sesion_pre["_provider_forzado"] = provider_forzado
         SESIONES[tel_clean] = sesion_pre
 
-    threading.Thread(target=_procesar, args=(tel_clean, texto, referral), daemon=True).start()
+    threading.Thread(target=_procesar_safe, args=(tel_clean, texto, referral), daemon=True).start()
     return {"status": "processing", "provider_detectado": parsed.get("provider", "?")}
 
 
@@ -3227,7 +3261,7 @@ async def simular_lead_anuncio(telefono: str, request: Request):
         SESIONES[tel] = sesion_pre
 
     primer_mensaje = body.get("mensaje", "Hola, me interesa la propiedad que vi en el anuncio")
-    threading.Thread(target=_procesar, args=(tel, primer_mensaje, referral), daemon=True).start()
+    threading.Thread(target=_procesar_safe, args=(tel, primer_mensaje, referral), daemon=True).start()
     return {
         "status": "processing",
         "telefono": tel,
