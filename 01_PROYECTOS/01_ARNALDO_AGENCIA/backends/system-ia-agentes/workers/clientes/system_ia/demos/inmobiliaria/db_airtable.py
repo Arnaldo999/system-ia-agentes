@@ -58,6 +58,7 @@ AIRTABLE_BASE_ID = (
 )
 TABLE_CLIENTES = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_CLIENTES", "")
 TABLE_PROPS    = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_PROPS", "")
+TABLE_SESSIONS = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_SESSIONS", "BotSessions")
 
 AT_HEADERS = {
     "Authorization": f"Bearer {AIRTABLE_TOKEN}",
@@ -472,34 +473,120 @@ def get_all_propiedades() -> list[dict]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# BOT SESSIONS — almacenadas in-memory en el worker (no en Airtable)
+# BOT SESSIONS — persistencia en tabla Airtable BotSessions
 # ═══════════════════════════════════════════════════════════════════════════════
-# El worker Robert persiste sesiones bot en una tabla PG dedicada `bot_sessions`.
-# Para Mica usamos almacenamiento in-memory (dict SESIONES en el worker).
-# Razon: las sesiones BANT son cortas (~5 min), si el worker reinicia el lead
-# vuelve a arrancar el flow desde cero o desde get_lead_by_telefono que SI lee
-# datos persistentes (nombre, ciudad, score) de la tabla Clientes.
-# Si en el futuro Mica quiere persistencia real, crear una tabla Sessiones en
-# Airtable y reemplazar estos no-op con PATCH/POST a esa tabla.
+# Campos esperados: Telefono (singleLineText, PK de hecho), Sesion (longText JSON),
+# Historial (longText JSON), Updated (datetime).
+# El worker usa RAM como cache primario; estas funciones corren en background
+# threads para no bloquear el hilo del webhook.
+
+import json as _json
+
+def _sessions_url() -> str:
+    return f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{TABLE_SESSIONS}"
+
+
+def _buscar_session_raw(telefono: str) -> Optional[dict]:
+    if not _available():
+        return None
+    tel = _clean_phone(telefono)
+    if not tel:
+        return None
+    try:
+        r = requests.get(
+            _sessions_url(),
+            headers=AT_HEADERS,
+            params={"filterByFormula": f"{{Telefono}}='{tel}'", "maxRecords": 1},
+            timeout=10,
+        )
+        if r.status_code != 200:
+            return None
+        recs = r.json().get("records", [])
+        return recs[0] if recs else None
+    except Exception as e:
+        logger.warning("[MICA-SESSION] buscar error: %s", e)
+        return None
+
 
 def setup_bot_sessions() -> None:
-    """No-op para Mica (sesiones in-memory). Se mantiene para compat con worker Robert."""
-    pass
+    """Verifica que la tabla BotSessions exista (Airtable la crea manualmente).
+    No lanza excepcion si no existe — solo loguea."""
+    if not _available():
+        return
+    try:
+        r = requests.get(_sessions_url(), headers=AT_HEADERS, params={"maxRecords": 1}, timeout=8)
+        if r.status_code == 404:
+            logger.warning("[MICA-SESSION] tabla '%s' no existe en base %s — crear manualmente con campos: Telefono, Sesion, Historial, Updated", TABLE_SESSIONS, AIRTABLE_BASE_ID)
+        elif r.status_code == 200:
+            logger.info("[MICA-SESSION] tabla '%s' OK", TABLE_SESSIONS)
+    except Exception as e:
+        logger.warning("[MICA-SESSION] setup error: %s", e)
 
 
 def get_bot_session(telefono: str) -> dict:
-    """Retorna {} (siempre arranca de cero o usa get_lead_by_telefono para recovery)."""
-    return {}
+    """Lee sesion + historial desde Airtable. Retorna {} si no existe."""
+    rec = _buscar_session_raw(telefono)
+    if not rec:
+        return {}
+    fields = rec.get("fields", {})
+    try:
+        sesion = _json.loads(fields.get("Sesion", "") or "{}")
+    except Exception:
+        sesion = {}
+    try:
+        historial = _json.loads(fields.get("Historial", "") or "[]")
+    except Exception:
+        historial = []
+    return {"sesion": sesion, "historial": historial}
 
 
 def save_bot_session(telefono: str, sesion: dict, historial: list) -> None:
-    """No-op (sesion vive en SESIONES dict del worker, no se persiste en Airtable)."""
-    pass
+    """Guarda o actualiza la sesion en Airtable. Upsert por Telefono."""
+    if not _available():
+        return
+    tel = _clean_phone(telefono)
+    if not tel:
+        return
+    try:
+        payload_fields = {
+            "Telefono": tel,
+            "Sesion": _json.dumps(sesion, ensure_ascii=False, default=str)[:99000],
+            "Historial": _json.dumps(historial, ensure_ascii=False, default=str)[:99000],
+            "Updated": datetime.now(timezone.utc).isoformat(),
+        }
+        existing = _buscar_session_raw(tel)
+        if existing:
+            rid = existing["id"]
+            requests.patch(
+                f"{_sessions_url()}/{rid}",
+                headers=AT_HEADERS,
+                json={"fields": payload_fields},
+                timeout=10,
+            )
+        else:
+            requests.post(
+                _sessions_url(),
+                headers=AT_HEADERS,
+                json={"fields": payload_fields},
+                timeout=10,
+            )
+    except Exception as e:
+        logger.warning("[MICA-SESSION] save error tel=%s: %s", tel[-4:], e)
 
 
 def delete_bot_session(telefono: str) -> None:
-    """No-op (limpieza es responsabilidad del SESIONES dict del worker)."""
-    pass
+    """Borra el registro de sesion. No-op si no existe."""
+    if not _available():
+        return
+    tel = _clean_phone(telefono)
+    if not tel:
+        return
+    try:
+        existing = _buscar_session_raw(tel)
+        if existing:
+            requests.delete(f"{_sessions_url()}/{existing['id']}", headers=AT_HEADERS, timeout=10)
+    except Exception as e:
+        logger.warning("[MICA-SESSION] delete error tel=%s: %s", tel[-4:], e)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
