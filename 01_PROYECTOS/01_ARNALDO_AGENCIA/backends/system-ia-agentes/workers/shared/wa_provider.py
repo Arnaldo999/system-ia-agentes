@@ -415,6 +415,15 @@ def _parse_evolution(body: dict) -> Optional[dict]:
             return None
 
         remote_jid = key.get("remoteJid", "")
+        # WhatsApp privacy update 2025-2026: si el JID viene como '<id>@lid'
+        # (Linked ID), el telefono REAL viene en `remoteJidAlt`. Ej:
+        #   key.remoteJid = "199406758436896@lid"
+        #   key.remoteJidAlt = "5493765384843@s.whatsapp.net"  ← este es el de verdad
+        # Ver tambien: addressingMode == "lid".
+        if "@lid" in remote_jid:
+            jid_alt = key.get("remoteJidAlt", "") or ""
+            if jid_alt and "@s.whatsapp.net" in jid_alt:
+                remote_jid = jid_alt
         telefono = _clean_phone(re.sub(r"@.*", "", remote_jid))
 
         message = data.get("message", {}) or {}
