@@ -2204,13 +2204,29 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
     _LEAK_KEYS = ("NOMBRE", "CIUDAD", "OBJETIVO", "TIPO", "ZONA", "PRESUPUESTO",
                   "URGENCIA", "AUTORIDAD", "FORMA_PAGO", "ACCION", "SCORE",
                   "MOTIVO", "SUBNICHE", "EMAIL")
+    # Extraer ACCION tambien si aparece entre corchetes/parentesis (leak comun del LLM)
+    # Ej: "[ACCION: mostrar_props]", "(ACCION: agendar)", "**ACCION**: cerrar_curioso"
+    for _m in re.finditer(r"[\[\(]?\s*\*?\*?\s*ACCION\s*\*?\*?\s*:\s*([a-z_]+)\s*[\]\)]?", respuesta_llm, re.IGNORECASE):
+        val = _m.group(1).strip().lower()
+        if val and "accion" not in acciones:
+            acciones["accion"] = val
+    # Y limpiar esos patrones del texto visible (los corchetes/parentesis tambien)
+    respuesta_llm_clean = re.sub(
+        r"[\[\(]?\s*\*?\*?\s*ACCION\s*\*?\*?\s*:\s*[a-z_]+\s*[\]\)]?",
+        "",
+        respuesta_llm,
+        flags=re.IGNORECASE,
+    )
+    lineas = respuesta_llm_clean.strip().split("\n")
+
     for linea in lineas:
         # Headers tipo "EXTRACCIÓN DE DATOS:" o "===" → ocultar
         if _es_header_interno(linea):
             continue
         # Líneas que empiezan con una KEY interna (leak del prompt) → ocultar
         linea_strip = linea.strip()
-        linea_upper = linea_strip.upper()
+        # Quitar [ ( al inicio para detectar leak: "[ACCION: ..." "(NOMBRE: ..."
+        linea_upper = re.sub(r"^[\[\(\*\s]+", "", linea_strip).upper()
         if any(linea_upper.startswith(k) for k in _LEAK_KEYS):
             continue
         # Línea KEY: VALUE → extraer y ocultar
