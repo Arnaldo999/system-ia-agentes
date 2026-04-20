@@ -1,25 +1,25 @@
 # Roadmap System IA — Estado actual y próximos pasos
 
-> **Para**: Micaela Colmenares
-> **De**: Arnaldo (socio técnico)
+> **Entre socios**: Arnaldo (técnico) + Micaela (comercial)
 > **Fecha**: 20 de abril 2026
 
 ---
 
 ## 🎯 Resumen en 30 segundos
 
-Ya tenés **toda la infraestructura técnica** para empezar a vender bots de WhatsApp con IA a tus clientes. Hoy podés:
+Ya tenemos **toda la infraestructura técnica** de System IA lista para activar clientes nuevos. El flujo es:
 
-1. Mandarle a un prospecto el link del **brief** para que lo complete.
-2. Correr **un comando** para activarle el bot.
-3. Enviarle otro link para que se **conecte él mismo** en 1 minuto.
+1. Mica cierra la venta con el prospecto.
+2. El prospecto completa el **brief** online.
+3. Arnaldo corre **un comando** para activar todo.
+4. Se le envía al cliente un link para que se **conecte él mismo** en 1 minuto.
 
-Tu cliente termina con:
+Nuestro cliente termina con:
 - Un **bot en su WhatsApp** que responde con IA 24/7 y califica leads.
 - Un **CRM** donde ve todos los leads y propiedades.
 - **Chatwoot** para cuando quiera responder manualmente.
 
-Todo funcionando, sin que tengas que tocar nada técnico.
+Todo funcionando, sin fricciones técnicas para el cliente.
 
 ---
 
@@ -33,7 +33,7 @@ Todo funcionando, sin que tengas que tocar nada técnico.
 | **Página de conexión WhatsApp** | El cliente entra, ve su QR y escanea con su celular para conectar | [systemia-onboarding.vercel.app](https://systemia-onboarding.vercel.app) |
 | **Bot demo inmobiliaria** | Un bot funcionando que responde, califica leads BANT, busca propiedades y agenda citas con Cal.com | Número Demos conectado |
 | **CRM con IA** | Panel donde vos y el cliente ven leads, propiedades, citas y un chat de IA que contesta preguntas sobre sus datos | Vinculado al worker |
-| **Base de datos Airtable** | Donde viven todos los datos de los clientes (leads, propiedades, sesiones del bot, clientes de tu agencia) | `appA8QxIhBYYAHw0F` |
+| **Base de datos Airtable** | Donde viven todos los datos de nuestros clientes (leads, propiedades, sesiones del bot, clientes de la agencia) | `appA8QxIhBYYAHw0F` |
 | **Script de activación** | Un comando que al correrlo registra al cliente nuevo y te genera el mensaje listo para mandarle | `onboard_mica_cliente.py` |
 
 ### 🟡 EN PROGRESO (funciona pero manual)
@@ -73,9 +73,9 @@ El cliente completa:
 
 Al final descarga un archivo `mi-empresa.yaml` y te lo manda por WhatsApp.
 
-### 🚀 Paso 3 — Vos activás al cliente (1 comando, 30 segundos)
+### 🚀 Paso 3 — Arnaldo activa al cliente (1 comando, 30 segundos)
 
-Vos (o Arnaldo) corre:
+Arnaldo corre:
 ```bash
 python onboard_mica_cliente.py mi-empresa.yaml
 ```
@@ -173,7 +173,7 @@ Cuando hables con un prospecto, le estás ofreciendo:
 
 ---
 
-## 🚨 Cosas importantes que tenés que saber
+## 🚨 Cosas importantes que tenemos que tener presentes
 
 ### ✅ Lo que funciona sin problema
 - Bot respondiendo 24/7
@@ -186,7 +186,7 @@ Cuando hables con un prospecto, le estás ofreciendo:
 2. **El cliente conecta con QR** — en el futuro migramos a login oficial con Meta (API oficial). Por ahora funciona con QR escaneado desde el celular.
 3. **Crear inbox Chatwoot es manual** — tarda 2 minutos. Próxima fase: automático.
 
-### 🛡️ Sobre riesgo de baneo de WhatsApp (IMPORTANTE que lo sepa tu cliente)
+### 🛡️ Sobre riesgo de baneo de WhatsApp (IMPORTANTE que sepamos y comuniquemos al cliente)
 - Estamos usando **Evolution API** (no oficial pero muy usado en la industria)
 - Riesgo de baneo existe pero es **bajo si se usa bien**:
   - No enviar masivamente a contactos que no iniciaron conversación
@@ -196,9 +196,9 @@ Cuando hables con un prospecto, le estás ofreciendo:
 
 ---
 
-## 📦 Stack técnico (para que sepas qué decir si te preguntan)
+## 📦 Stack técnico (por si un cliente pregunta)
 
-No hace falta que lo entiendas, solo que lo tengas a mano:
+No hace falta entender cada pieza, solo tenerlo a mano:
 
 | Capa | Qué usamos |
 |---|---|
@@ -237,16 +237,16 @@ No hace falta que lo entiendas, solo que lo tengas a mano:
 
 ---
 
-## 📞 ¿Qué hacés ahora?
+## 📞 ¿Qué hacemos ahora?
 
 **Opción 1 — Probar el flujo completo con un cliente ficticio**:
-Hablá con Arnaldo, inventen un cliente de prueba, completen el brief, provisionen y vean los links funcionando.
+Nos juntamos, inventamos un cliente de prueba, completamos el brief juntos, activamos y vemos los links funcionando end-to-end.
 
-**Opción 2 — Mandar el link del brief a tu primer prospecto real**:
-El sistema ya está listo. Si tenés un cliente interesado, mandale `systemia-brief-form.vercel.app` y arrancá.
+**Opción 2 — Mandar el link del brief al primer prospecto real**:
+El sistema ya está listo. Si Mica tiene alguien interesado, le manda `systemia-brief-form.vercel.app` y arrancamos con ese.
 
 **Opción 3 — Armar la demo de ventas**:
-Grabá un video de 5 minutos con tu celular mostrando el bot + CRM + Chatwoot. Sube a un link público. Usalo en todas tus primeras reuniones.
+Grabamos un video de 5 minutos mostrando el bot + CRM + Chatwoot. Se sube a un link público. Se usa en todas las primeras reuniones para que el prospecto vea el producto antes de decidir.
 
 ---
 
