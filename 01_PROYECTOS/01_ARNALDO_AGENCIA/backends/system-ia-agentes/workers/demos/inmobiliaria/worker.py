@@ -310,7 +310,30 @@ def _norm_tel(tel: str) -> str:
     return "+" + re.sub(r'\D', '', tel)
 
 
+# Provider switch: si WHATSAPP_PROVIDER esta seteado (meta/evolution/ycloud),
+# delega al modulo compartido workers.shared.wa_provider. Si no, usa el codigo
+# YCloud hardcodeado original (comportamiento default del demo Arnaldo).
+# MENCION: el codigo Meta Graph vive en wa_provider.py — este worker queda
+# provider-agnostic. Para switchear, setear WHATSAPP_PROVIDER=meta en el deploy.
+try:
+    from workers.shared import wa_provider as _wa
+    _WA_SHARED_OK = True
+except Exception as _e:
+    _wa = None
+    _WA_SHARED_OK = False
+    print(f"[DEMO-INMO] wa_provider no disponible: {_e}")
+
+_WA_PROVIDER_OVERRIDE = os.environ.get("WHATSAPP_PROVIDER", "").lower().strip()
+
+
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
+    # Si hay override de provider, usar la capa unificada
+    if _WA_SHARED_OK and _WA_PROVIDER_OVERRIDE:
+        ok = _wa.send_text(telefono, mensaje)
+        if ok:
+            _cw_mirror_msg(telefono, mensaje, es_bot=True)
+        return ok
+    # Default: YCloud (comportamiento original)
     if not YCLOUD_API_KEY or not NUMERO_BOT:
         print(f"[DEMO] Sin key/número configurado. Mensaje:\n{mensaje}")
         return False
@@ -331,6 +354,8 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
 
 
 def _enviar_imagen(telefono: str, url_img: str, caption: str = "") -> bool:
+    if _WA_SHARED_OK and _WA_PROVIDER_OVERRIDE:
+        return _wa.send_image(telefono, url_img, caption)
     if not YCLOUD_API_KEY or not NUMERO_BOT or not url_img:
         return False
     try:
@@ -1252,6 +1277,22 @@ async def procesar_whatsapp(request: Request):
         body = await request.json()
     except Exception:
         return {"status": "error", "detalle": "body no es JSON válido"}
+
+    # Pre-parser unificado — soporta Meta Graph, Evolution y YCloud.
+    # Si WHATSAPP_PROVIDER esta seteado o el payload tiene forma de Meta/Evolution,
+    # el dict unificado se mapea a la forma que espera el parser legacy de abajo.
+    if _WA_SHARED_OK:
+        parsed = _wa.parse_incoming(body)
+        if parsed and parsed.get("provider") in ("meta", "evolution", "bridge"):
+            # Reescribimos body al formato YCloud-legacy que el resto del handler ya entiende
+            body = {
+                "whatsappInboundMessage": {
+                    "from": parsed["telefono"],
+                    "type": "text" if parsed["texto"] else parsed.get("tipo", "text"),
+                    "text": {"body": parsed["texto"]},
+                    "customerProfile": {"name": parsed.get("nombre", "")},
+                }
+            }
 
     msg      = body.get("whatsappInboundMessage") or body
     telefono = str(msg.get("from") or body.get("from") or body.get("telefono") or "")

@@ -432,8 +432,29 @@ def _transcribir_audio(data: dict, message: dict) -> str:
 AT_HEADERS = {"Authorization": f"Bearer {AIRTABLE_TOKEN}", "Content-Type": "application/json"}
 
 
-# ─── EVOLUTION API ────────────────────────────────────────────────────────────
+# ─── WHATSAPP (Evolution por default, switch via WHATSAPP_PROVIDER) ────────
+# Provider switch: si WHATSAPP_PROVIDER esta seteado delega al modulo compartido
+# workers.shared.wa_provider. Si no, usa Evolution API (comportamiento default Mica).
+# MENCION: el codigo Meta Graph vive en wa_provider.py — este worker queda
+# provider-agnostic. Para switchear a Meta (ej: cuando Mica migre a Tech Provider
+# propio o cuando Arnaldo use su nro test via Robert), setear WHATSAPP_PROVIDER=meta.
+try:
+    from workers.shared import wa_provider as _wa
+    _WA_SHARED_OK = True
+except Exception as _e:
+    _wa = None
+    _WA_SHARED_OK = False
+    print(f"[MICA-DEMO] wa_provider no disponible: {_e}")
+
+_WA_PROVIDER_OVERRIDE = os.environ.get("WHATSAPP_PROVIDER", "").lower().strip()
+
+
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
+    if _WA_SHARED_OK and _WA_PROVIDER_OVERRIDE:
+        ok = _wa.send_text(telefono, mensaje)
+        if ok:
+            _cw_mirror_msg(telefono, mensaje, es_bot=True)
+        return ok
     if not EVOLUTION_API_URL or not EVOLUTION_API_KEY:
         print(f"[MICA-EVO] Sin config. Msg: {mensaje[:80]}")
         return False
@@ -456,6 +477,8 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
 
 
 def _enviar_imagen(telefono: str, url_imagen: str, caption: str = "") -> bool:
+    if _WA_SHARED_OK and _WA_PROVIDER_OVERRIDE:
+        return _wa.send_image(telefono, url_imagen, caption)
     if not EVOLUTION_API_URL or not EVOLUTION_API_KEY or not url_imagen:
         return False
     try:
@@ -1708,13 +1731,31 @@ async def chatwoot_webhook(request: Request):
 # ─── ENDPOINT WEBHOOK ─────────────────────────────────────────────────────────
 @router.post("/whatsapp")
 async def webhook_whatsapp(request: Request):
-    """Recibe mensajes directamente desde Evolution API."""
+    """Recibe mensajes desde Evolution API (default) o Meta Graph (si
+    el payload lo indica). El parseo unificado vive en wa_provider."""
     try:
         body = await request.json()
     except Exception:
         return {"status": "error"}
 
-    # Evolution manda "MESSAGES_UPSERT" (uppercase) o "messages.upsert"
+    # Pre-parser unificado: si el payload es Meta Graph o bridge interno,
+    # lo procesamos por la capa compartida y salimos temprano.
+    if _WA_SHARED_OK:
+        parsed = _wa.parse_incoming(body)
+        if parsed and parsed.get("provider") in ("meta", "bridge"):
+            telefono_p = parsed["telefono"]
+            texto_p    = parsed["texto"]
+            if not telefono_p or not texto_p:
+                return {"status": "ignored", "reason": "meta-sin-texto"}
+            push_name_p = parsed.get("nombre", "")
+            if push_name_p and telefono_p not in SESIONES:
+                SESIONES[telefono_p] = {"nombre": push_name_p}
+            elif push_name_p and not SESIONES.get(telefono_p, {}).get("nombre"):
+                SESIONES.setdefault(telefono_p, {})["nombre"] = push_name_p
+            threading.Thread(target=_procesar, args=(telefono_p, texto_p), daemon=True).start()
+            return {"status": "processing", "telefono": telefono_p, "provider": parsed["provider"]}
+
+    # Default: Evolution API
     event = body.get("event", "").lower().replace("_", ".")
     if event and event != "messages.upsert":
         return {"status": "ignored", "event": event}
