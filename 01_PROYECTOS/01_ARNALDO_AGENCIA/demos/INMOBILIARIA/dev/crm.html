@@ -1519,8 +1519,8 @@ tailwind.config = {
 <div class="panel hidden" id="panel-loteos" style="padding:20px">
   <div class="flex items-center justify-between mb-4">
     <div>
-      <h2 class="text-xl font-bold">📍 Loteos</h2>
-      <p class="text-sm text-txt-2">Proyectos con mapa SVG interactivo</p>
+      <h2 class="text-xl font-bold">📍 Loteos & Mapas</h2>
+      <p class="text-sm text-txt-2">Cargá tus loteos y lotes individuales. Marcá vendidos o reservados con el cliente asignado.</p>
     </div>
     <button onclick="abrirModalLoteo()" class="btn-primary">+ Nuevo loteo</button>
   </div>
@@ -1788,6 +1788,9 @@ function nav(id, el) {
   if (panelEl) {
     panelEl.classList.add('active');
     panelEl.classList.remove('hidden');
+    // Resetear scroll al tope del panel activado
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    panelEl.scrollIntoView({ block: 'start', behavior: 'instant' });
   }
   if(el) el.classList.add('active');
   if(id==='chat') cargarResumenes();
