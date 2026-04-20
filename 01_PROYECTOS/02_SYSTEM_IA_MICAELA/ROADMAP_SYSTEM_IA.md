@@ -43,11 +43,11 @@ Todo funcionando, sin que tengas que tocar nada técnico.
 | **Crear inbox Chatwoot para cada cliente** | Hoy lo hacés a mano en Chatwoot (2 minutos). En la versión próxima lo va a hacer el script automáticamente. |
 | **Auditoría diaria del ecosistema Mica** | El sistema existe y corre cada mañana, pero faltan unos chequeos específicos tuyos. |
 
-### 🔮 FUTURO (cuando aprueben a Robert)
+### 🔮 FUTURO
 
 | Pieza | Cuándo |
 |---|---|
-| **Conexión WhatsApp oficial (sin QR)** | Cuando Meta apruebe a Robert como Tech Provider (2-10 días desde el 19 de abril). En ese momento, los clientes podrán conectar su WhatsApp con un login oficial Meta en vez de escanear QR. Más profesional, más estable, sin riesgo de baneo. |
+| **Conexión WhatsApp oficial (sin QR)** | Próximamente vamos a migrar a la API oficial de Meta. En ese momento, los clientes podrán conectar su WhatsApp con un login oficial Meta en vez de escanear QR. Más profesional, más estable, sin riesgo de baneo. |
 
 ---
 
@@ -183,7 +183,7 @@ Cuando hables con un prospecto, le estás ofreciendo:
 
 ### ⚠️ Limitaciones actuales (no bloqueantes)
 1. **Cada cliente nuevo requiere que Arnaldo corra un comando** — no es 100% self-service todavía. Próxima fase: form que provisiona solo.
-2. **El cliente conecta con QR** — hasta que Robert sea aprobado como Tech Provider (2-10 días más). Después será login oficial con Meta.
+2. **El cliente conecta con QR** — en el futuro migramos a login oficial con Meta (API oficial). Por ahora funciona con QR escaneado desde el celular.
 3. **Crear inbox Chatwoot es manual** — tarda 2 minutos. Próxima fase: automático.
 
 ### 🛡️ Sobre riesgo de baneo de WhatsApp (IMPORTANTE que lo sepa tu cliente)
@@ -192,7 +192,7 @@ Cuando hables con un prospecto, le estás ofreciendo:
   - No enviar masivamente a contactos que no iniciaron conversación
   - No usar un número personal de WhatsApp (mejor crear uno nuevo solo para el bot)
   - El bot responde SOLO a mensajes entrantes (no envía primero)
-- Cuando Robert sea aprobado, migramos a Tech Provider Meta oficial y **desaparece el riesgo**.
+- Más adelante migramos a la API oficial de Meta y **desaparece el riesgo**.
 
 ---
 
@@ -219,18 +219,16 @@ No hace falta que lo entiendas, solo que lo tengas a mano:
 ### Semana próxima (fase 2C)
 - [ ] Chatwoot auto-provision (crear inbox automático al activar cliente nuevo)
 - [ ] Auditor específico de ecosistema Mica (alertas dedicadas)
-- [ ] Form dual: cuando Robert sea aprobado, el mismo form detecta si el cliente va por Evolution o Tech Provider
+- [ ] Form dual preparado para migrar a API oficial Meta
 
-### Cuando aprueben a Robert (en 2-10 días)
-- [ ] Migrar clientes Mica existentes a Tech Provider Meta (opcional, no obligatorio)
-- [ ] Clientes nuevos van directo a Tech Provider
-- [ ] Desaparece el paso del QR — login oficial Meta en 1 click
-
-### Mediano plazo (1-3 meses)
-- [ ] Mica se registra como Tech Provider propio (independiente de Robert) — opcional
+### Próximas semanas
+- [ ] Migración a API oficial Meta (sin QR, login oficial)
 - [ ] Plantillas de bot por vertical (inmobiliaria, gastronomía, automotriz, salud)
 - [ ] Dashboard agencia: Mica ve todos sus clientes en un solo panel
+
+### Mediano plazo (1-3 meses)
 - [ ] Facturación automatizada por cliente
+- [ ] Integración con más herramientas (Google Calendar, Notion)
 
 ### Largo plazo (6-12 meses)
 - [ ] Expansión a otros países de LATAM
