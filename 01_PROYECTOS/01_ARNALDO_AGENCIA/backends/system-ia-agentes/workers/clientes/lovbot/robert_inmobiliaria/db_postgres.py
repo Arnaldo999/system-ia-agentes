@@ -1016,12 +1016,90 @@ def get_lotes_mapa(loteo_id: int = None):
     except Exception as e:
         return {"error": str(e)}
 
+def _recalc_contadores_loteo(loteo_id: int):
+    """Recalcula lotes_disponibles/reservados/vendidos en la tabla loteos.
+
+    Se ejecuta luego de crear/editar/eliminar un lote_mapa para mantener
+    los contadores sincronizados con el estado real de lotes_mapa.
+    """
+    if not _available() or not loteo_id:
+        return
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE loteos l SET
+              lotes_disponibles = COALESCE(s.disp, 0),
+              lotes_reservados  = COALESCE(s.res, 0),
+              lotes_vendidos    = COALESCE(s.vend, 0),
+              updated_at        = CURRENT_TIMESTAMP
+            FROM (
+              SELECT
+                COUNT(*) FILTER (WHERE estado='disponible') AS disp,
+                COUNT(*) FILTER (WHERE estado='reservado')  AS res,
+                COUNT(*) FILTER (WHERE estado='vendido')    AS vend
+              FROM lotes_mapa
+              WHERE tenant_slug=%s AND loteo_id=%s
+            ) s
+            WHERE l.id=%s AND l.tenant_slug=%s
+            """,
+            (TENANT, loteo_id, loteo_id, TENANT),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"[DB] Error _recalc_contadores_loteo({loteo_id}): {e}")
+
+
 def create_lote_mapa(campos: dict):
-    return _crud_generico("lotes_mapa", "create", campos=campos)
+    loteo_id = campos.get("loteo_id")
+    result = _crud_generico("lotes_mapa", "create", campos=campos)
+    if result.get("ok") and loteo_id:
+        _recalc_contadores_loteo(int(loteo_id))
+    return result
+
 def update_lote_mapa(record_id: int, campos: dict):
-    return _crud_generico("lotes_mapa", "update", campos=campos, record_id=record_id)
+    result = _crud_generico("lotes_mapa", "update", campos=campos, record_id=record_id)
+    # Buscar loteo_id del registro (puede venir en campos o consultarlo)
+    loteo_id = campos.get("loteo_id")
+    if not loteo_id:
+        try:
+            conn = _conn()
+            cur = conn.cursor()
+            cur.execute("SELECT loteo_id FROM lotes_mapa WHERE id=%s AND tenant_slug=%s",
+                        (record_id, TENANT))
+            row = cur.fetchone()
+            if row:
+                loteo_id = row[0]
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
+    if loteo_id:
+        _recalc_contadores_loteo(int(loteo_id))
+    return result
+
 def delete_lote_mapa(record_id: int):
-    return _crud_generico("lotes_mapa", "delete", record_id=record_id)
+    # Consultar loteo_id antes de eliminar
+    loteo_id = None
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("SELECT loteo_id FROM lotes_mapa WHERE id=%s AND tenant_slug=%s",
+                    (record_id, TENANT))
+        row = cur.fetchone()
+        if row:
+            loteo_id = row[0]
+        cur.close()
+        conn.close()
+    except Exception:
+        pass
+    result = _crud_generico("lotes_mapa", "delete", record_id=record_id)
+    if loteo_id:
+        _recalc_contadores_loteo(int(loteo_id))
+    return result
 
 
 # ── Contratos (Sprint 6) ────────────────────────────────────────────────────

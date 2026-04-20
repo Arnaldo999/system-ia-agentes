@@ -1528,30 +1528,65 @@ tailwind.config = {
 </div>
 
 <div class="modal-bg hidden" id="modalLoteo">
-  <div class="modal" style="max-width:500px">
+  <div class="modal" style="max-width:520px">
     <button class="mc" onclick="document.getElementById('modalLoteo').classList.add('hidden')">✕</button>
     <h3 class="text-lg font-bold mb-4">📍 Loteo</h3>
     <input type="hidden" id="loteoId"/>
+    <div class="mb-3"><label class="text-xs text-txt-2">Nombre del loteo</label><input id="loteoNombre" class="w-full p-2 bg-surface-alt border border-brd rounded" placeholder="San Ignacio Golf & Resort"/></div>
     <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Nombre</label><input id="loteoNombre" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">Slug (URL)</label><input id="loteoSlug" class="w-full p-2 bg-surface-alt border border-brd rounded" placeholder="san-ignacio"/></div>
+      <div><label class="text-xs text-txt-2">Cantidad de lotes</label><input id="loteoTotal" type="number" min="1" max="500" class="w-full p-2 bg-surface-alt border border-brd rounded" placeholder="48"/></div>
+      <div><label class="text-xs text-txt-2">Ciudad</label><input id="loteoCiudad" class="w-full p-2 bg-surface-alt border border-brd rounded" placeholder="San Ignacio"/></div>
     </div>
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div><label class="text-xs text-txt-2">Ubicación</label><input id="loteoUbicacion" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
-      <div><label class="text-xs text-txt-2">Ciudad</label><input id="loteoCiudad" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
-    </div>
-    <div class="mb-3"><label class="text-xs text-txt-2">URL del mapa SVG (Cloudinary)</label><input id="loteoMapa" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Precio desde (USD)</label><input id="loteoPrecio" type="number" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
-    <div class="mb-3"><label class="text-xs text-txt-2">Descripción</label><textarea id="loteoDescripcion" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2"></textarea></div>
-    <button onclick="guardarLoteo()" class="w-full btn-primary">💾 Guardar</button>
+    <div class="mb-3"><label class="text-xs text-txt-2">Ubicación o URL de Google Maps</label><input id="loteoUbicacion" class="w-full p-2 bg-surface-alt border border-brd rounded" placeholder="Av. Principal 123 o https://maps.google.com/..."/></div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Descripción (opcional)</label><textarea id="loteoDescripcion" class="w-full p-2 bg-surface-alt border border-brd rounded" rows="2" placeholder="Club de campo premium con amenities..."></textarea></div>
+    <input type="hidden" id="loteoSlug"/>
+    <button onclick="guardarLoteo()" class="w-full btn-primary">💾 Guardar loteo</button>
   </div>
 </div>
 
 <div class="modal-bg hidden" id="modalMapa">
-  <div class="modal" style="max-width:900px">
+  <div class="modal" style="max-width:1100px">
     <button class="mc" onclick="document.getElementById('modalMapa').classList.add('hidden')">✕</button>
-    <h3 class="text-lg font-bold mb-4" id="mapaTitulo">🗺️ Mapa</h3>
+    <div class="flex items-start justify-between mb-4 gap-3">
+      <div class="flex-1">
+        <h3 class="text-lg font-bold" id="mapaTitulo">🗺️ Mapa</h3>
+        <div id="mapaSubtitulo" class="text-xs text-txt-2 mt-1"></div>
+      </div>
+      <button onclick="abrirModalLoteoDesdeMapa()" class="text-xs px-3 py-2 bg-surface-alt border border-brd rounded">✏️ Editar loteo</button>
+    </div>
     <div id="mapaContenido"></div>
+  </div>
+</div>
+
+<div class="modal-bg hidden" id="modalLote">
+  <div class="modal" style="max-width:480px">
+    <button class="mc" onclick="document.getElementById('modalLote').classList.add('hidden')">✕</button>
+    <h3 class="text-lg font-bold mb-1" id="loteTitulo">🏷️ Lote</h3>
+    <div id="loteSubtitulo" class="text-xs text-txt-2 mb-4"></div>
+    <input type="hidden" id="loteId"/>
+    <input type="hidden" id="loteLoteoId"/>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs text-txt-2">Nro de lote</label><input id="loteNumero" class="w-full p-2 bg-surface-alt border border-brd rounded" placeholder="Mz17-L5"/></div>
+      <div><label class="text-xs text-txt-2">Precio (USD)</label><input id="lotePrecio" type="number" step="0.01" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
+    </div>
+    <div class="mb-3"><label class="text-xs text-txt-2">Estado</label>
+      <select id="loteEstado" class="w-full p-2 bg-surface-alt border border-brd rounded" onchange="toggleClienteLote()">
+        <option value="disponible">🟢 Disponible</option>
+        <option value="reservado">🟡 Reservado</option>
+        <option value="vendido">🔴 Vendido</option>
+      </select>
+    </div>
+    <div class="mb-3 hidden" id="loteClienteWrap">
+      <label class="text-xs text-txt-2">Cliente asignado</label>
+      <select id="loteCliente" class="w-full p-2 bg-surface-alt border border-brd rounded">
+        <option value="">— Sin asignar —</option>
+      </select>
+      <div id="loteClienteInfo" class="mt-3 p-3 bg-surface-alt rounded text-xs hidden"></div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="guardarLote()" class="flex-1 btn-primary">💾 Guardar</button>
+      <button onclick="eliminarLote()" id="btnEliminarLote" class="px-3 py-2 bg-red-500/20 text-red-400 rounded hidden">🗑 Eliminar</button>
+    </div>
   </div>
 </div>
 

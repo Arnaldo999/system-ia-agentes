@@ -1,7 +1,50 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-20 07:30
+Fecha: 2026-04-20 16:00
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## 🎯 Próxima sesión — Módulo Loteos self-service CRM Robert
+
+**Objetivo**: que el cliente de Robert (inmobiliaria) pueda cargar sus propios loteos y lotes sin depender de Robert/Arnaldo.
+
+### Especificación acordada 2026-04-20 con Arnaldo
+
+**Filosofía**: simple, sin drag&drop, sin calibración de pins, sin upload de planos reales.
+
+**Estructura visual por loteo**:
+- Header editable: **nombre del loteo**, **cantidad de lotes**, **lugar** o **URL Google Maps** (todos editables)
+- Grilla uniforme de tarjetitas (ej: 6×8 si son 48 lotes). No es plano real — es cuadrícula estándar visual.
+
+**Estados de tarjeta (visual + acción)**:
+| Estado | Visual | Click |
+|--------|--------|-------|
+| Vacío | Gris + ícono **+** | Modal "Agregar lote" (nro_lote, precio, estado) |
+| Libre | Verde + nro_lote | Modal edición (precio, cambiar estado) |
+| Reservado | Amarillo + nro_lote | Modal con datos del cliente asignado |
+| Vendido | Rojo + nro_lote | Modal con datos del cliente asignado |
+
+**Sincronización con `clientes_activos`**:
+- Al marcar lote como Reservado/Vendido → dropdown selecciona cliente de tabla `clientes_activos`
+- Se guarda `lotes_mapa.cliente_id` (FK ya existe)
+- Click sobre lote vendido/reservado → muestra info del cliente: nombre, telefono, estado_pago, cuotas_pagadas/total, proximo_vencimiento
+
+**Lo que NO se hace (descartado explícitamente)**:
+- Upload de planos reales a Cloudinary
+- Calibración drag&drop de pins
+- Mapas SVG custom por loteo
+
+**Implementación propuesta**:
+1. UI grilla responsive en el CRM (`demos/INMOBILIARIA/dev/js/panel-loteos.js`)
+2. Modales "Agregar/Editar lote" → endpoints CRUD PostgreSQL ya existentes
+3. Dropdown clientes en modal → GET `/crm/clientes` + PATCH `lotes_mapa.cliente_id`
+4. Trigger o endpoint que actualice contadores `loteos.lotes_disponibles/reservados/vendidos`
+
+**Base de datos**: todo lo necesario ya existe en PG `robert_crm`:
+- `loteos` (id, nombre, slug, ubicacion, total_lotes, contadores)
+- `lotes_mapa` (loteo_id, numero_lote, estado, precio, cliente_id FK)
+- `clientes_activos` (datos del cliente)
+
+
 
 ## Sesión 2026-04-20 — Número test Tech Provider + Fase 1 ecosistema Mica
 
