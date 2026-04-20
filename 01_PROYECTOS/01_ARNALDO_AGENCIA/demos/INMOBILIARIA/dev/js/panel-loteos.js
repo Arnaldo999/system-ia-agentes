@@ -16,10 +16,13 @@
   }
 
   function calcularGrilla(total) {
-    // Devuelve { cols, rows } lo más cuadrado posible para `total` lotes
+    // Devuelve { cols, rows } priorizando que quepa en una sola pantalla.
+    // Para totales chicos, forma cuadrada. Para totales grandes, aumenta cols.
     const t = parseInt(total) || 0;
     if (t <= 0) return { cols: 0, rows: 0 };
-    const cols = Math.ceil(Math.sqrt(t));
+    // Tope de columnas por breakpoint visual: 8 (móvil/chico) / 12 (medio) / 16 (grande)
+    const maxCols = t <= 25 ? 5 : t <= 64 ? 8 : t <= 144 ? 12 : 16;
+    const cols = Math.min(Math.ceil(Math.sqrt(t)), maxCols);
     const rows = Math.ceil(t / cols);
     return { cols, rows };
   }
@@ -219,15 +222,12 @@
         const color = lote.estado === 'vendido' ? 'bg-red-500/80 hover:bg-red-500 border-red-400'
                    : lote.estado === 'reservado' ? 'bg-yellow-500/80 hover:bg-yellow-500 border-yellow-400'
                    : 'bg-green-500/80 hover:bg-green-500 border-green-400';
-        const icono = lote.estado === 'vendido' ? '🔴' : lote.estado === 'reservado' ? '🟡' : '🟢';
-        tarjetas += `<button onclick="abrirModalLote(${lote.id}, ${i})" class="relative aspect-square ${color} border-2 text-white rounded-lg transition font-bold flex flex-col items-center justify-center gap-1 p-1">
-          <div class="text-xs leading-none">${icono}</div>
-          <div class="text-sm leading-tight truncate max-w-full" title="${lote.numero_lote}">${lote.numero_lote}</div>
+        tarjetas += `<button onclick="abrirModalLote(${lote.id}, ${i})" class="relative aspect-square ${color} border text-white rounded transition font-semibold flex items-center justify-center p-0.5" title="Lote ${lote.numero_lote} — ${lote.estado}">
+          <span class="text-[11px] leading-tight truncate max-w-full">${lote.numero_lote}</span>
         </button>`;
       } else {
-        tarjetas += `<button onclick="abrirModalLote(null, ${i})" class="relative aspect-square bg-surface-alt/50 hover:bg-surface-alt border-2 border-dashed border-brd hover:border-primary text-txt-2 hover:text-primary rounded-lg transition flex flex-col items-center justify-center gap-1">
-          <div class="text-2xl leading-none">+</div>
-          <div class="text-[10px] leading-none opacity-70">#${i}</div>
+        tarjetas += `<button onclick="abrirModalLote(null, ${i})" class="relative aspect-square bg-surface-alt/40 hover:bg-surface-alt border border-dashed border-brd hover:border-primary text-txt-2 hover:text-primary rounded transition flex items-center justify-center" title="Posición #${i}">
+          <span class="text-base leading-none">+</span>
         </button>`;
       }
     }
@@ -240,8 +240,8 @@
         <span class="flex items-center gap-2"><span class="w-4 h-4 bg-red-500 rounded"></span> Vendidos: ${counts.vendidos}</span>
         <span class="flex items-center gap-2 text-txt-2"><span class="w-4 h-4 border-2 border-dashed border-brd rounded"></span> Sin configurar</span>
       </div>
-      <div class="bg-surface-alt/30 border border-brd rounded-lg p-4 overflow-auto" style="max-height:70vh">
-        <div class="grid gap-2" style="grid-template-columns: repeat(${cols}, minmax(72px, 1fr))">
+      <div class="bg-surface-alt/30 border border-brd rounded-lg p-3 overflow-auto" style="max-height:72vh">
+        <div class="grid gap-1.5" style="grid-template-columns: repeat(${cols}, minmax(44px, 1fr))">
           ${tarjetas}
         </div>
       </div>
