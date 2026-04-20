@@ -983,7 +983,17 @@ tailwind.config = {
           <div class="mf"><label>Nombre completo *</label><input id="ac-nombre" class="mi" placeholder="Ej: Juan Pérez"></div>
           <div class="mf"><label>Teléfono</label><input id="ac-tel" class="mi" placeholder="+52 55 1234-5678"></div>
           <div class="mf"><label>Email</label><input id="ac-email" class="mi" type="email" placeholder="juan@email.com"></div>
-          <div class="mf"><label>Propiedad</label><input id="ac-prop" class="mi" placeholder="Ej: Lote 12 - Fracc. Norte"></div>
+          <div class="mf">
+            <label>Propiedad asignada</label>
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:6px">
+              <select id="ac-prop-loteo" class="mi" onchange="actualizarPropiedadCombinada()">
+                <option value="">— Seleccionar loteo —</option>
+              </select>
+              <input id="ac-prop-lote" class="mi" placeholder="L-5" oninput="actualizarPropiedadCombinada()" style="text-transform:uppercase">
+            </div>
+            <input id="ac-prop" class="mi" placeholder="Se arma automático desde loteo + nro lote" style="font-size:12px;color:var(--text2);background:var(--surface2)">
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">💡 Al elegir loteo y lote, el campo de abajo se completa automáticamente y sincroniza con la grilla de Loteos.</div>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="mf"><label>Cuotas totales</label><input id="ac-total" class="mi" type="number" min="1" placeholder="24"></div>
             <div class="mf"><label>Cuotas pagadas</label><input id="ac-pagadas" class="mi" type="number" min="0" placeholder="3"></div>
@@ -4013,6 +4023,49 @@ function _renderTablaActivos(records) {
   }).join('');
 }
 
+// ── Helpers sync Propiedad ↔ Loteos ────────────────────────────────────────
+// El campo "Propiedad" se compone de: "{nombre loteo} · L-N"
+// Estos helpers lo parten en dropdown (loteo) + input (lote) y viceversa.
+
+async function cargarDropdownLoteosPropiedad(propiedadActual) {
+  const sel = document.getElementById('ac-prop-loteo');
+  const inpLote = document.getElementById('ac-prop-lote');
+  if (!sel) return;
+  try {
+    const data = await fetch(`${API_BASE}/crm/loteos`).then(r => r.json());
+    const loteos = data.items || [];
+    const opciones = loteos.map(l => `<option value="${l.nombre}">${l.nombre}</option>`).join('');
+    sel.innerHTML = `<option value="">— Sin asignar (texto libre) —</option>${opciones}`;
+    // Intentar parsear propiedad actual en formato "loteo · L-N"
+    if (propiedadActual && propiedadActual.includes('·')) {
+      const parts = propiedadActual.split('·').map(s => s.trim());
+      if (parts.length === 2) {
+        sel.value = parts[0];
+        inpLote.value = parts[1];
+        return;
+      }
+    }
+    sel.value = '';
+    inpLote.value = '';
+  } catch (e) {
+    console.error('[CLIENTES-ACTIVOS] Error cargando loteos', e);
+  }
+}
+
+function actualizarPropiedadCombinada() {
+  const loteo = document.getElementById('ac-prop-loteo').value;
+  const lote = document.getElementById('ac-prop-lote').value.trim().toUpperCase();
+  const inpProp = document.getElementById('ac-prop');
+  if (loteo && lote) {
+    // Normalizar: si escribió solo "5", convertir a "L-5"
+    const loteNorm = /^\d+$/.test(lote) ? `L-${lote}` : lote;
+    inpProp.value = `${loteo} · ${loteNorm}`;
+  } else if (loteo && !lote) {
+    inpProp.value = loteo;
+  }
+  // Si no hay loteo seleccionado, dejamos que el usuario escriba libre en ac-prop
+}
+
 function abrirModalActivo(id) {
   const modal = document.getElementById('modalActivo');
   const monedaLbl = document.getElementById('ac-moneda-lbl');
@@ -4032,11 +4085,14 @@ function abrirModalActivo(id) {
     document.getElementById('ac-venc').value    = r.Proximo_Vencimiento || '';
     document.getElementById('ac-monto').value   = r.Monto_Cuota || '';
     document.getElementById('ac-notas').value   = r.Notas || '';
+    cargarDropdownLoteosPropiedad(r.Propiedad || r.Tipo_Propiedad || '');
   } else {
     document.getElementById('modalActivoTitle').textContent = '➕ Nuevo Cliente Activo';
     document.getElementById('activoId').value = '';
     ['ac-nombre','ac-tel','ac-email','ac-prop','ac-total','ac-pagadas','ac-venc','ac-monto','ac-notas']
       .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    document.getElementById('ac-prop-lote').value = '';
+    cargarDropdownLoteosPropiedad('');
   }
   modal.style.display = 'flex';
 }
@@ -4050,6 +4106,9 @@ async function guardarActivo() {
   const id = document.getElementById('activoId').value;
   const nombre = document.getElementById('ac-nombre').value.trim();
   if(!nombre) { alert('El nombre es obligatorio'); return; }
+
+  // Re-sincronizar ac-prop con loteo+lote por si cambió
+  actualizarPropiedadCombinada();
 
   const fields = {
     Nombre:              nombre,
