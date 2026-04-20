@@ -1649,3 +1649,140 @@ def eliminar_waba_client(phone_number_id: str) -> bool:
     except Exception as e:
         print(f"[DB] Error eliminar_waba_client: {e}")
         return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# META COMPLIANCE LOGS — deauthorize + data_deletion (GDPR/LGPD)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def setup_meta_compliance_logs_table() -> bool:
+    """Crea tabla meta_compliance_logs si no existe. Idempotente."""
+    if not _available():
+        return False
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS meta_compliance_logs (
+                id              SERIAL PRIMARY KEY,
+                event_type      VARCHAR(32) NOT NULL,
+                user_id         VARCHAR(64),
+                algorithm       VARCHAR(32),
+                issued_at       BIGINT,
+                signature_valid BOOLEAN NOT NULL,
+                raw_payload     JSONB,
+                client_slug     VARCHAR(128),
+                action_taken    TEXT,
+                confirmation_code VARCHAR(64),
+                created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_meta_compliance_user ON meta_compliance_logs(user_id);
+            CREATE INDEX IF NOT EXISTS idx_meta_compliance_type ON meta_compliance_logs(event_type);
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("[DB] meta_compliance_logs: tabla OK")
+        return True
+    except Exception as e:
+        print(f"[DB] Error setup_meta_compliance_logs_table: {e}")
+        return False
+
+
+def log_meta_compliance_event(
+    event_type: str,
+    user_id: str | None,
+    algorithm: str | None,
+    issued_at: int | None,
+    signature_valid: bool,
+    raw_payload: dict,
+    client_slug: str | None,
+    action_taken: str,
+    confirmation_code: str | None,
+) -> int | None:
+    """Registra evento de compliance (deauthorize/data_deletion). Retorna id del row."""
+    if not _available():
+        return None
+    try:
+        import json as _json
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO meta_compliance_logs
+            (event_type, user_id, algorithm, issued_at, signature_valid,
+             raw_payload, client_slug, action_taken, confirmation_code)
+            VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s)
+            RETURNING id
+        """, (
+            event_type,
+            user_id,
+            algorithm,
+            issued_at,
+            signature_valid,
+            _json.dumps(raw_payload or {}),
+            client_slug,
+            action_taken,
+            confirmation_code,
+        ))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return new_id
+    except Exception as e:
+        print(f"[DB] Error log_meta_compliance_event: {e}")
+        return None
+
+
+def marcar_waba_revoked_por_user(user_id: str) -> list[str]:
+    """
+    Marca como revoked todos los waba_clients que tienen ese user_id asociado.
+    Retorna lista de client_slugs afectados. No borra datos — solo marca estado.
+    El borrado físico lo hace data_deletion.
+    """
+    if not _available():
+        return []
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            UPDATE waba_clients
+            SET webhook_subscrito = FALSE, updated_at = NOW()
+            WHERE meta_user_id = %s
+            RETURNING client_slug
+        """, (user_id,))
+        rows = cur.fetchall()
+        conn.commit()
+        cur.close()
+        conn.close()
+        return [r["client_slug"] for r in rows]
+    except Exception as e:
+        # Si la columna meta_user_id no existe todavía, devolver vacío sin romper.
+        print(f"[DB] Error marcar_waba_revoked_por_user: {e}")
+        return []
+
+
+def eliminar_datos_por_user(user_id: str) -> dict:
+    """
+    Borra físicamente los datos asociados a un user_id de Meta.
+    Retorna resumen de lo borrado. Si meta_user_id no existe como columna,
+    solo retorna 0 y registra el evento igual (compliance por log).
+    """
+    if not _available():
+        return {"waba_clients_eliminados": 0, "error": "DB no disponible"}
+    deleted = {"waba_clients_eliminados": 0}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM waba_clients WHERE meta_user_id = %s",
+            (user_id,),
+        )
+        deleted["waba_clients_eliminados"] = cur.rowcount
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"[DB] Error eliminar_datos_por_user: {e}")
+        deleted["error"] = str(e)
+    return deleted

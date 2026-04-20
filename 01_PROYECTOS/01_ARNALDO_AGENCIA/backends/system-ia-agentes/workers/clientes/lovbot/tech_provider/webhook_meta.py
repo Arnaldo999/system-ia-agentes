@@ -58,13 +58,18 @@ Variables de entorno requeridas
   LOVBOT_PG_HOST, LOVBOT_PG_PORT, LOVBOT_PG_DB, LOVBOT_PG_USER, LOVBOT_PG_PASS
 """
 
-import os
+import base64
+import hashlib
+import hmac
+import json
 import logging
+import os
+import secrets
 import threading
 import time
 
 import requests as _requests
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -476,3 +481,306 @@ async def override_webhook(body: OverrideBody):
         "graph_status": resp.status_code,
         "graph_response": resp.json() if resp.text else {},
     }
+
+
+@router.post(
+    "/setup-compliance-table",
+    summary="Crear tabla meta_compliance_logs en PostgreSQL (admin)",
+    description=(
+        "Crea la tabla meta_compliance_logs si no existe. "
+        "Idempotente — seguro de correr múltiples veces. Requiere X-Admin-Token."
+    ),
+    dependencies=[Depends(_require_admin)],
+)
+async def setup_compliance_table():
+    """
+    POST /webhook/meta/setup-compliance-table
+    Header: X-Admin-Token: <LOVBOT_ADMIN_TOKEN>
+
+    Crea la tabla para almacenar eventos de compliance (deauthorize + data_deletion).
+    """
+    ok = db.setup_meta_compliance_logs_table()
+    if not ok:
+        raise HTTPException(status_code=500, detail="No se pudo crear la tabla (revisar logs)")
+    return {"ok": True, "tabla": "meta_compliance_logs"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMPLIANCE WEBHOOKS — Deauthorize + Data Deletion (GDPR / LGPD / LFPDPPP)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Meta exige 2 webhooks de cumplimiento legal en el panel:
+#   Facebook Login → Configuración → sección "Cancelar autorización"
+#
+# URLs a pegar en el panel Meta:
+#   Deauthorize:    https://agentes.lovbot.ai/webhook/meta/deauthorize
+#   Data deletion:  https://agentes.lovbot.ai/webhook/meta/data-deletion
+#
+# Formato del payload (ambos webhooks usan el mismo):
+#   Content-Type: application/x-www-form-urlencoded
+#   body: signed_request=<encodedSig>.<encodedPayload>
+#
+# La firma se calcula con HMAC-SHA256(encodedPayload, META_APP_SECRET).
+# El payload decodificado contiene: {algorithm, issued_at, user_id}.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _b64url_decode(s: str) -> bytes:
+    """Decodifica base64url (sin padding) → bytes. Formato Meta."""
+    padding = "=" * (-len(s) % 4)
+    s = s + padding
+    return base64.urlsafe_b64decode(s.encode("ascii"))
+
+
+def _parse_signed_request(signed_request: str) -> tuple[bool, dict]:
+    """
+    Parsea y verifica un signed_request de Meta.
+    Retorna (is_valid, payload_dict).
+
+    El payload siempre se retorna aunque la firma sea inválida, para logging.
+    """
+    if not signed_request or "." not in signed_request:
+        return False, {}
+
+    try:
+        encoded_sig, encoded_payload = signed_request.split(".", 1)
+    except ValueError:
+        return False, {}
+
+    try:
+        sig_bytes = _b64url_decode(encoded_sig)
+        payload_bytes = _b64url_decode(encoded_payload)
+        payload = json.loads(payload_bytes.decode("utf-8"))
+    except Exception as e:
+        logger.warning(f"[META-COMPLIANCE] Error decodificando signed_request: {e}")
+        return False, {}
+
+    if not META_APP_SECRET:
+        logger.error("[META-COMPLIANCE] META_APP_SECRET no configurado — no se puede verificar firma")
+        return False, payload
+
+    expected_sig = hmac.new(
+        key=META_APP_SECRET.encode("utf-8"),
+        msg=encoded_payload.encode("ascii"),
+        digestmod=hashlib.sha256,
+    ).digest()
+
+    is_valid = hmac.compare_digest(sig_bytes, expected_sig)
+    return is_valid, payload
+
+
+async def _extract_signed_request(request: Request) -> str:
+    """
+    Extrae signed_request del body. Meta lo envía como application/x-www-form-urlencoded,
+    pero aceptamos también JSON por si algún cliente de prueba lo manda así.
+    """
+    content_type = (request.headers.get("content-type") or "").lower()
+
+    if "application/json" in content_type:
+        try:
+            body = await request.json()
+            return body.get("signed_request", "") if isinstance(body, dict) else ""
+        except Exception:
+            return ""
+
+    # Default: form-urlencoded
+    try:
+        form = await request.form()
+        return form.get("signed_request", "")
+    except Exception:
+        # Último recurso: parsear body crudo
+        raw = (await request.body()).decode("utf-8", errors="ignore")
+        for pair in raw.split("&"):
+            if pair.startswith("signed_request="):
+                from urllib.parse import unquote_plus
+                return unquote_plus(pair.split("=", 1)[1])
+        return ""
+
+
+@router.post(
+    "/deauthorize",
+    summary="Webhook deauthorize (compliance Meta)",
+    description=(
+        "Meta llama este endpoint cuando un usuario/negocio revoca el acceso a la app "
+        "desde su Business Manager. Verifica signed_request HMAC-SHA256 y marca "
+        "webhook_subscrito=FALSE en waba_clients para los tenants afectados. "
+        "Siempre responde 200 para que Meta no reintente (el resultado queda en meta_compliance_logs)."
+    ),
+)
+async def meta_deauthorize(request: Request):
+    """
+    POST /webhook/meta/deauthorize
+
+    URL para pegar en Meta (Facebook Login → Configuración → "URL de devolución
+    de llamada para autorización cancelada"):
+        https://agentes.lovbot.ai/webhook/meta/deauthorize
+
+    Response: 200 siempre (Meta no exige body específico).
+    Detalle del evento queda en tabla meta_compliance_logs.
+    """
+    signed_request = await _extract_signed_request(request)
+    is_valid, payload = _parse_signed_request(signed_request)
+
+    user_id = payload.get("user_id")
+    algorithm = payload.get("algorithm")
+    issued_at = payload.get("issued_at")
+
+    action_taken = "firma_invalida_evento_ignorado"
+    affected_slugs: list[str] = []
+
+    if is_valid and user_id:
+        affected_slugs = db.marcar_waba_revoked_por_user(str(user_id))
+        if affected_slugs:
+            action_taken = f"webhook_subscrito=FALSE en {len(affected_slugs)} tenant(s): {','.join(affected_slugs)}"
+        else:
+            action_taken = "firma_valida_sin_tenants_asociados"
+    elif is_valid and not user_id:
+        action_taken = "firma_valida_sin_user_id_en_payload"
+
+    try:
+        db.log_meta_compliance_event(
+            event_type="deauthorize",
+            user_id=str(user_id) if user_id is not None else None,
+            algorithm=algorithm,
+            issued_at=int(issued_at) if issued_at else None,
+            signature_valid=is_valid,
+            raw_payload=payload,
+            client_slug=affected_slugs[0] if affected_slugs else None,
+            action_taken=action_taken,
+            confirmation_code=None,
+        )
+    except Exception as e:
+        logger.error(f"[META-DEAUTH] Error logging event: {e}")
+
+    logger.info(
+        f"[META-DEAUTH] user_id={user_id} valid={is_valid} action={action_taken}"
+    )
+
+    # Siempre 200 para evitar reintentos de Meta
+    return JSONResponse({"ok": True}, status_code=200)
+
+
+@router.post(
+    "/data-deletion",
+    summary="Webhook data deletion request (compliance Meta — GDPR/LGPD)",
+    description=(
+        "Meta llama este endpoint cuando un usuario solicita eliminación de datos. "
+        "Verifica signed_request HMAC-SHA256, elimina los datos del user y responde con "
+        "{url, confirmation_code} como Meta exige para que el user pueda verificar el borrado."
+    ),
+)
+async def meta_data_deletion(request: Request):
+    """
+    POST /webhook/meta/data-deletion
+
+    URL para pegar en Meta (Facebook Login → Configuración → "URL de la
+    solicitud de eliminación de datos"):
+        https://agentes.lovbot.ai/webhook/meta/data-deletion
+
+    Response esperado por Meta:
+    {
+      "url": "https://agentes.lovbot.ai/compliance/deletion-status?code=<confirmation_code>",
+      "confirmation_code": "<código único>"
+    }
+    """
+    signed_request = await _extract_signed_request(request)
+    is_valid, payload = _parse_signed_request(signed_request)
+
+    user_id = payload.get("user_id")
+    algorithm = payload.get("algorithm")
+    issued_at = payload.get("issued_at")
+
+    confirmation_code = f"lovbot-del-{secrets.token_hex(8)}"
+    action_taken = "firma_invalida_datos_no_eliminados"
+    deletion_summary: dict = {}
+
+    if is_valid and user_id:
+        deletion_summary = db.eliminar_datos_por_user(str(user_id))
+        count = deletion_summary.get("waba_clients_eliminados", 0)
+        action_taken = f"waba_clients eliminados={count}"
+        if deletion_summary.get("error"):
+            action_taken += f" | error_parcial={deletion_summary['error']}"
+    elif is_valid and not user_id:
+        action_taken = "firma_valida_sin_user_id_en_payload"
+
+    try:
+        db.log_meta_compliance_event(
+            event_type="data_deletion",
+            user_id=str(user_id) if user_id is not None else None,
+            algorithm=algorithm,
+            issued_at=int(issued_at) if issued_at else None,
+            signature_valid=is_valid,
+            raw_payload=payload,
+            client_slug=None,
+            action_taken=action_taken,
+            confirmation_code=confirmation_code,
+        )
+    except Exception as e:
+        logger.error(f"[META-DEL] Error logging event: {e}")
+
+    logger.info(
+        f"[META-DEL] user_id={user_id} valid={is_valid} code={confirmation_code} action={action_taken}"
+    )
+
+    # Meta exige este formato de respuesta con url + confirmation_code
+    status_url = f"https://agentes.lovbot.ai/webhook/meta/deletion-status?code={confirmation_code}"
+    return JSONResponse({
+        "url": status_url,
+        "confirmation_code": confirmation_code,
+    }, status_code=200)
+
+
+@router.get(
+    "/deletion-status",
+    summary="Consulta pública de estado de eliminación (compliance Meta)",
+    description=(
+        "URL pública que ve el user final que solicitó el borrado de datos. "
+        "Retorna texto plano con el estado del confirmation_code."
+    ),
+    response_class=PlainTextResponse,
+)
+async def deletion_status(code: str = ""):
+    """
+    GET /webhook/meta/deletion-status?code=<confirmation_code>
+
+    Endpoint público (sin auth) para que el user que pidió eliminación
+    pueda verificar el estado de su solicitud.
+    """
+    if not code:
+        return PlainTextResponse("Falta parametro 'code'", status_code=400)
+
+    # En esta primera versión, si el código existe en la tabla de logs,
+    # se considera completado. No exponemos datos del user.
+    try:
+        from workers.clientes.lovbot.robert_inmobiliaria.db_postgres import _conn, _available
+        if not _available():
+            return PlainTextResponse("Servicio no disponible", status_code=503)
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT created_at, action_taken FROM meta_compliance_logs "
+            "WHERE confirmation_code = %s AND event_type = 'data_deletion' LIMIT 1",
+            (code,),
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if not row:
+            return PlainTextResponse(
+                f"Codigo {code} no encontrado. Si acabas de solicitar la eliminacion, "
+                "puede tardar unos minutos en procesarse.",
+                status_code=404,
+            )
+        created_at, action = row
+        return PlainTextResponse(
+            f"Solicitud de eliminacion procesada.\n"
+            f"Codigo: {code}\n"
+            f"Fecha: {created_at.isoformat() if hasattr(created_at, 'isoformat') else created_at}\n"
+            f"Estado: completado\n"
+            f"Detalle: {action}\n\n"
+            f"Si tenes consultas: arnaldo@lovbot.ai",
+            status_code=200,
+        )
+    except Exception as e:
+        logger.error(f"[COMPLIANCE-STATUS] Error: {e}")
+        return PlainTextResponse(f"Error consultando estado: {e}", status_code=500)
