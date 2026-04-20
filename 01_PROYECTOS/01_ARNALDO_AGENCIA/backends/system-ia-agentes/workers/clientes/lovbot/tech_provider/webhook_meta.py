@@ -130,6 +130,11 @@ class OverridePhoneBody(BaseModel):
     verify_token: str
 
 
+class ReclasificarAgenciaBody(BaseModel):
+    phone_number_id: str
+    nueva_agencia: str  # 'arnaldo' | 'mica' | 'lovbot'
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _dedup_msg(msg_id: str) -> bool:
@@ -558,6 +563,68 @@ async def override_webhook_phone(body: OverridePhoneBody):
         "graph_status": resp.status_code,
         "graph_response": resp.json() if resp.text else {},
     }
+
+
+@router.get(
+    "/tenants-por-agencia",
+    summary="Listar tenants filtrados por agencia (admin)",
+    description=(
+        "Devuelve waba_clients de una agencia especifica. "
+        "Util para dashboards separados de cada agencia del ecosistema."
+    ),
+    dependencies=[Depends(_require_admin)],
+)
+async def listar_por_agencia(agencia: str):
+    """
+    GET /webhook/meta/tenants-por-agencia?agencia=arnaldo
+    Header: X-Admin-Token: <LOVBOT_ADMIN_TOKEN>
+
+    Valores validos de agencia: arnaldo, mica, lovbot
+    """
+    if agencia not in ("arnaldo", "mica", "lovbot"):
+        raise HTTPException(
+            status_code=422,
+            detail="agencia debe ser uno de: arnaldo, mica, lovbot"
+        )
+    tenants = db.listar_waba_clients_por_agencia(agencia)
+    # Filtrar access_token por seguridad (no exponer en respuestas admin)
+    safe_tenants = []
+    for t in tenants:
+        safe = {k: v for k, v in t.items() if k != "access_token"}
+        safe["access_token"] = "***REDACTED***" if t.get("access_token") else None
+        safe_tenants.append(safe)
+    return {"agencia": agencia, "total": len(safe_tenants), "tenants": safe_tenants}
+
+
+@router.post(
+    "/reclasificar-agencia",
+    summary="Reclasificar un tenant a otra agencia (admin)",
+    description=(
+        "Cambia la agencia_origen de un tenant existente. Usado para corregir "
+        "tenants legacy que quedaron con default 'lovbot' pero pertenecen a "
+        "otra agencia (ej: test_arnaldo -> arnaldo)."
+    ),
+    dependencies=[Depends(_require_admin)],
+)
+async def reclasificar_agencia(body: ReclasificarAgenciaBody):
+    """
+    POST /webhook/meta/reclasificar-agencia
+    Header: X-Admin-Token: <LOVBOT_ADMIN_TOKEN>
+    Body: {"phone_number_id": "...", "nueva_agencia": "arnaldo|mica|lovbot"}
+    """
+    if body.nueva_agencia not in ("arnaldo", "mica", "lovbot"):
+        raise HTTPException(
+            status_code=422,
+            detail="nueva_agencia debe ser uno de: arnaldo, mica, lovbot"
+        )
+    ok = db.actualizar_agencia_origen(body.phone_number_id, body.nueva_agencia)
+    if not ok:
+        raise HTTPException(
+            status_code=404,
+            detail=f"phone_number_id={body.phone_number_id!r} no encontrado"
+        )
+    return {"ok": True, "phone_number_id": body.phone_number_id,
+            "nueva_agencia": body.nueva_agencia}
 
 
 @router.post(

@@ -1467,8 +1467,19 @@ def setup_waba_clients_table() -> dict:
                 webhook_subscrito   BOOLEAN DEFAULT FALSE,
                 created_at          TIMESTAMPTZ DEFAULT NOW(),
                 updated_at          TIMESTAMPTZ DEFAULT NOW(),
-                metadata            JSONB DEFAULT '{}'::jsonb
+                metadata            JSONB DEFAULT '{}'::jsonb,
+                agencia_origen      TEXT DEFAULT 'lovbot',
+                meta_user_id        TEXT
             )
+        """)
+        # Migration para tablas existentes (agrega columnas si no estan)
+        cur.execute("""
+            ALTER TABLE waba_clients
+            ADD COLUMN IF NOT EXISTS agencia_origen TEXT DEFAULT 'lovbot'
+        """)
+        cur.execute("""
+            ALTER TABLE waba_clients
+            ADD COLUMN IF NOT EXISTS meta_user_id TEXT
         """)
         cur.execute("""
             CREATE INDEX IF NOT EXISTS idx_waba_phone_id
@@ -1478,11 +1489,19 @@ def setup_waba_clients_table() -> dict:
             CREATE INDEX IF NOT EXISTS idx_waba_slug
             ON waba_clients(client_slug)
         """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_waba_agencia
+            ON waba_clients(agencia_origen)
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_waba_meta_user
+            ON waba_clients(meta_user_id)
+        """)
         conn.commit()
         cur.close()
         conn.close()
-        print("[DB] Tabla waba_clients lista.")
-        return {"ok": True, "mensaje": "Tabla waba_clients verificada/creada"}
+        print("[DB] Tabla waba_clients lista (con agencia_origen + meta_user_id).")
+        return {"ok": True, "mensaje": "Tabla waba_clients verificada/creada (multi-agencia)"}
     except Exception as e:
         print(f"[DB] Error setup_waba_clients_table: {e}")
         return {"error": str(e)}
@@ -1496,8 +1515,15 @@ def registrar_waba_client(
     access_token: str,
     worker_url: str = None,
     display_phone: str = None,
+    agencia_origen: str = "lovbot",
+    meta_user_id: str = None,
 ) -> dict:
-    """UPSERT de cliente WABA por phone_number_id."""
+    """UPSERT de cliente WABA por phone_number_id.
+
+    agencia_origen: 'arnaldo' | 'mica' | 'lovbot' — qué agencia vendió este cliente.
+    meta_user_id: ID del user Meta que hizo el Embedded Signup (viene del webhook
+                  deauthorize para identificar a qué tenant pertenece el evento).
+    """
     if not _available():
         return {"error": "DB no disponible"}
     try:
@@ -1506,8 +1532,9 @@ def registrar_waba_client(
         cur.execute("""
             INSERT INTO waba_clients
                 (client_name, client_slug, waba_id, phone_number_id,
-                 display_phone_number, access_token, worker_url, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                 display_phone_number, access_token, worker_url,
+                 agencia_origen, meta_user_id, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON CONFLICT (phone_number_id) DO UPDATE SET
                 client_name          = EXCLUDED.client_name,
                 client_slug          = EXCLUDED.client_slug,
@@ -1515,18 +1542,22 @@ def registrar_waba_client(
                 display_phone_number = COALESCE(EXCLUDED.display_phone_number, waba_clients.display_phone_number),
                 access_token         = EXCLUDED.access_token,
                 worker_url           = COALESCE(EXCLUDED.worker_url, waba_clients.worker_url),
+                agencia_origen       = COALESCE(EXCLUDED.agencia_origen, waba_clients.agencia_origen),
+                meta_user_id         = COALESCE(EXCLUDED.meta_user_id, waba_clients.meta_user_id),
                 updated_at           = NOW()
-            RETURNING id, client_slug, phone_number_id
+            RETURNING id, client_slug, phone_number_id, agencia_origen
         """, (
             client_name, client_slug, waba_id, phone_number_id,
             display_phone, access_token, worker_url,
+            agencia_origen, meta_user_id,
         ))
         row = cur.fetchone()
         conn.commit()
         cur.close()
         conn.close()
         return {"ok": True, "id": row["id"], "client_slug": row["client_slug"],
-                "phone_number_id": row["phone_number_id"]}
+                "phone_number_id": row["phone_number_id"],
+                "agencia_origen": row["agencia_origen"]}
     except Exception as e:
         print(f"[DB] Error registrar_waba_client: {e}")
         return {"error": str(e)}
@@ -1629,6 +1660,61 @@ def listar_waba_clients() -> list[dict]:
     except Exception as e:
         print(f"[DB] Error listar_waba_clients: {e}")
         return []
+
+
+def listar_waba_clients_por_agencia(agencia: str) -> list[dict]:
+    """SELECT waba_clients filtrado por agencia_origen (arnaldo/mica/lovbot).
+
+    Usado por panels admin de cada agencia para ver solo SUS clientes.
+    """
+    if not _available():
+        return []
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            "SELECT * FROM waba_clients WHERE agencia_origen = %s ORDER BY created_at DESC",
+            (agencia,),
+        )
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        result = []
+        for r in rows:
+            row = dict(r)
+            for k, v in row.items():
+                if hasattr(v, "isoformat"):
+                    row[k] = v.isoformat()
+            result.append(row)
+        return result
+    except Exception as e:
+        print(f"[DB] Error listar_waba_clients_por_agencia: {e}")
+        return []
+
+
+def actualizar_agencia_origen(phone_number_id: str, nueva_agencia: str) -> bool:
+    """Cambia la agencia_origen de un tenant. Usado para reclasificar tenants
+    legacy (ej: test_arnaldo que era 'lovbot' por default debe ser 'arnaldo')."""
+    if not _available():
+        return False
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE waba_clients
+            SET agencia_origen = %s, updated_at = NOW()
+            WHERE phone_number_id = %s
+        """, (nueva_agencia, phone_number_id))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        conn.close()
+        if ok:
+            print(f"[DB] agencia_origen actualizada: phone_id={phone_number_id} -> {nueva_agencia}")
+        return ok
+    except Exception as e:
+        print(f"[DB] Error actualizar_agencia_origen: {e}")
+        return False
 
 
 def eliminar_waba_client(phone_number_id: str) -> bool:
