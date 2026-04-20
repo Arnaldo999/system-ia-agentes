@@ -34,6 +34,7 @@ Todo funcionando, sin fricciones técnicas para el cliente.
 | **Bot demo inmobiliaria** | Un bot funcionando que responde, califica leads BANT, busca propiedades y agenda citas con Cal.com | Número Demos conectado |
 | **CRM con IA** | Panel donde vos y el cliente ven leads, propiedades, citas y un chat de IA que contesta preguntas sobre sus datos | Vinculado al worker |
 | **Base de datos Airtable** | Donde viven todos los datos de nuestros clientes (leads, propiedades, sesiones del bot, clientes de la agencia) | `appA8QxIhBYYAHw0F` |
+| **Panel admin de la agencia** | Dashboard interno para ver y gestionar todos los clientes de System IA: total clientes, facturación mensual, agregar/editar/pausar, estado de cada bot | [system-ia-agencia.vercel.app/system-ia/admin](https://system-ia-agencia.vercel.app/system-ia/admin) |
 | **Script de activación** | Un comando que al correrlo registra al cliente nuevo y te genera el mensaje listo para mandarle | `onboard_mica_cliente.py` |
 
 ### 🟡 EN PROGRESO (funciona pero manual)
