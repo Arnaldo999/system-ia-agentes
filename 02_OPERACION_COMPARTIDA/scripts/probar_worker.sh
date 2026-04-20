@@ -20,7 +20,8 @@
 #
 # Aliases pre-definidos (resueltos al HOST de agentes.lovbot.ai):
 #   arnaldo-demo   → /clientes/arnaldo/demo-inmobiliaria/whatsapp
-#   mica-demo      → /clientes/system_ia/demos/inmobiliaria/whatsapp
+#   mica-demo      → /clientes/system_ia/demos/inmobiliaria/whatsapp     (Evolution)
+#   mica-demo-v2   → /clientes/system_ia/demos/inmobiliaria-v2/whatsapp  (Meta Tech Provider)
 #   robert-demo    → /clientes/lovbot/robert_inmobiliaria/whatsapp
 #   gastronomia    → /demos/gastronomia/whatsapp
 #
@@ -44,7 +45,8 @@ Uso: probar_worker.sh <phone_number_id> <alias|url>
 
 Aliases:
   arnaldo-demo   demo inmobiliaria Arnaldo (YCloud por defecto, Meta si WHATSAPP_PROVIDER=meta)
-  mica-demo      demo inmobiliaria Mica (Evolution por defecto, Meta si WHATSAPP_PROVIDER=meta)
+  mica-demo      demo inmobiliaria Mica (Evolution — productivo Mica)
+  mica-demo-v2   demo inmobiliaria Mica (Meta via Tech Provider Robert — para tests)
   robert-demo    bot productivo Robert (Meta nativo)
   gastronomia    demo gastronomia (YCloud)
 
@@ -67,6 +69,9 @@ case "$TARGET" in
     ;;
   mica-demo)
     URL="${BASE}/clientes/system_ia/demos/inmobiliaria/whatsapp"
+    ;;
+  mica-demo-v2)
+    URL="${BASE}/clientes/system_ia/demos/inmobiliaria-v2/whatsapp"
     ;;
   robert-demo)
     URL="${BASE}/clientes/lovbot/robert_inmobiliaria/whatsapp"
