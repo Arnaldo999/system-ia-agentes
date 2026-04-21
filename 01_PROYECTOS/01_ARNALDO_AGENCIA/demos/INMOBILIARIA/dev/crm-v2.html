@@ -2310,10 +2310,11 @@ tailwind.config = {
       <div class="sidebar-section" style="margin-top:8px">Ventas</div>
       <div class="nav-item" onclick="nav('leads',this)">
         <span class="nav-icon">👥</span><span>Leads</span>
+        <span class="nav-badge" id="leadsBadge">—</span>
       </div>
       <div class="nav-item" onclick="nav('pipeline',this)">
         <span class="nav-icon">🔀</span><span>Pipeline</span>
-        <span class="nav-badge" id="pipelineBadge">12</span>
+        <span class="nav-badge" id="pipelineBadge">—</span>
       </div>
       <div class="nav-item" onclick="nav('chat',this)">
         <span class="nav-icon">🤖</span><span>Mensajes IA</span>
@@ -2321,7 +2322,7 @@ tailwind.config = {
       </div>
       <div class="nav-item" onclick="nav('activos',this)">
         <span class="nav-icon">🤝</span><span>Clientes</span>
-        <span class="nav-badge green" id="activosBadge">0</span>
+        <span class="nav-badge green" id="activosBadge">—</span>
       </div>
 
       <!-- ═══ GESTIÓN — DESARROLLADORA ═══ -->
@@ -3779,6 +3780,8 @@ function nav(id, el) {
   if(id==='activos') cargarActivos();
   if(id==='agenda') renderAgenda();
   if(id==='configuracion') cargarConfiguracion();
+  // Refresh badges en background cuando el usuario navega (no bloquea)
+  if (typeof refreshSidebarBadges === 'function') refreshSidebarBadges();
   // Paneles CRM Completo (Sprints 3-8)
   if(id==='asesores' && typeof cargarAsesores === 'function') cargarAsesores();
   if(id==='propietarios' && typeof cargarPropietarios === 'function') cargarPropietarios();
@@ -4495,6 +4498,7 @@ async function submitPin() {
       cargarLeads();
       renderProps();
       cargarActivos();
+      refreshSidebarBadges();  // sincroniza counters del sidebar con Postgres
       renderAgenda();
       cargarResumenes();
       iniciarAutoRefresh();
@@ -4670,6 +4674,36 @@ window.cambiarSubnichoTipo = function(tipo) {
   localStorage.setItem(`crm_tipo_${TENANT_SLUG}`, tipo);
   aplicarSubnichoTipo(tipo);
   notif('✅ Tipo de negocio actualizado', `Ahora estás en modo ${tipo}`);
+};
+
+// ── Refresh de todos los badges del sidebar en paralelo ────────────────────
+// Consulta endpoints reales y actualiza los counters para que coincidan con
+// el Postgres, sin depender de que el usuario haga click en cada panel.
+window.refreshSidebarBadges = async function() {
+  if (!API_BASE) return;
+  const setBadge = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (val === null || val === undefined) ? '—' : String(val);
+  };
+  const fetchCount = async (path) => {
+    try {
+      const r = await fetch(`${API_BASE}${path}`, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return null;
+      const d = await r.json();
+      const arr = d.records || d.items || [];
+      return arr.length;
+    } catch { return null; }
+  };
+  // Paralelo para que no bloquee al usuario
+  const [nLeads, nActivos, nResumenes] = await Promise.all([
+    fetchCount('/crm/clientes'),
+    fetchCount('/crm/activos'),
+    fetchCount('/crm/resumenes'),
+  ]);
+  setBadge('leadsBadge', nLeads);
+  setBadge('pipelineBadge', nLeads);  // pipeline = mismo total de leads
+  setBadge('activosBadge', nActivos);
+  setBadge('chatBadge', nResumenes);
 };
 
 // ── PROPS — conectado a Airtable via backend ────────────────────────────────
