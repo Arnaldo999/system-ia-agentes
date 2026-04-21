@@ -18,6 +18,8 @@ Proyecto de Mica (Micaela) bajo la marca System IA. CRM SaaS multi-tenant live e
 - Workers Mica: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/workers/clientes/system-ia/`
 
 ## Últimos cambios
+- [2026-04-21] CRM v2 de Mica creado en `demos/SYSTEM-IA/dev/crm-v2.html`: paleta ámbar/rojo, branding System IA, endpoints /clientes/system_ia/demos/inmobiliaria, tenant default mica-demo
+- [2026-04-21] Airtable base `appA8QxIhBYYAHw0F`: 12 tablas creadas (Asesores, Propietarios, Loteos, LotesMapa, Contratos, Visitas, InmueblesRenta, Inquilinos, ContratosAlquiler, PagosAlquiler, Liquidaciones, ConfigCliente)
 - Monitor vencimiento token LinkedIn ACTIVO en n8n Mica (`jUBWVBMR6t3iPF7l`) — testeado ✅ 60 días restantes al 2026-06-09
 - Worker Lau creado en `workers/clientes/system-ia/lau/worker.py` — pendiente deploy
 - Workflow redes sociales Mica activo en n8n Easypanel (`aOiZFbmvMoPSE0vB`) ✅
