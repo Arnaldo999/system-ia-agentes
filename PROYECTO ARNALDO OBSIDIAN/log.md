@@ -4,6 +4,18 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-21] sesion-claude | Setup CRM v2 Mica + decisión Embedded Signup compartido
+- Replicado el trabajo de CRM v2 de Robert para Mica (System IA), adaptando al stack Mica: Airtable `appA8QxIhBYYAHw0F` + Evolution API + Coolify Arnaldo. Respeta regla #0 de aislamiento entre stacks (nada de Postgres ni Meta Graph API propio, por ahora).
+- Creado `demos/SYSTEM-IA/dev/crm-v2.html` clonado del de Robert con: paleta ámbar/rojo `#f59e0b` + `#dc2626` (vs purple/cyan Robert), branding "System IA / Inmobiliaria Demo Mica", endpoints `/clientes/system_ia/*`, sidebar con 3 subnichos.
+- Base Airtable Mica ampliada de 5 tablas a **17 tablas** via Metadata API: agregadas 12 (core + agencia + config). Ver [[wiki/entidades/inmobiliaria-demo-mica-airtable]] para Table IDs completos.
+- Tenant `mica-demo` en Supabase corregido: `airtable_base_id` apuntaba a base de Arnaldo, colores heredados de demo anterior. Fix via PATCH directo a REST API Supabase. PIN reseteado a `1234`.
+- 5 bugs arreglados en el CRM Mica: (1) backend apuntaba a Vercel en vez de Coolify, (2) faltaba carpeta `dev/js/` con helpers externos, (3) endpoint `/crm/resumenes` bloqueaba por Postgres requerido, (4) tenant en Supabase con base Airtable cruzada, (5) colores residuales verde/beige.
+- Verificación end-to-end OK: CRM local muestra los 19 leads reales de Airtable Mica, paleta ámbar aplicada, webhook bot Evolution HTTP 200, sincronización bot↔Airtable↔CRM funcionando.
+- **Decisión estratégica**: Embedded Signup de Meta para Robert fue aprobado. El número que usa Mica (`+54 9 3765 00-5465`) se migrará de Evolution a Meta Graph API vía TP de Robert como tránsito técnico, hasta que Arnaldo y Mica saquen sus propios TPs. Infraestructura ya preparada en commit `ec33418` con columnas `agencia_origen` + `meta_user_id`. Migración del bot Mica queda para otra sesión.
+- Pendiente no urgente: deploy Vercel Mica (cupo 100 deploys/día agotado, reabre mañana), resúmenes IA stub hasta primer cliente pago, refactor "1 base Airtable por cliente" cuando haya cliente real.
+- Commits: `01c98f3` (CRM v2 adaptado), `8b32da1` (12 tablas Airtable), `31a85f9` (rewrite Vercel), `92617fe` (fixes backend+JS+resumenes).
+- Páginas wiki creadas: [[wiki/sintesis/2026-04-21-crm-v2-mica]], [[wiki/entidades/inmobiliaria-demo-mica-airtable]], [[raw/mica/sesion-2026-04-21-crm-v2-mica]].
+
 ## [2026-04-21] sesion-claude | Refactor Postgres Lovbot a arquitectura workspaces
 - Detectada violación de regla #0 (aislamiento físico por cliente): `robert_crm` tenía 38 leads mezclados entre `tenant_slug='demo'` (19) y `tenant_slug='robert'` (19).
 - Descubierta vulnerabilidad en validator SQL n8n (workflow `CRM IA - Ejecutar SQL` id `0t32XZ9AuQXB9fOn`): saltaba inyección de tenant si el query mencionaba `tenant_slug` como SELECT-field → cross-tenant leak posible. Fix aplicado vía MCP n8n.
