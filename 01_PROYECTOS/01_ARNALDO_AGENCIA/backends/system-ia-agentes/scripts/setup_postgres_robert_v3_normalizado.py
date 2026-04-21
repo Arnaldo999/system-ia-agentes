@@ -56,6 +56,34 @@ ALTER TABLE clientes_activos ADD COLUMN IF NOT EXISTS tenant_slug VARCHAR(50) DE
 ALTER TABLE contratos ADD COLUMN IF NOT EXISTS tenant_slug VARCHAR(50) DEFAULT 'robert';
 ALTER TABLE contratos ADD COLUMN IF NOT EXISTS cliente_activo_id INTEGER REFERENCES clientes_activos(id) ON DELETE SET NULL;
 
+-- inmuebles_renta, inquilinos, pagos_alquiler, liquidaciones:
+-- si fueron creadas por ampliar-schema-agencia (sin tenant_slug) hay que agregarlo
+-- antes de que los indices de la PARTE 3-6 intenten usarlo.
+-- Usamos DO $$ para proteger el ALTER con EXISTS check (no hay ALTER TABLE IF EXISTS en PG).
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='inmuebles_renta') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inmuebles_renta' AND column_name='tenant_slug') THEN
+            ALTER TABLE inmuebles_renta ADD COLUMN tenant_slug VARCHAR(50) DEFAULT 'demo';
+        END IF;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='inquilinos') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inquilinos' AND column_name='tenant_slug') THEN
+            ALTER TABLE inquilinos ADD COLUMN tenant_slug VARCHAR(50) DEFAULT 'demo';
+        END IF;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='pagos_alquiler') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='tenant_slug') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN tenant_slug VARCHAR(50) DEFAULT 'demo';
+        END IF;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='liquidaciones') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='tenant_slug') THEN
+            ALTER TABLE liquidaciones ADD COLUMN tenant_slug VARCHAR(50) DEFAULT 'demo';
+        END IF;
+    END IF;
+END $$;
+
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PARTE 1 — Extender clientes_activos con trazabilidad y documento
