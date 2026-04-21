@@ -1928,6 +1928,33 @@ tailwind.config = {
     .cd-panel-list, .cd-panel-map, .cd-panel-detail { grid-column: auto !important; }
   }
 
+  /* ==========================================================
+   * FIX modales: garantizar que .show muestre display:flex real
+   * y que si no hay .show queden ocultos. CSS puro sin @apply.
+   * Z-index alto para que el modal nunca quede tapado.
+   * ========================================================== */
+  .modal-bg {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, .65) !important;
+    z-index: 500 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    display: none !important;
+  }
+  /* hidden y no-show quedan ocultos (orden importa: show debe ganar sobre hidden) */
+  .modal-bg.hidden {
+    display: none !important;
+  }
+  .modal-bg.show {
+    display: flex !important;
+  }
+  /* Evitar que panels del 3-column layout intercepten clicks cuando hay modal */
+  body:has(.modal-bg.show) .cd-main-grid {
+    pointer-events: none;
+  }
+  .modal-bg .modal { pointer-events: auto; }
+
 </style>
 
 <!-- Fuentes del skin Claude Design -->
@@ -3163,7 +3190,7 @@ tailwind.config = {
 
 <div class="modal-bg hidden" id="modalContrato">
   <div class="modal" style="max-width:550px">
-    <button class="mc" onclick="document.getElementById('modalContrato').classList.add('hidden')">✕</button>
+    <button class="mc" onclick="cerrarModal('modalContrato')">✕</button>
     <h3 class="text-lg font-bold mb-4">📄 Contrato</h3>
     <input type="hidden" id="contratoId"/>
     <div class="mb-3"><label class="text-xs text-txt-2">Título / Descripción</label><input id="contratoTitulo" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
