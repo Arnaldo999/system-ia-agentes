@@ -1,4 +1,14 @@
 {
+  "headers": [
+    {
+      "source": "/dev/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
+        { "key": "CDN-Cache-Control", "value": "no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "has": [{"type":"host","value":"form.backurbanizaciones.com"}], "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/formulario.html" },
     { "source": "/mapa-publico.html", "has": [{"type":"host","value":"crm.backurbanizaciones.com"}], "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/back-urbanizaciones/mapa-publico.html" },
