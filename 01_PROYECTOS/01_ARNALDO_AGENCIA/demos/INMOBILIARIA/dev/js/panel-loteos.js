@@ -97,11 +97,54 @@
   function renderLoteos() {
     const cont = document.getElementById('loteosLista');
     if (!cont) return;
+    // Totales agregados
+    let totLotes = 0, totLibres = 0, totReservados = 0, totVendidos = 0;
+    LOTEOS.forEach(l => {
+      const total = l.total_lotes || 0;
+      const idx = indexarClientesPorLote(l.nombre);
+      const c = contarEstados(total, idx);
+      totLotes += total;
+      totLibres += c.libres;
+      totReservados += c.reservados;
+      totVendidos += c.vendidos;
+    });
+    const pctOcup = totLotes > 0 ? Math.round(((totReservados + totVendidos) / totLotes) * 100) : 0;
+
+    const overview = `
+      <div class="overview cd-overview">
+        <div class="ov" style="--c:#7c3aed">
+          <div class="ov-label"><span class="d"></span>Loteos activos</div>
+          <div class="ov-val mono">${LOTEOS.length}</div>
+          <div class="ov-foot">En tu cartera</div>
+        </div>
+        <div class="ov" style="--c:#10b981">
+          <div class="ov-label"><span class="d"></span>Lotes libres</div>
+          <div class="ov-val mono">${totLibres}</div>
+          <div class="ov-foot">Disponibles</div>
+        </div>
+        <div class="ov" style="--c:#f59e0b">
+          <div class="ov-label"><span class="d"></span>Reservados</div>
+          <div class="ov-val mono">${totReservados}</div>
+          <div class="ov-foot">En proceso</div>
+        </div>
+        <div class="ov" style="--c:#ef4444">
+          <div class="ov-label"><span class="d"></span>Vendidos</div>
+          <div class="ov-val mono">${totVendidos}</div>
+          <div class="ov-foot">Cerrados</div>
+        </div>
+        <div class="ov" style="--c:#06b6d4">
+          <div class="ov-label"><span class="d"></span>% Ocupación</div>
+          <div class="ov-val mono">${pctOcup}%</div>
+          <div class="ov-foot">${totLotes} lotes totales</div>
+        </div>
+      </div>
+    `;
+
     if (LOTEOS.length === 0) {
-      cont.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-5">${renderAddCard()}</div>`;
+      cont.innerHTML = overview + `<div class="cd-loteos-grid">${renderAddCard()}</div>`;
       return;
     }
-    cont.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    cont.innerHTML = overview + `<div class="cd-loteos-grid">
       ${LOTEOS.map(renderLoteoCard).join('')}
       ${renderAddCard()}
     </div>`;
@@ -109,66 +152,62 @@
 
   function renderAddCard() {
     return `
-      <button onclick="abrirModalLoteo()" style="background:rgba(26,29,39,0.4);border:2px dashed var(--brd);border-radius:12px;padding:40px 24px;min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s">
-        <div style="width:64px;height:64px;border-radius:50%;background:rgba(139,153,250,0.1);display:flex;align-items:center;justify-content:center;margin-bottom:12px">
-          <span style="font-size:36px;color:var(--accent);line-height:1">+</span>
+      <button class="cd-add-loteo" onclick="abrirModalLoteo()">
+        <div class="plus">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </div>
-        <div style="font-size:16px;font-weight:600;color:var(--text)">Agregar nuevo loteo</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px;text-align:center">Creá un loteo nuevo con su cantidad de lotes</div>
+        <div class="t">Agregar nuevo loteo</div>
+        <div class="s">Creá un loteo con su cantidad de lotes</div>
       </button>
     `;
   }
 
   function renderLoteoCard(l) {
     const total = l.total_lotes || 0;
-    // Calcular contadores cruzando con clientes
     const clientesPorLote = indexarClientesPorLote(l.nombre);
     const { libres, reservados, vendidos } = contarEstados(total, clientesPorLote);
-    const ocupados = reservados + vendidos;
-    const pctOcupado = total > 0 ? Math.round((ocupados / total) * 100) : 0;
+    const pctVendidos = total > 0 ? (vendidos / total) * 100 : 0;
+    const pctReservados = total > 0 ? (reservados / total) * 100 : 0;
+    const pctOcupado = total > 0 ? Math.round(((reservados + vendidos) / total) * 100) : 0;
     const ubic = l.ubicacion || l.ciudad || '';
     const ubicLabel = esUrlMaps(ubic)
-      ? `<a href="${ubic}" target="_blank" style="color:var(--accent);text-decoration:none" onclick="event.stopPropagation()">📍 Ver en Google Maps</a>`
-      : `<span>📍 ${ubic || l.ciudad || 'Sin ubicación'}</span>`;
+      ? `<a href="${ubic}" target="_blank" class="cd-place-link" onclick="event.stopPropagation()">Ver en Google Maps</a>`
+      : (ubic || l.ciudad || 'Sin ubicación');
+
+    const dataAttr = JSON.stringify(l).replace(/"/g, '&quot;');
 
     return `
-      <div style="background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;cursor:pointer;transition:all 0.2s" onclick="verMapaLoteo(${l.id})">
-        <div style="background:linear-gradient(135deg, rgba(139,153,250,0.15), rgba(34,38,54,0.8));padding:20px 24px">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:18px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.nombre}</div>
-              <div style="font-size:12px;color:var(--text2);margin-top:4px">${ubicLabel}</div>
-            </div>
-            <div style="display:flex;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
-              <button onclick='abrirModalLoteo(${JSON.stringify(l).replace(/'/g, "&apos;")})' title="Editar datos del loteo" style="padding:6px 10px;background:rgba(34,38,54,0.7);border:1px solid var(--brd);border-radius:6px;color:var(--text);cursor:pointer;font-size:12px">✏️</button>
-              <button onclick="eliminarLoteo(${l.id})" title="Eliminar" style="padding:6px 10px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#f87171;cursor:pointer;font-size:12px">🗑</button>
+      <div class="cd-loteo" onclick="verMapaLoteo(${l.id})">
+        <div class="cd-loteo-top">
+          <div class="cd-loteo-info">
+            <div class="cd-loteo-name">${l.nombre}</div>
+            <div class="cd-loteo-place">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              <span>${ubicLabel}</span>
             </div>
           </div>
-          ${l.descripcion ? `<p style="font-size:12px;color:var(--text2);margin-top:8px;line-height:1.4">${l.descripcion}</p>` : ''}
+          <div class="cd-loteo-actions" onclick="event.stopPropagation()">
+            <button class="cd-icon-btn" title="Editar" data-loteo="${dataAttr}" onclick="abrirModalLoteo(JSON.parse(this.dataset.loteo))">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+            <button class="cd-icon-btn danger" title="Eliminar" onclick="eliminarLoteo(${l.id})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+            </button>
+          </div>
         </div>
-        <div style="padding:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:8px">
-            <span style="color:var(--text2)">${total} lotes totales</span>
-            <span style="font-weight:600;color:var(--text)">${pctOcupado}% ocupado</span>
-          </div>
-          <div style="width:100%;height:6px;background:var(--surface2);border-radius:999px;overflow:hidden;margin-bottom:16px">
-            <div style="height:100%;background:linear-gradient(90deg, #16a34a, #eab308);width:${pctOcupado}%;transition:width 0.4s"></div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-bottom:16px">
-            <div style="background:rgba(22,163,74,0.1);color:#4ade80;padding:12px 8px;border-radius:6px;text-align:center">
-              <div style="font-size:20px;font-weight:700">${libres}</div>
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em">Libres</div>
-            </div>
-            <div style="background:rgba(234,179,8,0.1);color:#facc15;padding:12px 8px;border-radius:6px;text-align:center">
-              <div style="font-size:20px;font-weight:700">${reservados}</div>
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em">Reservados</div>
-            </div>
-            <div style="background:rgba(220,38,38,0.1);color:#f87171;padding:12px 8px;border-radius:6px;text-align:center">
-              <div style="font-size:20px;font-weight:700">${vendidos}</div>
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em">Vendidos</div>
-            </div>
-          </div>
-          <div style="font-size:12px;color:var(--text2);text-align:center">Hacé clic en la tarjeta para ver el mapa del loteo</div>
+        ${l.descripcion ? `<div class="cd-loteo-desc">${l.descripcion}</div>` : ''}
+        <div class="cd-loteo-progress">
+          <div class="seg s-sold" style="width:${pctVendidos}%"></div>
+          <div class="seg s-reserved" style="width:${pctReservados}%"></div>
+        </div>
+        <div class="cd-loteo-stats">
+          <span><b>${total}</b> lotes totales</span>
+          <span><b>${pctOcupado}%</b> ocupado</span>
+        </div>
+        <div class="cd-loteo-counts">
+          <div class="cc f"><span class="n">${libres}</span>libres</div>
+          <div class="cc r"><span class="n">${reservados}</span>reserv.</div>
+          <div class="cc s"><span class="n">${vendidos}</span>vendidos</div>
         </div>
       </div>
     `;
