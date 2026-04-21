@@ -2416,9 +2416,9 @@ tailwind.config = {
           <div class="kpi-delta" id="kpi-form-delta">&nbsp;</div>
         </div>
         <div class="kpi" style="--c:#a78bfa">
-          <div class="kpi-icon">🏠</div>
+          <div class="kpi-icon" id="kpi-props-icon">🏠</div>
           <div class="kpi-val" id="kpi-props">—</div>
-          <div class="kpi-label">Propiedades activas</div>
+          <div class="kpi-label" id="kpi-props-label">Propiedades activas</div>
           <div class="kpi-delta" id="kpi-props-delta">&nbsp;</div>
         </div>
       </div>
@@ -4612,6 +4612,18 @@ window.aplicarSubnichoTipo = function(tipo) {
     const visible = (tipo !== 'agente') && (itemSubnicho === tipo);
     el.style.display = visible ? '' : 'none';
   });
+
+  // Adaptar labels del panel Inicio según subnicho (KPIs transversales)
+  const labels = {
+    desarrolladora: { props: 'Propiedades activas', icon: '🏠' },
+    agencia:        { props: 'Inmuebles disponibles', icon: '🏢' },
+    agente:         { props: 'Propiedades publicadas', icon: '🗝️' },
+  };
+  const L = labels[tipo] || labels.desarrolladora;
+  const propsLabel = document.getElementById('kpi-props-label');
+  const propsIcon = document.getElementById('kpi-props-icon');
+  if (propsLabel) propsLabel.textContent = L.props;
+  if (propsIcon) propsIcon.textContent = L.icon;
 
   console.log(`[CRM] Subnicho aplicado: ${tipo}`);
 };
