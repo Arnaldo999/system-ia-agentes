@@ -395,10 +395,11 @@
     ` : '';
 
     // Acciones según estado
+    const loteIdAttr = LOTE_SELECCIONADO && LOTE_SELECCIONADO.cliente ? '' : '';
     const actions = estado === 'libre' || estado === 'free' ? `
-      <button class="cd-btn-primary" onclick="notif('💡 Asignación','Asignalo desde Clientes Activos escribiendo ${LOTE_ACTUAL.nombre} · ${nro} en Propiedad')">
+      <button class="cd-btn-primary" onclick="typeof abrirContratoDesideLote==='function' ? abrirContratoDesideLote(null,'${(LOTE_ACTUAL.nombre||'').replace(/'/g,'\\\'').replace(/"/g,'&quot;')}','${nro}') : notif('Modal contrato','Cargando...')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
-        Asignar lote
+        Nuevo contrato
       </button>
       <button class="cd-btn-secondary" onclick="notif('📤 Enviar ficha','Función en camino')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 8-16 8 4-8z"/></svg>

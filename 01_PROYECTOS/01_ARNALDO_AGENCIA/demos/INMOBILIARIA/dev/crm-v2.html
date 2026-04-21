@@ -1954,7 +1954,7 @@ tailwind.config = {
    *
    * IMPORTANTE: varios paneles Sprint CRM Completo (asesores,
    * propietarios, loteos, contratos, visitas, inmuebles-renta,
-   * inquilinos, contratos-alquiler, reportes) están fuera del
+   * inquilinos, pagos-alquiler, liquidaciones, reportes) están fuera del
    * .main en el DOM. Para que el sidebar NO se desplace cuando
    * se muestran, los forzamos a posicionarse como overlay del
    * área del .main con position:fixed.
@@ -2112,6 +2112,23 @@ tailwind.config = {
     color: #8b8ba7;
     margin-top: 4px;
   }
+
+  /* ==========================================================
+   * WIZARD CONTRATO UNIFICADO — step indicators
+   * ========================================================== */
+  .cu-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .cu-step-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface2); border: 2px solid var(--border);
+    color: var(--text2); font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .cu-step.active .cu-step-dot { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+  .cu-step.done .cu-step-dot { background: rgba(124,58,237,.2); border-color: rgba(124,58,237,.5); color: #a78bfa; }
+  .cu-step-label { font-size: 10px; color: var(--text2); font-weight: 500; }
+  .cu-step.active .cu-step-label { color: #a78bfa; font-weight: 600; }
+  .cu-step-line { flex: 1; height: 2px; background: var(--border); margin-top: 14px; align-self: flex-start; max-width: 48px; }
 
   /* ==========================================================
    * BOTONES — efecto "press" (hundido) al click en todo el CRM
@@ -2376,8 +2393,11 @@ tailwind.config = {
       <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inquilinos',this)">
         <span class="nav-icon">🧾</span><span>Inquilinos</span>
       </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('contratos-alquiler',this)">
-        <span class="nav-icon">📃</span><span>Contratos de alquiler</span>
+      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('pagos-alquiler',this)">
+        <span class="nav-icon">💳</span><span>Pagos alquiler</span>
+      </div>
+      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('liquidaciones',this)">
+        <span class="nav-icon">💵</span><span>Liquidaciones</span>
       </div>
 
       <!-- ═══ HERRAMIENTAS (transversal) ═══ -->
@@ -2691,7 +2711,8 @@ tailwind.config = {
         <div style="display:flex;gap:8px;align-items:center">
           <div id="activosStatus" style="font-size:12px;color:var(--text2)"></div>
           <button class="btn" onclick="cargarActivos()">↺ Actualizar</button>
-          <button class="btn btn-primary" onclick="abrirModalActivo()">+ Nuevo cliente activo</button>
+          <button class="btn btn-primary" onclick="abrirContratoUnificado()">+ Nuevo contrato</button>
+          <button class="btn" onclick="abrirModalActivo()" title="Alta manual sin contrato" style="font-size:11px">+ Cliente solo</button>
         </div>
       </div>
 
@@ -3565,24 +3586,21 @@ tailwind.config = {
       <div class="cd-page-sub">Propiedades disponibles para alquiler, con estado y rentabilidad mensual</div>
     </div>
     <div class="cd-page-actions">
-      <button class="cd-btn-primary" onclick="notif('🚧 En desarrollo','Panel de inmuebles en renta — próximamente')">
+      <button class="cd-btn-primary" onclick="abrirModalInmueble()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo inmueble
       </button>
     </div>
   </div>
-  <div class="cd-placeholder">
-    <div class="cd-placeholder-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    </div>
-    <div class="cd-placeholder-title">Módulo Inmuebles en renta</div>
-    <div class="cd-placeholder-sub">Acá vas a ver tu cartera de propiedades en alquiler, el estado de ocupación, rentabilidad mensual y alertas de próximos vencimientos. Próximamente.</div>
-    <div class="cd-placeholder-kpis">
-      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Inmuebles</div></div>
-      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Ocupados</div></div>
-      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Libres</div></div>
-      <div class="cd-placeholder-kpi"><div class="k">USD 0</div><div>Renta mensual</div></div>
-    </div>
+  <div class="leads-wrap">
+    <table class="leads-tbl" style="min-width:640px">
+      <thead><tr>
+        <th>Titulo</th><th>Tipo</th><th>Zona</th><th>Precio</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="inmueblesRentaBody">
+        <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">Cargando...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -3597,44 +3615,422 @@ tailwind.config = {
       <div class="cd-page-sub">Personas que alquilan tus inmuebles, con estado de cuenta y próximos vencimientos</div>
     </div>
     <div class="cd-page-actions">
-      <button class="cd-btn-primary" onclick="notif('🚧 En desarrollo','Panel de inquilinos — próximamente')">
+      <button class="cd-btn-primary" onclick="abrirModalInquilino()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo inquilino
       </button>
     </div>
   </div>
-  <div class="cd-placeholder">
-    <div class="cd-placeholder-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    </div>
-    <div class="cd-placeholder-title">Módulo Inquilinos</div>
-    <div class="cd-placeholder-sub">Listado de inquilinos, estado de cuenta, historial de pagos, garantías, alertas de morosidad y renovación de contrato. Próximamente.</div>
+  <div class="leads-wrap">
+    <table class="leads-tbl" style="min-width:560px">
+      <thead><tr>
+        <th>Nombre</th><th>Inmueble</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="inquilinosBody">
+        <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text2)">Cargando...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
-<!-- CONTRATOS DE ALQUILER (subnicho: agencia) -->
-<div class="panel hidden" id="panel-contratos-alquiler" style="padding:0">
+<!-- PAGOS DE ALQUILER (subnicho: agencia) -->
+<div class="panel hidden" id="panel-pagos-alquiler" style="padding:0">
   <div class="cd-page-head">
     <div>
       <h1 class="cd-page-title">
-        <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
-        Contratos de alquiler
+        <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span>
+        Pagos de alquiler
       </h1>
-      <div class="cd-page-sub">Contratos firmados, próximos a vencer, con índice de ajuste y cláusulas</div>
+      <div class="cd-page-sub">Registro de pagos mensuales por inquilino — historial y estado</div>
     </div>
     <div class="cd-page-actions">
-      <button class="cd-btn-primary" onclick="notif('🚧 En desarrollo','Panel de contratos de alquiler — próximamente')">
+      <button class="cd-btn-primary" onclick="abrirModalPago()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Nuevo contrato
+        Nuevo pago
       </button>
     </div>
   </div>
-  <div class="cd-placeholder">
-    <div class="cd-placeholder-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  <div class="leads-wrap">
+    <table class="leads-tbl" style="min-width:560px">
+      <thead><tr>
+        <th>Inquilino</th><th>Mes / Año</th><th>Monto</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="pagosAlquilerBody">
+        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text2)">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- LIQUIDACIONES (subnicho: agencia) -->
+<div class="panel hidden" id="panel-liquidaciones" style="padding:0">
+  <div class="cd-page-head">
+    <div>
+      <h1 class="cd-page-title">
+        <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        Liquidaciones
+      </h1>
+      <div class="cd-page-sub">Liquidaciones mensuales a propietarios — bruto, comisión y neto</div>
     </div>
-    <div class="cd-placeholder-title">Módulo Contratos de alquiler</div>
-    <div class="cd-placeholder-sub">Vas a gestionar los contratos firmados, índice de ajuste (IPC/ICL/UVA), vencimientos, renovaciones y cláusulas especiales. Próximamente.</div>
+    <div class="cd-page-actions">
+      <button class="cd-btn-primary" onclick="abrirModalLiquidacion()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva liquidacion
+      </button>
+    </div>
+  </div>
+  <div class="leads-wrap">
+    <table class="leads-tbl" style="min-width:560px">
+      <thead><tr>
+        <th>Propietario</th><th>Mes / Año</th><th>Neto</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="liquidacionesBody">
+        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text2)">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL CONTRATO UNIFICADO — 3 pasos
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-bg hidden" id="modalContratoUnificado">
+  <div class="modal" style="max-width:560px;width:95vw">
+    <button class="mc" onclick="_cuCerrar()">✕</button>
+
+    <!-- Título -->
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:4px">Nuevo Contrato</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:18px">Registrá la venta o alquiler en 3 pasos</p>
+
+    <!-- Indicadores de paso -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:22px">
+      <div id="cu-step-1" class="cu-step active" style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div class="cu-step-dot">1</div>
+        <div class="cu-step-label">Cliente</div>
+      </div>
+      <div class="cu-step-line"></div>
+      <div id="cu-step-2" class="cu-step" style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div class="cu-step-dot">2</div>
+        <div class="cu-step-label">Activo</div>
+      </div>
+      <div class="cu-step-line"></div>
+      <div id="cu-step-3" class="cu-step" style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div class="cu-step-dot">3</div>
+        <div class="cu-step-label">Contrato</div>
+      </div>
+    </div>
+
+    <!-- PASO 1 — Cliente -->
+    <div id="cu-paso-1">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Tipo de cliente</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .15s" onclick="this.style.borderColor='rgba(124,58,237,.6)'">
+          <input type="radio" name="cu-modo-cliente" value="existente" checked onclick="event.stopPropagation();_cuSetModoCliente('existente')">
+          <div><div style="font-weight:600;font-size:13px">Cliente existente</div><div style="font-size:11px;color:var(--text2)">Ya está en Clientes Activos</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .15s">
+          <input type="radio" name="cu-modo-cliente" value="convertir_lead" onclick="event.stopPropagation();_cuSetModoCliente('convertir_lead')">
+          <div><div style="font-weight:600;font-size:13px">Convertir lead</div><div style="font-size:11px;color:var(--text2)">Lead que cerró — pasa a cliente</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .15s">
+          <input type="radio" name="cu-modo-cliente" value="cliente_nuevo" onclick="event.stopPropagation();_cuSetModoCliente('cliente_nuevo')">
+          <div><div style="font-weight:600;font-size:13px">Cliente nuevo</div><div style="font-size:11px;color:var(--text2)">No estaba en el sistema</div></div>
+        </label>
+      </div>
+      <!-- Área: cliente existente -->
+      <div id="cu-area-existente">
+        <div class="mf"><label>Cliente activo</label>
+          <select id="cu-cliente-select" class="mi"><option value="">Cargando clientes...</option></select>
+        </div>
+      </div>
+      <!-- Área: convertir lead -->
+      <div id="cu-area-lead" style="display:none">
+        <div class="mf"><label>Lead a convertir</label>
+          <select id="cu-lead-select" class="mi"><option value="">Cargando leads...</option></select>
+        </div>
+      </div>
+      <!-- Área: cliente nuevo -->
+      <div id="cu-area-nuevo" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="mf"><label>Nombre *</label><input id="cu-nuevo-nombre" class="mi" placeholder="Juan"></div>
+          <div class="mf"><label>Apellido *</label><input id="cu-nuevo-apellido" class="mi" placeholder="Pérez"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="mf"><label>Teléfono *</label><input id="cu-nuevo-tel" class="mi" placeholder="+549..."></div>
+          <div class="mf"><label>Email</label><input id="cu-nuevo-email" class="mi" type="email" placeholder="juan@..."></div>
+        </div>
+        <div class="mf" style="margin-top:10px"><label>DNI / Documento</label><input id="cu-nuevo-doc" class="mi" placeholder="12.345.678"></div>
+      </div>
+    </div>
+
+    <!-- PASO 2 — Activo -->
+    <div id="cu-paso-2" style="display:none">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Tipo de operación</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="venta_lote" checked onclick="_cuOnTipoChange('venta_lote')">
+          <div><div style="font-size:12px;font-weight:600">Venta lote</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="venta_casa" onclick="_cuOnTipoChange('venta_casa')">
+          <div><div style="font-size:12px;font-weight:600">Venta casa</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="venta_terreno" onclick="_cuOnTipoChange('venta_terreno')">
+          <div><div style="font-size:12px;font-weight:600">Venta terreno</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="venta_unidad" onclick="_cuOnTipoChange('venta_unidad')">
+          <div><div style="font-size:12px;font-weight:600">Venta unidad</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="alquiler" onclick="_cuOnTipoChange('alquiler')">
+          <div><div style="font-size:12px;font-weight:600">Alquiler</div></div>
+        </label>
+      </div>
+      <div class="mf">
+        <label>Seleccionar activo</label>
+        <div id="cu-item-spinner" style="display:none;font-size:12px;color:var(--text2);padding:8px 0">Cargando...</div>
+        <div id="cu-item-wrap">
+          <select id="cu-item-select" class="mi"><option value="">— Seleccionar —</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 3 — Contrato -->
+    <div id="cu-paso-3" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Asesor</label>
+          <select id="cu-asesor" class="mi"><option value="">— Sin asesor —</option></select>
+        </div>
+        <div class="mf"><label>Fecha de firma</label>
+          <input type="date" id="cu-fecha-firma" class="mi">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+        <div class="mf"><label>Monto total</label>
+          <input type="number" id="cu-monto-total" class="mi" placeholder="0" step="0.01" oninput="_cuCalcularCuota()">
+        </div>
+        <div class="mf"><label>Moneda</label>
+          <select id="cu-moneda" class="mi">
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+            <option value="UF">UF</option>
+          </select>
+        </div>
+        <div class="mf"><label>Cuotas totales</label>
+          <input type="number" id="cu-cuotas-total" class="mi" placeholder="Ej: 60" min="1" oninput="_cuCalcularCuota()">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div class="mf"><label>Cuota mensual (auto)</label>
+          <input type="number" id="cu-monto-cuota" class="mi" placeholder="Calculado automático" step="0.01" readonly style="opacity:.7">
+        </div>
+        <div class="mf"><label>Próximo vencimiento</label>
+          <input type="date" id="cu-proximo-venc" class="mi">
+        </div>
+      </div>
+      <div class="mf" style="margin-top:10px"><label>Estado de pago</label>
+        <select id="cu-estado-pago" class="mi">
+          <option value="al_dia">Al dia</option>
+          <option value="atrasado">Atrasado</option>
+          <option value="moroso">Moroso</option>
+          <option value="pagado">Pagado</option>
+        </select>
+      </div>
+      <div class="mf" style="margin-top:10px"><label>Notas internas</label>
+        <textarea id="cu-notas" class="mi" rows="2" placeholder="Condiciones especiales, observaciones..." style="resize:vertical"></textarea>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="cu-error" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:7px;padding:10px 12px;font-size:12px;color:#fca5a5;margin-top:12px"></div>
+
+    <!-- Navegación -->
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button id="cu-btn-prev" class="btn" style="display:none" onclick="_cuPrev()">Anterior</button>
+      <button id="cu-btn-next" class="btn btn-primary" onclick="_cuNext()">Siguiente</button>
+      <button id="cu-btn-save" class="btn btn-primary" style="display:none" onclick="_cuGuardar()">Crear contrato</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL INMUEBLE EN RENTA
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-bg hidden" id="modalInmueble">
+  <div class="modal" style="max-width:500px;width:95vw">
+    <button class="mc" onclick="cerrarModal('modalInmueble')">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Inmueble en renta</h3>
+    <input type="hidden" id="inmuebleId">
+    <div style="display:grid;gap:10px">
+      <div class="mf"><label>Titulo *</label><input id="inmuebleTitulo" class="mi" placeholder="Ej: Depto 3A — Av. Corrientes"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Tipo</label>
+          <select id="inmuebleTipo" class="mi">
+            <option value="depto">Departamento</option>
+            <option value="casa">Casa</option>
+            <option value="local">Local comercial</option>
+            <option value="oficina">Oficina</option>
+            <option value="terreno">Terreno</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="mf"><label>Zona / Barrio</label><input id="inmuebleZona" class="mi" placeholder="Ej: Palermo"></div>
+      </div>
+      <div class="mf"><label>Direccion</label><input id="inmuebleDireccion" class="mi" placeholder="Calle y numero"></div>
+      <div class="mf"><label>Propietario</label>
+        <select id="inmueblePropietario" class="mi"><option value="">— Sin propietario —</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="mf"><label>Precio alquiler</label><input type="number" id="inmueblePrecio" class="mi" placeholder="0" step="0.01"></div>
+        <div class="mf"><label>Expensas</label><input type="number" id="inmuebleExpensas" class="mi" placeholder="0" step="0.01"></div>
+        <div class="mf"><label>Moneda</label>
+          <select id="inmuebleMoneda" class="mi">
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Fecha disponibilidad</label><input type="date" id="inmuebleFechaDisp" class="mi"></div>
+        <div class="mf" style="display:flex;align-items:center;gap:8px;padding-top:18px">
+          <input type="checkbox" id="inmuebleDisponible" checked style="width:16px;height:16px;accent-color:#7c3aed">
+          <label for="inmuebleDisponible" style="font-size:13px;cursor:pointer">Disponible</label>
+        </div>
+      </div>
+      <div class="mf"><label>Notas</label><textarea id="inmuebleNotas" class="mi" rows="2" style="resize:vertical"></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modalInmueble')">Cancelar</button>
+      <button id="btnGuardarInmueble" class="btn btn-primary" onclick="guardarInmueble()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL INQUILINO
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-bg hidden" id="modalInquilino">
+  <div class="modal" style="max-width:520px;width:95vw">
+    <button class="mc" onclick="cerrarModal('modalInquilino')">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Inquilino</h3>
+    <input type="hidden" id="inquilinoId">
+    <div style="display:grid;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Nombre *</label><input id="inquilinoNombre" class="mi" placeholder="Juan"></div>
+        <div class="mf"><label>Apellido *</label><input id="inquilinoApellido" class="mi" placeholder="Pérez"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Telefono</label><input id="inquilinoTel" class="mi" placeholder="+549..."></div>
+        <div class="mf"><label>Email</label><input id="inquilinoEmail" class="mi" type="email"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Documento</label><input id="inquilinoDoc" class="mi" placeholder="DNI / Pasaporte"></div>
+        <div class="mf"><label>Estado</label>
+          <select id="inquilinoEstado" class="mi">
+            <option value="activo">Activo</option>
+            <option value="deuda">Con deuda</option>
+            <option value="finalizado">Finalizado</option>
+          </select>
+        </div>
+      </div>
+      <div class="mf"><label>Inmueble asignado</label>
+        <select id="inquilinoInmueble" class="mi"><option value="">— Sin inmueble —</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="mf"><label>Fecha inicio</label><input type="date" id="inquilinoFechaInicio" class="mi"></div>
+        <div class="mf"><label>Fecha fin</label><input type="date" id="inquilinoFechaFin" class="mi"></div>
+        <div class="mf"><label>Monto alquiler</label><input type="number" id="inquilinoMonto" class="mi" placeholder="0" step="0.01"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Garante nombre</label><input id="inquilinoGaranteNombre" class="mi" placeholder="Nombre del garante"></div>
+        <div class="mf"><label>Garante telefono</label><input id="inquilinoGaranteTel" class="mi" placeholder="+549..."></div>
+      </div>
+      <div class="mf"><label>Notas</label><textarea id="inquilinoNotas" class="mi" rows="2" style="resize:vertical"></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modalInquilino')">Cancelar</button>
+      <button id="btnGuardarInquilino" class="btn btn-primary" onclick="guardarInquilino()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL PAGO DE ALQUILER
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-bg hidden" id="modalPago">
+  <div class="modal" style="max-width:460px;width:95vw">
+    <button class="mc" onclick="cerrarModal('modalPago')">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Pago de alquiler</h3>
+    <input type="hidden" id="pagoId">
+    <div style="display:grid;gap:10px">
+      <div class="mf"><label>Inquilino</label>
+        <select id="pagoInquilino" class="mi"><option value="">— Seleccionar inquilino —</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Mes / Año</label><input id="pagoMesAnio" class="mi" placeholder="Ej: 2026-04"></div>
+        <div class="mf"><label>Monto</label><input type="number" id="pagoMonto" class="mi" placeholder="0" step="0.01"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Fecha de pago</label><input type="date" id="pagoFechaPago" class="mi"></div>
+        <div class="mf"><label>Metodo</label>
+          <select id="pagoMetodo" class="mi">
+            <option value="transferencia">Transferencia</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="cheque">Cheque</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="mf"><label>Estado</label>
+        <select id="pagoEstado" class="mi">
+          <option value="pagado">Pagado</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="atrasado">Atrasado</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modalPago')">Cancelar</button>
+      <button id="btnGuardarPago" class="btn btn-primary" onclick="guardarPago()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL LIQUIDACION
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-bg hidden" id="modalLiquidacion">
+  <div class="modal" style="max-width:460px;width:95vw">
+    <button class="mc" onclick="cerrarModal('modalLiquidacion')">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Liquidacion a propietario</h3>
+    <input type="hidden" id="liquidacionId">
+    <div style="display:grid;gap:10px">
+      <div class="mf"><label>Propietario</label>
+        <select id="liquidacionPropietario" class="mi"><option value="">— Seleccionar propietario —</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Mes / Año</label><input id="liquidacionMesAnio" class="mi" placeholder="Ej: 2026-04"></div>
+        <div class="mf"><label>Fecha liquidacion</label><input type="date" id="liquidacionFecha" class="mi"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="mf"><label>Bruto</label><input type="number" id="liquidacionBruto" class="mi" placeholder="0" step="0.01" oninput="_calcularNeto()"></div>
+        <div class="mf"><label>Comision agencia</label><input type="number" id="liquidacionComision" class="mi" placeholder="0" step="0.01" oninput="_calcularNeto()"></div>
+        <div class="mf"><label>Neto propietario</label><input type="number" id="liquidacionNeto" class="mi" placeholder="Auto" step="0.01" readonly style="opacity:.7"></div>
+      </div>
+      <div class="mf"><label>Estado</label>
+        <select id="liquidacionEstado" class="mi">
+          <option value="pendiente">Pendiente</option>
+          <option value="pagado">Pagado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modalLiquidacion')">Cancelar</button>
+      <button id="btnGuardarLiquidacion" class="btn btn-primary" onclick="guardarLiquidacion()">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -3676,6 +4072,11 @@ tailwind.config = {
 <script src="js/panel-contratos.js"></script>
 <script src="js/panel-visitas.js"></script>
 <script src="js/panel-reportes.js"></script>
+<script src="js/panel-inmuebles-renta.js"></script>
+<script src="js/panel-inquilinos.js"></script>
+<script src="js/panel-pagos-alquiler.js"></script>
+<script src="js/panel-liquidaciones.js"></script>
+<script src="js/panel-contrato-unificado.js"></script>
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────
@@ -3738,7 +4139,7 @@ let activeChat = 0;
 (function reparentearPanelesSprintCRM(){
   const main = document.querySelector('.main');
   if (!main) return;
-  const ids = ['panel-asesores','panel-propietarios','panel-loteos','panel-contratos','panel-visitas','panel-reportes'];
+  const ids = ['panel-asesores','panel-propietarios','panel-loteos','panel-contratos','panel-visitas','panel-reportes','panel-inmuebles-renta','panel-inquilinos','panel-pagos-alquiler','panel-liquidaciones'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el && el.parentElement !== main) main.appendChild(el);
@@ -3791,6 +4192,11 @@ function nav(id, el) {
   if(id==='contratos' && typeof cargarContratos === 'function') cargarContratos();
   if(id==='visitas' && typeof cargarVisitas === 'function') cargarVisitas();
   if(id==='reportes' && typeof cargarReportes === 'function') cargarReportes();
+  // Paneles gestión-agencia
+  if(id==='inmuebles-renta' && typeof cargarInmueblesRenta === 'function') cargarInmueblesRenta();
+  if(id==='inquilinos' && typeof cargarInquilinos === 'function') cargarInquilinos();
+  if(id==='pagos-alquiler' && typeof cargarPagosAlquiler === 'function') cargarPagosAlquiler();
+  if(id==='liquidaciones' && typeof cargarLiquidaciones === 'function') cargarLiquidaciones();
 }
 
 // ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
@@ -3966,7 +4372,10 @@ function renderLeads(data) {
         <td style="color:var(--text2);font-size:12px">${l.interes}</td>
         <td>${spills[l.status] || ''}</td>
         <td style="color:${scoreColor(l.score)};font-weight:600;font-size:12px">${l.score ? l.score + ' pts' : '—'}</td>
-        <td><button class="btn" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button></td>
+        <td style="display:flex;gap:4px;align-items:center">
+          <button class="btn" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button>
+          <button class="btn" style="padding:4px 8px;font-size:10px;background:rgba(124,58,237,.18);color:#a78bfa;border-color:rgba(124,58,237,.3)" title="Convertir a cliente activo" onclick="event.stopPropagation();abrirContratoDesideLead(${l.id},'${(l.name||'').replace(/'/g,"\\'")}')">Convertir</button>
+        </td>
       </tr>`;
   });
 }
@@ -6415,6 +6824,10 @@ function iniciarAutoRefresh() {
     if (id === 'activos') cargarActivos();
     if (id === 'agenda') renderAgenda();
     if (id === 'chat') cargarResumenes();
+    if (id === 'inmuebles-renta' && typeof cargarInmueblesRenta === 'function') cargarInmueblesRenta();
+    if (id === 'inquilinos' && typeof cargarInquilinos === 'function') cargarInquilinos();
+    if (id === 'pagos-alquiler' && typeof cargarPagosAlquiler === 'function') cargarPagosAlquiler();
+    if (id === 'liquidaciones' && typeof cargarLiquidaciones === 'function') cargarLiquidaciones();
   }, AUTO_REFRESH_MS);
 }
 
@@ -6429,6 +6842,10 @@ document.addEventListener('visibilitychange', () => {
     if (id === 'activos') cargarActivos();
     if (id === 'agenda') renderAgenda();
     if (id === 'chat') cargarResumenes();
+    if (id === 'inmuebles-renta' && typeof cargarInmueblesRenta === 'function') cargarInmueblesRenta();
+    if (id === 'inquilinos' && typeof cargarInquilinos === 'function') cargarInquilinos();
+    if (id === 'pagos-alquiler' && typeof cargarPagosAlquiler === 'function') cargarPagosAlquiler();
+    if (id === 'liquidaciones' && typeof cargarLiquidaciones === 'function') cargarLiquidaciones();
   }
 });
 </script>
