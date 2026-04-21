@@ -1,0 +1,1308 @@
+<!DOCTYPE html><html lang="es"><head>
+
+
+<meta charset="utf-8">
+<title>Lovbot AI — Loteos</title>
+<meta name="viewport" content="width=1440">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0b14; --surface:#12121f; --card:#161627; --card-2:#1b1b2e;
+    --line:rgba(255,255,255,.06); --line-2:rgba(255,255,255,.10);
+    --text:#f1f5f9; --muted:#8b8ba7; --dim:#5a5a78;
+    --purple:#7c3aed; --purple-2:#a78bfa; --cyan:#06b6d4; --cyan-2:#22d3ee;
+    --green:#10b981; --amber:#f59e0b; --red:#ef4444; --pink:#ec4899;
+    --radius:12px;
+    --free:#10b981; --free-bg:rgba(16,185,129,.14);
+    --reserved:#f59e0b; --reserved-bg:rgba(245,158,11,.14);
+    --sold:#ef4444; --sold-bg:rgba(239,68,68,.12);
+    --hold:#06b6d4; --hold-bg:rgba(6,182,212,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  .mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+  button{font-family:inherit;color:inherit}
+
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+  /* ---- sidebar (compacto, mismo sistema) ---- */
+  .sidebar{background:#0a0a12;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;gap:2px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .brand-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:grid;place-items:center;color:#0b0b14}
+  .brand-mark svg{width:18px;height:18px}
+  .brand-name{font-weight:700;font-size:15px;letter-spacing:-.02em;background:linear-gradient(90deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .brand-sub{font-size:10.5px;color:var(--muted);margin-top:1px}
+  .nav-section{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);padding:10px 10px 6px;font-weight:600}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:8px;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:.12s;position:relative}
+  .nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+  .nav-item.active{color:var(--text);background:linear-gradient(90deg,rgba(124,58,237,.14),rgba(6,182,212,.04))}
+  .nav-item.active::before{content:"";position:absolute;left:-14px;top:8px;bottom:8px;width:2px;border-radius:2px;background:linear-gradient(180deg,#7c3aed,#06b6d4)}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.85}
+  .nav-item.active svg{opacity:1}
+  .nav-badge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.06);color:var(--text);font-weight:500}
+  .nav-badge.hot{background:rgba(236,72,153,.16);color:#f9a8d4}
+  .nav-badge.cyan{background:rgba(6,182,212,.16);color:#67e8f9}
+  .sidebar-spacer{flex:1}
+  .user-row{display:flex;align-items:center;gap:9px;padding:10px 8px;margin-top:10px;border-top:1px solid var(--line)}
+  .user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:grid;place-items:center;color:#0b0b14;font-weight:600;font-size:11px}
+  .user-info{flex:1;min-width:0}
+  .user-name{font-size:12.5px;font-weight:600}
+  .user-role{font-size:10.5px;color:var(--muted)}
+  .icon-btn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--muted);cursor:pointer;border:1px solid transparent;background:transparent}
+  .icon-btn:hover{color:var(--text);background:rgba(255,255,255,.04);border-color:var(--line)}
+  .icon-btn svg{width:14px;height:14px}
+
+  main{min-width:0;display:flex;flex-direction:column}
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 28px;border-bottom:1px solid var(--line);background:rgba(11,11,20,.85);backdrop-filter:blur(8px);position:sticky;top:0;z-index:10}
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:13px}
+  .crumbs .c{color:var(--muted)}
+  .crumbs .sep{color:var(--dim)}
+  .crumbs .cur{font-weight:600;color:var(--text)}
+  .search{max-width:360px;flex:1;display:flex;align-items:center;gap:9px;padding:7px 12px;background:var(--surface);border:1px solid var(--line);border-radius:9px;font-size:12.5px}
+  .search:focus-within{border-color:rgba(124,58,237,.4)}
+  .search svg{width:14px;height:14px;color:var(--dim)}
+  .search input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:inherit;font-size:12.5px}
+  .search input::placeholder{color:var(--dim)}
+  .status-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:999px;font-size:11.5px;color:#6ee7b7;font-weight:500}
+  .status-pill .dot{width:7px;height:7px;border-radius:50%;background:#10b981;animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%{box-shadow:0 0 0 6px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+  .topbar-user{display:flex;align-items:center;gap:9px;padding:5px 10px 5px 5px;border:1px solid var(--line);border-radius:999px;cursor:pointer}
+
+  /* ---- PAGE HEADER ---- */
+  .page-head{padding:22px 28px 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line)}
+  .page-head h1{margin:0 0 4px;font-size:22px;letter-spacing:-.02em;font-weight:600;display:flex;align-items:center;gap:10px}
+  .page-head .pin{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#ec4899,#f43f5e);display:grid;place-items:center}
+  .page-head .pin svg{width:14px;height:14px;color:#fff}
+  .page-sub{color:var(--muted);font-size:13px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--text);transition:.12s}
+  .btn:hover{border-color:var(--line-2);background:var(--card)}
+  .btn svg{width:13px;height:13px}
+  .btn.primary{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#0b0b14;border-color:transparent;font-weight:600}
+  .btn.primary:hover{filter:brightness(1.1)}
+
+  /* ---- OVERVIEW STRIP ---- */
+  .overview{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:18px 28px 6px}
+  .ov{padding:13px 15px;background:var(--card);border:1px solid var(--line);border-radius:10px;position:relative;overflow:hidden}
+  .ov::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--c)}
+  .ov-label{font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:500;display:flex;align-items:center;gap:6px}
+  .ov-label .d{width:7px;height:7px;border-radius:50%;background:var(--c)}
+  .ov-val{font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .ov-foot{font-size:10.5px;color:var(--dim);margin-top:3px}
+
+  /* ---- MAIN GRID: list | map | detail ---- */
+  .main-grid{display:grid;grid-template-columns:320px 1fr 340px;gap:16px;padding:18px 28px 40px;min-height:calc(100vh - 240px)}
+
+  /* ---- LEFT: loteos list ---- */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;min-height:0}
+  .panel-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .panel-title{font-size:13px;font-weight:600;letter-spacing:-.01em}
+  .panel-sub{font-size:11px;color:var(--muted);margin-top:1px}
+  .filter-chips{display:flex;gap:5px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .chip{padding:4px 9px;border-radius:6px;font-size:11px;font-weight:500;background:rgba(255,255,255,.03);color:var(--muted);border:1px solid var(--line);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+  .chip:hover{color:var(--text);border-color:var(--line-2)}
+  .chip.active{background:rgba(124,58,237,.14);border-color:rgba(124,58,237,.35);color:#c4b5fd}
+  .chip .ct{font-family:'JetBrains Mono',monospace;font-size:10px;opacity:.7}
+
+  .loteos{flex:1;overflow-y:auto;padding:8px}
+  .loteos::-webkit-scrollbar{width:6px}
+  .loteos::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:3px}
+  .loteo{padding:12px;margin:4px 0;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:.12s}
+  .loteo:hover{background:rgba(255,255,255,.025);border-color:var(--line)}
+  .loteo.selected{background:linear-gradient(180deg,rgba(124,58,237,.10),rgba(6,182,212,.04));border-color:rgba(124,58,237,.30)}
+  .loteo-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .loteo-name{font-weight:600;font-size:13px;letter-spacing:-.01em}
+  .loteo-place{font-size:11px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:5px}
+  .loteo-menu{color:var(--dim);cursor:pointer;padding:2px}
+  .loteo-progress{height:5px;background:#0a0a12;border-radius:3px;overflow:hidden;margin:8px 0 7px;position:relative;display:flex}
+  .loteo-progress .seg{height:100%}
+  .seg.s-reserved{background:var(--reserved)}
+  .seg.s-sold{background:var(--sold)}
+  .seg.s-hold{background:var(--hold)}
+  .loteo-stats{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .loteo-stats b{color:var(--text);font-weight:500}
+  .loteo-counts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:10.5px}
+  .cc{padding:4px 6px;border-radius:5px;text-align:center}
+  .cc .n{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12px;display:block}
+  .cc.f{background:var(--free-bg);color:#6ee7b7}
+  .cc.r{background:var(--reserved-bg);color:#fcd34d}
+  .cc.s{background:var(--sold-bg);color:#fca5a5}
+
+  .add-loteo{margin:6px 4px;padding:18px;border:1px dashed rgba(124,58,237,.3);border-radius:10px;display:flex;align-items:center;gap:10px;cursor:pointer;background:rgba(124,58,237,.04)}
+  .add-loteo:hover{background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.5)}
+  .add-loteo .plus{width:32px;height:32px;border-radius:8px;background:rgba(124,58,237,.2);display:grid;place-items:center;color:#c4b5fd}
+  .add-loteo .plus svg{width:14px;height:14px}
+  .add-loteo .t{font-size:12.5px;font-weight:600}
+  .add-loteo .s{font-size:11px;color:var(--muted)}
+
+  /* ---- CENTER: map ---- */
+  .map-panel{display:flex;flex-direction:column}
+  .map-toolbar{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .map-tabs{display:inline-flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px}
+  .map-tab{padding:5px 10px;border-radius:6px;font-size:11.5px;color:var(--muted);cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+  .map-tab.active{background:rgba(255,255,255,.06);color:var(--text)}
+  .map-tab svg{width:12px;height:12px}
+  .legend{display:flex;gap:12px;margin-left:auto;font-size:11px;color:var(--muted);flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:5px}
+  .legend-sw{width:11px;height:11px;border-radius:3px;border:1px solid rgba(0,0,0,.2)}
+
+  .map-stage{
+    flex:1;position:relative;overflow:hidden;
+    background:
+      radial-gradient(ellipse at 20% 30%,rgba(124,58,237,.05),transparent 50%),
+      radial-gradient(ellipse at 80% 70%,rgba(6,182,212,.04),transparent 50%),
+      #0a0a12;
+    min-height:520px;
+  }
+  /* subtle grid */
+  .map-stage::before{
+    content:"";position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size:28px 28px;
+    pointer-events:none;
+    mask-image:radial-gradient(ellipse at center, black 60%, transparent 100%);
+  }
+
+  /* streets */
+  .street{position:absolute;background:rgba(255,255,255,.04);border-top:1px dashed rgba(255,255,255,.10);border-bottom:1px dashed rgba(255,255,255,.10)}
+  .street .st-name{position:absolute;top:50%;transform:translateY(-50%);font-size:9.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;padding:0 8px;background:#0a0a12}
+  .landmark{position:absolute;font-size:10px;color:var(--muted);background:rgba(255,255,255,.03);border:1px dashed var(--line);border-radius:6px;padding:6px 10px;display:flex;align-items:center;gap:6px}
+  .landmark svg{width:11px;height:11px;opacity:.7}
+
+  /* lots grid */
+  .lots{position:absolute;inset:0;padding:58px 32px 32px}
+  .lots-row{display:grid;gap:6px;margin-bottom:10px}
+  .lot{
+    position:relative;border-radius:6px;padding:6px 7px;cursor:pointer;transition:transform .1s, box-shadow .12s;
+    min-height:64px;display:flex;flex-direction:column;justify-content:space-between;
+    border:1px solid;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .lot:hover{transform:translateY(-1px);z-index:5}
+  .lot.active{box-shadow:0 0 0 2px var(--purple), 0 0 0 5px rgba(124,58,237,.25);z-index:6}
+  .lot-n{font-size:11px;font-weight:600;letter-spacing:-.01em}
+  .lot-m{font-size:9.5px;opacity:.7}
+  .lot-price{font-size:10px;font-weight:500}
+
+  .lot.free{background:var(--free-bg);border-color:rgba(16,185,129,.4);color:#6ee7b7}
+  .lot.free:hover{background:rgba(16,185,129,.22)}
+  .lot.reserved{background:var(--reserved-bg);border-color:rgba(245,158,11,.4);color:#fcd34d}
+  .lot.reserved:hover{background:rgba(245,158,11,.22)}
+  .lot.sold{background:var(--sold-bg);border-color:rgba(239,68,68,.35);color:#fca5a5;opacity:.85}
+  .lot.sold:hover{opacity:1}
+  .lot.hold{background:var(--hold-bg);border-color:rgba(6,182,212,.4);color:#67e8f9}
+  .lot.hold:hover{background:rgba(6,182,212,.22)}
+
+  .lot-icon{position:absolute;top:5px;right:5px;opacity:.8}
+  .lot-icon svg{width:10px;height:10px}
+
+  .map-overlay-left{position:absolute;left:16px;top:12px;display:flex;flex-direction:row;gap:6px;z-index:4}
+  .map-badge{background:rgba(10,10,18,.85);border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;font-size:11px;backdrop-filter:blur(6px);display:flex;align-items:center;gap:6px}
+  .map-badge .t{color:var(--muted)}
+  .map-badge b{font-weight:600}
+
+  .map-overlay-right{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:6px;z-index:4}
+  .map-ctrl{width:32px;height:32px;border-radius:8px;background:rgba(10,10,18,.85);border:1px solid var(--line-2);display:grid;place-items:center;cursor:pointer;color:var(--muted);backdrop-filter:blur(6px)}
+  .map-ctrl:hover{color:var(--text)}
+  .map-ctrl svg{width:14px;height:14px}
+
+  .minimap{position:absolute;left:16px;bottom:16px;width:132px;height:82px;background:rgba(10,10,18,.9);border:1px solid var(--line-2);border-radius:8px;overflow:hidden;backdrop-filter:blur(6px);z-index:4;box-shadow:0 8px 24px -8px rgba(0,0,0,.6)}
+  .minimap-label{position:absolute;top:4px;left:6px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;z-index:2}
+  .minimap::before{content:"";position:absolute;inset:8px;background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(6,182,212,.1));border-radius:4px;opacity:.4}
+  .mini-dot{position:absolute;width:3px;height:3px;border-radius:50%}
+  .mini-view{position:absolute;border:1.5px solid #a78bfa;border-radius:3px;background:rgba(124,58,237,.1)}
+
+  /* ---- RIGHT: lot details ---- */
+  .detail{display:flex;flex-direction:column;min-height:0}
+  .detail-body{flex:1;overflow-y:auto;padding:16px 18px}
+  .detail-body::-webkit-scrollbar{width:6px}
+  .detail-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:3px}
+  .dt-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:10px}
+  .dt-id{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+  .dt-name{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-top:2px;display:flex;align-items:center;gap:10px}
+  .dt-status{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+  .dt-status .d{width:5px;height:5px;border-radius:50%}
+  .dt-status.reserved{color:#fcd34d;background:var(--reserved-bg);border:1px solid rgba(245,158,11,.3)}
+  .dt-status.reserved .d{background:#f59e0b}
+  .dt-status.free{color:#6ee7b7;background:var(--free-bg);border:1px solid rgba(16,185,129,.3)}
+  .dt-status.free .d{background:#10b981}
+  .dt-status.sold{color:#fca5a5;background:var(--sold-bg);border:1px solid rgba(239,68,68,.3)}
+  .dt-status.sold .d{background:#ef4444}
+
+  .dt-hero{background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(6,182,212,.12));border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:16px;margin-bottom:16px;position:relative;overflow:hidden}
+  .dt-hero::after{content:"";position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,.25),transparent 60%)}
+  .dt-hero-row{display:flex;justify-content:space-between;align-items:flex-start;position:relative}
+  .dt-hero .sup{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:500}
+  .dt-price{font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .dt-price .u{font-size:13px;color:var(--muted);margin-right:4px}
+  .dt-m2{font-size:11px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace}
+
+  .dt-section-title{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .dt-section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .dt-cell{padding:9px 11px;background:#0a0a12;border:1px solid var(--line);border-radius:8px}
+  .dt-cell .l{font-size:10px;color:var(--muted);margin-bottom:3px}
+  .dt-cell .v{font-size:12.5px;font-weight:500;font-family:'JetBrains Mono',monospace}
+
+  .dt-client{display:flex;align-items:center;gap:11px;padding:11px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
+  .dt-client-avatar{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#f59e0b,#ec4899);display:grid;place-items:center;font-weight:600;font-size:12px;color:#0b0b14}
+  .dt-client-info{flex:1;min-width:0}
+  .dt-client-name{font-size:13px;font-weight:600;margin-bottom:2px}
+  .dt-client-meta{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .dt-client-meta .sep{color:var(--dim)}
+
+  .dt-feats{display:flex;flex-wrap:wrap;gap:5px}
+  .feat{padding:4px 8px;border-radius:6px;font-size:10.5px;background:rgba(255,255,255,.03);border:1px solid var(--line);color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+  .feat svg{width:10px;height:10px;opacity:.7}
+
+  .timeline{display:flex;flex-direction:column;gap:10px;padding-left:4px}
+  .tl-item{display:flex;gap:10px;position:relative;font-size:12px}
+  .tl-item:not(:last-child)::after{content:"";position:absolute;left:5px;top:16px;bottom:-10px;width:1px;background:var(--line)}
+  .tl-dot{width:11px;height:11px;border-radius:50%;background:var(--card);border:2px solid var(--purple);flex-shrink:0;margin-top:2px;z-index:1}
+  .tl-body{flex:1}
+  .tl-body b{font-weight:600}
+  .tl-time{font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:2px}
+
+  .dt-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+  .dt-actions .btn{width:100%;justify-content:center}
+
+  /* ---- FAB: IA ---- */
+  .ai-fab{position:fixed;bottom:22px;right:22px;z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .ai-fab-btn{
+    display:flex;align-items:center;gap:8px;padding:11px 16px;border-radius:999px;
+    background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#0b0b14;font-weight:600;font-size:12.5px;
+    cursor:pointer;border:none;box-shadow:0 10px 30px -10px rgba(124,58,237,.5);
+  }
+  .ai-fab-btn svg{width:15px;height:15px}
+
+  /* ---- TOAST / AI inline hint ---- */
+  .ai-hint{
+    background:linear-gradient(160deg,rgba(124,58,237,.12),rgba(6,182,212,.06));
+    border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:12px 14px;
+    display:flex;gap:10px;margin-top:10px;
+  }
+  .ai-hint-ico{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:grid;place-items:center;color:#0b0b14;flex-shrink:0}
+  .ai-hint-ico svg{width:13px;height:13px}
+  .ai-hint-title{font-size:11.5px;font-weight:600;margin-bottom:2px}
+  .ai-hint-body{font-size:11.5px;color:var(--muted);line-height:1.5}
+  .ai-hint-body b{color:var(--text);font-weight:500}
+
+</style>
+</head>
+<body data-cc-id="cc-1" style="cursor: crosshair; background-color: rgb(20, 13, 11);">
+
+<div class="app">
+
+  <!-- ============== SIDEBAR ============== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10"></path></svg></div>
+      <div><div class="brand-name">Lovbot AI</div><div class="brand-sub">CRM · Inmobiliaria Ros</div></div>
+    </div>
+    <div class="nav-section">Principal</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Inicio</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 20V10l9-6 9 6v10"></path><path d="M9 20v-6h6v6"></path></svg>Mi Pipeline <span class="nav-badge hot">19</span></div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"></circle><path d="M2 20c.8-3.5 3.7-6 7-6s6.2 2.5 7 6"></path><circle cx="17" cy="6" r="2.5"></circle></svg>Mis Leads <span class="nav-badge">127</span></div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 3h6l1 3h3a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>Propiedades</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Mi Agenda <span class="nav-badge cyan">4</span></div>
+    <div class="nav-section">Gestión</div>
+    <div class="nav-item active"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>Loteos <span class="nav-badge hot">7</span></div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M9 13h6M9 17h4"></path></svg>Contratos</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M7 17l4-4 3 3 5-6"></path></svg>Reportes</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12a8 8 0 1 1-3.5-6.6L21 4l-.7 3.5A8 8 0 0 1 21 12z"></path></svg>Chat IA</div>
+    <div class="nav-section">Herramientas</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 14.5l1.6 1-2 3.4-1.9-.5a7.5 7.5 0 0 1-2 1.2l-.4 1.9h-4l-.4-2a7.5 7.5 0 0 1-2-1.1l-2 .5-2-3.4 1.7-1a7.5 7.5 0 0 1 0-2.3l-1.7-1 2-3.4 2 .5a7.5 7.5 0 0 1 2-1.2l.4-1.9h4l.4 1.9a7.5 7.5 0 0 1 2 1.2l2-.5 2 3.4-1.7 1a7.5 7.5 0 0 1 0 2.3z"></path></svg>Configuración</div>
+    <div class="sidebar-spacer"></div>
+    <div class="user-row">
+      <div class="user-avatar">MG</div>
+      <div class="user-info"><div class="user-name">Mariana G.</div><div class="user-role">Asesora · Posadas</div></div>
+      <button class="icon-btn" title="Cerrar sesión"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="crumbs">
+        <span class="c">CRM</span>
+        <span class="sep">/</span>
+        <span class="c">Gestión</span>
+        <span class="sep">/</span>
+        <span class="cur">Loteos</span>
+      </div>
+      <div style="flex:1"></div>
+      <div class="search">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3" stroke-linecap="round"></path></svg>
+        <input placeholder="Buscar loteo, lote, cliente…">
+      </div>
+      <div class="status-pill"><span class="dot"></span> Bot activo</div>
+      <div class="topbar-user">
+        <div class="user-avatar">IR</div>
+        <span style="font-size:12px;font-weight:500">Inmobiliaria Ros</span>
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--muted)"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+    </div>
+
+    <!-- PAGE HEADER -->
+    <div class="page-head">
+      <div>
+        <h1>
+          <span class="pin"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+          Loteos &amp; Mapas
+        </h1>
+        <div class="page-sub">Cargá tus loteos y lotes individuales. Marcá vendidos o reservados con el cliente asignado.</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3" stroke-linecap="round" stroke-linejoin="round"></path></svg>Exportar</button>
+        <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>Ver en Maps</button>
+        <button class="btn primary"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>Nuevo loteo</button>
+      </div>
+    </div>
+
+    <!-- OVERVIEW STRIP -->
+    <div class="overview">
+      <div class="ov" style="--c:#7c3aed">
+        <div class="ov-label">Loteos activos</div>
+        <div class="ov-val">7</div>
+        <div class="ov-foot">en 4 localidades</div>
+      </div>
+      <div class="ov" style="--c:#10b981">
+        <div class="ov-label"><span class="d"></span>Lotes libres</div>
+        <div class="ov-val">84</div>
+        <div class="ov-foot">62% del inventario</div>
+      </div>
+      <div class="ov" style="--c:#06b6d4">
+        <div class="ov-label"><span class="d"></span>En seña</div>
+        <div class="ov-val">9</div>
+        <div class="ov-foot">USD 38k comprometidos</div>
+      </div>
+      <div class="ov" style="--c:#f59e0b">
+        <div class="ov-label"><span class="d"></span>Reservados</div>
+        <div class="ov-val">23</div>
+        <div class="ov-foot">17% del inventario</div>
+      </div>
+      <div class="ov" style="--c:#ef4444">
+        <div class="ov-label"><span class="d"></span>Vendidos</div>
+        <div class="ov-val">19</div>
+        <div class="ov-foot">USD 1.12M este año</div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="main-grid">
+
+      <!-- LEFT: LOTEOS LIST -->
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Tus loteos</div>
+            <div class="panel-sub">7 activos</div>
+          </div>
+          <div style="flex:1"></div>
+          <button class="icon-btn" title="Ordenar"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"></path></svg></button>
+        </div>
+        <div class="filter-chips">
+          <button class="chip active">Todos <span class="ct">7</span></button>
+          <button class="chip">Posadas <span class="ct">3</span></button>
+          <button class="chip">Oberá <span class="ct">2</span></button>
+          <button class="chip">Iguazú <span class="ct">1</span></button>
+          <button class="chip">Eldorado <span class="ct">1</span></button>
+        </div>
+        <div class="loteos" id="loteos"><div class="loteo" data-id="l1">
+      <div class="loteo-top">
+        <div>
+          <div class="loteo-name">Villa Cabello Norte</div>
+          <div class="loteo-place">
+            <svg width="10" height="10" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Posadas · Av. San Martín km 4
+          </div>
+        </div>
+        <div class="loteo-menu" title="Opciones">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="18" r="1"></circle></svg>
+        </div>
+      </div>
+      <div class="loteo-progress">
+        <div class="seg s-sold" style="width:22.22222222222222%"></div>
+        <div class="seg s-reserved" style="width:25%"></div>
+        <div class="seg s-hold" style="width:5.555555555555555%"></div>
+      </div>
+      <div class="loteo-stats">
+        <span><b>36</b> lotes totales</span>
+        <span>53% ocupado</span>
+      </div>
+      <div class="loteo-counts">
+        <div class="cc f"><span class="n">17</span>libres</div>
+        <div class="cc r"><span class="n">9</span>reserv.</div>
+        <div class="cc s"><span class="n">8</span>vendidos</div>
+      </div>
+    </div><div class="loteo" data-id="l2">
+      <div class="loteo-top">
+        <div>
+          <div class="loteo-name">Altos de Garupá</div>
+          <div class="loteo-place">
+            <svg width="10" height="10" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Garupá · Ruta 12 km 8
+          </div>
+        </div>
+        <div class="loteo-menu" title="Opciones">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="18" r="1"></circle></svg>
+        </div>
+      </div>
+      <div class="loteo-progress">
+        <div class="seg s-sold" style="width:16.666666666666664%"></div>
+        <div class="seg s-reserved" style="width:20.833333333333336%"></div>
+        <div class="seg s-hold" style="width:4.166666666666666%"></div>
+      </div>
+      <div class="loteo-stats">
+        <span><b>24</b> lotes totales</span>
+        <span>42% ocupado</span>
+      </div>
+      <div class="loteo-counts">
+        <div class="cc f"><span class="n">14</span>libres</div>
+        <div class="cc r"><span class="n">5</span>reserv.</div>
+        <div class="cc s"><span class="n">4</span>vendidos</div>
+      </div>
+    </div><div class="loteo selected" data-id="l3">
+      <div class="loteo-top">
+        <div>
+          <div class="loteo-name">Mirador del Paraná</div>
+          <div class="loteo-place">
+            <svg width="10" height="10" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Posadas · Costanera sur
+          </div>
+        </div>
+        <div class="loteo-menu" title="Opciones">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="18" r="1"></circle></svg>
+        </div>
+      </div>
+      <div class="loteo-progress">
+        <div class="seg s-sold" style="width:27.77777777777778%"></div>
+        <div class="seg s-reserved" style="width:33.33333333333333%"></div>
+        <div class="seg s-hold" style="width:5.555555555555555%"></div>
+      </div>
+      <div class="loteo-stats">
+        <span><b>18</b> lotes totales</span>
+        <span>67% ocupado</span>
+      </div>
+      <div class="loteo-counts">
+        <div class="cc f"><span class="n">6</span>libres</div>
+        <div class="cc r"><span class="n">6</span>reserv.</div>
+        <div class="cc s"><span class="n">5</span>vendidos</div>
+      </div>
+    </div><div class="loteo" data-id="l4">
+      <div class="loteo-top">
+        <div>
+          <div class="loteo-name">Oberá Selva I</div>
+          <div class="loteo-place">
+            <svg width="10" height="10" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Oberá · Villa Stemberg
+          </div>
+        </div>
+        <div class="loteo-menu" title="Opciones">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="18" r="1"></circle></svg>
+        </div>
+      </div>
+      <div class="loteo-progress">
+        <div class="seg s-sold" style="width:7.142857142857142%"></div>
+        <div class="seg s-reserved" style="width:10.714285714285714%"></div>
+        <div class="seg s-hold" style="width:10.714285714285714%"></div>
+      </div>
+      <div class="loteo-stats">
+        <span><b>28</b> lotes totales</span>
+        <span>29% ocupado</span>
+      </div>
+      <div class="loteo-counts">
+        <div class="cc f"><span class="n">20</span>libres</div>
+        <div class="cc r"><span class="n">3</span>reserv.</div>
+        <div class="cc s"><span class="n">2</span>vendidos</div>
+      </div>
+    </div><div class="loteo" data-id="l5">
+      <div class="loteo-top">
+        <div>
+          <div class="loteo-name">Chacras de Apóstoles</div>
+          <div class="loteo-place">
+            <svg width="10" height="10" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Apóstoles · Acceso oeste
+          </div>
+        </div>
+        <div class="loteo-menu" title="Opciones">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="18" r="1"></circle></svg>
+        </div>
+      </div>
+      <div class="loteo-progress">
+        <div class="seg s-sold" style="width:0%"></div>
+        <div class="seg s-reserved" style="width:12.5%"></div>
+        <div class="seg s-hold" style="width:12.5%"></div>
+      </div>
+      <div class="loteo-stats">
+        <span><b>16</b> lotes totales</span>
+        <span>25% ocupado</span>
+      </div>
+      <div class="loteo-counts">
+        <div class="cc f"><span class="n">11</span>libres</div>
+        <div class="cc r"><span class="n">2</span>reserv.</div>
+        <div class="cc s"><span class="n">0</span>vendidos</div>
+      </div>
+    </div><div class="loteo" data-id="l6">
+      <div class="loteo-top">
+        <div>
+          <div class="loteo-name">Iguazú Reserva</div>
+          <div class="loteo-place">
+            <svg width="10" height="10" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Pto. Iguazú · zona selva
+          </div>
+        </div>
+        <div class="loteo-menu" title="Opciones">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="18" r="1"></circle></svg>
+        </div>
+      </div>
+      <div class="loteo-progress">
+        <div class="seg s-sold" style="width:8.333333333333332%"></div>
+        <div class="seg s-reserved" style="width:25%"></div>
+        <div class="seg s-hold" style="width:0%"></div>
+      </div>
+      <div class="loteo-stats">
+        <span><b>12</b> lotes totales</span>
+        <span>33% ocupado</span>
+      </div>
+      <div class="loteo-counts">
+        <div class="cc f"><span class="n">8</span>libres</div>
+        <div class="cc r"><span class="n">3</span>reserv.</div>
+        <div class="cc s"><span class="n">1</span>vendidos</div>
+      </div>
+    </div><div class="loteo" data-id="l7">
+      <div class="loteo-top">
+        <div>
+          <div class="loteo-name">Los Lapachos</div>
+          <div class="loteo-place">
+            <svg width="10" height="10" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Eldorado · km 7
+          </div>
+        </div>
+        <div class="loteo-menu" title="Opciones">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="18" r="1"></circle></svg>
+        </div>
+      </div>
+      <div class="loteo-progress">
+        <div class="seg s-sold" style="width:36.36363636363637%"></div>
+        <div class="seg s-reserved" style="width:27.27272727272727%"></div>
+        <div class="seg s-hold" style="width:0%"></div>
+      </div>
+      <div class="loteo-stats">
+        <span><b>22</b> lotes totales</span>
+        <span>64% ocupado</span>
+      </div>
+      <div class="loteo-counts">
+        <div class="cc f"><span class="n">8</span>libres</div>
+        <div class="cc r"><span class="n">6</span>reserv.</div>
+        <div class="cc s"><span class="n">8</span>vendidos</div>
+      </div>
+    </div><div class="add-loteo">
+    <div class="plus"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg></div>
+    <div><div class="t">Agregar nuevo loteo</div><div class="s">Con lotes, manzanas y mapa</div></div>
+  </div></div>
+      </div>
+
+      <!-- CENTER: MAP -->
+      <div class="panel map-panel">
+        <div class="map-toolbar">
+          <div>
+            <div class="panel-title" id="currentLoteoName">Loteo Mirador del Paraná</div>
+            <div class="panel-sub" id="currentLoteoMeta">Posadas · Costanera sur · 18 lotes · 4 manzanas</div>
+          </div>
+          <div style="flex:1"></div>
+          <div class="map-tabs">
+            <div class="map-tab active">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              Grid
+            </div>
+            <div class="map-tab">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              Satelital
+            </div>
+            <div class="map-tab">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+              Tabla
+            </div>
+          </div>
+          <div class="legend">
+            <div class="legend-item"><span class="legend-sw" style="background:var(--free)"></span>Libre</div>
+            <div class="legend-item"><span class="legend-sw" style="background:var(--hold)"></span>Seña</div>
+            <div class="legend-item"><span class="legend-sw" style="background:var(--reserved)"></span>Reservado</div>
+            <div class="legend-item"><span class="legend-sw" style="background:var(--sold)"></span>Vendido</div>
+          </div>
+        </div>
+
+        <div class="map-stage" id="mapStage">
+
+          <!-- overlays -->
+          <div class="map-overlay-left">
+            <div class="map-badge"><span class="t">Manzana</span><b id="mz">A</b></div>
+            <div class="map-badge"><span class="t">Ocupación</span><b>47%</b></div>
+          </div>
+          <!-- moved inline -->
+
+
+
+          <div class="map-overlay-right">
+            <div class="map-ctrl" title="Zoom in"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg></div>
+            <div class="map-ctrl" title="Zoom out"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14" stroke-linecap="round"></path></svg></div>
+            <div class="map-ctrl" title="Centrar"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3"></path></svg></div>
+          </div>
+
+          <!-- street labels -->
+          <div class="street" style="left:0;right:0;top:130px;height:22px"><span class="st-name" style="left:30px">Calle 12 de Octubre</span></div>
+          <div class="street" style="left:0;right:0;top:380px;height:22px"><span class="st-name" style="left:30px">Calle Las Glicinas</span></div>
+
+          <!-- landmarks removed -->
+          
+
+          <!-- lots -->
+          <div class="lots" id="lotsGrid"><div class="lots-row" style="grid-template-columns: repeat(8, 1fr);"><div class="lot sold" data-n="A-01">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+        <div>
+          <div class="lot-n">A-01</div>
+          <div class="lot-m">420 m²</div>
+        </div>
+        <div class="lot-price">USD 39k</div>
+      </div><div class="lot sold" data-n="A-02">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+        <div>
+          <div class="lot-n">A-02</div>
+          <div class="lot-m">450 m²</div>
+        </div>
+        <div class="lot-price">USD 41k</div>
+      </div><div class="lot reserved" data-n="A-03">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2" stroke-linecap="round"></path></svg></span>
+        <div>
+          <div class="lot-n">A-03</div>
+          <div class="lot-m">450 m²</div>
+        </div>
+        <div class="lot-price">USD 42k</div>
+      </div><div class="lot reserved" data-n="A-04">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2" stroke-linecap="round"></path></svg></span>
+        <div>
+          <div class="lot-n">A-04</div>
+          <div class="lot-m">500 m²</div>
+        </div>
+        <div class="lot-price">USD 46k</div>
+      </div><div class="lot free" data-n="A-05">
+        
+        <div>
+          <div class="lot-n">A-05</div>
+          <div class="lot-m">500 m²</div>
+        </div>
+        <div class="lot-price">USD 47k</div>
+      </div><div class="lot free" data-n="A-06">
+        
+        <div>
+          <div class="lot-n">A-06</div>
+          <div class="lot-m">520 m²</div>
+        </div>
+        <div class="lot-price">USD 49k</div>
+      </div><div class="lot hold" data-n="A-07">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 2L3 8v4c0 5 4 9 9 10 5-1 9-5 9-10V8z"></path></svg></span>
+        <div>
+          <div class="lot-n">A-07</div>
+          <div class="lot-m">540 m²</div>
+        </div>
+        <div class="lot-price">USD 51k</div>
+      </div><div class="lot free active" data-n="A-08">
+        
+        <div>
+          <div class="lot-n">A-08</div>
+          <div class="lot-m">600 m²</div>
+        </div>
+        <div class="lot-price">USD 54k</div>
+      </div></div><div class="lots-row" style="grid-template-columns: repeat(9, 1fr);"><div class="lot free" data-n="B-01">
+        
+        <div>
+          <div class="lot-n">B-01</div>
+          <div class="lot-m">380 m²</div>
+        </div>
+        <div class="lot-price">USD 34k</div>
+      </div><div class="lot reserved" data-n="B-02">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2" stroke-linecap="round"></path></svg></span>
+        <div>
+          <div class="lot-n">B-02</div>
+          <div class="lot-m">400 m²</div>
+        </div>
+        <div class="lot-price">USD 36k</div>
+      </div><div class="lot sold" data-n="B-03">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+        <div>
+          <div class="lot-n">B-03</div>
+          <div class="lot-m">420 m²</div>
+        </div>
+        <div class="lot-price">USD 38k</div>
+      </div><div class="lot sold" data-n="B-04">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+        <div>
+          <div class="lot-n">B-04</div>
+          <div class="lot-m">450 m²</div>
+        </div>
+        <div class="lot-price">USD 41k</div>
+      </div><div class="lot free" data-n="B-05">
+        
+        <div>
+          <div class="lot-n">B-05</div>
+          <div class="lot-m">460 m²</div>
+        </div>
+        <div class="lot-price">USD 42k</div>
+      </div><div class="lot reserved" data-n="B-06">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2" stroke-linecap="round"></path></svg></span>
+        <div>
+          <div class="lot-n">B-06</div>
+          <div class="lot-m">480 m²</div>
+        </div>
+        <div class="lot-price">USD 44k</div>
+      </div><div class="lot free" data-n="B-07">
+        
+        <div>
+          <div class="lot-n">B-07</div>
+          <div class="lot-m">500 m²</div>
+        </div>
+        <div class="lot-price">USD 45k</div>
+      </div><div class="lot free" data-n="B-08">
+        
+        <div>
+          <div class="lot-n">B-08</div>
+          <div class="lot-m">520 m²</div>
+        </div>
+        <div class="lot-price">USD 47k</div>
+      </div><div class="lot hold" data-n="B-09">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 2L3 8v4c0 5 4 9 9 10 5-1 9-5 9-10V8z"></path></svg></span>
+        <div>
+          <div class="lot-n">B-09</div>
+          <div class="lot-m">550 m²</div>
+        </div>
+        <div class="lot-price">USD 49k</div>
+      </div></div><div class="lots-row" style="grid-template-columns: repeat(8, 1fr);"><div class="lot free" data-n="C-01">
+        
+        <div>
+          <div class="lot-n">C-01</div>
+          <div class="lot-m">480 m²</div>
+        </div>
+        <div class="lot-price">USD 44k</div>
+      </div><div class="lot free" data-n="C-02">
+        
+        <div>
+          <div class="lot-n">C-02</div>
+          <div class="lot-m">500 m²</div>
+        </div>
+        <div class="lot-price">USD 46k</div>
+      </div><div class="lot reserved" data-n="C-03">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2" stroke-linecap="round"></path></svg></span>
+        <div>
+          <div class="lot-n">C-03</div>
+          <div class="lot-m">520 m²</div>
+        </div>
+        <div class="lot-price">USD 48k</div>
+      </div><div class="lot sold" data-n="C-04">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+        <div>
+          <div class="lot-n">C-04</div>
+          <div class="lot-m">540 m²</div>
+        </div>
+        <div class="lot-price">USD 49k</div>
+      </div><div class="lot free" data-n="C-05">
+        
+        <div>
+          <div class="lot-n">C-05</div>
+          <div class="lot-m">560 m²</div>
+        </div>
+        <div class="lot-price">USD 51k</div>
+      </div><div class="lot reserved" data-n="C-06">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2" stroke-linecap="round"></path></svg></span>
+        <div>
+          <div class="lot-n">C-06</div>
+          <div class="lot-m">580 m²</div>
+        </div>
+        <div class="lot-price">USD 53k</div>
+      </div><div class="lot free" data-n="C-07">
+        
+        <div>
+          <div class="lot-n">C-07</div>
+          <div class="lot-m">600 m²</div>
+        </div>
+        <div class="lot-price">USD 55k</div>
+      </div><div class="lot free" data-n="C-08">
+        
+        <div>
+          <div class="lot-n">C-08</div>
+          <div class="lot-m">620 m²</div>
+        </div>
+        <div class="lot-price">USD 57k</div>
+      </div></div><div class="lots-row" style="grid-template-columns: repeat(7, 1fr);"><div class="lot sold" data-n="D-01">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+        <div>
+          <div class="lot-n">D-01</div>
+          <div class="lot-m">650 m²</div>
+        </div>
+        <div class="lot-price">USD 62k</div>
+      </div><div class="lot reserved" data-n="D-02">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2" stroke-linecap="round"></path></svg></span>
+        <div>
+          <div class="lot-n">D-02</div>
+          <div class="lot-m">680 m²</div>
+        </div>
+        <div class="lot-price">USD 65k</div>
+      </div><div class="lot free" data-n="D-03">
+        
+        <div>
+          <div class="lot-n">D-03</div>
+          <div class="lot-m">700 m²</div>
+        </div>
+        <div class="lot-price">USD 68k</div>
+      </div><div class="lot reserved" data-n="D-04">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2" stroke-linecap="round"></path></svg></span>
+        <div>
+          <div class="lot-n">D-04</div>
+          <div class="lot-m">720 m²</div>
+        </div>
+        <div class="lot-price">USD 70k</div>
+      </div><div class="lot free" data-n="D-05">
+        
+        <div>
+          <div class="lot-n">D-05</div>
+          <div class="lot-m">740 m²</div>
+        </div>
+        <div class="lot-price">USD 72k</div>
+      </div><div class="lot free" data-n="D-06">
+        
+        <div>
+          <div class="lot-n">D-06</div>
+          <div class="lot-m">800 m²</div>
+        </div>
+        <div class="lot-price">USD 78k</div>
+      </div><div class="lot sold" data-n="D-07">
+        <span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+        <div>
+          <div class="lot-n">D-07</div>
+          <div class="lot-m">820 m²</div>
+        </div>
+        <div class="lot-price">USD 80k</div>
+      </div></div></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: DETAIL -->
+      <div class="panel detail">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Detalle del lote</div>
+            <div class="panel-sub">Click en un lote del mapa</div>
+          </div>
+          <div style="flex:1"></div>
+          <button class="icon-btn" title="Compartir"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"></path></svg></button>
+        </div>
+        <div class="detail-body" id="detailBody">
+    <div class="dt-head">
+      <div>
+        <div class="dt-id">Manzana A · Lote 08</div>
+        <div class="dt-name">A-08</div>
+      </div>
+      <div class="dt-status free"><span class="d"></span>Libre</div>
+    </div>
+
+    <div class="dt-hero">
+      <div class="dt-hero-row">
+        <div>
+          <div class="sup">Precio de lista</div>
+          <div class="dt-price"><span class="u">USD</span>54.000</div>
+          <div class="dt-m2">600 m² · 90 USD/m²</div>
+        </div>
+        <div style="position:relative">
+          <div style="padding:6px 10px;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:7px;font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace">
+            <div>18m × 33m</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dt-section-title">Características</div>
+    <div class="dt-grid">
+      <div class="dt-cell"><div class="l">Superficie</div><div class="v">600 m²</div></div>
+      <div class="dt-cell"><div class="l">Frente</div><div class="v">18 m</div></div>
+      <div class="dt-cell"><div class="l">Fondo</div><div class="v">33 m</div></div>
+      <div class="dt-cell"><div class="l">Orientación</div><div class="v">Noreste</div></div>
+      <div class="dt-cell"><div class="l">Escritura</div><div class="v">Matriz</div></div>
+      <div class="dt-cell"><div class="l">Pavim.</div><div class="v">Asfalto</div></div>
+    </div>
+
+    <div style="margin-top:10px" class="dt-feats">
+      <span class="feat"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"></path></svg>Agua de red</span>
+      <span class="feat"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"></path></svg>Luz</span>
+      <span class="feat"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"></rect><path d="M8 8V5a4 4 0 0 1 8 0v3"></path></svg>Cerrado</span>
+      <span class="feat">Cloaca próx.</span>
+    </div>
+
+    
+
+    <div class="dt-section-title">Historial</div>
+    <div class="timeline">
+      
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <div><b>Ingresado al inventario</b></div>
+            <div style="color:var(--muted);font-size:11px;margin-top:1px">Disponible para venta</div>
+            <div class="tl-time">12 ene 2026</div>
+          </div>
+        </div>
+      
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <div><b>Mensura aprobada</b></div>
+            <div style="color:var(--muted);font-size:11px;margin-top:1px">Municipalidad de Posadas</div>
+            <div class="tl-time">5 ene 2026</div>
+          </div>
+        </div>
+      
+    </div>
+
+    <div class="ai-hint">
+      <div class="ai-hint-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10"></path></svg>
+      </div>
+      <div>
+        <div class="ai-hint-title">Sugerencia de Lovbot</div>
+        <div class="ai-hint-body">Tenés <b>3 leads con presupuesto entre USD 49k y 59k</b> buscando lotes en ~500m². ¿Querés que les envíe este lote?</div>
+      </div>
+    </div>
+
+    <div class="dt-actions">
+    <button class="btn primary"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>Reservar lote</button>
+    <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4l16 8-16 8 4-8z" stroke-linecap="round" stroke-linejoin="round"></path></svg>Enviar ficha</button>
+  </div>
+  </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="ai-fab">
+  <button class="ai-fab-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10"></path></svg>
+    Preguntá a Lovbot
+  </button>
+</div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const LOTEOS = [
+  {id:'l1', name:'Villa Cabello Norte', place:'Posadas · Av. San Martín km 4', total:36, free:17, reserved:9, sold:8, hold:2, selected:true},
+  {id:'l2', name:'Altos de Garupá', place:'Garupá · Ruta 12 km 8', total:24, free:14, reserved:5, sold:4, hold:1},
+  {id:'l3', name:'Mirador del Paraná', place:'Posadas · Costanera sur', total:18, free:6, reserved:6, sold:5, hold:1},
+  {id:'l4', name:'Oberá Selva I', place:'Oberá · Villa Stemberg', total:28, free:20, reserved:3, sold:2, hold:3},
+  {id:'l5', name:'Chacras de Apóstoles', place:'Apóstoles · Acceso oeste', total:16, free:11, reserved:2, sold:0, hold:2},
+  {id:'l6', name:'Iguazú Reserva', place:'Pto. Iguazú · zona selva', total:12, free:8, reserved:3, sold:1, hold:0},
+  {id:'l7', name:'Los Lapachos', place:'Eldorado · km 7', total:22, free:8, reserved:6, sold:8, hold:0},
+];
+
+/* manzanas: 4 filas de lotes (A, B, C, D), distinta cantidad por fila */
+const LOTS_LAYOUT = [
+  // row A
+  [
+    {n:'A-01', st:'sold', m2:420, price:38500, client:'José Medina'},
+    {n:'A-02', st:'sold', m2:450, price:41000, client:'Andrea P.'},
+    {n:'A-03', st:'reserved', m2:450, price:42000, client:'Rodrigo Krauss'},
+    {n:'A-04', st:'reserved', m2:500, price:46000, client:'Mariana Ferreyra'},
+    {n:'A-05', st:'free', m2:500, price:47000},
+    {n:'A-06', st:'free', m2:520, price:48500},
+    {n:'A-07', st:'hold', m2:540, price:51000, client:'Carla Benítez'},
+    {n:'A-08', st:'free', m2:600, price:54000},
+  ],
+  // row B
+  [
+    {n:'B-01', st:'free', m2:380, price:34000},
+    {n:'B-02', st:'reserved', m2:400, price:36000, client:'Valeria Cabrera'},
+    {n:'B-03', st:'sold', m2:420, price:38000, client:'D. Stumpfs'},
+    {n:'B-04', st:'sold', m2:450, price:41000, client:'N. Vera'},
+    {n:'B-05', st:'free', m2:460, price:42000},
+    {n:'B-06', st:'reserved', m2:480, price:43500, client:'Laura Giménez'},
+    {n:'B-07', st:'free', m2:500, price:45000},
+    {n:'B-08', st:'free', m2:520, price:47000},
+    {n:'B-09', st:'hold', m2:550, price:49000, client:'Sofía Domínguez'},
+  ],
+  // row C
+  [
+    {n:'C-01', st:'free', m2:480, price:44000},
+    {n:'C-02', st:'free', m2:500, price:46000},
+    {n:'C-03', st:'reserved', m2:520, price:47500, client:'H. Kuchaszus'},
+    {n:'C-04', st:'sold', m2:540, price:49000, client:'R. Ledesma'},
+    {n:'C-05', st:'free', m2:560, price:51000},
+    {n:'C-06', st:'reserved', m2:580, price:53000, client:'S. Ayala'},
+    {n:'C-07', st:'free', m2:600, price:55000},
+    {n:'C-08', st:'free', m2:620, price:57000},
+  ],
+  // row D
+  [
+    {n:'D-01', st:'sold', m2:650, price:62000, client:'G. Núñez'},
+    {n:'D-02', st:'reserved', m2:680, price:65000, client:'F. Acuña'},
+    {n:'D-03', st:'free', m2:700, price:68000},
+    {n:'D-04', st:'reserved', m2:720, price:70000, client:'Matías O.'},
+    {n:'D-05', st:'free', m2:740, price:72000},
+    {n:'D-06', st:'free', m2:800, price:78000},
+    {n:'D-07', st:'sold', m2:820, price:80000, client:'Patricia S.'},
+  ],
+];
+
+/* ============================================================
+   RENDER LOTEOS LIST
+   ============================================================ */
+const loteosEl = document.getElementById('loteos');
+function renderLoteos(){
+  loteosEl.innerHTML = '';
+  LOTEOS.forEach(l=>{
+    const occ = Math.round(((l.reserved+l.sold+l.hold)/l.total)*100);
+    const pReserved = (l.reserved/l.total)*100;
+    const pSold = (l.sold/l.total)*100;
+    const pHold = (l.hold/l.total)*100;
+    const el = document.createElement('div');
+    el.className = 'loteo' + (l.selected?' selected':'');
+    el.dataset.id = l.id;
+    el.innerHTML = `
+      <div class="loteo-top">
+        <div>
+          <div class="loteo-name">${l.name}</div>
+          <div class="loteo-place">
+            <svg width="10" height="10" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${l.place}
+          </div>
+        </div>
+        <div class="loteo-menu" title="Opciones">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="18" r="1"/></svg>
+        </div>
+      </div>
+      <div class="loteo-progress">
+        <div class="seg s-sold" style="width:${pSold}%"></div>
+        <div class="seg s-reserved" style="width:${pReserved}%"></div>
+        <div class="seg s-hold" style="width:${pHold}%"></div>
+      </div>
+      <div class="loteo-stats">
+        <span><b>${l.total}</b> lotes totales</span>
+        <span>${occ}% ocupado</span>
+      </div>
+      <div class="loteo-counts">
+        <div class="cc f"><span class="n">${l.free}</span>libres</div>
+        <div class="cc r"><span class="n">${l.reserved}</span>reserv.</div>
+        <div class="cc s"><span class="n">${l.sold}</span>vendidos</div>
+      </div>
+    `;
+    el.addEventListener('click',()=>{
+      LOTEOS.forEach(x=>x.selected=false);
+      l.selected = true;
+      document.getElementById('currentLoteoName').textContent = 'Loteo ' + l.name;
+      document.getElementById('currentLoteoMeta').textContent = `${l.place} · ${l.total} lotes · 4 manzanas`;
+      renderLoteos();
+    });
+    loteosEl.appendChild(el);
+  });
+
+  // add tile
+  const add = document.createElement('div');
+  add.className = 'add-loteo';
+  add.innerHTML = `
+    <div class="plus"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></div>
+    <div><div class="t">Agregar nuevo loteo</div><div class="s">Con lotes, manzanas y mapa</div></div>
+  `;
+  loteosEl.appendChild(add);
+}
+renderLoteos();
+
+/* ============================================================
+   RENDER LOT GRID
+   ============================================================ */
+const grid = document.getElementById('lotsGrid');
+function renderLots(){
+  grid.innerHTML = '';
+  LOTS_LAYOUT.forEach((row, ri)=>{
+    const rowEl = document.createElement('div');
+    rowEl.className='lots-row';
+    rowEl.style.gridTemplateColumns = `repeat(${row.length}, 1fr)`;
+    row.forEach(lot=>{
+      const el = document.createElement('div');
+      el.className = 'lot ' + lot.st;
+      el.dataset.n = lot.n;
+      const icon = lot.st==='sold'
+        ? `<span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`
+        : lot.st==='reserved'
+        ? `<span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg></span>`
+        : lot.st==='hold'
+        ? `<span class="lot-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 2L3 8v4c0 5 4 9 9 10 5-1 9-5 9-10V8z"/></svg></span>`
+        : '';
+      el.innerHTML = `
+        ${icon}
+        <div>
+          <div class="lot-n">${lot.n}</div>
+          <div class="lot-m">${lot.m2} m²</div>
+        </div>
+        <div class="lot-price">USD ${(lot.price/1000).toFixed(0)}k</div>
+      `;
+      el.addEventListener('click',()=>{
+        document.querySelectorAll('.lot').forEach(x=>x.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('mz').textContent = lot.n.split('-')[0];
+        renderDetail(lot);
+      });
+      rowEl.appendChild(el);
+    });
+    grid.appendChild(rowEl);
+  });
+}
+renderLots();
+
+/* ============================================================
+   RENDER DETAIL PANEL
+   ============================================================ */
+const detailBody = document.getElementById('detailBody');
+function renderDetail(lot){
+  const stLabel = {free:'Libre', reserved:'Reservado', sold:'Vendido', hold:'En seña'}[lot.st];
+  const stCls = lot.st==='hold'?'free':lot.st; // reuse styles: hold uses free-ish
+  const clientBlock = lot.client ? `
+    <div class="dt-section-title">Cliente asignado</div>
+    <div class="dt-client">
+      <div class="dt-client-avatar">${lot.client.split(' ').map(x=>x[0]).join('').slice(0,2)}</div>
+      <div class="dt-client-info">
+        <div class="dt-client-name">${lot.client}</div>
+        <div class="dt-client-meta"><span class="mono">+54 376 4${Math.floor(100+Math.random()*900)}-${Math.floor(1000+Math.random()*9000)}</span><span class="sep">·</span><span>BANT 4/5</span></div>
+      </div>
+      <button class="icon-btn" title="Abrir ficha"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  `:'';
+
+  const timelineItems = {
+    sold:[
+      {t:'Escritura firmada',s:'Escribanía Villanueva',time:'15 mar 2026'},
+      {t:'Seña aceptada', s:'30% del valor', time:'28 feb 2026'},
+      {t:'Reservado por cliente',s:'Tras visita al terreno',time:'20 feb 2026'},
+    ],
+    reserved:[
+      {t:'Cliente reservó',s:'Depósito 15% · USD 6.300',time:'hace 3 días'},
+      {t:'Visita agendada',s:'Miércoles 22/4 · 15:30',time:'hace 4 días'},
+      {t:'Lead calificado',s:'BANT 4 · presupuesto OK',time:'hace 1 semana'},
+    ],
+    hold:[
+      {t:'Seña recibida',s:'USD 2.000 · vence en 7 días',time:'hace 2 días'},
+      {t:'Documentación solicitada',s:'DNI y comprobante',time:'hace 2 días'},
+    ],
+    free:[
+      {t:'Ingresado al inventario',s:'Disponible para venta',time:'12 ene 2026'},
+      {t:'Mensura aprobada',s:'Municipalidad de Posadas',time:'5 ene 2026'},
+    ]
+  }[lot.st];
+
+  const actions = lot.st==='free' ? `
+    <button class="btn primary"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>Reservar lote</button>
+    <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4l16 8-16 8 4-8z" stroke-linecap="round" stroke-linejoin="round"/></svg>Enviar ficha</button>
+  ` : lot.st==='reserved' ? `
+    <button class="btn primary">Confirmar venta</button>
+    <button class="btn">Liberar lote</button>
+  ` : lot.st==='hold' ? `
+    <button class="btn primary">Confirmar reserva</button>
+    <button class="btn">Cancelar seña</button>
+  ` : `
+    <button class="btn">Ver escritura</button>
+    <button class="btn">Contactar cliente</button>
+  `;
+
+  detailBody.innerHTML = `
+    <div class="dt-head">
+      <div>
+        <div class="dt-id">Manzana ${lot.n.split('-')[0]} · Lote ${lot.n.split('-')[1]}</div>
+        <div class="dt-name">${lot.n}</div>
+      </div>
+      <div class="dt-status ${stCls==='free'&&lot.st==='hold'?'reserved':stCls}"><span class="d"></span>${stLabel}</div>
+    </div>
+
+    <div class="dt-hero">
+      <div class="dt-hero-row">
+        <div>
+          <div class="sup">Precio de lista</div>
+          <div class="dt-price"><span class="u">USD</span>${lot.price.toLocaleString('es-AR')}</div>
+          <div class="dt-m2">${lot.m2} m² · ${(lot.price/lot.m2).toFixed(0)} USD/m²</div>
+        </div>
+        <div style="position:relative">
+          <div style="padding:6px 10px;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:7px;font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace">
+            <div>18m × ${Math.round(lot.m2/18)}m</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dt-section-title">Características</div>
+    <div class="dt-grid">
+      <div class="dt-cell"><div class="l">Superficie</div><div class="v">${lot.m2} m²</div></div>
+      <div class="dt-cell"><div class="l">Frente</div><div class="v">18 m</div></div>
+      <div class="dt-cell"><div class="l">Fondo</div><div class="v">${Math.round(lot.m2/18)} m</div></div>
+      <div class="dt-cell"><div class="l">Orientación</div><div class="v">Noreste</div></div>
+      <div class="dt-cell"><div class="l">Escritura</div><div class="v">Matriz</div></div>
+      <div class="dt-cell"><div class="l">Pavim.</div><div class="v">Asfalto</div></div>
+    </div>
+
+    <div style="margin-top:10px" class="dt-feats">
+      <span class="feat"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>Agua de red</span>
+      <span class="feat"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Luz</span>
+      <span class="feat"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M8 8V5a4 4 0 0 1 8 0v3"/></svg>Cerrado</span>
+      <span class="feat">Cloaca próx.</span>
+    </div>
+
+    ${clientBlock}
+
+    <div class="dt-section-title">Historial</div>
+    <div class="timeline">
+      ${timelineItems.map(t=>`
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <div><b>${t.t}</b></div>
+            <div style="color:var(--muted);font-size:11px;margin-top:1px">${t.s}</div>
+            <div class="tl-time">${t.time}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="ai-hint">
+      <div class="ai-hint-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10"/></svg>
+      </div>
+      <div>
+        <div class="ai-hint-title">Sugerencia de Lovbot</div>
+        <div class="ai-hint-body">${
+          lot.st==='free' ? `Tenés <b>3 leads con presupuesto entre USD ${(lot.price*0.9/1000).toFixed(0)}k y ${(lot.price*1.1/1000).toFixed(0)}k</b> buscando lotes en ${lot.n.startsWith('D')?'~700m²':'~500m²'}. ¿Querés que les envíe este lote?` :
+          lot.st==='reserved' ? `La seña vence en <b>5 días</b>. Recomiendo confirmar escritura o enviar recordatorio.` :
+          lot.st==='hold' ? `El cliente aún no adjuntó el DNI. ¿Le mando un recordatorio por WhatsApp?` :
+          `Buen comparable: próximos lotes vendieron entre USD ${(lot.price*0.95/1000).toFixed(0)}k y ${(lot.price*1.05/1000).toFixed(0)}k.`
+        }</div>
+      </div>
+    </div>
+
+    <div class="dt-actions">${actions}</div>
+  `;
+  detailBody.scrollTop=0;
+}
+
+// default selection
+const defaultLot = {n:'A-03', st:'reserved', m2:450, price:42000, client:'Rodrigo Krauss'};
+renderDetail(defaultLot);
+// mark visually
+setTimeout(()=>{
+  const el = [...document.querySelectorAll('.lot')].find(x=>x.dataset.n==='A-03');
+  if(el) el.classList.add('active');
+},50);
+
+</script>
+
+
+</body></html>
