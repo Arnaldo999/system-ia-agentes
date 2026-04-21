@@ -1946,6 +1946,35 @@ tailwind.config = {
   }
   .modal-bg .modal { pointer-events: auto; }
 
+  /* ==========================================================
+   * FIX contraste — inputs/textarea/select dentro de modales
+   * heredaban color de texto negro del UA (sin text-txt). Forzamos
+   * color claro sobre fondos oscuros para que el texto sea legible
+   * en los modales Asesor / Propietario / Contrato / Visita.
+   * ========================================================== */
+  .modal-bg .modal input,
+  .modal-bg .modal select,
+  .modal-bg .modal textarea {
+    color: #e4e6ee !important;
+    caret-color: #a78bfa !important;
+  }
+  .modal-bg .modal input::placeholder,
+  .modal-bg .modal textarea::placeholder {
+    color: rgba(200, 200, 220, 0.4) !important;
+  }
+  /* Select options: en browsers que aceptan estilo del dropdown */
+  .modal-bg .modal select option {
+    background: #1a1d27 !important;
+    color: #e4e6ee !important;
+  }
+  /* Inputs type=date/time: el ícono nativo en dark */
+  .modal-bg .modal input[type="date"]::-webkit-calendar-picker-indicator,
+  .modal-bg .modal input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+  .modal-bg .modal input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8) brightness(1.2);
+    cursor: pointer;
+  }
+
 </style>
 
 <!-- Fuentes del skin Claude Design -->
