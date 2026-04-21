@@ -639,6 +639,49 @@ async def admin_crear_db_cliente(db: str, from_tenant: str = None, from_db: str 
     return crear_db_cliente(db, from_tenant, from_db)
 
 
+@app.get("/admin/borrar-db", tags=["Admin"])
+async def admin_borrar_db(db: str, confirmar: str = ""):
+    """
+    Borra una DB Postgres del cluster. REQUIERE confirmar=si para ejecutar.
+    Protegido contra borrar DBs críticas: robert_crm, lovbot_crm, demo_crm, postgres.
+
+    Params:
+        db: nombre de la DB a borrar
+        confirmar: debe ser "si" para proceder
+
+    Ejemplo:
+        GET /admin/borrar-db?db=test_probe&confirmar=si
+    """
+    import psycopg2
+
+    PROTEGIDAS = {"robert_crm", "lovbot_crm", "demo_crm", "postgres", "template0", "template1"}
+    if db in PROTEGIDAS:
+        return {"ok": False, "error": f"DB '{db}' está protegida, no puede borrarse con este endpoint"}
+    if confirmar != "si":
+        return {"ok": False, "error": "Falta param confirmar=si para ejecutar el DROP"}
+
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+    try:
+        conn = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname="postgres",
+                                user=PG_USER, password=PG_PASS)
+        conn.autocommit = True
+        cur = conn.cursor()
+        # Matar conexiones activas a la DB primero
+        cur.execute(f"""
+            SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+            WHERE datname = %s AND pid <> pg_backend_pid()
+        """, (db,))
+        cur.execute(f'DROP DATABASE IF EXISTS "{db}"')
+        cur.close()
+        conn.close()
+        return {"ok": True, "db_borrada": db}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+
+
 @app.get("/admin/listar-dbs", tags=["Admin"])
 async def admin_listar_dbs():
     """
