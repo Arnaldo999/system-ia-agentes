@@ -57,29 +57,120 @@ ALTER TABLE contratos ADD COLUMN IF NOT EXISTS tenant_slug VARCHAR(50) DEFAULT '
 ALTER TABLE contratos ADD COLUMN IF NOT EXISTS cliente_activo_id INTEGER REFERENCES clientes_activos(id) ON DELETE SET NULL;
 
 -- inmuebles_renta, inquilinos, pagos_alquiler, liquidaciones:
--- si fueron creadas por ampliar-schema-agencia (sin tenant_slug) hay que agregarlo
--- antes de que los indices de la PARTE 3-6 intenten usarlo.
--- Usamos DO $$ para proteger el ALTER con EXISTS check (no hay ALTER TABLE IF EXISTS en PG).
+-- Pueden existir con schema anterior (ampliar-schema-agencia) que no tiene
+-- tenant_slug ni otros campos que el schema v3 necesita para sus indices.
+-- Este bloque agrega las columnas faltantes de forma idempotente.
+-- (No hay ALTER TABLE IF EXISTS en PostgreSQL — usamos DO $$ con chequeo.)
 DO $$
 BEGIN
+    -- ── inmuebles_renta ─────────────────────────────────────────────────────
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='inmuebles_renta') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inmuebles_renta' AND column_name='tenant_slug') THEN
             ALTER TABLE inmuebles_renta ADD COLUMN tenant_slug VARCHAR(50) DEFAULT 'demo';
         END IF;
+        -- disponible: schema viejo usa "estado" en lugar de este booleano
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inmuebles_renta' AND column_name='disponible') THEN
+            ALTER TABLE inmuebles_renta ADD COLUMN disponible BOOLEAN DEFAULT TRUE;
+        END IF;
+        -- propietario_id: puede no existir en schema muy viejo
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inmuebles_renta' AND column_name='propietario_id') THEN
+            ALTER TABLE inmuebles_renta ADD COLUMN propietario_id INTEGER REFERENCES propietarios(id) ON DELETE SET NULL;
+        END IF;
     END IF;
+
+    -- ── inquilinos ──────────────────────────────────────────────────────────
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='inquilinos') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inquilinos' AND column_name='tenant_slug') THEN
             ALTER TABLE inquilinos ADD COLUMN tenant_slug VARCHAR(50) DEFAULT 'demo';
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inquilinos' AND column_name='inmueble_renta_id') THEN
+            ALTER TABLE inquilinos ADD COLUMN inmueble_renta_id INTEGER REFERENCES inmuebles_renta(id) ON DELETE SET NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inquilinos' AND column_name='documento') THEN
+            ALTER TABLE inquilinos ADD COLUMN documento VARCHAR(30);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inquilinos' AND column_name='fecha_inicio_contrato') THEN
+            ALTER TABLE inquilinos ADD COLUMN fecha_inicio_contrato DATE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inquilinos' AND column_name='fecha_fin_contrato') THEN
+            ALTER TABLE inquilinos ADD COLUMN fecha_fin_contrato DATE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inquilinos' AND column_name='monto_alquiler_actual') THEN
+            ALTER TABLE inquilinos ADD COLUMN monto_alquiler_actual DECIMAL(15,2);
+        END IF;
+        -- estado: normalmente ya existe, pero asegurar
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='inquilinos' AND column_name='estado') THEN
+            ALTER TABLE inquilinos ADD COLUMN estado VARCHAR(30) DEFAULT 'activo';
+        END IF;
     END IF;
+
+    -- ── pagos_alquiler ──────────────────────────────────────────────────────
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='pagos_alquiler') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='tenant_slug') THEN
             ALTER TABLE pagos_alquiler ADD COLUMN tenant_slug VARCHAR(50) DEFAULT 'demo';
         END IF;
+        -- mes_anio: schema viejo usa periodo_mes + periodo_anio separados
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='mes_anio') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN mes_anio VARCHAR(7);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='inquilino_id') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN inquilino_id INTEGER REFERENCES inquilinos(id) ON DELETE CASCADE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='inmueble_renta_id') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN inmueble_renta_id INTEGER REFERENCES inmuebles_renta(id) ON DELETE SET NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='monto') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN monto DECIMAL(15,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='fecha_pago') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN fecha_pago DATE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='fecha_vencimiento') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN fecha_vencimiento DATE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='metodo') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN metodo VARCHAR(50);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='estado') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN estado VARCHAR(30) DEFAULT 'pendiente';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='pagos_alquiler' AND column_name='comprobante_url') THEN
+            ALTER TABLE pagos_alquiler ADD COLUMN comprobante_url TEXT;
+        END IF;
     END IF;
+
+    -- ── liquidaciones ───────────────────────────────────────────────────────
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='liquidaciones') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='tenant_slug') THEN
             ALTER TABLE liquidaciones ADD COLUMN tenant_slug VARCHAR(50) DEFAULT 'demo';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='inmueble_renta_id') THEN
+            ALTER TABLE liquidaciones ADD COLUMN inmueble_renta_id INTEGER REFERENCES inmuebles_renta(id) ON DELETE SET NULL;
+        END IF;
+        -- mes_anio: schema viejo usa periodo_mes + periodo_anio
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='mes_anio') THEN
+            ALTER TABLE liquidaciones ADD COLUMN mes_anio VARCHAR(7);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='bruto') THEN
+            ALTER TABLE liquidaciones ADD COLUMN bruto DECIMAL(15,2);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='comision_agencia') THEN
+            ALTER TABLE liquidaciones ADD COLUMN comision_agencia DECIMAL(15,2);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='neto_propietario') THEN
+            ALTER TABLE liquidaciones ADD COLUMN neto_propietario DECIMAL(15,2);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='fecha_liquidacion') THEN
+            ALTER TABLE liquidaciones ADD COLUMN fecha_liquidacion DATE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='estado') THEN
+            ALTER TABLE liquidaciones ADD COLUMN estado VARCHAR(30) DEFAULT 'pendiente';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='comprobante_url') THEN
+            ALTER TABLE liquidaciones ADD COLUMN comprobante_url TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='liquidaciones' AND column_name='propietario_id') THEN
+            ALTER TABLE liquidaciones ADD COLUMN propietario_id INTEGER REFERENCES propietarios(id) ON DELETE SET NULL;
         END IF;
     END IF;
 END $$;
