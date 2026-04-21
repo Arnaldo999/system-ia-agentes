@@ -2555,7 +2555,7 @@ tailwind.config = {
       <div class="sh">
         <div>
           <div class="sh-title">Mis Leads</div>
-          <div class="sh-sub" id="leadsCount">47 contactos registrados</div>
+          <div class="sh-sub" id="leadsCount">— contactos registrados</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div class="search-wrap">
@@ -3897,6 +3897,15 @@ function renderLeads(data) {
   data = data || LEADS;
   const tb = document.getElementById('leadsBody');
   tb.innerHTML = '';
+  // Actualizar contador de leads (sin hardcode 47)
+  const cnt = document.getElementById('leadsCount');
+  if (cnt) {
+    const total = LEADS.length;
+    const visibles = data.length;
+    cnt.textContent = visibles === total
+      ? `${total} ${total === 1 ? 'contacto registrado' : 'contactos registrados'}`
+      : `${visibles} de ${total} contactos`;
+  }
   const spills = {
     nuevo:     '<span class="spill s-nuevo">🔵 Nuevo</span>',
     contactado:'<span class="spill s-contactado">🟡 Contactado</span>',
