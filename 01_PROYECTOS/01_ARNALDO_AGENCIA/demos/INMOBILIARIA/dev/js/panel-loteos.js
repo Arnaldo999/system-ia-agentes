@@ -513,7 +513,8 @@
       notif('✅ Loteo guardado', campos.nombre);
       await cargarLoteos();
       if (LOTE_ACTUAL && id && Number(id) === LOTE_ACTUAL.id) {
-        setTimeout(() => verMapaLoteo(LOTE_ACTUAL.id), 300);
+        // Paso 3: re-renderizar panel-map inline (no modal)
+        setTimeout(() => seleccionarLoteo(LOTE_ACTUAL.id), 300);
       }
     } catch (e) { notif('❌ Error', e.message); }
   };
@@ -537,6 +538,7 @@
     const loteo = LOTEOS.find(l => l.id === loteoId);
     if (!loteo) return;
     LOTE_ACTUAL = loteo;
+    window.LOTE_MAPA_ACTUAL = loteo; // expuesto para botón "Editar loteo" del modalMapa legacy
     // Refrescar clientes para tener datos actualizados
     try {
       const data = await crmFetch('/crm/clientes');

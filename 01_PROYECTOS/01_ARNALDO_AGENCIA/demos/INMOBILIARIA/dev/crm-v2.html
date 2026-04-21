@@ -2985,7 +2985,7 @@ tailwind.config = {
 
 <div class="modal-bg hidden" id="modalAsesor">
   <div class="modal" style="max-width:500px">
-    <button class="mc" onclick="document.getElementById('modalAsesor').classList.add('hidden')">✕</button>
+    <button class="mc" onclick="cerrarModal('modalAsesor')">✕</button>
     <h3 class="text-lg font-bold mb-4">👨‍💼 Asesor</h3>
     <input type="hidden" id="asesorId"/>
     <div class="grid grid-cols-2 gap-3 mb-3">
@@ -3022,7 +3022,7 @@ tailwind.config = {
 
 <div class="modal-bg hidden" id="modalPropietario">
   <div class="modal" style="max-width:500px">
-    <button class="mc" onclick="document.getElementById('modalPropietario').classList.add('hidden')">✕</button>
+    <button class="mc" onclick="cerrarModal('modalPropietario')">✕</button>
     <h3 class="text-lg font-bold mb-4">📑 Propietario</h3>
     <input type="hidden" id="propietarioId"/>
     <div class="mb-3"><label class="text-xs text-txt-2">Nombre completo</label><input id="propietarioNombre" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
@@ -3157,7 +3157,7 @@ tailwind.config = {
         <h3 class="text-lg font-bold" id="mapaTitulo">🗺️ Mapa</h3>
         <div id="mapaSubtitulo" class="text-xs text-txt-2 mt-1"></div>
       </div>
-      <button onclick="abrirModalLoteoDesdeMapa()" class="text-xs px-3 py-2 bg-surface-alt border border-brd rounded">✏️ Editar loteo</button>
+      <button onclick="abrirModalLoteo(window.LOTE_MAPA_ACTUAL || null); cerrarModal('modalMapa')" class="text-xs px-3 py-2 bg-surface-alt border border-brd rounded">✏️ Editar loteo</button>
     </div>
     <div id="mapaContenido"></div>
   </div>
@@ -3245,7 +3245,7 @@ tailwind.config = {
 
 <div class="modal-bg hidden" id="modalVisita">
   <div class="modal" style="max-width:500px">
-    <button class="mc" onclick="document.getElementById('modalVisita').classList.add('hidden')">✕</button>
+    <button class="mc" onclick="cerrarModal('modalVisita')">✕</button>
     <h3 class="text-lg font-bold mb-4">🗓️ Visita</h3>
     <input type="hidden" id="visitaId"/>
     <div class="grid grid-cols-2 gap-3 mb-3">
