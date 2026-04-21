@@ -2295,7 +2295,7 @@ tailwind.config = {
   <!-- SIDEBAR -->
   <div class="sidebar">
     <!-- nav items scrolleable -->
-    <div style="flex:1;overflow-y:auto;overflow-x:hidden;">
+    <div id="sidebarScroller" style="flex:1;overflow-y:auto;overflow-x:hidden;">
 
       <!-- ═══ PRINCIPAL ═══ -->
       <div class="sidebar-section">Principal</div>
@@ -3734,8 +3734,15 @@ function nav(id, el) {
     const mainEl = document.querySelector('.main');
     if (mainEl) mainEl.scrollTop = 0;
     // Resetear scroll del sidebar interno también (por si el usuario bajó al footer)
-    const sidebarScroller = document.querySelector('.sidebar > div[style*="overflow-y"]');
+    const sidebarScroller = document.getElementById('sidebarScroller')
+      || document.querySelector('.sidebar > div[style*="overflow-y"]');
     if (sidebarScroller) sidebarScroller.scrollTop = 0;
+    // Asegurar que el nav-item activo sea visible dentro del sidebar scroller
+    if (sidebarScroller && el && typeof el.scrollIntoView === 'function') {
+      setTimeout(() => {
+        try { el.scrollIntoView({ block: 'nearest', behavior: 'instant' }); } catch(_) {}
+      }, 0);
+    }
     // Fallback al window por si algún panel se sale del .main
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
