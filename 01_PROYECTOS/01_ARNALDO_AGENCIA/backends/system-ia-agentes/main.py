@@ -639,6 +639,57 @@ async def admin_crear_db_cliente(db: str, from_tenant: str = None, from_db: str 
     return crear_db_cliente(db, from_tenant, from_db)
 
 
+@app.get("/admin/debug-db", tags=["Admin"])
+async def admin_debug_db(db: str):
+    """
+    Debug de una DB: muestra tenant_slugs distintos + samples de leads
+    con sus valores exactos de tenant_slug (útil para detectar whitespace,
+    mayúsculas, etc. que rompen la comparación SQL).
+    """
+    import psycopg2
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+    try:
+        c = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=db,
+                             user=PG_USER, password=PG_PASS, connect_timeout=5)
+        cur = c.cursor()
+        # Tenant_slugs distintos con su count + muestra el VALOR literal entre comillas
+        cur.execute("""
+            SELECT
+                '|' || tenant_slug || '|' AS slug_con_bordes,
+                LENGTH(tenant_slug) AS len,
+                COUNT(*) AS total
+            FROM leads
+            GROUP BY tenant_slug
+            ORDER BY total DESC
+        """)
+        slugs_leads = [{"slug": r[0], "len": r[1], "count": r[2]} for r in cur.fetchall()]
+
+        cur.execute("""
+            SELECT '|' || tenant_slug || '|' AS s, LENGTH(tenant_slug), COUNT(*)
+            FROM propiedades GROUP BY tenant_slug ORDER BY 3 DESC
+        """)
+        slugs_props = [{"slug": r[0], "len": r[1], "count": r[2]} for r in cur.fetchall()]
+
+        # Sample 3 rows literales
+        cur.execute("SELECT id, tenant_slug, nombre FROM leads ORDER BY id LIMIT 3")
+        samples = [{"id": r[0], "tenant_slug": repr(r[1]), "nombre": r[2]} for r in cur.fetchall()]
+
+        cur.close()
+        c.close()
+        return {
+            "ok": True,
+            "db": db,
+            "slugs_en_leads": slugs_leads,
+            "slugs_en_propiedades": slugs_props,
+            "samples_leads": samples,
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+
+
 @app.get("/admin/borrar-db", tags=["Admin"])
 async def admin_borrar_db(db: str, confirmar: str = ""):
     """
