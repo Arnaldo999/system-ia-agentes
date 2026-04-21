@@ -4610,6 +4610,16 @@ async function initTenant() {
         return false; // no continuar cargando datos
       }
     }
+
+    // ── Aplicar tipo de subnicho (desarrolladora / agencia / agente) ────────
+    // Prioridad: query param ?tipo=xxx > localStorage > campo t.tipo del tenant > 'desarrolladora'
+    const tipoFromParams = params.get('tipo');
+    const storageKey = `crm_tipo_${TENANT_SLUG}`;
+    const tipoFromStorage = localStorage.getItem(storageKey);
+    const tipoFromTenant = t.tipo;  // backend-provided (futuro campo Supabase)
+    const tipo = tipoFromParams || tipoFromStorage || tipoFromTenant || 'desarrolladora';
+    if (tipoFromParams) localStorage.setItem(storageKey, tipoFromParams);
+    aplicarSubnichoTipo(tipo);
   } catch(err) {
     console.warn('[Tenant] No encontrado o sin conexión:', err.message);
 
@@ -4644,15 +4654,11 @@ async function initTenant() {
     return false;
   }
 
-  // ── Aplicar tipo de subnicho (desarrolladora / agencia / agente) ────────
-  // Prioridad: query param ?tipo=xxx > localStorage > campo t.tipo del tenant > 'desarrolladora' default
-  const tipoFromParams = params.get('tipo');
-  const storageKey = `crm_tipo_${TENANT_SLUG}`;
-  const tipoFromStorage = localStorage.getItem(storageKey);
-  const tipoFromTenant = t.tipo;  // backend-provided (futuro campo Supabase)
-  const tipo = tipoFromParams || tipoFromStorage || tipoFromTenant || 'desarrolladora';
-  if (tipoFromParams) localStorage.setItem(storageKey, tipoFromParams);  // pin desde query
-  aplicarSubnichoTipo(tipo);
+  // Fallback por si el tenant no tenía campo tipo o el try cayó al catch con éxito parcial
+  if (typeof aplicarSubnichoTipo === 'function' && !document.body.hasAttribute('data-subnicho-tipo')) {
+    const tipoFallback = params.get('tipo') || localStorage.getItem(`crm_tipo_${TENANT_SLUG}`) || 'desarrolladora';
+    aplicarSubnichoTipo(tipoFallback);
+  }
 
   return true; // continuar cargando datos
 }
