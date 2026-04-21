@@ -639,6 +639,65 @@ async def admin_crear_db_cliente(db: str, from_tenant: str = None, from_db: str 
     return crear_db_cliente(db, from_tenant, from_db)
 
 
+@app.get("/admin/listar-dbs", tags=["Admin"])
+async def admin_listar_dbs():
+    """
+    Lista todas las DBs del cluster Postgres con su conteo de filas en
+    las tablas principales. Útil para auditar arquitectura workspaces.
+    """
+    import psycopg2
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+
+    # 1. Listar DBs
+    try:
+        conn = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname="postgres",
+                                user=PG_USER, password=PG_PASS)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT datname FROM pg_database
+            WHERE datistemplate = false AND datname NOT IN ('postgres')
+            ORDER BY datname
+        """)
+        dbs = [r[0] for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+    except Exception as e:
+        return {"ok": False, "error": f"listar DBs: {e}"}
+
+    # 2. Por cada DB, intentar contar leads/propiedades/clientes_activos
+    resumen = {}
+    for db in dbs:
+        try:
+            c = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=db,
+                                 user=PG_USER, password=PG_PASS, connect_timeout=5)
+            cur = c.cursor()
+            info = {}
+            for tabla in ["leads", "propiedades", "clientes_activos", "loteos", "contratos", "visitas"]:
+                try:
+                    cur.execute(f"SELECT COUNT(*), COUNT(DISTINCT tenant_slug) FROM {tabla}")
+                    total, n_tenants = cur.fetchone()
+                    info[tabla] = {"total": total, "tenants": n_tenants}
+                except Exception:
+                    info[tabla] = "no_existe"
+            # Tenant_slugs distintos en leads
+            try:
+                cur.execute("SELECT tenant_slug, COUNT(*) FROM leads GROUP BY tenant_slug")
+                info["_tenants_leads"] = {row[0]: row[1] for row in cur.fetchall()}
+            except Exception:
+                info["_tenants_leads"] = {}
+            cur.close()
+            c.close()
+            resumen[db] = info
+        except Exception as e:
+            resumen[db] = {"error": str(e)[:100]}
+
+    return {"ok": True, "dbs_totales": len(dbs), "dbs": dbs, "resumen": resumen}
+
+
 @app.post("/admin/onboard", tags=["Admin"])
 async def admin_onboard(request: Request):
     """Onboarding automático de cliente inmobiliario. Llamado desde n8n."""
