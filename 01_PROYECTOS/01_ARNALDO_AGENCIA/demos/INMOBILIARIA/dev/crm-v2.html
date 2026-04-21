@@ -15,7 +15,7 @@ tailwind.config = {
       fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
       colors: {
         bg: '#0f1117',
-        surface: { DEFAULT: '#1a1d27', 2: '#222636' },
+        surface: { DEFAULT: '#1a1d27', 2: '#222636', alt: '#1e2130' },
         brd: '#2e3347',
         accent: { DEFAULT: '#6c63ff', 2: '#00d4aa', hover: '#5a52d5' },
         txt: { DEFAULT: '#e8eaf0', 2: '#8b92a5' },
@@ -2218,27 +2218,27 @@ tailwind.config = {
   }
 
   /* ==========================================================
-   * FIX contraste — inputs/textarea/select dentro de modales
-   * heredaban color de texto negro del UA (sin text-txt). Forzamos
-   * color claro sobre fondos oscuros para que el texto sea legible
-   * en los modales Asesor / Propietario / Contrato / Visita.
+   * FIX contraste — MARCADO COMO INSUFICIENTE (especificidad pierde
+   * vs Tailwind CDN que inyecta después en el cascade).
+   * La regla definitiva vive en el <style> al final del <body>
+   * para garantizar que carga DESPUÉS del CDN y siempre gana.
+   * Se mantiene esta regla como fallback de compatibilidad.
    * ========================================================== */
   .modal-bg .modal input,
   .modal-bg .modal select,
   .modal-bg .modal textarea {
     color: #e4e6ee !important;
+    background-color: #1e2130 !important;
     caret-color: #a78bfa !important;
   }
   .modal-bg .modal input::placeholder,
   .modal-bg .modal textarea::placeholder {
     color: rgba(200, 200, 220, 0.4) !important;
   }
-  /* Select options: en browsers que aceptan estilo del dropdown */
   .modal-bg .modal select option {
     background: #1a1d27 !important;
     color: #e4e6ee !important;
   }
-  /* Inputs type=date/time: el ícono nativo en dark */
   .modal-bg .modal input[type="date"]::-webkit-calendar-picker-indicator,
   .modal-bg .modal input[type="datetime-local"]::-webkit-calendar-picker-indicator,
   .modal-bg .modal input[type="time"]::-webkit-calendar-picker-indicator {
@@ -2590,7 +2590,7 @@ tailwind.config = {
             <span>🔍</span>
             <input type="text" placeholder="Buscar..." oninput="aplicarFiltros()" id="searchInput">
           </div>
-          <select id="filtroEstado" onchange="aplicarFiltros()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
+          <select id="filtroEstado" onchange="aplicarFiltros()" style="background:var(--surface2,#1e2130);color:var(--text,#e8eaf0);border:1px solid var(--border,rgba(255,255,255,.08));border-radius:8px;padding:6px 10px;font-size:13px">
             <option value="">Todos los estados</option>
             <option value="nuevo">🔵 Nuevo</option>
             <option value="contactado">🟡 Contactado</option>
@@ -2599,7 +2599,7 @@ tailwind.config = {
             <option value="cerrado">🏆 Cerrado</option>
             <option value="perdido">🔴 Perdido</option>
           </select>
-          <select id="filtroScore" onchange="aplicarFiltros()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
+          <select id="filtroScore" onchange="aplicarFiltros()" style="background:var(--surface2,#1e2130);color:var(--text,#e8eaf0);border:1px solid var(--border,rgba(255,255,255,.08));border-radius:8px;padding:6px 10px;font-size:13px">
             <option value="">Todos los scores</option>
             <option value="caliente">🔥 Caliente</option>
             <option value="tibio">🌡️ Tibio</option>
@@ -6432,5 +6432,78 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 </script>
+
+<!-- ============================================================
+  FIX DEFINITIVO — contraste inputs dark mode
+  Este bloque vive AL FINAL del body para cargar DESPUÉS de que
+  Tailwind CDN inyecta sus utilidades en <head>. Eso garantiza
+  que en el cascade (misma especificidad + !important), esta hoja
+  gana sobre cualquier clase Tailwind como bg-surface-alt, bg-surface-2,
+  bg-white, bg-slate-*, etc. que pudiera estar en un input.
+
+  Cubre TODOS los inputs/selects/textareas del CRM:
+  — modales con class="bg-surface-alt" (Asesor, Propietario, Contrato, Visita)
+  — modales con class="mi" (Clientes Activos)
+  — inputs con class="mf-input" (perfil dropdown)
+  — inputs con class="search-input" (buscador global)
+  — selects con style inline que usan var(--card) undefined (filtros Leads)
+  — textarea chat IA
+  — inputs configuración (PIN, nombre empresa, etc.)
+
+  Excluye: checkbox, radio, submit, button, file, color, range.
+  ============================================================ -->
+<style>
+html body input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="color"]):not([type="range"]),
+html body select,
+html body textarea {
+  color: #e4e6ee !important;
+  background-color: #1e2130 !important;
+  caret-color: #a78bfa !important;
+}
+
+html body input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="color"]):not([type="range"])::placeholder,
+html body textarea::placeholder {
+  color: rgba(200, 200, 220, 0.38) !important;
+}
+
+html body select option {
+  background-color: #1a1d27 !important;
+  color: #e4e6ee !important;
+}
+
+/* Focus ring */
+html body input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="color"]):not([type="range"]):focus,
+html body select:focus,
+html body textarea:focus {
+  border-color: rgba(124, 58, 237, 0.5) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14) !important;
+}
+
+/* Calendario nativo dark */
+html body input[type="date"]::-webkit-calendar-picker-indicator,
+html body input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+html body input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) brightness(1.2) !important;
+  cursor: pointer;
+}
+
+/* Inputs de COLOR y de RANGO: no tocar fondo (son controles nativos de color) */
+html body input[type="color"] {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  padding: 2px !important;
+}
+
+/* Buscador global: mantener su border-radius propio */
+html body input#globalSearch {
+  border-radius: 8px !important;
+}
+
+/* Campo "ac-prop" (solo lectura, tono más apagado) */
+html body input#ac-prop {
+  color: #8b8ba7 !important;
+}
+</style>
 </body>
 </html>

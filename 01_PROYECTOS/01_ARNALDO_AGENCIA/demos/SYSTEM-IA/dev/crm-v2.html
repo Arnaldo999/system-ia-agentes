@@ -2590,7 +2590,7 @@ tailwind.config = {
             <span>🔍</span>
             <input type="text" placeholder="Buscar..." oninput="aplicarFiltros()" id="searchInput">
           </div>
-          <select id="filtroEstado" onchange="aplicarFiltros()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
+          <select id="filtroEstado" onchange="aplicarFiltros()" style="background:var(--surface2,#1e2130);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
             <option value="">Todos los estados</option>
             <option value="nuevo">🔵 Nuevo</option>
             <option value="contactado">🟡 Contactado</option>
@@ -2599,7 +2599,7 @@ tailwind.config = {
             <option value="cerrado">🏆 Cerrado</option>
             <option value="perdido">🔴 Perdido</option>
           </select>
-          <select id="filtroScore" onchange="aplicarFiltros()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
+          <select id="filtroScore" onchange="aplicarFiltros()" style="background:var(--surface2,#1e2130);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
             <option value="">Todos los scores</option>
             <option value="caliente">🔥 Caliente</option>
             <option value="tibio">🌡️ Tibio</option>
@@ -6294,7 +6294,7 @@ async function eliminarActivo(id, nombre) {
 }
 
 // ── CHAT IA ─────────────────────────────────────────────────────────────────
-const IA_WEBHOOK = 'https://n8n.system-ia-agencia.vercel.app/webhook/crm-ia-chat';
+const IA_WEBHOOK = 'https://n8n.arnaldoayalaestratega.cloud/webhook/crm-ia-chat-mica';
 let iaChatOpen = false;
 let iaSessionId = 'session_' + Date.now();
 
@@ -6432,5 +6432,36 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 </script>
+<style>
+  /* Fix contraste global inputs — carga después de Tailwind CDN para ganar cascade */
+  html body input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=file]):not([type=color]):not([type=range]),
+  html body select,
+  html body textarea {
+    color: #e4e6ee !important;
+    background-color: #1e2130 !important;
+    caret-color: #f59e0b !important;
+  }
+  html body input::placeholder,
+  html body textarea::placeholder {
+    color: #6b7280 !important;
+  }
+  html body input:focus,
+  html body select:focus,
+  html body textarea:focus {
+    outline: 2px solid #f59e0b !important;
+    outline-offset: -2px;
+  }
+  /* Calendar picker indicator visible en dark */
+  html body input[type="date"]::-webkit-calendar-picker-indicator,
+  html body input[type="time"]::-webkit-calendar-picker-indicator,
+  html body input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.6);
+  }
+  /* Input ac-prop (propiedad combinada automática) */
+  html body input.ac-prop,
+  html body input#ac-prop {
+    color: #9ca3af !important;
+  }
+</style>
 </body>
 </html>
