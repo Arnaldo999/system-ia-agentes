@@ -1346,8 +1346,13 @@ def ver_propiedades(tipo: str = None, operacion: str = None, zona: str = None):
 
 @router.get("/crm/propiedades")
 def crm_propiedades():
+    # Prioridad Postgres (regla #0)
+    if USE_POSTGRES:
+        records = db.get_all_propiedades()
+        return {"total": len(records), "records": records}
+    # Fallback legacy Airtable
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
-        return {"records": [], "error": "INMO_DEMO_AIRTABLE_BASE no configurado"}
+        return {"records": [], "error": "DB no configurada"}
     url     = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
     records, offset = [], None
     while True:
@@ -1365,8 +1370,13 @@ def crm_propiedades():
 
 @router.get("/crm/clientes")
 def crm_clientes():
+    # Prioridad Postgres (regla #0: cada cliente su DB aislada)
+    if USE_POSTGRES:
+        records = db.get_all_leads()
+        return {"total": len(records), "records": records}
+    # Fallback legacy Airtable (se removerá en próximo refactor)
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_CLIENTES:
-        return {"records": [], "error": "INMO_DEMO_AIRTABLE_BASE no configurado"}
+        return {"records": [], "error": "DB no configurada"}
     url     = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_CLIENTES}"
     records, offset = [], None
     while True:
@@ -1516,6 +1526,11 @@ def _calcular_estado_pago(fields: dict) -> str:
 @router.get("/crm/activos")
 def crm_activos():
     """Lista todos los clientes activos con estado de pago calculado."""
+    # Prioridad Postgres (regla #0)
+    if USE_POSTGRES:
+        records = db.get_all_activos()
+        return {"records": records}
+    # Fallback legacy Airtable
     if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
         return {"records": []}
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
