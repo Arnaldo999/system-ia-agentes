@@ -1950,6 +1950,13 @@ tailwind.config = {
    * LAYOUT LOCK — sidebar siempre visible, main con su scroll
    * Evita que paneles con min-height:100vh/calc(100vh-...) rompan
    * el flex del .layout y hagan scrollear al body.
+   *
+   * IMPORTANTE: varios paneles Sprint CRM Completo (asesores,
+   * propietarios, loteos, contratos, visitas, inmuebles-renta,
+   * inquilinos, contratos-alquiler, reportes) están fuera del
+   * .main en el DOM. Para que el sidebar NO se desplace cuando
+   * se muestran, los forzamos a posicionarse como overlay del
+   * área del .main con position:fixed.
    * ========================================================== */
   html, body {
     height: 100% !important;
@@ -1968,16 +1975,36 @@ tailwind.config = {
   .main {
     flex: 1 1 0 !important;
     min-width: 0 !important;
-    min-height: 0 !important;  /* permite a flex hijos contraerse en lugar de empujar fuera */
+    min-height: 0 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
   }
-  /* Paneles que usaban min-height calc(100vh-XXX) ahora respetan el .main padre */
-  .cd-main-grid {
-    min-height: 0 !important;  /* anula el min-height:calc(100vh-280px) del Paso 3 */
+
+  /* Paneles que quedaron FUERA del .main en el DOM — los anclamos al
+     área del .main con position:fixed para que sidebar siga visible */
+  body > .panel.active {
+    position: fixed !important;
+    top: 56px !important;           /* alto del topbar */
+    left: 200px !important;         /* ancho del sidebar */
+    right: 0 !important;
+    bottom: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 5 !important;
+    background: #0a0a12 !important;
   }
+
+  /* Paneles que usaban min-height calc(100vh-XXX) */
+  .cd-main-grid { min-height: 0 !important; }
   .cd-map-stage { min-height: 420px !important; }
   .cd-panel-detail { min-height: auto !important; }
+
+  /* Sidebar colapsado en mobile: ajustar offset de paneles externos */
+  @media (max-width: 768px) {
+    body > .panel.active {
+      left: 60px !important;        /* sidebar colapsado solo íconos */
+    }
+  }
 
   /* ==========================================================
    * TIPO DE NEGOCIO — tarjetas selector en Configuración
