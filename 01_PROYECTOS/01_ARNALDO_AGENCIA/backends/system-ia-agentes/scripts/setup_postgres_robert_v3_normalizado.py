@@ -44,6 +44,20 @@ DB_PASS = os.environ.get("LOVBOT_PG_PASS", "")
 MIGRACION_SQL = """
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- PARTE 0 — Garantizar columnas base en tablas legacy de produccion
+--           (robert_crm puede haber sido creada antes de que estas columnas
+--            existieran en el schema. IF NOT EXISTS hace esto idempotente.)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- clientes_activos: en produccion legacy puede no tener tenant_slug
+ALTER TABLE clientes_activos ADD COLUMN IF NOT EXISTS tenant_slug VARCHAR(50) DEFAULT 'robert';
+
+-- contratos: en produccion legacy puede no tener tenant_slug ni cliente_activo_id
+ALTER TABLE contratos ADD COLUMN IF NOT EXISTS tenant_slug VARCHAR(50) DEFAULT 'robert';
+ALTER TABLE contratos ADD COLUMN IF NOT EXISTS cliente_activo_id INTEGER REFERENCES clientes_activos(id) ON DELETE SET NULL;
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- PARTE 1 — Extender clientes_activos con trazabilidad y documento
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -51,9 +65,6 @@ ALTER TABLE clientes_activos ADD COLUMN IF NOT EXISTS documento VARCHAR(30);
 ALTER TABLE clientes_activos ADD COLUMN IF NOT EXISTS lead_id INTEGER REFERENCES leads(id) ON DELETE SET NULL;
 ALTER TABLE clientes_activos ADD COLUMN IF NOT EXISTS origen_creacion VARCHAR(30) DEFAULT 'manual_directo';
 ALTER TABLE clientes_activos ADD COLUMN IF NOT EXISTS fecha_alta DATE DEFAULT CURRENT_DATE;
-
-CREATE INDEX IF NOT EXISTS idx_clientes_activos_lead_id ON clientes_activos(lead_id);
-CREATE INDEX IF NOT EXISTS idx_clientes_activos_origen ON clientes_activos(tenant_slug, origen_creacion);
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -78,7 +89,14 @@ ALTER TABLE contratos ADD COLUMN IF NOT EXISTS estado_pago VARCHAR(30) DEFAULT '
 -- definicion original; se deja el IF NOT EXISTS por seguridad)
 ALTER TABLE contratos ADD COLUMN IF NOT EXISTS moneda VARCHAR(5) DEFAULT 'USD';
 
--- Indices para consultas frecuentes
+-- Indices de clientes_activos — van despues de TODOS los ALTER de esa tabla
+-- (garantiza que tenant_slug y origen_creacion ya existen antes de indexar)
+CREATE INDEX IF NOT EXISTS idx_clientes_activos_tenant ON clientes_activos(tenant_slug);
+CREATE INDEX IF NOT EXISTS idx_clientes_activos_lead_id ON clientes_activos(lead_id);
+CREATE INDEX IF NOT EXISTS idx_clientes_activos_origen ON clientes_activos(tenant_slug, origen_creacion);
+
+-- Indices de contratos — van despues de TODOS los ALTER de esa tabla
+-- (garantiza que tenant_slug, estado_pago, item_tipo, item_id ya existen)
 CREATE INDEX IF NOT EXISTS idx_contratos_cliente ON contratos(cliente_activo_id);
 CREATE INDEX IF NOT EXISTS idx_contratos_item ON contratos(item_tipo, item_id);
 CREATE INDEX IF NOT EXISTS idx_contratos_estado_pago ON contratos(tenant_slug, estado_pago);
