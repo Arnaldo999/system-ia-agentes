@@ -328,6 +328,74 @@ Cuando Arnaldo (o cualquier agencia del ecosistema) verifique portfolio propio y
 - ⚠️ Cliente debe hacer 1 click en el nuevo Embedded Signup (mandarle email/WhatsApp con instrucciones)
 - ⚠️ Meta no permite migración 100% automática — exige consentimiento explícito del cliente
 
+## Implementación técnica actualizada — 2026-04-21 (tarde)
+
+### Endpoint único de onboarding
+
+Vive en `workers/clientes/lovbot/robert_inmobiliaria/worker.py` (aprox. línea 3701):
+
+```
+POST https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/public/waba/onboarding
+```
+
+Body JSON que recibe desde el HTML de Vercel:
+```json
+{
+  "code": "AQDxxx...",               // code del Facebook Login (FB.login callback)
+  "waba_id": "123...",               // del evento FINISH del embedded signup
+  "phone_number_id": "456...",       // del evento FINISH
+  "slug": "mica-demo-inmo",          // slug del tenant — lo elige la agencia
+  "agencia": "system_ia"             // lovbot | system_ia | arnaldo (default: lovbot)
+}
+```
+
+### Flujo interno
+
+1. Intercambio `code → access_token` contra `graph.facebook.com/v24.0/oauth/access_token` con `APP_ID=704986485248523` + `APP_SECRET`.
+2. **Registro Cloud API con PIN** (fix crítico aplicado 2026-04-21):
+   - Genera `pin = random.randint(100000, 999999)`.
+   - Llama `POST /v24.0/{phone_number_id}/register` con `Authorization: Bearer {access_token}` y body `{"messaging_product":"whatsapp","pin":"{pin}"}`.
+   - Errores 133005/133008 (ya registrado) = OK. Otros errores se loggean no-fatal.
+3. Suscripción webhook: `POST /v24.0/{waba_id}/subscribed_apps` con el access_token del cliente.
+4. **Routing condicional por agencia** (fix aplicado 2026-04-21):
+   - `lovbot` → `worker_url = agentes.lovbot.ai/clientes/lovbot/{slug}/whatsapp` + crea DB Postgres `{slug}_crm` (llamada a `/admin/crear-db-cliente` en background).
+   - `system_ia` → `worker_url = agentes.lovbot.ai/clientes/system_ia/{slug}/whatsapp` + NO crea DB (Airtable).
+   - `arnaldo` → `worker_url = agentes.arnaldoayalaestratega.cloud/clientes/arnaldo/{slug}/whatsapp` + NO crea DB (Airtable).
+5. Guarda registro en `waba_clients` (tabla en `robert_crm`, compartida como directorio de routing) con: `slug`, `agencia_origen`, `phone_number_id`, `waba_id`, `access_token`, `cloud_api_pin`, `worker_url`, `meta_user_id`, `webhook_subscrito`.
+
+### Schema `waba_clients` actualizado
+
+```sql
+ALTER TABLE waba_clients ADD COLUMN IF NOT EXISTS cloud_api_pin VARCHAR(6);
+-- Columnas previas: agencia_origen, meta_user_id, access_token, worker_url, ...
+```
+
+### Router de webhooks Meta
+
+`webhook_meta.py:195-216` recibe en `POST /webhook/meta/events`, extrae `phone_number_id` del payload, consulta `waba_clients`, y forwardea al `worker_url` del tenant con header `X-Tenant-Slug`. Si no hay match → descarta.
+
+### HTML frontend
+
+Ubicado en `01_PROYECTOS/03_LOVBOT_ROBERT/clientes/onboarding-vercel/index.html`, deployado en `lovbot-onboarding.vercel.app`. Tiene ahora `<select id="selAgencia">` con 3 opciones. URL `?agencia=system_ia` preselecciona.
+
+### Slug reservados actualmente
+
+| Slug | Agencia | Worker |
+|------|---------|--------|
+| `inmobiliaria` | lovbot | `robert_inmobiliaria/worker.py` (Robert productivo) |
+| `mica-demo-inmo` | system_ia | `system_ia/demos/inmobiliaria/worker.py` router v2 (renombrado desde `inmobiliaria-v2` el 2026-04-21) |
+| `demos/inmobiliaria` | system_ia (legacy Evolution) | mismo worker, router v1, sigue activo |
+
+## Regla mental que NO se rompe
+
+**Robert es Tech Provider técnico ante Meta. NO es dueño de los clientes.** Cuando veas:
+
+- `waba_clients` en `robert_crm` → es directorio compartido, no implica pertenencia.
+- Endpoint onboarding en worker de Robert → es la puerta de entrada técnica, no implica pertenencia.
+- App de Meta a nombre de Lovbot → es solo el TP, no implica pertenencia.
+
+Mirá SIEMPRE `waba_clients.agencia_origen` para saber a qué agencia pertenece cada cliente. Sin eso podés terminar cruzando datos o cobrando mal.
+
 ## Relaciones
 
 - [[meta-graph-api]] — API que se desbloquea después del onboarding

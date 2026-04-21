@@ -11,8 +11,8 @@ adaptado para Mica:
   - Nurturing: solo in-window 24hs (sin templates — Mica sin prioridad)
 
 Dos routers expuestos (misma logica, distinto provider):
-  /clientes/system_ia/demos/inmobiliaria/whatsapp      → webhook Evolution (Mica productivo)
-  /clientes/system_ia/demos/inmobiliaria-v2/whatsapp   → webhook Meta (via Tech Provider Robert)
+  /clientes/system_ia/demos/inmobiliaria/whatsapp      → webhook Evolution (Mica productivo, legacy)
+  /clientes/system_ia/mica-demo-inmo/whatsapp          → webhook Meta (via Tech Provider Robert)
 
 Variables de entorno:
   MICA_OPENAI_API_KEY            API key OpenAI Mica (fallback OPENAI_API_KEY)
@@ -116,7 +116,7 @@ except Exception as _e:
 
 # Dos routers: uno oficial (Evolution, productivo Mica) + uno v2 (Meta, tech-provider Robert)
 router    = APIRouter(prefix="/clientes/system_ia/demos/inmobiliaria",    tags=["Mica — Inmobiliaria"])
-router_v2 = APIRouter(prefix="/clientes/system_ia/demos/inmobiliaria-v2", tags=["Mica — Inmobiliaria (Tech Provider)"])
+router_v2 = APIRouter(prefix="/clientes/system_ia/mica-demo-inmo",        tags=["Mica — Inmobiliaria (Tech Provider)"])
 
 # Multi-tenant slug para el historial/sesion (cada agencia su prefijo)
 TENANT_SLUG = os.environ.get("MICA_TENANT_SLUG", "mica-demo")

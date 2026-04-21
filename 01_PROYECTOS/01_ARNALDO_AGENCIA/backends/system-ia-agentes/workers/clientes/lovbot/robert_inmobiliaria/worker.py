@@ -3706,6 +3706,11 @@ async def waba_onboarding(request: Request):
     code            = (body.get("code") or "").strip()
     display_phone   = (body.get("display_phone") or "").strip() or None
     meta_user_id    = (body.get("meta_user_id") or "").strip() or None
+    # agencia: cuál agencia onboardea este cliente — default "lovbot" para backward compat
+    agencia_raw     = (body.get("agencia") or "lovbot").strip().lower()
+    agencia         = agencia_raw if agencia_raw in ("lovbot", "system_ia", "arnaldo") else "lovbot"
+
+    print(f"[WABA-ONBOARDING] Inicio onboarding — client={client_name!r} slug={client_slug_raw!r} agencia={agencia}")
 
     # Validaciones
     if not client_name:
@@ -3731,14 +3736,16 @@ async def waba_onboarding(request: Request):
     # Evita registrar clientes cuyos mensajes caerian al vacio por falta de worker.
     # Flow correcto: agencia clona el worker ANTES de mandar la URL al cliente.
     # Excepcion: permitir "robert-inmobiliaria" (tenant inicial/testing).
-    if client_slug != "robert-inmobiliaria":
+    # Para agencias system_ia y arnaldo NO se valida worker en este monorepo —
+    # sus workers viven en paths diferentes y se gestiona por cada agencia.
+    if agencia == "lovbot" and client_slug != "robert-inmobiliaria":
         worker_path = (
             f"/app/workers/clientes/lovbot/{client_slug.replace('-', '_')}/worker.py"
         )
         # Fallback: buscar tambien con guiones en el path (por si la carpeta usa guiones)
         worker_path_alt = f"/app/workers/clientes/lovbot/{client_slug}/worker.py"
         if not (os.path.exists(worker_path) or os.path.exists(worker_path_alt)):
-            print(f"[WABA] Worker no existe para slug={client_slug}")
+            print(f"[WABA-ONBOARDING] Worker no existe para slug={client_slug} agencia={agencia}")
             raise HTTPException(
                 status_code=409,
                 detail=(
@@ -3747,13 +3754,13 @@ async def waba_onboarding(request: Request):
                     "cuando este configurado."
                 )
             )
-        print(f"[WABA] Worker encontrado para slug={client_slug}")
+        print(f"[WABA-ONBOARDING] Worker encontrado para slug={client_slug}")
 
     # 1. Intercambiar code -> access_token permanente
-    print(f"[WABA] Intercambiando code -> access_token para {client_name} ({client_slug})")
+    print(f"[WABA-ONBOARDING] Intercambiando code -> access_token para {client_name} ({client_slug})")
     try:
         token_resp = requests.get(
-            "https://graph.facebook.com/v21.0/oauth/access_token",
+            "https://graph.facebook.com/v24.0/oauth/access_token",
             params={
                 "client_id": LOVBOT_META_APP_ID,
                 "client_secret": LOVBOT_META_APP_SECRET,
@@ -3773,32 +3780,73 @@ async def waba_onboarding(request: Request):
                 status_code=502,
                 detail=f"Meta no devolvio access_token: {token_data}"
             )
-        print(f"[WABA] access_token obtenido para {client_slug}")
+        print(f"[WABA-ONBOARDING] access_token obtenido para {client_slug}")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error llamando a Meta OAuth: {e}")
+
+    # 1b. Registrar numero en Cloud API con PIN aleatorio
+    import random as _random
+    cloud_api_pin = str(_random.randint(100000, 999999))
+    registro_cloud_api_ok = False
+    try:
+        reg_resp = requests.post(
+            f"https://graph.facebook.com/v24.0/{phone_number_id}/register",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json={"messaging_product": "whatsapp", "pin": cloud_api_pin},
+            timeout=15,
+        )
+        if reg_resp.status_code == 200:
+            registro_cloud_api_ok = True
+            print(f"[WABA-REGISTER] Numero {phone_number_id} registrado en Cloud API con PIN generado")
+        else:
+            reg_data = reg_resp.json() if reg_resp.content else {}
+            error_code = reg_data.get("error", {}).get("code", 0)
+            # 133005 y 133008: numero ya registrado — tratar como OK
+            if error_code in (133005, 133008):
+                registro_cloud_api_ok = True
+                print(f"[WABA-REGISTER] Numero {phone_number_id} ya estaba registrado (code={error_code}) — continuando")
+            else:
+                print(f"[WABA-REGISTER] Advertencia — registro Cloud API fallo (no bloqueante): "
+                      f"status={reg_resp.status_code} body={reg_resp.text[:400]}")
+    except Exception as e:
+        print(f"[WABA-REGISTER] Advertencia — excepcion al registrar en Cloud API (no bloqueante): {e}")
 
     # 2. Suscribir la app a esa WABA (webhooks del cliente)
     webhook_ok = False
     webhook_detail = ""
     try:
         sub_resp = requests.post(
-            f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
+            f"https://graph.facebook.com/v24.0/{waba_id}/subscribed_apps",
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=15,
         )
         if sub_resp.status_code == 200:
             webhook_ok = True
-            print(f"[WABA] Webhook suscrito para waba_id={waba_id}")
+            print(f"[WABA-ONBOARDING] Webhook suscrito para waba_id={waba_id}")
         else:
             webhook_detail = sub_resp.text[:300]
-            print(f"[WABA] Advertencia — webhook no suscrito: {webhook_detail}")
+            print(f"[WABA-ONBOARDING] Advertencia — webhook no suscrito: {webhook_detail}")
     except Exception as e:
         webhook_detail = str(e)
-        print(f"[WABA] Advertencia — excepcion al suscribir webhook: {e}")
+        print(f"[WABA-ONBOARDING] Advertencia — excepcion al suscribir webhook: {e}")
 
-    # 3. Guardar en PostgreSQL.
+    # 3. Calcular worker_url segun agencia
+    # lovbot  → Coolify Hetzner, paths /clientes/lovbot/{slug}/whatsapp
+    # system_ia → mismo backend compartido, paths /clientes/system_ia/{slug}/whatsapp
+    # arnaldo → Coolify Hostinger (backend propio de Arnaldo)
+    if agencia == "system_ia":
+        worker_url = f"https://agentes.lovbot.ai/clientes/system_ia/{client_slug}/whatsapp"
+    elif agencia == "arnaldo":
+        worker_url = f"https://agentes.arnaldoayalaestratega.cloud/clientes/arnaldo/{client_slug}/whatsapp"
+    else:
+        # lovbot (default) — comportamiento original
+        worker_url = f"https://agentes.lovbot.ai/clientes/lovbot/{client_slug}/whatsapp"
+
+    print(f"[WABA-ONBOARDING] worker_url asignado={worker_url} agencia={agencia}")
+
+    # 3b. Guardar en PostgreSQL.
     # worker_url: cada cliente tiene su propio worker dedicado siguiendo el slug.
     # IMPORTANTE: el worker debe existir en el monorepo ANTES de mandar la URL
     # de onboarding al cliente. Flow correcto:
@@ -3808,7 +3856,6 @@ async def waba_onboarding(request: Request):
     #   4. Recién ahí manda la URL de onboarding al cliente con ?client=NuevoSlug
     # Si hace falta corregir el worker_url despues del registro, usar el endpoint
     # POST /admin/waba/client/{phone_id}/update-worker-url
-    worker_url = f"https://agentes.lovbot.ai/clientes/lovbot/{client_slug}/whatsapp"
     reg = db.registrar_waba_client(
         client_name=client_name,
         client_slug=client_slug,
@@ -3817,7 +3864,9 @@ async def waba_onboarding(request: Request):
         access_token=access_token,
         worker_url=worker_url,
         display_phone=display_phone,
+        agencia_origen=agencia,
         meta_user_id=meta_user_id,
+        cloud_api_pin=cloud_api_pin if registro_cloud_api_ok else None,
     )
     if "error" in reg:
         raise HTTPException(status_code=500, detail=f"Error guardando en DB: {reg['error']}")
@@ -3825,6 +3874,28 @@ async def waba_onboarding(request: Request):
     # 4. Marcar webhook_subscrito si la suscripcion fue exitosa
     if webhook_ok:
         db.marcar_webhook_subscrito(phone_number_id)
+
+    # 4b. Para agencia lovbot: crear DB Postgres del cliente de forma asincrona
+    if agencia == "lovbot":
+        def _bg_crear_db():
+            try:
+                import httpx
+                admin_token = os.environ.get("LOVBOT_ADMIN_TOKEN", "")
+                resp = httpx.post(
+                    "http://localhost:8000/admin/crear-db-cliente",
+                    headers={"X-Admin-Token": admin_token},
+                    json={"client_slug": client_slug, "client_name": client_name},
+                    timeout=60,
+                )
+                if resp.status_code == 200:
+                    print(f"[WABA-ONBOARDING] DB creada para cliente lovbot slug={client_slug}")
+                else:
+                    print(f"[WABA-ONBOARDING] Advertencia — crear-db-cliente fallo: {resp.status_code} {resp.text[:200]}")
+            except Exception as e:
+                print(f"[WABA-ONBOARDING] Advertencia — excepcion al crear DB cliente: {e}")
+
+        threading.Thread(target=_bg_crear_db, daemon=True).start()
+        print(f"[WABA-ONBOARDING] Creacion DB Postgres iniciada en background para slug={client_slug}")
 
     # 5. Provisión asíncrona Chatwoot + CRM (en background, no bloquea el response)
     # Solo se dispara si vienen los datos opcionales del brief del cliente.
@@ -3852,14 +3923,19 @@ async def waba_onboarding(request: Request):
 
         threading.Thread(target=_bg_provisionar, daemon=True).start()
 
+    print(f"[WABA-ONBOARDING] Completado OK — slug={client_slug} agencia={agencia} "
+          f"webhook={webhook_ok} cloud_api={registro_cloud_api_ok}")
     return {
         "status": "ok",
         "client_slug": client_slug,
         "phone_number_id": phone_number_id,
         "waba_id": waba_id,
-        "worker_url": worker_url,
+        "agencia": agencia,
+        "worker_url_asignado": worker_url,
         "webhook_subscrito": webhook_ok,
         "webhook_detail": webhook_detail if not webhook_ok else None,
+        "registro_cloud_api": registro_cloud_api_ok,
+        "pin_guardado": bool(registro_cloud_api_ok),
         "db_id": reg.get("id"),
         "provision_started": bool(email_asesor),
     }

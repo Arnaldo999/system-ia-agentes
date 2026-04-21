@@ -1,7 +1,44 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-20 16:00
+Fecha: 2026-04-21 14:30
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## 🎯 En curso AHORA — Primera prueba de embedded signup real
+
+**Objetivo**: migrar el número demo inmobiliaria de Mica (`+54 9 3765 00-5465`, hoy en Evolution) a Meta Cloud API vía el Tech Provider de Robert.
+
+### Decisiones tomadas 2026-04-21 tarde
+- Arnaldo usa SU propio número (el del bot demo Mica en Evolution) como primer test del flujo end-to-end.
+- Agencia asignada: `system_ia` (el bot que atiende es el demo inmobiliaria de Mica con Airtable).
+- Slug: `mica-demo-inmo`.
+- TP compartido: app de Lovbot `704986485248523` (aprobado).
+
+### Fixes aplicados hoy al endpoint `/public/waba/onboarding`
+Son **bloqueantes generales**, afectaban a clientes de las 3 agencias, no solo a Mica:
+
+1. **Cloud API register con PIN** (faltaba completamente) — `worker.py` robert_inmobiliaria líneas ~3701-3942.
+2. **Routing condicional por agencia** — nuevo parámetro `agencia` (lovbot/system_ia/arnaldo) que decide `worker_url` + si crea DB Postgres o no.
+3. **Columna `cloud_api_pin`** agregada a `waba_clients` (ALTER TABLE IF NOT EXISTS).
+4. **HTML Vercel** con `<select>` de agencia.
+5. **Renombre** del router v2 de Mica: `/clientes/system_ia/demos/inmobiliaria-v2` → `/clientes/system_ia/mica-demo-inmo` (más limpio).
+6. **Unificado** Graph API a `v24.0` en todo el flujo.
+
+### Pendientes para ejecutar el test
+1. Deploy backend a Coolify Hetzner (`agentes.lovbot.ai`).
+2. Deploy HTML a Vercel (`lovbot-onboarding.vercel.app`).
+3. Desconectar número de Evolution (logout instancia + delete + cerrar sesión celular).
+4. Esperar 24-72h + desinstalar WhatsApp del celular.
+5. Abrir `lovbot-onboarding.vercel.app?agencia=system_ia` → signup → slug `mica-demo-inmo`.
+6. Validar que llega un mensaje al worker de Mica.
+
+### Regla crítica reforzada hoy
+**Tech Provider Robert ≠ dueño de los clientes.** La app de Meta es de Lovbot, el endpoint de onboarding vive en worker de Robert, pero cada cliente conserva su agencia (marcada en `waba_clients.agencia_origen`), su stack (Airtable para Mica/Arnaldo, Postgres para Robert) y su cobro. NUNCA asumir que todo pertenece a Robert solo porque la infra de entrada sea suya.
+
+Memoria persistente: `feedback_embedded_signup_compartido.md` (silo 1) + `wiki/conceptos/meta-tech-provider-onboarding.md` (silo 2).
+
+---
+
+
 
 ## 🎯 Próxima sesión — Módulo Loteos self-service CRM Robert
 

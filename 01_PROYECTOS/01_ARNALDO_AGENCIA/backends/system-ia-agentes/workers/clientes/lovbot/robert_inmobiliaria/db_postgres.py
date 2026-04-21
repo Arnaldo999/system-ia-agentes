@@ -1700,24 +1700,32 @@ def registrar_waba_client(
     display_phone: str = None,
     agencia_origen: str = "lovbot",
     meta_user_id: str = None,
+    cloud_api_pin: str = None,
 ) -> dict:
     """UPSERT de cliente WABA por phone_number_id.
 
     agencia_origen: 'arnaldo' | 'mica' | 'lovbot' — qué agencia vendió este cliente.
     meta_user_id: ID del user Meta que hizo el Embedded Signup (viene del webhook
                   deauthorize para identificar a qué tenant pertenece el evento).
+    cloud_api_pin: PIN de 6 dígitos generado al registrar el número en Cloud API.
+                   Se guarda para poder desregistrar el número después si es necesario.
     """
     if not _available():
         return {"error": "DB no disponible"}
     try:
         conn = _conn()
         cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Asegurar que la columna cloud_api_pin existe (puede no existir en DBs legacy)
+        cur.execute("""
+            ALTER TABLE waba_clients
+            ADD COLUMN IF NOT EXISTS cloud_api_pin VARCHAR(6)
+        """)
         cur.execute("""
             INSERT INTO waba_clients
                 (client_name, client_slug, waba_id, phone_number_id,
                  display_phone_number, access_token, worker_url,
-                 agencia_origen, meta_user_id, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                 agencia_origen, meta_user_id, cloud_api_pin, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON CONFLICT (phone_number_id) DO UPDATE SET
                 client_name          = EXCLUDED.client_name,
                 client_slug          = EXCLUDED.client_slug,
@@ -1727,12 +1735,13 @@ def registrar_waba_client(
                 worker_url           = COALESCE(EXCLUDED.worker_url, waba_clients.worker_url),
                 agencia_origen       = COALESCE(EXCLUDED.agencia_origen, waba_clients.agencia_origen),
                 meta_user_id         = COALESCE(EXCLUDED.meta_user_id, waba_clients.meta_user_id),
+                cloud_api_pin        = COALESCE(EXCLUDED.cloud_api_pin, waba_clients.cloud_api_pin),
                 updated_at           = NOW()
-            RETURNING id, client_slug, phone_number_id, agencia_origen
+            RETURNING id, client_slug, phone_number_id, agencia_origen, cloud_api_pin
         """, (
             client_name, client_slug, waba_id, phone_number_id,
             display_phone, access_token, worker_url,
-            agencia_origen, meta_user_id,
+            agencia_origen, meta_user_id, cloud_api_pin,
         ))
         row = cur.fetchone()
         conn.commit()
@@ -1740,7 +1749,8 @@ def registrar_waba_client(
         conn.close()
         return {"ok": True, "id": row["id"], "client_slug": row["client_slug"],
                 "phone_number_id": row["phone_number_id"],
-                "agencia_origen": row["agencia_origen"]}
+                "agencia_origen": row["agencia_origen"],
+                "cloud_api_pin": row["cloud_api_pin"]}
     except Exception as e:
         print(f"[DB] Error registrar_waba_client: {e}")
         return {"error": str(e)}

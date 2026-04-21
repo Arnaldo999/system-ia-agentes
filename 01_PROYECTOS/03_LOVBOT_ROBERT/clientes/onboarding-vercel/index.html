@@ -130,6 +130,32 @@
       background: rgba(255,255,255,0.05);
     }
     .form-group input::placeholder { color: rgba(148, 163, 184, 0.5); }
+    .form-group select {
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.92rem;
+      transition: all 0.15s;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      background-color: rgba(255,255,255,0.05);
+    }
+    .form-group select option {
+      background: #1e293b;
+      color: var(--text);
+    }
     .form-group small {
       font-size: 0.72rem;
       color: var(--muted);
@@ -293,6 +319,15 @@
           <input type="email" id="inpEmail" placeholder="tu@email.com" autocomplete="email" required>
           <small>Te enviaremos las credenciales de Chatwoot a este email</small>
         </div>
+        <div class="form-group" id="agenciaGroup">
+          <label for="selAgencia">Agencia</label>
+          <select id="selAgencia">
+            <option value="lovbot">Lovbot (inmobiliaria)</option>
+            <option value="system_ia">System IA (Micaela)</option>
+            <option value="arnaldo">Arnaldo Ayala</option>
+          </select>
+          <small>Selecciona la agencia a la que pertenece este cliente</small>
+        </div>
       </div>
 
       <button class="btn-connect" id="btnConnect" onclick="launchWhatsAppSignup()">
@@ -360,6 +395,17 @@
     const urlParams  = new URLSearchParams(window.location.search);
     const clientName = urlParams.get('client') || 'sin-nombre';
     const clientSlug = clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+    // Leer agencia desde ?agencia=... (permite preseleccionar via URL)
+    const agenciaFromUrl = urlParams.get('agencia');
+    const validAgencias  = ['lovbot', 'system_ia', 'arnaldo'];
+    if (agenciaFromUrl && validAgencias.includes(agenciaFromUrl)) {
+      // Preseleccionar el <select> una vez el DOM esté listo
+      document.addEventListener('DOMContentLoaded', function() {
+        const sel = document.getElementById('selAgencia');
+        if (sel) sel.value = agenciaFromUrl;
+      });
+    }
     // ── FIN CONFIG ───────────────────────────────────────────────────
 
     // Variables de estado entre FB.login y el evento FINISH
@@ -434,6 +480,7 @@
       // Datos del asesor para crear agent en Chatwoot + recibir credenciales
       const nombreAsesor = (document.getElementById('inpAsesor')?.value || '').trim();
       const emailAsesor  = (document.getElementById('inpEmail')?.value || '').trim();
+      const agencia      = (document.getElementById('selAgencia')?.value || 'lovbot');
 
       const payload = {
         client_name:     clientName,
@@ -444,7 +491,8 @@
         display_phone:   _pendingDisplayPhone || null,
         nombre_asesor:   nombreAsesor,
         email_asesor:    emailAsesor,
-        meta_user_id:    _pendingMetaUserId || null
+        meta_user_id:    _pendingMetaUserId || null,
+        agencia:         agencia
       };
 
       fetch(ONBOARDING_URL, {
