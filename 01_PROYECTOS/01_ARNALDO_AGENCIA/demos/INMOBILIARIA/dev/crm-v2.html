@@ -1947,6 +1947,112 @@ tailwind.config = {
   .modal-bg .modal { pointer-events: auto; }
 
   /* ==========================================================
+   * TIPO DE NEGOCIO — tarjetas selector en Configuración
+   * ========================================================== */
+  .cfg-subnicho-option {
+    padding: 16px 14px;
+    background: #161627;
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: .15s;
+    font-family: inherit;
+    color: inherit;
+  }
+  .cfg-subnicho-option:hover {
+    border-color: rgba(124,58,237,.4);
+    background: linear-gradient(180deg, rgba(124,58,237,.05), #161627);
+  }
+  body[data-subnicho-tipo="desarrolladora"] .cfg-subnicho-option[data-tipo="desarrolladora"],
+  body[data-subnicho-tipo="agencia"] .cfg-subnicho-option[data-tipo="agencia"],
+  body[data-subnicho-tipo="agente"] .cfg-subnicho-option[data-tipo="agente"] {
+    border-color: rgba(124,58,237,.5);
+    background: linear-gradient(180deg, rgba(124,58,237,.14), rgba(6,182,212,.04));
+    box-shadow: 0 0 0 1px rgba(124,58,237,.3);
+  }
+  .cfg-subnicho-icon {
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .cfg-subnicho-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .cfg-subnicho-sub {
+    font-size: 11.5px;
+    color: #8b8ba7;
+    line-height: 1.45;
+  }
+
+  /* ==========================================================
+   * PLACEHOLDER — paneles en construcción (subnicho agencia)
+   * ========================================================== */
+  .cd-placeholder {
+    max-width: 620px;
+    margin: 40px auto;
+    padding: 40px 30px;
+    background: #161627;
+    border: 1px dashed rgba(124, 58, 237, .3);
+    border-radius: 14px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .cd-placeholder-icon {
+    width: 88px;
+    height: 88px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(124,58,237,.18), rgba(6,182,212,.12));
+    display: grid;
+    place-items: center;
+    color: #c4b5fd;
+  }
+  .cd-placeholder-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #f1f5f9;
+    letter-spacing: -.02em;
+  }
+  .cd-placeholder-sub {
+    color: #8b8ba7;
+    font-size: 13px;
+    max-width: 440px;
+    line-height: 1.55;
+  }
+  .cd-placeholder-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-top: 6px;
+  }
+  .cd-placeholder-kpi {
+    padding: 12px;
+    background: #0a0a12;
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px;
+  }
+  .cd-placeholder-kpi .k {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .cd-placeholder-kpi > div:last-child {
+    font-size: 11px;
+    color: #8b8ba7;
+    margin-top: 4px;
+  }
+
+  /* ==========================================================
    * BOTONES — efecto "press" (hundido) al click en todo el CRM
    * Aplica a <button>, .btn*, .pin-btn, .cd-btn*, .cd-chip,
    * .cd-icon-btn, .nav-item, enlaces con role=button y .cd-lot.
@@ -2157,65 +2263,69 @@ tailwind.config = {
   <div class="sidebar">
     <!-- nav items scrolleable -->
     <div style="flex:1;overflow-y:auto;overflow-x:hidden;">
+
+      <!-- ═══ PRINCIPAL ═══ -->
       <div class="sidebar-section">Principal</div>
       <div class="nav-item active" onclick="nav('inicio',this)">
         <span class="nav-icon">📊</span><span>Inicio</span>
       </div>
-      <div class="nav-item" onclick="nav('pipeline',this)">
-        <span class="nav-icon">🔀</span><span>Mi Pipeline</span>
-        <span class="nav-badge" id="pipelineBadge">12</span>
-      </div>
-      <div class="nav-item" onclick="nav('leads',this)">
-        <span class="nav-icon">👥</span><span>Mis Leads</span>
-      </div>
-      <div class="nav-item" onclick="nav('chat',this)">
-        <span class="nav-icon">🤖</span><span>Resúmenes IA</span>
-        <span class="nav-badge green" id="chatBadge">—</span>
-      </div>
-      <div class="nav-item" onclick="nav('propiedades',this)">
-        <span class="nav-icon">🏘️</span><span>Propiedades</span>
-      </div>
-      <div class="nav-item" onclick="nav('activos',this)">
-        <span class="nav-icon">🤝</span><span>Clientes Activos</span>
-        <span class="nav-badge green" id="activosBadge">0</span>
-      </div>
       <div class="nav-item" onclick="nav('agenda',this)">
         <span class="nav-icon">📅</span><span>Mi Agenda</span>
       </div>
-      <div class="sidebar-section" style="margin-top:8px">Gestión</div>
-      <!-- OCULTO 2026-04-17 — Equipo, Propietarios y Visitas removidos del menú
-           para simplificar UX del CRM modelo. Las páginas internas siguen
-           funcionando si se accede via JS nav('asesores'/'propietarios'/'visitas').
-           Para reactivar: descomentar los 3 nav-items de abajo.
 
+      <!-- ═══ VENTAS (común a los 3 subnichos) ═══ -->
+      <div class="sidebar-section" style="margin-top:8px">Ventas</div>
+      <div class="nav-item" onclick="nav('leads',this)">
+        <span class="nav-icon">👥</span><span>Leads</span>
+      </div>
+      <div class="nav-item" onclick="nav('pipeline',this)">
+        <span class="nav-icon">🔀</span><span>Pipeline</span>
+        <span class="nav-badge" id="pipelineBadge">12</span>
+      </div>
+      <div class="nav-item" onclick="nav('chat',this)">
+        <span class="nav-icon">🤖</span><span>Mensajes IA</span>
+        <span class="nav-badge green" id="chatBadge">—</span>
+      </div>
+      <div class="nav-item" onclick="nav('activos',this)">
+        <span class="nav-icon">🤝</span><span>Clientes</span>
+        <span class="nav-badge green" id="activosBadge">0</span>
+      </div>
+
+      <!-- ═══ GESTIÓN — DESARROLLADORA ═══ -->
+      <div class="sidebar-section subnicho-gestion" data-subnicho="desarrolladora" style="margin-top:8px">Gestión · Desarrolladora</div>
+      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('propiedades',this)">
+        <span class="nav-icon">🏘️</span><span>Propiedades</span>
+      </div>
+      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('loteos',this)">
+        <span class="nav-icon">📍</span><span>Loteos</span>
+      </div>
+      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('contratos',this)">
+        <span class="nav-icon">📄</span><span>Contratos de venta</span>
+      </div>
+
+      <!-- ═══ GESTIÓN — AGENCIA ═══ -->
+      <div class="sidebar-section subnicho-gestion" data-subnicho="agencia" style="margin-top:8px">Gestión · Agencia</div>
+      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inmuebles-renta',this)">
+        <span class="nav-icon">🏠</span><span>Inmuebles en renta</span>
+      </div>
+      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('propietarios',this)">
+        <span class="nav-icon">📑</span><span>Propietarios</span>
+      </div>
+      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inquilinos',this)">
+        <span class="nav-icon">🧾</span><span>Inquilinos</span>
+      </div>
+      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('contratos-alquiler',this)">
+        <span class="nav-icon">📃</span><span>Contratos de alquiler</span>
+      </div>
+
+      <!-- ═══ HERRAMIENTAS (transversal) ═══ -->
+      <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
       <div class="nav-item" onclick="nav('asesores',this)">
         <span class="nav-icon">👨‍💼</span><span>Equipo</span>
       </div>
-      <div class="nav-item" onclick="nav('propietarios',this)">
-        <span class="nav-icon">📑</span><span>Propietarios</span>
-      </div>
-      -->
-      <div class="nav-item" onclick="nav('loteos',this)">
-        <span class="nav-icon">📍</span><span>Loteos</span>
-      </div>
-      <div class="nav-item" onclick="nav('contratos',this)">
-        <span class="nav-icon">📄</span><span>Contratos</span>
-      </div>
-      <!-- OCULTO 2026-04-17 — Visitas removido del menú (ver comentario arriba)
-      <div class="nav-item" onclick="nav('visitas',this)">
-        <span class="nav-icon">🗓️</span><span>Visitas</span>
-      </div>
-      -->
       <div class="nav-item" onclick="nav('reportes',this)">
         <span class="nav-icon">📈</span><span>Reportes</span>
       </div>
-      <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
-      <!-- OCULTO 2026-04-17 — Formularios no se usa en el modelo actual.
-           Para reactivar: descomentar el nav-item de abajo.
-      <div class="nav-item" onclick="nav('formularios',this)">
-        <span class="nav-icon">📋</span><span>Formularios</span>
-      </div>
-      -->
       <div class="nav-item" onclick="nav('configuracion',this)">
         <span class="nav-icon">⚙️</span><span>Configuración</span>
       </div>
@@ -2896,6 +3006,29 @@ tailwind.config = {
 
       <div id="cfg-feedback" class="mt-3 text-[13px] min-h-[20px]"></div>
 
+      <!-- Tipo de negocio -->
+      <div class="bg-surface border border-brd rounded-[14px] p-6 mt-5">
+        <div class="font-bold text-sm mb-1 text-txt">🏢 Tipo de negocio</div>
+        <div class="text-xs text-txt-2 mb-4">Determina qué secciones ves en GESTIÓN. Podés cambiarlo en cualquier momento.</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <button onclick="cambiarSubnichoTipo('desarrolladora')" class="cfg-subnicho-option" data-tipo="desarrolladora">
+            <div class="cfg-subnicho-icon">🏗️</div>
+            <div class="cfg-subnicho-title">Desarrolladora</div>
+            <div class="cfg-subnicho-sub">Loteos, contratos de venta, cuotas</div>
+          </button>
+          <button onclick="cambiarSubnichoTipo('agencia')" class="cfg-subnicho-option" data-tipo="agencia">
+            <div class="cfg-subnicho-icon">🏢</div>
+            <div class="cfg-subnicho-title">Agencia inmobiliaria</div>
+            <div class="cfg-subnicho-sub">Alquileres, propietarios, inquilinos</div>
+          </button>
+          <button onclick="cambiarSubnichoTipo('agente')" class="cfg-subnicho-option" data-tipo="agente">
+            <div class="cfg-subnicho-icon">🧑‍💼</div>
+            <div class="cfg-subnicho-title">Agente inmobiliario</div>
+            <div class="cfg-subnicho-sub">Solo ventas y leads</div>
+          </button>
+        </div>
+      </div>
+
       <!-- Cambiar PIN -->
       <div class="bg-surface border border-brd rounded-[14px] p-6 mt-5">
         <div class="font-bold text-sm mb-1 text-txt">🔐 Cambiar PIN de acceso</div>
@@ -3392,6 +3525,90 @@ tailwind.config = {
 </div>
 
 <!-- REPORTES -->
+<!-- INMUEBLES EN RENTA (subnicho: agencia) -->
+<div class="panel hidden" id="panel-inmuebles-renta" style="padding:0">
+  <div class="cd-page-head">
+    <div>
+      <h1 class="cd-page-title">
+        <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+        Inmuebles en renta
+      </h1>
+      <div class="cd-page-sub">Propiedades disponibles para alquiler, con estado y rentabilidad mensual</div>
+    </div>
+    <div class="cd-page-actions">
+      <button class="cd-btn-primary" onclick="notif('🚧 En desarrollo','Panel de inmuebles en renta — próximamente')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo inmueble
+      </button>
+    </div>
+  </div>
+  <div class="cd-placeholder">
+    <div class="cd-placeholder-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div class="cd-placeholder-title">Módulo Inmuebles en renta</div>
+    <div class="cd-placeholder-sub">Acá vas a ver tu cartera de propiedades en alquiler, el estado de ocupación, rentabilidad mensual y alertas de próximos vencimientos. Próximamente.</div>
+    <div class="cd-placeholder-kpis">
+      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Inmuebles</div></div>
+      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Ocupados</div></div>
+      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Libres</div></div>
+      <div class="cd-placeholder-kpi"><div class="k">USD 0</div><div>Renta mensual</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- INQUILINOS (subnicho: agencia) -->
+<div class="panel hidden" id="panel-inquilinos" style="padding:0">
+  <div class="cd-page-head">
+    <div>
+      <h1 class="cd-page-title">
+        <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+        Inquilinos
+      </h1>
+      <div class="cd-page-sub">Personas que alquilan tus inmuebles, con estado de cuenta y próximos vencimientos</div>
+    </div>
+    <div class="cd-page-actions">
+      <button class="cd-btn-primary" onclick="notif('🚧 En desarrollo','Panel de inquilinos — próximamente')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo inquilino
+      </button>
+    </div>
+  </div>
+  <div class="cd-placeholder">
+    <div class="cd-placeholder-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <div class="cd-placeholder-title">Módulo Inquilinos</div>
+    <div class="cd-placeholder-sub">Listado de inquilinos, estado de cuenta, historial de pagos, garantías, alertas de morosidad y renovación de contrato. Próximamente.</div>
+  </div>
+</div>
+
+<!-- CONTRATOS DE ALQUILER (subnicho: agencia) -->
+<div class="panel hidden" id="panel-contratos-alquiler" style="padding:0">
+  <div class="cd-page-head">
+    <div>
+      <h1 class="cd-page-title">
+        <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+        Contratos de alquiler
+      </h1>
+      <div class="cd-page-sub">Contratos firmados, próximos a vencer, con índice de ajuste y cláusulas</div>
+    </div>
+    <div class="cd-page-actions">
+      <button class="cd-btn-primary" onclick="notif('🚧 En desarrollo','Panel de contratos de alquiler — próximamente')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo contrato
+      </button>
+    </div>
+  </div>
+  <div class="cd-placeholder">
+    <div class="cd-placeholder-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div class="cd-placeholder-title">Módulo Contratos de alquiler</div>
+    <div class="cd-placeholder-sub">Vas a gestionar los contratos firmados, índice de ajuste (IPC/ICL/UVA), vencimientos, renovaciones y cláusulas especiales. Próximamente.</div>
+  </div>
+</div>
+
 <div class="panel hidden" id="panel-reportes" style="padding:20px">
   <div class="mb-4">
     <h2 class="text-xl font-bold">📈 Reportes</h2>
@@ -4367,8 +4584,43 @@ async function initTenant() {
       </div>`;
     return false;
   }
+
+  // ── Aplicar tipo de subnicho (desarrolladora / agencia / agente) ────────
+  // Prioridad: query param ?tipo=xxx > localStorage > campo t.tipo del tenant > 'desarrolladora' default
+  const tipoFromParams = params.get('tipo');
+  const storageKey = `crm_tipo_${TENANT_SLUG}`;
+  const tipoFromStorage = localStorage.getItem(storageKey);
+  const tipoFromTenant = t.tipo;  // backend-provided (futuro campo Supabase)
+  const tipo = tipoFromParams || tipoFromStorage || tipoFromTenant || 'desarrolladora';
+  if (tipoFromParams) localStorage.setItem(storageKey, tipoFromParams);  // pin desde query
+  aplicarSubnichoTipo(tipo);
+
   return true; // continuar cargando datos
 }
+
+// ── Aplicar tipo de subnicho al sidebar ─────────────────────────────────────
+// Muestra/oculta las secciones GESTIÓN según el modo. El "agente" solo ve VENTAS.
+window.aplicarSubnichoTipo = function(tipo) {
+  const validos = ['desarrolladora', 'agencia', 'agente'];
+  if (!validos.includes(tipo)) tipo = 'desarrolladora';
+  window.SUBNICHO_TIPO = tipo;
+  document.body.setAttribute('data-subnicho-tipo', tipo);
+
+  // Toggle items del sidebar con data-subnicho
+  document.querySelectorAll('.subnicho-gestion').forEach(el => {
+    const itemSubnicho = el.getAttribute('data-subnicho');
+    const visible = (tipo !== 'agente') && (itemSubnicho === tipo);
+    el.style.display = visible ? '' : 'none';
+  });
+
+  console.log(`[CRM] Subnicho aplicado: ${tipo}`);
+};
+
+window.cambiarSubnichoTipo = function(tipo) {
+  localStorage.setItem(`crm_tipo_${TENANT_SLUG}`, tipo);
+  aplicarSubnichoTipo(tipo);
+  notif('✅ Tipo de negocio actualizado', `Ahora estás en modo ${tipo}`);
+};
 
 // ── PROPS — conectado a Airtable via backend ────────────────────────────────
 
