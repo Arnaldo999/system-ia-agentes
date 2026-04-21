@@ -616,17 +616,19 @@ async def admin_setup_audit_columns():
 
 
 @app.get("/admin/crear-db-cliente", tags=["Admin"])
-async def admin_crear_db_cliente(db: str, from_tenant: str = None):
+async def admin_crear_db_cliente(db: str, from_tenant: str = None, from_db: str = "lovbot_crm"):
     """
     Crea una DB dedicada para un cliente inmobiliario.
-    Cada cliente → su propia DB (aislamiento tipo Airtable).
+    Cada cliente → su propia DB (aislamiento tipo Airtable, regla #0 irrompible).
 
     Params:
-        db: nombre de la DB nueva (ej: robert_crm, maria_crm)
-        from_tenant: slug del tenant en lovbot_crm para copiar datos (opcional)
+        db:          nombre de la DB nueva (ej: robert_crm, maria_crm)
+        from_tenant: slug del tenant a copiar (opcional)
+        from_db:     DB origen desde donde copiar (default: lovbot_crm).
+                     Útil si los datos están en otra DB como robert_crm vieja.
 
     Ejemplos:
-        GET /admin/crear-db-cliente?db=robert_crm&from_tenant=robert
+        GET /admin/crear-db-cliente?db=robert_crm_new&from_tenant=robert&from_db=robert_crm
         GET /admin/crear-db-cliente?db=maria_crm
     """
     import sys
@@ -634,7 +636,7 @@ async def admin_crear_db_cliente(db: str, from_tenant: str = None):
     if scripts_dir not in sys.path:
         sys.path.insert(0, scripts_dir)
     from scripts.crear_db_cliente import crear_db_cliente
-    return crear_db_cliente(db, from_tenant)
+    return crear_db_cliente(db, from_tenant, from_db)
 
 
 @app.post("/admin/onboard", tags=["Admin"])

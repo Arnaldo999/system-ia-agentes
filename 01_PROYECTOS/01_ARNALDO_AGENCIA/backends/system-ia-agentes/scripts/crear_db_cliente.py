@@ -337,20 +337,21 @@ def copiar_datos(db_origen: str, db_destino: str, tenant_slug: str) -> dict:
     return resumen
 
 
-def crear_db_cliente(db_nombre: str, copiar_desde_tenant: str = None) -> dict:
+def crear_db_cliente(db_nombre: str, copiar_desde_tenant: str = None, db_origen: str = "lovbot_crm") -> dict:
     """
     Flujo completo:
     1. Crear DB si no existe
     2. Aplicar schema
-    3. Opcionalmente, copiar datos desde lovbot_crm WHERE tenant_slug=X
+    3. Opcionalmente, copiar datos desde db_origen WHERE tenant_slug=X
     """
     print(f"\n════════════════════════════════════════════════════════════════")
     print(f"  Crear DB cliente: {db_nombre}")
     if copiar_desde_tenant:
         print(f"  Copiar datos de tenant: {copiar_desde_tenant}")
+        print(f"  DB origen: {db_origen}")
     print(f"════════════════════════════════════════════════════════════════\n")
 
-    resultado = {"db": db_nombre}
+    resultado = {"db": db_nombre, "db_origen": db_origen if copiar_desde_tenant else None}
 
     # Paso 1: crear DB
     r1 = crear_db(db_nombre)
@@ -362,7 +363,7 @@ def crear_db_cliente(db_nombre: str, copiar_desde_tenant: str = None) -> dict:
 
     # Paso 3: copiar datos (opcional)
     if copiar_desde_tenant:
-        r3 = copiar_datos("lovbot_crm", db_nombre, copiar_desde_tenant)
+        r3 = copiar_datos(db_origen, db_nombre, copiar_desde_tenant)
         resultado["copia"] = r3
 
     print(f"\n✅ Completado: {db_nombre}")
