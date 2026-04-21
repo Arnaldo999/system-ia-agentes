@@ -1947,6 +1947,39 @@ tailwind.config = {
   .modal-bg .modal { pointer-events: auto; }
 
   /* ==========================================================
+   * LAYOUT LOCK — sidebar siempre visible, main con su scroll
+   * Evita que paneles con min-height:100vh/calc(100vh-...) rompan
+   * el flex del .layout y hagan scrollear al body.
+   * ========================================================== */
+  html, body {
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  .layout {
+    height: calc(100vh - 56px) !important;
+    max-height: calc(100vh - 56px) !important;
+    overflow: hidden !important;
+  }
+  .sidebar {
+    height: 100% !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;  /* el scroll real está en el hijo interno */
+  }
+  .main {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;  /* permite a flex hijos contraerse en lugar de empujar fuera */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  /* Paneles que usaban min-height calc(100vh-XXX) ahora respetan el .main padre */
+  .cd-main-grid {
+    min-height: 0 !important;  /* anula el min-height:calc(100vh-280px) del Paso 3 */
+  }
+  .cd-map-stage { min-height: 420px !important; }
+  .cd-panel-detail { min-height: auto !important; }
+
+  /* ==========================================================
    * TIPO DE NEGOCIO — tarjetas selector en Configuración
    * ========================================================== */
   .cfg-subnicho-option {
@@ -3729,9 +3762,14 @@ function nav(id, el) {
   if (panelEl) {
     panelEl.classList.add('active');
     panelEl.classList.remove('hidden');
-    // Resetear scroll al tope del panel activado
+    // Resetear scroll del contenedor .main (scroll real ocurre ahí, NO en window)
+    const mainEl = document.querySelector('.main');
+    if (mainEl) mainEl.scrollTop = 0;
+    // Resetear scroll del sidebar interno también (por si el usuario bajó al footer)
+    const sidebarScroller = document.querySelector('.sidebar > div[style*="overflow-y"]');
+    if (sidebarScroller) sidebarScroller.scrollTop = 0;
+    // Fallback al window por si algún panel se sale del .main
     window.scrollTo({ top: 0, behavior: 'instant' });
-    panelEl.scrollIntoView({ block: 'start', behavior: 'instant' });
   }
   if(el) el.classList.add('active');
   if(id==='chat') cargarResumenes();
