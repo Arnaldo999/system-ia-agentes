@@ -904,6 +904,57 @@ async def admin_ampliar_schema_agencia(db: str):
         return {"ok": False, "error": str(e)[:500]}
 
 
+@app.get("/admin/debug-worker-demo", tags=["Admin"])
+async def admin_debug_worker_demo():
+    """
+    Muestra qué env vars y config está usando el worker demos/inmobiliaria.
+    Útil para diagnosticar si el worker lee la DB correcta.
+    Enmascara passwords.
+    """
+    import sys
+    # Importar el módulo db_postgres del demo para ver qué env vars tiene cargadas
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "workers/demos/inmobiliaria"))
+        # Importación fresca por si ya estaba cargado con otro valor
+        import importlib
+        import workers.demos.inmobiliaria.db_postgres as db
+        importlib.reload(db)
+
+        info = {
+            "pg_host_configurado": bool(db.PG_HOST),
+            "pg_host_suffix": db.PG_HOST[-15:] if db.PG_HOST else "",
+            "pg_port": db.PG_PORT,
+            "pg_db": db.PG_DB,  # el dato clave
+            "pg_user": db.PG_USER,
+            "pg_pass_configurado": bool(db.PG_PASS),
+            "tenant": db.TENANT,
+            "use_postgres": db._available(),
+        }
+
+        # Si postgres disponible, probar query real
+        if db._available():
+            try:
+                leads = db.get_all_leads()
+                info["test_get_all_leads"] = {"count": len(leads), "primer_nombre": leads[0].get("Nombre") if leads else None}
+            except Exception as e:
+                info["test_get_all_leads"] = {"error": str(e)[:200]}
+
+        # Import del worker para ver AIRTABLE_* env vars
+        try:
+            import workers.demos.inmobiliaria.worker as w
+            importlib.reload(w)
+            info["airtable"] = {
+                "base_id_configurado": bool(w.AIRTABLE_BASE_ID),
+                "table_clientes": w.AIRTABLE_TABLE_CLIENTES or "(vacío)",
+            }
+        except Exception as e:
+            info["airtable"] = {"error": str(e)[:100]}
+
+        return {"ok": True, "info": info}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:300]}
+
+
 @app.get("/admin/debug-db", tags=["Admin"])
 async def admin_debug_db(db: str):
     """
