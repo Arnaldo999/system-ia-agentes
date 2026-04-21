@@ -404,9 +404,9 @@ tailwind.config = {
     .np-body span { @apply text-txt-2 text-xs; }
     .np-close { @apply ml-auto cursor-pointer text-txt-2 text-[15px] self-start; }
 
-    /* ── MODAL ── */
-    .modal-bg { @apply fixed inset-0 bg-black/65 z-[400] hidden items-center justify-center; }
-    .modal-bg.show { @apply flex; }
+    /* ── MODAL ── (CSS puro: @apply hidden/flex rompe el Tailwind CDN con circular dep) */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 400; align-items: center; justify-content: center; display: none; }
+    .modal-bg.show { display: flex; }
     .modal { @apply bg-surface border border-brd rounded-[14px] p-5 min-w-[360px] max-w-[480px] w-[92%] relative max-h-[90vh] overflow-y-auto; }
     .mc { @apply absolute top-3.5 right-3.5 cursor-pointer text-txt-2 text-[19px] bg-transparent border-none; }
     .modal h3 { @apply text-[15px] mb-3.5; }
@@ -1929,22 +1929,13 @@ tailwind.config = {
   }
 
   /* ==========================================================
-   * FIX modales: garantizar que .show muestre display:flex real
-   * y que si no hay .show queden ocultos. CSS puro sin @apply.
-   * Z-index alto para que el modal nunca quede tapado.
+   * FIX modales — reforzar .modal-bg.show para que siempre gane
+   * sobre .hidden (Tailwind utility) cuando ambos coexistan.
+   * NO declaramos .modal-bg.hidden acá: rompería @apply hidden
+   * del CDN con error de circular dependency.
    * ========================================================== */
   .modal-bg {
-    position: fixed !important;
-    inset: 0 !important;
-    background: rgba(0, 0, 0, .65) !important;
     z-index: 500 !important;
-    align-items: center !important;
-    justify-content: center !important;
-    display: none !important;
-  }
-  /* hidden y no-show quedan ocultos (orden importa: show debe ganar sobre hidden) */
-  .modal-bg.hidden {
-    display: none !important;
   }
   .modal-bg.show {
     display: flex !important;
