@@ -639,6 +639,271 @@ async def admin_crear_db_cliente(db: str, from_tenant: str = None, from_db: str 
     return crear_db_cliente(db, from_tenant, from_db)
 
 
+@app.get("/admin/reducir-modelo", tags=["Admin"])
+async def admin_reducir_modelo(
+    db: str,
+    leads: int = 10,
+    propiedades: int = 10,
+    clientes_activos: int = 3,
+):
+    """
+    Reduce una DB modelo a N filas por tabla (deja los IDs más bajos).
+    Útil para crear una plantilla "demo limpia" con pocos registros.
+
+    Params:
+        db: nombre de la DB a reducir
+        leads, propiedades, clientes_activos: cantidad a mantener
+
+    Ejemplo:
+        GET /admin/reducir-modelo?db=lovbot_crm_modelo&leads=10&propiedades=10&clientes_activos=3
+    """
+    import psycopg2
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+
+    PROTEGIDAS = {"robert_crm", "lovbot_crm", "postgres"}
+    if db in PROTEGIDAS:
+        return {"ok": False, "error": f"DB '{db}' protegida contra reducción"}
+
+    try:
+        conn = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=db,
+                                user=PG_USER, password=PG_PASS)
+        conn.autocommit = True
+        cur = conn.cursor()
+        resumen = {}
+
+        limites = {"leads": leads, "propiedades": propiedades, "clientes_activos": clientes_activos}
+        for tabla, limite in limites.items():
+            cur.execute(f"SELECT COUNT(*) FROM {tabla}")
+            antes = cur.fetchone()[0]
+            if antes <= limite:
+                resumen[tabla] = {"antes": antes, "despues": antes, "eliminadas": 0}
+                continue
+            cur.execute(f"""
+                DELETE FROM {tabla}
+                WHERE id NOT IN (
+                    SELECT id FROM {tabla} ORDER BY id ASC LIMIT %s
+                )
+            """, (limite,))
+            eliminadas = cur.rowcount
+            cur.execute(f"SELECT COUNT(*) FROM {tabla}")
+            despues = cur.fetchone()[0]
+            resumen[tabla] = {"antes": antes, "despues": despues, "eliminadas": eliminadas}
+
+        cur.close()
+        conn.close()
+        return {"ok": True, "db": db, "resumen": resumen}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+
+
+@app.get("/admin/ampliar-schema-agencia", tags=["Admin"])
+async def admin_ampliar_schema_agencia(db: str):
+    """
+    Amplía el schema de la DB con las tablas de subnicho 'agencia':
+    - config_cliente (define tipo_subnicho)
+    - inmuebles_renta, inquilinos, contratos_alquiler
+    - pagos_alquiler, liquidaciones
+
+    Idempotente: usa CREATE TABLE IF NOT EXISTS.
+    """
+    import psycopg2
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+
+    SCHEMA_AGENCIA = """
+    CREATE TABLE IF NOT EXISTS config_cliente (
+        id SERIAL PRIMARY KEY,
+        tipo_subnicho VARCHAR(30) NOT NULL DEFAULT 'desarrolladora'
+            CHECK (tipo_subnicho IN ('desarrolladora','agencia','agente')),
+        nombre_comercial VARCHAR(150),
+        ciudad VARCHAR(100),
+        moneda_default VARCHAR(5) DEFAULT 'USD',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS inmuebles_renta (
+        id SERIAL PRIMARY KEY,
+        titulo VARCHAR(200) NOT NULL,
+        direccion VARCHAR(200),
+        ciudad VARCHAR(100),
+        barrio VARCHAR(100),
+        tipo VARCHAR(50),
+        dormitorios INTEGER,
+        banios INTEGER,
+        metros_cubiertos DECIMAL(10,2),
+        metros_terreno DECIMAL(10,2),
+        amoblado BOOLEAN DEFAULT FALSE,
+        permite_mascotas BOOLEAN DEFAULT FALSE,
+        precio_mensual DECIMAL(15,2) NOT NULL,
+        moneda VARCHAR(5) DEFAULT 'USD',
+        expensas DECIMAL(12,2),
+        comision_pct DECIMAL(5,2),
+        deposito_meses INTEGER DEFAULT 1,
+        estado VARCHAR(30) DEFAULT 'disponible'
+            CHECK (estado IN ('disponible','reservado','alquilado','mantenimiento','baja')),
+        disponible_desde DATE,
+        propietario_id INTEGER REFERENCES propietarios(id) ON DELETE SET NULL,
+        imagen_url TEXT,
+        maps_url TEXT,
+        descripcion TEXT,
+        caracteristicas JSONB,
+        asesor_asignado VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_inmuebles_renta_estado ON inmuebles_renta(estado);
+    CREATE INDEX IF NOT EXISTS idx_inmuebles_renta_ciudad ON inmuebles_renta(ciudad);
+
+    CREATE TABLE IF NOT EXISTS inquilinos (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        apellido VARCHAR(100),
+        telefono VARCHAR(30),
+        email VARCHAR(150),
+        dni_cuit VARCHAR(30),
+        fecha_nacimiento DATE,
+        ocupacion VARCHAR(100),
+        ingresos_mensuales DECIMAL(15,2),
+        garante_nombre VARCHAR(150),
+        garante_telefono VARCHAR(30),
+        garante_dni VARCHAR(30),
+        garante_tipo VARCHAR(30),
+        contacto_emergencia_nombre VARCHAR(150),
+        contacto_emergencia_telefono VARCHAR(30),
+        estado VARCHAR(30) DEFAULT 'activo'
+            CHECK (estado IN ('prospecto','activo','ex_inquilino','moroso','lista_negra')),
+        notas TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_inquilinos_telefono ON inquilinos(telefono);
+    CREATE INDEX IF NOT EXISTS idx_inquilinos_estado ON inquilinos(estado);
+
+    CREATE TABLE IF NOT EXISTS contratos_alquiler (
+        id SERIAL PRIMARY KEY,
+        inmueble_id INTEGER REFERENCES inmuebles_renta(id) ON DELETE SET NULL,
+        inquilino_id INTEGER REFERENCES inquilinos(id) ON DELETE SET NULL,
+        propietario_id INTEGER REFERENCES propietarios(id) ON DELETE SET NULL,
+        asesor_id INTEGER REFERENCES asesores(id) ON DELETE SET NULL,
+        fecha_inicio DATE NOT NULL,
+        fecha_fin DATE NOT NULL,
+        monto_inicial DECIMAL(15,2) NOT NULL,
+        moneda VARCHAR(5) DEFAULT 'USD',
+        indice_ajuste VARCHAR(20)
+            CHECK (indice_ajuste IN ('IPC','ICL','UVA','USD','fijo','otro')),
+        frecuencia_ajuste VARCHAR(20) DEFAULT 'semestral',
+        deposito_monto DECIMAL(15,2),
+        comision_inmobiliaria DECIMAL(15,2),
+        dia_cobro INTEGER DEFAULT 10 CHECK (dia_cobro BETWEEN 1 AND 28),
+        estado VARCHAR(30) DEFAULT 'activo'
+            CHECK (estado IN ('borrador','activo','rescindido','vencido','renovado')),
+        archivo_pdf_url TEXT,
+        clausulas_especiales TEXT,
+        notas TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_contratos_alq_estado ON contratos_alquiler(estado);
+    CREATE INDEX IF NOT EXISTS idx_contratos_alq_fecha_fin ON contratos_alquiler(fecha_fin);
+
+    CREATE TABLE IF NOT EXISTS pagos_alquiler (
+        id SERIAL PRIMARY KEY,
+        contrato_id INTEGER REFERENCES contratos_alquiler(id) ON DELETE CASCADE,
+        periodo_mes INTEGER NOT NULL CHECK (periodo_mes BETWEEN 1 AND 12),
+        periodo_anio INTEGER NOT NULL,
+        monto_alquiler DECIMAL(15,2) NOT NULL,
+        monto_expensas DECIMAL(12,2) DEFAULT 0,
+        monto_mora DECIMAL(12,2) DEFAULT 0,
+        monto_total DECIMAL(15,2) NOT NULL,
+        fecha_vencimiento DATE NOT NULL,
+        fecha_pago DATE,
+        metodo_pago VARCHAR(30),
+        comprobante_url TEXT,
+        estado VARCHAR(30) DEFAULT 'pendiente'
+            CHECK (estado IN ('pendiente','pagado','vencido','parcial','condonado')),
+        notas TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(contrato_id, periodo_anio, periodo_mes)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pagos_alq_estado ON pagos_alquiler(estado);
+    CREATE INDEX IF NOT EXISTS idx_pagos_alq_vencimiento ON pagos_alquiler(fecha_vencimiento);
+
+    CREATE TABLE IF NOT EXISTS liquidaciones (
+        id SERIAL PRIMARY KEY,
+        propietario_id INTEGER REFERENCES propietarios(id) ON DELETE CASCADE,
+        contrato_id INTEGER REFERENCES contratos_alquiler(id) ON DELETE SET NULL,
+        periodo_mes INTEGER NOT NULL,
+        periodo_anio INTEGER NOT NULL,
+        monto_bruto DECIMAL(15,2) NOT NULL,
+        comision_inmobiliaria DECIMAL(15,2) NOT NULL,
+        monto_neto DECIMAL(15,2) NOT NULL,
+        moneda VARCHAR(5) DEFAULT 'USD',
+        metodo_transferencia VARCHAR(30),
+        cbu_destino VARCHAR(30),
+        fecha_liquidacion DATE,
+        comprobante_url TEXT,
+        estado VARCHAR(30) DEFAULT 'pendiente'
+            CHECK (estado IN ('pendiente','procesada','pagada','rechazada')),
+        notas TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_liquid_estado ON liquidaciones(estado);
+
+    -- Triggers updated_at
+    DO $tr$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_config_cliente_updated') THEN
+            CREATE TRIGGER trg_config_cliente_updated BEFORE UPDATE ON config_cliente FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_inmuebles_renta_updated') THEN
+            CREATE TRIGGER trg_inmuebles_renta_updated BEFORE UPDATE ON inmuebles_renta FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_inquilinos_updated') THEN
+            CREATE TRIGGER trg_inquilinos_updated BEFORE UPDATE ON inquilinos FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_contratos_alq_updated') THEN
+            CREATE TRIGGER trg_contratos_alq_updated BEFORE UPDATE ON contratos_alquiler FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_pagos_alq_updated') THEN
+            CREATE TRIGGER trg_pagos_alq_updated BEFORE UPDATE ON pagos_alquiler FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_liquidaciones_updated') THEN
+            CREATE TRIGGER trg_liquidaciones_updated BEFORE UPDATE ON liquidaciones FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+        END IF;
+    END $tr$;
+
+    -- Seed default config si no existe
+    INSERT INTO config_cliente (tipo_subnicho, nombre_comercial)
+    SELECT 'desarrolladora', 'Cliente Demo'
+    WHERE NOT EXISTS (SELECT 1 FROM config_cliente);
+    """
+
+    try:
+        conn = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=db,
+                                user=PG_USER, password=PG_PASS)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(SCHEMA_AGENCIA)
+        cur.execute("""
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema='public' ORDER BY table_name
+        """)
+        tablas = [r[0] for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"ok": True, "db": db, "tablas_totales": len(tablas), "tablas": tablas}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:500]}
+
+
 @app.get("/admin/debug-db", tags=["Admin"])
 async def admin_debug_db(db: str):
     """
