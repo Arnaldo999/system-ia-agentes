@@ -4496,6 +4496,11 @@ async function submitPin() {
 async function initTenant() {
   const params = new URLSearchParams(window.location.search);
   TENANT_SLUG = params.get('tenant') || 'demo';
+  // ?force_pin=1 borra el token guardado para forzar pantalla de PIN (dev/test)
+  if (params.get('force_pin') === '1') {
+    sessionStorage.removeItem(`crm_token_${TENANT_SLUG}`);
+    console.log('[CRM] force_pin=1 → token eliminado, se pedirá PIN');
+  }
   try {
     const res = await fetch(`${SAAS_API}/tenant/${TENANT_SLUG}`, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) throw new Error(`tenant no encontrado: ${TENANT_SLUG}`);
