@@ -4,6 +4,19 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-21] sesion-claude | Refactor Postgres Lovbot a arquitectura workspaces
+- Detectada violación de regla #0 (aislamiento físico por cliente): `robert_crm` tenía 38 leads mezclados entre `tenant_slug='demo'` (19) y `tenant_slug='robert'` (19).
+- Descubierta vulnerabilidad en validator SQL n8n (workflow `CRM IA - Ejecutar SQL` id `0t32XZ9AuQXB9fOn`): saltaba inyección de tenant si el query mencionaba `tenant_slug` como SELECT-field → cross-tenant leak posible. Fix aplicado vía MCP n8n.
+- Detectado código legacy en worker demo `workers/demos/inmobiliaria/worker.py`: los 3 GET endpoints (`/crm/clientes`, `/crm/propiedades`, `/crm/activos`) leían de Airtable en lugar de Postgres. Refactorizado con patrón `if USE_POSTGRES: return db.get_all_X()` como ya hacía Robert.
+- Creada **`lovbot_crm_modelo`** como BD modelo única (10 leads + 10 props + 3 activos demo + 15 tablas cubriendo 3 subnichos). Schema ampliado con 6 tablas nuevas para agencia inmobiliaria (inmuebles_renta, inquilinos, contratos_alquiler, pagos_alquiler, liquidaciones, config_cliente).
+- Arnaldo actualizó Coolify (`LOVBOT_PG_DB=lovbot_crm_modelo`, `LOVBOT_TENANT_SLUG=demo`) + redeploy + credencial n8n "Postgres account 2" → `lovbot_crm_modelo`.
+- Verificación end-to-end: CRM frontend muestra 10/10/3, IA dice 10/10/3, Postgres tiene 10/10/3. Sincronización total.
+- Limpieza: 29 DBs → 1. Borradas 26 DBs de test + `robert_crm` + `lovbot_crm` + `demo_crm`.
+- Endpoints admin creados: `/admin/listar-dbs`, `/crear-db-cliente` (con param `from_db`), `/ampliar-schema-agencia`, `/reducir-modelo`, `/debug-db`, `/debug-worker-demo`, `/borrar-db`.
+- Commits relevantes en repo `Arnaldo999/system-ia-agentes`: 722617d, 859fc14, 34b16cd, e8f6bee, 35e91a7, b4abac0, b393eba, 14481f5, b245635.
+- Páginas wiki actualizadas: [[wiki/conceptos/postgresql]], [[wiki/entidades/lovbot-crm-modelo]] (nueva), [[wiki/sintesis/2026-04-21-refactor-postgres-workspaces]] (nueva).
+- Fuente ingestada: `raw/robert/sesion-2026-04-21-postgres-refactor.md`.
+
 ## [2026-04-20] ingest | Kevin curso "Tech Provider SaaS" — Intro
 - Nuevo curso de Kevin sobre convertir el TP en un SaaS multi-tenant (distinto al curso general de TP que ya completamos).
 - Distinción clave SaaS vs Agencia: SaaS = tú eres responsable de datos, multi-tenant en 1 infra, MÁS restricciones Meta. Agencia = cliente maneja sus datos, no escala.

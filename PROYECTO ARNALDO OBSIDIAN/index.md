@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-20 | Total páginas: 30 (15 entidades + 14 conceptos + 1 síntesis)
+Última actualización: 2026-04-21 | Total páginas: 32 (16 entidades + 14 conceptos + 2 síntesis)
 
 ## Fuentes (0)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -30,6 +30,11 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | Página | Tipo | Proyecto |
 |--------|------|----------|
 | [[wiki/entidades/back-urbanizaciones]] | marca comercial (cliente Maicol) | arnaldo |
+
+### Productos / BDs modelo
+| Página | Tipo | Proyecto |
+|--------|------|----------|
+| [[wiki/entidades/lovbot-crm-modelo]] | BD Postgres modelo (plantilla para clientes Lovbot) | robert |
 
 ### Infraestructura — VPS
 | Página | Tipo | Proyecto |
@@ -85,10 +90,11 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | [[wiki/conceptos/meta-tech-provider-onboarding]] | Embedded Signup + Coexistence + App Review — URLs oficiales Meta verificadas + checklist completo | robert |
 | [[wiki/conceptos/meta-webhooks-compliance]] | Deauthorize + Data Deletion webhooks (n8n + Cloudflare Worker verify HMAC) | robert |
 
-## Síntesis (0)
+## Síntesis (2)
 | Página | Origen | Fecha | Proyecto |
 |--------|--------|-------|----------|
 | [[wiki/sintesis/2026-04-18-limpieza-tenants-supabase]] | Decisión arquitectural: 1 tenant demo por agencia | 2026-04-18 | compartido |
+| [[wiki/sintesis/2026-04-21-refactor-postgres-workspaces]] | Refactor Postgres Lovbot a arquitectura workspaces (1 DB x cliente) — cerrada fuga cross-tenant, creada BD modelo `lovbot_crm_modelo` | 2026-04-21 | robert |
 
 ---
 
