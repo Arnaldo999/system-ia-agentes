@@ -3539,12 +3539,16 @@ def generar_resumenes_todos(solo_pendientes: bool = True):
 @router.get("/crm/resumenes")
 def crm_resumenes(limit: int = 20, score_min: int = None,
                    desde: str = None, search: str = None):
-    """Lista resúmenes con filtros: limit, score_min, desde (YYYY-MM-DD), search (texto libre)."""
-    _check_pg()
-    rows = db.listar_resumenes(limit=limit, score_min=score_min, desde=desde, search=search)
+    """Lista resúmenes con filtros: limit, score_min, desde (YYYY-MM-DD), search (texto libre).
+    Mica usa Airtable — listar_resumenes() retorna [] hasta que se implemente tabla."""
+    try:
+        rows = db.listar_resumenes(limit=limit, score_min=score_min, desde=desde, search=search)
+    except TypeError:
+        # Retrocompat: versión vieja sin parámetros
+        rows = db.listar_resumenes()
     for r in rows:
         for k in ("fecha_conversacion", "created_at"):
-            if r.get(k):
+            if r.get(k) and hasattr(r[k], "isoformat"):
                 r[k] = r[k].isoformat()
     return {"total": len(rows), "records": rows}
 

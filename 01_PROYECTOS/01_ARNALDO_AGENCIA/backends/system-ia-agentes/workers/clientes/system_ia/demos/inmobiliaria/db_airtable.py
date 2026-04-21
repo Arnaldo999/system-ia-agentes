@@ -601,7 +601,12 @@ def guardar_resumen(telefono: str, resumen: str) -> None:
     pass
 
 
-def listar_resumenes() -> list[dict]:
+def listar_resumenes(limit: int = 20, score_min: int = None,
+                     desde: str = None, search: str = None) -> list[dict]:
+    """Stub: Mica no tiene tabla 'resumenes_conversacion' en Airtable todavía.
+    Retorna lista vacía compatible con handler /crm/resumenes del worker.
+    Params aceptados para match con la interfaz del worker Postgres (Robert).
+    Futuro: tabla Airtable 'ResumenesConversacion' con schema equivalente."""
     return []
 
 
