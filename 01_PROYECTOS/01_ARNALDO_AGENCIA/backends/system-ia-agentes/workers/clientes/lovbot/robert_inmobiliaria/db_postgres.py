@@ -2211,7 +2211,7 @@ def crear_contrato_unificado(payload: dict) -> dict:
             INSERT INTO contratos (
                 tenant_slug, cliente_activo_id,
                 tipo, item_tipo, item_id,
-                asesor_id, fecha_firma, monto_total,
+                asesor_id, fecha_firma, monto,
                 cuotas_total, cuotas_pagadas, monto_cuota,
                 proximo_vencimiento, estado_pago,
                 moneda, notas, estado,
@@ -2230,7 +2230,7 @@ def crear_contrato_unificado(payload: dict) -> dict:
             tipo, item_tipo, item_id,
             payload.get("asesor_id"),
             payload.get("fecha_firma"),
-            payload.get("monto_total"),
+            payload.get("monto_total") or payload.get("monto"),
             payload.get("cuotas_total", 0),
             payload.get("cuotas_pagadas", 0),
             payload.get("monto_cuota"),
