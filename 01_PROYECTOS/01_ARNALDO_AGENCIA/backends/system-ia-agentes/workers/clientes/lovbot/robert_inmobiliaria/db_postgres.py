@@ -2065,3 +2065,422 @@ def eliminar_datos_por_user(user_id: str) -> dict:
         print(f"[DB] Error eliminar_datos_por_user: {e}")
         deleted["error"] = str(e)
     return deleted
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CRM v3 NORMALIZADO — Contratos polimorficos + GESTION-AGENCIA
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _serialize_row(row: dict) -> dict:
+    """Convierte tipos no-JSON (date, Decimal) a tipos serializables."""
+    result = {}
+    for k, v in row.items():
+        if hasattr(v, 'isoformat'):
+            result[k] = v.isoformat()
+        elif hasattr(v, '__float__') and not isinstance(v, (int, bool, float)):
+            result[k] = float(v)
+        else:
+            result[k] = v
+    return result
+
+
+# ── CONTRATOS v3 (endpoint unificado con logica de cliente) ─────────────────
+
+def crear_contrato_unificado(payload: dict) -> dict:
+    """
+    Endpoint unificado de contrato. Acepta exactamente UNA de estas 3 opciones
+    para el cliente:
+      A) cliente_activo_id: INT  → usar cliente existente
+      B) convertir_lead_id: INT  → convertir lead a cliente activo
+      C) cliente_nuevo: dict     → crear cliente directo
+
+    Luego crea el registro en contratos y actualiza el item (lote/propiedad/inmueble).
+    Todo en una sola transaccion.
+
+    Retorna: {cliente_activo_id, contrato_id, item_actualizado, error?}
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+
+    # Validar que llegue exactamente una opcion de cliente
+    opcion_a = payload.get("cliente_activo_id")
+    opcion_b = payload.get("convertir_lead_id")
+    opcion_c = payload.get("cliente_nuevo")
+    opciones_presentes = sum([bool(opcion_a), bool(opcion_b), bool(opcion_c)])
+
+    if opciones_presentes != 1:
+        return {"error": "Debe venir exactamente una opcion: cliente_activo_id, convertir_lead_id o cliente_nuevo"}
+
+    # Campos obligatorios del contrato
+    tipo = payload.get("tipo")
+    item_tipo = payload.get("item_tipo")
+    item_id = payload.get("item_id")
+    if not tipo:
+        return {"error": "Campo 'tipo' es obligatorio"}
+
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # ── Resolver cliente ────────────────────────────────────────────────
+
+        cliente_activo_id = None
+        origen_creacion = "manual_directo"
+
+        if opcion_a:
+            # A: cliente existente — verificar que exista y sea del tenant
+            cur.execute(
+                "SELECT id FROM clientes_activos WHERE id=%s AND tenant_slug=%s",
+                (opcion_a, TENANT)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {"error": f"cliente_activo_id={opcion_a} no encontrado para tenant={TENANT}"}
+            cliente_activo_id = row["id"]
+            print(f"[DB] Contrato unificado: usando cliente existente #{cliente_activo_id}")
+
+        elif opcion_b:
+            # B: convertir lead a cliente activo
+            cur.execute(
+                "SELECT * FROM leads WHERE id=%s AND tenant_slug=%s",
+                (opcion_b, TENANT)
+            )
+            lead = cur.fetchone()
+            if not lead:
+                cur.close(); conn.close()
+                return {"error": f"convertir_lead_id={opcion_b} no encontrado para tenant={TENANT}"}
+
+            lead = dict(lead)
+            origen_creacion = "lead_convertido"
+
+            # Crear cliente activo copiando datos del lead
+            cur2 = conn.cursor(cursor_factory=RealDictCursor)
+            cur2.execute("""
+                INSERT INTO clientes_activos (
+                    tenant_slug, nombre, apellido, telefono, email,
+                    lead_id, origen_creacion, fecha_alta
+                ) VALUES (%s, %s, %s, %s, %s, %s, 'lead_convertido', CURRENT_DATE)
+                RETURNING id
+            """, (
+                TENANT,
+                lead.get("nombre", ""),
+                lead.get("apellido", ""),
+                lead.get("telefono", ""),
+                lead.get("email", ""),
+                opcion_b,
+            ))
+            nuevo = cur2.fetchone()
+            cliente_activo_id = nuevo["id"]
+            cur2.close()
+
+            # Marcar lead como cerrado_ganado (no se borra)
+            cur.execute(
+                "UPDATE leads SET estado='cerrado_ganado', fecha_ultimo_contacto=NOW() WHERE id=%s AND tenant_slug=%s",
+                (opcion_b, TENANT)
+            )
+            print(f"[DB] Lead #{opcion_b} convertido a cliente_activo #{cliente_activo_id}")
+
+        elif opcion_c:
+            # C: crear cliente directo
+            cnuevo = opcion_c
+            origen = payload.get("origen_creacion", "manual_directo")
+            cur.execute("""
+                INSERT INTO clientes_activos (
+                    tenant_slug, nombre, apellido, telefono, email, documento,
+                    origen_creacion, fecha_alta
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_DATE)
+                RETURNING id
+            """, (
+                TENANT,
+                cnuevo.get("nombre", ""),
+                cnuevo.get("apellido", ""),
+                cnuevo.get("telefono", ""),
+                cnuevo.get("email", ""),
+                cnuevo.get("documento", ""),
+                origen,
+            ))
+            nuevo = cur.fetchone()
+            cliente_activo_id = nuevo["id"]
+            origen_creacion = origen
+            print(f"[DB] Nuevo cliente #{cliente_activo_id} creado directamente (origen={origen})")
+
+        # ── Crear contrato ──────────────────────────────────────────────────
+
+        cur.execute("""
+            INSERT INTO contratos (
+                tenant_slug, cliente_activo_id,
+                tipo, item_tipo, item_id,
+                asesor_id, fecha_firma, monto_total,
+                cuotas_total, cuotas_pagadas, monto_cuota,
+                proximo_vencimiento, estado_pago,
+                moneda, notas, estado,
+                created_at, updated_at
+            ) VALUES (
+                %s, %s,
+                %s, %s, %s,
+                %s, %s, %s,
+                %s, %s, %s,
+                %s, %s,
+                %s, %s, 'firmado',
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            ) RETURNING id
+        """, (
+            TENANT, cliente_activo_id,
+            tipo, item_tipo, item_id,
+            payload.get("asesor_id"),
+            payload.get("fecha_firma"),
+            payload.get("monto_total"),
+            payload.get("cuotas_total", 0),
+            payload.get("cuotas_pagadas", 0),
+            payload.get("monto_cuota"),
+            payload.get("proximo_vencimiento"),
+            payload.get("estado_pago", "al_dia"),
+            payload.get("moneda", "USD"),
+            payload.get("notas", ""),
+        ))
+        contrato_id = cur.fetchone()["id"]
+        print(f"[DB] Contrato #{contrato_id} creado (tipo={tipo}, item={item_tipo}#{item_id})")
+
+        # ── Actualizar item segun tipo ──────────────────────────────────────
+
+        item_actualizado = False
+        if item_tipo == "lote" and item_id:
+            cur.execute(
+                "UPDATE lotes_mapa SET estado='vendido', cliente_id=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s AND tenant_slug=%s",
+                (cliente_activo_id, item_id, TENANT)
+            )
+            item_actualizado = cur.rowcount > 0
+            # Actualizar campo propiedad string en cliente (backward compat)
+            if item_actualizado:
+                cur.execute(
+                    "SELECT l.nombre, lm.numero_lote FROM lotes_mapa lm JOIN loteos l ON lm.loteo_id=l.id WHERE lm.id=%s",
+                    (item_id,)
+                )
+                lote_info = cur.fetchone()
+                if lote_info:
+                    propiedad_str = f"{lote_info['nombre']} · {lote_info['numero_lote']}"
+                    cur.execute(
+                        "UPDATE clientes_activos SET propiedad=%s WHERE id=%s AND tenant_slug=%s",
+                        (propiedad_str, cliente_activo_id, TENANT)
+                    )
+                # Recalcular contadores del loteo
+                cur.execute(
+                    "SELECT loteo_id FROM lotes_mapa WHERE id=%s", (item_id,)
+                )
+                lote_row = cur.fetchone()
+                if lote_row:
+                    _recalc_contadores_loteo_conn(cur, lote_row["loteo_id"])
+            print(f"[DB] Lote #{item_id} marcado como vendido={item_actualizado}")
+
+        elif item_tipo == "propiedad" and item_id:
+            cur.execute(
+                "UPDATE propiedades SET disponible='No Disponible', updated_at=CURRENT_TIMESTAMP WHERE id=%s AND tenant_slug=%s",
+                (item_id, TENANT)
+            )
+            item_actualizado = cur.rowcount > 0
+            print(f"[DB] Propiedad #{item_id} marcada no disponible={item_actualizado}")
+
+        elif item_tipo == "inmueble_renta" and item_id:
+            cur.execute(
+                "UPDATE inmuebles_renta SET disponible=FALSE, updated_at=CURRENT_TIMESTAMP WHERE id=%s AND tenant_slug=%s",
+                (item_id, TENANT)
+            )
+            item_actualizado = cur.rowcount > 0
+            print(f"[DB] Inmueble renta #{item_id} marcado no disponible={item_actualizado}")
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return {
+            "ok": True,
+            "cliente_activo_id": cliente_activo_id,
+            "contrato_id": contrato_id,
+            "origen_creacion": origen_creacion,
+            "item_actualizado": item_actualizado,
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[DB] Error crear_contrato_unificado: {e}")
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return {"error": str(e)}
+
+
+def _recalc_contadores_loteo_conn(cur, loteo_id: int):
+    """Version que reutiliza cursor existente (para uso dentro de transaccion)."""
+    try:
+        cur.execute(
+            """
+            UPDATE loteos l SET
+              lotes_disponibles = COALESCE(s.disp, 0),
+              lotes_reservados  = COALESCE(s.res, 0),
+              lotes_vendidos    = COALESCE(s.vend, 0),
+              updated_at        = CURRENT_TIMESTAMP
+            FROM (
+              SELECT
+                COUNT(*) FILTER (WHERE estado='disponible') AS disp,
+                COUNT(*) FILTER (WHERE estado='reservado')  AS res,
+                COUNT(*) FILTER (WHERE estado='vendido')    AS vend
+              FROM lotes_mapa
+              WHERE tenant_slug=%s AND loteo_id=%s
+            ) s
+            WHERE l.id=%s AND l.tenant_slug=%s
+            """,
+            (TENANT, loteo_id, loteo_id, TENANT),
+        )
+    except Exception as e:
+        print(f"[DB] Error _recalc_contadores_loteo_conn({loteo_id}): {e}")
+
+
+def get_contratos_by_cliente(cliente_activo_id: int) -> dict:
+    """Lista todos los contratos de un cliente activo (para ficha completa)."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT c.*,
+                   a.nombre as asesor_nombre, a.apellido as asesor_apellido
+            FROM contratos c
+            LEFT JOIN asesores a ON c.asesor_id = a.id
+            WHERE c.cliente_activo_id = %s AND c.tenant_slug = %s
+            ORDER BY c.created_at DESC
+        """, (cliente_activo_id, TENANT))
+        rows = [_serialize_row(dict(r)) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"items": rows, "total": len(rows)}
+    except Exception as e:
+        print(f"[DB] Error get_contratos_by_cliente: {e}")
+        return {"error": str(e)}
+
+
+# ── INMUEBLES RENTA (gestion agencia) ───────────────────────────────────────
+
+def get_all_inmuebles_renta() -> dict:
+    return _crud_generico("inmuebles_renta", "list")
+
+def create_inmueble_renta(campos: dict) -> dict:
+    return _crud_generico("inmuebles_renta", "create", campos=campos)
+
+def update_inmueble_renta(record_id: int, campos: dict) -> dict:
+    return _crud_generico("inmuebles_renta", "update", campos=campos, record_id=record_id)
+
+def delete_inmueble_renta(record_id: int) -> dict:
+    return _crud_generico("inmuebles_renta", "delete", record_id=record_id)
+
+
+# ── INQUILINOS ───────────────────────────────────────────────────────────────
+
+def get_all_inquilinos(inmueble_renta_id: int = None) -> dict:
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if inmueble_renta_id:
+            cur.execute(
+                "SELECT * FROM inquilinos WHERE tenant_slug=%s AND inmueble_renta_id=%s ORDER BY created_at DESC",
+                (TENANT, inmueble_renta_id)
+            )
+        else:
+            cur.execute(
+                "SELECT * FROM inquilinos WHERE tenant_slug=%s ORDER BY created_at DESC",
+                (TENANT,)
+            )
+        rows = [_serialize_row(dict(r)) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"items": rows, "total": len(rows)}
+    except Exception as e:
+        print(f"[DB] Error get_all_inquilinos: {e}")
+        return {"error": str(e)}
+
+def create_inquilino(campos: dict) -> dict:
+    return _crud_generico("inquilinos", "create", campos=campos)
+
+def update_inquilino(record_id: int, campos: dict) -> dict:
+    return _crud_generico("inquilinos", "update", campos=campos, record_id=record_id)
+
+def delete_inquilino(record_id: int) -> dict:
+    return _crud_generico("inquilinos", "delete", record_id=record_id)
+
+
+# ── PAGOS ALQUILER ──────────────────────────────────────────────────────────
+
+def get_all_pagos_alquiler(inquilino_id: int = None, mes_anio: str = None) -> dict:
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        conditions = ["tenant_slug=%s"]
+        params = [TENANT]
+        if inquilino_id:
+            conditions.append("inquilino_id=%s")
+            params.append(inquilino_id)
+        if mes_anio:
+            conditions.append("mes_anio=%s")
+            params.append(mes_anio)
+        where = " AND ".join(conditions)
+        cur.execute(f"SELECT * FROM pagos_alquiler WHERE {where} ORDER BY mes_anio DESC, created_at DESC", params)
+        rows = [_serialize_row(dict(r)) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"items": rows, "total": len(rows)}
+    except Exception as e:
+        print(f"[DB] Error get_all_pagos_alquiler: {e}")
+        return {"error": str(e)}
+
+def create_pago_alquiler(campos: dict) -> dict:
+    return _crud_generico("pagos_alquiler", "create", campos=campos)
+
+def update_pago_alquiler(record_id: int, campos: dict) -> dict:
+    return _crud_generico("pagos_alquiler", "update", campos=campos, record_id=record_id)
+
+def delete_pago_alquiler(record_id: int) -> dict:
+    return _crud_generico("pagos_alquiler", "delete", record_id=record_id)
+
+
+# ── LIQUIDACIONES ────────────────────────────────────────────────────────────
+
+def get_all_liquidaciones(propietario_id: int = None, mes_anio: str = None) -> dict:
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        conditions = ["tenant_slug=%s"]
+        params = [TENANT]
+        if propietario_id:
+            conditions.append("propietario_id=%s")
+            params.append(propietario_id)
+        if mes_anio:
+            conditions.append("mes_anio=%s")
+            params.append(mes_anio)
+        where = " AND ".join(conditions)
+        cur.execute(f"SELECT * FROM liquidaciones WHERE {where} ORDER BY mes_anio DESC, created_at DESC", params)
+        rows = [_serialize_row(dict(r)) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"items": rows, "total": len(rows)}
+    except Exception as e:
+        print(f"[DB] Error get_all_liquidaciones: {e}")
+        return {"error": str(e)}
+
+def create_liquidacion(campos: dict) -> dict:
+    return _crud_generico("liquidaciones", "create", campos=campos)
+
+def update_liquidacion(record_id: int, campos: dict) -> dict:
+    return _crud_generico("liquidaciones", "update", campos=campos, record_id=record_id)
+
+def delete_liquidacion(record_id: int) -> dict:
+    return _crud_generico("liquidaciones", "delete", record_id=record_id)

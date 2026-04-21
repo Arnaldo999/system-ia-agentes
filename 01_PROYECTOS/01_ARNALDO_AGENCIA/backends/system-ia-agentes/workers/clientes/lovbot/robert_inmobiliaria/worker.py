@@ -3262,6 +3262,51 @@ def setup_nurturing():
     return db.setup_nurturing_columns()
 
 
+@router.post("/admin/migrar-v3-normalizado")
+def admin_migrar_v3(request: Request):
+    """
+    Ejecuta la migracion CRM v3 normalizado directamente en la DB del servidor.
+    Idempotente — se puede llamar N veces sin dano.
+    Requiere header X-Admin-Token.
+
+    Hace:
+      1. ALTER clientes_activos (documento, lead_id, origen_creacion, fecha_alta)
+      2. ALTER contratos (item_tipo, item_id, cuotas_*, estado_pago)
+      3. CREATE inmuebles_renta, inquilinos, pagos_alquiler, liquidaciones
+      4. Migracion de datos legacy (campo propiedad → contratos)
+    """
+    from fastapi import HTTPException
+    import subprocess, sys, os
+    _check_admin_token(request)
+    _check_pg()
+
+    # Ejecutar el script de migracion como subproceso (corre en el mismo entorno)
+    script_path = os.path.join(
+        os.path.dirname(__file__),
+        "..", "..", "..", "..", "scripts", "setup_postgres_robert_v3_normalizado.py"
+    )
+    script_path = os.path.normpath(script_path)
+
+    if not os.path.exists(script_path):
+        # Fallback: intentar ejecutar inline la SQL via db
+        return {"error": f"Script no encontrado: {script_path}", "tip": "Deployar el script junto al worker"}
+
+    try:
+        result = subprocess.run(
+            [sys.executable, script_path],
+            capture_output=True, text=True, timeout=120,
+            env=os.environ.copy(),
+        )
+        return {
+            "ok": result.returncode == 0,
+            "stdout": result.stdout[-3000:] if result.stdout else "",
+            "stderr": result.stderr[-1000:] if result.stderr else "",
+            "returncode": result.returncode,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/admin/nurturing/24h")
 def nurturing_24h():
     """Envía mensajes de seguimiento a leads calificados que NO agendaron cita
@@ -3540,26 +3585,162 @@ def crm_lote_mapa_delete(record_id: int):
     return db.delete_lote_mapa(record_id)
 
 
-# ── Contratos (Sprint 6) ────────────────────────────────────────────────────
+# ── Contratos v3 (Sprint 6 + v3 normalizado) ────────────────────────────────
 @router.get("/crm/contratos")
 def crm_contratos_list():
     _check_pg()
     return db.get_all_contratos()
 
+
 @router.post("/crm/contratos")
 async def crm_contrato_create(request: Request):
+    """
+    Endpoint unificado de contratos v3.
+    Acepta 3 modos de cliente:
+      A) cliente_activo_id: usar cliente existente
+      B) convertir_lead_id: convierte lead a cliente activo
+      C) cliente_nuevo: { nombre, apellido, telefono, email, documento }
+    Si el payload no trae ninguna de esas claves, delega al comportamiento
+    legacy (create_contrato simple) para backward compat.
+    """
+    from fastapi import HTTPException
     _check_pg()
-    return db.create_contrato(await request.json())
+    data = await request.json()
+
+    # Detectar si es request v3 (tiene alguna de las claves de cliente)
+    es_v3 = any(k in data for k in ("cliente_activo_id", "convertir_lead_id", "cliente_nuevo"))
+
+    if es_v3:
+        resultado = db.crear_contrato_unificado(data)
+        if "error" in resultado:
+            raise HTTPException(status_code=400, detail=resultado["error"])
+        return resultado
+    else:
+        # Legacy: passthrough a _crud_generico (no rompe integraciones existentes)
+        return db.create_contrato(data)
+
 
 @router.patch("/crm/contratos/{record_id}")
 async def crm_contrato_update(record_id: int, request: Request):
     _check_pg()
     return db.update_contrato(record_id, await request.json())
 
+
 @router.delete("/crm/contratos/{record_id}")
 def crm_contrato_delete(record_id: int):
     _check_pg()
     return db.delete_contrato(record_id)
+
+
+@router.get("/crm/clientes-activos/{cliente_id}/contratos")
+def crm_contratos_by_cliente(cliente_id: int):
+    """Lista todos los contratos de un cliente activo (ficha completa)."""
+    _check_pg()
+    return db.get_contratos_by_cliente(cliente_id)
+
+
+# ── GESTIÓN-Agencia — Inmuebles Renta ────────────────────────────────────────
+
+@router.get("/crm/inmuebles-renta")
+def crm_inmuebles_renta_list():
+    _check_pg()
+    return db.get_all_inmuebles_renta()
+
+
+@router.post("/crm/inmuebles-renta")
+async def crm_inmueble_renta_create(request: Request):
+    _check_pg()
+    return db.create_inmueble_renta(await request.json())
+
+
+@router.patch("/crm/inmuebles-renta/{record_id}")
+async def crm_inmueble_renta_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_inmueble_renta(record_id, await request.json())
+
+
+@router.delete("/crm/inmuebles-renta/{record_id}")
+def crm_inmueble_renta_delete(record_id: int):
+    _check_pg()
+    return db.delete_inmueble_renta(record_id)
+
+
+# ── GESTIÓN-Agencia — Inquilinos ─────────────────────────────────────────────
+
+@router.get("/crm/inquilinos")
+def crm_inquilinos_list(inmueble_renta_id: int = None):
+    _check_pg()
+    return db.get_all_inquilinos(inmueble_renta_id)
+
+
+@router.post("/crm/inquilinos")
+async def crm_inquilino_create(request: Request):
+    _check_pg()
+    return db.create_inquilino(await request.json())
+
+
+@router.patch("/crm/inquilinos/{record_id}")
+async def crm_inquilino_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_inquilino(record_id, await request.json())
+
+
+@router.delete("/crm/inquilinos/{record_id}")
+def crm_inquilino_delete(record_id: int):
+    _check_pg()
+    return db.delete_inquilino(record_id)
+
+
+# ── GESTIÓN-Agencia — Pagos Alquiler ─────────────────────────────────────────
+
+@router.get("/crm/pagos-alquiler")
+def crm_pagos_alquiler_list(inquilino_id: int = None, mes_anio: str = None):
+    _check_pg()
+    return db.get_all_pagos_alquiler(inquilino_id, mes_anio)
+
+
+@router.post("/crm/pagos-alquiler")
+async def crm_pago_alquiler_create(request: Request):
+    _check_pg()
+    return db.create_pago_alquiler(await request.json())
+
+
+@router.patch("/crm/pagos-alquiler/{record_id}")
+async def crm_pago_alquiler_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_pago_alquiler(record_id, await request.json())
+
+
+@router.delete("/crm/pagos-alquiler/{record_id}")
+def crm_pago_alquiler_delete(record_id: int):
+    _check_pg()
+    return db.delete_pago_alquiler(record_id)
+
+
+# ── GESTIÓN-Agencia — Liquidaciones ──────────────────────────────────────────
+
+@router.get("/crm/liquidaciones")
+def crm_liquidaciones_list(propietario_id: int = None, mes_anio: str = None):
+    _check_pg()
+    return db.get_all_liquidaciones(propietario_id, mes_anio)
+
+
+@router.post("/crm/liquidaciones")
+async def crm_liquidacion_create(request: Request):
+    _check_pg()
+    return db.create_liquidacion(await request.json())
+
+
+@router.patch("/crm/liquidaciones/{record_id}")
+async def crm_liquidacion_update(record_id: int, request: Request):
+    _check_pg()
+    return db.update_liquidacion(record_id, await request.json())
+
+
+@router.delete("/crm/liquidaciones/{record_id}")
+def crm_liquidacion_delete(record_id: int):
+    _check_pg()
+    return db.delete_liquidacion(record_id)
 
 
 # ── Visitas / Agenda (Sprint 8) ─────────────────────────────────────────────
