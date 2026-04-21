@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Lovbot AI — Contratos</title>
+<meta name="viewport" content="width=1440">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0b14; --surface:#12121f; --card:#161627; --card-2:#1b1b2e;
+    --line:rgba(255,255,255,.06); --line-2:rgba(255,255,255,.10);
+    --text:#f1f5f9; --muted:#8b8ba7; --dim:#5a5a78;
+    --purple:#7c3aed; --purple-2:#a78bfa; --cyan:#06b6d4; --cyan-2:#22d3ee;
+    --green:#10b981; --amber:#f59e0b; --red:#ef4444; --pink:#ec4899;
+    --radius:12px;
+    /* contract stages */
+    --st-draft:#64748b; --st-draft-bg:rgba(100,116,139,.14);
+    --st-sign:#f59e0b;  --st-sign-bg:rgba(245,158,11,.14);
+    --st-active:#10b981;--st-active-bg:rgba(16,185,129,.14);
+    --st-closed:#06b6d4;--st-closed-bg:rgba(6,182,212,.14);
+    --st-risk:#ef4444; --st-risk-bg:rgba(239,68,68,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  .mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+  button{font-family:inherit;color:inherit}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.12)}
+
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+  /* ---- sidebar ---- */
+  .sidebar{background:#0a0a12;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;gap:2px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .brand-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:grid;place-items:center;color:#0b0b14}
+  .brand-mark svg{width:18px;height:18px}
+  .brand-name{font-weight:700;font-size:15px;letter-spacing:-.02em;background:linear-gradient(90deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .brand-sub{font-size:10.5px;color:var(--muted);margin-top:1px}
+  .nav-section{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);padding:10px 10px 6px;font-weight:600}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:8px;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:.12s;position:relative}
+  .nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+  .nav-item.active{color:var(--text);background:linear-gradient(90deg,rgba(124,58,237,.14),rgba(6,182,212,.04))}
+  .nav-item.active::before{content:"";position:absolute;left:-14px;top:8px;bottom:8px;width:2px;border-radius:2px;background:linear-gradient(180deg,#7c3aed,#06b6d4)}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.85}
+  .nav-item.active svg{opacity:1}
+  .nav-badge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.06);color:var(--text);font-weight:500}
+  .nav-badge.hot{background:rgba(236,72,153,.16);color:#f9a8d4}
+  .nav-badge.cyan{background:rgba(6,182,212,.16);color:#67e8f9}
+  .nav-badge.amber{background:rgba(245,158,11,.16);color:#fcd34d}
+  .sidebar-spacer{flex:1}
+  .user-row{display:flex;align-items:center;gap:9px;padding:10px 8px;margin-top:10px;border-top:1px solid var(--line)}
+  .user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:grid;place-items:center;color:#0b0b14;font-weight:600;font-size:11px}
+  .user-info{flex:1;min-width:0}
+  .user-name{font-size:12.5px;font-weight:600}
+  .user-role{font-size:10.5px;color:var(--muted)}
+  .icon-btn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--muted);cursor:pointer;border:1px solid transparent;background:transparent}
+  .icon-btn:hover{color:var(--text);background:rgba(255,255,255,.04);border-color:var(--line)}
+  .icon-btn svg{width:14px;height:14px}
+
+  main{min-width:0;display:flex;flex-direction:column}
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 28px;border-bottom:1px solid var(--line);background:rgba(11,11,20,.85);backdrop-filter:blur(8px);position:sticky;top:0;z-index:10}
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:13px}
+  .crumbs .c{color:var(--muted)}
+  .crumbs .sep{color:var(--dim)}
+  .crumbs .cur{font-weight:600;color:var(--text)}
+  .search{max-width:360px;flex:1;display:flex;align-items:center;gap:9px;padding:7px 12px;background:var(--surface);border:1px solid var(--line);border-radius:9px;font-size:12.5px}
+  .search:focus-within{border-color:rgba(124,58,237,.4)}
+  .search svg{width:14px;height:14px;color:var(--dim)}
+  .search input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:inherit;font-size:12.5px}
+  .search input::placeholder{color:var(--dim)}
+  .status-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:999px;font-size:11.5px;color:#6ee7b7;font-weight:500}
+  .status-pill .dot{width:7px;height:7px;border-radius:50%;background:#10b981;animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%{box-shadow:0 0 0 6px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+  .topbar-user{display:flex;align-items:center;gap:9px;padding:5px 10px 5px 5px;border:1px solid var(--line);border-radius:999px;cursor:pointer}
+
+  /* ---- PAGE HEADER ---- */
+  .page-head{padding:22px 28px 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line)}
+  .page-head h1{margin:0 0 4px;font-size:22px;letter-spacing:-.02em;font-weight:600;display:flex;align-items:center;gap:10px}
+  .page-head .pin{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:grid;place-items:center}
+  .page-head .pin svg{width:14px;height:14px;color:#0b0b14}
+  .page-sub{color:var(--muted);font-size:13px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--text);transition:.12s;white-space:nowrap}
+  .btn:hover{border-color:var(--line-2);background:var(--card)}
+  .btn svg{width:13px;height:13px}
+  .btn.primary{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#0b0b14;border-color:transparent;font-weight:600}
+  .btn.primary:hover{filter:brightness(1.1)}
+  .btn.sm{padding:5px 10px;font-size:11.5px}
+
+  /* ---- KPI STRIP ---- */
+  .overview{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:18px 28px 6px}
+  .ov{padding:13px 15px;background:var(--card);border:1px solid var(--line);border-radius:10px;position:relative;overflow:hidden}
+  .ov::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--c)}
+  .ov-label{font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:500;display:flex;align-items:center;gap:6px}
+  .ov-label .d{width:7px;height:7px;border-radius:50%;background:var(--c)}
+  .ov-val{font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .ov-foot{font-size:10.5px;color:var(--dim);margin-top:3px}
+  .ov-foot b{font-weight:500}
+  .ov-foot .up{color:#6ee7b7}
+  .ov-foot .down{color:#fca5a5}
+
+  /* ---- FILTER BAR ---- */
+  .filter-bar{padding:12px 28px 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .seg-ctrl{display:inline-flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:3px}
+  .seg-btn{padding:5px 12px;border-radius:6px;font-size:11.5px;color:var(--muted);cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:5px;border:none;background:transparent}
+  .seg-btn.active{background:rgba(255,255,255,.06);color:var(--text)}
+  .seg-btn svg{width:11px;height:11px}
+  .filt-chip{padding:5px 10px;border-radius:7px;font-size:11.5px;background:var(--surface);border:1px solid var(--line);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .filt-chip:hover{color:var(--text);border-color:var(--line-2)}
+  .filt-chip.active{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.3);color:#c4b5fd}
+  .filt-chip svg{width:11px;height:11px}
+
+  /* ---- KANBAN ---- */
+  .kanban{padding:16px 28px 40px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start;min-height:calc(100vh - 280px)}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;min-height:600px}
+  .col-head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}
+  .col-dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+  .col-title{font-size:12.5px;font-weight:600;letter-spacing:-.01em}
+  .col-count{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:1px 7px;border-radius:5px;background:rgba(255,255,255,.04);color:var(--muted);margin-left:4px}
+  .col-sum{margin-left:auto;font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .col-sum b{color:var(--text);font-weight:500}
+  .col-body{padding:10px;display:flex;flex-direction:column;gap:9px;flex:1}
+
+  .contract{
+    background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;
+    transition:.14s;position:relative;overflow:hidden;
+  }
+  .contract:hover{border-color:var(--line-2);transform:translateY(-1px);box-shadow:0 6px 20px -8px rgba(0,0,0,.5)}
+  .contract.selected{border-color:rgba(124,58,237,.45);background:linear-gradient(180deg,rgba(124,58,237,.07),rgba(6,182,212,.02))}
+  .contract.selected::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px;background:linear-gradient(180deg,#7c3aed,#06b6d4)}
+
+  .c-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .c-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.05em}
+  .c-type{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .c-type.lote{background:rgba(124,58,237,.14);color:#c4b5fd}
+  .c-type.casa{background:rgba(236,72,153,.14);color:#f9a8d4}
+  .c-type.terreno{background:rgba(16,185,129,.14);color:#6ee7b7}
+  .c-type.alquiler{background:rgba(6,182,212,.14);color:#67e8f9}
+  .c-type.comodato{background:rgba(245,158,11,.14);color:#fcd34d}
+  .c-type svg{width:9px;height:9px}
+
+  .c-title{font-size:13.5px;font-weight:600;letter-spacing:-.01em;margin-bottom:4px}
+  .c-amount{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px}
+  .c-amount .u{color:var(--muted);font-weight:400;margin-right:3px;font-size:10.5px}
+  .c-amount .sub{font-size:10px;color:var(--muted);font-weight:400;display:inline-block;margin-left:5px}
+
+  /* LINKS (client + lot) */
+  .c-links{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+  .c-link{
+    display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;
+    background:rgba(255,255,255,.025);border:1px solid var(--line);
+    font-size:11px;cursor:pointer;transition:.12s;
+  }
+  .c-link:hover{background:rgba(255,255,255,.05);border-color:var(--line-2)}
+  .c-link .l-ico{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;flex-shrink:0}
+  .c-link .l-ico svg{width:10px;height:10px}
+  .c-link.client .l-ico{background:linear-gradient(135deg,#f59e0b,#ec4899);color:#0b0b14}
+  .c-link.lot .l-ico{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#0b0b14}
+  .c-link-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin-right:3px}
+  .c-link-val{color:var(--text);font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-link .arr{color:var(--dim);margin-left:auto}
+  .c-link .arr svg{width:10px;height:10px}
+
+  /* progress + meta */
+  .c-progress{height:4px;background:#0a0a12;border-radius:2px;overflow:hidden;margin-bottom:6px}
+  .c-progress-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#06b6d4);transition:width .4s}
+  .c-meta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+  /* alerts */
+  .c-alert{
+    margin-top:9px;padding:6px 9px;border-radius:6px;font-size:11px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .c-alert.warn{background:rgba(245,158,11,.10);color:#fcd34d;border:1px solid rgba(245,158,11,.22)}
+  .c-alert.danger{background:rgba(239,68,68,.10);color:#fca5a5;border:1px solid rgba(239,68,68,.22)}
+  .c-alert.info{background:rgba(6,182,212,.08);color:#67e8f9;border:1px solid rgba(6,182,212,.22)}
+  .c-alert svg{width:11px;height:11px;flex-shrink:0}
+
+  /* add column footer */
+  .add-contract{
+    margin:4px;padding:10px;border:1px dashed var(--line-2);border-radius:9px;
+    display:flex;align-items:center;justify-content:center;gap:7px;color:var(--muted);font-size:11.5px;cursor:pointer;
+  }
+  .add-contract:hover{color:var(--text);border-color:rgba(124,58,237,.3);background:rgba(124,58,237,.04)}
+  .add-contract svg{width:12px;height:12px}
+
+  /* ---- DETAIL DRAWER ---- */
+  .drawer-backdrop{position:fixed;inset:0;background:rgba(5,5,10,.6);backdrop-filter:blur(4px);z-index:80;opacity:0;pointer-events:none;transition:.2s}
+  .drawer-backdrop.open{opacity:1;pointer-events:auto}
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:min(720px,95vw);background:#0e0e1a;
+    border-left:1px solid var(--line-2);z-index:90;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(0,0,0,.8);
+  }
+  .drawer.open{transform:translateX(0)}
+  .drawer-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:14px}
+  .drawer-close{width:32px;height:32px;border-radius:8px;background:transparent;border:1px solid var(--line);color:var(--muted);cursor:pointer;display:grid;place-items:center;margin-left:auto;flex-shrink:0}
+  .drawer-close:hover{color:var(--text);border-color:var(--line-2);background:rgba(255,255,255,.03)}
+  .drawer-close svg{width:14px;height:14px}
+  .dh-id{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+  .dh-title{font-size:20px;font-weight:600;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+  .dh-status{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+  .dh-status .d{width:5px;height:5px;border-radius:50%}
+  .dh-status.active{background:var(--st-active-bg);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+  .dh-status.active .d{background:var(--st-active)}
+  .dh-status.sign{background:var(--st-sign-bg);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+  .dh-status.sign .d{background:var(--st-sign)}
+  .dh-status.draft{background:var(--st-draft-bg);color:#cbd5e1;border:1px solid rgba(100,116,139,.3)}
+  .dh-status.draft .d{background:var(--st-draft)}
+  .dh-status.closed{background:var(--st-closed-bg);color:#67e8f9;border:1px solid rgba(6,182,212,.3)}
+  .dh-status.closed .d{background:var(--st-closed)}
+  .dh-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+  .drawer-tabs{display:flex;padding:0 22px;border-bottom:1px solid var(--line);gap:2px}
+  .dt-tab{padding:10px 14px;font-size:12px;color:var(--muted);cursor:pointer;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .dt-tab:hover{color:var(--text)}
+  .dt-tab.active{color:var(--text);border-color:var(--purple-2)}
+  .dt-tab .ct{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-left:4px}
+
+  .drawer-body{flex:1;overflow-y:auto;padding:20px 22px 60px}
+
+  .panel-row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:18px}
+  .mini-panel{background:#141423;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .mp-title{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .mp-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* MINI MAP inside drawer */
+  .mini-map{position:relative;height:180px;border-radius:8px;overflow:hidden;background:#0a0a12;border:1px solid var(--line)}
+  .mini-map::before{
+    content:"";position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size:24px 24px;
+    mask-image:radial-gradient(ellipse at center,black 60%,transparent 100%);
+  }
+  .mini-map::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(ellipse at 30% 40%,rgba(124,58,237,.12),transparent 60%);
+  }
+  .mm-lot{position:absolute;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:600;display:grid;place-items:center;border:1px solid}
+  .mm-lot.free{background:rgba(16,185,129,.18);border-color:rgba(16,185,129,.4);color:#6ee7b7}
+  .mm-lot.sold{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);color:#fca5a5}
+  .mm-lot.reserved{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.4);color:#fcd34d}
+  .mm-lot.target{background:rgba(124,58,237,.35);border-color:#a78bfa;color:#fff;box-shadow:0 0 0 2px rgba(124,58,237,.3),0 0 20px rgba(124,58,237,.5);z-index:2}
+
+  .mm-caption{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:10px}
+  .mm-caption b{color:var(--text);font-weight:500}
+  .mm-caption .lnk{color:#a78bfa;cursor:pointer}
+
+  /* CLIENT MINI */
+  .client-mini{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+  .cm-av{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#ec4899);display:grid;place-items:center;font-weight:600;font-size:14px;color:#0b0b14;flex-shrink:0}
+  .cm-info{flex:1;min-width:0}
+  .cm-name{font-size:14px;font-weight:600;letter-spacing:-.01em}
+  .cm-meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .cm-extras{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+  .cm-ex{padding:7px 9px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:7px}
+  .cm-ex .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+  .cm-ex .v{font-size:12px;font-weight:500;font-family:'JetBrains Mono',monospace}
+
+  /* KEY FACTS */
+  .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+  .fact{padding:10px 12px;background:#141423;border:1px solid var(--line);border-radius:9px}
+  .fact .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:500;margin-bottom:4px}
+  .fact .v{font-size:15px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:-.01em}
+  .fact .s{font-size:10.5px;color:var(--dim);margin-top:2px}
+
+  /* AMORT TABLE */
+  .amort-wrap{background:#141423;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px}
+  .amort-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .amort-head .t{font-size:13px;font-weight:600}
+  .amort-head .s{font-size:11px;color:var(--muted);margin-left:10px}
+  .amort-head .right{margin-left:auto;display:flex;gap:6px}
+  .amort-table{width:100%;border-collapse:collapse;font-size:11.5px}
+  .amort-table th{text-align:left;padding:8px 14px;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:600;background:#0f0f1a;border-bottom:1px solid var(--line)}
+  .amort-table td{padding:10px 14px;border-bottom:1px solid var(--line);font-family:'JetBrains Mono',monospace}
+  .amort-table tr:last-child td{border-bottom:none}
+  .amort-table tr:hover td{background:rgba(255,255,255,.02)}
+  .pay-state{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .pay-state.paid{background:rgba(16,185,129,.14);color:#6ee7b7}
+  .pay-state.pending{background:rgba(245,158,11,.14);color:#fcd34d}
+  .pay-state.overdue{background:rgba(239,68,68,.14);color:#fca5a5}
+  .pay-state.next{background:rgba(124,58,237,.14);color:#c4b5fd}
+  .pay-state .d{width:4px;height:4px;border-radius:50%;background:currentColor}
+  .amort-foot{padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:20px;font-size:11.5px;background:#0f0f1a}
+  .af-cell .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .af-cell .v{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13px}
+
+  /* DOCS */
+  .docs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .doc{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;
+    background:#141423;border:1px solid var(--line);border-radius:8px;cursor:pointer;
+  }
+  .doc:hover{border-color:var(--line-2);background:#181828}
+  .doc-ico{width:34px;height:34px;border-radius:7px;display:grid;place-items:center;flex-shrink:0;background:rgba(124,58,237,.15);color:#c4b5fd}
+  .doc-ico svg{width:15px;height:15px}
+  .doc.missing .doc-ico{background:rgba(239,68,68,.12);color:#fca5a5}
+  .doc-info{flex:1;min-width:0}
+  .doc-name{font-size:12.5px;font-weight:500;letter-spacing:-.01em}
+  .doc-meta{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .doc-state{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .doc-state.ok{color:#6ee7b7}
+  .doc-state.need{color:#fca5a5}
+  .doc-state.wait{color:#fcd34d}
+
+  /* ALERTS PANEL */
+  .alerts-list{display:flex;flex-direction:column;gap:8px}
+  .alert-row{
+    display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:9px;
+    border:1px solid;background:rgba(255,255,255,.02);
+  }
+  .alert-row.warn{border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.06)}
+  .alert-row.danger{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06)}
+  .alert-row.info{border-color:rgba(6,182,212,.25);background:rgba(6,182,212,.06)}
+  .alert-ico{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex-shrink:0}
+  .alert-row.warn .alert-ico{background:rgba(245,158,11,.2);color:#fcd34d}
+  .alert-row.danger .alert-ico{background:rgba(239,68,68,.2);color:#fca5a5}
+  .alert-row.info .alert-ico{background:rgba(6,182,212,.2);color:#67e8f9}
+  .alert-ico svg{width:13px;height:13px}
+  .alert-body{flex:1;font-size:12px}
+  .alert-body b{font-weight:600}
+  .alert-time{font-size:10.5px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace}
+  .alert-cta{font-size:11px;color:#a78bfa;cursor:pointer;margin-top:3px;display:inline-block}
+
+  /* AI suggestion */
+  .ai-box{
+    background:linear-gradient(160deg,rgba(124,58,237,.12),rgba(6,182,212,.05));
+    border:1px solid rgba(124,58,237,.28);border-radius:10px;padding:14px;
+    display:flex;gap:12px;margin-top:18px;
+  }
+  .ai-ico{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:grid;place-items:center;color:#0b0b14;flex-shrink:0}
+  .ai-ico svg{width:15px;height:15px}
+  .ai-title{font-size:12px;font-weight:600;margin-bottom:4px}
+  .ai-body{font-size:12px;color:var(--muted);line-height:1.5}
+  .ai-body b{color:var(--text);font-weight:500}
+  .ai-actions{display:flex;gap:6px;margin-top:9px}
+
+  .drawer-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;background:#0a0a14;flex-shrink:0}
+
+  /* ---- FAB ---- */
+  .ai-fab{position:fixed;bottom:22px;right:22px;z-index:50}
+  .ai-fab-btn{
+    display:flex;align-items:center;gap:8px;padding:11px 16px;border-radius:999px;
+    background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#0b0b14;font-weight:600;font-size:12.5px;
+    cursor:pointer;border:none;box-shadow:0 10px 30px -10px rgba(124,58,237,.5);
+  }
+  .ai-fab-btn svg{width:15px;height:15px}
+
+  /* Tweaks panel */
+  .tweaks{position:fixed;bottom:80px;right:22px;width:260px;background:#141423;border:1px solid var(--line-2);border-radius:12px;padding:14px;z-index:60;box-shadow:0 20px 60px -20px rgba(0,0,0,.7);display:none}
+  .tweaks.open{display:block}
+  .tweaks h4{margin:0 0 10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .tw-row{margin-bottom:12px}
+  .tw-row label{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-weight:600}
+  .tw-options{display:flex;gap:4px;flex-wrap:wrap}
+  .tw-opt{padding:4px 8px;border-radius:6px;background:#0e0e1a;border:1px solid var(--line);font-size:11px;cursor:pointer;color:var(--muted)}
+  .tw-opt.active{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);color:#c4b5fd}
+  .tw-close{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:6px;border:none;background:transparent;color:var(--muted);cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============== SIDEBAR ============== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10"/></svg></div>
+      <div><div class="brand-name">Lovbot AI</div><div class="brand-sub">CRM · Inmobiliaria Ros</div></div>
+    </div>
+    <div class="nav-section">Principal</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Inicio</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 20V10l9-6 9 6v10"/><path d="M9 20v-6h6v6"/></svg>Mi Pipeline <span class="nav-badge hot">19</span></div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c.8-3.5 3.7-6 7-6s6.2 2.5 7 6"/><circle cx="17" cy="6" r="2.5"/></svg>Clientes Activos <span class="nav-badge">34</span></div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 3h6l1 3h3a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3z"/><circle cx="12" cy="13" r="3.5"/></svg>Propiedades</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Mi Agenda <span class="nav-badge cyan">4</span></div>
+    <div class="nav-section">Gestión</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Loteos</div>
+    <div class="nav-item active"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>Contratos <span class="nav-badge amber">7</span></div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 17l4-4 3 3 5-6"/></svg>Reportes</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12a8 8 0 1 1-3.5-6.6L21 4l-.7 3.5A8 8 0 0 1 21 12z"/></svg>Chat IA</div>
+    <div class="nav-section">Herramientas</div>
+    <div class="nav-item"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 14.5l1.6 1-2 3.4-1.9-.5a7.5 7.5 0 0 1-2 1.2l-.4 1.9h-4l-.4-2a7.5 7.5 0 0 1-2-1.1l-2 .5-2-3.4 1.7-1a7.5 7.5 0 0 1 0-2.3l-1.7-1 2-3.4 2 .5a7.5 7.5 0 0 1 2-1.2l.4-1.9h4l.4 1.9a7.5 7.5 0 0 1 2 1.2l2-.5 2 3.4-1.7 1a7.5 7.5 0 0 1 0 2.3z"/></svg>Configuración</div>
+    <div class="sidebar-spacer"></div>
+    <div class="user-row">
+      <div class="user-avatar">MG</div>
+      <div class="user-info"><div class="user-name">Mariana G.</div><div class="user-role">Asesora · Posadas</div></div>
+      <button class="icon-btn" title="Cerrar sesión"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="crumbs">
+        <span class="c">CRM</span>
+        <span class="sep">/</span>
+        <span class="c">Gestión</span>
+        <span class="sep">/</span>
+        <span class="cur">Contratos</span>
+      </div>
+      <div style="flex:1"></div>
+      <div class="search">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
+        <input placeholder="Buscar contrato, cliente, lote, propiedad…">
+      </div>
+      <div class="status-pill"><span class="dot"></span> Bot activo</div>
+      <div class="topbar-user">
+        <div class="user-avatar">IR</div>
+        <span style="font-size:12px;font-weight:500">Inmobiliaria Ros</span>
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--muted)"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+
+    <!-- PAGE HEADER -->
+    <div class="page-head">
+      <div>
+        <h1>
+          <span class="pin"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></span>
+          Contratos
+        </h1>
+        <div class="page-sub">Reservas, boletos, escrituras, alquileres y comodatos — sincronizados con tus loteos y clientes.</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3" stroke-linecap="round" stroke-linejoin="round"/></svg>Exportar</button>
+        <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6"/></svg>Plantillas</button>
+        <button class="btn primary" onclick="document.querySelector('.drawer-backdrop').classList.add('open');document.getElementById('drawer').classList.add('open')"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>Nuevo contrato</button>
+      </div>
+    </div>
+
+    <!-- OVERVIEW STRIP -->
+    <div class="overview">
+      <div class="ov" style="--c:#7c3aed">
+        <div class="ov-label">Activos</div>
+        <div class="ov-val">46</div>
+        <div class="ov-foot"><span class="up">+8</span> este mes</div>
+      </div>
+      <div class="ov" style="--c:#10b981">
+        <div class="ov-label"><span class="d"></span>Volumen</div>
+        <div class="ov-val">USD 3.2M</div>
+        <div class="ov-foot">en gestión</div>
+      </div>
+      <div class="ov" style="--c:#06b6d4">
+        <div class="ov-label"><span class="d"></span>Cobrado mes</div>
+        <div class="ov-val">USD 142k</div>
+        <div class="ov-foot"><span class="up">+22%</span> vs mes ant.</div>
+      </div>
+      <div class="ov" style="--c:#f59e0b">
+        <div class="ov-label"><span class="d"></span>Por firmar</div>
+        <div class="ov-val">7</div>
+        <div class="ov-foot">5 esperan cliente</div>
+      </div>
+      <div class="ov" style="--c:#ef4444">
+        <div class="ov-label"><span class="d"></span>Vencen &lt; 30d</div>
+        <div class="ov-val">4</div>
+        <div class="ov-foot">2 señas · 2 alquileres</div>
+      </div>
+      <div class="ov" style="--c:#ec4899">
+        <div class="ov-label"><span class="d"></span>Mora</div>
+        <div class="ov-val">3</div>
+        <div class="ov-foot">USD 18k pendientes</div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <div class="seg-ctrl">
+        <button class="seg-btn active">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="18"/><rect x="14" y="3" width="7" height="10"/></svg>
+          Kanban
+        </button>
+        <button class="seg-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          Tabla
+        </button>
+        <button class="seg-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          Calendario
+        </button>
+      </div>
+      <div style="width:1px;height:22px;background:var(--line)"></div>
+      <button class="filt-chip active">Todos tipos</button>
+      <button class="filt-chip">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/></svg>
+        Lote <span class="mono" style="opacity:.6">24</span>
+      </button>
+      <button class="filt-chip">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+        Casa <span class="mono" style="opacity:.6">9</span>
+      </button>
+      <button class="filt-chip">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+        Terreno <span class="mono" style="opacity:.6">5</span>
+      </button>
+      <button class="filt-chip">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+        Alquiler <span class="mono" style="opacity:.6">8</span>
+      </button>
+      <div style="flex:1"></div>
+      <button class="filt-chip">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        USD
+      </button>
+      <button class="filt-chip">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+        Filtros
+      </button>
+    </div>
+
+    <!-- KANBAN -->
+    <div class="kanban" id="kanban"></div>
+
+  </main>
+</div>
+
+<!-- ============ DETAIL DRAWER ============ -->
+<div class="drawer-backdrop" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div style="flex:1;min-width:0">
+      <div class="dh-id" id="dhId">CONTRATO · CTR-2026-042</div>
+      <div class="dh-title" id="dhTitle">
+        Boleto de Compraventa · Lote A-03
+        <span class="dh-status sign" id="dhStatus"><span class="d"></span>En firma</span>
+      </div>
+      <div class="dh-sub" id="dhSub">Villa Cabello Norte · Posadas · Creado 18 abr 2026 · Escribanía Villanueva</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6l-12 12" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="drawer-tabs">
+    <div class="dt-tab active">Resumen</div>
+    <div class="dt-tab">Pagos <span class="ct">12</span></div>
+    <div class="dt-tab">Documentos <span class="ct">6</span></div>
+    <div class="dt-tab">Alertas <span class="ct" style="color:#fca5a5">2</span></div>
+    <div class="dt-tab">Historial</div>
+  </div>
+  <div class="drawer-body">
+
+    <!-- row 1: client + lot -->
+    <div class="panel-row">
+
+      <div class="mini-panel">
+        <div class="mp-title">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Lote vinculado
+        </div>
+        <div class="mini-map" id="miniMap">
+          <div class="mm-lot sold" style="left:6%;top:14%;width:11%;height:22%">A-01</div>
+          <div class="mm-lot sold" style="left:18%;top:14%;width:11%;height:22%">A-02</div>
+          <div class="mm-lot target" style="left:30%;top:14%;width:11%;height:22%">A-03</div>
+          <div class="mm-lot reserved" style="left:42%;top:14%;width:11%;height:22%">A-04</div>
+          <div class="mm-lot free" style="left:54%;top:14%;width:11%;height:22%">A-05</div>
+          <div class="mm-lot free" style="left:66%;top:14%;width:11%;height:22%">A-06</div>
+          <div class="mm-lot reserved" style="left:78%;top:14%;width:11%;height:22%">A-07</div>
+          <div class="mm-lot free" style="left:6%;top:44%;width:11%;height:22%">B-01</div>
+          <div class="mm-lot free" style="left:18%;top:44%;width:11%;height:22%">B-02</div>
+          <div class="mm-lot sold" style="left:30%;top:44%;width:11%;height:22%">B-03</div>
+          <div class="mm-lot free" style="left:42%;top:44%;width:11%;height:22%">B-04</div>
+          <div class="mm-lot reserved" style="left:54%;top:44%;width:11%;height:22%">B-05</div>
+          <div class="mm-lot free" style="left:66%;top:44%;width:11%;height:22%">B-06</div>
+          <div class="mm-lot free" style="left:78%;top:44%;width:11%;height:22%">B-07</div>
+          <div class="mm-lot free" style="left:6%;top:74%;width:11%;height:22%">C-01</div>
+          <div class="mm-lot sold" style="left:18%;top:74%;width:11%;height:22%">C-02</div>
+          <div class="mm-lot free" style="left:30%;top:74%;width:11%;height:22%">C-03</div>
+          <div class="mm-lot free" style="left:42%;top:74%;width:11%;height:22%">C-04</div>
+          <div class="mm-lot reserved" style="left:54%;top:74%;width:11%;height:22%">C-05</div>
+          <div class="mm-lot free" style="left:66%;top:74%;width:11%;height:22%">C-06</div>
+          <div class="mm-lot free" style="left:78%;top:74%;width:11%;height:22%">C-07</div>
+        </div>
+        <div class="mm-caption">
+          <div><b>Villa Cabello Norte</b> · Manzana A · Lote 03 · 450 m²</div>
+          <div class="lnk">Ver en mapa →</div>
+        </div>
+      </div>
+
+      <div class="mini-panel">
+        <div class="mp-title">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c.8-3.5 3.7-6 7-6s6.2 2.5 7 6"/></svg>
+          Cliente
+        </div>
+        <div class="client-mini">
+          <div class="cm-av">RK</div>
+          <div class="cm-info">
+            <div class="cm-name">Rodrigo Krauss</div>
+            <div class="cm-meta">+54 376 4521-8832 · Posadas · Cliente activo</div>
+          </div>
+        </div>
+        <div class="cm-extras">
+          <div class="cm-ex"><div class="l">BANT</div><div class="v">4 / 5</div></div>
+          <div class="cm-ex"><div class="l">Origen</div><div class="v" style="font-family:Inter,sans-serif">Facebook</div></div>
+          <div class="cm-ex"><div class="l">DNI</div><div class="v">32.458.271</div></div>
+          <div class="cm-ex"><div class="l">CUIT</div><div class="v">20-32458271-4</div></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button class="btn sm" style="flex:1;justify-content:center">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4A8.4 8.4 0 0 1 3 11.5 8.4 8.4 0 0 1 11.6 3a8.4 8.4 0 0 1 9.4 8.5z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+            WhatsApp
+          </button>
+          <button class="btn sm" style="flex:1;justify-content:center">Abrir ficha</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- facts -->
+    <div class="mp-title" style="margin:0 0 10px">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-6 4 2 8-6-4-6 4 2-8-6-4h7z"/></svg>
+      Términos del contrato
+    </div>
+    <div class="facts">
+      <div class="fact"><div class="l">Precio total</div><div class="v">USD 42.000</div><div class="s">450 m² · 93 USD/m²</div></div>
+      <div class="fact"><div class="l">Seña</div><div class="v">USD 6.300</div><div class="s">15% · pagado</div></div>
+      <div class="fact"><div class="l">Saldo</div><div class="v">USD 35.700</div><div class="s">en 24 cuotas</div></div>
+      <div class="fact"><div class="l">Cuota mensual</div><div class="v">USD 1.488</div><div class="s">TNA 8% · USD</div></div>
+    </div>
+
+    <!-- amortization -->
+    <div class="amort-wrap">
+      <div class="amort-head">
+        <div class="t">Plan de pagos</div>
+        <div class="s">24 cuotas mensuales · próxima 5 may 2026</div>
+        <div class="right">
+          <button class="btn sm">Ver todas</button>
+          <button class="btn sm">Exportar PDF</button>
+        </div>
+      </div>
+      <table class="amort-table">
+        <thead>
+          <tr><th>#</th><th>Vencimiento</th><th>Capital</th><th>Interés</th><th>Total</th><th>Estado</th></tr>
+        </thead>
+        <tbody id="amortBody"></tbody>
+      </table>
+      <div class="amort-foot">
+        <div class="af-cell"><div class="l">Pagado</div><div class="v" style="color:#6ee7b7">USD 10.764</div></div>
+        <div class="af-cell"><div class="l">Pendiente</div><div class="v">USD 31.236</div></div>
+        <div class="af-cell"><div class="l">% avance</div><div class="v">25.6%</div></div>
+        <div class="af-cell"><div class="l">Interés total</div><div class="v">USD 3.412</div></div>
+      </div>
+    </div>
+
+    <!-- documents -->
+    <div class="mp-title">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      Documentos
+    </div>
+    <div class="docs">
+      <div class="doc">
+        <div class="doc-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></div>
+        <div class="doc-info">
+          <div class="doc-name">Boleto de compraventa.pdf</div>
+          <div class="doc-meta">328 KB · 18 abr 2026</div>
+        </div>
+        <div class="doc-state wait">En firma</div>
+      </div>
+      <div class="doc">
+        <div class="doc-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16"/></svg></div>
+        <div class="doc-info">
+          <div class="doc-name">DNI Rodrigo Krauss.pdf</div>
+          <div class="doc-meta">2 páginas · ✓ validado</div>
+        </div>
+        <div class="doc-state ok">Ok</div>
+      </div>
+      <div class="doc">
+        <div class="doc-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div>
+        <div class="doc-info">
+          <div class="doc-name">Matrícula del lote</div>
+          <div class="doc-meta">Reg. Propiedad Misiones</div>
+        </div>
+        <div class="doc-state ok">Ok</div>
+      </div>
+      <div class="doc missing">
+        <div class="doc-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg></div>
+        <div class="doc-info">
+          <div class="doc-name">Comprobante de domicilio</div>
+          <div class="doc-meta">Solicitado · sin respuesta</div>
+        </div>
+        <div class="doc-state need">Falta</div>
+      </div>
+      <div class="doc">
+        <div class="doc-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg></div>
+        <div class="doc-info">
+          <div class="doc-name">Comprobante seña</div>
+          <div class="doc-meta">Transf. 28 feb · USD 6.300</div>
+        </div>
+        <div class="doc-state ok">Ok</div>
+      </div>
+      <div class="doc">
+        <div class="doc-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div>
+        <div class="doc-info">
+          <div class="doc-name">Firma digital</div>
+          <div class="doc-meta">Pendiente del escribano</div>
+        </div>
+        <div class="doc-state wait">Pendiente</div>
+      </div>
+    </div>
+
+    <!-- alerts -->
+    <div class="mp-title" style="margin-top:18px">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 8v4M12 16h.01"/></svg>
+      Alertas activas
+    </div>
+    <div class="alerts-list">
+      <div class="alert-row warn">
+        <div class="alert-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg></div>
+        <div class="alert-body">
+          <div><b>Cuota 3 vence en 12 días</b> · USD 1.488</div>
+          <div class="alert-time">5 may 2026 · Rodrigo Krauss</div>
+          <a class="alert-cta">Enviar recordatorio por WhatsApp →</a>
+        </div>
+      </div>
+      <div class="alert-row danger">
+        <div class="alert-ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+        <div class="alert-body">
+          <div><b>Documentación faltante:</b> comprobante de domicilio</div>
+          <div class="alert-time">Solicitado hace 6 días</div>
+          <a class="alert-cta">Pedir por WhatsApp →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI -->
+    <div class="ai-box">
+      <div class="ai-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10"/></svg></div>
+      <div style="flex:1">
+        <div class="ai-title">Sugerencia de Lovbot</div>
+        <div class="ai-body">
+          Este contrato tiene <b>2 alertas activas</b>. Te recomiendo: <b>(1)</b> pedir el comprobante de domicilio por WhatsApp al cliente, y <b>(2)</b> recordar al escribano Villanueva que la firma digital lleva 4 días pendiente. ¿Querés que lo haga yo?
+        </div>
+        <div class="ai-actions">
+          <button class="btn primary sm">Sí, ocupate</button>
+          <button class="btn sm">Ver detalles</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="drawer-foot">
+    <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Descargar PDF</button>
+    <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Aprobar</button>
+    <div style="flex:1"></div>
+    <button class="btn">Mover a Borrador</button>
+    <button class="btn primary">Marcar firmado</button>
+  </div>
+</aside>
+
+<!-- FAB + Tweaks -->
+<div class="ai-fab">
+  <button class="ai-fab-btn" onclick="document.querySelector('.tweaks').classList.toggle('open')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10"/></svg>
+    Preguntá a Lovbot
+  </button>
+</div>
+
+<div class="tweaks">
+  <button class="tw-close" onclick="this.parentElement.classList.remove('open')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6l-12 12"/></svg></button>
+  <h4>
+    <svg width="13" height="13" fill="none" stroke="#a78bfa" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+    Tweaks
+  </h4>
+  <div class="tw-row">
+    <label>Densidad</label>
+    <div class="tw-options">
+      <div class="tw-opt">Compacta</div>
+      <div class="tw-opt active">Normal</div>
+      <div class="tw-opt">Cómoda</div>
+    </div>
+  </div>
+  <div class="tw-row">
+    <label>Moneda por defecto</label>
+    <div class="tw-options">
+      <div class="tw-opt active">USD</div>
+      <div class="tw-opt">ARS</div>
+      <div class="tw-opt">UVA</div>
+    </div>
+  </div>
+  <div class="tw-row">
+    <label>Mostrar</label>
+    <div class="tw-options">
+      <div class="tw-opt active">Alertas en tarjetas</div>
+      <div class="tw-opt active">Links a cliente/lote</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONTRACTS DATA — synced with Loteos & Clientes Activos
+   ============================================================ */
+const CONTRACTS = [
+  // ---- DRAFT ----
+  {
+    id:'CTR-2026-051', stage:'draft', type:'lote', typeLabel:'Lote',
+    title:'Reserva · Lote B-05',
+    amount:6900, amountSub:'15% de USD 46.000',
+    clientName:'Valeria Cabrera', clientInitials:'VC', clientAvatar:'amber',
+    lotRef:'Villa Cabello Norte · A-03', lotTag:'lote',
+    progress:10, meta:'Creado hace 2 días', metaRight:'Sin firmar',
+    alert:{kind:'info', text:'Esperando datos fiscales del cliente'}
+  },
+  {
+    id:'CTR-2026-050', stage:'draft', type:'alquiler', typeLabel:'Alquiler',
+    title:'Alquiler · Depto Av. Mitre 2410',
+    amount:180000, currency:'ARS', amountSub:'/ mes · 24 meses',
+    clientName:'Fernando Acuña', clientInitials:'FA', clientAvatar:'cyan',
+    lotRef:'Propiedad · DEP-0142',
+    progress:15, meta:'Borrador 4/4', metaRight:'Revisión interna',
+  },
+  // ---- EN FIRMA ----
+  {
+    id:'CTR-2026-042', stage:'sign', type:'lote', typeLabel:'Boleto',
+    title:'Compraventa · Lote A-03',
+    amount:42000, amountSub:'seña 15% pagada',
+    clientName:'Rodrigo Krauss', clientInitials:'RK', clientAvatar:'amber',
+    lotRef:'Villa Cabello Norte · A-03',
+    progress:60, meta:'Firma esperada', metaRight:'28 abr',
+    alert:{kind:'warn', text:'Firma digital pendiente del escribano (4 días)'},
+    selected:true
+  },
+  {
+    id:'CTR-2026-048', stage:'sign', type:'casa', typeLabel:'Escritura',
+    title:'Escritura · Casa Los Sauces',
+    amount:128000, amountSub:'pago contado',
+    clientName:'Patricia Sánchez', clientInitials:'PS', clientAvatar:'pink',
+    lotRef:'Propiedad · CAS-0088',
+    progress:80, meta:'Turno escribanía', metaRight:'30 abr',
+    alert:{kind:'info', text:'Escribanía Villanueva confirmada'}
+  },
+  {
+    id:'CTR-2026-047', stage:'sign', type:'terreno', typeLabel:'Reserva',
+    title:'Reserva · Terreno Chacra 12',
+    amount:8000, amountSub:'seña · saldo a 30d',
+    clientName:'Laura Giménez', clientInitials:'LG', clientAvatar:'green',
+    lotRef:'Chacras de Apóstoles · LT-04',
+    progress:45, meta:'Vence', metaRight:'4 may',
+    alert:{kind:'danger', text:'Seña por vencer en 9 días'}
+  },
+  // ---- VIGENTE ----
+  {
+    id:'CTR-2026-018', stage:'active', type:'lote', typeLabel:'Plan cuotas',
+    title:'Plan 24 cuotas · Lote D-02',
+    amount:65000, amountSub:'cuota 8/24 · USD 1.625',
+    clientName:'Francisco Acuña', clientInitials:'FA', clientAvatar:'cyan',
+    lotRef:'Villa Cabello Norte · D-02',
+    progress:33, meta:'Próx. cuota', metaRight:'5 may',
+    alert:{kind:'warn', text:'Cuota próxima en 12 días — USD 1.625'}
+  },
+  {
+    id:'CTR-2025-213', stage:'active', type:'alquiler', typeLabel:'Alquiler',
+    title:'Alquiler · Casa San Lorenzo 742',
+    amount:220000, currency:'ARS', amountSub:'/ mes · mes 14/24',
+    clientName:'Matías Olivera', clientInitials:'MO', clientAvatar:'purple',
+    lotRef:'Propiedad · CAS-0051',
+    progress:58, meta:'Cobro automático', metaRight:'día 5',
+  },
+  {
+    id:'CTR-2026-004', stage:'active', type:'comodato', typeLabel:'Comodato',
+    title:'Comodato · Lote temporal',
+    amount:0, amountSub:'sin contraprestación',
+    clientName:'Sofía Domínguez', clientInitials:'SD', clientAvatar:'pink',
+    lotRef:'Oberá Selva I · LT-09',
+    progress:40, meta:'Vto.', metaRight:'31 dic',
+  },
+  {
+    id:'CTR-2026-015', stage:'active', type:'lote', typeLabel:'Plan cuotas',
+    title:'Plan 36 cuotas · Lote C-03',
+    amount:47500, amountSub:'cuota 5/36',
+    clientName:'H. Kuchaszus', clientInitials:'HK', clientAvatar:'amber',
+    lotRef:'Villa Cabello Norte · C-03',
+    progress:14, meta:'Próx. cuota', metaRight:'10 may',
+    alert:{kind:'danger', text:'Cuota anterior en mora — USD 1.320'}
+  },
+  {
+    id:'CTR-2025-198', stage:'active', type:'alquiler', typeLabel:'Alquiler',
+    title:'Alquiler · Monoamb. Centro',
+    amount:95000, currency:'ARS', amountSub:'/ mes · mes 10/12',
+    clientName:'Carla Benítez', clientInitials:'CB', clientAvatar:'cyan',
+    lotRef:'Propiedad · DEP-0091',
+    progress:83, meta:'Renovación', metaRight:'jun 2026',
+    alert:{kind:'warn', text:'Aniversario próximo — renovar contrato'}
+  },
+  // ---- CERRADO ----
+  {
+    id:'CTR-2025-189', stage:'closed', type:'lote', typeLabel:'Escritura',
+    title:'Escritura · Lote A-01',
+    amount:38500,
+    clientName:'José Medina', clientInitials:'JM', clientAvatar:'green',
+    lotRef:'Villa Cabello Norte · A-01',
+    progress:100, meta:'Escriturado', metaRight:'15 mar 2026',
+  },
+  {
+    id:'CTR-2025-176', stage:'closed', type:'casa', typeLabel:'Escritura',
+    title:'Escritura · Casa Yerbal 1520',
+    amount:156000,
+    clientName:'Andrea Parodi', clientInitials:'AP', clientAvatar:'pink',
+    lotRef:'Propiedad · CAS-0034',
+    progress:100, meta:'Escriturado', metaRight:'28 feb 2026',
+  },
+  {
+    id:'CTR-2025-144', stage:'closed', type:'terreno', typeLabel:'Escritura',
+    title:'Escritura · Chacra 8 Apóstoles',
+    amount:42000,
+    clientName:'Gabriel Núñez', clientInitials:'GN', clientAvatar:'amber',
+    lotRef:'Chacras de Apóstoles · CH-08',
+    progress:100, meta:'Escriturado', metaRight:'10 ene 2026',
+  },
+];
+
+const COLS = [
+  {id:'draft', title:'Borrador', color:'#64748b', icon:'📝'},
+  {id:'sign',  title:'En firma', color:'#f59e0b'},
+  {id:'active',title:'Vigente',  color:'#10b981'},
+  {id:'closed',title:'Cerrado',  color:'#06b6d4'},
+];
+
+const kanban = document.getElementById('kanban');
+
+function fmtAmount(c){
+  if(c.currency==='ARS'){
+    return `<span class="u">ARS</span>${c.amount.toLocaleString('es-AR')}`;
+  }
+  if(c.amount===0) return `<span class="u">—</span>Comodato`;
+  return `<span class="u">USD</span>${c.amount.toLocaleString('es-AR')}`;
+}
+
+function renderKanban(){
+  kanban.innerHTML = '';
+  COLS.forEach(col=>{
+    const items = CONTRACTS.filter(c=>c.stage===col.id);
+    const sum = items.reduce((a,c)=>a+(c.currency==='ARS'?0:c.amount),0);
+    const colEl = document.createElement('div');
+    colEl.className='col';
+    colEl.innerHTML = `
+      <div class="col-head">
+        <span class="col-dot" style="--c:${col.color}"></span>
+        <span class="col-title">${col.title}</span>
+        <span class="col-count">${items.length}</span>
+        <span class="col-sum">USD <b>${(sum/1000).toFixed(0)}k</b></span>
+      </div>
+      <div class="col-body">
+        ${items.map(c=>cardHtml(c)).join('')}
+        <div class="add-contract"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>Agregar contrato</div>
+      </div>
+    `;
+    kanban.appendChild(colEl);
+  });
+
+  // bind clicks
+  document.querySelectorAll('.contract').forEach(el=>{
+    el.addEventListener('click',()=>{
+      document.querySelectorAll('.contract').forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+      openDrawer(el.dataset.id);
+    });
+  });
+}
+
+function cardHtml(c){
+  const alertHtml = c.alert ? `
+    <div class="c-alert ${c.alert.kind}">
+      ${c.alert.kind==='danger'?'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>':
+        c.alert.kind==='warn'?'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>':
+        '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'}
+      <span>${c.alert.text}</span>
+    </div>` : '';
+
+  return `
+    <div class="contract ${c.selected?'selected':''}" data-id="${c.id}">
+      <div class="c-top">
+        <span class="c-id">${c.id}</span>
+        <span class="c-type ${c.type}">${c.typeLabel}</span>
+      </div>
+      <div class="c-title">${c.title}</div>
+      <div class="c-amount">${fmtAmount(c)}${c.amountSub?`<span class="sub">· ${c.amountSub}</span>`:''}</div>
+      <div class="c-links">
+        <div class="c-link client">
+          <div class="l-ico">${c.clientInitials}</div>
+          <span class="c-link-label">Cliente</span>
+          <span class="c-link-val">${c.clientName}</span>
+          <span class="arr"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+        <div class="c-link lot">
+          <div class="l-ico">
+            ${c.type==='alquiler'||c.type==='casa'
+              ? '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 12l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>'
+              : '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'}
+          </div>
+          <span class="c-link-label">Inmueble</span>
+          <span class="c-link-val">${c.lotRef}</span>
+          <span class="arr"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+      </div>
+      <div class="c-progress"><div class="c-progress-fill" style="width:${c.progress}%"></div></div>
+      <div class="c-meta"><span>${c.meta}</span><span>${c.metaRight||''}</span></div>
+      ${alertHtml}
+    </div>
+  `;
+}
+
+// client avatar gradient variants
+const gradStyle = document.createElement('style');
+gradStyle.textContent = `
+  .c-link.client .l-ico{font-size:9px;font-weight:600;color:#0b0b14}
+`;
+document.head.appendChild(gradStyle);
+
+/* ============================================================
+   DRAWER
+   ============================================================ */
+function openDrawer(id){
+  const c = CONTRACTS.find(x=>x.id===id);
+  if(!c) return;
+  document.querySelector('.drawer-backdrop').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  // minimal update of header
+  document.getElementById('dhId').textContent = `CONTRATO · ${c.id}`;
+  document.getElementById('dhTitle').firstChild.nodeValue = `${c.typeLabel} · ${c.title.split('·').slice(1).join('·').trim()||c.title} `;
+  document.getElementById('dhSub').textContent = c.lotRef + ' · ' + (c.meta||'');
+  const stEl = document.getElementById('dhStatus');
+  stEl.className = 'dh-status ' + c.stage;
+  stEl.innerHTML = `<span class="d"></span>${({draft:'Borrador',sign:'En firma',active:'Vigente',closed:'Cerrado'})[c.stage]}`;
+}
+function closeDrawer(){
+  document.querySelector('.drawer-backdrop').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+/* ============================================================
+   AMORTIZATION TABLE
+   ============================================================ */
+const amortBody = document.getElementById('amortBody');
+const rows = [
+  {n:1, date:'5 mar 2026', cap:1351, int:137, st:'paid'},
+  {n:2, date:'5 abr 2026', cap:1360, int:128, st:'paid'},
+  {n:3, date:'5 may 2026', cap:1369, int:119, st:'next'},
+  {n:4, date:'5 jun 2026', cap:1378, int:110, st:'pending'},
+  {n:5, date:'5 jul 2026', cap:1388, int:100, st:'pending'},
+  {n:6, date:'5 ago 2026', cap:1397, int:91, st:'pending'},
+  {n:7, date:'5 sep 2026', cap:1406, int:82, st:'pending'},
+];
+amortBody.innerHTML = rows.map(r=>`
+  <tr>
+    <td style="color:var(--muted)">${r.n}</td>
+    <td>${r.date}</td>
+    <td>USD ${r.cap.toLocaleString('es-AR')}</td>
+    <td style="color:var(--muted)">USD ${r.int}</td>
+    <td style="font-weight:600">USD ${(r.cap+r.int).toLocaleString('es-AR')}</td>
+    <td><span class="pay-state ${r.st}"><span class="d"></span>${({paid:'Pagado',pending:'Pendiente',overdue:'Mora',next:'Próxima'})[r.st]}</span></td>
+  </tr>
+`).join('');
+
+/* init */
+renderKanban();
+
+/* tab switching */
+document.querySelectorAll('.dt-tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.dt-tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+}));
+
+/* filter chips */
+document.querySelectorAll('.filt-chip').forEach(c=>c.addEventListener('click',()=>{
+  c.classList.toggle('active');
+}));
+document.querySelectorAll('.seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+}));
+
+/* tweaks */
+document.querySelectorAll('.tw-opt').forEach(o=>o.addEventListener('click',()=>{
+  const row = o.parentElement;
+  // only density + currency are single-select
+  const label = row.previousElementSibling.textContent;
+  if(label.includes('Densidad')||label.includes('Moneda')){
+    row.querySelectorAll('.tw-opt').forEach(x=>x.classList.remove('active'));
+  }
+  o.classList.toggle('active');
+}));
+
+/* esc to close drawer */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeDrawer();
+});
+</script>
+</body>
+</html>
