@@ -2457,51 +2457,18 @@ tailwind.config = {
         </div>
       </div>
 
-      <!-- CHARTS -->
+      <!-- CHARTS — se llenan con datos reales desde cargarMetricas() / renderLeads() -->
       <div class="charts-row">
         <div class="chart-card">
           <div class="chart-title">Origen de tus leads este mes</div>
-          <div class="bar-chart">
-            <div class="bar-row">
-              <div class="bar-label">📋 Formulario</div>
-              <div class="bar-track"><div class="bar-fill" style="width:69%;background:#6c63ff;color:#fff">49%</div></div>
-              <div class="bar-num">23</div>
-            </div>
-            <div class="bar-row">
-              <div class="bar-label">💬 WhatsApp</div>
-              <div class="bar-track"><div class="bar-fill" style="width:44%;background:#25d366;color:#fff">31%</div></div>
-              <div class="bar-num">15</div>
-            </div>
-            <div class="bar-row">
-              <div class="bar-label">🔥 Referidos</div>
-              <div class="bar-track"><div class="bar-fill" style="width:28%;background:#ffa94d;color:#000">20%</div></div>
-              <div class="bar-num">9</div>
-            </div>
+          <div class="bar-chart" id="chartFuentesInicio">
+            <div style="color:var(--text2);font-size:12px;padding:16px 0;text-align:center">Cargando datos…</div>
           </div>
         </div>
         <div class="chart-card">
           <div class="chart-title">Estado actual del pipeline</div>
-          <div class="bar-chart">
-            <div class="bar-row">
-              <div class="bar-label">🔵 Nuevos</div>
-              <div class="bar-track"><div class="bar-fill" style="width:53%;background:#3b82f6;color:#fff">5</div></div>
-              <div class="bar-num">5</div>
-            </div>
-            <div class="bar-row">
-              <div class="bar-label">🟡 Contactados</div>
-              <div class="bar-track"><div class="bar-fill" style="width:32%;background:#f59e0b;color:#000">3</div></div>
-              <div class="bar-num">3</div>
-            </div>
-            <div class="bar-row">
-              <div class="bar-label">🟣 Calificados</div>
-              <div class="bar-track"><div class="bar-fill" style="width:21%;background:#8b5cf6;color:#fff">2</div></div>
-              <div class="bar-num">2</div>
-            </div>
-            <div class="bar-row">
-              <div class="bar-label">🟢 Con cita</div>
-              <div class="bar-track"><div class="bar-fill" style="width:21%;background:#10b981;color:#fff">2</div></div>
-              <div class="bar-num">2</div>
-            </div>
+          <div class="bar-chart" id="chartPipelineInicio">
+            <div style="color:var(--text2);font-size:12px;padding:16px 0;text-align:center">Cargando datos…</div>
           </div>
         </div>
       </div>
@@ -3852,12 +3819,14 @@ async function cargarLeads() {
 
     renderLeads();
     renderKanbanFromLeads();
+    renderChartsInicio();  // charts fuentes + pipeline en panel Inicio
     cargarMetricas();
   } catch (err) {
-    console.warn('[Leads] Usando datos demo:', err.message);
-    LEADS = LEADS_FALLBACK;
+    console.warn('[Leads] Error cargando:', err.message);
+    LEADS = LEADS_FALLBACK;  // [] — array vacío, no datos dummy
     renderLeads();
     renderKanbanFromLeads();
+    renderChartsInicio();  // muestra "sin datos aún" en los charts
   }
 }
 
@@ -4674,6 +4643,74 @@ window.cambiarSubnichoTipo = function(tipo) {
   localStorage.setItem(`crm_tipo_${TENANT_SLUG}`, tipo);
   aplicarSubnichoTipo(tipo);
   notif('✅ Tipo de negocio actualizado', `Ahora estás en modo ${tipo}`);
+};
+
+// ── Render charts del panel Inicio usando LEADS reales (sin hardcode) ──────
+window.renderChartsInicio = function() {
+  const empty = (container, msg = 'Sin datos aún') => {
+    if (container) container.innerHTML = `<div style="color:var(--text2);font-size:12px;padding:16px 0;text-align:center">${msg}</div>`;
+  };
+  const cFuentes = document.getElementById('chartFuentesInicio');
+  const cPipeline = document.getElementById('chartPipelineInicio');
+
+  if (!Array.isArray(LEADS) || LEADS.length === 0) {
+    empty(cFuentes);
+    empty(cPipeline);
+    return;
+  }
+
+  // Chart 1: Origen de leads (por campo `origen`)
+  if (cFuentes) {
+    const fuentes = {};
+    LEADS.forEach(l => {
+      const key = (l.origen || 'otros').toLowerCase();
+      fuentes[key] = (fuentes[key] || 0) + 1;
+    });
+    const total = LEADS.length;
+    const labels = { form: '📋 Formulario', formulario: '📋 Formulario', wa: '💬 WhatsApp', whatsapp: '💬 WhatsApp', referido: '🔥 Referido', otros: '📌 Otros' };
+    const colores = { form: '#6c63ff', formulario: '#6c63ff', wa: '#25d366', whatsapp: '#25d366', referido: '#ffa94d', otros: '#8b92a5' };
+    const rows = Object.entries(fuentes).sort((a, b) => b[1] - a[1]).map(([k, n]) => {
+      const pct = Math.round((n / total) * 100);
+      const label = labels[k] || `📌 ${k}`;
+      const color = colores[k] || '#8b92a5';
+      return `<div class="bar-row">
+        <div class="bar-label">${label}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(pct, 4)}%;background:${color};color:#fff">${pct}%</div></div>
+        <div class="bar-num">${n}</div>
+      </div>`;
+    }).join('');
+    cFuentes.innerHTML = rows || '<div style="color:var(--text2);font-size:12px;padding:16px 0;text-align:center">Sin datos aún</div>';
+  }
+
+  // Chart 2: Estado del pipeline (usa el campo `status` normalizado en cargarLeads)
+  if (cPipeline) {
+    const estados = { nuevo: 0, contactado: 0, calificado: 0, cita: 0 };
+    LEADS.forEach(l => {
+      const st = (l.status || '').toLowerCase();
+      if (st in estados) estados[st]++;
+      else if (st === 'nuevos') estados.nuevo++;
+      else if (st.includes('contact')) estados.contactado++;
+      else if (st.includes('calif')) estados.calificado++;
+      else if (st.includes('cita')) estados.cita++;
+    });
+    const max = Math.max(...Object.values(estados), 1);
+    const defs = [
+      { key: 'nuevo',      label: '🔵 Nuevos',      color: '#3b82f6', textColor: '#fff' },
+      { key: 'contactado', label: '🟡 Contactados', color: '#f59e0b', textColor: '#000' },
+      { key: 'calificado', label: '🟣 Calificados', color: '#8b5cf6', textColor: '#fff' },
+      { key: 'cita',       label: '🟢 Con cita',    color: '#10b981', textColor: '#fff' },
+    ];
+    const rows = defs.map(d => {
+      const n = estados[d.key] || 0;
+      const pct = Math.max(Math.round((n / max) * 100), 4);
+      return `<div class="bar-row">
+        <div class="bar-label">${d.label}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${d.color};color:${d.textColor}">${n}</div></div>
+        <div class="bar-num">${n}</div>
+      </div>`;
+    }).join('');
+    cPipeline.innerHTML = rows;
+  }
 };
 
 // ── Refresh de todos los badges del sidebar en paralelo ────────────────────
