@@ -277,7 +277,12 @@ def aplicar_schema(db_nombre: str) -> dict:
 
 
 def copiar_datos(db_origen: str, db_destino: str, tenant_slug: str) -> dict:
-    """Copia todos los datos de tenant_slug desde db_origen → db_destino."""
+    """Copia todos los datos de tenant_slug desde db_origen → db_destino.
+
+    Estrategia robusta:
+    - Consulta columnas en común entre origen y destino (no asume schemas iguales)
+    - Reporta primer error row-level con detalle
+    """
     print(f"[copiar] Copiando datos de tenant '{tenant_slug}': {db_origen} → {db_destino}")
 
     src = psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=db_origen,
@@ -291,45 +296,77 @@ def copiar_datos(db_origen: str, db_destino: str, tenant_slug: str) -> dict:
     for tabla in TABLAS_COPIABLES:
         try:
             src_cur = src.cursor()
-            src_cur.execute(f"SELECT * FROM {tabla} WHERE tenant_slug=%s", (tenant_slug,))
+            dst_cur = dst.cursor()
+
+            # 1. Obtener columnas de cada lado
+            src_cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position",
+                (tabla,)
+            )
+            cols_src = [r[0] for r in src_cur.fetchall()]
+
+            dst_cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position",
+                (tabla,)
+            )
+            cols_dst = [r[0] for r in dst_cur.fetchall()]
+
+            # 2. Intersección (columnas que existen en ambos) excluyendo 'id'
+            comunes = [c for c in cols_src if c in cols_dst and c != "id"]
+            if not comunes:
+                resumen[tabla] = {"copiados": 0, "error": "sin columnas comunes"}
+                src_cur.close(); dst_cur.close()
+                continue
+
+            # 3. SELECT solo columnas comunes WHERE tenant_slug
+            cols_select = ", ".join(f'"{c}"' for c in comunes)
+            src_cur.execute(
+                f'SELECT {cols_select} FROM {tabla} WHERE tenant_slug=%s',
+                (tenant_slug,)
+            )
             rows = src_cur.fetchall()
 
             if not rows:
-                resumen[tabla] = 0
-                src_cur.close()
+                resumen[tabla] = {"copiados": 0, "en_origen": 0}
+                src_cur.close(); dst_cur.close()
                 continue
 
-            # Columnas
-            cols = [d[0] for d in src_cur.description]
-            # Excluir 'id' para que PostgreSQL genere uno nuevo (evitar conflictos)
-            cols_sin_id = [c for c in cols if c != "id"]
-            idx_sin_id = [cols.index(c) for c in cols_sin_id]
-
-            placeholders = ", ".join(["%s"] * len(cols_sin_id))
-            cols_str = ", ".join(cols_sin_id)
-
-            dst_cur = dst.cursor()
+            # 4. INSERT en destino
+            placeholders = ", ".join(["%s"] * len(comunes))
+            cols_str = ", ".join(f'"{c}"' for c in comunes)
             insertados = 0
             errores = 0
+            primer_error = None
             for row in rows:
-                values = tuple(row[i] for i in idx_sin_id)
                 try:
                     dst_cur.execute(
                         f"INSERT INTO {tabla} ({cols_str}) VALUES ({placeholders}) ON CONFLICT DO NOTHING",
-                        values
+                        row
                     )
                     insertados += dst_cur.rowcount
                 except Exception as e:
                     errores += 1
+                    if primer_error is None:
+                        primer_error = str(e)[:200]
                     print(f"[copiar] Error row {tabla}: {e}")
 
             print(f"[copiar]   {tabla}: {insertados}/{len(rows)} copiados ({errores} errores)")
-            resumen[tabla] = insertados
+            resumen[tabla] = {
+                "copiados": insertados,
+                "en_origen": len(rows),
+                "errores": errores,
+                "primer_error": primer_error,
+                "cols_origen": len(cols_src),
+                "cols_destino": len(cols_dst),
+                "cols_comunes": len(comunes),
+            }
             dst_cur.close()
             src_cur.close()
         except Exception as e:
             print(f"[copiar] Error tabla {tabla}: {e}")
-            resumen[tabla] = f"error: {e}"
+            resumen[tabla] = {"error_tabla": str(e)[:200]}
 
     src.close()
     dst.close()
