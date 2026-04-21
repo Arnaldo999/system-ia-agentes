@@ -1306,6 +1306,628 @@ tailwind.config = {
     .cd-overview-contratos { grid-template-columns: repeat(2, 1fr) !important; }
   }
 
+  /* ==========================================================
+   * SKIN CLAUDE DESIGN v2 — Paso 3: Panel Loteos layout 3 columnas
+   * Page head + overview + filter chips + grid (list | map | detail)
+   * ========================================================== */
+
+  /* Page head */
+  .cd-page-head {
+    padding: 22px 28px 14px !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+    border-bottom: 1px solid rgba(255,255,255,.06) !important;
+    flex-wrap: wrap !important;
+  }
+  .cd-page-title {
+    margin: 0 0 4px 0 !important;
+    font-size: 22px !important;
+    letter-spacing: -.02em !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    color: #f1f5f9 !important;
+  }
+  .cd-pin {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 8px !important;
+    background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+    display: grid !important;
+    place-items: center !important;
+    color: #fff !important;
+  }
+  .cd-pin svg { width: 14px !important; height: 14px !important; }
+  .cd-page-sub {
+    color: #8b8ba7 !important;
+    font-size: 13px !important;
+  }
+  .cd-page-actions {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+  }
+  .cd-btn-secondary {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 8px 14px !important;
+    border-radius: 9px !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    border: 1px solid rgba(255,255,255,.06) !important;
+    background: #12121f !important;
+    color: #f1f5f9 !important;
+    font-family: inherit !important;
+    transition: .12s !important;
+  }
+  .cd-btn-secondary:hover {
+    border-color: rgba(255,255,255,.10) !important;
+    background: #161627 !important;
+  }
+  .cd-btn-secondary svg { width: 13px !important; height: 13px !important; }
+  .cd-btn-primary.cd-btn-sm { padding: 6px 12px !important; font-size: 11.5px !important; }
+
+  /* Overview + filter-bar live inside panel-loteos (not inside page-head) */
+  #loteosOverview .cd-overview {
+    padding: 18px 28px 6px !important;
+  }
+  .cd-filter-bar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    padding: 12px 28px 4px !important;
+  }
+  .cd-chip {
+    padding: 5px 11px !important;
+    border-radius: 7px !important;
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    background: #12121f !important;
+    color: #8b8ba7 !important;
+    border: 1px solid rgba(255,255,255,.06) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-family: inherit !important;
+    transition: .12s !important;
+  }
+  .cd-chip:hover {
+    color: #f1f5f9 !important;
+    border-color: rgba(255,255,255,.10) !important;
+  }
+  .cd-chip.active {
+    background: rgba(124,58,237,.14) !important;
+    border-color: rgba(124,58,237,.35) !important;
+    color: #c4b5fd !important;
+  }
+  .cd-chip .ct {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 10px !important;
+    opacity: .7 !important;
+  }
+
+  /* 3-column main grid */
+  .cd-main-grid {
+    display: grid !important;
+    grid-template-columns: 320px 1fr 340px !important;
+    gap: 16px !important;
+    padding: 18px 28px 40px !important;
+    min-height: calc(100vh - 280px) !important;
+  }
+
+  .cd-panel {
+    background: #161627 !important;
+    border: 1px solid rgba(255,255,255,.06) !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  .cd-panel-head {
+    padding: 14px 16px !important;
+    border-bottom: 1px solid rgba(255,255,255,.06) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+  .cd-panel-title {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: -.01em !important;
+    color: #f1f5f9 !important;
+  }
+  .cd-panel-sub {
+    font-size: 11px !important;
+    color: #8b8ba7 !important;
+    margin-top: 2px !important;
+  }
+
+  /* LEFT: list of loteos */
+  .cd-loteos-list {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+  .cd-loteos-list::-webkit-scrollbar { width: 6px; }
+  .cd-loteos-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.06); border-radius: 3px; }
+
+  /* Sobrescribir cd-loteo para versión compacta dentro de la lista */
+  .cd-panel-list .cd-loteo {
+    padding: 12px !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    transition: .12s !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    box-shadow: none !important;
+  }
+  .cd-panel-list .cd-loteo:hover {
+    background: rgba(255,255,255,.025) !important;
+    border-color: rgba(255,255,255,.06) !important;
+    transform: none !important;
+  }
+  .cd-panel-list .cd-loteo.selected {
+    background: linear-gradient(180deg, rgba(124,58,237,.10), rgba(6,182,212,.04)) !important;
+    border-color: rgba(124,58,237,.30) !important;
+  }
+  .cd-panel-list .cd-loteo-name { font-size: 13px !important; }
+  .cd-panel-list .cd-loteo-place { font-size: 10.5px !important; margin-top: 2px !important; }
+  .cd-panel-list .cd-loteo-progress { height: 5px !important; margin: 4px 0 !important; }
+  .cd-panel-list .cd-loteo-stats { font-size: 10.5px !important; }
+  .cd-panel-list .cd-loteo-counts { font-size: 10px !important; gap: 5px !important; }
+  .cd-panel-list .cd-loteo-counts .cc { padding: 5px 4px !important; }
+  .cd-panel-list .cd-loteo-counts .cc .n { font-size: 13px !important; }
+
+  .cd-panel-list .cd-add-loteo {
+    margin: 6px 4px 4px !important;
+    padding: 14px !important;
+    min-height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    text-align: left !important;
+  }
+  .cd-panel-list .cd-add-loteo .plus {
+    width: 32px !important; height: 32px !important;
+    border-radius: 8px !important;
+    margin: 0 !important;
+  }
+  .cd-panel-list .cd-add-loteo .plus svg { width: 14px !important; height: 14px !important; }
+  .cd-panel-list .cd-add-loteo .t { font-size: 12.5px !important; }
+  .cd-panel-list .cd-add-loteo .s { font-size: 11px !important; text-align: left !important; }
+
+  /* CENTER: map */
+  .cd-panel-map .cd-panel-head { flex-wrap: wrap; }
+  .cd-legend {
+    display: flex !important;
+    gap: 12px !important;
+    margin-left: auto !important;
+    font-size: 11px !important;
+    color: #8b8ba7 !important;
+    flex-wrap: wrap !important;
+  }
+  .cd-lg-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+  }
+  .cd-lg-sw {
+    width: 11px !important;
+    height: 11px !important;
+    border-radius: 3px !important;
+    display: inline-block !important;
+  }
+
+  .cd-map-stage {
+    flex: 1 !important;
+    position: relative !important;
+    overflow: auto !important;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(124,58,237,.05), transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(6,182,212,.04), transparent 50%),
+      #0a0a12 !important;
+    min-height: 420px !important;
+    padding: 24px !important;
+  }
+  .cd-map-stage::before {
+    content: "";
+    position: absolute !important;
+    inset: 0 !important;
+    background-image:
+      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px) !important;
+    background-size: 28px 28px !important;
+    pointer-events: none !important;
+    mask-image: radial-gradient(ellipse at center, black 60%, transparent 100%) !important;
+  }
+  .cd-map-inner {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+    gap: 20px !important;
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  .cd-manzana {
+    position: relative !important;
+    background: rgba(255,255,255,.04) !important;
+    border: 1px solid rgba(255,255,255,.08) !important;
+    border-radius: 10px !important;
+    padding: 18px 12px 10px !important;
+    box-shadow: inset 0 0 40px rgba(0,0,0,.15) !important;
+  }
+  .cd-manzana-label {
+    position: absolute !important;
+    top: -10px !important;
+    left: 14px !important;
+    background: #12121f !important;
+    color: #8b8ba7 !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    padding: 2px 10px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255,255,255,.08) !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    font-family: 'JetBrains Mono', monospace !important;
+  }
+  .cd-lots-row {
+    display: grid !important;
+    gap: 6px !important;
+    justify-content: center !important;
+    margin-top: 6px !important;
+  }
+
+  .cd-lot {
+    position: relative !important;
+    border-radius: 6px !important;
+    padding: 8px 6px !important;
+    cursor: pointer !important;
+    transition: transform .1s, box-shadow .12s !important;
+    min-height: 60px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    border: 1px solid transparent !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    background: transparent !important;
+  }
+  .cd-lot:hover { transform: translateY(-1px); z-index: 5; }
+  .cd-lot.active {
+    box-shadow: 0 0 0 2px #7c3aed, 0 0 0 5px rgba(124,58,237,.25) !important;
+    z-index: 6 !important;
+  }
+  .cd-lot.free {
+    background: rgba(16,185,129,.14) !important;
+    border-color: rgba(16,185,129,.4) !important;
+    color: #6ee7b7 !important;
+  }
+  .cd-lot.free:hover { background: rgba(16,185,129,.22) !important; }
+  .cd-lot.reserved {
+    background: rgba(245,158,11,.14) !important;
+    border-color: rgba(245,158,11,.4) !important;
+    color: #fcd34d !important;
+  }
+  .cd-lot.reserved:hover { background: rgba(245,158,11,.22) !important; }
+  .cd-lot.sold {
+    background: rgba(239,68,68,.12) !important;
+    border-color: rgba(239,68,68,.35) !important;
+    color: #fca5a5 !important;
+    opacity: .85 !important;
+  }
+  .cd-lot.sold:hover { opacity: 1 !important; }
+  .cd-lot-icon {
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    opacity: .8 !important;
+  }
+  .cd-lot-icon svg { width: 10px !important; height: 10px !important; }
+  .cd-lot-n {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: -.01em !important;
+  }
+  .cd-lot-body {
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+  }
+
+  .cd-stage-empty {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    padding: 60px 20px !important;
+    text-align: center !important;
+    color: #8b8ba7 !important;
+    min-height: 300px !important;
+  }
+  .cd-stage-empty svg { color: #5a5a78 !important; }
+
+  /* RIGHT: detail panel */
+  .cd-panel-detail { min-height: 600px; }
+  .cd-detail-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px 18px !important;
+  }
+  .cd-detail-body::-webkit-scrollbar { width: 6px; }
+  .cd-detail-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.06); border-radius: 3px; }
+
+  .cd-detail-empty {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 40px 16px !important;
+    color: #8b8ba7 !important;
+    gap: 8px !important;
+    min-height: 300px !important;
+  }
+  .cd-detail-empty svg { color: #5a5a78 !important; }
+  .cd-detail-empty-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #cbd5e1 !important;
+    margin-top: 8px !important;
+  }
+  .cd-detail-empty-sub { font-size: 12px !important; }
+
+  .cd-dt-head {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    margin-bottom: 14px !important;
+    gap: 10px !important;
+  }
+  .cd-dt-id {
+    font-size: 10px !important;
+    color: #5a5a78 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    letter-spacing: .06em !important;
+    text-transform: uppercase !important;
+  }
+  .cd-dt-name {
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    letter-spacing: -.02em !important;
+    margin-top: 2px !important;
+    color: #f1f5f9 !important;
+  }
+  .cd-dt-status {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 3px 9px !important;
+    border-radius: 5px !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    letter-spacing: .05em !important;
+    text-transform: uppercase !important;
+  }
+  .cd-dt-status .d { width: 5px !important; height: 5px !important; border-radius: 50% !important; }
+  .cd-dt-status.free { color: #6ee7b7 !important; background: rgba(16,185,129,.14) !important; border: 1px solid rgba(16,185,129,.3) !important; }
+  .cd-dt-status.free .d { background: #10b981 !important; }
+  .cd-dt-status.reserved { color: #fcd34d !important; background: rgba(245,158,11,.14) !important; border: 1px solid rgba(245,158,11,.3) !important; }
+  .cd-dt-status.reserved .d { background: #f59e0b !important; }
+  .cd-dt-status.sold { color: #fca5a5 !important; background: rgba(239,68,68,.12) !important; border: 1px solid rgba(239,68,68,.3) !important; }
+  .cd-dt-status.sold .d { background: #ef4444 !important; }
+
+  .cd-dt-hero {
+    background: linear-gradient(135deg, rgba(124,58,237,.18), rgba(6,182,212,.12)) !important;
+    border: 1px solid rgba(124,58,237,.25) !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    margin-bottom: 16px !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+  .cd-dt-hero::after {
+    content: "" !important;
+    position: absolute !important;
+    top: -40px !important; right: -40px !important;
+    width: 140px !important; height: 140px !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle, rgba(6,182,212,.25), transparent 60%) !important;
+  }
+  .cd-dt-hero-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+  .cd-dt-sup {
+    font-size: 10.5px !important;
+    color: #8b8ba7 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .08em !important;
+    margin-bottom: 4px !important;
+    font-weight: 500 !important;
+  }
+  .cd-dt-price {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    letter-spacing: -.01em !important;
+    color: #f1f5f9 !important;
+  }
+  .cd-dt-m2 {
+    font-size: 11px !important;
+    color: #8b8ba7 !important;
+    margin-top: 3px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+  }
+
+  .cd-dt-section-title {
+    font-size: 10.5px !important;
+    color: #5a5a78 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .08em !important;
+    margin: 16px 0 10px !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .cd-dt-section-title::after {
+    content: "" !important;
+    flex: 1 !important;
+    height: 1px !important;
+    background: rgba(255,255,255,.06) !important;
+  }
+
+  .cd-dt-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  .cd-dt-cell {
+    padding: 9px 11px !important;
+    background: #0a0a12 !important;
+    border: 1px solid rgba(255,255,255,.06) !important;
+    border-radius: 8px !important;
+  }
+  .cd-dt-cell .l {
+    font-size: 10px !important;
+    color: #8b8ba7 !important;
+    margin-bottom: 3px !important;
+  }
+  .cd-dt-cell .v {
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    color: #f1f5f9 !important;
+  }
+
+  .cd-dt-client {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 10px 12px !important;
+    background: rgba(255,255,255,.025) !important;
+    border: 1px solid rgba(255,255,255,.06) !important;
+    border-radius: 9px !important;
+  }
+  .cd-dt-client-avatar {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #f59e0b, #ec4899) !important;
+    display: grid !important;
+    place-items: center !important;
+    color: #0b0b14 !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    flex-shrink: 0 !important;
+  }
+  .cd-dt-client-info { flex: 1 !important; min-width: 0 !important; }
+  .cd-dt-client-name {
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    color: #f1f5f9 !important;
+  }
+  .cd-dt-client-meta {
+    font-size: 10.5px !important;
+    color: #8b8ba7 !important;
+    display: flex !important;
+    gap: 6px !important;
+    align-items: center !important;
+    margin-top: 2px !important;
+  }
+  .cd-dt-client-meta .sep { color: #5a5a78 !important; }
+
+  .cd-ai-hint {
+    display: flex !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    margin-top: 16px !important;
+    background: linear-gradient(135deg, rgba(124,58,237,.08), rgba(6,182,212,.04)) !important;
+    border: 1px solid rgba(124,58,237,.2) !important;
+    border-radius: 9px !important;
+  }
+  .cd-ai-hint-ico {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+    background: linear-gradient(135deg, #7c3aed, #06b6d4) !important;
+    display: grid !important;
+    place-items: center !important;
+    color: #0b0b14 !important;
+    flex-shrink: 0 !important;
+  }
+  .cd-ai-hint-ico svg { width: 14px !important; height: 14px !important; }
+  .cd-ai-hint-title {
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    color: #c4b5fd !important;
+    margin-bottom: 3px !important;
+  }
+  .cd-ai-hint-body {
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+    line-height: 1.5 !important;
+  }
+  .cd-ai-hint-body code {
+    background: rgba(0,0,0,.3) !important;
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    font-size: 10.5px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    color: #a78bfa !important;
+  }
+
+  .cd-dt-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 16px !important;
+    flex-wrap: wrap !important;
+  }
+  .cd-dt-actions .cd-btn-primary,
+  .cd-dt-actions .cd-btn-secondary {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 10px 14px !important;
+  }
+
+  /* Responsive: 3 columns → 1 column on narrow screens */
+  @media (max-width: 1280px) {
+    .cd-main-grid {
+      grid-template-columns: 300px 1fr !important;
+    }
+    .cd-panel-detail {
+      grid-column: 1 / -1 !important;
+      min-height: 400px !important;
+    }
+  }
+  @media (max-width: 900px) {
+    .cd-main-grid { grid-template-columns: 1fr !important; }
+    .cd-panel-list, .cd-panel-map, .cd-panel-detail { grid-column: auto !important; }
+  }
+
 </style>
 
 <!-- Fuentes del skin Claude Design -->
@@ -2390,12 +3012,82 @@ tailwind.config = {
 </div>
 
 <!-- LOTEOS -->
-<div class="panel hidden" id="panel-loteos" style="padding:20px">
-  <div class="mb-4">
-    <h2 class="text-xl font-bold">📍 Loteos & Mapas</h2>
-    <p class="text-sm text-txt-2">Cargá tus loteos y lotes individuales. Marcá vendidos o reservados con el cliente asignado.</p>
+<div class="panel hidden" id="panel-loteos" style="padding:0">
+  <!-- Page head -->
+  <div class="cd-page-head">
+    <div>
+      <h1 class="cd-page-title">
+        <span class="cd-pin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </span>
+        Loteos & Mapas
+      </h1>
+      <div class="cd-page-sub">Cargá tus loteos y marcá vendidos/reservados desde Clientes Activos</div>
+    </div>
+    <div class="cd-page-actions">
+      <button class="cd-btn-secondary" onclick="exportarLoteos()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar
+      </button>
+      <button class="cd-btn-primary" onclick="abrirModalLoteo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo loteo
+      </button>
+    </div>
   </div>
-  <div id="loteosLista"></div>
+
+  <!-- Overview strip -->
+  <div id="loteosOverview"></div>
+
+  <!-- Filter chips -->
+  <div class="cd-filter-bar" id="loteosFilterBar"></div>
+
+  <!-- Main 3-column grid -->
+  <div class="cd-main-grid">
+    <!-- LEFT: list of loteos -->
+    <div class="cd-panel cd-panel-list">
+      <div class="cd-panel-head">
+        <div>
+          <div class="cd-panel-title">Tus loteos</div>
+          <div class="cd-panel-sub" id="loteosListCount">0 activos</div>
+        </div>
+      </div>
+      <div class="cd-loteos-list" id="loteosLista"></div>
+    </div>
+
+    <!-- CENTER: map / lotes grid -->
+    <div class="cd-panel cd-panel-map">
+      <div class="cd-panel-head">
+        <div>
+          <div class="cd-panel-title" id="currentLoteoName">Seleccioná un loteo</div>
+          <div class="cd-panel-sub" id="currentLoteoMeta">Hacé click en un loteo de la izquierda</div>
+        </div>
+        <div class="cd-legend">
+          <span class="cd-lg-item"><span class="cd-lg-sw" style="background:rgba(16,185,129,.25);border:1px solid rgba(16,185,129,.4)"></span>Libre</span>
+          <span class="cd-lg-item"><span class="cd-lg-sw" style="background:rgba(245,158,11,.25);border:1px solid rgba(245,158,11,.4)"></span>Reservado</span>
+          <span class="cd-lg-item"><span class="cd-lg-sw" style="background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.4)"></span>Vendido</span>
+        </div>
+      </div>
+      <div class="cd-map-stage" id="lotsStage"></div>
+    </div>
+
+    <!-- RIGHT: detail -->
+    <div class="cd-panel cd-panel-detail">
+      <div class="cd-panel-head">
+        <div>
+          <div class="cd-panel-title">Detalle del lote</div>
+          <div class="cd-panel-sub">Click en un lote del mapa</div>
+        </div>
+      </div>
+      <div class="cd-detail-body" id="detailBody">
+        <div class="cd-detail-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0H5a2 2 0 0 1-2-2v-4m6 6h10a2 2 0 0 0 2-2v-4M3 15v-2m18 2v-2"/></svg>
+          <div class="cd-detail-empty-title">Ningún lote seleccionado</div>
+          <div class="cd-detail-empty-sub">Elegí un lote del mapa para ver su ficha</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal-bg hidden" id="modalLoteo">

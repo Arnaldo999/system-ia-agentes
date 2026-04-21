@@ -6,8 +6,10 @@
 // El cliente asigna lotes desde el CRM de Clientes Activos, no desde Loteos.
 (function(){
   let LOTEOS = [];
-  let LOTE_ACTUAL = null;              // loteo abierto en modalMapa
+  let LOTE_ACTUAL = null;              // loteo abierto en modalMapa / panel-map
+  let LOTE_SELECCIONADO = null;        // lote individual seleccionado en el mapa
   let CLIENTES_CACHE = [];             // cache de clientes_activos
+  let FILTRO_CIUDAD = 'todos';         // chip activo
 
   // ── Utilidades ────────────────────────────────────────────────────────────
 
@@ -94,10 +96,24 @@
     }
   };
 
-  function renderLoteos() {
-    const cont = document.getElementById('loteosLista');
+  // Agrupa ciudades únicas desde LOTEOS para filter chips
+  function ciudadesUnicas() {
+    const set = new Map();
+    LOTEOS.forEach(l => {
+      const key = (l.ciudad || 'Sin ciudad').trim();
+      set.set(key, (set.get(key) || 0) + 1);
+    });
+    return Array.from(set.entries()); // [ [ciudad, count], ... ]
+  }
+
+  function loteosFiltrados() {
+    if (FILTRO_CIUDAD === 'todos') return LOTEOS;
+    return LOTEOS.filter(l => (l.ciudad || 'Sin ciudad').trim() === FILTRO_CIUDAD);
+  }
+
+  function renderOverview() {
+    const cont = document.getElementById('loteosOverview');
     if (!cont) return;
-    // Totales agregados
     let totLotes = 0, totLibres = 0, totReservados = 0, totVendidos = 0;
     LOTEOS.forEach(l => {
       const total = l.total_lotes || 0;
@@ -110,7 +126,7 @@
     });
     const pctOcup = totLotes > 0 ? Math.round(((totReservados + totVendidos) / totLotes) * 100) : 0;
 
-    const overview = `
+    cont.innerHTML = `
       <div class="overview cd-overview">
         <div class="ov" style="--c:#7c3aed">
           <div class="ov-label"><span class="d"></span>Loteos activos</div>
@@ -139,15 +155,48 @@
         </div>
       </div>
     `;
+  }
 
-    if (LOTEOS.length === 0) {
-      cont.innerHTML = overview + `<div class="cd-loteos-grid">${renderAddCard()}</div>`;
+  function renderFilterChips() {
+    const cont = document.getElementById('loteosFilterBar');
+    if (!cont) return;
+    const ciudades = ciudadesUnicas();
+    const chipTodos = `<button class="cd-chip ${FILTRO_CIUDAD === 'todos' ? 'active' : ''}" onclick="filtrarLoteosPorCiudad('todos')">Todos <span class="ct">${LOTEOS.length}</span></button>`;
+    const chips = ciudades.map(([ciudad, count]) => `
+      <button class="cd-chip ${FILTRO_CIUDAD === ciudad ? 'active' : ''}" onclick="filtrarLoteosPorCiudad('${ciudad.replace(/'/g, "\\'")}')">${ciudad} <span class="ct">${count}</span></button>
+    `).join('');
+    cont.innerHTML = chipTodos + chips;
+  }
+
+  window.filtrarLoteosPorCiudad = function(ciudad) {
+    FILTRO_CIUDAD = ciudad;
+    renderFilterChips();
+    renderLoteos();
+  };
+
+  function renderLoteos() {
+    const list = document.getElementById('loteosLista');
+    if (!list) return;
+    renderOverview();
+    renderFilterChips();
+
+    const filtrados = loteosFiltrados();
+    const countEl = document.getElementById('loteosListCount');
+    if (countEl) countEl.textContent = `${filtrados.length} ${filtrados.length === 1 ? 'activo' : 'activos'}`;
+
+    if (filtrados.length === 0) {
+      list.innerHTML = renderAddCard();
       return;
     }
-    cont.innerHTML = overview + `<div class="cd-loteos-grid">
-      ${LOTEOS.map(renderLoteoCard).join('')}
-      ${renderAddCard()}
-    </div>`;
+    list.innerHTML = filtrados.map(renderLoteoCard).join('') + renderAddCard();
+
+    // Auto-seleccionar el primero si no hay ninguno activo o el actual fue filtrado
+    if (!LOTE_ACTUAL || !filtrados.find(l => l.id === LOTE_ACTUAL.id)) {
+      seleccionarLoteo(filtrados[0].id);
+    } else {
+      // Re-sync UI del loteo actual
+      renderLotsStage();
+    }
   }
 
   function renderAddCard() {
@@ -156,8 +205,7 @@
         <div class="plus">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </div>
-        <div class="t">Agregar nuevo loteo</div>
-        <div class="s">Creá un loteo con su cantidad de lotes</div>
+        <div><div class="t">Agregar nuevo loteo</div><div class="s">Con lotes, manzanas y mapa</div></div>
       </button>
     `;
   }
@@ -175,9 +223,10 @@
       : (ubic || l.ciudad || 'Sin ubicación');
 
     const dataAttr = JSON.stringify(l).replace(/"/g, '&quot;');
+    const selected = LOTE_ACTUAL && LOTE_ACTUAL.id === l.id ? 'selected' : '';
 
     return `
-      <div class="cd-loteo" onclick="verMapaLoteo(${l.id})">
+      <div class="cd-loteo ${selected}" data-id="${l.id}" onclick="seleccionarLoteo(${l.id})">
         <div class="cd-loteo-top">
           <div class="cd-loteo-info">
             <div class="cd-loteo-name">${l.nombre}</div>
@@ -195,7 +244,6 @@
             </button>
           </div>
         </div>
-        ${l.descripcion ? `<div class="cd-loteo-desc">${l.descripcion}</div>` : ''}
         <div class="cd-loteo-progress">
           <div class="seg s-sold" style="width:${pctVendidos}%"></div>
           <div class="seg s-reserved" style="width:${pctReservados}%"></div>
@@ -212,6 +260,220 @@
       </div>
     `;
   }
+
+  // ── Panel centro (mapa) + panel derecho (detalle del lote) ────────────────
+
+  window.seleccionarLoteo = function(id) {
+    const l = LOTEOS.find(x => x.id === id);
+    if (!l) return;
+    LOTE_ACTUAL = l;
+    LOTE_SELECCIONADO = null;
+    // Marcar selección en lista
+    document.querySelectorAll('#loteosLista .cd-loteo').forEach(el => {
+      el.classList.toggle('selected', Number(el.dataset.id) === id);
+    });
+    // Refrescar clientes por si cambiaron
+    (async () => {
+      try {
+        const data = await crmFetch('/crm/clientes');
+        CLIENTES_CACHE = data.items || data.records || [];
+      } catch (e) { /* ignore */ }
+      renderLotsStage();
+    })();
+    renderLotsStage();
+    renderDetailEmpty();
+  };
+
+  function renderLotsStage() {
+    const stage = document.getElementById('lotsStage');
+    const nameEl = document.getElementById('currentLoteoName');
+    const metaEl = document.getElementById('currentLoteoMeta');
+    if (!stage || !LOTE_ACTUAL) return;
+
+    const loteo = LOTE_ACTUAL;
+    const total = loteo.total_lotes || 0;
+    const clientesPorLote = indexarClientesPorLote(loteo.nombre);
+    const manzanas = dividirEnManzanas(total);
+
+    if (nameEl) nameEl.textContent = `Loteo ${loteo.nombre}`;
+    if (metaEl) {
+      const ubic = loteo.ubicacion || loteo.ciudad || 'Sin ubicación';
+      metaEl.innerHTML = `${ubic} · ${total} lotes · ${manzanas.length} ${manzanas.length === 1 ? 'manzana' : 'manzanas'}`;
+    }
+
+    if (total === 0) {
+      stage.innerHTML = `<div class="cd-stage-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+        <div>Este loteo todavía no tiene lotes cargados.</div>
+        <button class="cd-btn-primary cd-btn-sm" onclick='abrirModalLoteo(${JSON.stringify(loteo).replace(/'/g, "&apos;")})'>Editar loteo</button>
+      </div>`;
+      return;
+    }
+
+    const manzanasHtml = manzanas.map((lotes, idx) => {
+      const letra = String.fromCharCode(65 + idx);
+      const colsManzana = lotes.length <= 4 ? lotes.length : Math.ceil(lotes.length / 2);
+      return `
+        <div class="cd-manzana">
+          <div class="cd-manzana-label">Manzana ${letra}</div>
+          <div class="cd-lots-row" style="grid-template-columns: repeat(${colsManzana}, minmax(60px, 84px))">
+            ${lotes.map(n => renderLotTile(n, clientesPorLote, letra)).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    stage.innerHTML = `<div class="cd-map-inner">${manzanasHtml}</div>`;
+  }
+
+  function renderLotTile(nroLoteNum, clientesPorLote, manzana) {
+    const nroLote = `L-${nroLoteNum}`;
+    const asignado = clientesPorLote[nroLote];
+    const estado = asignado ? asignado.estado : 'free'; // free|reservado|vendido
+    const stClass = estado === 'vendido' ? 'sold' : (estado === 'reservado' ? 'reserved' : 'free');
+    const active = LOTE_SELECCIONADO && LOTE_SELECCIONADO.nro === nroLote ? 'active' : '';
+    const icon = stClass === 'sold'
+      ? '<span class="cd-lot-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>'
+      : stClass === 'reserved'
+      ? '<span class="cd-lot-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>'
+      : '';
+    return `
+      <button class="cd-lot ${stClass} ${active}" data-nro="${nroLote}" data-manzana="${manzana}" onclick="seleccionarLote('${nroLote}','${manzana}')">
+        ${icon}
+        <div class="cd-lot-body">
+          <div class="cd-lot-n">${manzana}-${String(nroLoteNum).padStart(2,'0')}</div>
+        </div>
+      </button>
+    `;
+  }
+
+  window.seleccionarLote = function(nroLote, manzana) {
+    if (!LOTE_ACTUAL) return;
+    const clientesPorLote = indexarClientesPorLote(LOTE_ACTUAL.nombre);
+    const asignado = clientesPorLote[nroLote];
+    LOTE_SELECCIONADO = { nro: nroLote, manzana, cliente: asignado ? asignado.cliente : null, estado: asignado ? asignado.estado : 'libre' };
+    // Marcar active
+    document.querySelectorAll('#lotsStage .cd-lot').forEach(el => {
+      el.classList.toggle('active', el.dataset.nro === nroLote);
+    });
+    renderDetail();
+  };
+
+  function renderDetailEmpty() {
+    const body = document.getElementById('detailBody');
+    if (!body) return;
+    body.innerHTML = `
+      <div class="cd-detail-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0H5a2 2 0 0 1-2-2v-4m6 6h10a2 2 0 0 0 2-2v-4M3 15v-2m18 2v-2"/></svg>
+        <div class="cd-detail-empty-title">Ningún lote seleccionado</div>
+        <div class="cd-detail-empty-sub">Elegí un lote del mapa para ver su ficha</div>
+      </div>
+    `;
+  }
+
+  function renderDetail() {
+    const body = document.getElementById('detailBody');
+    if (!body || !LOTE_SELECCIONADO || !LOTE_ACTUAL) return;
+
+    const { nro, manzana, cliente, estado } = LOTE_SELECCIONADO;
+    const stLabel = estado === 'vendido' ? 'Vendido' : (estado === 'reservado' ? 'Reservado' : 'Libre');
+    const stCls = estado === 'vendido' ? 'sold' : (estado === 'reservado' ? 'reserved' : 'free');
+
+    // Bloque cliente (si hay)
+    const clienteBlock = cliente ? `
+      <div class="cd-dt-section-title">Cliente asignado</div>
+      <div class="cd-dt-client">
+        <div class="cd-dt-client-avatar">${((cliente.nombre || '?') + ' ' + (cliente.apellido || '')).trim().split(' ').map(x => x[0] || '').join('').slice(0, 2).toUpperCase()}</div>
+        <div class="cd-dt-client-info">
+          <div class="cd-dt-client-name">${(cliente.nombre || '') + ' ' + (cliente.apellido || '')}</div>
+          <div class="cd-dt-client-meta"><span class="mono">${cliente.telefono || '—'}</span>${cliente.estado_pago ? `<span class="sep">·</span><span>${cliente.estado_pago}</span>` : ''}</div>
+        </div>
+        <button class="cd-icon-btn" title="Ver ficha" onclick="verInfoClienteLote(${cliente.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    ` : '';
+
+    // Acciones según estado
+    const actions = estado === 'libre' || estado === 'free' ? `
+      <button class="cd-btn-primary" onclick="notif('💡 Asignación','Asignalo desde Clientes Activos escribiendo ${LOTE_ACTUAL.nombre} · ${nro} en Propiedad')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+        Asignar lote
+      </button>
+      <button class="cd-btn-secondary" onclick="notif('📤 Enviar ficha','Función en camino')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 8-16 8 4-8z"/></svg>
+        Enviar ficha
+      </button>
+    ` : cliente ? `
+      <button class="cd-btn-primary" onclick="verInfoClienteLote(${cliente.id})">Ver ficha cliente</button>
+      <button class="cd-btn-secondary" onclick="window.open('https://wa.me/${(cliente.telefono||'').replace(/[^0-9]/g,'')}','_blank')">WhatsApp</button>
+    ` : '';
+
+    body.innerHTML = `
+      <div class="cd-dt-head">
+        <div>
+          <div class="cd-dt-id">Manzana ${manzana} · ${nro}</div>
+          <div class="cd-dt-name">${manzana}-${nro.replace('L-', '').padStart(2, '0')}</div>
+        </div>
+        <div class="cd-dt-status ${stCls}"><span class="d"></span>${stLabel}</div>
+      </div>
+
+      <div class="cd-dt-hero">
+        <div class="cd-dt-hero-row">
+          <div>
+            <div class="cd-dt-sup">Loteo</div>
+            <div class="cd-dt-price">${LOTE_ACTUAL.nombre}</div>
+            <div class="cd-dt-m2">${LOTE_ACTUAL.ciudad || ''}${LOTE_ACTUAL.ubicacion ? ' · ' + LOTE_ACTUAL.ubicacion : ''}</div>
+          </div>
+        </div>
+      </div>
+
+      ${clienteBlock}
+
+      ${cliente ? `
+        <div class="cd-dt-section-title">Estado de pago</div>
+        <div class="cd-dt-grid">
+          <div class="cd-dt-cell"><div class="l">Cuotas</div><div class="v">${cliente.cuotas_pagadas || 0}/${cliente.cuotas_total || 0}</div></div>
+          <div class="cd-dt-cell"><div class="l">Cuota</div><div class="v">${cliente.monto_cuota ? 'USD ' + cliente.monto_cuota : '—'}</div></div>
+          <div class="cd-dt-cell"><div class="l">Próx. venc.</div><div class="v">${cliente.proximo_vencimiento || '—'}</div></div>
+          <div class="cd-dt-cell"><div class="l">Estado</div><div class="v">${cliente.estado_pago || '—'}</div></div>
+        </div>
+      ` : `
+        <div class="cd-ai-hint">
+          <div class="cd-ai-hint-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10"/></svg>
+          </div>
+          <div>
+            <div class="cd-ai-hint-title">Sugerencia de Lovbot</div>
+            <div class="cd-ai-hint-body">Este lote está <b>libre</b>. Asignalo a un cliente escribiendo <code>${LOTE_ACTUAL.nombre} · ${nro}</code> en su campo <em>Propiedad</em> en Clientes Activos.</div>
+          </div>
+        </div>
+      `}
+
+      <div class="cd-dt-actions">${actions}</div>
+    `;
+    body.scrollTop = 0;
+  }
+
+  window.exportarLoteos = function() {
+    if (!LOTEOS.length) { notif('⚠️ Sin datos', 'No hay loteos para exportar'); return; }
+    const rows = [['Loteo', 'Ciudad', 'Total lotes', 'Libres', 'Reservados', 'Vendidos', '% Ocupado']];
+    LOTEOS.forEach(l => {
+      const total = l.total_lotes || 0;
+      const idx = indexarClientesPorLote(l.nombre);
+      const c = contarEstados(total, idx);
+      const pct = total > 0 ? Math.round(((c.reservados + c.vendidos) / total) * 100) : 0;
+      rows.push([l.nombre, l.ciudad || '', total, c.libres, c.reservados, c.vendidos, pct + '%']);
+    });
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `loteos-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    notif('✅ Exportado', `${LOTEOS.length} loteos a CSV`);
+  };
 
   // ── Modal crear/editar datos del loteo ────────────────────────────────────
 
