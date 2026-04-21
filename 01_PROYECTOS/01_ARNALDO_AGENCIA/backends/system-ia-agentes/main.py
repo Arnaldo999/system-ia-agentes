@@ -1021,9 +1021,11 @@ async def admin_borrar_db(db: str, confirmar: str = ""):
     """
     import psycopg2
 
-    PROTEGIDAS = {"robert_crm", "lovbot_crm", "demo_crm", "postgres", "template0", "template1"}
+    # Solo Postgres system protegido. Las DBs de cliente pueden borrarse
+    # con doble confirmación (confirmar=si).
+    PROTEGIDAS = {"postgres", "template0", "template1", "lovbot_crm_modelo"}
     if db in PROTEGIDAS:
-        return {"ok": False, "error": f"DB '{db}' está protegida, no puede borrarse con este endpoint"}
+        return {"ok": False, "error": f"DB '{db}' está protegida (es la modelo o sistema)"}
     if confirmar != "si":
         return {"ok": False, "error": "Falta param confirmar=si para ejecutar el DROP"}
 
