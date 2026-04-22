@@ -53,6 +53,8 @@
     return { libres, reservados, vendidos };
   }
 
+  const ESTADOS_LIBRES = new Set(['disponible', 'libre', 'free']);
+
   // Estado real de un lote: primero lo que diga lotes_mapa, luego cruce con clientes
   function _estadoEfectivo(lote, clientesPorLote) {
     if (lote.estado === 'vendido' || lote.cliente_id) return 'vendido';
@@ -60,7 +62,7 @@
     // Cruce por numero_lote con clientes_activos.propiedad
     const asignado = clientesPorLote[String(lote.numero_lote)];
     if (asignado) return asignado.estado;
-    return 'libre';
+    return 'libre';  // disponible/libre ambos = libre en UI
   }
 
   // ── Carga combinada: loteos + clientes ─────────────────────────────────────

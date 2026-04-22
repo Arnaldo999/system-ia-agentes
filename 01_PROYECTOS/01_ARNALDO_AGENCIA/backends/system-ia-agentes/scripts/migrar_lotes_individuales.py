@@ -154,7 +154,7 @@ def migrar():
                     cur.execute(
                         """INSERT INTO lotes_mapa
                              (tenant_slug, loteo_id, manzana, numero_lote, estado)
-                           VALUES (%s, %s, %s, %s, 'libre')
+                           VALUES (%s, %s, %s, %s, 'disponible')
                            ON CONFLICT (tenant_slug, loteo_id, numero_lote) DO NOTHING""",
                         (TENANT, loteo_id, mz_nombre, str(nro_lote)),
                     )

@@ -1040,9 +1040,9 @@ def _recalc_contadores_loteo(loteo_id: int):
               updated_at        = CURRENT_TIMESTAMP
             FROM (
               SELECT
-                COUNT(*) FILTER (WHERE estado='disponible') AS disp,
-                COUNT(*) FILTER (WHERE estado='reservado')  AS res,
-                COUNT(*) FILTER (WHERE estado='vendido')    AS vend
+                COUNT(*) FILTER (WHERE estado IN ('disponible','libre')) AS disp,
+                COUNT(*) FILTER (WHERE estado='reservado')              AS res,
+                COUNT(*) FILTER (WHERE estado='vendido')                AS vend
               FROM lotes_mapa
               WHERE tenant_slug=%s AND loteo_id=%s
             ) s
@@ -1325,11 +1325,12 @@ def delete_lote_mapa_seguro(record_id: int) -> dict:
             return {"ok": False, "error": "Lote no encontrado"}
 
         loteo_id, cliente_id, estado = row
-        estados_bloqueados = {"vendido", "reservado"}
-        if estado in estados_bloqueados or cliente_id:
+        estados_libres = {"disponible", "libre"}
+        if estado not in estados_libres or cliente_id:
+            motivo = "con cliente asignado" if cliente_id else (estado or "ocupado")
             return {
                 "conflict": True, "ok": False,
-                "error": f"No se puede borrar lote {estado or 'con cliente asignado'}",
+                "error": f"No se puede borrar lote {motivo}",
             }
 
         # Proceder con el borrado
@@ -2561,9 +2562,9 @@ def _recalc_contadores_loteo_conn(cur, loteo_id: int):
               updated_at        = CURRENT_TIMESTAMP
             FROM (
               SELECT
-                COUNT(*) FILTER (WHERE estado='disponible') AS disp,
-                COUNT(*) FILTER (WHERE estado='reservado')  AS res,
-                COUNT(*) FILTER (WHERE estado='vendido')    AS vend
+                COUNT(*) FILTER (WHERE estado IN ('disponible','libre')) AS disp,
+                COUNT(*) FILTER (WHERE estado='reservado')              AS res,
+                COUNT(*) FILTER (WHERE estado='vendido')                AS vend
               FROM lotes_mapa
               WHERE tenant_slug=%s AND loteo_id=%s
             ) s
