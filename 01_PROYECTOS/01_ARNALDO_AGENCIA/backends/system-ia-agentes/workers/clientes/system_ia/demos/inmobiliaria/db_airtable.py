@@ -773,7 +773,20 @@ def delete_propiedad(record_id: str) -> bool:
 # CRUD ACTIVOS (CLIENTES_ACTIVOS table)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-TABLE_ACTIVOS = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_ACTIVOS", "")
+TABLE_ACTIVOS       = os.environ.get("MICA_DEMO_AIRTABLE_TABLE_ACTIVOS", "tblpfSE6qkGCV6e99")
+
+# ── Tablas v3 (IDs fijos de base appA8QxIhBYYAHw0F) ─────────────────────────
+TABLE_CONTRATOS           = os.environ.get("MICA_TABLE_CONTRATOS",      "tblQvGFwL5sZdf1jU")
+TABLE_CONTRATOS_ALQUILER  = os.environ.get("MICA_TABLE_CONTRATOS_ALQ",  "tbluxdLR0bnpfLay9")
+TABLE_PAGOS_ALQUILER      = os.environ.get("MICA_TABLE_PAGOS_ALQ",      "tblUKoTFkJzk31N2m")
+TABLE_LIQUIDACIONES       = os.environ.get("MICA_TABLE_LIQUIDACIONES",  "tbl3ELdKQOTlKj4Wz")
+TABLE_INMUEBLES_RENTA     = os.environ.get("MICA_TABLE_INMUEBLES_RENTA","tblRlLK8doYDCZIiK")
+TABLE_LOTES_MAPA          = os.environ.get("MICA_TABLE_LOTES_MAPA",     "tblglWTmEsQ7n8ANf")
+TABLE_ASESORES            = os.environ.get("MICA_TABLE_ASESORES",       "tblfso1JAoJaDUTLf")
+TABLE_PROPIETARIOS        = os.environ.get("MICA_TABLE_PROPIETARIOS",   "tbl7XoZ9NOfkfqQAG")
+TABLE_LOTEOS              = os.environ.get("MICA_TABLE_LOTEOS",         "tbluM3b8vHShORORO")
+TABLE_INQUILINOS          = os.environ.get("MICA_TABLE_INQUILINOS",     "tblCs0nMKxExE6lp5")
+TABLE_VISITAS             = os.environ.get("MICA_TABLE_VISITAS",        "tblu3EHwh8eJkOPjI")
 
 
 def get_all_activos() -> list[dict]:
@@ -836,45 +849,487 @@ def delete_activo(record_id: str) -> bool:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STUBS no-op para tablas que Mica no tiene aun (asesores, propietarios, etc)
-# Endpoints CRM responden con [] o {} hasta que Mica cree esas tablas en Airtable.
+# HELPERS GENÉRICOS para CRUD sobre cualquier tabla Airtable
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Asesores
-def get_all_asesores() -> list[dict]: return []
-def create_asesor(campos: dict) -> dict: return {"error": "Tabla Asesores no existe en base Mica"}
-def update_asesor(record_id: str, campos: dict) -> bool: return False
-def delete_asesor(record_id: str) -> bool: return False
+def _at_get_all(table_id: str, params: dict = None) -> list[dict]:
+    """Retorna todos los registros de una tabla Airtable (paginando)."""
+    if not _available() or not table_id:
+        return []
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{table_id}"
+    results, offset = [], None
+    try:
+        while True:
+            p = {"pageSize": 100, **(params or {})}
+            if offset:
+                p["offset"] = offset
+            r = requests.get(url, headers=AT_HEADERS, params=p, timeout=12)
+            if r.status_code != 200:
+                logger.warning("[MICA-DB] _at_get_all %s HTTP %s: %s", table_id, r.status_code, r.text[:200])
+                break
+            data = r.json()
+            for rec in data.get("records", []):
+                results.append({"id": rec["id"], **rec.get("fields", {})})
+            offset = data.get("offset")
+            if not offset:
+                break
+        return results
+    except Exception as e:
+        logger.warning("[MICA-DB] _at_get_all exc: %s", e)
+        return results
 
-# Propietarios
-def get_all_propietarios() -> list[dict]: return []
-def create_propietario(campos: dict) -> dict: return {"error": "Tabla Propietarios no existe en base Mica"}
-def update_propietario(record_id: str, campos: dict) -> bool: return False
-def delete_propietario(record_id: str) -> bool: return False
 
-# Loteos
-def get_all_loteos() -> list[dict]: return []
-def create_loteo(campos: dict) -> dict: return {"error": "Tabla Loteos no existe en base Mica"}
-def update_loteo(record_id: str, campos: dict) -> bool: return False
-def delete_loteo(record_id: str) -> bool: return False
+def _at_create(table_id: str, campos: dict) -> dict:
+    """Crea un registro en una tabla Airtable."""
+    if not _available() or not table_id:
+        return {"error": "Airtable no configurado o tabla vacía"}
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{table_id}"
+    try:
+        r = requests.post(url, headers=AT_HEADERS, json={"fields": campos}, timeout=10)
+        if r.status_code in (200, 201):
+            rec = r.json()
+            return {"id": rec.get("id", ""), **rec.get("fields", {})}
+        logger.warning("[MICA-DB] _at_create %s HTTP %s: %s", table_id, r.status_code, r.text[:200])
+        return {"error": f"HTTP {r.status_code}: {r.text[:200]}"}
+    except Exception as e:
+        logger.warning("[MICA-DB] _at_create exc: %s", e)
+        return {"error": str(e)}
 
-# Lotes mapa
-def get_lotes_mapa(loteo_id: str = None) -> list[dict]: return []
-def create_lote_mapa(campos: dict) -> dict: return {"error": "Tabla LotesMapa no existe en base Mica"}
-def update_lote_mapa(record_id: str, campos: dict) -> bool: return False
-def delete_lote_mapa(record_id: str) -> bool: return False
 
-# Contratos
-def get_all_contratos() -> list[dict]: return []
-def create_contrato(campos: dict) -> dict: return {"error": "Tabla Contratos no existe en base Mica"}
-def update_contrato(record_id: str, campos: dict) -> bool: return False
-def delete_contrato(record_id: str) -> bool: return False
+def _at_update(table_id: str, record_id: str, campos: dict) -> bool:
+    """PATCH un registro en Airtable."""
+    if not _available() or not table_id or not record_id:
+        return False
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{table_id}/{record_id}"
+    try:
+        r = requests.patch(url, headers=AT_HEADERS, json={"fields": campos}, timeout=10)
+        return r.status_code in (200, 201)
+    except Exception as e:
+        logger.warning("[MICA-DB] _at_update exc: %s", e)
+        return False
 
-# Visitas
-def get_all_visitas() -> list[dict]: return []
-def create_visita(campos: dict) -> dict: return {"error": "Tabla Visitas no existe en base Mica"}
-def update_visita(record_id: str, campos: dict) -> bool: return False
-def delete_visita(record_id: str) -> bool: return False
+
+def _at_delete(table_id: str, record_id: str) -> bool:
+    """Elimina un registro de Airtable."""
+    if not _available() or not table_id or not record_id:
+        return False
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{table_id}/{record_id}"
+    try:
+        r = requests.delete(url, headers=AT_HEADERS, timeout=10)
+        return r.status_code in (200, 204)
+    except Exception as e:
+        logger.warning("[MICA-DB] _at_delete exc: %s", e)
+        return False
+
+
+def _at_get_one(table_id: str, record_id: str) -> Optional[dict]:
+    """Lee un registro de Airtable por ID."""
+    if not _available() or not table_id or not record_id:
+        return None
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{table_id}/{record_id}"
+    try:
+        r = requests.get(url, headers=AT_HEADERS, timeout=10)
+        if r.status_code == 200:
+            rec = r.json()
+            return {"id": rec.get("id", ""), **rec.get("fields", {})}
+        return None
+    except Exception:
+        return None
+
+
+def _at_filter(table_id: str, formula: str, max_records: int = 100) -> list[dict]:
+    """Filtra registros por fórmula Airtable."""
+    if not _available() or not table_id:
+        return []
+    url = f"{AT_BASE_URL}/{AIRTABLE_BASE_ID}/{table_id}"
+    try:
+        r = requests.get(
+            url, headers=AT_HEADERS,
+            params={"filterByFormula": formula, "maxRecords": max_records},
+            timeout=12,
+        )
+        if r.status_code == 200:
+            return [{"id": rec["id"], **rec.get("fields", {})} for rec in r.json().get("records", [])]
+        return []
+    except Exception:
+        return []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ASESORES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_all_asesores() -> list[dict]:
+    return _at_get_all(TABLE_ASESORES)
+
+
+def create_asesor(campos: dict) -> dict:
+    return _at_create(TABLE_ASESORES, campos)
+
+
+def update_asesor(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_ASESORES, record_id, campos)
+
+
+def delete_asesor(record_id: str) -> bool:
+    return _at_delete(TABLE_ASESORES, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROPIETARIOS (tabla legacy — se mantiene para compatibilidad)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_all_propietarios() -> list[dict]:
+    return _at_get_all(TABLE_PROPIETARIOS)
+
+
+def create_propietario(campos: dict) -> dict:
+    return _at_create(TABLE_PROPIETARIOS, campos)
+
+
+def update_propietario(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_PROPIETARIOS, record_id, campos)
+
+
+def delete_propietario(record_id: str) -> bool:
+    return _at_delete(TABLE_PROPIETARIOS, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LOTEOS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_all_loteos() -> list[dict]:
+    return _at_get_all(TABLE_LOTEOS)
+
+
+def create_loteo(campos: dict) -> dict:
+    return _at_create(TABLE_LOTEOS, campos)
+
+
+def update_loteo(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_LOTEOS, record_id, campos)
+
+
+def delete_loteo(record_id: str) -> bool:
+    return _at_delete(TABLE_LOTEOS, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LOTES MAPA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_lotes_mapa(loteo_id: str = None) -> list[dict]:
+    if loteo_id:
+        # Airtable linkedRecord: filtrar por campo Proyecto que sea array con este ID
+        formula = f"FIND('{loteo_id}', ARRAYJOIN({{Proyecto}}, ','))>0"
+        return _at_filter(TABLE_LOTES_MAPA, formula, max_records=500)
+    return _at_get_all(TABLE_LOTES_MAPA)
+
+
+def create_lote_mapa(campos: dict) -> dict:
+    return _at_create(TABLE_LOTES_MAPA, campos)
+
+
+def update_lote_mapa(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_LOTES_MAPA, record_id, campos)
+
+
+def delete_lote_mapa(record_id: str) -> bool:
+    return _at_delete(TABLE_LOTES_MAPA, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTRATOS (tabla v3 — polimórfica)
+# Tipo singleSelect: venta | reserva | alquiler | boleto
+# Polimorfismo por 3 linkedRecord: Lote_Asignado | Propiedad_Asignada | Inmueble_Asignado
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_TIPO_GRANULAR_MAP = {
+    "venta_lote": "venta",
+    "venta_casa": "venta",
+    "venta_terreno": "venta",
+    "venta_unidad": "venta",
+    "venta": "venta",
+    "reserva": "reserva",
+    "alquiler": "alquiler",
+    "boleto": "boleto",
+}
+
+
+def _at_serialize_contrato(rec: dict) -> dict:
+    """Transforma un registro de Contratos a formato compatible con Robert.
+    Resuelve polimorfismo: Lote_Asignado / Propiedad_Asignada / Inmueble_Asignado
+    → item_tipo + item_id.
+    """
+    lote_ids = rec.get("Lote_Asignado") or []
+    prop_ids = rec.get("Propiedad_Asignada") or []
+    inmu_ids = rec.get("Inmueble_Asignado") or []
+
+    if lote_ids:
+        item_tipo = "lote"
+        item_id = lote_ids[0] if isinstance(lote_ids, list) else lote_ids
+    elif prop_ids:
+        item_tipo = "propiedad"
+        item_id = prop_ids[0] if isinstance(prop_ids, list) else prop_ids
+    elif inmu_ids:
+        item_tipo = "inmueble_renta"
+        item_id = inmu_ids[0] if isinstance(inmu_ids, list) else inmu_ids
+    else:
+        item_tipo = ""
+        item_id = None
+
+    cliente_ids = rec.get("Cliente") or []
+    cliente_id = (cliente_ids[0] if isinstance(cliente_ids, list) else cliente_ids) if cliente_ids else None
+
+    return {
+        "id": rec.get("id", ""),
+        "cliente_activo_id": cliente_id,
+        "tipo": rec.get("Tipo", ""),
+        "item_tipo": item_tipo,
+        "item_id": item_id,
+        "item_descripcion": rec.get("Item_Descripcion", ""),
+        "monto": rec.get("Monto_Total") or rec.get("Precio") or None,
+        "moneda": rec.get("Moneda", "USD"),
+        "fecha_firma": rec.get("Fecha_Firma", ""),
+        "estado_pago": rec.get("Estado_Pago", ""),
+        "cuotas_total": rec.get("Cuotas_Total", 0),
+        "cuotas_pagadas": rec.get("Cuotas_Pagadas", 0),
+        "monto_cuota": rec.get("Monto_Cuota") or None,
+        "proximo_vencimiento": rec.get("Proximo_Vencimiento", ""),
+        "notas": rec.get("Notas", ""),
+        # Campos originales Airtable para edición
+        "Tipo": rec.get("Tipo", ""),
+        "Estado_Pago": rec.get("Estado_Pago", ""),
+        "Cliente": cliente_ids,
+        "Lote_Asignado": lote_ids,
+        "Propiedad_Asignada": prop_ids,
+        "Inmueble_Asignado": inmu_ids,
+        "Item_Descripcion": rec.get("Item_Descripcion", ""),
+    }
+
+
+def get_all_contratos() -> list[dict]:
+    recs = _at_get_all(TABLE_CONTRATOS)
+    return [_at_serialize_contrato(r) for r in recs]
+
+
+def create_contrato(campos: dict) -> dict:
+    """Creación legacy directa (backward compat). Mapea campos Robert-like a Airtable."""
+    at_campos = {}
+
+    tipo_raw = campos.get("tipo") or campos.get("Tipo", "")
+    tipo_at = _TIPO_GRANULAR_MAP.get(tipo_raw, tipo_raw)
+    if tipo_at:
+        at_campos["Tipo"] = tipo_at
+
+    # Item_Descripcion guarda el subtipo granular si viene
+    if tipo_raw != tipo_at:
+        at_campos["Item_Descripcion"] = tipo_raw
+    if campos.get("notas") or campos.get("Notas"):
+        at_campos["Item_Descripcion"] = (campos.get("notas") or campos.get("Notas", ""))[:200]
+
+    # linkedRecord cliente
+    cliente_id = campos.get("cliente_activo_id") or campos.get("Cliente")
+    if cliente_id:
+        at_campos["Cliente"] = [str(cliente_id)] if not isinstance(cliente_id, list) else cliente_id
+
+    # linkedRecord item polimórfico
+    item_tipo = campos.get("item_tipo", "")
+    item_id = campos.get("item_id") or campos.get("Item_Id")
+    if item_id:
+        if item_tipo == "lote":
+            at_campos["Lote_Asignado"] = [str(item_id)] if not isinstance(item_id, list) else item_id
+        elif item_tipo == "propiedad":
+            at_campos["Propiedad_Asignada"] = [str(item_id)] if not isinstance(item_id, list) else item_id
+        elif item_tipo == "inmueble_renta":
+            at_campos["Inmueble_Asignado"] = [str(item_id)] if not isinstance(item_id, list) else item_id
+
+    for src, dst in [
+        ("fecha_firma", "Fecha_Firma"), ("Fecha_Firma", "Fecha_Firma"),
+        ("moneda", "Moneda"), ("Moneda", "Moneda"),
+        ("estado_pago", "Estado_Pago"),
+        ("cuotas_total", "Cuotas_Total"),
+        ("cuotas_pagadas", "Cuotas_Pagadas"),
+        ("monto_cuota", "Monto_Cuota"),
+        ("proximo_vencimiento", "Proximo_Vencimiento"),
+    ]:
+        if campos.get(src) is not None and dst not in at_campos:
+            at_campos[dst] = campos[src]
+
+    rec = _at_create(TABLE_CONTRATOS, at_campos)
+    if "error" not in rec:
+        return _at_serialize_contrato(rec)
+    return rec
+
+
+def update_contrato(record_id: str, campos: dict) -> bool:
+    # Mapear campos lowercase a Airtable PascalCase si llegan así
+    at = {}
+    mapping = {
+        "tipo": "Tipo", "estado_pago": "Estado_Pago",
+        "fecha_firma": "Fecha_Firma", "moneda": "Moneda",
+        "cuotas_total": "Cuotas_Total", "cuotas_pagadas": "Cuotas_Pagadas",
+        "monto_cuota": "Monto_Cuota", "proximo_vencimiento": "Proximo_Vencimiento",
+        "notas": "Item_Descripcion",
+    }
+    for k, v in campos.items():
+        dest = mapping.get(k, k)
+        at[dest] = v
+    return _at_update(TABLE_CONTRATOS, record_id, at)
+
+
+def delete_contrato(record_id: str) -> bool:
+    return _at_delete(TABLE_CONTRATOS, record_id)
+
+
+def get_contratos_by_cliente(cliente_id: str) -> dict:
+    """Lista contratos de un CLIENTES_ACTIVOS por su record ID."""
+    formula = f"FIND('{cliente_id}', ARRAYJOIN({{Cliente}}, ','))>0"
+    recs = _at_filter(TABLE_CONTRATOS, formula, max_records=100)
+    items = [_at_serialize_contrato(r) for r in recs]
+    return {"items": items, "total": len(items)}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INMUEBLES RENTA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _serialize_inmueble(rec: dict) -> dict:
+    prop_ids = rec.get("Propietario") or []
+    prop_id = (prop_ids[0] if isinstance(prop_ids, list) else prop_ids) if prop_ids else None
+    return {
+        "id": rec.get("id", ""),
+        "titulo": rec.get("Titulo") or rec.get("Nombre", ""),
+        "Titulo": rec.get("Titulo") or rec.get("Nombre", ""),
+        "tipo": rec.get("Tipo", ""),
+        "Tipo": rec.get("Tipo", ""),
+        "direccion": rec.get("Direccion", ""),
+        "zona": rec.get("Zona", ""),
+        "precio_mensual": rec.get("Precio_Mensual") or rec.get("Precio") or None,
+        "disponible": rec.get("Disponible", True),
+        "propietario_id": prop_id,
+        "Propietario": prop_ids,
+        "notas": rec.get("Notas", ""),
+        **{k: v for k, v in rec.items() if k not in ("id",)},
+    }
+
+
+def get_all_inmuebles_renta() -> list[dict]:
+    recs = _at_get_all(TABLE_INMUEBLES_RENTA)
+    return [_serialize_inmueble(r) for r in recs]
+
+
+def create_inmueble_renta(campos: dict) -> dict:
+    rec = _at_create(TABLE_INMUEBLES_RENTA, campos)
+    return _serialize_inmueble(rec) if "error" not in rec else rec
+
+
+def update_inmueble_renta(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_INMUEBLES_RENTA, record_id, campos)
+
+
+def delete_inmueble_renta(record_id: str) -> bool:
+    return _at_delete(TABLE_INMUEBLES_RENTA, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INQUILINOS (tabla legacy — se mantiene para compatibilidad)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_all_inquilinos(inmueble_id: str = None) -> list[dict]:
+    if inmueble_id:
+        formula = f"FIND('{inmueble_id}', ARRAYJOIN({{Inmueble}}, ','))>0"
+        return _at_filter(TABLE_INQUILINOS, formula)
+    return _at_get_all(TABLE_INQUILINOS)
+
+
+def create_inquilino(campos: dict) -> dict:
+    return _at_create(TABLE_INQUILINOS, campos)
+
+
+def update_inquilino(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_INQUILINOS, record_id, campos)
+
+
+def delete_inquilino(record_id: str) -> bool:
+    return _at_delete(TABLE_INQUILINOS, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PAGOS ALQUILER
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_all_pagos_alquiler(inquilino_id: str = None, mes_anio: str = None) -> list[dict]:
+    filtros = []
+    if inquilino_id:
+        filtros.append(f"FIND('{inquilino_id}', ARRAYJOIN({{Inquilino}}, ','))>0")
+    if mes_anio:
+        filtros.append(f"{{Mes_Anio}}='{mes_anio}'")
+    if filtros:
+        formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
+        return _at_filter(TABLE_PAGOS_ALQUILER, formula)
+    return _at_get_all(TABLE_PAGOS_ALQUILER)
+
+
+def create_pago_alquiler(campos: dict) -> dict:
+    return _at_create(TABLE_PAGOS_ALQUILER, campos)
+
+
+def update_pago_alquiler(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_PAGOS_ALQUILER, record_id, campos)
+
+
+def delete_pago_alquiler(record_id: str) -> bool:
+    return _at_delete(TABLE_PAGOS_ALQUILER, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LIQUIDACIONES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_all_liquidaciones(propietario_id: str = None, mes_anio: str = None) -> list[dict]:
+    filtros = []
+    if propietario_id:
+        filtros.append(f"FIND('{propietario_id}', ARRAYJOIN({{Propietario}}, ','))>0")
+    if mes_anio:
+        filtros.append(f"{{Mes_Anio}}='{mes_anio}'")
+    if filtros:
+        formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
+        return _at_filter(TABLE_LIQUIDACIONES, formula)
+    return _at_get_all(TABLE_LIQUIDACIONES)
+
+
+def create_liquidacion(campos: dict) -> dict:
+    return _at_create(TABLE_LIQUIDACIONES, campos)
+
+
+def update_liquidacion(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_LIQUIDACIONES, record_id, campos)
+
+
+def delete_liquidacion(record_id: str) -> bool:
+    return _at_delete(TABLE_LIQUIDACIONES, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VISITAS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_all_visitas() -> list[dict]:
+    return _at_get_all(TABLE_VISITAS)
+
+
+def create_visita(campos: dict) -> dict:
+    return _at_create(TABLE_VISITAS, campos)
+
+
+def update_visita(record_id: str, campos: dict) -> bool:
+    return _at_update(TABLE_VISITAS, record_id, campos)
+
+
+def delete_visita(record_id: str) -> bool:
+    return _at_delete(TABLE_VISITAS, record_id)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -909,3 +1364,460 @@ def marcar_webhook_subscrito(phone_number_id: str) -> bool:
 
 def eliminar_waba_client(phone_number_id: str) -> bool:
     return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PERSONA ÚNICA — búsqueda, ficha 360, agregar rol
+# Equivalente a las funciones homónimas en db_postgres.py de Robert,
+# adaptadas a Airtable (sin transacciones, con linkedRecords).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def buscar_personas(q: str, limit: int = 20) -> dict:
+    """Busca en CLIENTES_ACTIVOS por nombre, apellido, teléfono, email o documento.
+    Usa filterByFormula con FIND/LOWER — Airtable no tiene ILIKE nativo.
+    Retorna {"items": [...]} con hasta `limit` resultados.
+    """
+    if not _available() or not TABLE_ACTIVOS:
+        return {"items": []}
+    q_safe = q.replace("'", "\\'")
+    formula = (
+        f"OR("
+        f"FIND(LOWER('{q_safe}'),LOWER({{Nombre}}&''))>0,"
+        f"FIND(LOWER('{q_safe}'),LOWER({{Apellido}}&''))>0,"
+        f"FIND(LOWER('{q_safe}'),LOWER({{Telefono}}&''))>0,"
+        f"FIND(LOWER('{q_safe}'),LOWER({{Email}}&''))>0,"
+        f"FIND(LOWER('{q_safe}'),LOWER({{Documento}}&''))>0"
+        f")"
+    )
+    recs = _at_filter(TABLE_ACTIVOS, formula, max_records=limit)
+    items = []
+    for rec in recs:
+        roles = rec.get("Roles") or ["comprador"]
+        items.append({
+            "id": rec.get("id", ""),
+            "nombre": rec.get("Nombre", ""),
+            "apellido": rec.get("Apellido", ""),
+            "telefono": rec.get("Telefono", ""),
+            "email": rec.get("Email", ""),
+            "documento": rec.get("Documento", ""),
+            "roles": roles,
+            "origen_creacion": rec.get("Origen_Creacion", ""),
+        })
+    return {"items": items}
+
+
+def get_ficha_persona(cliente_id: str) -> dict:
+    """Ficha 360 de una persona en CLIENTES_ACTIVOS.
+    Reune: datos base + lead origen + contratos + alquileres ContratosAlquiler + inmuebles propios.
+
+    Sin transacciones — cada llamada Airtable es independiente.
+    Si una falla se loguea y se devuelve parcial.
+    """
+    if not _available() or not TABLE_ACTIVOS:
+        return {"error": "Airtable no configurado"}
+
+    # 1. Persona base
+    persona_rec = _at_get_one(TABLE_ACTIVOS, cliente_id)
+    if not persona_rec:
+        return {"error": f"Persona {cliente_id} no encontrada"}
+
+    roles = persona_rec.get("Roles") or ["comprador"]
+    lead_origen_ids = persona_rec.get("Lead_Origen") or []
+
+    persona = {
+        "id": persona_rec.get("id", ""),
+        "nombre": persona_rec.get("Nombre", ""),
+        "apellido": persona_rec.get("Apellido", ""),
+        "telefono": persona_rec.get("Telefono", ""),
+        "email": persona_rec.get("Email", ""),
+        "documento": persona_rec.get("Documento", ""),
+        "roles": roles,
+        "origen_creacion": persona_rec.get("Origen_Creacion", ""),
+        "ciudad": persona_rec.get("Ciudad", ""),
+        # IDs de links inversos (Airtable los expone en el registro)
+        "contratos_ids": persona_rec.get("Contratos") or [],
+        "visitas_ids": persona_rec.get("Visitas") or [],
+    }
+
+    # 2. Lead origen (linkedRecord a tabla Clientes)
+    lead_origen = None
+    if lead_origen_ids:
+        lead_id = lead_origen_ids[0] if isinstance(lead_origen_ids, list) else lead_origen_ids
+        try:
+            lead_rec = _at_get_one(TABLE_CLIENTES, lead_id)
+            if lead_rec:
+                lead_origen = {
+                    "id": lead_rec.get("id", ""),
+                    "nombre": lead_rec.get("Nombre", ""),
+                    "telefono": lead_rec.get("Telefono", ""),
+                    "estado": lead_rec.get("Estado", ""),
+                    "fecha_whatsapp": lead_rec.get("Fecha_WhatsApp", ""),
+                }
+        except Exception as e:
+            logger.warning("[MICA-FICHA] lead origen exc: %s", e)
+
+    # 3. Contratos del cliente — filterByFormula por linkedRecord Cliente
+    contratos = []
+    try:
+        contratos = get_contratos_by_cliente(cliente_id).get("items", [])
+    except Exception as e:
+        logger.warning("[MICA-FICHA] contratos exc: %s", e)
+
+    # 4. ContratosAlquiler donde Inquilino = este cliente
+    alquileres = []
+    try:
+        formula_alq = f"FIND('{cliente_id}', ARRAYJOIN({{Inquilino}}, ','))>0"
+        alq_recs = _at_filter(TABLE_CONTRATOS_ALQUILER, formula_alq, max_records=50)
+        for a in alq_recs:
+            inmueble_ids = a.get("Inmueble") or []
+            contrato_ids = a.get("Contrato") or []
+            alquileres.append({
+                "id": a.get("id", ""),
+                "contrato_id": contrato_ids[0] if contrato_ids else None,
+                "inmueble_id": inmueble_ids[0] if inmueble_ids else None,
+                "fecha_inicio": a.get("Fecha_Inicio", ""),
+                "fecha_fin": a.get("Fecha_Fin", ""),
+                "monto_mensual": a.get("Monto_Mensual") or None,
+                "estado": a.get("Estado", ""),
+                "garante_nombre": a.get("Garante_Nombre", ""),
+            })
+    except Exception as e:
+        logger.warning("[MICA-FICHA] alquileres exc: %s", e)
+
+    # 5. Inmuebles propios — InmueblesRenta donde Propietario = este cliente
+    inmuebles_propios = []
+    try:
+        formula_inm = f"FIND('{cliente_id}', ARRAYJOIN({{Propietario}}, ','))>0"
+        inm_recs = _at_filter(TABLE_INMUEBLES_RENTA, formula_inm, max_records=50)
+        for inm in inm_recs:
+            inmuebles_propios.append({
+                "id": inm.get("id", ""),
+                "titulo": inm.get("Titulo") or inm.get("Nombre", ""),
+                "tipo": inm.get("Tipo", ""),
+                "precio_mensual": inm.get("Precio_Mensual") or None,
+                "disponible": inm.get("Disponible", True),
+            })
+    except Exception as e:
+        logger.warning("[MICA-FICHA] inmuebles propios exc: %s", e)
+
+    return {
+        "persona": persona,
+        "lead_origen": lead_origen,
+        "contratos": contratos,
+        "alquileres": alquileres,
+        "inmuebles_propios": inmuebles_propios,
+    }
+
+
+def agregar_rol_persona(cliente_id: str, rol: str) -> dict:
+    """Agrega un rol al multiSelect Roles de CLIENTES_ACTIVOS.
+    Idempotente — si ya tiene el rol no lo duplica.
+    Airtable no tiene array_append nativo: leer → merge → PATCH.
+    """
+    roles_validos = {"comprador", "inquilino", "propietario"}
+    if rol not in roles_validos:
+        return {"error": f"Rol inválido: {rol}. Válidos: {roles_validos}"}
+
+    rec = _at_get_one(TABLE_ACTIVOS, cliente_id)
+    if not rec:
+        return {"error": f"cliente_id {cliente_id} no encontrado"}
+
+    roles_actuales = rec.get("Roles") or []
+    if rol in roles_actuales:
+        return {"ok": True, "cliente_id": cliente_id, "rol_agregado": rol, "ya_existia": True}
+
+    nuevos_roles = list(roles_actuales) + [rol]
+    ok = _at_update(TABLE_ACTIVOS, cliente_id, {"Roles": nuevos_roles})
+    if ok:
+        return {"ok": True, "cliente_id": cliente_id, "rol_agregado": rol, "roles": nuevos_roles}
+    return {"error": "No se pudo actualizar el registro en Airtable"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTRATO UNIFICADO v3 — 3 ramas de cliente + polimorfismo de item
+# Sin transacciones — si un paso falla se loguea y se retorna parcial.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def crear_contrato_unificado(payload: dict) -> dict:
+    """
+    Endpoint unificado de contrato para Airtable.
+    Acepta exactamente UNA opción de cliente:
+      A) cliente_activo_id: str (rec...)  → usar cliente existente en CLIENTES_ACTIVOS
+      B) convertir_lead_id: str (rec...)  → convierte lead de tabla Clientes a CLIENTES_ACTIVOS
+      C) cliente_nuevo: dict              → crea cliente directo en CLIENTES_ACTIVOS
+
+    Sin transacciones — si un paso falla se loguea y se devuelve estado parcial.
+    El frontend puede reintentar.
+
+    Retorna: {ok, cliente_activo_id, contrato_id, origen_creacion, item_actualizado}
+    """
+    if not _available():
+        return {"error": "Airtable no configurado"}
+
+    opcion_a = payload.get("cliente_activo_id")
+    opcion_b = payload.get("convertir_lead_id")
+    opcion_c = payload.get("cliente_nuevo")
+    opciones = sum([bool(opcion_a), bool(opcion_b), bool(opcion_c)])
+
+    if opciones != 1:
+        return {"error": "Debe venir exactamente una opción: cliente_activo_id, convertir_lead_id o cliente_nuevo"}
+
+    tipo = payload.get("tipo")
+    if not tipo:
+        return {"error": "Campo 'tipo' es obligatorio"}
+
+    item_tipo = payload.get("item_tipo", "")
+    item_id = payload.get("item_id")
+    log = []
+
+    # ── Resolver cliente ─────────────────────────────────────────────────────
+    cliente_activo_id = None
+    origen_creacion = "manual_directo"
+
+    if opcion_a:
+        rec = _at_get_one(TABLE_ACTIVOS, opcion_a)
+        if not rec:
+            return {"error": f"cliente_activo_id={opcion_a} no encontrado en CLIENTES_ACTIVOS"}
+        cliente_activo_id = opcion_a
+        log.append(f"Usando cliente existente {cliente_activo_id}")
+
+    elif opcion_b:
+        lead_rec = _at_get_one(TABLE_CLIENTES, opcion_b)
+        if not lead_rec:
+            return {"error": f"convertir_lead_id={opcion_b} no encontrado en tabla Clientes"}
+
+        # Crear cliente activo copiando datos del lead
+        at_campos_nuevo = {
+            "Nombre": lead_rec.get("Nombre", ""),
+            "Apellido": lead_rec.get("Apellido", ""),
+            "Telefono": lead_rec.get("Telefono", ""),
+            "Email": lead_rec.get("Email", ""),
+            "Ciudad": lead_rec.get("Ciudad", ""),
+            "Origen_Creacion": "lead_convertido",
+            "Lead_Origen": [opcion_b],
+        }
+        nuevo_rec = _at_create(TABLE_ACTIVOS, at_campos_nuevo)
+        if "error" in nuevo_rec:
+            return {"error": f"No se pudo crear cliente desde lead: {nuevo_rec['error']}"}
+        cliente_activo_id = nuevo_rec["id"]
+        origen_creacion = "lead_convertido"
+        log.append(f"Lead {opcion_b} convertido a cliente {cliente_activo_id}")
+
+        # Marcar lead como cerrado_ganado (no hay rollback si falla)
+        _patch_lead(opcion_b, {"Estado": "cerrado_ganado"})
+
+    elif opcion_c:
+        cnuevo = opcion_c
+        origen = payload.get("origen_creacion", "manual_directo")
+        at_campos_nuevo = {
+            "Nombre": cnuevo.get("nombre", ""),
+            "Apellido": cnuevo.get("apellido", ""),
+            "Telefono": cnuevo.get("telefono", ""),
+            "Email": cnuevo.get("email", ""),
+            "Documento": cnuevo.get("documento", ""),
+            "Origen_Creacion": origen,
+        }
+        nuevo_rec = _at_create(TABLE_ACTIVOS, at_campos_nuevo)
+        if "error" in nuevo_rec:
+            return {"error": f"No se pudo crear cliente: {nuevo_rec['error']}"}
+        cliente_activo_id = nuevo_rec["id"]
+        origen_creacion = origen
+        log.append(f"Nuevo cliente {cliente_activo_id} creado (origen={origen})")
+
+    # ── Crear contrato ────────────────────────────────────────────────────────
+    tipo_at = _TIPO_GRANULAR_MAP.get(tipo, tipo)
+    item_descripcion = payload.get("item_descripcion", "")
+    if tipo != tipo_at and not item_descripcion:
+        # Guardar subtipo granular en Item_Descripcion
+        item_descripcion = tipo
+
+    at_contrato = {
+        "Tipo": tipo_at,
+        "Cliente": [cliente_activo_id],
+        "Origen_Creacion": origen_creacion,
+    }
+    if item_descripcion:
+        at_contrato["Item_Descripcion"] = item_descripcion
+
+    # linkedRecord item polimórfico
+    if item_id:
+        if item_tipo == "lote":
+            at_contrato["Lote_Asignado"] = [str(item_id)] if not isinstance(item_id, list) else item_id
+        elif item_tipo == "propiedad":
+            at_contrato["Propiedad_Asignada"] = [str(item_id)] if not isinstance(item_id, list) else item_id
+        elif item_tipo == "inmueble_renta":
+            at_contrato["Inmueble_Asignado"] = [str(item_id)] if not isinstance(item_id, list) else item_id
+
+    for src, dst in [
+        ("fecha_firma", "Fecha_Firma"),
+        ("moneda", "Moneda"),
+        ("estado_pago", "Estado_Pago"),
+        ("cuotas_total", "Cuotas_Total"),
+        ("cuotas_pagadas", "Cuotas_Pagadas"),
+        ("monto_cuota", "Monto_Cuota"),
+        ("proximo_vencimiento", "Proximo_Vencimiento"),
+    ]:
+        v = payload.get(src) or payload.get("monto_total" if src == "monto_total" else src)
+        if v is not None:
+            at_contrato[dst] = v
+
+    contrato_rec = _at_create(TABLE_CONTRATOS, at_contrato)
+    if "error" in contrato_rec:
+        return {
+            "error": f"Cliente creado ({cliente_activo_id}) pero contrato falló: {contrato_rec['error']}",
+            "cliente_activo_id": cliente_activo_id,
+            "log": log,
+        }
+    contrato_id = contrato_rec["id"]
+    log.append(f"Contrato {contrato_id} creado (tipo={tipo_at}, item={item_tipo}/{item_id})")
+
+    # ── Actualizar item según tipo ────────────────────────────────────────────
+    item_actualizado = False
+    if item_id:
+        try:
+            if item_tipo == "lote":
+                item_actualizado = _at_update(TABLE_LOTES_MAPA, str(item_id), {
+                    "Estado": "vendido",
+                    "Cliente_Activo": [cliente_activo_id],
+                })
+            elif item_tipo == "propiedad":
+                item_actualizado = _at_update(TABLE_PROPS, str(item_id), {"Disponible": "No Disponible"})
+            elif item_tipo == "inmueble_renta":
+                item_actualizado = _at_update(TABLE_INMUEBLES_RENTA, str(item_id), {"Disponible": False})
+            log.append(f"Item {item_tipo}/{item_id} actualizado={item_actualizado}")
+        except Exception as e:
+            logger.warning("[MICA-CONTRATO] update item exc: %s", e)
+            log.append(f"WARNING: update item falló: {e}")
+
+    return {
+        "ok": True,
+        "cliente_activo_id": cliente_activo_id,
+        "contrato_id": contrato_id,
+        "origen_creacion": origen_creacion,
+        "item_actualizado": item_actualizado,
+        "log": log,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTRATO ALQUILER — crea Contratos + ContratosAlquiler + actualiza inmueble
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def crear_contrato_alquiler(campos: dict) -> dict:
+    """Crea contrato tipo alquiler en 4 pasos secuenciales sin transacción:
+    1. Crear registro en Contratos
+    2. Crear registro en ContratosAlquiler
+    3. Marcar InmueblesRenta como no disponible
+    4. Agregar rol 'inquilino' al cliente
+
+    Si un paso falla: loguea warning y retorna estado parcial.
+    """
+    if not _available():
+        return {"error": "Airtable no configurado"}
+
+    alquiler_data = campos.get("alquiler") or {}
+    cliente_activo_id = campos.get("cliente_activo_id")
+    item_id = campos.get("item_id")
+
+    if not cliente_activo_id or not item_id:
+        return {"error": "Faltan cliente_activo_id o item_id"}
+
+    log = []
+
+    # Paso 1: Crear contrato base en tabla Contratos
+    at_contrato = {
+        "Tipo": "alquiler",
+        "Cliente": [cliente_activo_id],
+        "Inmueble_Asignado": [str(item_id)],
+        "Estado_Pago": "al_dia",
+    }
+    if campos.get("fecha_firma"):
+        at_contrato["Fecha_Firma"] = campos["fecha_firma"]
+    if campos.get("moneda"):
+        at_contrato["Moneda"] = campos["moneda"]
+    if campos.get("notas"):
+        at_contrato["Item_Descripcion"] = campos["notas"][:200]
+    monto = campos.get("monto_total") or alquiler_data.get("monto_mensual")
+    if monto:
+        at_contrato["Monto_Cuota"] = monto
+
+    contrato_rec = _at_create(TABLE_CONTRATOS, at_contrato)
+    if "error" in contrato_rec:
+        return {"error": f"Paso 1 falló (crear Contratos): {contrato_rec['error']}"}
+    contrato_id = contrato_rec["id"]
+    log.append(f"Contrato {contrato_id} creado")
+
+    # Paso 2: Crear ContratosAlquiler
+    alquiler_id = None
+    at_alquiler = {
+        "Contrato": [contrato_id],
+        "Inquilino": [cliente_activo_id],
+        "Inmueble": [str(item_id)],
+        "Estado": "vigente",
+    }
+    for src, dst in [
+        ("fecha_inicio", "Fecha_Inicio"), ("fecha_fin", "Fecha_Fin"),
+        ("monto_mensual", "Monto_Mensual"), ("deposito_pagado", "Deposito_Pagado"),
+        ("garante_nombre", "Garante_Nombre"), ("garante_telefono", "Garante_Telefono"),
+        ("garante_dni", "Garante_DNI"),
+    ]:
+        if alquiler_data.get(src) is not None:
+            at_alquiler[dst] = alquiler_data[src]
+
+    alq_rec = _at_create(TABLE_CONTRATOS_ALQUILER, at_alquiler)
+    if "error" in alq_rec:
+        logger.warning("[MICA-ALQ] Paso 2 falló (ContratosAlquiler): %s", alq_rec["error"])
+        log.append(f"WARNING Paso 2: {alq_rec['error']}")
+    else:
+        alquiler_id = alq_rec["id"]
+        log.append(f"ContratosAlquiler {alquiler_id} creado")
+
+    # Paso 3: Marcar inmueble no disponible
+    ok3 = _at_update(TABLE_INMUEBLES_RENTA, str(item_id), {"Disponible": False})
+    if not ok3:
+        logger.warning("[MICA-ALQ] Paso 3 falló (update InmueblesRenta)")
+        log.append("WARNING Paso 3: inmueble no actualizado")
+    else:
+        log.append(f"InmueblesRenta {item_id} marcado no disponible")
+
+    # Paso 4: Agregar rol 'inquilino' al cliente
+    rol_res = agregar_rol_persona(cliente_activo_id, "inquilino")
+    if "error" in rol_res:
+        logger.warning("[MICA-ALQ] Paso 4 falló (agregar rol): %s", rol_res["error"])
+        log.append(f"WARNING Paso 4: {rol_res['error']}")
+    else:
+        log.append("Rol inquilino agregado")
+
+    return {
+        "ok": True,
+        "contrato_id": contrato_id,
+        "alquiler_id": alquiler_id,
+        "cliente_activo_id": cliente_activo_id,
+        "item_id": item_id,
+        "log": log,
+    }
+
+
+def get_all_alquileres() -> dict:
+    """Lista todos los ContratosAlquiler con datos de inmueble y cliente."""
+    recs = _at_get_all(TABLE_CONTRATOS_ALQUILER)
+    items = []
+    for a in recs:
+        inmueble_ids = a.get("Inmueble") or []
+        inquilino_ids = a.get("Inquilino") or []
+        contrato_ids = a.get("Contrato") or []
+        items.append({
+            "id": a.get("id", ""),
+            "contrato_id": contrato_ids[0] if contrato_ids else None,
+            "inmueble_id": inmueble_ids[0] if inmueble_ids else None,
+            "cliente_id": inquilino_ids[0] if inquilino_ids else None,
+            "fecha_inicio": a.get("Fecha_Inicio", ""),
+            "fecha_fin": a.get("Fecha_Fin", ""),
+            "monto_mensual": a.get("Monto_Mensual") or None,
+            "deposito_pagado": a.get("Deposito_Pagado") or None,
+            "estado": a.get("Estado", ""),
+            "garante_nombre": a.get("Garante_Nombre", ""),
+            "garante_telefono": a.get("Garante_Telefono", ""),
+            "garante_dni": a.get("Garante_DNI", ""),
+        })
+    return {"items": items, "total": len(items)}

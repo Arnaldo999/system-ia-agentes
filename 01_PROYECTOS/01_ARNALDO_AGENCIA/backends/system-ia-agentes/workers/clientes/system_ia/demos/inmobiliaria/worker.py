@@ -3559,9 +3559,18 @@ def crm_resumenes(limit: int = 20, score_min: int = None,
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _check_pg():
+    """Mica usa Airtable como backend — esta función es no-op (siempre pasa).
+    El guard real ocurre dentro de db_airtable cuando TOKEN/BASE_ID no están configurados.
+    Se mantiene el nombre _check_pg para que los endpoints que ya lo llaman no rompan.
+    """
+    pass  # Airtable siempre disponible si env vars configuradas
+
+
+def _check_at():
+    """Verifica que Airtable esté configurado. Lanza 503 si no."""
     from fastapi import HTTPException
-    if not USE_POSTGRES:
-        raise HTTPException(status_code=503, detail="PostgreSQL no disponible")
+    if not db._available():
+        raise HTTPException(status_code=503, detail="Airtable no configurado (TOKEN/BASE_ID faltantes)")
 
 
 # ── Asesores (Sprint 3) ─────────────────────────────────────────────────────
@@ -3660,18 +3669,37 @@ def crm_contratos_list():
 
 @router.post("/crm/contratos")
 async def crm_contrato_create(request: Request):
-    _check_pg()
-    return db.create_contrato(await request.json())
+    """Contrato unificado v3 (3 ramas) o legacy passthrough.
+    v3: payload con cliente_activo_id | convertir_lead_id | cliente_nuevo.
+    Legacy: cualquier otro payload → create_contrato directo.
+    """
+    from fastapi import HTTPException
+    _check_at()
+    data = await request.json()
+    es_v3 = any(k in data for k in ("cliente_activo_id", "convertir_lead_id", "cliente_nuevo"))
+    if es_v3:
+        resultado = db.crear_contrato_unificado(data)
+        if "error" in resultado and not resultado.get("log"):
+            raise HTTPException(status_code=400, detail=resultado["error"])
+        return resultado
+    return db.create_contrato(data)
 
 @router.patch("/crm/contratos/{record_id}")
-async def crm_contrato_update(record_id: int, request: Request):
-    _check_pg()
+async def crm_contrato_update(record_id: str, request: Request):
+    _check_at()
     return db.update_contrato(record_id, await request.json())
 
 @router.delete("/crm/contratos/{record_id}")
-def crm_contrato_delete(record_id: int):
-    _check_pg()
+def crm_contrato_delete(record_id: str):
+    _check_at()
     return db.delete_contrato(record_id)
+
+
+@router.get("/crm/clientes-activos/{cliente_id}/contratos")
+def crm_contratos_by_cliente(cliente_id: str):
+    """Lista todos los contratos de un cliente activo."""
+    _check_at()
+    return db.get_contratos_by_cliente(cliente_id)
 
 
 # ── Visitas / Agenda (Sprint 8) ─────────────────────────────────────────────
@@ -3694,6 +3722,159 @@ async def crm_visita_update(record_id: int, request: Request):
 def crm_visita_delete(record_id: int):
     _check_pg()
     return db.delete_visita(record_id)
+
+
+# ── InmueblesRenta (Agencia) ─────────────────────────────────────────────────
+@router.get("/crm/inmuebles-renta")
+def crm_inmuebles_renta_list():
+    _check_at()
+    return db.get_all_inmuebles_renta()
+
+@router.post("/crm/inmuebles-renta")
+async def crm_inmueble_renta_create(request: Request):
+    _check_at()
+    return db.create_inmueble_renta(await request.json())
+
+@router.patch("/crm/inmuebles-renta/{record_id}")
+async def crm_inmueble_renta_update(record_id: str, request: Request):
+    _check_at()
+    return db.update_inmueble_renta(record_id, await request.json())
+
+@router.delete("/crm/inmuebles-renta/{record_id}")
+def crm_inmueble_renta_delete(record_id: str):
+    _check_at()
+    return db.delete_inmueble_renta(record_id)
+
+
+# ── Inquilinos (legacy + compatibilidad) ────────────────────────────────────
+@router.get("/crm/inquilinos")
+def crm_inquilinos_list(inmueble_renta_id: str = None):
+    _check_at()
+    return db.get_all_inquilinos(inmueble_renta_id)
+
+@router.post("/crm/inquilinos")
+async def crm_inquilino_create(request: Request):
+    _check_at()
+    return db.create_inquilino(await request.json())
+
+@router.patch("/crm/inquilinos/{record_id}")
+async def crm_inquilino_update(record_id: str, request: Request):
+    _check_at()
+    return db.update_inquilino(record_id, await request.json())
+
+@router.delete("/crm/inquilinos/{record_id}")
+def crm_inquilino_delete(record_id: str):
+    _check_at()
+    return db.delete_inquilino(record_id)
+
+
+# ── PagosAlquiler ────────────────────────────────────────────────────────────
+@router.get("/crm/pagos-alquiler")
+def crm_pagos_alquiler_list(inquilino_id: str = None, mes_anio: str = None):
+    _check_at()
+    return db.get_all_pagos_alquiler(inquilino_id, mes_anio)
+
+@router.post("/crm/pagos-alquiler")
+async def crm_pago_alquiler_create(request: Request):
+    _check_at()
+    return db.create_pago_alquiler(await request.json())
+
+@router.patch("/crm/pagos-alquiler/{record_id}")
+async def crm_pago_alquiler_update(record_id: str, request: Request):
+    _check_at()
+    return db.update_pago_alquiler(record_id, await request.json())
+
+@router.delete("/crm/pagos-alquiler/{record_id}")
+def crm_pago_alquiler_delete(record_id: str):
+    _check_at()
+    return db.delete_pago_alquiler(record_id)
+
+
+# ── Liquidaciones ────────────────────────────────────────────────────────────
+@router.get("/crm/liquidaciones")
+def crm_liquidaciones_list(propietario_id: str = None, mes_anio: str = None):
+    _check_at()
+    return db.get_all_liquidaciones(propietario_id, mes_anio)
+
+@router.post("/crm/liquidaciones")
+async def crm_liquidacion_create(request: Request):
+    _check_at()
+    return db.create_liquidacion(await request.json())
+
+@router.patch("/crm/liquidaciones/{record_id}")
+async def crm_liquidacion_update(record_id: str, request: Request):
+    _check_at()
+    return db.update_liquidacion(record_id, await request.json())
+
+@router.delete("/crm/liquidaciones/{record_id}")
+def crm_liquidacion_delete(record_id: str):
+    _check_at()
+    return db.delete_liquidacion(record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CRM — Persona única v3 (espejo de Robert)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/crm/personas/buscar")
+def crm_buscar_personas(q: str = ""):
+    """Autocomplete de CLIENTES_ACTIVOS por nombre, apellido, teléfono, email, documento."""
+    _check_at()
+    if not q or len(q.strip()) < 1:
+        return {"items": []}
+    return db.buscar_personas(q.strip(), limit=20)
+
+
+@router.get("/crm/personas/{cliente_id}")
+def crm_get_ficha_persona(cliente_id: str):
+    """Ficha 360: datos base + lead origen + contratos + alquileres + inmuebles propios."""
+    from fastapi import HTTPException
+    _check_at()
+    result = db.get_ficha_persona(cliente_id)
+    if "error" in result:
+        raise HTTPException(404, result["error"])
+    return result
+
+
+@router.post("/crm/personas/agregar-rol")
+async def crm_agregar_rol_persona(request: Request):
+    """Agrega un rol (comprador | inquilino | propietario) a un cliente.
+    Body: {"cliente_id": "recXXX", "rol": "propietario"}
+    Idempotente.
+    """
+    from fastapi import HTTPException
+    _check_at()
+    body = await request.json()
+    cliente_id = body.get("cliente_id")
+    rol = (body.get("rol") or "").strip()
+    if not cliente_id or not rol:
+        raise HTTPException(400, "Faltan cliente_id o rol")
+    result = db.agregar_rol_persona(str(cliente_id), rol)
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return result
+
+
+@router.post("/crm/contratos/alquiler")
+async def crm_crear_contrato_alquiler(request: Request):
+    """Crea contrato tipo alquiler + ContratosAlquiler + actualiza inmueble + rol inquilino.
+    Body: {cliente_activo_id, item_id, fecha_firma, moneda, notas?,
+           alquiler: {fecha_inicio, fecha_fin, monto_mensual, ...}}
+    """
+    from fastapi import HTTPException
+    _check_at()
+    campos = await request.json()
+    result = db.crear_contrato_alquiler(campos)
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return result
+
+
+@router.get("/crm/alquileres")
+def crm_get_alquileres():
+    """Lista todos los ContratosAlquiler activos con datos de inmueble y cliente."""
+    _check_at()
+    return db.get_all_alquileres()
 
 
 # ── Reportes (Sprint 7) ─────────────────────────────────────────────────────
