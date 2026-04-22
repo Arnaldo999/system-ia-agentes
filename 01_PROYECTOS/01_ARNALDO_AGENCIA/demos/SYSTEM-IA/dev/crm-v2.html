@@ -596,6 +596,32 @@ tailwind.config = {
     border-radius: 10px !important;
   }
 
+  /* ───── SIDEBAR ACCORDION GROUPS (sg-*) ───── */
+  .sg-group { margin: 2px 0; border-radius: 8px; }
+  .sg-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 10px; border-radius: 8px; cursor: pointer;
+    font-size: 12px; font-weight: 600; color: #8b8ba7;
+    transition: background .12s, color .12s; user-select: none; position: relative;
+  }
+  .sg-header:hover { background: rgba(255,255,255,.03); color: #c4c4d8; }
+  .sg-group.sg-open > .sg-header { color: #d0d0ea; }
+  .sg-label { flex: 1; font-size: 11px; letter-spacing: .03em; text-transform: uppercase; }
+  .sg-arrow { font-size: 9px; opacity: .5; transition: transform .2s ease; display: inline-block; }
+  .sg-group.sg-open > .sg-header .sg-arrow { transform: rotate(90deg); opacity: .8; }
+  /* Dot ambar — visible solo cuando grupo tiene item activo y esta colapsado */
+  .sg-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,.6);
+    display: none; flex-shrink: 0;
+  }
+  .sg-dot.visible { display: block; }
+  /* Cuerpo del grupo */
+  .sg-body { overflow: hidden; max-height: 0; transition: max-height .22s ease; border-left: 1px solid transparent; margin-left: 0; }
+  .sg-group.sg-open > .sg-body { max-height: 320px; border-left: 1px solid rgba(245,158,11,.15); margin-left: 14px; }
+  .sg-body .nav-item { margin-left: 0 !important; font-size: 12px !important; padding-left: 8px !important; }
+  .sg-group[data-hidden="true"] { display: none; }
+
   /* CTA Chat IA en sidebar */
   .ia-chat-btn {
     background: linear-gradient(160deg, rgba(124,58,237,.2), rgba(6,182,212,.1)) !important;
@@ -2353,38 +2379,77 @@ tailwind.config = {
         <span class="nav-badge green" id="activosBadge">—</span>
       </div>
 
-      <!-- ═══ GESTIÓN — DESARROLLADORA ═══ -->
-      <div class="sidebar-section subnicho-gestion" data-subnicho="desarrolladora" style="margin-top:8px">Gestión · Desarrolladora</div>
-      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('propiedades',this)">
-        <span class="nav-icon">🏘️</span><span>Propiedades</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('loteos',this)">
-        <span class="nav-icon">📍</span><span>Loteos</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('contratos',this)">
-        <span class="nav-icon">📄</span><span>Contratos de venta</span>
+      <!-- ═══ GESTIÓN (acordeón sg-group) ═══ -->
+      <div class="sidebar-section" style="margin-top:8px">Gestión</div>
+
+      <!-- Grupo: Desarrolladora -->
+      <div class="sg-group" id="sg-desarrolladora" data-group="desarrolladora">
+        <div class="sg-header" onclick="sgToggle('desarrolladora')">
+          <span class="nav-icon" style="flex-shrink:0">🏗️</span>
+          <span class="sg-label">Desarrolladora</span>
+          <span class="sg-dot" id="sg-dot-desarrolladora"></span>
+          <span class="sg-arrow">▶</span>
+        </div>
+        <div class="sg-body">
+          <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('propiedades',this)">
+            <span class="nav-icon">🏘️</span><span>Propiedades</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('loteos',this)">
+            <span class="nav-icon">📍</span><span>Loteos</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('contratos',this)">
+            <span class="nav-icon">📄</span><span>Contratos de venta</span>
+          </div>
+        </div>
       </div>
 
-      <!-- ═══ GESTIÓN — AGENCIA ═══ -->
-      <div class="sidebar-section subnicho-gestion" data-subnicho="agencia" style="margin-top:8px">Gestión · Agencia</div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inmuebles-renta',this)">
-        <span class="nav-icon">🏠</span><span>Inmuebles en renta</span>
+      <!-- Grupo: Agencia -->
+      <div class="sg-group" id="sg-agencia" data-group="agencia">
+        <div class="sg-header" onclick="sgToggle('agencia')">
+          <span class="nav-icon" style="flex-shrink:0">🏢</span>
+          <span class="sg-label">Agencia</span>
+          <span class="sg-dot" id="sg-dot-agencia"></span>
+          <span class="sg-arrow">▶</span>
+        </div>
+        <div class="sg-body">
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inmuebles-renta',this)">
+            <span class="nav-icon">🏠</span><span>Inmuebles en renta</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('propietarios',this)">
+            <span class="nav-icon">📑</span><span>Propietarios</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inquilinos',this)">
+            <span class="nav-icon">🧾</span><span>Inquilinos</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('pagos-alquiler',this)">
+            <span class="nav-icon">💳</span><span>Pagos alquiler</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('liquidaciones',this)">
+            <span class="nav-icon">💵</span><span>Liquidaciones</span>
+          </div>
+        </div>
       </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('propietarios',this)">
-        <span class="nav-icon">📑</span><span>Propietarios</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inquilinos',this)">
-        <span class="nav-icon">🧾</span><span>Inquilinos</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('contratos-alquiler',this)">
-        <span class="nav-icon">📃</span><span>Contratos de alquiler</span>
+
+      <!-- Grupo: Mixto -->
+      <div class="sg-group" id="sg-mixto" data-group="mixto">
+        <div class="sg-header" onclick="sgToggle('mixto')">
+          <span class="nav-icon" style="flex-shrink:0">🔀</span>
+          <span class="sg-label">Mixto</span>
+          <span class="sg-dot" id="sg-dot-mixto"></span>
+          <span class="sg-arrow">▶</span>
+        </div>
+        <div class="sg-body">
+          <div class="nav-item" onclick="nav('asesores',this)">
+            <span class="nav-icon">👨‍💼</span><span>Equipo / Asesores</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="mixto" onclick="nav('visitas',this)">
+            <span class="nav-icon">🗓️</span><span>Visitas agendadas</span>
+          </div>
+        </div>
       </div>
 
       <!-- ═══ HERRAMIENTAS (transversal) ═══ -->
       <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
-      <div class="nav-item" onclick="nav('asesores',this)">
-        <span class="nav-icon">👨‍💼</span><span>Equipo</span>
-      </div>
       <div class="nav-item" onclick="nav('reportes',this)">
         <span class="nav-icon">📈</span><span>Reportes</span>
       </div>
@@ -2749,38 +2814,60 @@ tailwind.config = {
 
     <!-- Modal Nuevo/Editar Cliente Activo -->
     <div id="modalActivo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;margin:16px;max-height:90vh;overflow-y:auto">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:560px;margin:16px;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div style="font-weight:700;font-size:15px" id="modalActivoTitle">➕ Nuevo Cliente Activo</div>
           <button onclick="cerrarModalActivo()" style="background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer">✕</button>
         </div>
-        <input type="hidden" id="activoId">
-        <div style="display:grid;gap:14px">
-          <div class="mf"><label>Nombre completo *</label><input id="ac-nombre" class="mi" placeholder="Ej: Juan Pérez"></div>
-          <div class="mf"><label>Teléfono</label><input id="ac-tel" class="mi" placeholder="+52 55 1234-5678"></div>
-          <div class="mf"><label>Email</label><input id="ac-email" class="mi" type="email" placeholder="juan@email.com"></div>
-          <div class="mf">
-            <label>Propiedad asignada</label>
-            <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:6px">
-              <select id="ac-prop-loteo" class="mi" onchange="actualizarPropiedadCombinada()">
-                <option value="">— Seleccionar loteo —</option>
-              </select>
-              <input id="ac-prop-lote" class="mi" placeholder="L-5" oninput="actualizarPropiedadCombinada()" style="text-transform:uppercase">
-            </div>
-            <input id="ac-prop" class="mi" placeholder="Se arma automático desde loteo + nro lote" style="font-size:12px;color:var(--text2);background:var(--surface2)">
-            <div style="font-size:11px;color:var(--text2);margin-top:4px">💡 Al elegir loteo y lote, el campo de abajo se completa automáticamente y sincroniza con la grilla de Loteos.</div>
+        <!-- Tabs navegacion interna del modal -->
+        <div id="modalActivoTabs" style="display:none;border-bottom:1px solid var(--border);margin-bottom:18px">
+          <div style="display:flex;gap:4px">
+            <button id="tab-btn-datos" onclick="activarTabActivo('datos')"
+              style="padding:7px 16px;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;background:#f59e0b;color:#fff">
+              Datos
+            </button>
+            <button id="tab-btn-relaciones" onclick="activarTabActivo('relaciones')"
+              style="padding:7px 16px;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;background:var(--surface2);color:var(--text2)">
+              Relaciones
+            </button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="mf"><label>Cuotas totales</label><input id="ac-total" class="mi" type="number" min="1" placeholder="24"></div>
-            <div class="mf"><label>Cuotas pagadas</label><input id="ac-pagadas" class="mi" type="number" min="0" placeholder="3"></div>
-          </div>
-          <div class="mf"><label>Próximo vencimiento</label><input id="ac-venc" class="mi" type="date"></div>
-          <div class="mf"><label>Monto cuota (<span id="ac-moneda-lbl">USD</span>)</label><input id="ac-monto" class="mi" type="number" placeholder="500"></div>
-          <div class="mf"><label>Notas</label><textarea id="ac-notas" class="mi" rows="2" placeholder="Observaciones..."></textarea></div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end">
-          <button class="btn" onclick="cerrarModalActivo()">Cancelar</button>
-          <button class="btn btn-primary" onclick="guardarActivo()" id="btnGuardarActivo">💾 Guardar</button>
+        <input type="hidden" id="activoId">
+        <!-- Tab: Datos (formulario existente) -->
+        <div id="tab-datos">
+          <div style="display:grid;gap:14px">
+            <div class="mf"><label>Nombre completo *</label><input id="ac-nombre" class="mi" placeholder="Ej: Juan Pérez"></div>
+            <div class="mf"><label>Teléfono</label><input id="ac-tel" class="mi" placeholder="+52 55 1234-5678"></div>
+            <div class="mf"><label>Email</label><input id="ac-email" class="mi" type="email" placeholder="juan@email.com"></div>
+            <div class="mf">
+              <label>Propiedad asignada</label>
+              <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:6px">
+                <select id="ac-prop-loteo" class="mi" onchange="actualizarPropiedadCombinada()">
+                  <option value="">— Seleccionar loteo —</option>
+                </select>
+                <input id="ac-prop-lote" class="mi" placeholder="L-5" oninput="actualizarPropiedadCombinada()" style="text-transform:uppercase">
+              </div>
+              <input id="ac-prop" class="mi" placeholder="Se arma automático desde loteo + nro lote" style="font-size:12px;color:var(--text2);background:var(--surface2)">
+              <div style="font-size:11px;color:var(--text2);margin-top:4px">💡 Al elegir loteo y lote, el campo de abajo se completa automáticamente y sincroniza con la grilla de Loteos.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="mf"><label>Cuotas totales</label><input id="ac-total" class="mi" type="number" min="1" placeholder="24"></div>
+              <div class="mf"><label>Cuotas pagadas</label><input id="ac-pagadas" class="mi" type="number" min="0" placeholder="3"></div>
+            </div>
+            <div class="mf"><label>Próximo vencimiento</label><input id="ac-venc" class="mi" type="date"></div>
+            <div class="mf"><label>Monto cuota (<span id="ac-moneda-lbl">USD</span>)</label><input id="ac-monto" class="mi" type="number" placeholder="500"></div>
+            <div class="mf"><label>Notas</label><textarea id="ac-notas" class="mi" rows="2" placeholder="Observaciones..."></textarea></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end">
+            <button class="btn" onclick="cerrarModalActivo()">Cancelar</button>
+            <button class="btn btn-primary" onclick="guardarActivo()" id="btnGuardarActivo">💾 Guardar</button>
+          </div>
+        </div>
+        <!-- Tab: Relaciones -->
+        <div id="tab-relaciones" style="display:none">
+          <div id="relacionesBody" style="min-height:120px">
+            <div style="text-align:center;color:var(--text2);padding:32px 0;font-size:14px">Cargando relaciones...</div>
+          </div>
         </div>
       </div>
     </div>
@@ -3553,7 +3640,6 @@ tailwind.config = {
   </div>
 </div>
 
-<!-- REPORTES -->
 <!-- INMUEBLES EN RENTA (subnicho: agencia) -->
 <div class="panel hidden" id="panel-inmuebles-renta" style="padding:0">
   <div class="cd-page-head">
@@ -3565,24 +3651,21 @@ tailwind.config = {
       <div class="cd-page-sub">Propiedades disponibles para alquiler, con estado y rentabilidad mensual</div>
     </div>
     <div class="cd-page-actions">
-      <button class="cd-btn-primary" onclick="notif('🚧 En desarrollo','Panel de inmuebles en renta — próximamente')">
+      <button class="cd-btn-primary" onclick="abrirModalInmueble()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo inmueble
       </button>
     </div>
   </div>
-  <div class="cd-placeholder">
-    <div class="cd-placeholder-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    </div>
-    <div class="cd-placeholder-title">Módulo Inmuebles en renta</div>
-    <div class="cd-placeholder-sub">Acá vas a ver tu cartera de propiedades en alquiler, el estado de ocupación, rentabilidad mensual y alertas de próximos vencimientos. Próximamente.</div>
-    <div class="cd-placeholder-kpis">
-      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Inmuebles</div></div>
-      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Ocupados</div></div>
-      <div class="cd-placeholder-kpi"><div class="k">0</div><div>Libres</div></div>
-      <div class="cd-placeholder-kpi"><div class="k">USD 0</div><div>Renta mensual</div></div>
-    </div>
+  <div class="leads-wrap">
+    <table class="leads-tbl" style="min-width:640px">
+      <thead><tr>
+        <th>Titulo</th><th>Tipo</th><th>Zona</th><th>Precio</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="inmueblesRentaBody">
+        <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">Cargando...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -3594,21 +3677,174 @@ tailwind.config = {
         <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
         Inquilinos
       </h1>
-      <div class="cd-page-sub">Personas que alquilan tus inmuebles, con estado de cuenta y próximos vencimientos</div>
+      <div class="cd-page-sub">Personas que alquilan tus inmuebles, con estado de cuenta y proximos vencimientos</div>
     </div>
     <div class="cd-page-actions">
-      <button class="cd-btn-primary" onclick="notif('🚧 En desarrollo','Panel de inquilinos — próximamente')">
+      <button class="cd-btn-primary" onclick="abrirModalInquilino()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo inquilino
       </button>
     </div>
   </div>
-  <div class="cd-placeholder">
-    <div class="cd-placeholder-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+  <div class="leads-wrap">
+    <table class="leads-tbl" style="min-width:560px">
+      <thead><tr>
+        <th>Nombre</th><th>Inmueble</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="inquilinosBody">
+        <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text2)">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL INQUILINO — 2 pasos: persona + alquiler -->
+<div class="modal-bg" id="modalInquilino" style="display:none">
+  <div class="modal" style="max-width:520px;width:95vw">
+    <button class="mc" onclick="document.getElementById('modalInquilino').classList.remove('show');document.getElementById('modalInquilino').style.display='none'">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Nuevo inquilino</h3>
+    <input type="hidden" id="inquilinoId"/>
+
+    <!-- PASO 1: buscar o crear persona -->
+    <div id="inqPaso1">
+      <p style="font-size:12px;color:var(--txt-2);margin-bottom:12px">Paso 1 — Buscar cliente existente o crear nuevo</p>
+      <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:5px">Buscar por nombre, telefono o email</label>
+      <input id="inqBusqueda" type="text" placeholder="Ej: Pedro Gomez, +549..." oninput="inqBuscarPersona(this)"
+        style="width:100%;padding:8px 12px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:6px;color:inherit;font-size:13px;box-sizing:border-box"/>
+      <div id="inqAutocompleteLista" style="display:none;border:1px solid var(--brd);border-radius:6px;margin-top:4px;background:var(--surface);max-height:200px;overflow-y:auto;z-index:10"></div>
+      <div id="inqPersonaBadge" style="display:none;margin-top:8px"></div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <div style="flex:1;height:1px;background:var(--brd)"></div>
+        <span style="font-size:11px;color:var(--txt-2)">o</span>
+        <div style="flex:1;height:1px;background:var(--brd)"></div>
+      </div>
+      <button onclick="inqCrearNuevo()" style="margin-top:10px;width:100%;padding:8px;background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.25);border-radius:6px;cursor:pointer;font-size:13px">
+        + Crear como cliente nuevo
+      </button>
+      <!-- Campos solo visibles si crea nuevo -->
+      <div id="inqCamposNuevo" style="display:none;margin-top:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:3px">Nombre completo</label>
+            <input id="inqNombreNuevo" type="text" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/></div>
+          <div><label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:3px">Telefono</label>
+            <input id="inqTelNuevo" type="text" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/></div>
+        </div>
+        <div><label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:3px">Email</label>
+          <input id="inqEmailNuevo" type="email" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/></div>
+      </div>
     </div>
-    <div class="cd-placeholder-title">Módulo Inquilinos</div>
-    <div class="cd-placeholder-sub">Listado de inquilinos, estado de cuenta, historial de pagos, garantías, alertas de morosidad y renovación de contrato. Próximamente.</div>
+
+    <!-- PASO 2: datos del alquiler -->
+    <div id="inqPaso2" style="display:none">
+      <p style="font-size:12px;color:var(--txt-2);margin-bottom:12px">Paso 2 — Datos del alquiler</p>
+      <div id="inqPersonaBadgeP2" style="margin-bottom:10px"></div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Inmueble (solo disponibles)</label>
+        <select id="inqInmueble" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px">
+          <option value="">— Cargando... —</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Fecha inicio</label>
+          <input id="inqFechaInicio" type="date" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Fecha fin</label>
+          <input id="inqFechaFin" type="date" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Monto mensual</label>
+          <input id="inqMonto" type="number" step="1" placeholder="Ej: 180000" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Deposito pagado</label>
+          <input id="inqDeposito" type="number" step="1" placeholder="Ej: 180000" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+      </div>
+      <details style="margin-bottom:10px">
+        <summary style="font-size:12px;color:var(--txt-2);cursor:pointer;padding:4px 0">Garante (opcional)</summary>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+          <div>
+            <label style="font-size:10px;color:var(--txt-2);display:block;margin-bottom:3px">Nombre garante</label>
+            <input id="inqGaranteNombre" type="text" style="width:100%;padding:6px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:12px;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--txt-2);display:block;margin-bottom:3px">Telefono garante</label>
+            <input id="inqGaranteTel" type="text" style="width:100%;padding:6px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:12px;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--txt-2);display:block;margin-bottom:3px">DNI garante</label>
+            <input id="inqGaranteDni" type="text" style="width:100%;padding:6px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:12px;box-sizing:border-box"/>
+          </div>
+        </div>
+      </details>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button onclick="inqLimpiarPersona()" style="padding:8px 16px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:6px;cursor:pointer;font-size:13px;color:var(--txt-2)">Atras</button>
+        <button id="btnGuardarInquilino" onclick="guardarInquilino()" style="flex:1;padding:8px;background:#f59e0b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Guardar alquiler</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>#modalInquilino.show { display:flex !important; }</style>
+
+<!-- PAGOS DE ALQUILER (subnicho: agencia) -->
+<div class="panel hidden" id="panel-pagos-alquiler" style="padding:0">
+  <div class="cd-page-head">
+    <div>
+      <h1 class="cd-page-title">
+        <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span>
+        Pagos de alquiler
+      </h1>
+      <div class="cd-page-sub">Registro de pagos mensuales por inquilino — historial y estado</div>
+    </div>
+    <div class="cd-page-actions">
+      <button class="cd-btn-primary" onclick="abrirModalPago()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo pago
+      </button>
+    </div>
+  </div>
+  <div class="leads-wrap">
+    <table class="leads-tbl" style="min-width:560px">
+      <thead><tr>
+        <th>Inquilino</th><th>Mes / Año</th><th>Monto</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="pagosAlquilerBody">
+        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text2)">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- LIQUIDACIONES (subnicho: agencia) -->
+<div class="panel hidden" id="panel-liquidaciones" style="padding:0">
+  <div class="cd-page-head">
+    <div>
+      <h1 class="cd-page-title">
+        <span class="cd-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        Liquidaciones
+      </h1>
+      <div class="cd-page-sub">Liquidaciones mensuales a propietarios — bruto, comision y neto</div>
+    </div>
+    <div class="cd-page-actions">
+      <button class="cd-btn-primary" onclick="abrirModalLiquidacion()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva liquidacion
+      </button>
+    </div>
+  </div>
+  <div class="leads-wrap">
+    <table class="leads-tbl" style="min-width:560px">
+      <thead><tr>
+        <th>Propietario</th><th>Mes / Año</th><th>Neto</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="liquidacionesBody">
+        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text2)">Cargando...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -3665,6 +3901,287 @@ tailwind.config = {
   </div>
 </div>
 
+<!-- ══ MODAL CONTRATO UNIFICADO — 3 pasos ══ -->
+<style>
+  /* Wizard steps */
+  .cu-step { display:flex;flex-direction:column;align-items:center;gap:4px;flex:1; }
+  .cu-step-dot {
+    width:28px;height:28px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2);
+    transition:all .2s;
+  }
+  .cu-step.active .cu-step-dot { background:#f59e0b;border-color:#f59e0b;color:#fff; }
+  .cu-step.done .cu-step-dot { background:#10b981;border-color:#10b981;color:#fff; }
+  .cu-step-label { font-size:10px;color:var(--text2);font-weight:500; }
+  .cu-step.active .cu-step-label { color:#f59e0b; }
+  .cu-step-line { flex:1;height:2px;background:var(--border);align-self:center;margin:0 4px;margin-bottom:14px; }
+</style>
+<div class="modal-bg hidden" id="modalContratoUnificado">
+  <div class="modal" style="max-width:560px;width:95vw">
+    <button class="mc" onclick="_cuCerrar()">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:4px">Nuevo Contrato</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:18px">Registra la venta o alquiler en 3 pasos</p>
+    <!-- Indicadores de paso -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:22px">
+      <div id="cu-step-1" class="cu-step active"><div class="cu-step-dot">1</div><div class="cu-step-label">Cliente</div></div>
+      <div class="cu-step-line"></div>
+      <div id="cu-step-2" class="cu-step"><div class="cu-step-dot">2</div><div class="cu-step-label">Activo</div></div>
+      <div class="cu-step-line"></div>
+      <div id="cu-step-3" class="cu-step"><div class="cu-step-dot">3</div><div class="cu-step-label">Contrato</div></div>
+    </div>
+    <!-- PASO 1 — Cliente -->
+    <div id="cu-paso-1">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Tipo de cliente</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-modo-cliente" value="existente" checked onclick="event.stopPropagation();_cuSetModoCliente('existente')">
+          <div><div style="font-weight:600;font-size:13px">Cliente existente</div><div style="font-size:11px;color:var(--text2)">Ya esta en Clientes Activos</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-modo-cliente" value="convertir_lead" onclick="event.stopPropagation();_cuSetModoCliente('convertir_lead')">
+          <div><div style="font-weight:600;font-size:13px">Convertir lead</div><div style="font-size:11px;color:var(--text2)">Lead que cerro — pasa a cliente</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-modo-cliente" value="cliente_nuevo" onclick="event.stopPropagation();_cuSetModoCliente('cliente_nuevo')">
+          <div><div style="font-weight:600;font-size:13px">Cliente nuevo</div><div style="font-size:11px;color:var(--text2)">No estaba en el sistema</div></div>
+        </label>
+      </div>
+      <div id="cu-area-existente">
+        <div class="mf"><label>Cliente activo</label>
+          <select id="cu-cliente-select" class="mi"><option value="">Cargando clientes...</option></select>
+        </div>
+      </div>
+      <div id="cu-area-lead" style="display:none">
+        <div class="mf"><label>Lead a convertir</label>
+          <select id="cu-lead-select" class="mi"><option value="">Cargando leads...</option></select>
+        </div>
+      </div>
+      <div id="cu-area-nuevo" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="mf"><label>Nombre *</label><input id="cu-nuevo-nombre" class="mi" placeholder="Juan"></div>
+          <div class="mf"><label>Apellido *</label><input id="cu-nuevo-apellido" class="mi" placeholder="Perez"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="mf"><label>Telefono *</label><input id="cu-nuevo-tel" class="mi" placeholder="+549..."></div>
+          <div class="mf"><label>Email</label><input id="cu-nuevo-email" class="mi" type="email" placeholder="juan@..."></div>
+        </div>
+        <div class="mf" style="margin-top:10px"><label>DNI / Documento</label><input id="cu-nuevo-doc" class="mi" placeholder="12.345.678"></div>
+      </div>
+    </div>
+    <!-- PASO 2 — Activo -->
+    <div id="cu-paso-2" style="display:none">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Tipo de operacion</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="venta_lote" checked onclick="_cuOnTipoChange('venta_lote')">
+          <div><div style="font-size:12px;font-weight:600">Venta lote</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="venta_casa" onclick="_cuOnTipoChange('venta_casa')">
+          <div><div style="font-size:12px;font-weight:600">Venta casa</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="venta_terreno" onclick="_cuOnTipoChange('venta_terreno')">
+          <div><div style="font-size:12px;font-weight:600">Venta terreno</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="venta_unidad" onclick="_cuOnTipoChange('venta_unidad')">
+          <div><div style="font-size:12px;font-weight:600">Venta unidad</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="radio" name="cu-tipo" value="alquiler" onclick="_cuOnTipoChange('alquiler')">
+          <div><div style="font-size:12px;font-weight:600">Alquiler</div></div>
+        </label>
+      </div>
+      <div class="mf">
+        <label>Seleccionar activo</label>
+        <div id="cu-item-spinner" style="display:none;font-size:12px;color:var(--text2);padding:8px 0">Cargando...</div>
+        <div id="cu-item-wrap">
+          <select id="cu-item-select" class="mi"><option value="">— Seleccionar —</option></select>
+        </div>
+      </div>
+    </div>
+    <!-- PASO 3 — Contrato -->
+    <div id="cu-paso-3" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Asesor</label>
+          <select id="cu-asesor" class="mi"><option value="">— Sin asesor —</option></select>
+        </div>
+        <div class="mf"><label>Fecha de firma</label>
+          <input type="date" id="cu-fecha-firma" class="mi">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+        <div class="mf"><label>Monto total</label>
+          <input type="number" id="cu-monto-total" class="mi" placeholder="0" step="0.01" oninput="_cuCalcularCuota()">
+        </div>
+        <div class="mf"><label>Moneda</label>
+          <select id="cu-moneda" class="mi">
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+            <option value="UF">UF</option>
+          </select>
+        </div>
+        <div class="mf"><label>Cuotas totales</label>
+          <input type="number" id="cu-cuotas-total" class="mi" placeholder="Ej: 60" min="1" oninput="_cuCalcularCuota()">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div class="mf"><label>Cuota mensual (auto)</label>
+          <input type="number" id="cu-monto-cuota" class="mi" placeholder="Calculado automatico" step="0.01" readonly style="opacity:.7">
+        </div>
+        <div class="mf"><label>Proximo vencimiento</label>
+          <input type="date" id="cu-proximo-venc" class="mi">
+        </div>
+      </div>
+      <div class="mf" style="margin-top:10px"><label>Estado de pago</label>
+        <select id="cu-estado-pago" class="mi">
+          <option value="al_dia">Al dia</option>
+          <option value="atrasado">Atrasado</option>
+          <option value="moroso">Moroso</option>
+          <option value="pagado">Pagado</option>
+        </select>
+      </div>
+      <div class="mf" style="margin-top:10px"><label>Notas internas</label>
+        <textarea id="cu-notas" class="mi" rows="2" placeholder="Condiciones especiales, observaciones..." style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <!-- Error -->
+    <div id="cu-error" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:7px;padding:10px 12px;font-size:12px;color:#fca5a5;margin-top:12px"></div>
+    <!-- Navegacion -->
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button id="cu-btn-prev" class="btn" style="display:none" onclick="_cuPrev()">Anterior</button>
+      <button id="cu-btn-next" class="btn btn-primary" onclick="_cuNext()">Siguiente</button>
+      <button id="cu-btn-save" class="btn btn-primary" style="display:none" onclick="_cuGuardar()">Crear contrato</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL INMUEBLE EN RENTA ══ -->
+<div class="modal-bg hidden" id="modalInmueble">
+  <div class="modal" style="max-width:500px;width:95vw">
+    <button class="mc" onclick="cerrarModal('modalInmueble')">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Inmueble en renta</h3>
+    <input type="hidden" id="inmuebleId">
+    <div style="display:grid;gap:10px">
+      <div class="mf"><label>Titulo *</label><input id="inmuebleTitulo" class="mi" placeholder="Ej: Depto 3A — Av. Corrientes"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Tipo</label>
+          <select id="inmuebleTipo" class="mi">
+            <option value="depto">Departamento</option>
+            <option value="casa">Casa</option>
+            <option value="local">Local comercial</option>
+            <option value="oficina">Oficina</option>
+            <option value="terreno">Terreno</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="mf"><label>Zona / Barrio</label><input id="inmuebleZona" class="mi" placeholder="Ej: Palermo"></div>
+      </div>
+      <div class="mf"><label>Direccion</label><input id="inmuebleDireccion" class="mi" placeholder="Calle y numero"></div>
+      <div class="mf"><label>Propietario</label>
+        <select id="inmueblePropietario" class="mi"><option value="">— Sin propietario —</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="mf"><label>Precio alquiler</label><input type="number" id="inmueblePrecio" class="mi" placeholder="0" step="0.01"></div>
+        <div class="mf"><label>Expensas</label><input type="number" id="inmuebleExpensas" class="mi" placeholder="0" step="0.01"></div>
+        <div class="mf"><label>Moneda</label>
+          <select id="inmuebleMoneda" class="mi">
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Fecha disponibilidad</label><input type="date" id="inmuebleFechaDisp" class="mi"></div>
+        <div class="mf" style="display:flex;align-items:center;gap:8px;padding-top:18px">
+          <input type="checkbox" id="inmuebleDisponible" checked style="width:16px;height:16px;accent-color:#f59e0b">
+          <label for="inmuebleDisponible" style="font-size:13px;cursor:pointer">Disponible</label>
+        </div>
+      </div>
+      <div class="mf"><label>Notas</label><textarea id="inmuebleNotas" class="mi" rows="2" style="resize:vertical"></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modalInmueble')">Cancelar</button>
+      <button id="btnGuardarInmueble" class="btn btn-primary" onclick="guardarInmueble()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL PAGO DE ALQUILER ══ -->
+<div class="modal-bg hidden" id="modalPago">
+  <div class="modal" style="max-width:460px;width:95vw">
+    <button class="mc" onclick="cerrarModal('modalPago')">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Pago de alquiler</h3>
+    <input type="hidden" id="pagoId">
+    <div style="display:grid;gap:10px">
+      <div class="mf"><label>Inquilino</label>
+        <select id="pagoInquilino" class="mi"><option value="">— Seleccionar inquilino —</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Mes / Año</label><input id="pagoMesAnio" class="mi" placeholder="Ej: 2026-04"></div>
+        <div class="mf"><label>Monto</label><input type="number" id="pagoMonto" class="mi" placeholder="0" step="0.01"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Fecha de pago</label><input type="date" id="pagoFechaPago" class="mi"></div>
+        <div class="mf"><label>Metodo</label>
+          <select id="pagoMetodo" class="mi">
+            <option value="transferencia">Transferencia</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="cheque">Cheque</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="mf"><label>Estado</label>
+        <select id="pagoEstado" class="mi">
+          <option value="pagado">Pagado</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="atrasado">Atrasado</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modalPago')">Cancelar</button>
+      <button id="btnGuardarPago" class="btn btn-primary" onclick="guardarPago()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL LIQUIDACION ══ -->
+<div class="modal-bg hidden" id="modalLiquidacion">
+  <div class="modal" style="max-width:460px;width:95vw">
+    <button class="mc" onclick="cerrarModal('modalLiquidacion')">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Liquidacion a propietario</h3>
+    <input type="hidden" id="liquidacionId">
+    <div style="display:grid;gap:10px">
+      <div class="mf"><label>Propietario</label>
+        <select id="liquidacionPropietario" class="mi"><option value="">— Seleccionar propietario —</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Mes / Año</label><input id="liquidacionMesAnio" class="mi" placeholder="Ej: 2026-04"></div>
+        <div class="mf"><label>Fecha liquidacion</label><input type="date" id="liquidacionFecha" class="mi"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="mf"><label>Bruto</label><input type="number" id="liquidacionBruto" class="mi" placeholder="0" step="0.01" oninput="_calcularNeto()"></div>
+        <div class="mf"><label>Comision agencia</label><input type="number" id="liquidacionComision" class="mi" placeholder="0" step="0.01" oninput="_calcularNeto()"></div>
+        <div class="mf"><label>Neto propietario</label><input type="number" id="liquidacionNeto" class="mi" placeholder="Auto" step="0.01" readonly style="opacity:.7"></div>
+      </div>
+      <div class="mf"><label>Estado</label>
+        <select id="liquidacionEstado" class="mi">
+          <option value="pendiente">Pendiente</option>
+          <option value="pagado">Pagado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modalLiquidacion')">Cancelar</button>
+      <button id="btnGuardarLiquidacion" class="btn btn-primary" onclick="guardarLiquidacion()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Chart.js para reportes -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -3676,6 +4193,11 @@ tailwind.config = {
 <script src="js/panel-contratos.js"></script>
 <script src="js/panel-visitas.js"></script>
 <script src="js/panel-reportes.js"></script>
+<script src="js/panel-contrato-unificado.js"></script>
+<script src="js/panel-inmuebles-renta.js"></script>
+<script src="js/panel-inquilinos.js"></script>
+<script src="js/panel-pagos-alquiler.js"></script>
+<script src="js/panel-liquidaciones.js"></script>
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────
@@ -3738,7 +4260,10 @@ let activeChat = 0;
 (function reparentearPanelesSprintCRM(){
   const main = document.querySelector('.main');
   if (!main) return;
-  const ids = ['panel-asesores','panel-propietarios','panel-loteos','panel-contratos','panel-visitas','panel-reportes'];
+  const ids = [
+    'panel-asesores','panel-propietarios','panel-loteos','panel-contratos','panel-visitas','panel-reportes',
+    'panel-inmuebles-renta','panel-inquilinos','panel-pagos-alquiler','panel-liquidaciones',
+  ];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el && el.parentElement !== main) main.appendChild(el);
@@ -3791,6 +4316,13 @@ function nav(id, el) {
   if(id==='contratos' && typeof cargarContratos === 'function') cargarContratos();
   if(id==='visitas' && typeof cargarVisitas === 'function') cargarVisitas();
   if(id==='reportes' && typeof cargarReportes === 'function') cargarReportes();
+  // Paneles GESTION Agencia v3
+  if(id==='inmuebles-renta' && typeof cargarInmueblesRenta === 'function') cargarInmueblesRenta();
+  if(id==='inquilinos' && typeof cargarInquilinos === 'function') cargarInquilinos();
+  if(id==='pagos-alquiler' && typeof cargarPagosAlquiler === 'function') cargarPagosAlquiler();
+  if(id==='liquidaciones' && typeof cargarLiquidaciones === 'function') cargarLiquidaciones();
+  // Actualizar dots acordeón
+  if (typeof sgUpdateDots === 'function') sgUpdateDots();
 }
 
 // ── CARGAR LEADS DESDE AIRTABLE ────────────────────────────────────────────
@@ -6229,11 +6761,20 @@ function abrirModalActivo(id) {
     document.getElementById('ac-prop-lote').value = '';
     cargarDropdownLoteosPropiedad('');
   }
+  // Mostrar tabs solo en modo edicion
+  const tabsEl = document.getElementById('modalActivoTabs');
+  if (tabsEl) tabsEl.style.display = id ? 'block' : 'none';
+  if (id) {
+    activarTabActivo('datos', false);
+  }
   modal.style.display = 'flex';
 }
 
 function cerrarModalActivo() {
   document.getElementById('modalActivo').style.display = 'none';
+  // Ocultar tabs y resetear al tab Datos para proxima apertura
+  const tabsEl = document.getElementById('modalActivoTabs');
+  if (tabsEl) tabsEl.style.display = 'none';
 }
 
 async function guardarActivo() {
@@ -6382,6 +6923,122 @@ async function enviarMensajeIA() {
     sendBtn.disabled = false;
     input.focus();
   }
+}
+
+// ── SIDEBAR ACORDEON (sg-group) ───────────────────────────────────────────────
+// Todos los grupos siempre visibles (colapsables). El subnicho define defaultOpen.
+const ALL_GROUPS = ['desarrolladora', 'agencia', 'mixto'];
+const SG_GROUP_CONFIG = {
+  desarrolladora: { defaultOpen: ['desarrolladora'] },
+  agencia:        { defaultOpen: ['agencia']        },
+  mixto:          { defaultOpen: ALL_GROUPS         },
+  agente:         { defaultOpen: []                 },
+};
+
+function sgStateKey() {
+  return `crm_sidebar_groups_${typeof TENANT_SLUG !== 'undefined' ? TENANT_SLUG : 'mica-demo'}`;
+}
+function sgSaveState() {
+  const state = {};
+  document.querySelectorAll('.sg-group[data-group]').forEach(grp => {
+    state[grp.getAttribute('data-group')] = grp.classList.contains('sg-open');
+  });
+  try { localStorage.setItem(sgStateKey(), JSON.stringify(state)); } catch(_) {}
+}
+function sgLoadState() {
+  try {
+    const raw = localStorage.getItem(sgStateKey());
+    return raw ? JSON.parse(raw) : null;
+  } catch(_) { return null; }
+}
+window.sgToggle = function(groupId) {
+  const grp = document.getElementById('sg-' + groupId);
+  if (!grp) return;
+  grp.classList.toggle('sg-open');
+  sgSaveState();
+  sgUpdateDots();
+};
+window.sgUpdateDots = function() {
+  document.querySelectorAll('.sg-group[data-group]').forEach(grp => {
+    const g = grp.getAttribute('data-group');
+    const dot = document.getElementById('sg-dot-' + g);
+    if (!dot) return;
+    const hasActive = grp.querySelector('.nav-item.active') !== null;
+    const isOpen = grp.classList.contains('sg-open');
+    dot.classList.toggle('visible', hasActive && !isOpen);
+  });
+};
+// Inicializar grupos acordeón con estado guardado o default
+(function initSgGroups() {
+  const stored = sgLoadState();
+  const tipo = 'mixto'; // System IA siempre es mixto
+  const cfg = SG_GROUP_CONFIG[tipo] || SG_GROUP_CONFIG.desarrolladora;
+  document.querySelectorAll('.sg-group[data-group]').forEach(grp => {
+    const g = grp.getAttribute('data-group');
+    const shouldOpen = (stored !== null) ? !!stored[g] : cfg.defaultOpen.includes(g);
+    if (shouldOpen) grp.classList.add('sg-open');
+    else grp.classList.remove('sg-open');
+  });
+})();
+
+// ── TAB RELACIONES en modalActivo ─────────────────────────────────────────────
+function activarTabActivo(tab, cargar) {
+  // Tabs botones
+  const btnDatos = document.getElementById('tab-btn-datos');
+  const btnRel = document.getElementById('tab-btn-relaciones');
+  if (btnDatos) {
+    btnDatos.style.background = tab === 'datos' ? '#f59e0b' : 'var(--surface2)';
+    btnDatos.style.color = tab === 'datos' ? '#fff' : 'var(--text2)';
+  }
+  if (btnRel) {
+    btnRel.style.background = tab === 'relaciones' ? '#f59e0b' : 'var(--surface2)';
+    btnRel.style.color = tab === 'relaciones' ? '#fff' : 'var(--text2)';
+  }
+  const tabDatos = document.getElementById('tab-datos');
+  const tabRel = document.getElementById('tab-relaciones');
+  if (tabDatos) tabDatos.style.display = tab === 'datos' ? '' : 'none';
+  if (tabRel) tabRel.style.display = tab === 'relaciones' ? '' : 'none';
+
+  if (tab === 'relaciones' && cargar !== false) {
+    const pid = document.getElementById('activoId') ? document.getElementById('activoId').value : '';
+    if (pid) cargarRelacionesCliente(pid);
+  }
+}
+
+async function cargarRelacionesCliente(clienteId) {
+  const body = document.getElementById('relacionesBody');
+  if (!body) return;
+  body.innerHTML = '<div style="text-align:center;color:var(--text2);padding:32px 0">Cargando...</div>';
+  try {
+    const data = await crmFetch('/crm/personas/' + clienteId);
+    body.innerHTML = renderRelaciones(data);
+  } catch(e) {
+    body.innerHTML = '<div style="color:#f87171;padding:16px;font-size:13px">Error: ' + e.message + '</div>';
+  }
+}
+
+function renderRelaciones(data) {
+  const contratos = data.contratos || [];
+  const pagos = data.pagos || [];
+  const visitas = data.visitas || [];
+  let html = '';
+  if (contratos.length) {
+    html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Contratos</div>';
+    html += contratos.map(c => `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12px">
+      <strong>${c.tipo || 'Contrato'}</strong>
+      <span style="color:var(--text2);margin-left:8px">${c.estado_pago || ''}</span>
+      <span style="float:right;color:#f59e0b">${c.monto_total ? (c.moneda || 'USD') + ' ' + Number(c.monto_total).toLocaleString() : ''}</span>
+    </div>`).join('');
+  }
+  if (visitas.length) {
+    html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px">Visitas</div>';
+    html += visitas.map(v => `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12px">
+      <strong>${v.fecha_hora ? new Date(v.fecha_hora).toLocaleDateString('es') : 'Sin fecha'}</strong>
+      <span style="color:var(--text2);margin-left:8px">${v.estado || ''}</span>
+    </div>`).join('');
+  }
+  if (!html) html = '<div style="text-align:center;color:var(--text2);padding:24px;font-size:13px">Sin relaciones registradas para este cliente.</div>';
+  return html;
 }
 
 // ── INIT ────────────────────────────────────────────────────────────────────

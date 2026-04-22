@@ -99,7 +99,7 @@
 
     const overview = `
       <div class="overview cd-overview cd-overview-contratos">
-        <div class="ov" style="--c:#7c3aed">
+        <div class="ov" style="--c:#f59e0b">
           <div class="ov-label"><span class="d"></span>Contratos</div>
           <div class="ov-val mono">${count}</div>
           <div class="ov-foot">En la cartera</div>

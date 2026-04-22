@@ -128,7 +128,7 @@
 
     cont.innerHTML = `
       <div class="overview cd-overview">
-        <div class="ov" style="--c:#7c3aed">
+        <div class="ov" style="--c:#f59e0b">
           <div class="ov-label"><span class="d"></span>Loteos activos</div>
           <div class="ov-val mono">${LOTEOS.length}</div>
           <div class="ov-foot">En tu cartera</div>
