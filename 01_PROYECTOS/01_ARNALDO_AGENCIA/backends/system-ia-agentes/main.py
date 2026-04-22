@@ -116,9 +116,13 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # ── Arnaldo — Maicol / Back Urbanizaciones ────────────────────────────
+        "https://crm.backurbanizaciones.com",
+        # ── Lovbot / Robert ───────────────────────────────────────────────────
         "https://crm.lovbot.ai",
         "https://lovbot-demos.vercel.app",
         "https://admin.lovbot.ai",
+        # ── Local dev ─────────────────────────────────────────────────────────
         "http://localhost:8765",
         "http://localhost:8766",
         "http://127.0.0.1:8765",
