@@ -3179,6 +3179,77 @@ def setup_resumenes():
     return db.crear_tabla_resumenes()
 
 
+@router.post("/admin/limpiar-urls-airtable")
+def limpiar_urls_airtable(request: Request):
+    """
+    Limpia URLs de imágenes de Airtable expiradas en la tabla propiedades.
+
+    Las URLs firmadas de Airtable tienen TTL ~2h. Cuando se migraron datos
+    Airtable -> PostgreSQL se copiaron las URLs tal cual. Generan HTTP 410.
+
+    Pone NULL en columnas de tipo texto que contengan 'airtableusercontent.com'
+    o 'v5.airtable'. Idempotente.
+
+    Requiere header: X-Admin-Token
+    """
+    from fastapi import HTTPException
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+
+    _check_admin_token(request)
+    _check_pg()
+
+    URL_PATTERNS = ["%airtableusercontent.com%", "%v5.airtable%"]
+    TABLA = "propiedades"
+
+    try:
+        conn = db._conn()
+        conn.autocommit = False
+        results = {}
+
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Descubrir columnas de texto automáticamente
+            cur.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = %s
+                  AND data_type IN ('text', 'character varying', 'varchar', 'character', 'char')
+                ORDER BY ordinal_position
+            """, (TABLA,))
+            text_cols = [row["column_name"] for row in cur.fetchall()]
+
+            for col in text_cols:
+                conditions = " OR ".join([f'"{col}" ILIKE %s' for _ in URL_PATTERNS])
+                sql = f'UPDATE "{TABLA}" SET "{col}" = NULL WHERE ({conditions}) AND "{col}" IS NOT NULL'
+                try:
+                    cur.execute(sql, URL_PATTERNS)
+                    if cur.rowcount > 0:
+                        results[col] = cur.rowcount
+                        print(f"[limpiar-urls-airtable] {TABLA}.{col}: {cur.rowcount} fila(s) limpiadas")
+                except psycopg2.Error as col_err:
+                    print(f"[limpiar-urls-airtable] SKIP {col}: {col_err}")
+
+        conn.commit()
+        conn.close()
+
+        total = sum(results.values())
+        return {
+            "status": "ok",
+            "tabla": TABLA,
+            "columnas_afectadas": results,
+            "total_filas_limpiadas": total,
+            "mensaje": f"{total} URL(s) Airtable expiradas eliminadas" if total else "DB ya estaba limpia",
+        }
+
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail=f"Error limpiando URLs: {str(e)}")
+
+
 @router.post("/admin/reset-sesion/{telefono}")
 def reset_sesion_bot(telefono: str):
     """Borra la sesión del bot para empezar fresh (útil para testing)."""
