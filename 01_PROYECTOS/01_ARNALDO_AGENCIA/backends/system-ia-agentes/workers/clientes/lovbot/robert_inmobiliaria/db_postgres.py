@@ -918,10 +918,14 @@ def _crud_generico(tabla: str, accion: str, campos: dict = None, record_id: int 
             return {"items": result, "total": len(result)}
 
         elif accion == "create":
-            keys = list(campos.keys())
+            # Remover tenant_slug del body si viene del cliente — _crud_generico
+            # lo agrega internamente con el valor canónico de TENANT.
+            # Sin este pop, el INSERT falla con "column specified more than once".
+            campos_clean = {k: v for k, v in campos.items() if k != "tenant_slug"}
+            keys = list(campos_clean.keys())
             placeholders = ", ".join(["%s"] * (len(keys) + 1))
             cols = ", ".join(["tenant_slug"] + keys)
-            values = [TENANT] + list(campos.values())
+            values = [TENANT] + list(campos_clean.values())
             cur.execute(f"INSERT INTO {tabla} ({cols}) VALUES ({placeholders}) RETURNING id", values)
             new_id = cur.fetchone()["id"]
             conn.commit()
