@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-21 | Total páginas: 34 (17 entidades + 14 conceptos + 3 síntesis)
+Última actualización: 2026-04-22 | Total páginas: 37 (17 entidades + 16 conceptos + 4 síntesis)
 
 ## Fuentes (0)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -91,12 +91,19 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | [[wiki/conceptos/meta-tech-provider-onboarding]] | Embedded Signup + Coexistence + App Review — URLs oficiales Meta verificadas + checklist completo | robert |
 | [[wiki/conceptos/meta-webhooks-compliance]] | Deauthorize + Data Deletion webhooks (n8n + Cloudflare Worker verify HMAC) | robert |
 
-## Síntesis (3)
+### CRM arquitectura (data model)
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/persona-unica-crm]] | Persona única con roles múltiples (comprador/inquilino/propietario) — evita duplicación cross-tabla | robert, mica |
+| [[wiki/conceptos/contratos-polimorficos]] | Tabla contratos con tipo + item_tipo + item_id — 3 puertas 1 modal 1 endpoint | robert, mica |
+
+## Síntesis (4)
 | Página | Origen | Fecha | Proyecto |
 |--------|--------|-------|----------|
 | [[wiki/sintesis/2026-04-18-limpieza-tenants-supabase]] | Decisión arquitectural: 1 tenant demo por agencia | 2026-04-18 | compartido |
 | [[wiki/sintesis/2026-04-21-refactor-postgres-workspaces]] | Refactor Postgres Lovbot a arquitectura workspaces (1 DB x cliente) — cerrada fuga cross-tenant, creada BD modelo `lovbot_crm_modelo` | 2026-04-21 | robert |
 | [[wiki/sintesis/2026-04-21-crm-v2-mica]] | Setup CRM v2 Mica con stack Airtable + Evolution + decisión Embedded Signup compartido via TP Robert | 2026-04-21 | mica |
+| [[wiki/sintesis/2026-04-22-crm-v3-robert]] | Refactor CRM v3 Robert — persona única + contratos polimórficos + lotes granulares + GESTIÓN editable | 2026-04-22 | robert |
 
 ---
 

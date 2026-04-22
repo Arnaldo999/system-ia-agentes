@@ -247,3 +247,9 @@ Conceptos creados (6):
 Actualizado `matriz-infraestructura.md` con wikilinks transversales a todas las entidades y conceptos nuevos + 2 secciones especiales (Lau con trampa del path + Back Urbanizaciones).
 
 Estado wiki: 12 entidades + 7 conceptos = 19 páginas. Falta ingestar fuentes oficiales (briefs, memory/*.md del Mission Control).
+
+## [2026-04-22] sesion-claude | CRM v3 Robert refactor completo — contratos polimórficos + persona única
+- Ingesta: `raw/robert/sesion-2026-04-22-crm-v3-robert.md`
+- Síntesis: `wiki/sintesis/2026-04-22-crm-v3-robert.md`
+- Conceptos nuevos: `wiki/conceptos/persona-unica-crm.md`, `wiki/conceptos/contratos-polimorficos.md`
+- 16+ commits backend+frontend, 14 smoke tests verdes en producción, UI visualmente idéntica
