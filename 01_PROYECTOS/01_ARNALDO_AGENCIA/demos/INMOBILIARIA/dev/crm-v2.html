@@ -5504,13 +5504,8 @@ async function renderProps() {
       const mapsUrl = p.Google_Maps_URL || p.google_maps_url || '';
 
       // Imagen — puede ser array Airtable [{url:...}] o string
-      let imgUrl = '';
-      const imgField = p.Imagen_URL || p.imagen_url || p.Foto || p.foto || '';
-      if(Array.isArray(imgField) && imgField.length > 0) {
-        imgUrl = imgField[0].url || imgField[0].thumbnails?.large?.url || '';
-      } else if(typeof imgField === 'string') {
-        imgUrl = imgField;
-      }
+      // getPropertyImage() filtra URLs Airtable expiradas (evita errores 410)
+      const imgUrl = getPropertyImage(p);
 
       // Status
       const isRes  = disponible.includes('Reservado') || disponible.includes('reservado');
@@ -5600,6 +5595,24 @@ function _imgErr(imgEl) {
   // Si el padre solo tenía la img (previews de logo/icono), mostrar emoji fallback
   const p = imgEl.parentElement;
   if(p && p.children.length === 1) p.textContent = '🏠';
+}
+
+// Normaliza el campo imagen de una propiedad (Postgres o legacy Airtable).
+// Retorna string con URL válida, o '' si no hay imagen o la URL es de Airtable
+// (expirada — no intentar cargarla, evita errores 410 en consola).
+function getPropertyImage(p) {
+  const raw = p.Imagen_URL || p.imagen_url || p.Foto || p.foto || p.Imagen || p.imagen || '';
+  let url = '';
+  if (Array.isArray(raw) && raw.length > 0) {
+    url = raw[0].thumbnails?.large?.url || raw[0].url || '';
+  } else if (typeof raw === 'string') {
+    url = raw;
+  }
+  // URLs de Airtable firmadas expiran en ~2h — nunca intentar cargarlas
+  if (url && (url.includes('airtableusercontent.com') || url.includes('v5.airtable'))) {
+    return '';
+  }
+  return url;
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
@@ -5730,10 +5743,10 @@ function abrirEditorPropiedad(pid) {
       document.getElementById('prop-direccion').value = p.Direccion || p.direccion || '';
       document.getElementById('prop-maps').value = p.Maps || p.maps_url || p.Google_Maps_URL || '';
       document.getElementById('prop-descripcion').value = p.Descripcion || p.descripcion || '';
-      let img = p.Imagen || p.imagen_url || '';
-      if (Array.isArray(img)) img = img[0]?.url || '';
+      // getPropertyImage() filtra URLs Airtable expiradas (evita errores 410)
+      const img = getPropertyImage(p);
       document.getElementById('prop-imagen').value = img;
-      if (img) document.getElementById('prop-imagen-preview').innerHTML = `<img src="${img}" style="max-width:200px;border-radius:8px">`;
+      if (img) document.getElementById('prop-imagen-preview').innerHTML = `<img src="${img}" style="max-width:200px;border-radius:8px" onerror="_imgErr(this)">`;
     }
     btnEliminar.style.display = '';
   } else {
@@ -5896,10 +5909,8 @@ function verDetalleProp(id) {
   // Buscar en cache de props cargadas desde API
   const p = _cachedProps.find(x => (x.id||x.ID) === id);
   if (!p) return;
-  let imgUrl = '';
-  const imgField = p.Imagen_URL || p.imagen_url || p.Foto || '';
-  if(Array.isArray(imgField) && imgField.length > 0) imgUrl = imgField[0].thumbnails?.large?.url || imgField[0].url || '';
-  else if(typeof imgField === 'string') imgUrl = imgField;
+  // getPropertyImage() filtra URLs Airtable expiradas (evita errores 410)
+  const imgUrl = getPropertyImage(p);
   _renderModalProp(
     p.Titulo||p.titulo, p.Zona||p.zona, p.Precio||p.precio, p.Moneda||p.moneda||'USD',
     p.Tipo||p.tipo, p.Operacion||p.operacion, p.Disponible||p.disponible,
