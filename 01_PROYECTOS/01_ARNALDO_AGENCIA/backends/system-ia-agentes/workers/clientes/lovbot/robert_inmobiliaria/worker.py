@@ -3307,6 +3307,48 @@ def admin_migrar_v3(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/admin/migrar-lotes-individuales")
+def admin_migrar_lotes_individuales(request: Request):
+    """Migra lotes derivados de total_lotes a registros individuales en lotes_mapa.
+
+    Idempotente: si un loteo ya tiene lotes en lotes_mapa, no lo toca.
+    Para cada loteo sin lotes: genera registros divididos en manzanas de 8
+    (igual que el JS anterior) con estado='libre'.
+
+    Ademas aplica el UNIQUE constraint si no existe todavia.
+
+    Requiere header X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    import subprocess, sys, os
+    _check_admin_token(request)
+    _check_pg()
+
+    script_path = os.path.join(
+        os.path.dirname(__file__),
+        "..", "..", "..", "..", "scripts", "migrar_lotes_individuales.py",
+    )
+    script_path = os.path.normpath(script_path)
+
+    if not os.path.exists(script_path):
+        return {"error": f"Script no encontrado: {script_path}"}
+
+    try:
+        result = subprocess.run(
+            [sys.executable, script_path],
+            capture_output=True, text=True, timeout=120,
+            env=os.environ.copy(),
+        )
+        return {
+            "ok": result.returncode == 0,
+            "stdout": result.stdout[-4000:] if result.stdout else "",
+            "stderr": result.stderr[-1000:] if result.stderr else "",
+            "returncode": result.returncode,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/admin/nurturing/24h")
 def nurturing_24h():
     """Envía mensajes de seguimiento a leads calificados que NO agendaron cita
@@ -3583,6 +3625,84 @@ async def crm_lote_mapa_update(record_id: int, request: Request):
 def crm_lote_mapa_delete(record_id: int):
     _check_pg()
     return db.delete_lote_mapa(record_id)
+
+
+# ── Lotes Mapa granular por loteo (Sprint 6.5) ──────────────────────────────
+
+@router.get("/crm/loteos/{loteo_id}/lotes")
+def crm_lotes_por_manzana(loteo_id: int):
+    """Lista lotes de un loteo agrupados por manzana, ordenados numericamente.
+
+    Respuesta: {"grupos": [{"manzana":"A","lotes":[...]}], "total": N}
+    """
+    _check_pg()
+    return db.get_lotes_por_manzana(loteo_id)
+
+
+@router.post("/crm/lotes-mapa/seguro")
+async def crm_lote_mapa_create_seguro(request: Request):
+    """Crea un lote individual. Devuelve 409 si ya existe (unique loteo+manzana+numero)."""
+    from fastapi import HTTPException
+    _check_pg()
+    data = await request.json()
+    result = db.create_lote_mapa_seguro(data)
+    if result.get("conflict"):
+        raise HTTPException(status_code=409, detail=result.get("error", "Lote duplicado"))
+    return result
+
+
+@router.delete("/crm/lotes-mapa/{record_id}/seguro")
+def crm_lote_mapa_delete_seguro(record_id: int):
+    """Elimina un lote solo si esta libre. 409 si tiene cliente o esta vendido/reservado."""
+    from fastapi import HTTPException
+    _check_pg()
+    result = db.delete_lote_mapa_seguro(record_id)
+    if result.get("conflict"):
+        raise HTTPException(status_code=409, detail=result.get("error", "Lote ocupado"))
+    return result
+
+
+@router.post("/crm/loteos/{loteo_id}/manzana")
+async def crm_manzana_create(loteo_id: int, request: Request):
+    """Crea una manzana nueva con N lotes iniciales en un loteo.
+
+    Body: {"manzana":"D","cantidad":10,"numero_lote_inicio":1}
+    """
+    _check_pg()
+    data = await request.json()
+    manzana = (data.get("manzana") or "").strip()
+    cantidad = int(data.get("cantidad") or 8)
+    inicio = int(data.get("numero_lote_inicio") or 1)
+    if not manzana:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Campo 'manzana' requerido")
+    return db.create_manzana_bulk(loteo_id, manzana, cantidad, inicio)
+
+
+@router.patch("/crm/loteos/{loteo_id}/manzana/{nombre_actual:path}")
+async def crm_manzana_rename(loteo_id: int, nombre_actual: str, request: Request):
+    """Renombra todos los lotes de una manzana dentro de un loteo.
+
+    Body: {"nuevo_nombre":"Norte"}
+    """
+    _check_pg()
+    data = await request.json()
+    nuevo_nombre = (data.get("nuevo_nombre") or "").strip()
+    if not nuevo_nombre:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Campo 'nuevo_nombre' requerido")
+    return db.rename_manzana(loteo_id, nombre_actual, nuevo_nombre)
+
+
+@router.delete("/crm/loteos/{loteo_id}/manzana/{nombre_manzana:path}")
+def crm_manzana_delete(loteo_id: int, nombre_manzana: str):
+    """Elimina una manzana completa. 409 si alguno de sus lotes esta vendido/reservado."""
+    from fastapi import HTTPException
+    _check_pg()
+    result = db.delete_manzana(loteo_id, nombre_manzana)
+    if result.get("conflict"):
+        raise HTTPException(status_code=409, detail=result.get("error", "Manzana ocupada"))
+    return result
 
 
 # ── Contratos v3 (Sprint 6 + v3 normalizado) ────────────────────────────────

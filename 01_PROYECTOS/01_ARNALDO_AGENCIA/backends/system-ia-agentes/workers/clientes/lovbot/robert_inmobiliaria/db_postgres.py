@@ -1211,6 +1211,238 @@ def delete_lote_mapa(record_id: int):
     return result
 
 
+# ── Lotes Mapa granular (Sprint 6.5) ────────────────────────────────────────
+
+def get_lotes_por_manzana(loteo_id: int) -> dict:
+    """Devuelve lotes agrupados por manzana: [{manzana, lotes:[...]}].
+
+    Lotes dentro de cada manzana ordenados numericamente por numero_lote.
+    Retorna {"grupos": [...], "total": N} o {"error": "..."}.
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            SELECT * FROM lotes_mapa
+            WHERE tenant_slug=%s AND loteo_id=%s
+            ORDER BY
+                manzana,
+                NULLIF(regexp_replace(numero_lote, '[^0-9]', '', 'g'), '')::int NULLS LAST,
+                numero_lote
+            """,
+            (TENANT, loteo_id),
+        )
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        # Serializar y agrupar
+        grupos_map: dict = {}
+        for r in rows:
+            row = dict(r)
+            for k, v in row.items():
+                if hasattr(v, "isoformat"):
+                    row[k] = v.isoformat()
+                elif hasattr(v, "__float__") and not isinstance(v, (int, bool)):
+                    row[k] = float(v)
+            mz = row.get("manzana") or "Sin manzana"
+            if mz not in grupos_map:
+                grupos_map[mz] = []
+            grupos_map[mz].append(row)
+
+        grupos = [{"manzana": mz, "lotes": lotes} for mz, lotes in grupos_map.items()]
+        return {"grupos": grupos, "total": sum(len(g["lotes"]) for g in grupos)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def create_lote_mapa_seguro(campos: dict) -> dict:
+    """Igual que create_lote_mapa pero devuelve {"conflict": true} en vez de error
+    si el unique constraint (tenant_slug, loteo_id, numero_lote) ya existe.
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+    loteo_id = campos.get("loteo_id")
+    try:
+        campos_clean = {k: v for k, v in campos.items() if k != "tenant_slug"}
+        keys = list(campos_clean.keys())
+        cols = ", ".join(["tenant_slug"] + keys)
+        placeholders = ", ".join(["%s"] * (len(keys) + 1))
+        values = [TENANT] + list(campos_clean.values())
+
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            f"INSERT INTO lotes_mapa ({cols}) VALUES ({placeholders}) RETURNING id",
+            values,
+        )
+        new_id = cur.fetchone()["id"]
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        if loteo_id:
+            _recalc_contadores_loteo(int(loteo_id))
+            cliente_id = campos.get("cliente_id")
+            if cliente_id:
+                _sincronizar_propiedad_cliente(
+                    int(cliente_id), int(loteo_id),
+                    campos.get("numero_lote", ""),
+                    campos.get("estado", "disponible"),
+                )
+        return {"id": new_id, "ok": True}
+
+    except Exception as e:
+        err_str = str(e)
+        if "unique" in err_str.lower() or "duplicate" in err_str.lower():
+            return {"conflict": True, "ok": False,
+                    "error": "Ya existe un lote con ese numero en esa manzana"}
+        return {"ok": False, "error": err_str}
+
+
+def delete_lote_mapa_seguro(record_id: int) -> dict:
+    """Elimina un lote solo si estado='libre' o 'disponible'.
+
+    Devuelve {"conflict": true} si el lote tiene cliente asignado o estado != libre.
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT loteo_id, cliente_id, estado FROM lotes_mapa WHERE id=%s AND tenant_slug=%s",
+            (record_id, TENANT),
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not row:
+            return {"ok": False, "error": "Lote no encontrado"}
+
+        loteo_id, cliente_id, estado = row
+        estados_bloqueados = {"vendido", "reservado"}
+        if estado in estados_bloqueados or cliente_id:
+            return {
+                "conflict": True, "ok": False,
+                "error": f"No se puede borrar lote {estado or 'con cliente asignado'}",
+            }
+
+        # Proceder con el borrado
+        result = _crud_generico("lotes_mapa", "delete", record_id=record_id)
+        if loteo_id:
+            _recalc_contadores_loteo(int(loteo_id))
+        return result
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def create_manzana_bulk(loteo_id: int, manzana: str, cantidad: int, numero_inicio: int) -> dict:
+    """Crea N lotes en la manzana dada dentro de un loteo. Transaccional.
+
+    Devuelve {"ok": true, "creados": N, "ids": [...]} o {"error": "..."}.
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+    if not manzana or cantidad <= 0:
+        return {"ok": False, "error": "Manzana y cantidad son obligatorios"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        ids = []
+        for i in range(cantidad):
+            nro = str(numero_inicio + i)
+            try:
+                cur.execute(
+                    """INSERT INTO lotes_mapa (tenant_slug, loteo_id, manzana, numero_lote, estado)
+                       VALUES (%s, %s, %s, %s, 'libre')
+                       RETURNING id""",
+                    (TENANT, loteo_id, manzana, nro),
+                )
+                ids.append(cur.fetchone()[0])
+            except Exception as ex:
+                if "unique" in str(ex).lower():
+                    # Saltar duplicados silenciosamente
+                    conn.rollback()
+                    # Re-abrir transaccion parcial limpia
+                    cur = conn.cursor()
+                else:
+                    conn.rollback()
+                    cur.close()
+                    conn.close()
+                    return {"ok": False, "error": str(ex)}
+        conn.commit()
+        cur.close()
+        conn.close()
+        if loteo_id:
+            _recalc_contadores_loteo(int(loteo_id))
+        return {"ok": True, "creados": len(ids), "ids": ids}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def rename_manzana(loteo_id: int, nombre_actual: str, nuevo_nombre: str) -> dict:
+    """Renombra todos los lotes de una manzana dentro de un loteo."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(
+            """UPDATE lotes_mapa SET manzana=%s, updated_at=CURRENT_TIMESTAMP
+               WHERE tenant_slug=%s AND loteo_id=%s AND manzana=%s""",
+            (nuevo_nombre, TENANT, loteo_id, nombre_actual),
+        )
+        afectados = cur.rowcount
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"ok": True, "actualizados": afectados}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def delete_manzana(loteo_id: int, manzana: str) -> dict:
+    """Elimina todos los lotes de una manzana. Solo si TODOS estan libres/disponibles."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        # Verificar que no haya lotes vendidos/reservados
+        cur.execute(
+            """SELECT COUNT(*) FROM lotes_mapa
+               WHERE tenant_slug=%s AND loteo_id=%s AND manzana=%s
+               AND (estado IN ('vendido','reservado') OR cliente_id IS NOT NULL)""",
+            (TENANT, loteo_id, manzana),
+        )
+        bloqueados = cur.fetchone()[0]
+        if bloqueados > 0:
+            cur.close()
+            conn.close()
+            return {
+                "conflict": True, "ok": False,
+                "error": f"La manzana tiene {bloqueados} lote(s) vendido(s)/reservado(s) — no se puede eliminar",
+            }
+        cur.execute(
+            "DELETE FROM lotes_mapa WHERE tenant_slug=%s AND loteo_id=%s AND manzana=%s",
+            (TENANT, loteo_id, manzana),
+        )
+        eliminados = cur.rowcount
+        conn.commit()
+        cur.close()
+        conn.close()
+        if loteo_id:
+            _recalc_contadores_loteo(int(loteo_id))
+        return {"ok": True, "eliminados": eliminados}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 # ── Contratos (Sprint 6) ────────────────────────────────────────────────────
 def get_all_contratos():
     return _crud_generico("contratos", "list")
