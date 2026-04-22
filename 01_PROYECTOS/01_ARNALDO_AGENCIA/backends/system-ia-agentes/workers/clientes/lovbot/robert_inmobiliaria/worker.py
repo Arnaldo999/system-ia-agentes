@@ -3349,6 +3349,50 @@ def admin_migrar_lotes_individuales(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/admin/fix-lotes-constraint")
+def admin_fix_lotes_constraint(request: Request):
+    """
+    Corrige el UNIQUE constraint de lotes_mapa para incluir la columna 'manzana'.
+
+    Problema anterior: UNIQUE (tenant_slug, loteo_id, numero_lote) impedía que
+    A-9 y B-9 coexistieran en el mismo loteo. En planos reales cada manzana
+    tiene su propia numeración 1..N.
+
+    Nuevo constraint: UNIQUE (tenant_slug, loteo_id, manzana, numero_lote)
+
+    Idempotente: elimina el viejo si existe, crea el nuevo si no existe.
+    Requiere header X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    import subprocess, sys, os
+    _check_admin_token(request)
+    _check_pg()
+
+    script_path = os.path.join(
+        os.path.dirname(__file__),
+        "..", "..", "..", "..", "scripts", "fix_lotes_mapa_constraint.py",
+    )
+    script_path = os.path.normpath(script_path)
+
+    if not os.path.exists(script_path):
+        return {"error": f"Script no encontrado: {script_path}"}
+
+    try:
+        result = subprocess.run(
+            [sys.executable, script_path],
+            capture_output=True, text=True, timeout=60,
+            env=os.environ.copy(),
+        )
+        return {
+            "ok": result.returncode == 0,
+            "stdout": result.stdout[-4000:] if result.stdout else "",
+            "stderr": result.stderr[-1000:] if result.stderr else "",
+            "returncode": result.returncode,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/admin/nurturing/24h")
 def nurturing_24h():
     """Envía mensajes de seguimiento a leads calificados que NO agendaron cita
