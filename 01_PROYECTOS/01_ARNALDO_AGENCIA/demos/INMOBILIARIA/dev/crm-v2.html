@@ -5255,21 +5255,20 @@ window.aplicarSubnichoTipo = function(tipo) {
   window.SUBNICHO_TIPO = tipo;
   document.body.setAttribute('data-subnicho-tipo', tipo);
 
-  // ── 1. Compat. legacy: ocultar/mostrar ítems individuales con data-subnicho ──
-  // (mantener por si algún panel externo usa esta clase directo)
+  // ── 1. Mostrar TODOS los items (los grupos acordeón arriba ya organizan por subnicho) ──
+  // El usuario siempre puede acceder a cualquier módulo desde cualquier tenant.
   document.querySelectorAll('.subnicho-gestion').forEach(el => {
-    const itemSubnicho = el.getAttribute('data-subnicho');
-    const visible = (tipo !== 'agente') && (itemSubnicho === tipo || tipo === 'mixto');
-    el.style.display = visible ? '' : 'none';
+    el.style.display = '';
   });
 
   // ── 2. Control de grupos acordeón (sg-group) ──────────────────────────────
-  // Definir qué grupos se muestran y cuál empieza abierto por defecto
+  // Todos los grupos siempre visibles (colapsables). El subnicho solo decide cuál abre por defecto.
+  const ALL_GROUPS = ['desarrolladora', 'agencia', 'mixto'];
   const groupConfig = {
-    desarrolladora: { show: ['desarrolladora', 'mixto'], defaultOpen: ['desarrolladora'] },
-    agencia:        { show: ['agencia', 'mixto'],        defaultOpen: ['agencia']        },
-    mixto:          { show: ['desarrolladora', 'agencia', 'mixto'], defaultOpen: ['desarrolladora', 'agencia', 'mixto'] },
-    agente:         { show: [],                          defaultOpen: []                 },
+    desarrolladora: { show: ALL_GROUPS, defaultOpen: ['desarrolladora'] },
+    agencia:        { show: ALL_GROUPS, defaultOpen: ['agencia']        },
+    mixto:          { show: ALL_GROUPS, defaultOpen: ALL_GROUPS         },
+    agente:         { show: ALL_GROUPS, defaultOpen: []                 },
   };
   const cfg = groupConfig[tipo] || groupConfig.desarrolladora;
 
