@@ -28,6 +28,16 @@
 - Causa: `import time` puesto dentro de un bloque de código (dentro de una función o sección) en lugar del top-level.
 - Solución: Todos los imports al inicio del archivo, antes de cualquier código.
 
+## 2026-04-22 — CORS bloqueaba CRM Maicol (Back Urbanizaciones)
+
+### Bug: CRM crm.backurbanizaciones.com no podía hacer fetch al backend
+**Síntoma**: Todos los endpoints `/clientes/arnaldo/maicol/crm/*` devolvían error CORS en consola Chrome. UI mostraba "Failed to fetch" / "Cargando leads..." infinito / funnels en 0.
+**Causa raíz**: `main.py` CORSMiddleware tenía en `allow_origins` solo orígenes Lovbot (`crm.lovbot.ai`, `lovbot-demos.vercel.app`, `admin.lovbot.ai`) + localhost. El origen `https://crm.backurbanizaciones.com` NUNCA fue agregado — omisión histórica desde que se configuró CORS (commit `b39264c`).
+**Fix**: agregar `"https://crm.backurbanizaciones.com"` como primer elemento de `allow_origins` en `main.py`, con comentario de sección para Arnaldo/Maicol.
+**Commit**: `a681a5c` — push `master:main` — Coolify Hostinger autodeploy.
+**Validación post-deploy**: esperar redeploy y confirmar preflight OPTIONS con `Access-Control-Allow-Origin: https://crm.backurbanizaciones.com`.
+**Nota**: el backend estaba VIVO (respondía 405 al GET — correcto para rutas POST). El problema era 100% CORS, no caída del servidor.
+
 ## 2026-04-22 — Sesión CRM v3 Robert — bugs notables fixeados
 
 ### Bug: `tenant_slug specified more than once` al POST de GESTIÓN
