@@ -3573,6 +3573,17 @@ def _check_at():
         raise HTTPException(status_code=503, detail="Airtable no configurado (TOKEN/BASE_ID faltantes)")
 
 
+def _at_result(result) -> dict:
+    """Convierte el resultado de _at_create en respuesta HTTP correcta.
+    Si el dict contiene 'error', lanza HTTPException 422 para que el frontend
+    reciba un status 4XX real y no un HTTP 200 con body de error silencioso.
+    """
+    from fastapi import HTTPException
+    if isinstance(result, dict) and "error" in result and "id" not in result:
+        raise HTTPException(status_code=422, detail=result["error"])
+    return result
+
+
 # ── Asesores (Sprint 3) ─────────────────────────────────────────────────────
 @router.get("/crm/asesores")
 def crm_asesores_list():
@@ -3582,7 +3593,7 @@ def crm_asesores_list():
 @router.post("/crm/asesores")
 async def crm_asesor_create(request: Request):
     _check_at()
-    return db.create_asesor(await request.json())
+    return _at_result(db.create_asesor(await request.json()))
 
 @router.patch("/crm/asesores/{record_id}")
 async def crm_asesor_update(record_id: str, request: Request):
@@ -3604,7 +3615,7 @@ def crm_propietarios_list():
 @router.post("/crm/propietarios")
 async def crm_propietario_create(request: Request):
     _check_at()
-    return db.create_propietario(await request.json())
+    return _at_result(db.create_propietario(await request.json()))
 
 @router.patch("/crm/propietarios/{record_id}")
 async def crm_propietario_update(record_id: str, request: Request):
@@ -3626,7 +3637,7 @@ def crm_loteos_list():
 @router.post("/crm/loteos")
 async def crm_loteo_create(request: Request):
     _check_at()
-    return db.create_loteo(await request.json())
+    return _at_result(db.create_loteo(await request.json()))
 
 @router.patch("/crm/loteos/{record_id}")
 async def crm_loteo_update(record_id: str, request: Request):
@@ -3648,7 +3659,7 @@ def crm_lotes_mapa_list(loteo_id: str = None):
 @router.post("/crm/lotes-mapa")
 async def crm_lote_mapa_create(request: Request):
     _check_at()
-    return db.create_lote_mapa(await request.json())
+    return _at_result(db.create_lote_mapa(await request.json()))
 
 @router.patch("/crm/lotes-mapa/{record_id}")
 async def crm_lote_mapa_update(record_id: str, request: Request):
@@ -3711,7 +3722,7 @@ def crm_visitas_list():
 @router.post("/crm/visitas")
 async def crm_visita_create(request: Request):
     _check_at()
-    return db.create_visita(await request.json())
+    return _at_result(db.create_visita(await request.json()))
 
 @router.patch("/crm/visitas/{record_id}")
 async def crm_visita_update(record_id: str, request: Request):
@@ -3733,7 +3744,7 @@ def crm_inmuebles_renta_list():
 @router.post("/crm/inmuebles-renta")
 async def crm_inmueble_renta_create(request: Request):
     _check_at()
-    return db.create_inmueble_renta(await request.json())
+    return _at_result(db.create_inmueble_renta(await request.json()))
 
 @router.patch("/crm/inmuebles-renta/{record_id}")
 async def crm_inmueble_renta_update(record_id: str, request: Request):
@@ -3755,7 +3766,7 @@ def crm_inquilinos_list(inmueble_renta_id: str = None):
 @router.post("/crm/inquilinos")
 async def crm_inquilino_create(request: Request):
     _check_at()
-    return db.create_inquilino(await request.json())
+    return _at_result(db.create_inquilino(await request.json()))
 
 @router.patch("/crm/inquilinos/{record_id}")
 async def crm_inquilino_update(record_id: str, request: Request):
@@ -3777,7 +3788,7 @@ def crm_pagos_alquiler_list(inquilino_id: str = None, mes_anio: str = None):
 @router.post("/crm/pagos-alquiler")
 async def crm_pago_alquiler_create(request: Request):
     _check_at()
-    return db.create_pago_alquiler(await request.json())
+    return _at_result(db.create_pago_alquiler(await request.json()))
 
 @router.patch("/crm/pagos-alquiler/{record_id}")
 async def crm_pago_alquiler_update(record_id: str, request: Request):
@@ -3799,7 +3810,7 @@ def crm_liquidaciones_list(propietario_id: str = None, mes_anio: str = None):
 @router.post("/crm/liquidaciones")
 async def crm_liquidacion_create(request: Request):
     _check_at()
-    return db.create_liquidacion(await request.json())
+    return _at_result(db.create_liquidacion(await request.json()))
 
 @router.patch("/crm/liquidaciones/{record_id}")
 async def crm_liquidacion_update(record_id: str, request: Request):

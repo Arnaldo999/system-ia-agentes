@@ -964,11 +964,11 @@ def get_all_asesores() -> list[dict]:
 
 
 def create_asesor(campos: dict) -> dict:
-    return _at_create(TABLE_ASESORES, campos)
+    return _at_create(TABLE_ASESORES, _map_asesor(campos))
 
 
 def update_asesor(record_id: str, campos: dict) -> bool:
-    return _at_update(TABLE_ASESORES, record_id, campos)
+    return _at_update(TABLE_ASESORES, record_id, _map_asesor(campos))
 
 
 def delete_asesor(record_id: str) -> bool:
@@ -984,15 +984,241 @@ def get_all_propietarios() -> list[dict]:
 
 
 def create_propietario(campos: dict) -> dict:
-    return _at_create(TABLE_PROPIETARIOS, campos)
+    return _at_create(TABLE_PROPIETARIOS, _map_propietario(campos))
 
 
 def update_propietario(record_id: str, campos: dict) -> bool:
-    return _at_update(TABLE_PROPIETARIOS, record_id, campos)
+    return _at_update(TABLE_PROPIETARIOS, record_id, _map_propietario(campos))
 
 
 def delete_propietario(record_id: str) -> bool:
     return _at_delete(TABLE_PROPIETARIOS, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HELPERS DE MAPEO snake_case → PascalCase Airtable
+# El JS del CRM envía campos en snake_case; Airtable espera exactamente el
+# nombre del campo tal como está definido en la base (PascalCase con _).
+# Estos mappers aplican la conversión + manejan campos con nombres distintos.
+# Los campos no reconocidos se pasan tal cual (permite que ya vengan en AT-format).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _map_loteo(campos: dict) -> dict:
+    """JS → Airtable para tabla Loteos."""
+    MAPPING = {
+        "nombre":          "Nombre",
+        "slug":            "Slug",
+        "descripcion":     "Descripcion",
+        "ubicacion":       "Ubicacion",
+        "ciudad":          "Ciudad",
+        "mapa_svg_url":    "Mapa_SVG_URL",
+        "total_lotes":     "Total_Lotes",
+        "lotes_disponibles": "Lotes_Disponibles",
+        "lotes_reservados":  "Lotes_Reservados",
+        "lotes_vendidos":    "Lotes_Vendidos",
+        "precio_desde":    "Precio_Desde",
+        "moneda":          "Moneda",
+        "activo":          "Activo",
+    }
+    return {MAPPING.get(k, k): v for k, v in campos.items() if v is not None and v != ""}
+
+
+def _map_propietario(campos: dict) -> dict:
+    """JS → Airtable para tabla Propietarios."""
+    MAPPING = {
+        "nombre":            "Nombre",
+        "telefono":          "Telefono",
+        "email":             "Email",
+        "dni_cuit":          "DNI_CUIT",
+        "direccion":         "Direccion",
+        "comision_pactada":  "Comision_Pactada",
+        "cantidad_propiedades": "Cantidad_Propiedades",
+        "notas":             "Notas",
+    }
+    return {MAPPING.get(k, k): v for k, v in campos.items() if v is not None and v != ""}
+
+
+def _map_asesor(campos: dict) -> dict:
+    """JS → Airtable para tabla Asesores."""
+    MAPPING = {
+        "nombre":        "Nombre",
+        "apellido":      "Apellido",
+        "email":         "Email",
+        "telefono":      "Telefono",
+        "foto_url":      "Foto_URL",
+        "rol":           "Rol",
+        "comision_pct":  "Comision_Pct",
+        "activo":        "Activo",
+        "notas":         "Notas",
+    }
+    return {MAPPING.get(k, k): v for k, v in campos.items() if v is not None and v != ""}
+
+
+def _map_inmueble_renta(campos: dict) -> dict:
+    """JS → Airtable para tabla InmueblesRenta.
+    Nota: JS envía precio_alquiler, Airtable tiene Precio_Mensual.
+          JS envía disponible (bool), Airtable tiene Estado (singleSelect).
+          JS envía zona, Airtable no tiene Zona — se ignora (no existe en schema).
+          JS envía propietario_id (string), Airtable tiene Propietario (linkedRecord).
+    """
+    MAPPING = {
+        "titulo":             "Titulo",
+        "direccion":          "Direccion",
+        "ciudad":             "Ciudad",
+        "barrio":             "Barrio",
+        "tipo":               "Tipo",
+        "dormitorios":        "Dormitorios",
+        "banios":             "Banios",
+        "metros_cubiertos":   "Metros_Cubiertos",
+        "metros_terreno":     "Metros_Terreno",
+        "amoblado":           "Amoblado",
+        "permite_mascotas":   "Permite_Mascotas",
+        # nombre distinto
+        "precio_alquiler":    "Precio_Mensual",
+        "precio_mensual":     "Precio_Mensual",
+        "expensas":           "Expensas",
+        "moneda":             "Moneda",
+        "comision_pct":       "Comision_Pct",
+        "deposito_meses":     "Deposito_Meses",
+        "disponible_desde":   "Disponible_Desde",
+        "fecha_disponibilidad": "Disponible_Desde",
+        "imagen_url":         "Imagen_URL",
+        "maps_url":           "Maps_URL",
+        "descripcion":        "Descripcion",
+        "asesor_asignado":    "Asesor_Asignado",
+        "notas":              "Descripcion",  # InmueblesRenta no tiene campo Notas propio
+    }
+    at = {}
+    for k, v in campos.items():
+        if v is None or v == "":
+            continue
+        # disponible (bool) → Estado (singleSelect)
+        if k == "disponible":
+            at["Estado"] = "disponible" if v else "alquilado"
+            continue
+        # propietario_id (string rec...) → Propietario (linkedRecord array)
+        if k == "propietario_id" and v:
+            at["Propietario"] = [str(v)] if not isinstance(v, list) else v
+            continue
+        # zona no existe en InmueblesRenta — descartar silenciosamente
+        if k == "zona":
+            continue
+        dest = MAPPING.get(k, k)
+        at[dest] = v
+    return at
+
+
+def _map_inquilino(campos: dict) -> dict:
+    """JS → Airtable para tabla Inquilinos (tabla de datos puros del inquilino).
+    inmueble_renta_id no existe en Inquilinos — se descarta (va al contrato).
+    """
+    MAPPING = {
+        "nombre":                      "Nombre",
+        "apellido":                    "Apellido",
+        "telefono":                    "Telefono",
+        "email":                       "Email",
+        "documento":                   "DNI_CUIT",
+        "dni_cuit":                    "DNI_CUIT",
+        "fecha_nacimiento":            "Fecha_Nacimiento",
+        "ocupacion":                   "Ocupacion",
+        "ingresos_mensuales":          "Ingresos_Mensuales",
+        "garante_nombre":              "Garante_Nombre",
+        "garante_telefono":            "Garante_Telefono",
+        "garante_dni":                 "Garante_DNI",
+        "garante_tipo":                "Garante_Tipo",
+        "contacto_emergencia_nombre":  "Contacto_Emergencia_Nombre",
+        "contacto_emergencia_telefono":"Contacto_Emergencia_Telefono",
+        "estado":                      "Estado",
+        "notas":                       "Notas",
+    }
+    IGNORAR = {"inmueble_renta_id", "fecha_inicio", "fecha_fin",
+               "monto_alquiler_actual", "monto_cuota", "monto_mensual"}
+    return {MAPPING.get(k, k): v for k, v in campos.items()
+            if v is not None and v != "" and k not in IGNORAR}
+
+
+def _map_pago_alquiler(campos: dict) -> dict:
+    """JS → Airtable para tabla PagosAlquiler.
+    JS envía mes_anio (str "2024-03"), Airtable tiene Periodo_Mes + Periodo_Anio separados.
+    JS envía monto → Monto_Alquiler (campo principal).
+    JS envía inquilino_id (string rec...) → Inquilino (linkedRecord).
+    """
+    MAPPING = {
+        "monto":              "Monto_Alquiler",
+        "monto_alquiler":     "Monto_Alquiler",
+        "monto_expensas":     "Monto_Expensas",
+        "monto_mora":         "Monto_Mora",
+        "monto_total":        "Monto_Total",
+        "fecha_vencimiento":  "Fecha_Vencimiento",
+        "fecha_pago":         "Fecha_Pago",
+        "metodo":             "Metodo_Pago",
+        "metodo_pago":        "Metodo_Pago",
+        "comprobante_url":    "Comprobante_URL",
+        "estado":             "Estado",
+        "notas":              "Notas",
+    }
+    at = {}
+    for k, v in campos.items():
+        if v is None or v == "":
+            continue
+        # mes_anio "2024-03" → Periodo_Mes=3, Periodo_Anio=2024
+        if k == "mes_anio" and v:
+            try:
+                parts = str(v).split("-")
+                at["Periodo_Anio"] = int(parts[0])
+                at["Periodo_Mes"] = int(parts[1])
+            except Exception:
+                pass
+            continue
+        # inquilino_id → Inquilino linkedRecord
+        if k == "inquilino_id" and v:
+            at["Inquilino"] = [str(v)] if not isinstance(v, list) else v
+            continue
+        dest = MAPPING.get(k, k)
+        at[dest] = v
+    return at
+
+
+def _map_liquidacion(campos: dict) -> dict:
+    """JS → Airtable para tabla Liquidaciones.
+    JS envía mes_anio → Periodo_Mes + Periodo_Anio.
+    JS envía bruto → Monto_Bruto; comision_agencia → Comision_Inmobiliaria;
+    neto_propietario → Monto_Neto.
+    JS envía propietario_id → Propietario (linkedRecord).
+    """
+    MAPPING = {
+        "bruto":               "Monto_Bruto",
+        "monto_bruto":         "Monto_Bruto",
+        "comision_agencia":    "Comision_Inmobiliaria",
+        "comision_inmobiliaria": "Comision_Inmobiliaria",
+        "neto_propietario":    "Monto_Neto",
+        "monto_neto":          "Monto_Neto",
+        "moneda":              "Moneda",
+        "metodo_transferencia":"Metodo_Transferencia",
+        "cbu_destino":         "CBU_Destino",
+        "fecha_liquidacion":   "Fecha_Liquidacion",
+        "comprobante_url":     "Comprobante_URL",
+        "estado":              "Estado",
+        "notas":               "Notas",
+    }
+    at = {}
+    for k, v in campos.items():
+        if v is None or v == "":
+            continue
+        if k == "mes_anio" and v:
+            try:
+                parts = str(v).split("-")
+                at["Periodo_Anio"] = int(parts[0])
+                at["Periodo_Mes"] = int(parts[1])
+            except Exception:
+                pass
+            continue
+        if k == "propietario_id" and v:
+            at["Propietario"] = [str(v)] if not isinstance(v, list) else v
+            continue
+        dest = MAPPING.get(k, k)
+        at[dest] = v
+    return at
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1004,11 +1230,11 @@ def get_all_loteos() -> list[dict]:
 
 
 def create_loteo(campos: dict) -> dict:
-    return _at_create(TABLE_LOTEOS, campos)
+    return _at_create(TABLE_LOTEOS, _map_loteo(campos))
 
 
 def update_loteo(record_id: str, campos: dict) -> bool:
-    return _at_update(TABLE_LOTEOS, record_id, campos)
+    return _at_update(TABLE_LOTEOS, record_id, _map_loteo(campos))
 
 
 def delete_loteo(record_id: str) -> bool:
@@ -1221,12 +1447,12 @@ def get_all_inmuebles_renta() -> list[dict]:
 
 
 def create_inmueble_renta(campos: dict) -> dict:
-    rec = _at_create(TABLE_INMUEBLES_RENTA, campos)
+    rec = _at_create(TABLE_INMUEBLES_RENTA, _map_inmueble_renta(campos))
     return _serialize_inmueble(rec) if "error" not in rec else rec
 
 
 def update_inmueble_renta(record_id: str, campos: dict) -> bool:
-    return _at_update(TABLE_INMUEBLES_RENTA, record_id, campos)
+    return _at_update(TABLE_INMUEBLES_RENTA, record_id, _map_inmueble_renta(campos))
 
 
 def delete_inmueble_renta(record_id: str) -> bool:
@@ -1245,11 +1471,11 @@ def get_all_inquilinos(inmueble_id: str = None) -> list[dict]:
 
 
 def create_inquilino(campos: dict) -> dict:
-    return _at_create(TABLE_INQUILINOS, campos)
+    return _at_create(TABLE_INQUILINOS, _map_inquilino(campos))
 
 
 def update_inquilino(record_id: str, campos: dict) -> bool:
-    return _at_update(TABLE_INQUILINOS, record_id, campos)
+    return _at_update(TABLE_INQUILINOS, record_id, _map_inquilino(campos))
 
 
 def delete_inquilino(record_id: str) -> bool:
@@ -1273,11 +1499,11 @@ def get_all_pagos_alquiler(inquilino_id: str = None, mes_anio: str = None) -> li
 
 
 def create_pago_alquiler(campos: dict) -> dict:
-    return _at_create(TABLE_PAGOS_ALQUILER, campos)
+    return _at_create(TABLE_PAGOS_ALQUILER, _map_pago_alquiler(campos))
 
 
 def update_pago_alquiler(record_id: str, campos: dict) -> bool:
-    return _at_update(TABLE_PAGOS_ALQUILER, record_id, campos)
+    return _at_update(TABLE_PAGOS_ALQUILER, record_id, _map_pago_alquiler(campos))
 
 
 def delete_pago_alquiler(record_id: str) -> bool:
@@ -1301,11 +1527,11 @@ def get_all_liquidaciones(propietario_id: str = None, mes_anio: str = None) -> l
 
 
 def create_liquidacion(campos: dict) -> dict:
-    return _at_create(TABLE_LIQUIDACIONES, campos)
+    return _at_create(TABLE_LIQUIDACIONES, _map_liquidacion(campos))
 
 
 def update_liquidacion(record_id: str, campos: dict) -> bool:
-    return _at_update(TABLE_LIQUIDACIONES, record_id, campos)
+    return _at_update(TABLE_LIQUIDACIONES, record_id, _map_liquidacion(campos))
 
 
 def delete_liquidacion(record_id: str) -> bool:
