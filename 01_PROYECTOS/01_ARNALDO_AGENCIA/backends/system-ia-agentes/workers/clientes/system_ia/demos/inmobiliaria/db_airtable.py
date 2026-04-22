@@ -1634,7 +1634,6 @@ def crear_contrato_unificado(payload: dict) -> dict:
     at_contrato = {
         "Tipo": tipo_at,
         "Cliente": [cliente_activo_id],
-        "Origen_Creacion": origen_creacion,
     }
     if item_descripcion:
         at_contrato["Item_Descripcion"] = item_descripcion
