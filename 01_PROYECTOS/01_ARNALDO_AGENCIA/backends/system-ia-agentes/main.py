@@ -115,10 +115,20 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https?://.*",
+    allow_origins=[
+        "https://crm.lovbot.ai",
+        "https://lovbot-demos.vercel.app",
+        "https://admin.lovbot.ai",
+        "http://localhost:8765",
+        "http://localhost:8766",
+        "http://127.0.0.1:8765",
+        "http://127.0.0.1:8766",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 @app.middleware("http")
