@@ -10,7 +10,8 @@ ALCANCE Y LIMITACIÓN DOCUMENTADA:
 - La protección ante caída total de VPS queda como mejora futura (ej: cron externo o UptimeRobot).
 - Lo que sí cubre: FastAPI caído, n8n caído, app Coolify unhealthy, CORS Maicol,
   frontend CRM Maicol, Chatwoot Arnaldo, backend Robert (ping externo),
-  CRM Robert frontend, CORS Robert, admin Robert.
+  CRM Robert modelo (/dev/crm-v2), dominio raíz CRM Robert, panel gestión Robert,
+  CORS Robert, admin Robert.
   Mica CRM: preparado pero deshabilitado hasta que defina dominio prod.
 
 ENVÍO CONSOLIDADO:
@@ -36,7 +37,9 @@ VARIABLES OPCIONALES (tienen defaults):
 - BACKEND_ROBERT_URL     → default: https://agentes.lovbot.ai
 - MAICOL_CORS_ORIGIN     → default: https://crm.backurbanizaciones.com
 - MAICOL_CORS_ENDPOINT   → default: /clientes/arnaldo/maicol/crm/propiedades
-- ROBERT_CRM_URL         → default: https://crm.lovbot.ai
+- ROBERT_CRM_MODELO_URL  → default: https://crm.lovbot.ai/dev/crm-v2  (CRM modelo real)
+- ROBERT_CRM_DOMINIO_URL → default: https://crm.lovbot.ai  (raíz — verifica que el dominio responde)
+- ROBERT_PANEL_GESTION_URL → default: https://lovbot-demos.vercel.app/dev/admin
 - ROBERT_ADMIN_URL       → default: https://admin.lovbot.ai
 - ROBERT_BACKEND_CORS    → default: https://agentes.lovbot.ai
 
@@ -96,10 +99,15 @@ MAICOL_CORS_ORIGIN  = os.getenv("MAICOL_CORS_ORIGIN", "https://crm.backurbanizac
 MAICOL_CORS_ENDPOINT = os.getenv("MAICOL_CORS_ENDPOINT", "/clientes/arnaldo/maicol/crm/propiedades")
 
 # Robert — checks de CRM y admin (LIVE, habilitados)
-ROBERT_CRM_URL      = os.getenv("ROBERT_CRM_URL", "https://crm.lovbot.ai").rstrip("/")
-ROBERT_ADMIN_URL    = os.getenv("ROBERT_ADMIN_URL", "https://admin.lovbot.ai").rstrip("/")
-ROBERT_BACKEND_CORS = os.getenv("ROBERT_BACKEND_CORS", "https://agentes.lovbot.ai").rstrip("/")
-ROBERT_CORS_ORIGIN  = os.getenv("ROBERT_CORS_ORIGIN", "https://crm.lovbot.ai")
+# IMPORTANTE: el CRM modelo está en /dev/crm-v2, no en raíz.
+# Cuando un cliente real se replique (futuro), va a tener su propia URL.
+# Por ahora monitoreamos: modelo (/dev/crm-v2) + dominio raíz + panel gestión + admin + backend.
+ROBERT_CRM_MODELO_URL    = os.getenv("ROBERT_CRM_MODELO_URL", "https://crm.lovbot.ai/dev/crm-v2")
+ROBERT_CRM_DOMINIO_URL   = os.getenv("ROBERT_CRM_DOMINIO_URL", "https://crm.lovbot.ai").rstrip("/")
+ROBERT_PANEL_GESTION_URL = os.getenv("ROBERT_PANEL_GESTION_URL", "https://lovbot-demos.vercel.app/dev/admin")
+ROBERT_ADMIN_URL         = os.getenv("ROBERT_ADMIN_URL", "https://admin.lovbot.ai").rstrip("/")
+ROBERT_BACKEND_CORS      = os.getenv("ROBERT_BACKEND_CORS", "https://agentes.lovbot.ai").rstrip("/")
+ROBERT_CORS_ORIGIN       = os.getenv("ROBERT_CORS_ORIGIN", "https://crm.lovbot.ai")
 
 # Mica — checks deshabilitados hasta que se defina dominio prod
 # Para activar: setear MICA_CRM_ENABLED=1 y opcionalmente MICA_CRM_URL en Coolify.
@@ -323,14 +331,58 @@ def check_backend_robert() -> tuple[bool, str]:
     return False, "no responde"
 
 
-def check_robert_crm_frontend() -> tuple[bool, str]:
+def check_robert_crm_modelo() -> tuple[bool, str]:
     """
-    Verifica que el frontend del CRM de Robert responde 200.
-    Agnóstico a la versión del CRM (v1/v2): cuando se hace sync-crm-prod
-    el dominio crm.lovbot.ai queda igual, solo cambia el archivo servido.
+    Verifica que el CRM modelo de Robert responde 200.
+    La URL real del modelo es /dev/crm-v2 — esta es la que importa monitorear.
+    Cuando un cliente real se replique (futuro), tendrá su propia URL y su propio check.
     Solo ping externo — no toca datos ni lógica de Lovbot.
     """
-    url = f"{ROBERT_CRM_URL}/"
+    url = ROBERT_CRM_MODELO_URL
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            if r.status_code == 200:
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_robert_crm_dominio() -> tuple[bool, str]:
+    """
+    Verifica que el dominio raíz crm.lovbot.ai responde 200.
+    Sirve como check de disponibilidad del dominio, independientemente
+    de que el modelo real esté en /dev/crm-v2.
+    Solo ping externo — no toca datos ni lógica de Lovbot.
+    """
+    url = f"{ROBERT_CRM_DOMINIO_URL}/"
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            if r.status_code == 200:
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_robert_panel_gestion() -> tuple[bool, str]:
+    """
+    Verifica que el panel de gestión de Robert responde 200.
+    URL: https://lovbot-demos.vercel.app/dev/admin
+    Panel crítico para crear y configurar tenants/clientes.
+    Solo ping externo — no toca datos ni lógica de Lovbot.
+    """
+    url = ROBERT_PANEL_GESTION_URL
     for intento in range(2):
         try:
             r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
@@ -489,10 +541,12 @@ def main():
         "maicol_cors":        check_maicol_crm_cors,
         "maicol_frontend":    check_maicol_crm_frontend,
         "chatwoot_arnaldo":   check_chatwoot_arnaldo,
-        "backend_robert":     check_backend_robert,
-        "robert_crm":         check_robert_crm_frontend,
-        "robert_crm_cors":    check_robert_crm_cors,
-        "robert_admin":       check_robert_admin,
+        "backend_robert":       check_backend_robert,
+        "robert_crm_modelo":    check_robert_crm_modelo,
+        "robert_crm_dominio":   check_robert_crm_dominio,
+        "robert_panel_gestion": check_robert_panel_gestion,
+        "robert_crm_cors":      check_robert_crm_cors,
+        "robert_admin":         check_robert_admin,
         "mica_crm":           check_mica_crm_frontend,
         "mica_crm_cors":      check_mica_crm_cors,
     }
@@ -506,10 +560,12 @@ def main():
         "maicol_cors":        "Maicol CRM — preflight CORS",
         "maicol_frontend":    "Maicol CRM — frontend",
         "chatwoot_arnaldo":   "Chatwoot Arnaldo",
-        "backend_robert":     "Backend Robert (ping externo)",
-        "robert_crm":         "Robert CRM frontend",
-        "robert_crm_cors":    "Robert CRM CORS",
-        "robert_admin":       "Robert admin",
+        "backend_robert":       "Backend Robert (ping externo)",
+        "robert_crm_modelo":    "Robert CRM modelo (dev/crm-v2)",
+        "robert_crm_dominio":   "Robert CRM dominio raíz",
+        "robert_panel_gestion": "Robert Panel Gestión",
+        "robert_crm_cors":      "Robert CRM CORS",
+        "robert_admin":         "Robert admin",
         "mica_crm":           "Mica CRM frontend",
         "mica_crm_cors":      "Mica CRM CORS",
     }

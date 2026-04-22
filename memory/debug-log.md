@@ -68,6 +68,36 @@ Para deshabilitar temporalmente sin tocar el cron: agregar env var `GUARDIA_DISA
 
 Con COOLIFY_TOKEN correcto, los 9 checks pasan. Con token bogus y N8N_URL bogus, se mandó correctamente 1 Telegram consolidado con 2 alertas juntas — formato correcto.
 
+## 2026-04-22 — Refinamiento checks Robert en guardia_critica.py (chat con Robert)
+
+**Motivo**: Arnaldo habló con Robert y confirmó el esquema real del CRM Lovbot. La URL que se monitoreaba (`crm.lovbot.ai/` raíz) no era la que importaba — el modelo real del CRM vive en `/dev/crm-v2`.
+
+**Esquema confirmado por Robert**:
+- `https://crm.lovbot.ai/?tenant=robert` → YA NO EXISTE (URL legacy, descartada).
+- `https://crm.lovbot.ai/dev/crm-v2` → CRM modelo real (template del que se replica para cada cliente futuro).
+- `https://lovbot-demos.vercel.app/dev/admin` → Panel de Gestión (admin para crear/configurar tenants). Crítico.
+- `https://crm.lovbot.ai/` (raíz) → sigue siendo 200 (sirve HTML), vale como check de disponibilidad de dominio.
+- `https://admin.lovbot.ai/` → sin cambios.
+- `https://agentes.lovbot.ai/health` → sin cambios.
+
+**Cambios aplicados en `scripts/guardia_critica.py`**:
+- `check_robert_crm_frontend` → renombrado a `check_robert_crm_modelo`, apunta a `/dev/crm-v2`.
+- Nuevo `check_robert_crm_dominio` → GET `crm.lovbot.ai/` (raíz, 200 = dominio responde).
+- Nuevo `check_robert_panel_gestion` → GET `lovbot-demos.vercel.app/dev/admin` (200).
+- `check_robert_crm_cors` → sin cambios (preflight con Origin `crm.lovbot.ai` sigue siendo correcto).
+- `check_robert_admin` → sin cambios.
+- Vars env: `ROBERT_CRM_URL` → `ROBERT_CRM_MODELO_URL` + nuevas `ROBERT_CRM_DOMINIO_URL` y `ROBERT_PANEL_GESTION_URL`.
+
+**Resultado run local post-cambio**: 14 checks activos OK, 2 Mica deshabilitados (skip). Todo verde.
+
+**TODOs futuros**:
+- Cuando se replique el modelo para clientes reales de Lovbot (ej: subdominios o tenant-paths), agregar checks por cliente.
+- Cuando Arnaldo y Robert armen el "CRM agencia" (hablado el 22/04), sumar check a la guardia.
+- Nuevas env vars a agregar en Coolify Hostinger si se quieren cambiar las URLs por defecto:
+  - `ROBERT_CRM_MODELO_URL` (default: `https://crm.lovbot.ai/dev/crm-v2`)
+  - `ROBERT_CRM_DOMINIO_URL` (default: `https://crm.lovbot.ai`)
+  - `ROBERT_PANEL_GESTION_URL` (default: `https://lovbot-demos.vercel.app/dev/admin`)
+
 ## 2026-04-22 — Guardia Crítica ampliada: checks Robert CRM/admin + Mica preparado
 
 **Cambio**: se sumaron 5 checks nuevos a `guardia_critica.py` (total 14 en el dict, 12 activos + 2 deshabilitados).
