@@ -3050,7 +3050,7 @@ def get_ficha_persona(cliente_id: int) -> dict:
         inmuebles_propios = []
         if telefono_persona:
             cur.execute("""
-                SELECT ir.id, ir.titulo, ir.tipo, ir.zona, ir.precio_mensual, ir.disponible
+                SELECT ir.id, ir.titulo, ir.tipo, ir.precio_mensual, ir.disponible
                 FROM inmuebles_renta ir
                 JOIN propietarios p ON p.id=ir.propietario_id AND p.tenant_slug=ir.tenant_slug
                 WHERE ir.tenant_slug=%s AND p.telefono=%s
