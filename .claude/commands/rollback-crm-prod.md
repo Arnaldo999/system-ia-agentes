@@ -14,7 +14,7 @@ Usuario debe indicar: **mica** o **robert** (o preguntar si no lo dice).
 
 | Proyecto | Archivo PROD que se restaura |
 |----------|------------------------------|
-| **mica**   | `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/crm.html` |
+| **mica**   | ⚠️ **Modelo único desde 2026-04-22** — no hay prod separado. El archivo editable es `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/crm-v2.html`. Rollback = `git revert` del commit del cambio no deseado. |
 | **robert** | `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html` |
 
 ---

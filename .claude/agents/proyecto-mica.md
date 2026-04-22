@@ -88,7 +88,7 @@ Vivís en un ecosistema de **3 agencias que NUNCA se cruzan entre sí**:
 
 ## Regla de demo → producción
 
-NUNCA editar workers de Mica ni `demos/SYSTEM-IA/crm.html` directamente sin probar en `dev/` primero.
+NUNCA editar workers de Mica ni `demos/SYSTEM-IA/dev/crm-v2.html` sin coordinar con Arnaldo. El archivo `crm.html` (raiz) y `dev/crm.html` (v1) fueron eliminados el 2026-04-22 — modelo unico es `crm-v2.html`.
 
 ## Tokens / env vars
 

@@ -16,7 +16,7 @@ Usuario debe indicar: **mica** o **robert** (o preguntar si no lo dice).
 
 | Proyecto | Archivo DEMO (editable) | Archivo PROD (read-only) | Backend URL prod | api_prefix |
 |----------|-------------------------|---------------------------|------------------|------------|
-| **mica**   | `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/crm.html` | `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/crm.html` | `https://agentes.arnaldoayalaestratega.cloud` | `/mica/demos/inmobiliaria` |
+| **mica**   | `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/crm-v2.html` | ⚠️ **Modelo único — no hay archivo prod separado** (2026-04-22). El mismo `crm-v2.html` es producción. Las rutas `/system-ia/crm` y `/system-ia/dev/crm` son alias en vercel.json al mismo archivo. | `https://agentes.arnaldoayalaestratega.cloud` | `/mica/demos/inmobiliaria` |
 | **robert** | `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/crm.html` | `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html` | `https://agentes.lovbot.ai` | `/clientes/lovbot/inmobiliaria` |
 
 Los archivos PROD están en la lista `deny` de `.claude/settings.json`. Este comando usa `cat > PROD` desde Bash (permitido) para evitar la restricción.
@@ -215,8 +215,8 @@ Aplicar con `sed -i "s/const CRM_VERSION = '.*';/const CRM_VERSION = 'NUEVA';/"`
 
 ## URLs de verificación
 
-- **Mica prod**: https://system-ia-agencia.vercel.app/system-ia/crm?tenant=mica-demo
-- **Mica dev**:  https://system-ia-agencia.vercel.app/system-ia/dev/crm?tenant=mica-demo
+- **Mica (modelo único)**: https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2?tenant=mica-demo
+- **Mica (alias legacy)**: https://system-ia-agencia.vercel.app/system-ia/crm?tenant=mica-demo (redirige al v2)
 - **Robert prod**: https://crm.lovbot.ai/?tenant=robert
 - **Robert dev**:  https://lovbot-demos.vercel.app/dev/crm?tenant=robert
 

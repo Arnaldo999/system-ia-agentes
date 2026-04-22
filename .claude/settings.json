@@ -569,8 +569,6 @@
       "Bash(mv meta-webhook-parser.md providers/meta-graph-api.md)"
     ],
     "deny": [
-      "Edit(**/demos/SYSTEM-IA/crm.html)",
-      "Write(**/demos/SYSTEM-IA/crm.html)",
       "Edit(**/demos/INMOBILIARIA/demo-crm-mvp.html)",
       "Write(**/demos/INMOBILIARIA/demo-crm-mvp.html)"
     ],
