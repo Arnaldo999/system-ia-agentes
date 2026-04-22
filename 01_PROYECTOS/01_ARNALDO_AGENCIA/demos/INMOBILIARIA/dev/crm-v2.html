@@ -2515,6 +2515,9 @@ tailwind.config = {
           <div class="nav-item" onclick="nav('asesores',this)">
             <span class="nav-icon">👨‍💼</span><span>Equipo / Asesores</span>
           </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="mixto" onclick="nav('visitas',this)">
+            <span class="nav-icon">🗓️</span><span>Visitas agendadas</span>
+          </div>
         </div>
       </div>
 
@@ -5589,12 +5592,7 @@ async function renderProps() {
 
 // Helpers data-attribute — evitan comillas simples dentro de atributos HTML en template literals
 function _verProp(el) { verDetalleProp(el.dataset.pid); }
-function _avanzarLead(el) {
-  const lid = el.dataset.lid;
-  const st = LEADS[lid] ? LEADS[lid].status : null;
-  const next = st === 'contactado' ? 'calificado' : 'cita';
-  moverLead(lid, next);
-}
+// _avanzarLead eliminado (solo invocaba moverLead, también eliminado).
 
 // Ocultar imagen rota — función global, sin strings dentro del atributo onerror
 function _imgErr(imgEl) {
@@ -6023,77 +6021,8 @@ function abrirDetalleCita(i) {
   openDetalle(lead.id);
 }
 
-// ── MOVER LEAD EN KANBAN ────────────────────────────────────────────────────
-const COL_MAP = {
-  contactado:{col:'col-c',cnt:'cnt-c',label:'Contactado',next:'calificado',nextLabel:'→ Calificado'},
-  calificado:{col:'col-q',cnt:'cnt-q',label:'Calificado',next:'cita',nextLabel:'→ Cita agendada'},
-  cita:{col:'col-a',cnt:'cnt-a',label:'Cita Agendada',next:'cerrado',nextLabel:'✅ Cerrar venta'},
-  cerrado:{col:'col-z',cnt:'cnt-z',label:'Cerrado 🏆',next:null,nextLabel:''},
-};
-
-function moverLead(id, destino) {
-  const card = document.getElementById(`kcard-${id}`);
-  if(!card) return;
-
-  // remove from current col
-  card.parentElement.removeChild(card);
-
-  // update all kanban counts
-  ['cnt-n','cnt-c','cnt-q','cnt-a','cnt-z'].forEach(cntId=>{
-    const el=document.getElementById(cntId);
-    if(el){
-      const col=document.getElementById(cntId.replace('cnt-','col-').replace('n','n').replace('c','c').replace('q','q').replace('a','a').replace('z','z'));
-    }
-  });
-
-  // add to dest col
-  const info = COL_MAP[destino];
-  const destCol = document.getElementById(info.col);
-  if(!destCol) return;
-
-  const l = LEADS[id];
-  const origenBadge = l.origen==='wa'?'<span class="badge b-wa">💬 WhatsApp</span>':l.origen==='web'?'<span class="badge b-web">📋 Web</span>':'<span class="badge b-ref">🔥 Referido</span>';
-
-  card.className='lcard fresh';
-  const nextBtn = info.next
-    ? `<button class="btn ${info.next==='cerrado'?'':'btn-primary'}" style="font-size:11px;padding:3px 8px;${info.next==='cerrado'?'background:#064e3b;border-color:#1a5c33;color:#34d399':''}" data-lid="${id}" data-next="${info.next}" onclick="event.stopPropagation();moverLead(this.dataset.lid,this.dataset.next)">${info.nextLabel}</button>`
-    : `<span style="color:var(--green);font-size:11px;font-weight:600">🏆 Venta cerrada</span>`;
-
-  card.querySelector('.lcard-actions').innerHTML = `
-    <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDetalle(${id})">Ver</button>
-    ${nextBtn}
-  `;
-  destCol.insertBefore(card, destCol.firstChild);
-
-  // recount
-  recontarKanban();
-
-  // update lead data
-  const statusMap = {contactado:'contactado',calificado:'calificado',cita:'cita',cerrado:'cita'};
-  if(LEADS[id]) LEADS[id].status = statusMap[destino]||destino;
-
-  // feedback
-  const msgs = {
-    contactado:`<strong>${l.name}</strong> movido a Contactado`,
-    calificado:`<strong>${l.name}</strong> calificado — bot confirmó presupuesto y necesidades`,
-    cita:`<strong>${l.name}</strong> tiene cita agendada 📅`,
-    cerrado:`🏆 <strong>¡Venta cerrada!</strong> — ${l.name}`,
-  };
-  addAct(msgs[destino]||'Lead actualizado','var(--accent)','ahora mismo');
-  if(destino==='cerrado') showNotif('🏆 ¡Venta cerrada!',`${l.name} — ¡felicitaciones!`);
-
-  // refresh leads table if visible
-  renderLeads();
-}
-
-function recontarKanban() {
-  const map = {n:'col-n',c:'col-c',q:'col-q',a:'col-a',z:'col-z',p:'col-p'};
-  Object.entries(map).forEach(([k,colId])=>{
-    const col=document.getElementById(colId);
-    const cnt=document.getElementById(`cnt-${k}`);
-    if(col&&cnt) cnt.textContent=[...col.querySelectorAll('.lcard')].length;
-  });
-}
+// moverLead / COL_MAP / recontarKanban eliminados (código legacy — IDs inexistentes).
+// El flujo activo de kanban es kanbanDrop() con drag & drop + PATCH /crm/clientes/{id}.
 
 // ── RESÚMENES IA ────────────────────────────────────────────────────────────
 let RESUMENES = [];

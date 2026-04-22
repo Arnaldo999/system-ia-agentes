@@ -2,10 +2,10 @@
 // Requiere que API_BASE y showNotif() estén definidos globalmente en crm.html
 
 window.crmFetch = async function(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options
-  });
+  const token = sessionStorage.getItem(`crm_token_${window.TENANT_SLUG || 'demo'}`);
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (!res.ok) {
     const rawText = await res.text();
     // Intentar extraer el campo 'detail' si el backend devolvio JSON (FastAPI HTTPException)
