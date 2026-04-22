@@ -64,17 +64,21 @@
     document.getElementById('inmuebleTipo').value = m.tipo || 'depto';
     document.getElementById('inmuebleZona').value = m.zona || '';
     document.getElementById('inmuebleDireccion').value = m.direccion || '';
-    document.getElementById('inmueblePropietario').value = m.propietario_id || '';
     document.getElementById('inmueblePrecio').value = m.precio_alquiler || '';
     document.getElementById('inmuebleExpensas').value = m.expensas || '';
     document.getElementById('inmuebleMoneda').value = m.moneda || 'USD';
     document.getElementById('inmuebleDisponible').checked = m.disponible !== false;
     document.getElementById('inmuebleFechaDisp').value = (m.fecha_disponibilidad || '').slice(0, 10);
     document.getElementById('inmuebleNotas').value = m.notas || '';
-    // Cargar propietarios en el select
+    // Cargar propietarios en el select — usar cache ya cargado
     const selProp = document.getElementById('inmueblePropietario');
-    selProp.innerHTML = '<option value="">— Sin propietario —</option>' +
-      _propietariosCache.map(p => `<option value="${p.id}"${m.propietario_id == p.id ? ' selected' : ''}>${p.nombre || 'Propietario #' + p.id}</option>`).join('');
+    if (selProp) {
+      selProp.innerHTML = '<option value="">— Sin propietario —</option>' +
+        _propietariosCache.map(p => {
+          const label = [p.nombre || '', p.apellido || ''].join(' ').trim() + (p.telefono ? ' — ' + p.telefono : '');
+          return `<option value="${p.id}"${m.propietario_id == p.id ? ' selected' : ''}>${label || 'Propietario #' + p.id}</option>`;
+        }).join('');
+    }
     modal.classList.add('show');
   };
 

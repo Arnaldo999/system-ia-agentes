@@ -1,7 +1,10 @@
-// Panel Inquilinos — CRUD real conectado a /crm/inquilinos
+// Panel Inquilinos — persona única + alquiler unificado
+// Flujo modal: Paso 1 buscar/crear persona → Paso 2 datos del alquiler
 (function () {
   let _items = [];
   let _inmueblesCache = [];
+  let _personaSeleccionada = null; // { id, nombre, apellido, telefono, email, documento }
+  let _autocompleteTid = null;
 
   window.cargarInquilinos = async function () {
     const cont = document.getElementById('inquilinosBody');
@@ -29,8 +32,11 @@
 
   const ESTADO_COLORS = {
     activo:    { bg: 'rgba(16,185,129,.14)', color: '#6ee7b7' },
+    vigente:   { bg: 'rgba(16,185,129,.14)', color: '#6ee7b7' },
     deuda:     { bg: 'rgba(245,158,11,.14)', color: '#fcd34d' },
+    atrasado:  { bg: 'rgba(245,158,11,.14)', color: '#fcd34d' },
     finalizado:{ bg: 'rgba(139,139,167,.14)', color: '#cbd5e1' },
+    rescindido:{ bg: 'rgba(239,68,68,.14)', color: '#fca5a5' },
   };
 
   function _renderTablaInquilinos() {
@@ -64,55 +70,278 @@
     }).join('');
   }
 
+  // ── Modal nuevo inquilino (2 pasos) ────────────────────────────────────────
+
   window.abrirModalInquilino = function (id) {
     const item = id ? _items.find(x => String(x.id) === String(id)) : null;
-    const m = item || {};
     const modal = document.getElementById('modalInquilino');
     if (!modal) return;
-    document.getElementById('inquilinoId').value = m.id || '';
-    document.getElementById('inquilinoNombre').value = m.nombre || '';
-    document.getElementById('inquilinoApellido').value = m.apellido || '';
-    document.getElementById('inquilinoTel').value = m.telefono || '';
-    document.getElementById('inquilinoEmail').value = m.email || '';
-    document.getElementById('inquilinoDoc').value = m.documento || '';
-    document.getElementById('inquilinoEstado').value = m.estado || 'activo';
-    document.getElementById('inquilinoFechaInicio').value = (m.fecha_inicio || '').slice(0, 10);
-    document.getElementById('inquilinoFechaFin').value = (m.fecha_fin || '').slice(0, 10);
-    document.getElementById('inquilinoMonto').value = m.monto_alquiler_actual || '';
-    document.getElementById('inquilinoGaranteNombre').value = m.garante_nombre || '';
-    document.getElementById('inquilinoGaranteTel').value = m.garante_telefono || '';
-    document.getElementById('inquilinoNotas').value = m.notas || '';
-    // Dropdown inmuebles
-    const selInm = document.getElementById('inquilinoInmueble');
-    selInm.innerHTML = '<option value="">— Sin inmueble —</option>' +
-      _inmueblesCache.map(inm => `<option value="${inm.id}"${m.inmueble_renta_id == inm.id ? ' selected' : ''}>${inm.titulo || 'Inmueble #' + inm.id}</option>`).join('');
+
+    if (item) {
+      // Modo edición legacy — usar flujo original directo
+      _abrirModoEdicion(item);
+    } else {
+      // Modo creación — flujo persona única (2 pasos)
+      _abrirModoCreacion();
+    }
     modal.classList.add('show');
   };
 
+  function _abrirModoCreacion() {
+    _personaSeleccionada = null;
+    const modal = document.getElementById('modalInquilino');
+
+    // Si el modal tiene paso1/paso2, usamos ese flujo
+    const paso1 = document.getElementById('inqPaso1');
+    const paso2 = document.getElementById('inqPaso2');
+    if (paso1 && paso2) {
+      paso1.style.display = '';
+      paso2.style.display = 'none';
+      document.getElementById('inqBusqueda').value = '';
+      document.getElementById('inqAutocompleteLista').innerHTML = '';
+      document.getElementById('inqAutocompleteLista').style.display = 'none';
+      _limpiarPersonaSeleccionada();
+      // Limpiar campos paso2
+      ['inqFechaInicio','inqFechaFin','inqMonto','inqDeposito',
+       'inqGaranteNombre','inqGaranteTel','inqGaranteDni'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      const selInm = document.getElementById('inqInmueble');
+      if (selInm) {
+        selInm.innerHTML = '<option value="">— Cargando... —</option>';
+        // Cargar solo disponibles
+        crmFetch('/crm/inmuebles-renta').then(data => {
+          const disponibles = (data.items || []).filter(i => i.disponible !== false);
+          selInm.innerHTML = '<option value="">— Seleccionar inmueble —</option>' +
+            disponibles.map(i => `<option value="${i.id}">${i.titulo || 'Inmueble #' + i.id}${i.zona ? ' — ' + i.zona : ''}</option>`).join('');
+        }).catch(() => {
+          selInm.innerHTML = '<option value="">— Sin inmuebles disponibles —</option>';
+        });
+      }
+    } else {
+      // Fallback: abrir modal legacy vacío
+      _abrirModoEdicion({});
+    }
+    // Ocultar campo ID
+    const idEl = document.getElementById('inquilinoId');
+    if (idEl) idEl.value = '';
+  }
+
+  function _abrirModoEdicion(m) {
+    // Flujo legacy para edición directa en tabla inquilinos
+    const paso1 = document.getElementById('inqPaso1');
+    const paso2 = document.getElementById('inqPaso2');
+    // Si existe el nuevo layout, mostrar directamente paso2 con datos
+    if (paso1 && paso2) {
+      paso1.style.display = 'none';
+      paso2.style.display = '';
+    }
+    document.getElementById('inquilinoId').value = m.id || '';
+    // Rellenar campos si existen en el modal
+    _setVal('inquilinoNombre', m.nombre);
+    _setVal('inquilinoApellido', m.apellido);
+    _setVal('inquilinoTel', m.telefono);
+    _setVal('inquilinoEmail', m.email);
+    _setVal('inquilinoDoc', m.documento);
+    _setVal('inquilinoEstado', m.estado || 'activo');
+    _setVal('inquilinoFechaInicio', (m.fecha_inicio || '').slice(0, 10));
+    _setVal('inquilinoFechaFin', (m.fecha_fin || '').slice(0, 10));
+    _setVal('inquilinoMonto', m.monto_alquiler_actual);
+    _setVal('inquilinoGaranteNombre', m.garante_nombre);
+    _setVal('inquilinoGaranteTel', m.garante_telefono);
+    _setVal('inquilinoNotas', m.notas);
+    // Dropdown inmuebles
+    const selInm = document.getElementById('inquilinoInmueble') || document.getElementById('inqInmueble');
+    if (selInm) {
+      selInm.innerHTML = '<option value="">— Sin inmueble —</option>' +
+        _inmueblesCache.map(inm => `<option value="${inm.id}"${m.inmueble_renta_id == inm.id ? ' selected' : ''}>${inm.titulo || 'Inmueble #' + inm.id}</option>`).join('');
+    }
+  }
+
+  function _setVal(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val != null ? val : '';
+  }
+
+  // ── Autocomplete búsqueda de persona ──────────────────────────────────────
+
+  window.inqBuscarPersona = function (input) {
+    const q = input.value.trim();
+    const lista = document.getElementById('inqAutocompleteLista');
+    if (!lista) return;
+    clearTimeout(_autocompleteTid);
+    if (q.length < 2) {
+      lista.innerHTML = '';
+      lista.style.display = 'none';
+      return;
+    }
+    lista.innerHTML = '<div style="padding:8px;color:var(--txt-2);font-size:12px">Buscando...</div>';
+    lista.style.display = '';
+    _autocompleteTid = setTimeout(async () => {
+      try {
+        const data = await crmFetch('/crm/personas/buscar?q=' + encodeURIComponent(q));
+        const items = data.items || [];
+        if (items.length === 0) {
+          lista.innerHTML = '<div style="padding:8px;color:var(--txt-2);font-size:12px">Sin resultados — podés crear como nuevo cliente.</div>';
+        } else {
+          lista.innerHTML = items.map(p => {
+            const nombre = [p.nombre || '', p.apellido || ''].join(' ').trim();
+            const roles = (p.roles || []).join(', ');
+            return `<div class="inq-ac-item" onclick="inqSeleccionarPersona(${JSON.stringify(JSON.stringify(p))})"
+              style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--brd);font-size:13px">
+              <strong>${nombre}</strong>
+              <span style="color:var(--txt-2);margin-left:6px;font-size:11px">${p.telefono || ''}</span>
+              <span style="float:right;font-size:10px;color:var(--accent-2)">${roles}</span>
+            </div>`;
+          }).join('');
+        }
+      } catch (err) {
+        lista.innerHTML = '<div style="padding:8px;color:#f87171;font-size:12px">Error: ' + err.message + '</div>';
+      }
+    }, 300);
+  };
+
+  window.inqSeleccionarPersona = function (personaJson) {
+    const p = JSON.parse(personaJson);
+    _personaSeleccionada = p;
+    const lista = document.getElementById('inqAutocompleteLista');
+    if (lista) lista.style.display = 'none';
+    const busqueda = document.getElementById('inqBusqueda');
+    if (busqueda) busqueda.value = [p.nombre || '', p.apellido || ''].join(' ').trim();
+    // Mostrar badge de persona seleccionada
+    const badge = document.getElementById('inqPersonaBadge');
+    if (badge) {
+      badge.innerHTML = `<span style="background:rgba(16,185,129,.15);color:#6ee7b7;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600">
+        Persona existente: ${[p.nombre, p.apellido].join(' ').trim()} · ${p.telefono || ''}
+        <button onclick="inqLimpiarPersona()" style="background:none;border:none;color:#f87171;cursor:pointer;margin-left:6px;font-size:13px">x</button>
+      </span>`;
+      badge.style.display = '';
+    }
+    // Avanzar al paso 2
+    _avanzarPaso2();
+  };
+
+  window.inqLimpiarPersona = function () {
+    _personaSeleccionada = null;
+    _limpiarPersonaSeleccionada();
+    const paso1 = document.getElementById('inqPaso1');
+    const paso2 = document.getElementById('inqPaso2');
+    if (paso1) paso1.style.display = '';
+    if (paso2) paso2.style.display = 'none';
+    const busqueda = document.getElementById('inqBusqueda');
+    if (busqueda) { busqueda.value = ''; busqueda.focus(); }
+  };
+
+  function _limpiarPersonaSeleccionada() {
+    const badge = document.getElementById('inqPersonaBadge');
+    if (badge) { badge.innerHTML = ''; badge.style.display = 'none'; }
+  }
+
+  window.inqCrearNuevo = function () {
+    _personaSeleccionada = null;
+    _limpiarPersonaSeleccionada();
+    const badge = document.getElementById('inqPersonaBadge');
+    if (badge) {
+      badge.innerHTML = `<span style="background:rgba(99,102,241,.15);color:#a5b4fc;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600">
+        Crear cliente nuevo
+        <button onclick="inqLimpiarPersona()" style="background:none;border:none;color:#f87171;cursor:pointer;margin-left:6px;font-size:13px">x</button>
+      </span>`;
+      badge.style.display = '';
+    }
+    // Mostrar campos de nuevo cliente en paso1
+    const camposNuevo = document.getElementById('inqCamposNuevo');
+    if (camposNuevo) camposNuevo.style.display = '';
+    _avanzarPaso2();
+  };
+
+  function _avanzarPaso2() {
+    const paso1 = document.getElementById('inqPaso1');
+    const paso2 = document.getElementById('inqPaso2');
+    if (paso1) paso1.style.display = 'none';
+    if (paso2) paso2.style.display = '';
+  }
+
+  // ── Guardar ───────────────────────────────────────────────────────────────
+
   window.guardarInquilino = async function () {
-    const id = document.getElementById('inquilinoId').value;
+    const id = document.getElementById('inquilinoId') ? document.getElementById('inquilinoId').value : '';
     const btn = document.getElementById('btnGuardarInquilino');
     if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-    const campos = {
-      nombre: document.getElementById('inquilinoNombre').value,
-      apellido: document.getElementById('inquilinoApellido').value,
-      telefono: document.getElementById('inquilinoTel').value || null,
-      email: document.getElementById('inquilinoEmail').value || null,
-      documento: document.getElementById('inquilinoDoc').value || null,
-      inmueble_renta_id: parseInt(document.getElementById('inquilinoInmueble').value) || null,
-      estado: document.getElementById('inquilinoEstado').value,
-      fecha_inicio: document.getElementById('inquilinoFechaInicio').value || null,
-      fecha_fin: document.getElementById('inquilinoFechaFin').value || null,
-      monto_alquiler_actual: parseFloat(document.getElementById('inquilinoMonto').value) || null,
-      garante_nombre: document.getElementById('inquilinoGaranteNombre').value || null,
-      garante_telefono: document.getElementById('inquilinoGaranteTel').value || null,
-      notas: document.getElementById('inquilinoNotas').value || null,
-    };
+
     try {
-      if (id) await crmUpdate('inquilinos', id, campos);
-      else await crmCreate('inquilinos', campos);
+      const paso1El = document.getElementById('inqPaso1');
+      const usaFlujoNuevo = !!paso1El;
+
+      if (usaFlujoNuevo && !id) {
+        // Flujo nuevo — contrato alquiler
+        const inmuebleId = parseInt(document.getElementById('inqInmueble').value) || null;
+        if (!inmuebleId) throw new Error('Seleccioná un inmueble');
+
+        // Determinar cliente: existente o nuevo
+        let clienteActivoId = _personaSeleccionada ? _personaSeleccionada.id : null;
+
+        if (!clienteActivoId) {
+          // Crear cliente nuevo primero
+          const nombreNuevo = document.getElementById('inqNombreNuevo') ? document.getElementById('inqNombreNuevo').value.trim() : '';
+          const telNuevo = document.getElementById('inqTelNuevo') ? document.getElementById('inqTelNuevo').value.trim() : '';
+          if (!nombreNuevo) throw new Error('Ingresá el nombre del inquilino');
+          const nuevoCliente = await crmCreate('clientes_activos', {
+            nombre: nombreNuevo.split(' ')[0],
+            apellido: nombreNuevo.split(' ').slice(1).join(' '),
+            telefono: telNuevo || null,
+            email: document.getElementById('inqEmailNuevo') ? document.getElementById('inqEmailNuevo').value || null : null,
+            origen_creacion: 'crm_manual',
+          });
+          clienteActivoId = nuevoCliente.id;
+          if (!clienteActivoId) throw new Error('Error creando cliente');
+        }
+
+        const body = {
+          cliente_activo_id: clienteActivoId,
+          item_tipo: 'inmueble_renta',
+          item_id: inmuebleId,
+          monto_total: parseFloat(document.getElementById('inqMonto').value) || null,
+          fecha_firma: new Date().toISOString().slice(0, 10),
+          moneda: 'ARS',
+          alquiler: {
+            fecha_inicio: document.getElementById('inqFechaInicio').value || null,
+            fecha_fin: document.getElementById('inqFechaFin').value || null,
+            monto_mensual: parseFloat(document.getElementById('inqMonto').value) || null,
+            deposito_pagado: parseFloat(document.getElementById('inqDeposito').value) || null,
+            garante_nombre: document.getElementById('inqGaranteNombre').value || null,
+            garante_telefono: document.getElementById('inqGaranteTel').value || null,
+            garante_dni: document.getElementById('inqGaranteDni').value || null,
+          },
+        };
+
+        await crmFetch('/crm/contratos/alquiler', { method: 'POST', body: JSON.stringify(body) });
+        notif('Alquiler creado', 'Contrato + alquiler registrado correctamente');
+
+      } else {
+        // Flujo legacy — edición directa en tabla inquilinos
+        const campos = {
+          nombre: _getVal('inquilinoNombre'),
+          apellido: _getVal('inquilinoApellido'),
+          telefono: _getVal('inquilinoTel') || null,
+          email: _getVal('inquilinoEmail') || null,
+          documento: _getVal('inquilinoDoc') || null,
+          inmueble_renta_id: parseInt(_getVal('inquilinoInmueble') || _getVal('inqInmueble')) || null,
+          estado: _getVal('inquilinoEstado') || 'activo',
+          fecha_inicio: _getVal('inquilinoFechaInicio') || null,
+          fecha_fin: _getVal('inquilinoFechaFin') || null,
+          monto_alquiler_actual: parseFloat(_getVal('inquilinoMonto')) || null,
+          garante_nombre: _getVal('inquilinoGaranteNombre') || null,
+          garante_telefono: _getVal('inquilinoGaranteTel') || null,
+          notas: _getVal('inquilinoNotas') || null,
+        };
+        if (id) await crmUpdate('inquilinos', id, campos);
+        else await crmCreate('inquilinos', campos);
+        notif('Inquilino guardado', [campos.nombre, campos.apellido].join(' ').trim());
+      }
+
       document.getElementById('modalInquilino').classList.remove('show');
-      notif('Inquilino guardado', [campos.nombre, campos.apellido].join(' ').trim());
+      _personaSeleccionada = null;
       cargarInquilinos();
     } catch (e) {
       notif('Error al guardar', e.message);
@@ -120,6 +349,11 @@
       if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
     }
   };
+
+  function _getVal(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+  }
 
   window._eliminarInquilino = async function (id, nombre) {
     if (!confirm('Eliminar "' + nombre + '"?')) return;

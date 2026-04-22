@@ -3448,8 +3448,17 @@ tailwind.config = {
 <div class="modal-bg hidden" id="modalPropietario">
   <div class="modal" style="max-width:500px">
     <button class="mc" onclick="cerrarModal('modalPropietario')">✕</button>
-    <h3 class="text-lg font-bold mb-4">📑 Propietario</h3>
+    <h3 class="text-lg font-bold mb-4">Propietario</h3>
     <input type="hidden" id="propietarioId"/>
+    <!-- Bloque autocomplete persona existente (solo en creacion) -->
+    <div id="propBusquedaBloque" style="margin-bottom:14px;padding:12px;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.2);border-radius:8px">
+      <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:5px">Buscar cliente existente para vincular como propietario</label>
+      <input id="propBusqueda" type="text" placeholder="Nombre, teléfono o email..." oninput="propBuscarPersona(this)"
+        style="width:100%;padding:7px 10px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:6px;color:inherit;font-size:13px;box-sizing:border-box"/>
+      <div id="propAutocompleteLista" style="display:none;border:1px solid var(--brd);border-radius:6px;margin-top:4px;background:var(--surface);max-height:180px;overflow-y:auto;position:relative;z-index:10"></div>
+      <div id="propPersonaBadge" style="display:none;margin-top:6px"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--txt-2)">O completá los campos directamente para crear como nuevo cliente.</div>
+    </div>
     <div class="mb-3"><label class="text-xs text-txt-2">Nombre completo</label><input id="propietarioNombre" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
     <div class="grid grid-cols-2 gap-3 mb-3">
       <div><label class="text-xs text-txt-2">Teléfono</label><input id="propietarioTelefono" class="w-full p-2 bg-surface-alt border border-brd rounded"/></div>
@@ -3802,6 +3811,103 @@ tailwind.config = {
     </table>
   </div>
 </div>
+
+<!-- MODAL INQUILINO — 2 pasos: persona + alquiler -->
+<div class="modal-bg" id="modalInquilino" style="display:none">
+  <div class="modal" style="max-width:520px;width:95vw">
+    <button class="mc" onclick="document.getElementById('modalInquilino').classList.remove('show');document.getElementById('modalInquilino').style.display='none'">✕</button>
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">Nuevo inquilino</h3>
+    <input type="hidden" id="inquilinoId"/>
+
+    <!-- PASO 1: buscar o crear persona -->
+    <div id="inqPaso1">
+      <p style="font-size:12px;color:var(--txt-2);margin-bottom:12px">Paso 1 — Buscar cliente existente o crear nuevo</p>
+      <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:5px">Buscar por nombre, teléfono o email</label>
+      <input id="inqBusqueda" type="text" placeholder="Ej: Pedro Gomez, +549..." oninput="inqBuscarPersona(this)"
+        style="width:100%;padding:8px 12px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:6px;color:inherit;font-size:13px;box-sizing:border-box"/>
+      <div id="inqAutocompleteLista" style="display:none;border:1px solid var(--brd);border-radius:6px;margin-top:4px;background:var(--surface);max-height:200px;overflow-y:auto;z-index:10"></div>
+      <div id="inqPersonaBadge" style="display:none;margin-top:8px"></div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <div style="flex:1;height:1px;background:var(--brd)"></div>
+        <span style="font-size:11px;color:var(--txt-2)">o</span>
+        <div style="flex:1;height:1px;background:var(--brd)"></div>
+      </div>
+      <button onclick="inqCrearNuevo()" style="margin-top:10px;width:100%;padding:8px;background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(99,102,241,.25);border-radius:6px;cursor:pointer;font-size:13px">
+        + Crear como cliente nuevo
+      </button>
+      <!-- Campos solo visibles si crea nuevo -->
+      <div id="inqCamposNuevo" style="display:none;margin-top:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:3px">Nombre completo</label>
+            <input id="inqNombreNuevo" type="text" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/></div>
+          <div><label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:3px">Teléfono</label>
+            <input id="inqTelNuevo" type="text" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/></div>
+        </div>
+        <div><label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:3px">Email</label>
+          <input id="inqEmailNuevo" type="email" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/></div>
+      </div>
+    </div>
+
+    <!-- PASO 2: datos del alquiler -->
+    <div id="inqPaso2" style="display:none">
+      <p style="font-size:12px;color:var(--txt-2);margin-bottom:12px">Paso 2 — Datos del alquiler</p>
+      <div id="inqPersonaBadgeP2" style="margin-bottom:10px"></div>
+
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Inmueble (solo disponibles)</label>
+        <select id="inqInmueble" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px">
+          <option value="">— Cargando... —</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Fecha inicio</label>
+          <input id="inqFechaInicio" type="date" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Fecha fin</label>
+          <input id="inqFechaFin" type="date" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Monto mensual</label>
+          <input id="inqMonto" type="number" step="1" placeholder="Ej: 180000" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--txt-2);display:block;margin-bottom:4px">Depósito pagado</label>
+          <input id="inqDeposito" type="number" step="1" placeholder="Ej: 180000" style="width:100%;padding:7px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+      </div>
+
+      <details style="margin-bottom:10px">
+        <summary style="font-size:12px;color:var(--txt-2);cursor:pointer;padding:4px 0">Garante (opcional)</summary>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+          <div>
+            <label style="font-size:10px;color:var(--txt-2);display:block;margin-bottom:3px">Nombre garante</label>
+            <input id="inqGaranteNombre" type="text" style="width:100%;padding:6px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:12px;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--txt-2);display:block;margin-bottom:3px">Teléfono garante</label>
+            <input id="inqGaranteTel" type="text" style="width:100%;padding:6px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:12px;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--txt-2);display:block;margin-bottom:3px">DNI garante</label>
+            <input id="inqGaranteDni" type="text" style="width:100%;padding:6px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:5px;color:inherit;font-size:12px;box-sizing:border-box"/>
+          </div>
+        </div>
+      </details>
+
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button onclick="inqLimpiarPersona()" style="padding:8px 16px;background:var(--surface-alt);border:1px solid var(--brd);border-radius:6px;cursor:pointer;font-size:13px;color:var(--txt-2)">Atras</button>
+        <button id="btnGuardarInquilino" onclick="guardarInquilino()" style="flex:1;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Guardar alquiler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Override: show class para modalInquilino -->
+<style>#modalInquilino.show { display:flex !important; }</style>
 
 <!-- PAGOS DE ALQUILER (subnicho: agencia) -->
 <div class="panel hidden" id="panel-pagos-alquiler" style="padding:0">
