@@ -9,12 +9,15 @@ ALCANCE Y LIMITACIÓN DOCUMENTADA:
 - Si el VPS cae completamente, este script tampoco corre.
 - La protección ante caída total de VPS queda como mejora futura (ej: cron externo o UptimeRobot).
 - Lo que sí cubre: FastAPI caído, n8n caído, app Coolify unhealthy, CORS Maicol,
-  frontend CRM Maicol, Chatwoot Arnaldo, backend Robert (ping externo).
+  frontend CRM Maicol, Chatwoot Arnaldo, backend Robert (ping externo),
+  CRM Robert frontend, CORS Robert, admin Robert.
+  Mica CRM: preparado pero deshabilitado hasta que defina dominio prod.
 
 ENVÍO CONSOLIDADO:
 - Si hay múltiples servicios caídos, se manda UN SOLO mensaje de Telegram con todos juntos.
 - Cada servicio tiene cooldown individual de 30 min (no re-alerta hasta que pase ese tiempo).
 - Si un servicio se recupera, su cooldown se limpia (volvería a alertar si cae de nuevo).
+- Checks que devuelven None (deshabilitados) se saltan silenciosamente.
 
 VARIABLES DE ENTORNO REQUERIDAS:
 - TELEGRAM_BOT_TOKEN     → token del bot Telegram
@@ -33,6 +36,16 @@ VARIABLES OPCIONALES (tienen defaults):
 - BACKEND_ROBERT_URL     → default: https://agentes.lovbot.ai
 - MAICOL_CORS_ORIGIN     → default: https://crm.backurbanizaciones.com
 - MAICOL_CORS_ENDPOINT   → default: /clientes/arnaldo/maicol/crm/propiedades
+- ROBERT_CRM_URL         → default: https://crm.lovbot.ai
+- ROBERT_ADMIN_URL       → default: https://admin.lovbot.ai
+- ROBERT_BACKEND_CORS    → default: https://agentes.lovbot.ai
+
+CHECKS MICA (deshabilitados — activar cuando Mica defina dominio prod):
+- MICA_CRM_ENABLED       → setear "1" para habilitar los checks de Mica
+- MICA_CRM_URL           → default: https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2
+                            Cuando Mica defina dominio prod (ej: crm.systemia.com),
+                            setear MICA_CRM_URL en Coolify y poner MICA_CRM_ENABLED=1.
+                            TODO: actualizar cuando se defina dominio prod (consultar a Arnaldo).
 
 USO:
   python scripts/guardia_critica.py
@@ -81,6 +94,19 @@ CHATWOOT_URL        = os.getenv("CHATWOOT_URL", "https://chatwoot.arnaldoayalaes
 BACKEND_ROBERT_URL  = os.getenv("BACKEND_ROBERT_URL", "https://agentes.lovbot.ai").rstrip("/")
 MAICOL_CORS_ORIGIN  = os.getenv("MAICOL_CORS_ORIGIN", "https://crm.backurbanizaciones.com")
 MAICOL_CORS_ENDPOINT = os.getenv("MAICOL_CORS_ENDPOINT", "/clientes/arnaldo/maicol/crm/propiedades")
+
+# Robert — checks de CRM y admin (LIVE, habilitados)
+ROBERT_CRM_URL      = os.getenv("ROBERT_CRM_URL", "https://crm.lovbot.ai").rstrip("/")
+ROBERT_ADMIN_URL    = os.getenv("ROBERT_ADMIN_URL", "https://admin.lovbot.ai").rstrip("/")
+ROBERT_BACKEND_CORS = os.getenv("ROBERT_BACKEND_CORS", "https://agentes.lovbot.ai").rstrip("/")
+ROBERT_CORS_ORIGIN  = os.getenv("ROBERT_CORS_ORIGIN", "https://crm.lovbot.ai")
+
+# Mica — checks deshabilitados hasta que se defina dominio prod
+# Para activar: setear MICA_CRM_ENABLED=1 y opcionalmente MICA_CRM_URL en Coolify.
+# TODO: cuando Mica defina dominio prod (ej: crm.systemia.com), actualizar MICA_CRM_URL
+#       y poner MICA_CRM_ENABLED=1. Consultar a Arnaldo antes de activar.
+MICA_CRM_ENABLED    = os.getenv("MICA_CRM_ENABLED", "0")
+MICA_CRM_URL        = os.getenv("MICA_CRM_URL", "https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2").rstrip("/")
 
 ESTADO_PATH     = Path("/tmp/guardia_estado.json")
 COOLDOWN_MIN    = 30          # minutos entre alertas del mismo servicio
@@ -297,6 +323,140 @@ def check_backend_robert() -> tuple[bool, str]:
     return False, "no responde"
 
 
+def check_robert_crm_frontend() -> tuple[bool, str]:
+    """
+    Verifica que el frontend del CRM de Robert responde 200.
+    Agnóstico a la versión del CRM (v1/v2): cuando se hace sync-crm-prod
+    el dominio crm.lovbot.ai queda igual, solo cambia el archivo servido.
+    Solo ping externo — no toca datos ni lógica de Lovbot.
+    """
+    url = f"{ROBERT_CRM_URL}/"
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            if r.status_code == 200:
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_robert_crm_cors() -> tuple[bool, str]:
+    """
+    Verifica CORS del backend de Robert para el CRM.
+    Preflight OPTIONS a /health con Origin: crm.lovbot.ai.
+    Valida que responde 200/204 + Access-Control-Allow-Origin correcto.
+    Solo ping externo — no toca datos ni lógica de Lovbot.
+    """
+    url = f"{ROBERT_BACKEND_CORS}/health"
+    headers = {
+        "Origin": ROBERT_CORS_ORIGIN,
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "content-type",
+    }
+    for intento in range(2):
+        try:
+            r = requests.options(url, headers=headers, timeout=REQUEST_TIMEOUT)
+            if r.status_code not in (200, 204):
+                return False, f"preflight HTTP {r.status_code}"
+            acao = r.headers.get("Access-Control-Allow-Origin", "")
+            if acao == ROBERT_CORS_ORIGIN or acao == "*":
+                return True, f"CORS ok (ACAO={acao})"
+            return False, f"Access-Control-Allow-Origin ausente o incorrecto: '{acao}'"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_robert_admin() -> tuple[bool, str]:
+    """
+    Verifica que el panel admin de Robert responde 200.
+    Solo ping externo — no toca datos ni lógica de Lovbot.
+    """
+    url = f"{ROBERT_ADMIN_URL}/"
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            if r.status_code == 200:
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_mica_crm_frontend() -> tuple[bool, str] | None:
+    """
+    Verifica que el frontend del CRM de Mica responde 200.
+
+    DESHABILITADO por defecto. Para activar:
+      1. Definir el dominio prod de Mica (ej: crm.systemia.com) — consultar a Arnaldo.
+      2. Setear MICA_CRM_URL=https://crm.systemia.com en Coolify (env vars de la app).
+      3. Setear MICA_CRM_ENABLED=1 en Coolify.
+    URL actual (dev): https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2
+    TODO: actualizar cuando se defina dominio prod (consultar a Arnaldo).
+    """
+    if MICA_CRM_ENABLED != "1":
+        return None  # Deshabilitado — saltar silenciosamente
+    url = f"{MICA_CRM_URL}"
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            if r.status_code == 200:
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_mica_crm_cors() -> tuple[bool, str] | None:
+    """
+    Verifica CORS del backend Arnaldo para el CRM de Mica.
+    Preflight OPTIONS a /health con Origin: $MICA_CRM_URL.
+
+    DESHABILITADO por defecto. Para activar: igual que check_mica_crm_frontend().
+    Setear MICA_CRM_ENABLED=1 y MICA_CRM_URL en Coolify.
+    TODO: actualizar cuando se defina dominio prod (consultar a Arnaldo).
+    """
+    if MICA_CRM_ENABLED != "1":
+        return None  # Deshabilitado — saltar silenciosamente
+    url = f"{FASTAPI_URL}/health"
+    headers = {
+        "Origin": MICA_CRM_URL,
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "content-type",
+    }
+    for intento in range(2):
+        try:
+            r = requests.options(url, headers=headers, timeout=REQUEST_TIMEOUT)
+            if r.status_code not in (200, 204):
+                return False, f"preflight HTTP {r.status_code}"
+            acao = r.headers.get("Access-Control-Allow-Origin", "")
+            if acao == MICA_CRM_URL or acao == "*":
+                return True, f"CORS ok (ACAO={acao})"
+            return False, f"Access-Control-Allow-Origin ausente o incorrecto: '{acao}'"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
 # ── Telegram ──────────────────────────────────────────────────────────────────
 
 def enviar_telegram(mensaje: str):
@@ -330,6 +490,11 @@ def main():
         "maicol_frontend":    check_maicol_crm_frontend,
         "chatwoot_arnaldo":   check_chatwoot_arnaldo,
         "backend_robert":     check_backend_robert,
+        "robert_crm":         check_robert_crm_frontend,
+        "robert_crm_cors":    check_robert_crm_cors,
+        "robert_admin":       check_robert_admin,
+        "mica_crm":           check_mica_crm_frontend,
+        "mica_crm_cors":      check_mica_crm_cors,
     }
 
     nombres = {
@@ -342,13 +507,25 @@ def main():
         "maicol_frontend":    "Maicol CRM — frontend",
         "chatwoot_arnaldo":   "Chatwoot Arnaldo",
         "backend_robert":     "Backend Robert (ping externo)",
+        "robert_crm":         "Robert CRM frontend",
+        "robert_crm_cors":    "Robert CRM CORS",
+        "robert_admin":       "Robert admin",
+        "mica_crm":           "Mica CRM frontend",
+        "mica_crm_cors":      "Mica CRM CORS",
     }
 
     # Acumular alertas que pasaron el cooldown
     alertas_pendientes: list[tuple[str, str, str]] = []  # (servicio, nombre, detalle)
 
     for servicio, fn in checks.items():
-        ok, detalle = fn()
+        resultado = fn()
+
+        # Check deshabilitado — saltar silenciosamente
+        if resultado is None:
+            print(f"[guardia] --- {nombres[servicio]}: deshabilitado (skip)")
+            continue
+
+        ok, detalle = resultado
 
         if ok:
             # Limpiar cooldown si el servicio se recuperó

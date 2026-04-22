@@ -1,5 +1,31 @@
 # Debug y errores frecuentes
 
+## 2026-04-22 — Bug histórico de tokens: por qué pedíamos credenciales una y otra vez
+
+**Síntoma**: Arnaldo mostró captura de Coolify con 4 tokens emitidos (`worker-arnaldo`, dos `agentes`, `flujos agenticos`). Cada subagente le pedía un token Coolify "porque no funcionaba", aunque ya había 1 guardado en `.env`.
+
+**Causa raíz (3 capas)**:
+1. **Quoting**: `COOLIFY_TOKEN='3|9jSOO...'` con comillas SIMPLES en `.env` raíz. `bash source .env` rompe en el `|` (lo lee como pipe) → "orden no encontrada" → token nunca se cargaba en variables de entorno → API auth devolvía 401.
+2. **Lookup incompleto**: subagentes buscaban `COOLIFY_TOKEN` solo en `.env` del backend monorepo (donde NO estaba — solo `COOLIFY_ROBERT_TOKEN`). El de Arnaldo vivía solo en `.env` raíz Mission Control.
+3. **Síntoma engaño**: 401 lo interpretaban como "token inválido/expirado" y pedían uno nuevo. La verdad era "token correcto, mal cargado".
+
+**Fix definitivo**:
+- Cambiar TODOS los tokens con `|` a comillas DOBLES: `COOLIFY_TOKEN="3|9jSOO..."`. Aplicado a `.env` raíz y `.env` backend (también el `COOLIFY_ROBERT_TOKEN`).
+- Agregado `COOLIFY_TOKEN` (Arnaldo) al `.env` del backend monorepo, no solo al raíz, para que `guardia_critica.py` lo encuentre directo.
+- Memoria persistente nueva: `feedback_REGLA_env_quoting_y_lookup.md` — antes de pedir token Coolify, agotar lookup en ambos `.env` y validar con curl.
+
+**Validación**: `curl Bearer $COOLIFY_TOKEN /api/v1/applications` → HTTP 200 con app `system-ia-agentes` running:healthy.
+
+**Acción pendiente para Arnaldo**: revocar manualmente desde panel Coolify los 3 tokens viejos no usados (dejar solo el `agentes` que figura como "Last used: 4 hours ago").
+
+## 2026-04-22 — Hallazgo: la Guardia Crítica YA estaba programada hace 11 días, solo le faltaban env vars
+
+**Descubierto al integrar guardia_critica.py**: la Scheduled Task "Guardia Crítica" (`*/5 * * * *  cd /app/scripts && python guardia_critica.py`) ya existía en Coolify desde 2026-04-11 (UUID `fo5l5or8bbz3bl8d0n47dj9a`). Llevaba 11 días corriendo sin alertar — no porque todo estuviera bien, sino porque le faltaban las env vars `COOLIFY_API_URL`, `COOLIFY_APP_UUID`, `FASTAPI_URL`, `N8N_URL` y el script crasheaba antes de poder mandar Telegram.
+
+**Fix**: Agregadas las 4 env vars vía API Coolify (`POST /api/v1/applications/<uuid>/envs`). Disparado deploy `ph3xsqna8ag7vowvmsgzwjht` para que el container las recoja. Eliminada la Scheduled Task duplicada que mi subagente había creado.
+
+**Lección**: antes de "crear" un cron en Coolify, listar `GET /scheduled-tasks` y verificar si ya existe.
+
 ## 2026-04-22 — CRM Maicol caído por CORS + monitor Capa 1 instalado
 
 **Síntoma**: `crm.backurbanizaciones.com` mostraba "Failed to fetch" y "Cargando leads…" infinito. Maicol avisó.
@@ -41,6 +67,45 @@ Para deshabilitar temporalmente sin tocar el cron: agregar env var `GUARDIA_DISA
 ### Resultado del run local (2026-04-22)
 
 Con COOLIFY_TOKEN correcto, los 9 checks pasan. Con token bogus y N8N_URL bogus, se mandó correctamente 1 Telegram consolidado con 2 alertas juntas — formato correcto.
+
+## 2026-04-22 — Guardia Crítica ampliada: checks Robert CRM/admin + Mica preparado
+
+**Cambio**: se sumaron 5 checks nuevos a `guardia_critica.py` (total 14 en el dict, 12 activos + 2 deshabilitados).
+
+**3 checks Robert (LIVE, habilitados)**:
+- `robert_crm` → GET `https://crm.lovbot.ai/` → espera 200. Agnóstico a v1/v2 (el dominio no cambia con sync-crm-prod).
+- `robert_crm_cors` → OPTIONS `https://agentes.lovbot.ai/health` con `Origin: https://crm.lovbot.ai`. Valida 200/204 + ACAO correcto.
+- `robert_admin` → GET `https://admin.lovbot.ai/` → 200.
+
+**2 checks Mica (deshabilitados — `enabled=False` via env var)**:
+- `mica_crm` → GET `$MICA_CRM_URL` (default: `https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2`).
+- `mica_crm_cors` → preflight al backend Arnaldo con `Origin: $MICA_CRM_URL`.
+
+**Patrón de deshabilitar**: las funciones retornan `None` si `MICA_CRM_ENABLED != "1"`. El loop de `main()` hace `continue` en `None` y loggea `deshabilitado (skip)`.
+
+**Cómo activar Mica cuando entre a prod**:
+1. Definir dominio prod con Arnaldo (ej: `crm.systemia.com`).
+2. En Coolify → app `system-ia-agentes` → env vars: `MICA_CRM_URL=https://crm.systemia.com` y `MICA_CRM_ENABLED=1`.
+3. Redeploy automático. Próximo ciclo cron ya los corre.
+
+**Run local confirmado (2026-04-22)**:
+```
+[guardia] OK  FastAPI Arnaldo: healthy, workers=6
+[guardia] OK  n8n Arnaldo: ok
+[guardia] OK  n8n Mica: ok
+[guardia] OK  n8n Lovbot: ok
+[guardia] OK  Coolify app: status=running:healthy
+[guardia] OK  Maicol CRM — preflight CORS: CORS ok (ACAO=https://crm.backurbanizaciones.com)
+[guardia] OK  Maicol CRM — frontend: HTTP 200
+[guardia] OK  Chatwoot Arnaldo: HTTP 200
+[guardia] OK  Backend Robert (ping externo): HTTP 200
+[guardia] OK  Robert CRM frontend: HTTP 200
+[guardia] OK  Robert CRM CORS: CORS ok (ACAO=https://crm.lovbot.ai)
+[guardia] OK  Robert admin: HTTP 200
+[guardia] --- Mica CRM frontend: deshabilitado (skip)
+[guardia] --- Mica CRM CORS: deshabilitado (skip)
+[guardia] Todo OK — sin alertas a enviar
+```
 
 
 ## n8n HTTP Request — JSON inválido
