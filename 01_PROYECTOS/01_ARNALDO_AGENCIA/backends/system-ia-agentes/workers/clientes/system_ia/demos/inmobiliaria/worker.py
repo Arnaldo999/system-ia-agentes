@@ -3576,95 +3576,95 @@ def _check_at():
 # ── Asesores (Sprint 3) ─────────────────────────────────────────────────────
 @router.get("/crm/asesores")
 def crm_asesores_list():
-    _check_pg()
+    _check_at()
     return db.get_all_asesores()
 
 @router.post("/crm/asesores")
 async def crm_asesor_create(request: Request):
-    _check_pg()
+    _check_at()
     return db.create_asesor(await request.json())
 
 @router.patch("/crm/asesores/{record_id}")
-async def crm_asesor_update(record_id: int, request: Request):
-    _check_pg()
+async def crm_asesor_update(record_id: str, request: Request):
+    _check_at()
     return db.update_asesor(record_id, await request.json())
 
 @router.delete("/crm/asesores/{record_id}")
-def crm_asesor_delete(record_id: int):
-    _check_pg()
+def crm_asesor_delete(record_id: str):
+    _check_at()
     return db.delete_asesor(record_id)
 
 
 # ── Propietarios (Sprint 4) ─────────────────────────────────────────────────
 @router.get("/crm/propietarios")
 def crm_propietarios_list():
-    _check_pg()
+    _check_at()
     return db.get_all_propietarios()
 
 @router.post("/crm/propietarios")
 async def crm_propietario_create(request: Request):
-    _check_pg()
+    _check_at()
     return db.create_propietario(await request.json())
 
 @router.patch("/crm/propietarios/{record_id}")
-async def crm_propietario_update(record_id: int, request: Request):
-    _check_pg()
+async def crm_propietario_update(record_id: str, request: Request):
+    _check_at()
     return db.update_propietario(record_id, await request.json())
 
 @router.delete("/crm/propietarios/{record_id}")
-def crm_propietario_delete(record_id: int):
-    _check_pg()
+def crm_propietario_delete(record_id: str):
+    _check_at()
     return db.delete_propietario(record_id)
 
 
 # ── Loteos (Sprint 5) ───────────────────────────────────────────────────────
 @router.get("/crm/loteos")
 def crm_loteos_list():
-    _check_pg()
+    _check_at()
     return db.get_all_loteos()
 
 @router.post("/crm/loteos")
 async def crm_loteo_create(request: Request):
-    _check_pg()
+    _check_at()
     return db.create_loteo(await request.json())
 
 @router.patch("/crm/loteos/{record_id}")
-async def crm_loteo_update(record_id: int, request: Request):
-    _check_pg()
+async def crm_loteo_update(record_id: str, request: Request):
+    _check_at()
     return db.update_loteo(record_id, await request.json())
 
 @router.delete("/crm/loteos/{record_id}")
-def crm_loteo_delete(record_id: int):
-    _check_pg()
+def crm_loteo_delete(record_id: str):
+    _check_at()
     return db.delete_loteo(record_id)
 
 
 # ── Lotes Mapa (Sprint 5) ───────────────────────────────────────────────────
 @router.get("/crm/lotes-mapa")
-def crm_lotes_mapa_list(loteo_id: int = None):
-    _check_pg()
+def crm_lotes_mapa_list(loteo_id: str = None):
+    _check_at()
     return db.get_lotes_mapa(loteo_id)
 
 @router.post("/crm/lotes-mapa")
 async def crm_lote_mapa_create(request: Request):
-    _check_pg()
+    _check_at()
     return db.create_lote_mapa(await request.json())
 
 @router.patch("/crm/lotes-mapa/{record_id}")
-async def crm_lote_mapa_update(record_id: int, request: Request):
-    _check_pg()
+async def crm_lote_mapa_update(record_id: str, request: Request):
+    _check_at()
     return db.update_lote_mapa(record_id, await request.json())
 
 @router.delete("/crm/lotes-mapa/{record_id}")
-def crm_lote_mapa_delete(record_id: int):
-    _check_pg()
+def crm_lote_mapa_delete(record_id: str):
+    _check_at()
     return db.delete_lote_mapa(record_id)
 
 
 # ── Contratos (Sprint 6) ────────────────────────────────────────────────────
 @router.get("/crm/contratos")
 def crm_contratos_list():
-    _check_pg()
+    _check_at()
     return db.get_all_contratos()
 
 @router.post("/crm/contratos")
@@ -3705,22 +3705,22 @@ def crm_contratos_by_cliente(cliente_id: str):
 # ── Visitas / Agenda (Sprint 8) ─────────────────────────────────────────────
 @router.get("/crm/visitas")
 def crm_visitas_list():
-    _check_pg()
+    _check_at()
     return db.get_all_visitas()
 
 @router.post("/crm/visitas")
 async def crm_visita_create(request: Request):
-    _check_pg()
+    _check_at()
     return db.create_visita(await request.json())
 
 @router.patch("/crm/visitas/{record_id}")
-async def crm_visita_update(record_id: int, request: Request):
-    _check_pg()
+async def crm_visita_update(record_id: str, request: Request):
+    _check_at()
     return db.update_visita(record_id, await request.json())
 
 @router.delete("/crm/visitas/{record_id}")
-def crm_visita_delete(record_id: int):
-    _check_pg()
+def crm_visita_delete(record_id: str):
+    _check_at()
     return db.delete_visita(record_id)
 
 
