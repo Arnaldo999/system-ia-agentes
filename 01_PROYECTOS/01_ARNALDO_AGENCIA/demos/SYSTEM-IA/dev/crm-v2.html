@@ -4550,7 +4550,10 @@ function renderLeads(data) {
         <td style="color:var(--text2);font-size:12px">${l.interes}</td>
         <td>${spills[l.status] || ''}</td>
         <td style="color:${scoreColor(l.score)};font-weight:600;font-size:12px">${l.score ? l.score + ' pts' : '—'}</td>
-        <td><button class="btn" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button></td>
+        <td style="display:flex;gap:6px;align-items:center">
+          <button class="btn" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();openDetalle(${l.id})">Ver</button>
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();_cuAbrir('${l.atId}','${(l.name||'').replace(/'/g,'')}')">⚡ Convertir</button>
+        </td>
       </tr>`;
   });
 }
@@ -7070,10 +7073,36 @@ async function cargarRelacionesCliente(clienteId) {
 }
 
 function renderRelaciones(data) {
-  const contratos = data.contratos || [];
-  const pagos = data.pagos || [];
-  const visitas = data.visitas || [];
+  const roles        = data.roles || data.persona?.roles || [];
+  const leadOrigen   = data.lead_origen || null;
+  const contratos    = data.contratos || [];
+  const alquileres   = data.alquileres || [];
+  const inmPropios   = data.inmuebles_propios || [];
+  const visitas      = data.visitas || [];
   let html = '';
+
+  // 1. Roles del cliente
+  if (roles.length) {
+    const badgeColor = { comprador:'#1d4ed8', inquilino:'#7c3aed', propietario:'#f59e0b', garante:'#6b7280' };
+    html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Roles</div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
+    html += roles.map(r => {
+      const bg = badgeColor[r] || '#374151';
+      return `<span style="background:${bg};color:#fff;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:600">${r.charAt(0).toUpperCase()+r.slice(1)}</span>`;
+    }).join('');
+    html += '</div>';
+  }
+
+  // 2. Lead de origen
+  if (leadOrigen) {
+    html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Lead origen</div>';
+    html += `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;display:flex;justify-content:space-between;align-items:center">
+      <span><strong>${leadOrigen.nombre || 'Lead'}</strong><span style="color:var(--text2);margin-left:8px">${leadOrigen.estado || ''}</span></span>
+      <button class="btn" style="padding:3px 10px;font-size:11px" onclick="nav('leads',document.querySelector('[data-panel=leads],[onclick*=leads]'));setTimeout(()=>{ const l=LEADS.find(x=>x.atId==='${leadOrigen.id}'); if(l) openDetalle(l.id); },400)">Ver lead</button>
+    </div>`;
+  }
+
+  // 3. Contratos de venta
   if (contratos.length) {
     html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Contratos</div>';
     html += contratos.map(c => `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12px">
@@ -7081,16 +7110,309 @@ function renderRelaciones(data) {
       <span style="color:var(--text2);margin-left:8px">${c.estado_pago || ''}</span>
       <span style="float:right;color:#f59e0b">${c.monto_total ? (c.moneda || 'USD') + ' ' + Number(c.monto_total).toLocaleString() : ''}</span>
     </div>`).join('');
+    html += '<div style="margin-bottom:10px"></div>';
   }
+
+  // 4. Alquileres
+  if (alquileres.length) {
+    html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Alquileres</div>';
+    html += alquileres.map(a => {
+      const fInicio = a.fecha_inicio ? new Date(a.fecha_inicio).toLocaleDateString('es') : '—';
+      const fFin    = a.fecha_fin    ? new Date(a.fecha_fin).toLocaleDateString('es')    : '—';
+      return `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12px">
+        <div style="display:flex;justify-content:space-between">
+          <strong>${a.inmueble_id ? 'Inmueble' : 'Alquiler'}</strong>
+          <span style="color:#f59e0b">${a.monto_mensual ? '$' + Number(a.monto_mensual).toLocaleString() + '/mes' : ''}</span>
+        </div>
+        <div style="color:var(--text2);margin-top:3px">${fInicio} → ${fFin} <span style="margin-left:8px">${a.estado || ''}</span></div>
+        ${a.garante_nombre ? `<div style="color:var(--text2);font-size:11px;margin-top:2px">Garante: ${a.garante_nombre}</div>` : ''}
+      </div>`;
+    }).join('');
+    html += '<div style="margin-bottom:10px"></div>';
+  }
+
+  // 5. Inmuebles propios (solo si es propietario)
+  if (inmPropios.length) {
+    html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Inmuebles propios</div>';
+    html += inmPropios.map(i => `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12px">
+      <strong>${i.titulo || i.nombre || 'Inmueble'}</strong>
+      <span style="color:var(--text2);margin-left:8px">${i.tipo || ''}</span>
+      <span style="float:right;color:#f59e0b">${i.estado || ''}</span>
+    </div>`).join('');
+    html += '<div style="margin-bottom:10px"></div>';
+  }
+
+  // 6. Visitas
   if (visitas.length) {
-    html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px">Visitas</div>';
+    html += '<div style="font-size:11px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin:4px 0 8px">Visitas</div>';
     html += visitas.map(v => `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12px">
       <strong>${v.fecha_hora ? new Date(v.fecha_hora).toLocaleDateString('es') : 'Sin fecha'}</strong>
       <span style="color:var(--text2);margin-left:8px">${v.estado || ''}</span>
     </div>`).join('');
   }
+
   if (!html) html = '<div style="text-align:center;color:var(--text2);padding:24px;font-size:13px">Sin relaciones registradas para este cliente.</div>';
   return html;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODAL CONTRATO UNIFICADO — _cu* functions
+// Wizard 3 pasos: 1=Cliente  2=Activo  3=Contrato
+// Invocado desde:
+//   - Botón "+ Nuevo contrato" (paso 1 genérico)
+//   - Botón "Convertir" en tabla leads (paso 1 con lead pre-seleccionado)
+// ══════════════════════════════════════════════════════════════════════════════
+let _CU_PASO = 1;
+let _CU_MODO = 'existente';  // 'existente' | 'convertir_lead' | 'cliente_nuevo'
+let _CU_LEAD_ID_PRE = null;  // rec... de Airtable si viene de "Convertir"
+
+function _cuAbrir(leadAtId, leadNombre) {
+  _CU_PASO = 1;
+  _CU_LEAD_ID_PRE = leadAtId || null;
+  _CU_MODO = leadAtId ? 'convertir_lead' : 'existente';
+
+  // Resetear campos
+  _cuLimpiar();
+
+  // Si viene de "Convertir lead" pre-seleccionar radio y cargar datos
+  if (_CU_LEAD_ID_PRE) {
+    const radio = document.querySelector('input[name="cu-modo-cliente"][value="convertir_lead"]');
+    if (radio) radio.checked = true;
+    _cuSetModoCliente('convertir_lead');
+    // Pre-cargar select de leads y pre-seleccionar el lead
+    _cuCargarLeadSelect(_CU_LEAD_ID_PRE);
+  } else {
+    const radio = document.querySelector('input[name="cu-modo-cliente"][value="existente"]');
+    if (radio) radio.checked = true;
+    _cuSetModoCliente('existente');
+    _cuCargarClienteSelect();
+  }
+
+  // Mostrar paso 1
+  _cuMostrarPaso(1);
+  document.getElementById('modalContratoUnificado').classList.remove('hidden');
+  document.getElementById('modalContratoUnificado').style.display = '';
+}
+
+function _cuCerrar() {
+  document.getElementById('modalContratoUnificado').classList.add('hidden');
+  document.getElementById('modalContratoUnificado').style.display = 'none';
+  _cuLimpiar();
+}
+
+function _cuLimpiar() {
+  ['cu-nuevo-nombre','cu-nuevo-apellido','cu-nuevo-tel','cu-nuevo-email','cu-nuevo-doc',
+   'cu-monto-total','cu-cuotas-total','cu-monto-cuota','cu-notas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const errEl = document.getElementById('cu-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  const fechaEl = document.getElementById('cu-fecha-firma');
+  if (fechaEl) fechaEl.value = new Date().toISOString().slice(0, 10);
+}
+
+function _cuSetModoCliente(modo) {
+  _CU_MODO = modo;
+  document.getElementById('cu-area-existente').style.display = modo === 'existente' ? '' : 'none';
+  document.getElementById('cu-area-lead').style.display = modo === 'convertir_lead' ? '' : 'none';
+  document.getElementById('cu-area-nuevo').style.display = modo === 'cliente_nuevo' ? '' : 'none';
+  if (modo === 'existente') _cuCargarClienteSelect();
+  if (modo === 'convertir_lead') _cuCargarLeadSelect(_CU_LEAD_ID_PRE);
+}
+
+async function _cuCargarClienteSelect() {
+  const sel = document.getElementById('cu-cliente-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  try {
+    const d = await crmFetch('/crm/activos');
+    const recs = d.records || [];
+    sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' +
+      recs.map(r => `<option value="${r.id}">${r.Nombre || r.nombre || ''} ${r.Apellido || r.apellido || ''} ${r.Telefono || r.telefono ? '· ' + (r.Telefono||r.telefono) : ''}</option>`).join('');
+  } catch { sel.innerHTML = '<option value="">Error cargando clientes</option>'; }
+}
+
+async function _cuCargarLeadSelect(preSelectId) {
+  const sel = document.getElementById('cu-lead-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Cargando leads...</option>';
+  try {
+    const d = await crmFetch('/crm/clientes');
+    const recs = d.records || [];
+    sel.innerHTML = '<option value="">— Seleccionar lead —</option>' +
+      recs.map(r => {
+        const f = r.fields || r;
+        const id = r.id || r.atId || '';
+        return `<option value="${id}" ${id === preSelectId ? 'selected' : ''}>${f.Nombre || ''} ${f.Apellido || ''} · ${f.Telefono || f.telefono || ''}</option>`;
+      }).join('');
+  } catch { sel.innerHTML = '<option value="">Error cargando leads</option>'; }
+}
+
+function _cuMostrarPaso(paso) {
+  _CU_PASO = paso;
+  [1,2,3].forEach(n => {
+    const p = document.getElementById(`cu-paso-${n}`);
+    const s = document.getElementById(`cu-step-${n}`);
+    if (p) p.style.display = n === paso ? '' : 'none';
+    if (s) {
+      s.classList.remove('active','done');
+      if (n < paso) s.classList.add('done');
+      if (n === paso) s.classList.add('active');
+    }
+  });
+  const prev = document.getElementById('cu-btn-prev');
+  const next = document.getElementById('cu-btn-next');
+  const save = document.getElementById('cu-btn-save');
+  if (prev) prev.style.display = paso > 1 ? '' : 'none';
+  if (next) next.style.display = paso < 3 ? '' : 'none';
+  if (save) save.style.display = paso === 3 ? '' : 'none';
+
+  // Al llegar al paso 2 cargar activos según tipo
+  if (paso === 2) _cuCargarActivos();
+  // Al llegar al paso 3 cargar asesores
+  if (paso === 3) _cuCargarAsesores();
+}
+
+function _cuNext() {
+  const err = document.getElementById('cu-error');
+  if (err) { err.style.display = 'none'; }
+
+  if (_CU_PASO === 1) {
+    // Validar selección de cliente
+    if (_CU_MODO === 'existente') {
+      const sel = document.getElementById('cu-cliente-select');
+      if (!sel || !sel.value) { _cuError('Selecciona un cliente activo.'); return; }
+    }
+    if (_CU_MODO === 'convertir_lead') {
+      const sel = document.getElementById('cu-lead-select');
+      if (!sel || !sel.value) { _cuError('Selecciona el lead a convertir.'); return; }
+    }
+    if (_CU_MODO === 'cliente_nuevo') {
+      const nom = document.getElementById('cu-nuevo-nombre')?.value.trim();
+      const tel = document.getElementById('cu-nuevo-tel')?.value.trim();
+      if (!nom || !tel) { _cuError('Nombre y teléfono son obligatorios.'); return; }
+    }
+    _cuMostrarPaso(2);
+  } else if (_CU_PASO === 2) {
+    const sel = document.getElementById('cu-item-select');
+    if (!sel || !sel.value) { _cuError('Selecciona un activo o inmueble.'); return; }
+    _cuMostrarPaso(3);
+  }
+}
+
+function _cuPrev() {
+  if (_CU_PASO > 1) _cuMostrarPaso(_CU_PASO - 1);
+}
+
+function _cuError(msg) {
+  const el = document.getElementById('cu-error');
+  if (el) { el.textContent = msg; el.style.display = ''; }
+}
+
+function _cuOnTipoChange(tipo) {
+  _cuCargarActivos(tipo);
+}
+
+async function _cuCargarActivos(tipo) {
+  const tipoRad = tipo || document.querySelector('input[name="cu-tipo"]:checked')?.value || 'venta_lote';
+  const spinner = document.getElementById('cu-item-spinner');
+  const sel = document.getElementById('cu-item-select');
+  if (!sel) return;
+  if (spinner) spinner.style.display = '';
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  try {
+    if (tipoRad === 'alquiler') {
+      const d = await crmFetch('/crm/inmuebles');
+      const recs = d.records || d.items || [];
+      sel.innerHTML = '<option value="">— Seleccionar inmueble —</option>' +
+        recs.map(r => `<option value="${r.id}">${r.Titulo || r.titulo || r.Nombre || r.nombre || r.id}</option>`).join('');
+    } else {
+      const d = await crmFetch('/crm/propiedades');
+      const recs = d.records || [];
+      sel.innerHTML = '<option value="">— Seleccionar propiedad —</option>' +
+        recs.filter(r => (r.Estado || r.estado || '').toLowerCase() === 'disponible')
+          .map(r => `<option value="${r.id}">${r.Titulo || r.titulo || r.id}</option>`).join('');
+    }
+  } catch { sel.innerHTML = '<option value="">Error cargando activos</option>'; }
+  if (spinner) spinner.style.display = 'none';
+}
+
+async function _cuCargarAsesores() {
+  const sel = document.getElementById('cu-asesor');
+  if (!sel || sel.options.length > 1) return;  // ya cargados
+  try {
+    const d = await crmFetch('/crm/asesores');
+    const recs = d.records || d.items || [];
+    sel.innerHTML = '<option value="">— Sin asesor —</option>' +
+      recs.map(r => `<option value="${r.id}">${r.nombre || r.Nombre || r.id}</option>`).join('');
+  } catch {}
+}
+
+function _cuCalcularCuota() {
+  const monto = parseFloat(document.getElementById('cu-monto-total')?.value) || 0;
+  const cuotas = parseInt(document.getElementById('cu-cuotas-total')?.value) || 0;
+  const cuotaEl = document.getElementById('cu-monto-cuota');
+  if (cuotaEl && monto && cuotas) {
+    cuotaEl.value = (monto / cuotas).toFixed(2);
+  }
+}
+
+async function _cuGuardar() {
+  const saveBtn = document.getElementById('cu-btn-save');
+  if (saveBtn) saveBtn.disabled = true;
+
+  try {
+    // Resolver cliente_id (o datos de nuevo cliente)
+    let clientePayload = {};
+    if (_CU_MODO === 'existente') {
+      clientePayload.cliente_activo_id = document.getElementById('cu-cliente-select')?.value;
+    } else if (_CU_MODO === 'convertir_lead') {
+      clientePayload.convertir_lead_id = document.getElementById('cu-lead-select')?.value;
+    } else {
+      clientePayload.cliente_nuevo = {
+        nombre:   document.getElementById('cu-nuevo-nombre')?.value.trim(),
+        apellido: document.getElementById('cu-nuevo-apellido')?.value.trim(),
+        telefono: document.getElementById('cu-nuevo-tel')?.value.trim(),
+        email:    document.getElementById('cu-nuevo-email')?.value.trim(),
+        documento:document.getElementById('cu-nuevo-doc')?.value.trim(),
+      };
+    }
+
+    const tipoRad = document.querySelector('input[name="cu-tipo"]:checked')?.value || 'venta_lote';
+    const payload = {
+      ...clientePayload,
+      tipo:          tipoRad,
+      item_id:       document.getElementById('cu-item-select')?.value,
+      asesor_id:     document.getElementById('cu-asesor')?.value || null,
+      fecha_firma:   document.getElementById('cu-fecha-firma')?.value || null,
+      monto_total:   parseFloat(document.getElementById('cu-monto-total')?.value) || null,
+      moneda:        document.getElementById('cu-moneda')?.value || 'USD',
+      cuotas_total:  parseInt(document.getElementById('cu-cuotas-total')?.value) || null,
+      monto_cuota:   parseFloat(document.getElementById('cu-monto-cuota')?.value) || null,
+      proximo_vencimiento: document.getElementById('cu-proximo-venc')?.value || null,
+      estado_pago:   document.getElementById('cu-estado-pago')?.value || 'al_dia',
+      notas:         document.getElementById('cu-notas')?.value.trim() || '',
+    };
+
+    const endpoint = tipoRad === 'alquiler' ? '/crm/contratos-alquiler' : '/crm/contratos';
+    const res = await fetch(`${API_BASE}${endpoint}?tenant=${TENANT}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || data.detail || `HTTP ${res.status}`);
+
+    _cuCerrar();
+    // Refrescar panel activos y contratos
+    if (typeof cargarActivos === 'function') cargarActivos();
+    alert('Contrato creado correctamente.');
+  } catch (e) {
+    _cuError('Error al guardar: ' + e.message);
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
 }
 
 // ── INIT ────────────────────────────────────────────────────────────────────
