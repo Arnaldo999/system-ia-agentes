@@ -3018,29 +3018,14 @@ def get_ficha_persona(cliente_id: int) -> dict:
             if lead_row:
                 lead_origen = _serialize_row_safe(dict(lead_row))
 
-        # Contratos del cliente
+        # Contratos del cliente (simple, sin subqueries que puedan colgarse)
         cur.execute("""
             SELECT c.id, c.tipo, c.item_tipo, c.item_id, c.monto, c.moneda,
                    c.estado_pago, c.cuotas_total, c.cuotas_pagadas,
-                   c.fecha_firma, c.notas,
-                   CASE
-                     WHEN c.item_tipo='lote' THEN (
-                       SELECT CONCAT(lt.nombre_loteo, ' · ', lm.numero_lote)
-                       FROM lotes_mapa lm
-                       JOIN loteos lt ON lt.id=lm.loteo_id
-                       WHERE lm.id=c.item_id LIMIT 1
-                     )
-                     WHEN c.item_tipo='inmueble_renta' THEN (
-                       SELECT ir.titulo FROM inmuebles_renta ir WHERE ir.id=c.item_id LIMIT 1
-                     )
-                     WHEN c.item_tipo='propiedad' THEN (
-                       SELECT p.titulo FROM propiedades p WHERE p.id=c.item_id LIMIT 1
-                     )
-                     ELSE NULL
-                   END AS item_descripcion
+                   c.fecha_firma, c.notas
             FROM contratos c
             WHERE c.cliente_activo_id=%s AND c.tenant_slug=%s
-            ORDER BY c.fecha_firma DESC
+            ORDER BY c.fecha_firma DESC NULLS LAST
         """, (cliente_id, TENANT))
         contratos_rows = cur.fetchall()
         contratos = [_serialize_row_safe(dict(r)) for r in contratos_rows]
@@ -3060,20 +3045,17 @@ def get_ficha_persona(cliente_id: int) -> dict:
         alquileres_rows = cur.fetchall()
         alquileres = [_serialize_row_safe(dict(r)) for r in alquileres_rows]
 
-        # Inmuebles propios (inmuebles_renta donde propietario_id apunta a esta persona via propietarios)
-        # Buscar si esta persona tiene un propietario_id asociado
-        cur.execute("""
-            SELECT ir.id, ir.titulo, ir.tipo, ir.zona, ir.precio_alquiler AS precio_mensual, ir.disponible
-            FROM inmuebles_renta ir
-            WHERE ir.tenant_slug=%s AND ir.propietario_id IN (
-              SELECT p.id FROM propietarios p
-              WHERE p.tenant_slug=%s AND p.telefono=(
-                SELECT ca.telefono FROM clientes_activos ca WHERE ca.id=%s AND ca.tenant_slug=%s LIMIT 1
-              )
-            )
-        """, (TENANT, TENANT, cliente_id, TENANT))
-        inmuebles_rows = cur.fetchall()
-        inmuebles_propios = [_serialize_row_safe(dict(r)) for r in inmuebles_rows]
+        # Inmuebles propios — buscar por teléfono de la persona en tabla propietarios
+        telefono_persona = persona.get("telefono") or ""
+        inmuebles_propios = []
+        if telefono_persona:
+            cur.execute("""
+                SELECT ir.id, ir.titulo, ir.tipo, ir.zona, ir.precio_mensual, ir.disponible
+                FROM inmuebles_renta ir
+                JOIN propietarios p ON p.id=ir.propietario_id AND p.tenant_slug=ir.tenant_slug
+                WHERE ir.tenant_slug=%s AND p.telefono=%s
+            """, (TENANT, telefono_persona))
+            inmuebles_propios = [_serialize_row_safe(dict(r)) for r in cur.fetchall()]
 
         cur.close()
         conn.close()
