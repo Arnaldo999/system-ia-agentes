@@ -684,8 +684,11 @@ def get_metricas() -> dict:
         return {"error": str(e)}
 
 
-def get_reportes() -> dict:
-    """Stub — Mica no tiene tabla reportes separada todavia."""
+def get_reportes(fecha_desde=None, fecha_hasta=None) -> dict:
+    """Stub — Mica no tiene tabla reportes separada todavia.
+    Los params fecha_desde/fecha_hasta se ignoran por ahora
+    (pendiente implementar filterByFormula por rango de fechas).
+    """
     return get_metricas()
 
 
