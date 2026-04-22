@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-22 | Total páginas: 40 (18 entidades + 17 conceptos + 5 síntesis)
+Última actualización: 2026-04-22 | Total páginas: 41 (18 entidades + 18 conceptos + 5 síntesis)
 
 ## Fuentes (0)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -102,6 +102,11 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | Página | Resumen breve | Proyectos |
 |--------|--------------|-----------|
 | [[wiki/conceptos/onboarding-cliente-nuevo-arnaldo]] | Patrón brief HTML + propuesta HTML + deploy Coolify — USD 300 impl + USD 80/mes. Primer uso: Cesar Posada | arnaldo |
+
+### Infraestructura y deploys
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/coolify-default-deploy]] | ⚡ Coolify como default para HTMLs/sitios nuevos (no Vercel). Sin cupo 100/día. 2026-04-22 | compartido |
 
 ## Síntesis (5)
 | Página | Origen | Fecha | Proyecto |

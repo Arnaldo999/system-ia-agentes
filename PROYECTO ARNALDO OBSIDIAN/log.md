@@ -267,3 +267,10 @@ Estado wiki: 12 entidades + 7 conceptos = 19 páginas. Falta ingestar fuentes of
 - Stack asignado: Airtable + YCloud + Coolify Hostinger (matriz estándar clientes Arnaldo)
 - Precios: USD 300 implementación + USD 80/mes mantenimiento
 - Próximo paso: esperar que Cesar complete y envíe el brief .md por WhatsApp
+
+## [2026-04-22] update | Regla: Coolify default para deploys nuevos (reemplaza Vercel)
+- Concepto nuevo: `wiki/conceptos/coolify-default-deploy.md`
+- Actualizado: `wiki/conceptos/onboarding-cliente-nuevo-arnaldo.md` con referencia a la regla
+- Motivo: cupo Vercel Hobby 100/día se agotó 2 veces en sesiones de refactor intenso. Coolify Hostinger no tiene límite, mismo VPS ya pagado.
+- Pendiente: migrar CRM v2 Robert de Vercel a Coolify Hetzner Robert (agendado 2026-04-23 tras reset cupo Vercel)
+- Mica queda en Vercel hasta que compre dominio propio

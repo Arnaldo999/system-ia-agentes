@@ -3,6 +3,23 @@
 Fecha: 2026-04-22 (tarde) ART
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
 
+## 🎯 Regla operativa NUEVA — Coolify default (2026-04-22)
+
+Desde ahora, **cualquier HTML/sitio/propuesta/formulario nuevo se deploya en Coolify Hostinger**, no en Vercel. Motivo: cupo Hobby Vercel 100 deploys/día se agotó en 2 sesiones seguidas.
+
+Patrón: archivos en `backends/system-ia-agentes/clientes-publicos/{slug}/` → `git push` → auto-deploy en ~30s → URL `agentes.arnaldoayalaestratega.cloud/propuestas/{slug}/archivo.html`.
+
+**Vercel solo se mantiene para**:
+- Apps existentes ya productivas (`crm.lovbot.ai` hasta migrarse, `system-ia-agencia.vercel.app` hasta que Mica compre dominio)
+
+**Migraciones agendadas**:
+- **Robert** → Coolify Hetzner Robert (2026-04-23, tras reset cupo Vercel de hoy)
+- **Mica** → diferida (sin dominio propio aún)
+
+Ver doc completa: `PROYECTO ARNALDO OBSIDIAN/wiki/conceptos/coolify-default-deploy.md`
+
+---
+
 ## 🎯 Abierto — Cliente nuevo Cesar Posada (agencia turismo)
 
 **Estado**: propuesta enviada, esperando brief.

@@ -97,7 +97,9 @@ LANZAMIENTO
 
 **Info de pago**: NO incluida en el HTML — se coordina por privado tras recibir el brief.
 
-### 3. Deploy a Coolify Hostinger
+### 3. Deploy a Coolify Hostinger (default — NO usar Vercel)
+
+⚠️ **Regla vigente desde 2026-04-22**: cualquier HTML/proyecto nuevo va a Coolify, no a Vercel. Ver [[coolify-default-deploy]] para el fundamento completo.
 
 Montar los 2 HTMLs como static site dentro del backend `system-ia-agentes` ya deployado:
 
@@ -107,17 +109,18 @@ from fastapi.staticfiles import StaticFiles
 app.mount("/propuestas", StaticFiles(directory="clientes-publicos"))
 ```
 
-Copiar los archivos a `backends/system-ia-agentes/clientes-publicos/{slug}/` y commit + push.
+Copiar los archivos a `backends/system-ia-agentes/clientes-publicos/{slug}/` y commit + push. El `StaticFiles` mount ya existe (commit `6231ddd` original).
 
 **URLs resultantes**:
 - `https://agentes.arnaldoayalaestratega.cloud/propuestas/{slug}/brief.html`
 - `https://agentes.arnaldoayalaestratega.cloud/propuestas/{slug}/propuesta.html`
 
-**Por qué no Vercel**:
-- Evita cupo limitado del plan Hobby (100 deploys/día)
-- Subdomain propio es más profesional que `.vercel.app`
-- No requiere configurar DNS nuevos
-- Deploy automático al push del repo existente
+**Por qué Coolify por default**:
+- Sin cupo 100 deploys/día del plan Hobby Vercel (se agota rápido con refactors activos)
+- Subdomain propio `arnaldoayalaestratega.cloud` es más profesional que `.vercel.app`
+- Auto-deploy en 15-30 segundos tras `git push`
+- Aprovecha VPS y backend que ya pagás — costo marginal cero
+- Control total sobre logs, SSL, rewrites
 
 ### 4. Mensaje WhatsApp para enviar al cliente
 
