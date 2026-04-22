@@ -1,7 +1,19 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-22 06:00 ART
+Fecha: 2026-04-22 08:30 ART
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## 🎯 Hito cerrado — CRM v3 Mica COMPLETO (misma jornada que Robert)
+
+Replicado el modelo v3 en el stack Airtable de Mica con paridad funcional completa. Sesión 3 de 3 fases:
+
+- **Fase 1** — Schema Airtable `appA8QxIhBYYAHw0F`: 39 campos nuevos agregados (roles, linkedRecords polimórficos, campos cuotas, etc.). Tenant mica-demo con subniche=mixto.
+- **Fase 2** — Backend adapter `db_airtable.py` +978 líneas: helpers `_at_*`, serializer polimórfico, 12 endpoints nuevos espejo de Robert. Smoke tests 11/11 OK.
+- **Fase 3** — Frontend `demos/SYSTEM-IA/dev/`: 5 JS nuevos, `crm-v2.html` +657 líneas, paleta ámbar respetada (64× `#f59e0b`, 0× purple). Deploy Vercel inmediato.
+
+**Commits Mica**: `5ef5303` → `a9dc86a` → `a616f70` → `e3817bb`.
+**Producción Vercel Mica**: `https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2?tenant=mica-demo` (deployado).
+**Backend Mica**: `https://agentes.arnaldoayalaestratega.cloud/clientes/system_ia/demos/inmobiliaria`.
 
 ## 🎯 Hito cerrado — CRM v3 Robert completo
 
@@ -41,15 +53,20 @@ Ayer y hoy terminamos el refactor arquitectónico del CRM v2 de Robert. 18h de t
 2. **Vercel deploy** del último commit `d7b05d0` (tab Relaciones) — puede estar esperando cupo.
 3. **Sync dev → prod HTML** (`sync-crm-prod`) cuando el usuario valide todo.
 
-## 🎯 Próximo paso — Sesión 3 Mica
+## 🎯 Próximo paso — validación visual Mica + pendientes menores
 
-Replicar todo el modelo v3 en Airtable base `appA8QxIhBYYAHw0F`:
-- Adapter `db_airtable.py` debe espejar funciones de `db_postgres.py` Robert
-- Crear tablas pendientes: Contratos, Alquileres, InmueblesRenta, Inquilinos, PagosAlquiler, Liquidaciones
-- Campos `Multiple select` para roles en vez de array Postgres
-- Campos `linkedRecord` para FKs entre tablas (Propietarios → InmueblesRenta, etc.)
-- Modal unificado + 3 puertas replicado en `demos/SYSTEM-IA/dev/crm-v2.html`
-- Fix subnicho Mica: hoy `mica-demo` está como desarrolladora, ocultaba GESTIÓN-Agencia
+1. **Hard reload** en `https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2?tenant=mica-demo` y probar:
+   - PIN demo `1234`
+   - Modal unificado "Nuevo contrato" desde panel Clientes Activos
+   - Tab "Relaciones" en ficha de cliente
+   - Paneles GESTIÓN (Inmuebles, Inquilinos, Pagos, Liquidaciones, Propietarios) — crear 1 de cada para validar
+   - Sidebar acordeón 3 grupos (Desarrolladora / Agencia / Mixto)
+
+2. **Panel loteos granular Mica** — pendiente portar CRUD por manzana/lote (botones +Manzana, +lote, renombrar, borrar individual). Backend ya tiene `/crm/lotes-mapa/seguro` y `/crm/loteos/{id}/lotes`.
+
+3. **Tipos granulares** Airtable Contratos.Tipo — autorizar PATCH si se quiere `venta_lote` vs `venta_casa` a nivel DB (hoy se guarda como `venta` + subtipo en `Item_Descripcion`).
+
+4. **Sync dev → prod HTML** (`sync-crm-prod`) cuando el usuario valide todo.
 
 ## 🎯 Pendientes viejos del embedded signup (sigue abierto)
 

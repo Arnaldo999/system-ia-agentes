@@ -253,3 +253,8 @@ Estado wiki: 12 entidades + 7 conceptos = 19 páginas. Falta ingestar fuentes of
 - Síntesis: `wiki/sintesis/2026-04-22-crm-v3-robert.md`
 - Conceptos nuevos: `wiki/conceptos/persona-unica-crm.md`, `wiki/conceptos/contratos-polimorficos.md`
 - 16+ commits backend+frontend, 14 smoke tests verdes en producción, UI visualmente idéntica
+
+## [2026-04-22] sesion-claude | CRM v3 Mica — replicación del modelo persona única en Airtable
+- Ingesta: `raw/mica/sesion-2026-04-22-crm-v3-mica.md`
+- Síntesis: `wiki/sintesis/2026-04-22-crm-v3-mica.md`
+- 4 commits backend+frontend (5ef5303 → a9dc86a → a616f70 → e3817bb), 11/11 endpoints Mica producción OK, frontend Vercel deployado inmediatamente. UI ámbar respetada (0 purple Robert). IDs Airtable strings rec... sin parseInt. Polimorfismo con 3 linkedRecord + serializer.

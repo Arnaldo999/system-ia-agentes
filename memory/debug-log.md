@@ -81,3 +81,28 @@
 **Causa raíz**: Plan Hobby tiene límite 100 deploys/día. Hicimos 20+ commits y el límite se activó.
 **Mitigación**: esperar reset (medianoche UTC). Redeploy del último commit (gratis, no cuenta). O upgrade a Pro ($20/mes, 6000/día).
 **No requiere fix en código** — limitación de plan.
+
+## 2026-04-22 — Sesión CRM v3 Mica — bugs/decisiones notables
+
+### Decisión: polimorfismo Airtable con 3 linkedRecord
+Airtable NO tiene FK polimórfica como Postgres. En vez de `item_tipo + item_id`, tabla Contratos Mica tiene 3 campos `linkedRecord` separados (Lote_Asignado, Propiedad_Asignada, Inmueble_Asignado). Solo UNO se setea por contrato. Adapter serializa a misma forma JSON que Robert para que el frontend sea portable.
+
+### Bug: record_id int vs string en endpoints CRUD
+**Síntoma**: crear/borrar propietarios/inmuebles/inquilinos devolvía 422 en Mica.
+**Causa raíz**: los handlers del worker Mica estaban declarados con `record_id: int` (copiados de Robert) pero Airtable usa IDs tipo `rec12345abc...` (strings).
+**Fix**: reemplazar `record_id: int` → `record_id: str` en todos los endpoints CRM del worker Mica.
+**Commit**: `a616f70`.
+
+### Decisión: Contratos.Tipo limitado a venta/reserva/alquiler/boleto en Airtable
+**Síntoma**: el backend Robert usa `venta_lote/venta_casa/venta_terreno/venta_unidad` como valores válidos del campo Tipo. Mica no.
+**Causa raíz**: el campo singleSelect en Airtable fue creado con opciones `venta/reserva/alquiler/boleto` de antes del refactor. Modificar las opciones vía Metadata API requiere PATCH del campo completo (destructivo si no se cuida).
+**Decisión**: backend Mica mapea los subtipos granulares a `venta` en Airtable + guarda el subtipo en `Item_Descripcion` (texto libre). Si se quieren granulares explícitos en Airtable a futuro, requiere autorización del usuario.
+
+### Decisión: sin transacciones — log warnings
+**Síntoma**: operaciones multi-paso (crear cliente + contrato + update item) no son atómicas en Airtable.
+**Fix**: el handler hace los pasos secuencialmente. Si uno falla, loguea WARNING y devuelve el estado parcial. El frontend puede reintentar. NO deshacer pasos exitosos anteriores (no hay ROLLBACK).
+
+### Decisión: campo Origen_Creacion removido de Contratos
+**Síntoma**: error 422 al crear contrato porque Airtable no tenía el campo `Origen_Creacion` en la tabla Contratos (sí lo tiene CLIENTES_ACTIVOS pero no Contratos).
+**Fix**: el backend Mica quita ese campo del payload antes de enviar a Airtable. El origen se guarda solo en CLIENTES_ACTIVOS al crear el cliente.
+**Commit**: `a9dc86a`.
