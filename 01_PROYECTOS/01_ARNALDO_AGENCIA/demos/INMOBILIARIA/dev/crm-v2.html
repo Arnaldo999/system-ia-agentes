@@ -616,6 +616,88 @@ tailwind.config = {
   }
   .ia-chat-btn:hover { border-color: rgba(124,58,237,.5) !important; transform: translateY(-1px); }
 
+  /* ───── SIDEBAR ACCORDION GROUPS (sg-*) ───── */
+  .sg-group {
+    margin: 2px 0;
+    border-radius: 8px;
+  }
+
+  .sg-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8b8ba7;
+    transition: background .12s, color .12s;
+    user-select: none;
+    position: relative;
+  }
+  .sg-header:hover {
+    background: rgba(255,255,255,.03);
+    color: #c4c4d8;
+  }
+  .sg-group.sg-open > .sg-header {
+    color: #d0d0ea;
+  }
+
+  .sg-label {
+    flex: 1;
+    font-size: 11px;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+  }
+
+  /* Flecha — rota 90° cuando grupo está abierto */
+  .sg-arrow {
+    font-size: 9px;
+    opacity: .5;
+    transition: transform .2s ease;
+    display: inline-block;
+  }
+  .sg-group.sg-open > .sg-header .sg-arrow {
+    transform: rotate(90deg);
+    opacity: .8;
+  }
+
+  /* Dot purple — visible solo cuando grupo tiene ítem activo y está colapsado */
+  .sg-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #7c3aed;
+    box-shadow: 0 0 6px rgba(124,58,237,.6);
+    display: none;
+    flex-shrink: 0;
+  }
+  .sg-dot.visible { display: block; }
+
+  /* Cuerpo del grupo — animación con max-height */
+  .sg-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .22s ease;
+    border-left: 1px solid transparent;
+    margin-left: 0;
+  }
+  .sg-group.sg-open > .sg-body {
+    /* 300px cubre sobradamente 5 items (cada uno ~36px) */
+    max-height: 300px;
+    border-left: 1px solid rgba(124,58,237,.15);
+    margin-left: 14px;
+  }
+
+  /* Indent visual de ítems dentro del grupo */
+  .sg-body .nav-item {
+    margin-left: 0 !important;
+    font-size: 12px !important;
+    padding-left: 8px !important;
+  }
+  /* Ocultar grupo entero si el subnicho no corresponde */
+  .sg-group[data-hidden="true"] { display: none; }
+
   /* ───── PANELES / CONTENIDO ───── */
   .main, main, .content { background: #0a0a12 !important; }
   .panel { background: transparent !important; }
@@ -2370,41 +2452,75 @@ tailwind.config = {
         <span class="nav-badge green" id="activosBadge">—</span>
       </div>
 
-      <!-- ═══ GESTIÓN — DESARROLLADORA ═══ -->
-      <div class="sidebar-section subnicho-gestion" data-subnicho="desarrolladora" style="margin-top:8px">Gestión · Desarrolladora</div>
-      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('propiedades',this)">
-        <span class="nav-icon">🏘️</span><span>Propiedades</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('loteos',this)">
-        <span class="nav-icon">📍</span><span>Loteos</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('contratos',this)">
-        <span class="nav-icon">📄</span><span>Contratos de venta</span>
+      <!-- ═══ GESTIÓN — acordeón 3 subnichos ═══ -->
+      <div class="sidebar-section" style="margin-top:8px">Gestión</div>
+
+      <!-- Grupo: Desarrolladora -->
+      <div class="sg-group" id="sg-desarrolladora" data-group="desarrolladora">
+        <div class="sg-header" onclick="sgToggle('desarrolladora')">
+          <span class="nav-icon" style="flex-shrink:0">🏗️</span>
+          <span class="sg-label">Desarrolladora</span>
+          <span class="sg-dot" id="sg-dot-desarrolladora"></span>
+          <span class="sg-arrow">▶</span>
+        </div>
+        <div class="sg-body">
+          <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('propiedades',this)">
+            <span class="nav-icon">🏘️</span><span>Propiedades</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('loteos',this)">
+            <span class="nav-icon">📍</span><span>Loteos</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="desarrolladora" onclick="nav('contratos',this)">
+            <span class="nav-icon">📄</span><span>Contratos de venta</span>
+          </div>
+        </div>
       </div>
 
-      <!-- ═══ GESTIÓN — AGENCIA ═══ -->
-      <div class="sidebar-section subnicho-gestion" data-subnicho="agencia" style="margin-top:8px">Gestión · Agencia</div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inmuebles-renta',this)">
-        <span class="nav-icon">🏠</span><span>Inmuebles en renta</span>
+      <!-- Grupo: Agencia -->
+      <div class="sg-group" id="sg-agencia" data-group="agencia">
+        <div class="sg-header" onclick="sgToggle('agencia')">
+          <span class="nav-icon" style="flex-shrink:0">🏢</span>
+          <span class="sg-label">Agencia</span>
+          <span class="sg-dot" id="sg-dot-agencia"></span>
+          <span class="sg-arrow">▶</span>
+        </div>
+        <div class="sg-body">
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inmuebles-renta',this)">
+            <span class="nav-icon">🏠</span><span>Inmuebles en renta</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('propietarios',this)">
+            <span class="nav-icon">📑</span><span>Propietarios</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inquilinos',this)">
+            <span class="nav-icon">🧾</span><span>Inquilinos</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('pagos-alquiler',this)">
+            <span class="nav-icon">💳</span><span>Pagos alquiler</span>
+          </div>
+          <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('liquidaciones',this)">
+            <span class="nav-icon">💵</span><span>Liquidaciones</span>
+          </div>
+        </div>
       </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('propietarios',this)">
-        <span class="nav-icon">📑</span><span>Propietarios</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('inquilinos',this)">
-        <span class="nav-icon">🧾</span><span>Inquilinos</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('pagos-alquiler',this)">
-        <span class="nav-icon">💳</span><span>Pagos alquiler</span>
-      </div>
-      <div class="nav-item subnicho-gestion" data-subnicho="agencia" onclick="nav('liquidaciones',this)">
-        <span class="nav-icon">💵</span><span>Liquidaciones</span>
+
+      <!-- Grupo: Mixto (Asesores — compartido) -->
+      <div class="sg-group" id="sg-mixto" data-group="mixto">
+        <div class="sg-header" onclick="sgToggle('mixto')">
+          <span class="nav-icon" style="flex-shrink:0">🔀</span>
+          <span class="sg-label">Mixto</span>
+          <span class="sg-dot" id="sg-dot-mixto"></span>
+          <span class="sg-arrow">▶</span>
+        </div>
+        <div class="sg-body">
+          <div class="nav-item" onclick="nav('asesores',this)">
+            <span class="nav-icon">👨‍💼</span><span>Equipo / Asesores</span>
+          </div>
+        </div>
       </div>
 
       <!-- ═══ HERRAMIENTAS (transversal) ═══ -->
       <div class="sidebar-section" style="margin-top:8px">Herramientas</div>
-      <div class="nav-item" onclick="nav('asesores',this)">
-        <span class="nav-icon">👨‍💼</span><span>Equipo</span>
-      </div>
+      <!-- Asesores ahora vive en Mixto; aquí van los ítems transversales restantes -->
       <div class="nav-item" onclick="nav('reportes',this)">
         <span class="nav-icon">📈</span><span>Reportes</span>
       </div>
@@ -4176,6 +4292,8 @@ function nav(id, el) {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
   if(el) el.classList.add('active');
+  // Actualizar dot de grupo activo en el acordeón
+  if (typeof sgUpdateDots === 'function') sgUpdateDots();
   if(id==='chat') cargarResumenes();
   if(id==='leads') renderLeads();
   if(id==='pipeline') renderKanbanFromLeads();
@@ -4917,6 +5035,7 @@ async function submitPin() {
       // Ocultar login, mostrar app
       document.getElementById('loginScreen').style.display = 'none';
       document.querySelector('.layout') && (document.querySelector('.layout').style.display = ''); nav('inicio', document.querySelector('.nav-item'));
+      if (typeof sgUpdateDots === 'function') sgUpdateDots();
       cargarLeads();
       renderProps();
       cargarActivos();
@@ -5074,25 +5193,61 @@ async function initTenant() {
 }
 
 // ── Aplicar tipo de subnicho al sidebar ─────────────────────────────────────
-// Muestra/oculta las secciones GESTIÓN según el modo. El "agente" solo ve VENTAS.
+// Muestra/oculta los grupos acordeón según el modo.
+// 'agente' oculta todos los grupos; 'mixto' abre todos.
 window.aplicarSubnichoTipo = function(tipo) {
-  const validos = ['desarrolladora', 'agencia', 'agente'];
+  const validos = ['desarrolladora', 'agencia', 'agente', 'mixto'];
   if (!validos.includes(tipo)) tipo = 'desarrolladora';
   window.SUBNICHO_TIPO = tipo;
   document.body.setAttribute('data-subnicho-tipo', tipo);
 
-  // Toggle items del sidebar con data-subnicho
+  // ── 1. Compat. legacy: ocultar/mostrar ítems individuales con data-subnicho ──
+  // (mantener por si algún panel externo usa esta clase directo)
   document.querySelectorAll('.subnicho-gestion').forEach(el => {
     const itemSubnicho = el.getAttribute('data-subnicho');
-    const visible = (tipo !== 'agente') && (itemSubnicho === tipo);
+    const visible = (tipo !== 'agente') && (itemSubnicho === tipo || tipo === 'mixto');
     el.style.display = visible ? '' : 'none';
   });
 
-  // Adaptar labels del panel Inicio según subnicho (KPIs transversales)
+  // ── 2. Control de grupos acordeón (sg-group) ──────────────────────────────
+  // Definir qué grupos se muestran y cuál empieza abierto por defecto
+  const groupConfig = {
+    desarrolladora: { show: ['desarrolladora', 'mixto'], defaultOpen: ['desarrolladora'] },
+    agencia:        { show: ['agencia', 'mixto'],        defaultOpen: ['agencia']        },
+    mixto:          { show: ['desarrolladora', 'agencia', 'mixto'], defaultOpen: ['desarrolladora', 'agencia', 'mixto'] },
+    agente:         { show: [],                          defaultOpen: []                 },
+  };
+  const cfg = groupConfig[tipo] || groupConfig.desarrolladora;
+
+  // Leer estado guardado (localStorage sobreescribe el defaultOpen)
+  const stored = sgLoadState();
+
+  document.querySelectorAll('.sg-group[data-group]').forEach(grp => {
+    const g = grp.getAttribute('data-group');
+    const visible = cfg.show.includes(g);
+    grp.setAttribute('data-hidden', visible ? 'false' : 'true');
+
+    if (visible) {
+      // Usar estado guardado si existe, sino usar defaultOpen
+      const shouldOpen = (stored !== null)
+        ? !!stored[g]
+        : cfg.defaultOpen.includes(g);
+      if (shouldOpen) {
+        grp.classList.add('sg-open');
+      } else {
+        grp.classList.remove('sg-open');
+      }
+    } else {
+      grp.classList.remove('sg-open');
+    }
+  });
+
+  // ── 3. Adaptar labels del panel Inicio según subnicho (KPIs transversales) ──
   const labels = {
     desarrolladora: { props: 'Propiedades activas', icon: '🏠' },
     agencia:        { props: 'Inmuebles disponibles', icon: '🏢' },
     agente:         { props: 'Propiedades publicadas', icon: '🗝️' },
+    mixto:          { props: 'Propiedades activas', icon: '🏠' },
   };
   const L = labels[tipo] || labels.desarrolladora;
   const propsLabel = document.getElementById('kpi-props-label');
@@ -5101,6 +5256,46 @@ window.aplicarSubnichoTipo = function(tipo) {
   if (propsIcon) propsIcon.textContent = L.icon;
 
   console.log(`[CRM] Subnicho aplicado: ${tipo}`);
+};
+
+// ── Toggle manual de un grupo (desde el header onclick) ───────────────────
+window.sgToggle = function(groupId) {
+  const grp = document.getElementById(`sg-${groupId}`);
+  if (!grp) return;
+  grp.classList.toggle('sg-open');
+  sgSaveState();
+  sgUpdateDots();
+};
+
+// ── Persistencia en localStorage ─────────────────────────────────────────
+function sgStateKey() {
+  return `crm_sidebar_groups_${typeof TENANT_SLUG !== 'undefined' ? TENANT_SLUG : 'demo'}`;
+}
+function sgSaveState() {
+  const state = {};
+  document.querySelectorAll('.sg-group[data-group]').forEach(grp => {
+    state[grp.getAttribute('data-group')] = grp.classList.contains('sg-open');
+  });
+  try { localStorage.setItem(sgStateKey(), JSON.stringify(state)); } catch(_) {}
+}
+function sgLoadState() {
+  try {
+    const raw = localStorage.getItem(sgStateKey());
+    return raw ? JSON.parse(raw) : null;
+  } catch(_) { return null; }
+}
+
+// ── Dot de grupo activo ──────────────────────────────────────────────────
+// Muestra el dot purple en el header cuando el grupo tiene un ítem activo y está colapsado.
+window.sgUpdateDots = function() {
+  document.querySelectorAll('.sg-group[data-group]').forEach(grp => {
+    const g = grp.getAttribute('data-group');
+    const dot = document.getElementById(`sg-dot-${g}`);
+    if (!dot) return;
+    const hasActive = grp.querySelector('.nav-item.active') !== null;
+    const isOpen = grp.classList.contains('sg-open');
+    dot.classList.toggle('visible', hasActive && !isOpen);
+  });
 };
 
 window.cambiarSubnichoTipo = function(tipo) {
