@@ -2927,10 +2927,10 @@ def limpiar_smoke_tests() -> dict:
         )
         eliminados["inmuebles_renta"] = cur.rowcount
 
-        # 4. Clientes activos de test
+        # 4. Clientes activos de test (por email, nombre o apellido)
         cur.execute(
-            "DELETE FROM clientes_activos WHERE tenant_slug=%s AND (email ILIKE %s OR email ILIKE %s OR nombre ILIKE %s)",
-            (TENANT, "%test%", "%smoke%", "%smoke%")
+            "DELETE FROM clientes_activos WHERE tenant_slug=%s AND (email ILIKE %s OR email ILIKE %s OR nombre ILIKE %s OR apellido ILIKE %s)",
+            (TENANT, "%test%", "%smoke%", "%smoke%", "%test%")
         )
         eliminados["clientes_activos"] = cur.rowcount
 
