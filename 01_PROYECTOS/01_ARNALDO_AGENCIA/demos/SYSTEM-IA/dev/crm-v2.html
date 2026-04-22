@@ -618,7 +618,7 @@ tailwind.config = {
   .sg-dot.visible { display: block; }
   /* Cuerpo del grupo */
   .sg-body { overflow: hidden; max-height: 0; transition: max-height .22s ease; border-left: 1px solid transparent; margin-left: 0; }
-  .sg-group.sg-open > .sg-body { max-height: 320px; border-left: 1px solid rgba(245,158,11,.15); margin-left: 14px; }
+  .sg-group.sg-open > .sg-body { max-height: 500px; border-left: 1px solid rgba(245,158,11,.15); margin-left: 14px; }
   .sg-body .nav-item { margin-left: 0 !important; font-size: 12px !important; padding-left: 8px !important; }
   .sg-group[data-hidden="true"] { display: none; }
 
@@ -5254,23 +5254,50 @@ async function initTenant() {
 // ── Aplicar tipo de subnicho al sidebar ─────────────────────────────────────
 // Muestra/oculta las secciones GESTIÓN según el modo. El "agente" solo ve VENTAS.
 window.aplicarSubnichoTipo = function(tipo) {
-  const validos = ['desarrolladora', 'agencia', 'agente'];
+  const validos = ['desarrolladora', 'agencia', 'agente', 'mixto'];
   if (!validos.includes(tipo)) tipo = 'desarrolladora';
   window.SUBNICHO_TIPO = tipo;
   document.body.setAttribute('data-subnicho-tipo', tipo);
 
-  // Toggle items del sidebar con data-subnicho
+  // ── 1. Mostrar TODOS los items (los grupos acordeón arriba ya organizan por subnicho) ──
+  // El usuario siempre puede acceder a cualquier módulo desde cualquier tenant.
   document.querySelectorAll('.subnicho-gestion').forEach(el => {
-    const itemSubnicho = el.getAttribute('data-subnicho');
-    const visible = (tipo !== 'agente') && (itemSubnicho === tipo);
-    el.style.display = visible ? '' : 'none';
+    el.style.display = '';
   });
 
-  // Adaptar labels del panel Inicio según subnicho (KPIs transversales)
+  // ── 2. Control de grupos acordeón — todos siempre visibles, subnicho decide cuál abre por default ──
+  const ALL_GROUPS = ['desarrolladora', 'agencia', 'mixto'];
+  const groupConfig = {
+    desarrolladora: { show: ALL_GROUPS, defaultOpen: ['desarrolladora'] },
+    agencia:        { show: ALL_GROUPS, defaultOpen: ['agencia']        },
+    mixto:          { show: ALL_GROUPS, defaultOpen: ALL_GROUPS         },
+    agente:         { show: ALL_GROUPS, defaultOpen: []                 },
+  };
+  const cfg = groupConfig[tipo] || groupConfig.desarrolladora;
+
+  // Leer estado guardado (localStorage sobreescribe el defaultOpen)
+  const stored = (typeof sgLoadState === 'function') ? sgLoadState() : null;
+
+  document.querySelectorAll('.sg-group[data-group]').forEach(grp => {
+    const g = grp.getAttribute('data-group');
+    const visible = cfg.show.includes(g);
+    grp.setAttribute('data-hidden', visible ? 'false' : 'true');
+
+    if (visible) {
+      const shouldOpen = (stored !== null) ? !!stored[g] : cfg.defaultOpen.includes(g);
+      if (shouldOpen) grp.classList.add('sg-open');
+      else grp.classList.remove('sg-open');
+    } else {
+      grp.classList.remove('sg-open');
+    }
+  });
+
+  // ── 3. Adaptar labels del panel Inicio según subnicho ──
   const labels = {
     desarrolladora: { props: 'Propiedades activas', icon: '🏠' },
     agencia:        { props: 'Inmuebles disponibles', icon: '🏢' },
     agente:         { props: 'Propiedades publicadas', icon: '🗝️' },
+    mixto:          { props: 'Propiedades activas', icon: '🏠' },
   };
   const L = labels[tipo] || labels.desarrolladora;
   const propsLabel = document.getElementById('kpi-props-label');
