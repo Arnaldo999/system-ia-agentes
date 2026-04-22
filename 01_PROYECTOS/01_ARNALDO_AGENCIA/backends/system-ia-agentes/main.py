@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 
 # ── Logging estructurado ──────────────────────────────────────────────────────
 logging.basicConfig(
@@ -167,6 +168,13 @@ app.include_router(mica_demo_inmo_router_v2)
 app.include_router(mica_onboarding_router)
 app.include_router(social_router)
 app.include_router(meta_tp_router)
+
+# ── Archivos estáticos — Propuestas de clientes ──────────────────────────────
+import pathlib
+_static_dir = pathlib.Path(__file__).parent / "clientes-publicos"
+if _static_dir.exists():
+    app.mount("/propuestas", StaticFiles(directory=str(_static_dir)), name="propuestas")
+
 
 
 # ── Meta Webhook — Tech Provider Robert/Lovbot ───────────────────────────────
