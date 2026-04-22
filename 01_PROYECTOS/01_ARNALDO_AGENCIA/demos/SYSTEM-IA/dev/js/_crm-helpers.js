@@ -19,11 +19,21 @@ window.crmFetch = async function(path, options = {}) {
 };
 
 window.crmCreate = async function(recurso, campos) {
-  return await crmFetch(`/crm/${recurso}`, { method: 'POST', body: JSON.stringify(campos) });
+  const data = await crmFetch(`/crm/${recurso}`, { method: 'POST', body: JSON.stringify(campos) });
+  // El backend puede devolver HTTP 200 pero con {"error":"..."} cuando Airtable rechaza
+  if (data && typeof data === 'object' && data.error && !data.id) {
+    throw new Error(data.error);
+  }
+  return data;
 };
 
 window.crmUpdate = async function(recurso, id, campos) {
-  return await crmFetch(`/crm/${recurso}/${id}`, { method: 'PATCH', body: JSON.stringify(campos) });
+  const data = await crmFetch(`/crm/${recurso}/${id}`, { method: 'PATCH', body: JSON.stringify(campos) });
+  // idem — PATCH puede retornar false o {"error":"..."} con HTTP 200
+  if (data === false || (data && typeof data === 'object' && data.error)) {
+    throw new Error((data && data.error) ? data.error : 'Error al actualizar registro');
+  }
+  return data;
 };
 
 window.crmDelete = async function(recurso, id) {
