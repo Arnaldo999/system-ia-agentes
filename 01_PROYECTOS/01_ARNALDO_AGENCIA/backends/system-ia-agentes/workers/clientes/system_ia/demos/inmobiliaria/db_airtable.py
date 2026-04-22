@@ -1214,7 +1214,11 @@ def _map_liquidacion(campos: dict) -> dict:
                 pass
             continue
         if k == "propietario_id" and v:
-            at["Propietario"] = [str(v)] if not isinstance(v, list) else v
+            # IMPORTANTE: Liquidaciones.Propietario linkea a CLIENTES_ACTIVOS
+            # (tblpfSE6qkGCV6e99), NO a la tabla Propietarios (tbl7XoZ9NOfkfqQAG).
+            # El JS actualmente envía IDs de la tabla Propietarios — descartamos
+            # el link para evitar ROW_TABLE_DOES_NOT_MATCH de Airtable.
+            # El vínculo se puede establecer desde Clientes Activos cuando corresponda.
             continue
         dest = MAPPING.get(k, k)
         at[dest] = v
