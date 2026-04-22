@@ -1,5 +1,64 @@
 # Debug y errores frecuentes
 
+## 2026-04-22 — Migración CRM v2 definitiva Robert (Lovbot.ai)
+
+**Decisión**: Robert (dueño Lovbot.ai) y Arnaldo (socio técnico) decidieron el 22/04/2026 que `dev/crm-v2.html` reemplaza definitivamente al CRM v1 (`dev/crm.html`) y al legacy MVP (`demo-crm-mvp.html`). El v2 estaba validado en producción.
+
+**Archivos eliminados**:
+- `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/demo-crm-mvp.html` (legacy v0)
+- `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/crm.html` (legacy v1)
+
+**Cambios en vercel.json**:
+- Eliminada regla `/dev/crm` con host `crm.lovbot.ai` → apuntaba a `crm.html` (v1)
+- Catch-all `crm.lovbot.ai` cambiado de `demo-crm-mvp.html` a `dev/crm-v2.html`
+- Eliminadas rutas globales sin host: `/crm` (legacy MVP) y `/dev/crm` (legacy v1)
+- Conservado `/dev/crm-v2` (con y sin host), `/dev/admin`, `/dev/js/:file`, `/js/:file`
+
+**Validación post-deploy (Vercel desplegó commit 83d24c8)**:
+- `https://crm.lovbot.ai/dev/crm-v2` → HTTP 200
+- `https://crm.lovbot.ai/` (catch-all) → HTTP 200, sirve v2 (`panel-loteos`, `panel-contratos` confirmados via curl)
+- `https://crm.lovbot.ai/dev/crm` (legacy) → HTTP 200 via catch-all, sirve v2
+- `https://crm.lovbot.ai/dev/admin` → HTTP 200
+
+**Commit**: `83d24c8` — `feat(robert/crm): migración v2 definitiva — eliminar v1 y legacy MVP`
+
+**Modelo único Robert a partir de hoy**: `dev/crm-v2.html` en `https://crm.lovbot.ai/dev/crm-v2`
+
+
+
+## 2026-04-22 — Migración CRM v2 definitiva Mica (System IA)
+
+**Decisión**: Arnaldo y Mica decidieron el 22/04/2026 que `dev/crm-v2.html` reemplaza definitivamente al CRM v1 (`dev/crm.html`) y al legacy raiz (`crm.html`). El v2 estaba validado en `https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2?tenant=mica-demo`. Mismo patron aplicado antes a Robert (commit `83d24c8`).
+
+**Archivos eliminados**:
+- `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/crm.html` (legacy v0 raiz)
+- `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/crm.html` (legacy v1)
+
+**Cambios en vercel.json**:
+- `/system-ia/dev/crm` → antes apuntaba a `dev/crm.html`, ahora apunta a `dev/crm-v2.html` (alias, no rompe links viejos)
+- `/system-ia/crm` → antes apuntaba a `crm.html` (raiz), ahora apunta a `dev/crm-v2.html` (alias)
+- Conservadas: `/system-ia/dev/crm-v2`, `/system-ia/admin`, `/system-ia/dev/js/:file`
+
+**Archivos de soporte actualizados**:
+- `.claude/commands/sync-crm-prod.md` — mapeo Mica corregido: modelo unico, no hay prod separado
+- `.claude/commands/rollback-crm-prod.md` — mapeo Mica corregido
+- `.claude/agents/proyecto-mica.md` — regla de demo actualizada al v2
+- `.claude/settings.json` — eliminadas reglas deny de crm.html (ya no existe)
+
+**Validacion post-deploy (Vercel deploya commit `a674c3d`)**:
+- `https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2` → HTTP 200
+- `https://system-ia-agencia.vercel.app/system-ia/dev/crm` (alias v1) → HTTP 200, sirve v2 (2 matches grep `crm-v2|panel-loteos`)
+- `https://system-ia-agencia.vercel.app/system-ia/crm` (alias raiz) → HTTP 200, sirve v2 (2 matches grep)
+- `https://system-ia-agencia.vercel.app/system-ia/admin` → HTTP 200
+
+**Commit**: `a674c3d` — `feat(mica/crm): migracion v2 definitiva — eliminar v1 (dev/crm.html) y legacy raiz (crm.html)`
+
+**Modelo unico Mica a partir de hoy**: `dev/crm-v2.html` en `https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2?tenant=mica-demo`
+
+**Pendiente (monitor guardia_critica.py)**: Los checks de Mica estan DESHABILITADOS hoy. Cuando Mica tenga dominio prod definitivo (no `vercel.app`), setear `MICA_CRM_URL` y `MICA_CRM_ENABLED=1` en Coolify.
+
+---
+
 ## 2026-04-22 — Bug histórico de tokens: por qué pedíamos credenciales una y otra vez
 
 **Síntoma**: Arnaldo mostró captura de Coolify con 4 tokens emitidos (`worker-arnaldo`, dos `agentes`, `flujos agenticos`). Cada subagente le pedía un token Coolify "porque no funcionaba", aunque ya había 1 guardado en `.env`.
