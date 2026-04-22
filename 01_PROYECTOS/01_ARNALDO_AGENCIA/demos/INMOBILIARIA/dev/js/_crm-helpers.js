@@ -6,7 +6,16 @@ window.crmFetch = async function(path, options = {}) {
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    const rawText = await res.text();
+    // Intentar extraer el campo 'detail' si el backend devolvio JSON (FastAPI HTTPException)
+    let msg = rawText;
+    try {
+      const parsed = JSON.parse(rawText);
+      if (parsed && parsed.detail) msg = parsed.detail;
+    } catch (_) { /* no era JSON, usar rawText */ }
+    throw new Error(`HTTP ${res.status}: ${msg}`);
+  }
   return await res.json();
 };
 

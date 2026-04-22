@@ -548,9 +548,10 @@
       if (l) LOTE_ACTUAL = l;
     } catch (e) {
       // 409 trae el mensaje en el body como detail de HTTPException
-      const msg = e.message || '';
-      const esBloqueado = msg.includes('409') || msg.toLowerCase().includes('vendido') || msg.toLowerCase().includes('reservado');
-      notif(esBloqueado ? 'No se puede eliminar' : 'Error al eliminar', msg.replace(/^HTTP \d+: /, ''));
+      // crmFetch ya extrae el campo 'detail' del JSON de error
+      const msg = (e.message || '').replace(/^HTTP \d+: /, '');
+      const esBloqueado = e.message.includes('409') || msg.toLowerCase().includes('vendido') || msg.toLowerCase().includes('reservado');
+      notif(esBloqueado ? 'No se puede eliminar' : 'Error al eliminar', msg);
     }
   };
 
@@ -586,9 +587,10 @@
       if (l) LOTE_ACTUAL = l;
       renderLoteos();
     } catch (e) {
-      const msg = e.message || '';
-      const esBloqueado = msg.includes('409') || msg.toLowerCase().includes('vendido') || msg.toLowerCase().includes('reservado');
-      notif(esBloqueado ? 'No se puede eliminar manzana' : 'Error', msg.replace(/^HTTP \d+: /, ''));
+      // crmFetch ya extrae el campo 'detail' del JSON de error
+      const msg = (e.message || '').replace(/^HTTP \d+: /, '');
+      const esBloqueado = e.message.includes('409') || msg.toLowerCase().includes('vendido') || msg.toLowerCase().includes('reservado');
+      notif(esBloqueado ? 'No se puede eliminar manzana' : 'Error', msg);
     }
   };
 
@@ -616,6 +618,12 @@
     const inicio   = parseInt(document.getElementById('nuevaManzanaInicio').value)   || 1;
     if (!nombre) { notif('Falta el nombre de la manzana'); return; }
     if (cantidad <= 0 || cantidad > 200) { notif('Cantidad debe ser entre 1 y 200'); return; }
+
+    // Estado loading en el boton
+    const btn = document.querySelector('#modalNuevaManzana .btn-primary');
+    const textoOriginal = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
+
     try {
       const res = await crmFetch(`/crm/loteos/${LOTE_ACTUAL.id}/manzana`, {
         method: 'POST',
@@ -631,7 +639,10 @@
       if (l) LOTE_ACTUAL = l;
       renderLoteos();
     } catch (e) {
-      notif('Error creando manzana', e.message);
+      const msg = (e.message || '').replace(/^HTTP \d+: /, '');
+      notif('Error creando manzana', msg);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = textoOriginal; }
     }
   };
 
@@ -667,6 +678,12 @@
       estado: 'libre',
     };
     if (precio) payload.precio = parseFloat(precio);
+
+    // Estado loading en el boton para evitar doble-submit y dar feedback
+    const btn = document.querySelector('#modalAgregarLote .btn-primary');
+    const textoOriginal = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
+
     try {
       await crmFetch('/crm/lotes-mapa/seguro', {
         method: 'POST',
@@ -677,9 +694,11 @@
       notif(`Lote ${manzana}-${numero} creado`);
       await cargarGruposYRenderizar(LOTE_ACTUAL.id);
     } catch (e) {
-      const msg = e.message || '';
-      const esDuplicado = msg.includes('409') || msg.toLowerCase().includes('duplicado') || msg.toLowerCase().includes('ya existe');
-      notif(esDuplicado ? 'Lote duplicado' : 'Error creando lote', msg.replace(/^HTTP \d+: /, ''));
+      const msg = (e.message || '').replace(/^HTTP \d+: /, '');
+      const esDuplicado = e.message.includes('409') || msg.toLowerCase().includes('duplicado') || msg.toLowerCase().includes('ya existe');
+      notif(esDuplicado ? 'Lote duplicado' : 'Error creando lote', msg);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = textoOriginal; }
     }
   };
 
