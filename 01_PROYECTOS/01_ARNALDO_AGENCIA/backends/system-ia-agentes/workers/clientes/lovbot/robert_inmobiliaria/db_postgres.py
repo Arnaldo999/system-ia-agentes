@@ -2721,3 +2721,536 @@ def update_liquidacion(record_id: int, campos: dict) -> dict:
 
 def delete_liquidacion(record_id: int) -> dict:
     return _crud_generico("liquidaciones", "delete", record_id=record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PERSONA ÚNICA — Sprints Refactor Unificación
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _serialize_row_safe(row: dict) -> dict:
+    """Serializa un dict de DB a tipos JSON-safe."""
+    result = {}
+    for k, v in row.items():
+        if v is None:
+            result[k] = None
+        elif hasattr(v, 'isoformat'):
+            result[k] = v.isoformat()
+        elif hasattr(v, '__float__') and not isinstance(v, (int, bool)):
+            result[k] = float(v)
+        else:
+            result[k] = v
+    return result
+
+
+def refactor_schema_persona_unica() -> dict:
+    """Ejecuta las migraciones de schema para persona única:
+    - Agrega columna roles TEXT[] a clientes_activos (si no existe)
+    - Crea tabla alquileres (si no existe)
+    - Migra inquilinos → clientes_activos + actualiza roles
+    - Migra propietarios → clientes_activos + actualiza roles
+    Idempotente: puede correrse varias veces.
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+
+    log = []
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+
+        # 2.1 — Agregar columna roles a clientes_activos
+        cur.execute("""
+            ALTER TABLE clientes_activos
+            ADD COLUMN IF NOT EXISTS roles TEXT[] DEFAULT ARRAY['comprador']::TEXT[]
+        """)
+        log.append("roles column: ok")
+
+        # 2.2 — Crear tabla alquileres
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS alquileres (
+              id SERIAL PRIMARY KEY,
+              tenant_slug TEXT NOT NULL,
+              contrato_id INTEGER UNIQUE REFERENCES contratos(id) ON DELETE CASCADE,
+              fecha_inicio DATE,
+              fecha_fin DATE,
+              monto_mensual NUMERIC,
+              deposito_pagado NUMERIC,
+              estado TEXT DEFAULT 'vigente',
+              garante_nombre TEXT,
+              garante_telefono TEXT,
+              garante_dni TEXT,
+              created_at TIMESTAMPTZ DEFAULT now(),
+              updated_at TIMESTAMPTZ DEFAULT now()
+            )
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_alquileres_tenant ON alquileres(tenant_slug)
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_alquileres_contrato ON alquileres(contrato_id)
+        """)
+        log.append("tabla alquileres: ok")
+
+        # 2.3 — Migrar inquilinos → clientes_activos (solo los que NO tienen coincidencia por teléfono)
+        cur.execute("""
+            INSERT INTO clientes_activos
+              (tenant_slug, nombre, apellido, telefono, email, documento, origen_creacion, roles)
+            SELECT
+              i.tenant_slug,
+              i.nombre,
+              i.apellido,
+              i.telefono,
+              i.email,
+              i.dni_cuit,
+              'migracion_inquilino',
+              ARRAY['inquilino']::TEXT[]
+            FROM inquilinos i
+            WHERE i.tenant_slug = %s
+              AND (i.telefono IS NULL OR i.telefono = '' OR NOT EXISTS (
+                SELECT 1 FROM clientes_activos ca
+                WHERE ca.tenant_slug = i.tenant_slug
+                  AND ca.telefono = i.telefono
+                  AND ca.telefono != ''
+              ))
+            ON CONFLICT DO NOTHING
+        """, (TENANT,))
+        migrados_inq = cur.rowcount
+        log.append(f"inquilinos migrados: {migrados_inq}")
+
+        # Para los que ya existían por teléfono, agregar rol 'inquilino'
+        cur.execute("""
+            UPDATE clientes_activos SET
+              roles = array_append(roles, 'inquilino'),
+              updated_at = now()
+            WHERE tenant_slug = %s
+              AND NOT ('inquilino' = ANY(roles))
+              AND telefono IN (SELECT telefono FROM inquilinos WHERE tenant_slug = %s AND telefono != '')
+        """, (TENANT, TENANT))
+        actualizados_inq = cur.rowcount
+        log.append(f"roles inquilino actualizados en existentes: {actualizados_inq}")
+
+        # 2.4 — Migrar propietarios → clientes_activos
+        cur.execute("""
+            INSERT INTO clientes_activos
+              (tenant_slug, nombre, apellido, telefono, email, documento, origen_creacion, roles)
+            SELECT
+              p.tenant_slug,
+              split_part(p.nombre, ' ', 1),
+              COALESCE(NULLIF(trim(substring(p.nombre from position(' ' in p.nombre) + 1)), ''), ''),
+              p.telefono,
+              p.email,
+              p.dni_cuit,
+              'migracion_propietario',
+              ARRAY['propietario']::TEXT[]
+            FROM propietarios p
+            WHERE p.tenant_slug = %s
+              AND (p.telefono IS NULL OR p.telefono = '' OR NOT EXISTS (
+                SELECT 1 FROM clientes_activos ca
+                WHERE ca.tenant_slug = p.tenant_slug
+                  AND ca.telefono = p.telefono
+                  AND ca.telefono != ''
+              ))
+            ON CONFLICT DO NOTHING
+        """, (TENANT,))
+        migrados_prop = cur.rowcount
+        log.append(f"propietarios migrados: {migrados_prop}")
+
+        # Para los que ya existían, agregar rol 'propietario'
+        cur.execute("""
+            UPDATE clientes_activos SET
+              roles = array_append(roles, 'propietario'),
+              updated_at = now()
+            WHERE tenant_slug = %s
+              AND NOT ('propietario' = ANY(roles))
+              AND telefono IN (SELECT telefono FROM propietarios WHERE tenant_slug = %s AND telefono != '')
+        """, (TENANT, TENANT))
+        actualizados_prop = cur.rowcount
+        log.append(f"roles propietario actualizados en existentes: {actualizados_prop}")
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        # Contar personas unificadas (tienen 2+ roles)
+        conn2 = _conn()
+        cur2 = conn2.cursor()
+        cur2.execute("""
+            SELECT count(*) FROM clientes_activos
+            WHERE tenant_slug=%s AND array_length(roles, 1) > 1
+        """, (TENANT,))
+        unificadas = cur2.fetchone()[0]
+        cur2.close()
+        conn2.close()
+
+        return {
+            "ok": True,
+            "log": log,
+            "personas_con_multiples_roles": unificadas,
+            "migrados_inquilinos": migrados_inq,
+            "migrados_propietarios": migrados_prop,
+        }
+    except Exception as e:
+        print(f"[DB] Error refactor_schema_persona_unica: {e}")
+        return {"error": str(e), "log": log}
+
+
+def limpiar_smoke_tests() -> dict:
+    """Elimina registros de smoke tests del tenant demo.
+    Idempotente — si no hay datos de test, no hace nada.
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+
+        cur.execute("""
+            DELETE FROM inmuebles_renta
+            WHERE tenant_slug=%s AND (titulo ILIKE '%test%' OR titulo ILIKE '%probe%')
+        """, (TENANT,))
+        del_inm = cur.rowcount
+
+        cur.execute("""
+            DELETE FROM inquilinos
+            WHERE tenant_slug=%s AND (
+              (nombre ILIKE '%test%' OR apellido ILIKE '%test%')
+              OR (nombre='Laura' AND apellido ILIKE '%Inquilina%')
+            )
+        """, (TENANT,))
+        del_inq = cur.rowcount
+
+        cur.execute("""
+            DELETE FROM propietarios
+            WHERE tenant_slug=%s AND (nombre ILIKE '%test%' OR nombre ILIKE '%prop test%')
+        """, (TENANT,))
+        del_prop = cur.rowcount
+
+        cur.execute("""
+            DELETE FROM clientes_activos
+            WHERE tenant_slug=%s AND (
+              email ILIKE '%test%' OR email ILIKE '%smoke%'
+              OR nombre ILIKE '%smoke%'
+            )
+        """, (TENANT,))
+        del_ca = cur.rowcount
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {
+            "ok": True,
+            "eliminados": {
+                "inmuebles_renta": del_inm,
+                "inquilinos": del_inq,
+                "propietarios": del_prop,
+                "clientes_activos": del_ca,
+            }
+        }
+    except Exception as e:
+        print(f"[DB] Error limpiar_smoke_tests: {e}")
+        return {"error": str(e)}
+
+
+def buscar_personas(q: str, limit: int = 20) -> dict:
+    """Busca en clientes_activos por nombre, apellido, teléfono, email o documento.
+    Devuelve lista para autocomplete — persona única.
+    """
+    if not _available():
+        return {"items": []}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        like = f"%{q}%"
+        cur.execute("""
+            SELECT
+              ca.id, ca.nombre, ca.apellido, ca.telefono, ca.email,
+              ca.documento, ca.roles, ca.lead_id, ca.origen_creacion,
+              (SELECT count(*) FROM contratos c WHERE c.cliente_activo_id = ca.id AND c.tenant_slug = ca.tenant_slug) AS contratos_count
+            FROM clientes_activos ca
+            WHERE ca.tenant_slug=%s
+              AND (
+                ca.nombre ILIKE %s OR ca.apellido ILIKE %s
+                OR ca.telefono ILIKE %s OR ca.email ILIKE %s
+                OR ca.documento ILIKE %s
+              )
+            ORDER BY ca.created_at DESC
+            LIMIT %s
+        """, (TENANT, like, like, like, like, like, limit))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        items = []
+        for r in rows:
+            d = dict(r)
+            d["contratos_count"] = int(d.get("contratos_count") or 0)
+            if d.get("roles") is None:
+                d["roles"] = ["comprador"]
+            items.append(_serialize_row_safe(d))
+        return {"items": items}
+    except Exception as e:
+        print(f"[DB] Error buscar_personas: {e}")
+        return {"items": [], "error": str(e)}
+
+
+def get_ficha_persona(cliente_id: int) -> dict:
+    """Ficha 360 de una persona: datos + lead origen + contratos + alquileres + inmuebles propios."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Persona base
+        cur.execute("""
+            SELECT id, nombre, apellido, telefono, email, documento,
+                   roles, lead_id, origen_creacion, created_at, updated_at
+            FROM clientes_activos WHERE id=%s AND tenant_slug=%s
+        """, (cliente_id, TENANT))
+        persona_row = cur.fetchone()
+        if not persona_row:
+            cur.close()
+            conn.close()
+            return {"error": "Persona no encontrada"}
+
+        persona = _serialize_row_safe(dict(persona_row))
+        if persona.get("roles") is None:
+            persona["roles"] = ["comprador"]
+
+        # Lead origen
+        lead_origen = None
+        if persona.get("lead_id"):
+            cur.execute("SELECT * FROM leads WHERE id=%s AND tenant_slug=%s",
+                        (persona["lead_id"], TENANT))
+            lead_row = cur.fetchone()
+            if lead_row:
+                lead_origen = _serialize_row_safe(dict(lead_row))
+
+        # Contratos del cliente
+        cur.execute("""
+            SELECT c.id, c.tipo, c.item_tipo, c.item_id, c.monto, c.moneda,
+                   c.estado_pago, c.cuotas_total, c.cuotas_pagadas,
+                   c.fecha_firma, c.notas,
+                   CASE
+                     WHEN c.item_tipo='lote' THEN (
+                       SELECT CONCAT(lt.nombre_loteo, ' · ', lm.numero_lote)
+                       FROM lotes_mapa lm
+                       JOIN loteos lt ON lt.id=lm.loteo_id
+                       WHERE lm.id=c.item_id LIMIT 1
+                     )
+                     WHEN c.item_tipo='inmueble_renta' THEN (
+                       SELECT ir.titulo FROM inmuebles_renta ir WHERE ir.id=c.item_id LIMIT 1
+                     )
+                     WHEN c.item_tipo='propiedad' THEN (
+                       SELECT p.titulo FROM propiedades p WHERE p.id=c.item_id LIMIT 1
+                     )
+                     ELSE NULL
+                   END AS item_descripcion
+            FROM contratos c
+            WHERE c.cliente_activo_id=%s AND c.tenant_slug=%s
+            ORDER BY c.fecha_firma DESC
+        """, (cliente_id, TENANT))
+        contratos_rows = cur.fetchall()
+        contratos = [_serialize_row_safe(dict(r)) for r in contratos_rows]
+
+        # Alquileres (via contratos)
+        cur.execute("""
+            SELECT a.id, a.contrato_id, a.fecha_inicio, a.fecha_fin,
+                   a.monto_mensual, a.deposito_pagado, a.estado,
+                   a.garante_nombre, a.garante_telefono, a.garante_dni,
+                   ir.titulo AS inmueble_titulo, ir.id AS inmueble_id
+            FROM alquileres a
+            JOIN contratos c ON c.id=a.contrato_id
+            LEFT JOIN inmuebles_renta ir ON ir.id=c.item_id
+            WHERE c.cliente_activo_id=%s AND a.tenant_slug=%s
+            ORDER BY a.fecha_inicio DESC
+        """, (cliente_id, TENANT))
+        alquileres_rows = cur.fetchall()
+        alquileres = [_serialize_row_safe(dict(r)) for r in alquileres_rows]
+
+        # Inmuebles propios (inmuebles_renta donde propietario_id apunta a esta persona via propietarios)
+        # Buscar si esta persona tiene un propietario_id asociado
+        cur.execute("""
+            SELECT ir.id, ir.titulo, ir.tipo, ir.zona, ir.precio_alquiler AS precio_mensual, ir.disponible
+            FROM inmuebles_renta ir
+            WHERE ir.tenant_slug=%s AND ir.propietario_id IN (
+              SELECT p.id FROM propietarios p
+              WHERE p.tenant_slug=%s AND p.telefono=(
+                SELECT ca.telefono FROM clientes_activos ca WHERE ca.id=%s AND ca.tenant_slug=%s LIMIT 1
+              )
+            )
+        """, (TENANT, TENANT, cliente_id, TENANT))
+        inmuebles_rows = cur.fetchall()
+        inmuebles_propios = [_serialize_row_safe(dict(r)) for r in inmuebles_rows]
+
+        cur.close()
+        conn.close()
+
+        return {
+            "persona": persona,
+            "lead_origen": lead_origen,
+            "contratos": contratos,
+            "alquileres": alquileres,
+            "inmuebles_propios": inmuebles_propios,
+        }
+    except Exception as e:
+        print(f"[DB] Error get_ficha_persona: {e}")
+        return {"error": str(e)}
+
+
+def agregar_rol_persona(cliente_id: int, rol: str) -> dict:
+    """Agrega un rol al array de roles de un cliente. Idempotente."""
+    if not _available():
+        return {"error": "DB no disponible"}
+    roles_validos = {"comprador", "inquilino", "propietario", "lead"}
+    if rol not in roles_validos:
+        return {"error": f"Rol inválido: {rol}. Válidos: {roles_validos}"}
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE clientes_activos SET
+              roles = array_append(roles, %s),
+              updated_at = now()
+            WHERE id=%s AND tenant_slug=%s
+              AND NOT (%s = ANY(COALESCE(roles, ARRAY[]::TEXT[])))
+        """, (rol, cliente_id, TENANT, rol))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"ok": True, "cliente_id": cliente_id, "rol_agregado": rol}
+    except Exception as e:
+        print(f"[DB] Error agregar_rol_persona: {e}")
+        return {"error": str(e)}
+
+
+def crear_contrato_alquiler(campos: dict) -> dict:
+    """Crea contrato tipo alquiler + registro en tabla alquileres + actualiza inmueble y rol cliente.
+
+    campos esperados:
+      tenant_slug, cliente_activo_id, tipo='alquiler', item_tipo='inmueble_renta',
+      item_id (int), monto_total, fecha_firma,
+      alquiler: { fecha_inicio, fecha_fin, monto_mensual, deposito_pagado,
+                  garante_nombre, garante_telefono, garante_dni }
+    """
+    if not _available():
+        return {"error": "DB no disponible"}
+
+    alquiler_data = campos.get("alquiler") or {}
+    cliente_activo_id = campos.get("cliente_activo_id")
+    item_id = campos.get("item_id")
+
+    if not cliente_activo_id or not item_id:
+        return {"error": "Faltan cliente_activo_id o item_id"}
+
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # 1. Crear contrato
+        cur.execute("""
+            INSERT INTO contratos (
+              tenant_slug, cliente_activo_id, tipo, item_tipo, item_id,
+              monto, moneda, fecha_firma, estado_pago, notas
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            TENANT,
+            cliente_activo_id,
+            "alquiler",
+            campos.get("item_tipo", "inmueble_renta"),
+            item_id,
+            campos.get("monto_total") or alquiler_data.get("monto_mensual"),
+            campos.get("moneda", "ARS"),
+            campos.get("fecha_firma") or date.today().isoformat(),
+            "al_dia",
+            campos.get("notas", ""),
+        ))
+        contrato_id = cur.fetchone()["id"]
+
+        # 2. Crear registro en alquileres
+        cur.execute("""
+            INSERT INTO alquileres (
+              tenant_slug, contrato_id, fecha_inicio, fecha_fin,
+              monto_mensual, deposito_pagado, estado,
+              garante_nombre, garante_telefono, garante_dni
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            TENANT,
+            contrato_id,
+            alquiler_data.get("fecha_inicio"),
+            alquiler_data.get("fecha_fin"),
+            alquiler_data.get("monto_mensual"),
+            alquiler_data.get("deposito_pagado"),
+            "vigente",
+            alquiler_data.get("garante_nombre"),
+            alquiler_data.get("garante_telefono"),
+            alquiler_data.get("garante_dni"),
+        ))
+        alquiler_id = cur.fetchone()["id"]
+
+        # 3. Marcar inmueble como no disponible
+        cur.execute("""
+            UPDATE inmuebles_renta SET disponible=false, updated_at=now()
+            WHERE id=%s AND tenant_slug=%s
+        """, (item_id, TENANT))
+
+        # 4. Agregar rol 'inquilino' al cliente (si no lo tiene)
+        cur.execute("""
+            UPDATE clientes_activos SET
+              roles = array_append(roles, 'inquilino'),
+              updated_at = now()
+            WHERE id=%s AND tenant_slug=%s
+              AND NOT ('inquilino' = ANY(COALESCE(roles, ARRAY[]::TEXT[])))
+        """, (cliente_activo_id, TENANT))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return {
+            "ok": True,
+            "contrato_id": contrato_id,
+            "alquiler_id": alquiler_id,
+            "cliente_activo_id": cliente_activo_id,
+            "item_id": item_id,
+        }
+    except Exception as e:
+        print(f"[DB] Error crear_contrato_alquiler: {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return {"error": str(e)}
+
+
+def get_all_alquileres() -> dict:
+    """Lista todos los alquileres con datos del inmueble y cliente."""
+    if not _available():
+        return {"items": []}
+    try:
+        conn = _conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT
+              a.id, a.contrato_id, a.fecha_inicio, a.fecha_fin,
+              a.monto_mensual, a.deposito_pagado, a.estado,
+              a.garante_nombre, a.garante_telefono, a.garante_dni,
+              a.created_at,
+              ir.titulo AS inmueble_titulo, ir.id AS inmueble_id,
+              ca.nombre AS cliente_nombre, ca.apellido AS cliente_apellido,
+              ca.telefono AS cliente_telefono, ca.id AS cliente_id
+            FROM alquileres a
+            JOIN contratos c ON c.id=a.contrato_id
+            LEFT JOIN inmuebles_renta ir ON ir.id=c.item_id
+            LEFT JOIN clientes_activos ca ON ca.id=c.cliente_activo_id
+            WHERE a.tenant_slug=%s
+            ORDER BY a.created_at DESC
+        """, (TENANT,))
+        rows = [_serialize_row_safe(dict(r)) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {"items": rows, "total": len(rows)}
+    except Exception as e:
+        print(f"[DB] Error get_all_alquileres: {e}")
+        return {"items": [], "error": str(e)}

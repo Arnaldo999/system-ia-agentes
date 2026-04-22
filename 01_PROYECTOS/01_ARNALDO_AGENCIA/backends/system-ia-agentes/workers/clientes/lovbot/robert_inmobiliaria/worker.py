@@ -4863,3 +4863,122 @@ async def test_onboard_completo(request: Request):
         return resultado
     except Exception as e:
         raise HTTPException(500, f"Error orquestando: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ADMIN — Limpieza y refactor persona única
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.post("/admin/limpiar-smoke-tests")
+def limpiar_smoke_tests(request: Request):
+    """Elimina registros de smoke tests del tenant demo.
+    Idempotente. Requiere X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+    _check_pg()
+    result = db.limpiar_smoke_tests()
+    if "error" in result:
+        raise HTTPException(500, result["error"])
+    return result
+
+
+@router.post("/admin/refactor-persona-unica")
+def refactor_persona_unica(request: Request):
+    """Ejecuta migracion de schema persona única:
+    - Agrega columna roles[] a clientes_activos
+    - Crea tabla alquileres
+    - Migra inquilinos y propietarios a clientes_activos con roles
+    Idempotente. Requiere X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    _check_admin_token(request)
+    _check_pg()
+    result = db.refactor_schema_persona_unica()
+    if "error" in result and not result.get("log"):
+        raise HTTPException(500, result["error"])
+    return result
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CRM — Persona única: búsqueda + ficha 360 + rol + contrato alquiler
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/crm/personas/buscar")
+def buscar_personas(q: str = ""):
+    """Busca clientes_activos por nombre, apellido, teléfono, email o documento.
+    Útil para autocomplete en modales de inquilino/propietario.
+    Requiere ?q=término (mínimo 1 char).
+    """
+    _check_pg()
+    if not q or len(q.strip()) < 1:
+        return {"items": []}
+    return db.buscar_personas(q.strip(), limit=20)
+
+
+@router.get("/crm/personas/{cliente_id}")
+def get_ficha_persona(cliente_id: int):
+    """Ficha 360 de una persona: datos base + lead origen + contratos + alquileres + inmuebles propios."""
+    from fastapi import HTTPException
+    _check_pg()
+    result = db.get_ficha_persona(cliente_id)
+    if "error" in result:
+        raise HTTPException(404, result["error"])
+    return result
+
+
+@router.post("/crm/personas/agregar-rol")
+async def agregar_rol_persona(request: Request):
+    """Agrega un rol al array roles[] de un cliente_activo.
+    Body: {"cliente_id": 16, "rol": "propietario"}
+    Idempotente.
+    """
+    from fastapi import HTTPException
+    _check_pg()
+    body = await request.json()
+    cliente_id = body.get("cliente_id")
+    rol = body.get("rol", "").strip()
+    if not cliente_id or not rol:
+        raise HTTPException(400, "Faltan cliente_id o rol")
+    result = db.agregar_rol_persona(int(cliente_id), rol)
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return result
+
+
+@router.post("/crm/contratos/alquiler")
+async def crear_contrato_alquiler(request: Request):
+    """Crea un contrato tipo alquiler con registro en tabla alquileres.
+    Marca inmueble como no disponible y agrega rol 'inquilino' al cliente.
+
+    Body JSON:
+      cliente_activo_id (int) — ID de clientes_activos
+      item_id (int)           — ID de inmuebles_renta
+      item_tipo (str)         — default 'inmueble_renta'
+      monto_total (float)
+      fecha_firma (str)       — YYYY-MM-DD
+      moneda (str)            — default 'ARS'
+      notas (str, opcional)
+      alquiler:
+        fecha_inicio (str)
+        fecha_fin (str)
+        monto_mensual (float)
+        deposito_pagado (float, opcional)
+        garante_nombre (str, opcional)
+        garante_telefono (str, opcional)
+        garante_dni (str, opcional)
+    """
+    from fastapi import HTTPException
+    _check_pg()
+    campos = await request.json()
+    result = db.crear_contrato_alquiler(campos)
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return result
+
+
+@router.get("/crm/alquileres")
+def get_alquileres():
+    """Lista todos los alquileres activos con datos de inmueble y cliente."""
+    _check_pg()
+    return db.get_all_alquileres()
