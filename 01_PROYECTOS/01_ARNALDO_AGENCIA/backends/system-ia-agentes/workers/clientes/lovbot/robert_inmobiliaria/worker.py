@@ -3349,6 +3349,156 @@ def admin_migrar_lotes_individuales(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/admin/diagnosticar-lotes")
+def admin_diagnosticar_lotes(request: Request):
+    """
+    Diagnóstico de constraints e índices UNIQUE sobre lotes_mapa.
+    Devuelve la lista completa para detectar constraints obsoletos sin 'manzana'.
+    Requiere header X-Admin-Token. ENDPOINT TEMPORAL — borrar tras el fix.
+    """
+    from fastapi import HTTPException
+    import psycopg2
+    _check_admin_token(request)
+    _check_pg()
+
+    import os
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "localhost")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_DB   = os.environ.get("LOVBOT_PG_DB", "lovbot_crm")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+
+    try:
+        conn = psycopg2.connect(
+            host=PG_HOST, port=PG_PORT, dbname=PG_DB,
+            user=PG_USER, password=PG_PASS, connect_timeout=10,
+        )
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT con.conname, pg_get_constraintdef(con.oid), con.contype
+            FROM pg_constraint con
+            JOIN pg_class cls ON con.conrelid = cls.oid
+            WHERE cls.relname = 'lotes_mapa'
+            ORDER BY con.conname
+        """)
+        constraints = [{"nombre": r[0], "definicion": r[1], "tipo": r[2]} for r in cur.fetchall()]
+
+        cur.execute("""
+            SELECT indexname, indexdef
+            FROM pg_indexes
+            WHERE tablename = 'lotes_mapa'
+            ORDER BY indexname
+        """)
+        indices = [{"nombre": r[0], "definicion": r[1]} for r in cur.fetchall()]
+
+        cur.close()
+        conn.close()
+
+        unique_sin_manzana_constraints = [c for c in constraints if c["tipo"] == "u" and "manzana" not in c["definicion"]]
+        unique_sin_manzana_indices = [i for i in indices if "UNIQUE" in (i["definicion"] or "") and "manzana" not in (i["definicion"] or "")]
+
+        return {
+            "ok": True,
+            "constraints_todos": constraints,
+            "indices_todos": indices,
+            "unique_sin_manzana_constraints": unique_sin_manzana_constraints,
+            "unique_sin_manzana_indices": unique_sin_manzana_indices,
+            "diagnostico": (
+                "HAY constraints/indices UNIQUE sin 'manzana' — ejecutar fix-lotes-constraint-v2"
+                if unique_sin_manzana_constraints or unique_sin_manzana_indices
+                else "OK: todos los UNIQUE incluyen 'manzana'"
+            ),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/admin/fix-lotes-constraint-v2")
+def admin_fix_lotes_constraint_v2(request: Request):
+    """
+    Fix v2: elimina TODOS los constraints e índices UNIQUE de lotes_mapa
+    que no incluyan 'manzana', luego crea el constraint definitivo.
+    A diferencia del fix v1, no busca por nombre exacto sino por definición.
+    Idempotente. Requiere header X-Admin-Token.
+    """
+    from fastapi import HTTPException
+    import psycopg2
+    _check_admin_token(request)
+    _check_pg()
+
+    import os
+    PG_HOST = os.environ.get("LOVBOT_PG_HOST", "localhost")
+    PG_PORT = os.environ.get("LOVBOT_PG_PORT", "5432")
+    PG_DB   = os.environ.get("LOVBOT_PG_DB", "lovbot_crm")
+    PG_USER = os.environ.get("LOVBOT_PG_USER", "lovbot")
+    PG_PASS = os.environ.get("LOVBOT_PG_PASS", "")
+    CONSTRAINT_NUEVO = "uq_lotes_mapa_tenant_loteo_manzana_nro"
+    log = []
+
+    try:
+        conn = psycopg2.connect(
+            host=PG_HOST, port=PG_PORT, dbname=PG_DB,
+            user=PG_USER, password=PG_PASS, connect_timeout=10,
+        )
+        cur = conn.cursor()
+
+        # 1. Listar todos los UNIQUE constraints sin 'manzana'
+        cur.execute("""
+            SELECT con.conname, pg_get_constraintdef(con.oid)
+            FROM pg_constraint con
+            JOIN pg_class cls ON con.conrelid = cls.oid
+            WHERE cls.relname = 'lotes_mapa' AND con.contype = 'u'
+        """)
+        constraints = cur.fetchall()
+        log.append(f"Constraints UNIQUE encontrados: {constraints}")
+
+        for conname, condef in constraints:
+            if "manzana" not in condef:
+                log.append(f"Eliminando constraint obsoleto: {conname} — def: {condef}")
+                cur.execute(f'ALTER TABLE lotes_mapa DROP CONSTRAINT IF EXISTS "{conname}"')
+                conn.commit()
+                log.append(f"Eliminado: {conname}")
+
+        # 2. Crear el definitivo si no existe
+        cur.execute("""
+            SELECT 1 FROM pg_constraint
+            WHERE conname = %s AND conrelid = 'lotes_mapa'::regclass
+        """, (CONSTRAINT_NUEVO,))
+        if not cur.fetchone():
+            cur.execute(f"""
+                ALTER TABLE lotes_mapa
+                ADD CONSTRAINT {CONSTRAINT_NUEVO}
+                UNIQUE (tenant_slug, loteo_id, manzana, numero_lote)
+            """)
+            conn.commit()
+            log.append(f"Constraint nuevo creado: {CONSTRAINT_NUEVO}")
+        else:
+            log.append(f"Constraint nuevo ya existia: {CONSTRAINT_NUEVO}")
+
+        # 3. Drop índices UNIQUE sin 'manzana' que no sean el constraint nuevo
+        cur.execute("""
+            SELECT indexname, indexdef FROM pg_indexes
+            WHERE tablename = 'lotes_mapa' AND indexdef LIKE '%UNIQUE%'
+        """)
+        indices = cur.fetchall()
+        log.append(f"Indices UNIQUE encontrados: {indices}")
+
+        for indexname, indexdef in indices:
+            if "manzana" not in (indexdef or "") and indexname != CONSTRAINT_NUEVO:
+                cur.execute(f'DROP INDEX IF EXISTS "{indexname}"')
+                conn.commit()
+                log.append(f"Drop index obsoleto: {indexname}")
+
+        cur.close()
+        conn.close()
+
+        return {"ok": True, "log": log}
+    except Exception as e:
+        log.append(f"ERROR: {e}")
+        raise HTTPException(status_code=500, detail={"error": str(e), "log": log})
+
+
 @router.post("/admin/fix-lotes-constraint")
 def admin_fix_lotes_constraint(request: Request):
     """
