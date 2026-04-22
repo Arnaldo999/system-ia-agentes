@@ -13,6 +13,14 @@
 
   // ── Utilidades ─────────────────────────────────────────────────────────────
 
+  // Normaliza un id de cliente para comparar (backend devuelve "pg_16", lote guarda 16)
+  function clienteMatches(c, targetId) {
+    if (c == null || targetId == null) return false;
+    const cid = String(c.id || '').replace(/^pg_/, '');
+    const tid = String(targetId).replace(/^pg_/, '');
+    return cid === tid;
+  }
+
   function esUrlMaps(str) {
     if (!str) return false;
     return /^https?:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google|maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(str.trim());
@@ -71,7 +79,7 @@
     try {
       const [loteosData, clientesData] = await Promise.all([
         crmList('loteos'),
-        crmFetch('/crm/clientes'),
+        crmFetch('/crm/activos'),
       ]);
       LOTEOS = loteosData.items || [];
       CLIENTES_CACHE = clientesData.items || clientesData.records || [];
@@ -262,7 +270,7 @@
     try {
       const [data, clientesData] = await Promise.all([
         crmFetch(`/crm/loteos/${loteoId}/lotes`),
-        crmFetch('/crm/clientes'),
+        crmFetch('/crm/activos'),
       ]);
       GRUPOS_ACTUALES = data.grupos || [];
       CLIENTES_CACHE  = clientesData.items || clientesData.records || [];
@@ -409,7 +417,7 @@
     const estado = loteObj ? _estadoEfectivo(loteObj, clientesPorLote) : 'libre';
     const asignado = clientesPorLote[String(nroLote)];
     const clienteData = loteObj && loteObj.cliente_id
-      ? CLIENTES_CACHE.find(c => c.id === loteObj.cliente_id) || null
+      ? CLIENTES_CACHE.find(c => clienteMatches(c, loteObj.cliente_id)) || null
       : (asignado ? asignado.cliente : null);
 
     LOTE_SELECCIONADO = {
@@ -448,15 +456,21 @@
     const stCls   = estado === 'vendido' ? 'sold'    : (estado === 'reservado' ? 'reserved'  : 'free');
     const nroPadded = String(nro).padStart(2, '0');
 
+    const cNombre = cliente ? (cliente.Nombre || cliente.nombre || '') : '';
+    const cApellido = cliente ? (cliente.Apellido || cliente.apellido || '') : '';
+    const cTelefono = cliente ? (cliente.Telefono || cliente.telefono || '') : '';
+    const cEstadoPago = cliente ? (cliente.Estado_Pago || cliente.estado_pago || '') : '';
+    const cPropiedad = cliente ? (cliente.Propiedad || cliente.propiedad || '') : '';
     const clienteBlock = cliente ? `
       <div class="cd-dt-section-title">Cliente asignado</div>
       <div class="cd-dt-client">
-        <div class="cd-dt-client-avatar">${((cliente.nombre || '?') + ' ' + (cliente.apellido || '')).trim().split(' ').map(x => x[0] || '').join('').slice(0,2).toUpperCase()}</div>
+        <div class="cd-dt-client-avatar">${((cNombre || '?') + ' ' + cApellido).trim().split(' ').map(x => x[0] || '').join('').slice(0,2).toUpperCase()}</div>
         <div class="cd-dt-client-info">
-          <div class="cd-dt-client-name">${(cliente.nombre || '') + ' ' + (cliente.apellido || '')}</div>
-          <div class="cd-dt-client-meta"><span class="mono">${cliente.telefono || '—'}</span>${cliente.estado_pago ? `<span class="sep">·</span><span>${cliente.estado_pago}</span>` : ''}</div>
+          <div class="cd-dt-client-name">${cNombre} ${cApellido}</div>
+          <div class="cd-dt-client-meta"><span class="mono">${cTelefono || '—'}</span>${cEstadoPago ? `<span class="sep">·</span><span>${cEstadoPago}</span>` : ''}</div>
+          ${cPropiedad ? `<div class="cd-dt-client-meta" style="margin-top:2px"><span style="opacity:.7">📍 ${cPropiedad}</span></div>` : ''}
         </div>
-        <button class="cd-icon-btn" title="Ver ficha" onclick="verInfoClienteLote(${cliente.id})">
+        <button class="cd-icon-btn" title="Ver ficha" onclick="verInfoClienteLote('${cliente.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
         </button>
       </div>
@@ -479,8 +493,8 @@
         Eliminar lote
       </button>
     ` : cliente ? `
-      <button class="cd-btn-primary"   onclick="verInfoClienteLote(${cliente.id})">Ver ficha cliente</button>
-      <button class="cd-btn-secondary" onclick="window.open('https://wa.me/${(cliente.telefono||'').replace(/[^0-9]/g,'')}','_blank')">WhatsApp</button>
+      <button class="cd-btn-primary"   onclick="verInfoClienteLote('${cliente.id}')">Ver ficha cliente</button>
+      <button class="cd-btn-secondary" onclick="window.open('https://wa.me/${cTelefono.replace(/[^0-9]/g,'')}','_blank')">WhatsApp</button>
     ` : '';
 
     body.innerHTML = `
@@ -792,7 +806,7 @@
     try {
       const [data, clientesData] = await Promise.all([
         crmFetch(`/crm/loteos/${loteoId}/lotes`),
-        crmFetch('/crm/clientes'),
+        crmFetch('/crm/activos'),
       ]);
       GRUPOS_ACTUALES = data.grupos || [];
       CLIENTES_CACHE  = clientesData.items || clientesData.records || [];
@@ -855,9 +869,9 @@
     const label = lote.numero_lote;
 
     if (estado === 'vendido') {
-      const cliente = asignado ? asignado.cliente : (lote.cliente_id ? CLIENTES_CACHE.find(c => c.id === lote.cliente_id) : null);
-      const nombre  = cliente ? `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim() : 'Cliente';
-      const clickAction = cliente ? `onclick="verInfoClienteLote(${cliente.id})"` : '';
+      const cliente = asignado ? asignado.cliente : (lote.cliente_id ? CLIENTES_CACHE.find(c => clienteMatches(c, lote.cliente_id)) : null);
+      const nombre  = cliente ? `${cliente.Nombre || cliente.nombre || ''} ${cliente.Apellido || cliente.apellido || ''}`.trim() : 'Cliente';
+      const clickAction = cliente ? `onclick="verInfoClienteLote('${cliente.id}')"` : '';
       return `<button ${clickAction} title="${label} — ${nombre}" style="${base};background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);border:1.5px solid #fca5a5" ${hover}>
         <span style="font-size:13px;margin-bottom:2px">🏡</span>
         <span style="font-size:10px;font-weight:800">${label}</span>
@@ -878,22 +892,33 @@
   // ── Modal info del cliente (solo lectura) ─────────────────────────────────
 
   window.verInfoClienteLote = function(clienteId) {
-    const c = CLIENTES_CACHE.find(x => x.id === clienteId);
+    const c = CLIENTES_CACHE.find(x => clienteMatches(x, clienteId));
     if (!c) return;
-    const pct    = c.cuotas_total > 0 ? Math.round((c.cuotas_pagadas / c.cuotas_total) * 100) : 0;
-    const nombre = `${c.nombre || ''} ${c.apellido || ''}`.trim() || 'Cliente';
-    document.getElementById('loteTitulo').textContent    = `Cliente: ${nombre}`;
-    document.getElementById('loteSubtitulo').textContent = c.propiedad || '';
+    const nombre      = c.Nombre      || c.nombre      || '';
+    const apellido    = c.Apellido    || c.apellido    || '';
+    const telefono    = c.Telefono    || c.telefono    || '';
+    const email       = c.Email       || c.email       || '';
+    const propiedad   = c.Propiedad   || c.propiedad   || '';
+    const estadoPago  = c.Estado_Pago || c.estado_pago || 'al_dia';
+    const cuotasTotal = c.Cuotas_Total || c.cuotas_total || 0;
+    const cuotasPagadas = c.Cuotas_Pagadas || c.cuotas_pagadas || 0;
+    const montoCuota  = c.Monto_Cuota || c.monto_cuota;
+    const proxVenc    = c.Proximo_Vencimiento || c.proximo_vencimiento;
+    const notas       = c.Notas       || c.notas       || '';
+    const pct    = cuotasTotal > 0 ? Math.round((cuotasPagadas / cuotasTotal) * 100) : 0;
+    const nombreCompleto = `${nombre} ${apellido}`.trim() || 'Cliente';
+    document.getElementById('loteTitulo').textContent    = `Cliente: ${nombreCompleto}`;
+    document.getElementById('loteSubtitulo').textContent = propiedad;
     document.getElementById('loteClienteInfoContent').innerHTML = `
-      ${c.telefono ? `<div style="margin-bottom:6px">Tel: ${c.telefono}</div>` : ''}
-      ${c.email    ? `<div style="margin-bottom:6px">Email: ${c.email}</div>`  : ''}
+      ${telefono ? `<div style="margin-bottom:6px">Tel: ${telefono}</div>` : ''}
+      ${email    ? `<div style="margin-bottom:6px">Email: ${email}</div>`  : ''}
       <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div style="font-size:11px;color:var(--text2)">Estado de pago</div><div style="font-weight:600;margin-top:2px">${c.estado_pago || 'al_dia'}</div></div>
-        <div><div style="font-size:11px;color:var(--text2)">Cuotas</div><div style="font-weight:600;margin-top:2px">${c.cuotas_pagadas || 0}/${c.cuotas_total || 0} (${pct}%)</div></div>
-        ${c.monto_cuota ? `<div><div style="font-size:11px;color:var(--text2)">Cuota</div><div style="font-weight:600;margin-top:2px">$${c.monto_cuota}</div></div>` : ''}
-        ${c.proximo_vencimiento ? `<div><div style="font-size:11px;color:var(--text2)">Proximo vencimiento</div><div style="font-weight:600;margin-top:2px">${c.proximo_vencimiento}</div></div>` : ''}
+        <div><div style="font-size:11px;color:var(--text2)">Estado de pago</div><div style="font-weight:600;margin-top:2px">${estadoPago}</div></div>
+        <div><div style="font-size:11px;color:var(--text2)">Cuotas</div><div style="font-weight:600;margin-top:2px">${cuotasPagadas}/${cuotasTotal} (${pct}%)</div></div>
+        ${montoCuota ? `<div><div style="font-size:11px;color:var(--text2)">Cuota</div><div style="font-weight:600;margin-top:2px">$${montoCuota}</div></div>` : ''}
+        ${proxVenc ? `<div><div style="font-size:11px;color:var(--text2)">Proximo vencimiento</div><div style="font-weight:600;margin-top:2px">${proxVenc}</div></div>` : ''}
       </div>
-      ${c.notas ? `<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;font-size:12px"><strong>Notas:</strong> ${c.notas}</div>` : ''}
+      ${notas ? `<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;font-size:12px"><strong>Notas:</strong> ${notas}</div>` : ''}
     `;
     abrirModal('modalLote');
   };
