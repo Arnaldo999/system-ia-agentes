@@ -3599,6 +3599,58 @@ tailwind.config = {
   </div>
 </div>
 
+<!-- MODAL: Nueva manzana -->
+<div class="modal-bg hidden" id="modalNuevaManzana">
+  <div class="modal" style="max-width:420px">
+    <button class="mc" onclick="cerrarModal('modalNuevaManzana')">&#x2715;</button>
+    <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:16px">Nueva manzana</h3>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Nombre / Letra</label>
+      <input id="nuevaManzanaNombre" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)" placeholder="A, Norte, Sector 1..."/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Cantidad de lotes</label>
+        <input id="nuevaManzanaCantidad" type="number" min="1" max="200" value="8" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)"/>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Primer numero de lote</label>
+        <input id="nuevaManzanaInicio" type="number" min="1" value="1" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick="cerrarModal('modalNuevaManzana')" class="btn" style="flex:1;background:var(--surface2);color:var(--text)">Cancelar</button>
+      <button onclick="guardarNuevaManzana()" class="btn btn-primary" style="flex:1">Crear manzana</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Agregar lote a manzana -->
+<div class="modal-bg hidden" id="modalAgregarLote">
+  <div class="modal" style="max-width:380px">
+    <button class="mc" onclick="cerrarModal('modalAgregarLote')">&#x2715;</button>
+    <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:16px">Agregar lote</h3>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Manzana</label>
+      <input id="agregarLoteManzana" readonly style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text2);opacity:0.7"/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Numero del lote</label>
+        <input id="agregarLoteNumero" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)" placeholder="9"/>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Precio (opcional)</label>
+        <input id="agregarLotePrecio" type="number" min="0" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;color:var(--text)" placeholder="0"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick="cerrarModal('modalAgregarLote')" class="btn" style="flex:1;background:var(--surface2);color:var(--text)">Cancelar</button>
+      <button onclick="guardarAgregarLote()" class="btn btn-primary" style="flex:1">Crear lote</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONTRATOS -->
 <div class="panel hidden" id="panel-contratos" style="padding:20px">
   <div class="flex items-center justify-between mb-4">
