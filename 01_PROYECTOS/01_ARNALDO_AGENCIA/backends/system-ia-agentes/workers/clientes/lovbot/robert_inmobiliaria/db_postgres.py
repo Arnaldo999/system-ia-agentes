@@ -2904,16 +2904,11 @@ def limpiar_smoke_tests() -> dict:
         conn = _conn()
         cur = conn.cursor()
 
-        cur.execute("""
-            DELETE FROM inmuebles_renta
-            WHERE tenant_slug=%s AND (titulo ILIKE '%test%' OR titulo ILIKE '%probe%')
-        """, (TENANT,))
-        del_inm = cur.rowcount
-
+        # Borrar dependientes primero para evitar FK violations
         cur.execute("""
             DELETE FROM inquilinos
             WHERE tenant_slug=%s AND (
-              (nombre ILIKE '%test%' OR apellido ILIKE '%test%')
+              nombre ILIKE '%test%' OR apellido ILIKE '%test%'
               OR (nombre='Laura' AND apellido ILIKE '%Inquilina%')
             )
         """, (TENANT,))
@@ -2924,6 +2919,13 @@ def limpiar_smoke_tests() -> dict:
             WHERE tenant_slug=%s AND (nombre ILIKE '%test%' OR nombre ILIKE '%prop test%')
         """, (TENANT,))
         del_prop = cur.rowcount
+
+        # Ahora borrar inmuebles (ya sin inquilinos que los referencien)
+        cur.execute("""
+            DELETE FROM inmuebles_renta
+            WHERE tenant_slug=%s AND (titulo ILIKE '%test%' OR titulo ILIKE '%probe%')
+        """, (TENANT,))
+        del_inm = cur.rowcount
 
         cur.execute("""
             DELETE FROM clientes_activos
