@@ -3395,8 +3395,14 @@ def admin_diagnosticar_lotes(request: Request):
         cur.close()
         conn.close()
 
+        # Excluir PKs del check — el PK (id) no necesita manzana, eso es normal
         unique_sin_manzana_constraints = [c for c in constraints if c["tipo"] == "u" and "manzana" not in c["definicion"]]
-        unique_sin_manzana_indices = [i for i in indices if "UNIQUE" in (i["definicion"] or "") and "manzana" not in (i["definicion"] or "")]
+        unique_sin_manzana_indices = [
+            i for i in indices
+            if "UNIQUE" in (i["definicion"] or "")
+            and "manzana" not in (i["definicion"] or "")
+            and not i["nombre"].endswith("_pkey")
+        ]
 
         return {
             "ok": True,
@@ -3485,7 +3491,12 @@ def admin_fix_lotes_constraint_v2(request: Request):
         log.append(f"Indices UNIQUE encontrados: {indices}")
 
         for indexname, indexdef in indices:
-            if "manzana" not in (indexdef or "") and indexname != CONSTRAINT_NUEVO:
+            # Excluir PKs — nunca deben dropearse aunque no tengan 'manzana'
+            if (
+                "manzana" not in (indexdef or "")
+                and indexname != CONSTRAINT_NUEVO
+                and not indexname.endswith("_pkey")
+            ):
                 cur.execute(f'DROP INDEX IF EXISTS "{indexname}"')
                 conn.commit()
                 log.append(f"Drop index obsoleto: {indexname}")
