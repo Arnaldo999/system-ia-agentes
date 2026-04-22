@@ -1,5 +1,48 @@
 # Debug y errores frecuentes
 
+## 2026-04-22 — CRM Maicol caído por CORS + monitor Capa 1 instalado
+
+**Síntoma**: `crm.backurbanizaciones.com` mostraba "Failed to fetch" y "Cargando leads…" infinito. Maicol avisó.
+
+**Causa**: El `CORSMiddleware` del backend FastAPI Arnaldo (`agentes.arnaldoayalaestratega.cloud`) no tenía `https://crm.backurbanizaciones.com` en `allow_origins`. Preflight OPTIONS rechazado sin header `Access-Control-Allow-Origin`.
+
+**Fix**: Agregado el origen al `CORSMiddleware` en `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/main.py`. Commit `a681a5c`. Validado con preflight OPTIONS → `200` + header correcto.
+
+**Lección y acción permanente — Monitor Capa 1 (guardia_critica.py)**:
+- Script definitivo: `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/scripts/guardia_critica.py`
+- 9 checks: FastAPI Arnaldo, n8n Arnaldo, n8n Mica, n8n Lovbot, Coolify app, Maicol CRM CORS preflight, Maicol CRM frontend, Chatwoot Arnaldo, Backend Robert (ping externo)
+- Envío CONSOLIDADO: 1 solo Telegram con todos los fallos juntos (no un mensaje por servicio)
+- Cooldown 30 min por servicio (no spamea)
+- Kill switch: env var `GUARDIA_DISABLED=1`
+- Deploy: Coolify Hostinger → Scheduled Tasks `*/5 * * * *  python scripts/guardia_critica.py`
+- Vars de entorno a configurar en Coolify (ver sección abajo)
+- Commit: `[ver commit guardia_critica refactor]`
+
+### Env vars a configurar en Coolify (app FastAPI Arnaldo — Hostinger)
+
+Ir a `coolify.arnaldoayalaestratega.cloud` → app `system-ia-agentes` → Environment Variables → agregar:
+
+```
+TELEGRAM_BOT_TOKEN=<token del bot>
+TELEGRAM_CHAT_ID=863363759
+COOLIFY_API_URL=https://coolify.arnaldoayalaestratega.cloud
+COOLIFY_TOKEN=<token API Coolify Arnaldo>
+COOLIFY_APP_UUID=ygjvl9byac1x99laqj4ky1b5
+FASTAPI_URL=https://agentes.arnaldoayalaestratega.cloud
+N8N_URL=https://n8n.arnaldoayalaestratega.cloud
+```
+
+Luego en Coolify → Scheduled Tasks → agregar:
+- Schedule: `*/5 * * * *`
+- Command: `python scripts/guardia_critica.py`
+
+Para deshabilitar temporalmente sin tocar el cron: agregar env var `GUARDIA_DISABLED=1`.
+
+### Resultado del run local (2026-04-22)
+
+Con COOLIFY_TOKEN correcto, los 9 checks pasan. Con token bogus y N8N_URL bogus, se mandó correctamente 1 Telegram consolidado con 2 alertas juntas — formato correcto.
+
+
 ## n8n HTTP Request — JSON inválido
 - Causa: JSON body pegado como literal o con prefijo incorrecto (por ejemplo "=={{").
 - Solucion: usar modo Expression y un prefijo unico "={{...}}".

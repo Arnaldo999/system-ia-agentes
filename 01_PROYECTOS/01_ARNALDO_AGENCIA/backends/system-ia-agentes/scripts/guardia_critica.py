@@ -2,13 +2,19 @@
 Guardia Crítica — Monitoreo de producción Arnaldo
 =================================================
 Corre cada 5 minutos via cron en el entorno Arnaldo.
-Alerta por Telegram si FastAPI, n8n o Coolify están caídos.
+Alerta por Telegram si algún servicio crítico está caído.
 
 ALCANCE Y LIMITACIÓN DOCUMENTADA:
 - Este script corre en el VPS de Arnaldo (Coolify Hostinger).
 - Si el VPS cae completamente, este script tampoco corre.
 - La protección ante caída total de VPS queda como mejora futura (ej: cron externo o UptimeRobot).
-- Lo que sí cubre: FastAPI caído, n8n caído, app Coolify unhealthy.
+- Lo que sí cubre: FastAPI caído, n8n caído, app Coolify unhealthy, CORS Maicol,
+  frontend CRM Maicol, Chatwoot Arnaldo, backend Robert (ping externo).
+
+ENVÍO CONSOLIDADO:
+- Si hay múltiples servicios caídos, se manda UN SOLO mensaje de Telegram con todos juntos.
+- Cada servicio tiene cooldown individual de 30 min (no re-alerta hasta que pase ese tiempo).
+- Si un servicio se recupera, su cooldown se limpia (volvería a alertar si cae de nuevo).
 
 VARIABLES DE ENTORNO REQUERIDAS:
 - TELEGRAM_BOT_TOKEN     → token del bot Telegram
@@ -19,11 +25,24 @@ VARIABLES DE ENTORNO REQUERIDAS:
 - FASTAPI_URL            → URL pública FastAPI (ej: https://agentes.arnaldoayalaestratega.cloud)
 - N8N_URL                → URL pública n8n Arnaldo (ej: https://n8n.arnaldoayalaestratega.cloud)
 
-USO:
-  python guardia_critica.py
+VARIABLES OPCIONALES (tienen defaults):
+- N8N_MICA_URL           → default: https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host
+- N8N_LOVBOT_URL         → default: https://n8n.lovbot.ai
+- MAICOL_CRM_FRONTEND    → default: https://crm.backurbanizaciones.com
+- CHATWOOT_URL           → default: https://chatwoot.arnaldoayalaestratega.cloud
+- BACKEND_ROBERT_URL     → default: https://agentes.lovbot.ai
+- MAICOL_CORS_ORIGIN     → default: https://crm.backurbanizaciones.com
+- MAICOL_CORS_ENDPOINT   → default: /clientes/arnaldo/maicol/crm/propiedades
 
-CRON (cada 5 minutos):
-  */5 * * * * /path/to/venv/bin/python /path/to/guardia_critica.py >> /var/log/guardia_critica.log 2>&1
+USO:
+  python scripts/guardia_critica.py
+
+CRON EN COOLIFY (Scheduled Tasks, cada 5 minutos):
+  */5 * * * *   python scripts/guardia_critica.py
+
+DESHABILITAR TEMPORALMENTE:
+  En Coolify → la app → Scheduled Tasks → pausar la tarea.
+  O: setear env var GUARDIA_DISABLED=1 para que el script salga sin hacer nada.
 """
 
 import os
@@ -35,8 +54,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Cargar .env desde la raíz del repo
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(_REPO_ROOT / ".env")
+
+# ── Kill switch ───────────────────────────────────────────────────────────────
+
+if os.getenv("GUARDIA_DISABLED", "").strip() == "1":
+    print("[guardia] GUARDIA_DISABLED=1 — saliendo sin checks")
+    exit(0)
 
 # ── Configuración ────────────────────────────────────────────────────────────
 
@@ -48,10 +73,19 @@ COOLIFY_APP_UUID   = os.environ["COOLIFY_APP_UUID"]
 FASTAPI_URL        = os.environ["FASTAPI_URL"].rstrip("/")
 N8N_URL            = os.environ["N8N_URL"].rstrip("/")
 
-ESTADO_PATH    = Path("/tmp/guardia_estado.json")
-COOLDOWN_MIN   = 30          # minutos entre alertas del mismo servicio
-REQUEST_TIMEOUT = 10         # segundos timeout por request
-RETRY_WAIT      = 5          # segundos entre intento 1 y retry
+# Opcionales con defaults
+N8N_MICA_URL        = os.getenv("N8N_MICA_URL", "https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host").rstrip("/")
+N8N_LOVBOT_URL      = os.getenv("N8N_LOVBOT_URL", "https://n8n.lovbot.ai").rstrip("/")
+MAICOL_CRM_FRONTEND = os.getenv("MAICOL_CRM_FRONTEND", "https://crm.backurbanizaciones.com").rstrip("/")
+CHATWOOT_URL        = os.getenv("CHATWOOT_URL", "https://chatwoot.arnaldoayalaestratega.cloud").rstrip("/")
+BACKEND_ROBERT_URL  = os.getenv("BACKEND_ROBERT_URL", "https://agentes.lovbot.ai").rstrip("/")
+MAICOL_CORS_ORIGIN  = os.getenv("MAICOL_CORS_ORIGIN", "https://crm.backurbanizaciones.com")
+MAICOL_CORS_ENDPOINT = os.getenv("MAICOL_CORS_ENDPOINT", "/clientes/arnaldo/maicol/crm/propiedades")
+
+ESTADO_PATH     = Path("/tmp/guardia_estado.json")
+COOLDOWN_MIN    = 30          # minutos entre alertas del mismo servicio
+REQUEST_TIMEOUT = 10          # segundos timeout por request
+RETRY_WAIT      = 5           # segundos entre intento 1 y retry
 
 
 # ── Estado persistido (cooldown por servicio) ─────────────────────────────────
@@ -85,10 +119,7 @@ def registrar_alerta(estado: dict, servicio: str):
 # ── Checks individuales ───────────────────────────────────────────────────────
 
 def check_fastapi() -> tuple[bool, str]:
-    """
-    Retorna (ok, detalle).
-    ok=True si status==healthy y workers_activos>=6.
-    """
+    """Retorna (ok, detalle). ok=True si status==healthy y workers_activos>=6."""
     url = f"{FASTAPI_URL}/health"
     for intento in range(2):
         try:
@@ -99,7 +130,7 @@ def check_fastapi() -> tuple[bool, str]:
                 return False, f"status={data.get('status')}"
             workers = data.get("workers_activos", 0)
             if workers < 6:
-                return False, f"workers_activos={workers} (esperado ≥6)"
+                return False, f"workers_activos={workers} (esperado >=6)"
             return True, f"healthy, workers={workers}"
         except Exception as e:
             if intento == 0:
@@ -128,7 +159,7 @@ def check_n8n() -> tuple[bool, str]:
 
 def check_n8n_mica() -> tuple[bool, str]:
     """Chequea /healthz de n8n Mica (Easypanel)."""
-    url = os.getenv("N8N_MICA_URL", "https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host") + "/healthz"
+    url = f"{N8N_MICA_URL}/healthz"
     for intento in range(2):
         try:
             r = requests.get(url, timeout=REQUEST_TIMEOUT)
@@ -145,7 +176,7 @@ def check_n8n_mica() -> tuple[bool, str]:
 
 def check_n8n_lovbot() -> tuple[bool, str]:
     """Chequea /healthz de n8n Lovbot (Hetzner)."""
-    url = os.getenv("N8N_LOVBOT_URL", "https://n8n.lovbot.ai") + "/healthz"
+    url = f"{N8N_LOVBOT_URL}/healthz"
     for intento in range(2):
         try:
             r = requests.get(url, timeout=REQUEST_TIMEOUT)
@@ -181,6 +212,91 @@ def check_coolify() -> tuple[bool, str]:
     return False, "error API Coolify"
 
 
+def check_maicol_crm_cors() -> tuple[bool, str]:
+    """
+    Verifica que el endpoint de propiedades Maicol responde correctamente
+    a un preflight CORS desde el dominio del CRM.
+    Este fue exactamente el bug del 2026-04-22 que tumbó el CRM de Maicol.
+    """
+    url = f"{FASTAPI_URL}{MAICOL_CORS_ENDPOINT}"
+    headers = {
+        "Origin": MAICOL_CORS_ORIGIN,
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "content-type",
+    }
+    for intento in range(2):
+        try:
+            r = requests.options(url, headers=headers, timeout=REQUEST_TIMEOUT)
+            if r.status_code not in (200, 204):
+                return False, f"preflight HTTP {r.status_code}"
+            acao = r.headers.get("Access-Control-Allow-Origin", "")
+            if acao == MAICOL_CORS_ORIGIN or acao == "*":
+                return True, f"CORS ok (ACAO={acao})"
+            return False, f"Access-Control-Allow-Origin ausente o incorrecto: '{acao}'"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_maicol_crm_frontend() -> tuple[bool, str]:
+    """Verifica que el frontend del CRM de Maicol responde 200."""
+    url = f"{MAICOL_CRM_FRONTEND}/"
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            if r.status_code == 200:
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_chatwoot_arnaldo() -> tuple[bool, str]:
+    """Verifica que Chatwoot Arnaldo responde 200 o 302."""
+    url = f"{CHATWOOT_URL}/"
+    for intento in range(2):
+        try:
+            # No seguir redirects para detectar 302 también como OK
+            r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=False)
+            if r.status_code in (200, 302):
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_backend_robert() -> tuple[bool, str]:
+    """
+    Ping externo al backend de Robert — solo verifica disponibilidad,
+    no toca ningún dato ni lógica de Lovbot.
+    Acepta 200, 404 y 405 como respuesta válida (el endpoint existe).
+    """
+    url = f"{BACKEND_ROBERT_URL}/health"
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT)
+            if r.status_code in (200, 404, 405):
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code}"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
 # ── Telegram ──────────────────────────────────────────────────────────────────
 
 def enviar_telegram(mensaje: str):
@@ -191,7 +307,9 @@ def enviar_telegram(mensaje: str):
         "parse_mode": "HTML",
     }
     try:
-        requests.post(url, json=payload, timeout=REQUEST_TIMEOUT)
+        r = requests.post(url, json=payload, timeout=REQUEST_TIMEOUT)
+        if not r.ok:
+            print(f"[guardia] ERROR Telegram HTTP {r.status_code}: {r.text[:200]}")
     except Exception as e:
         print(f"[guardia] ERROR enviando Telegram: {e}")
 
@@ -203,20 +321,31 @@ def main():
     estado = cargar_estado()
 
     checks = {
-        "fastapi":    check_fastapi,
-        "n8n":        check_n8n,
-        "n8n_mica":   check_n8n_mica,
-        "n8n_lovbot": check_n8n_lovbot,
-        "coolify":    check_coolify,
+        "fastapi":            check_fastapi,
+        "n8n":                check_n8n,
+        "n8n_mica":           check_n8n_mica,
+        "n8n_lovbot":         check_n8n_lovbot,
+        "coolify":            check_coolify,
+        "maicol_cors":        check_maicol_crm_cors,
+        "maicol_frontend":    check_maicol_crm_frontend,
+        "chatwoot_arnaldo":   check_chatwoot_arnaldo,
+        "backend_robert":     check_backend_robert,
     }
 
     nombres = {
-        "fastapi":    "FastAPI Arnaldo",
-        "n8n":        "n8n Arnaldo",
-        "n8n_mica":   "n8n Mica",
-        "n8n_lovbot": "n8n Lovbot",
-        "coolify":    "Coolify app",
+        "fastapi":            "FastAPI Arnaldo",
+        "n8n":                "n8n Arnaldo",
+        "n8n_mica":           "n8n Mica",
+        "n8n_lovbot":         "n8n Lovbot",
+        "coolify":            "Coolify app",
+        "maicol_cors":        "Maicol CRM — preflight CORS",
+        "maicol_frontend":    "Maicol CRM — frontend",
+        "chatwoot_arnaldo":   "Chatwoot Arnaldo",
+        "backend_robert":     "Backend Robert (ping externo)",
     }
+
+    # Acumular alertas que pasaron el cooldown
+    alertas_pendientes: list[tuple[str, str, str]] = []  # (servicio, nombre, detalle)
 
     for servicio, fn in checks.items():
         ok, detalle = fn()
@@ -225,24 +354,36 @@ def main():
             # Limpiar cooldown si el servicio se recuperó
             if servicio in estado:
                 estado[servicio].pop("ultima_alerta", None)
-            print(f"[guardia] ✅ {servicio}: {detalle}")
+            print(f"[guardia] OK  {nombres[servicio]}: {detalle}")
             continue
 
-        print(f"[guardia] ❌ {servicio}: {detalle}")
+        print(f"[guardia] ERR {nombres[servicio]}: {detalle}")
 
         if not puede_alertar(estado, servicio):
-            print(f"[guardia] ⏸ {servicio}: cooldown activo, no se alerta")
+            print(f"[guardia] --- {nombres[servicio]}: cooldown activo, no se alerta")
             continue
 
+        # Acumular — registrar alerta ya para que el cooldown corra
+        alertas_pendientes.append((servicio, nombres[servicio], detalle))
+        registrar_alerta(estado, servicio)
+
+    # Enviar UN solo mensaje consolidado si hay alertas
+    if alertas_pendientes:
+        lineas_fallo = "\n".join(
+            f"❌ <b>{nombre}</b> — {detalle}"
+            for _, nombre, detalle in alertas_pendientes
+        )
+        n = len(alertas_pendientes)
+        plural = "servicio caído" if n == 1 else "servicios caídos"
         mensaje = (
             f"🚨 <b>GUARDIA CRÍTICA</b> — {ahora}\n\n"
-            f"❌ <b>{nombres[servicio]}</b> — caído\n"
-            f"Detalle: <code>{detalle}</code>\n\n"
-            f"Revisá inmediatamente."
+            f"{lineas_fallo}\n\n"
+            f"<b>{n} {plural}</b> — revisá inmediatamente."
         )
         enviar_telegram(mensaje)
-        registrar_alerta(estado, servicio)
-        print(f"[guardia] 📨 alerta enviada por {servicio}")
+        print(f"[guardia] Telegram enviado — {n} alerta(s): {[s for s, _, _ in alertas_pendientes]}")
+    else:
+        print(f"[guardia] Todo OK — sin alertas a enviar")
 
     guardar_estado(estado)
 
