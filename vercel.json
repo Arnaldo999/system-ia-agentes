@@ -35,6 +35,7 @@
     { "source": "/system-ia/admin",                "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/admin.html" },
     { "source": "/system-ia/dev/crm-v2",           "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/crm-v2.html" },
     { "source": "/system-ia/dev/crm",              "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/crm.html" },
+    { "source": "/system-ia/dev/js/:file",         "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/js/:file" },
     { "source": "/system-ia/crm",                  "destination": "/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/crm.html" }
   ]
 }
