@@ -2900,57 +2900,48 @@ def limpiar_smoke_tests() -> dict:
     """
     if not _available():
         return {"error": "DB no disponible"}
+
+    eliminados = {}
     try:
         conn = _conn()
         cur = conn.cursor()
 
-        # Borrar dependientes primero para evitar FK violations
-        cur.execute("""
-            DELETE FROM inquilinos
-            WHERE tenant_slug=%s AND (
-              nombre ILIKE '%test%' OR apellido ILIKE '%test%'
-              OR (nombre='Laura' AND apellido ILIKE '%Inquilina%')
-            )
-        """, (TENANT,))
-        del_inq = cur.rowcount
+        # 1. Inquilinos con nombre/apellido de test
+        cur.execute(
+            "DELETE FROM inquilinos WHERE tenant_slug=%s AND (nombre ILIKE %s OR apellido ILIKE %s)",
+            (TENANT, "%test%", "%test%")
+        )
+        eliminados["inquilinos"] = cur.rowcount
 
-        cur.execute("""
-            DELETE FROM propietarios
-            WHERE tenant_slug=%s AND (nombre ILIKE '%test%' OR nombre ILIKE '%prop test%')
-        """, (TENANT,))
-        del_prop = cur.rowcount
+        # 2. Propietarios con nombre de test
+        cur.execute(
+            "DELETE FROM propietarios WHERE tenant_slug=%s AND nombre ILIKE %s",
+            (TENANT, "%test%")
+        )
+        eliminados["propietarios"] = cur.rowcount
 
-        # Ahora borrar inmuebles (ya sin inquilinos que los referencien)
-        cur.execute("""
-            DELETE FROM inmuebles_renta
-            WHERE tenant_slug=%s AND (titulo ILIKE '%test%' OR titulo ILIKE '%probe%')
-        """, (TENANT,))
-        del_inm = cur.rowcount
+        # 3. Inmuebles de test (sin inquilinos que los referencien)
+        cur.execute(
+            "DELETE FROM inmuebles_renta WHERE tenant_slug=%s AND (titulo ILIKE %s OR titulo ILIKE %s)",
+            (TENANT, "%test%", "%probe%")
+        )
+        eliminados["inmuebles_renta"] = cur.rowcount
 
-        cur.execute("""
-            DELETE FROM clientes_activos
-            WHERE tenant_slug=%s AND (
-              email ILIKE '%test%' OR email ILIKE '%smoke%'
-              OR nombre ILIKE '%smoke%'
-            )
-        """, (TENANT,))
-        del_ca = cur.rowcount
+        # 4. Clientes activos de test
+        cur.execute(
+            "DELETE FROM clientes_activos WHERE tenant_slug=%s AND (email ILIKE %s OR email ILIKE %s OR nombre ILIKE %s)",
+            (TENANT, "%test%", "%smoke%", "%smoke%")
+        )
+        eliminados["clientes_activos"] = cur.rowcount
 
         conn.commit()
         cur.close()
         conn.close()
-        return {
-            "ok": True,
-            "eliminados": {
-                "inmuebles_renta": del_inm,
-                "inquilinos": del_inq,
-                "propietarios": del_prop,
-                "clientes_activos": del_ca,
-            }
-        }
+        return {"ok": True, "eliminados": eliminados}
     except Exception as e:
-        print(f"[DB] Error limpiar_smoke_tests: {e}")
-        return {"error": str(e)}
+        import traceback
+        print(f"[DB] Error limpiar_smoke_tests: {e}\n{traceback.format_exc()}")
+        return {"error": str(e), "eliminados_parciales": eliminados}
 
 
 def buscar_personas(q: str, limit: int = 20) -> dict:
