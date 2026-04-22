@@ -1,7 +1,41 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-22 08:30 ART
+Fecha: 2026-04-22 (tarde) ART
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## 🎯 Abierto — Cliente nuevo Cesar Posada (agencia turismo)
+
+**Estado**: propuesta enviada, esperando brief.
+
+**Contacto**: Cesar Posada (persona, la marca de su agencia se confirma en el brief)
+**Vertical**: agencia de turismo / viajes
+**Cliente de**: Arnaldo (directo, NO Mica ni Robert)
+
+**Entregables LIVE**:
+- Formulario: https://agentes.arnaldoayalaestratega.cloud/propuestas/cesar-posada/brief.html
+- Propuesta: https://agentes.arnaldoayalaestratega.cloud/propuestas/cesar-posada/propuesta.html
+
+**Precios enviados**:
+- Implementación única: USD 300
+- Mantenimiento: USD 80/mes
+
+**Mensaje WhatsApp enviado**: Arnaldo ya le mandó los 2 links con el resumen.
+
+**Próximos pasos** (cuando Cesar envíe el brief .md):
+1. Copiar el brief recibido a `01_PROYECTOS/01_ARNALDO_AGENCIA/clientes/cesar-posada/brief-recibido-YYYY-MM-DD.md`
+2. Crear base Airtable nueva para turismo (tablas: Leads, Clientes_Activos, Paquetes, Asesores, Conversaciones, Destinos)
+3. Scaffold worker en `workers/clientes/arnaldo/cesar-posada/worker.py` basado en patrón Maicol
+4. Scaffold CRM web en `demos/turismo/dev/crm-v2.html` como template del nicho
+5. Onboarding WhatsApp YCloud
+6. Deploy Coolify Hostinger + smoke tests
+7. Capacitación
+
+**Docs de referencia**:
+- Entidad Obsidian: `PROYECTO ARNALDO OBSIDIAN/wiki/entidades/cesar-posada.md`
+- Síntesis: `PROYECTO ARNALDO OBSIDIAN/raw/arnaldo/sesion-2026-04-22-brief-cesar-posada.md`
+- Patrón reutilizable: `PROYECTO ARNALDO OBSIDIAN/wiki/conceptos/onboarding-cliente-nuevo-arnaldo.md`
+
+---
 
 ## 🎯 Hito cerrado — CRM v3 Mica COMPLETO (misma jornada que Robert)
 

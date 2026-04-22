@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-22 | Total páginas: 38 (17 entidades + 16 conceptos + 5 síntesis)
+Última actualización: 2026-04-22 | Total páginas: 40 (18 entidades + 17 conceptos + 5 síntesis)
 
 ## Fuentes (0)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -25,6 +25,7 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | [[wiki/entidades/micaela-colmenares]] | persona / dueña System IA | mica |
 | [[wiki/entidades/lau]] | persona / cliente-propio (familia) | arnaldo |
 | [[wiki/entidades/maicol]] | cliente externo de Arnaldo | arnaldo |
+| [[wiki/entidades/cesar-posada]] | cliente nuevo de Arnaldo — agencia turismo (propuesta enviada 2026-04-22) | arnaldo |
 
 ### Marcas de clientes
 | Página | Tipo | Proyecto |
@@ -96,6 +97,11 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 |--------|--------------|-----------|
 | [[wiki/conceptos/persona-unica-crm]] | Persona única con roles múltiples (comprador/inquilino/propietario) — evita duplicación cross-tabla | robert, mica |
 | [[wiki/conceptos/contratos-polimorficos]] | Tabla contratos con tipo + item_tipo + item_id — 3 puertas 1 modal 1 endpoint | robert, mica |
+
+### Ventas y onboarding
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/onboarding-cliente-nuevo-arnaldo]] | Patrón brief HTML + propuesta HTML + deploy Coolify — USD 300 impl + USD 80/mes. Primer uso: Cesar Posada | arnaldo |
 
 ## Síntesis (5)
 | Página | Origen | Fecha | Proyecto |

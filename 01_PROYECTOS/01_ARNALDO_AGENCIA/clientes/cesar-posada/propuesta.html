@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Propuesta — Bot + CRM para tu agencia de turismo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+    color: white;
+  }
+  .card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(15, 23, 42, 0.04);
+    border: 1px solid #e5e7eb;
+    padding: 28px;
+  }
+  .feature {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .feature:last-child { border-bottom: none; }
+  .feature-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: #eff6ff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+  }
+  .feature-title {
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 3px;
+  }
+  .feature-desc {
+    font-size: 0.875rem;
+    color: #475569;
+    line-height: 1.5;
+  }
+  .tech-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    color: #334155;
+    font-weight: 500;
+  }
+  .price-card {
+    background: linear-gradient(135deg, #ecfdf5 0%, #dbeafe 100%);
+    border: 2px solid #10b981;
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .price-card.secondary {
+    background: white;
+    border: 2px solid #0ea5e9;
+  }
+  .price-amount {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+  }
+  .price-period {
+    font-size: 1rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: #e2e8f0;
+  }
+  .timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    background: #0ea5e9;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px #0ea5e9;
+  }
+  .cta-button {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    transition: all 0.2s;
+  }
+  .cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  }
+  @media print {
+    body { background: white; }
+    .no-print { display: none !important; }
+    .card { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body class="py-6 sm:py-10 px-3 sm:px-6">
+
+<div class="max-w-4xl mx-auto">
+
+  <!-- Hero -->
+  <div class="hero rounded-2xl p-6 sm:p-10 mb-6">
+    <div class="flex items-center gap-2 text-sky-100 text-sm mb-3">
+      <span>✈️</span>
+      <span>Propuesta personalizada — Agencia de turismo</span>
+    </div>
+    <h1 class="text-2xl sm:text-4xl font-bold mb-3">Bot WhatsApp 24/7 + CRM para tu agencia</h1>
+    <p class="text-sky-100 text-base sm:text-lg leading-relaxed max-w-2xl">
+      Atendé todas las consultas de viajes de forma automática, filtrá los leads que realmente van a comprar
+      y controlá el pipeline completo desde un solo panel.
+    </p>
+    <div class="mt-6 flex flex-wrap gap-2 text-xs text-sky-100">
+      <span>📅 Abril 2026</span>
+      <span>·</span>
+      <span>Para: Cesar Posada</span>
+      <span>·</span>
+      <span>De: Arnaldo Ayala — Estratega en IA</span>
+    </div>
+  </div>
+
+  <!-- ¿Qué implementamos? -->
+  <div class="card mb-6">
+    <h2 class="text-2xl font-bold mb-2">Qué vamos a implementar</h2>
+    <p class="text-slate-600 mb-5">Todo en un mismo stack integrado. Vos solo vas a operar desde el CRM.</p>
+
+    <div class="feature">
+      <div class="feature-icon">🤖</div>
+      <div>
+        <div class="feature-title">Bot WhatsApp inteligente 24/7</div>
+        <div class="feature-desc">
+          Responde consultas de viajes con IA entrenada con TU info (paquetes, precios, destinos).
+          Filtra clientes haciendo las preguntas clave: destino, fechas, cantidad de personas, presupuesto.
+          Detecta si el cliente está listo para comprar o solo está curioseando.
+        </div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <div>
+        <div class="feature-title">CRM web personalizado</div>
+        <div class="feature-desc">
+          Dashboard con todos tus leads y clientes. Pipeline visual (nuevo → contactado → cotizando → cerrado).
+          Ficha completa de cada cliente con historial de conversación. Métricas de conversión, fuentes y asesores.
+          Accesible desde cualquier navegador — computadora, celular, tablet.
+        </div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">📦</div>
+      <div>
+        <div class="feature-title">Panel de paquetes editable</div>
+        <div class="feature-desc">
+          Vos cargás y editás tus paquetes turísticos (precios, duración, destinos, qué incluye) desde una interfaz simple.
+          El bot toma la info directo de ahí — sin que tengas que tocar código ni depender de nosotros para actualizar.
+        </div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">🔔</div>
+      <div>
+        <div class="feature-title">Notificaciones en tiempo real</div>
+        <div class="feature-desc">
+          Cuando el bot detecta un lead caliente (cliente listo para comprar), te llega una notificación por WhatsApp al instante.
+          Así el asesor puede tomar el chat en el mejor momento.
+        </div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">📅</div>
+      <div>
+        <div class="feature-title">Agenda integrada</div>
+        <div class="feature-desc">
+          Si tenés Cal.com, Calendly o similar, el bot ofrece al cliente agendar una llamada directamente en tu agenda.
+          Sincronización automática — nunca más doble-reserva.
+        </div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">🎨</div>
+      <div>
+        <div class="feature-title">Personalidad propia del bot</div>
+        <div class="feature-desc">
+          Configurado con el tono de voz que vos decidas (informal, neutro, profesional).
+          Con el saludo, emojis y estilo que represente a tu agencia. No suena a "bot genérico" — suena a tu equipo.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stack técnico -->
+  <div class="card mb-6">
+    <h2 class="text-xl font-bold mb-2">Stack técnico (qué servicios usamos)</h2>
+    <p class="text-slate-600 mb-5 text-sm">Todo transparente. Usamos servicios confiables y estándar de la industria.</p>
+    <div class="flex flex-wrap gap-2">
+      <span class="tech-tag">💬 WhatsApp Business oficial (YCloud)</span>
+      <span class="tech-tag">🧠 IA — Google Gemini / GPT-4</span>
+      <span class="tech-tag">🗄️ Base de datos — Airtable</span>
+      <span class="tech-tag">⚡ Servidor propio (Hostinger + Coolify)</span>
+      <span class="tech-tag">🌐 CRM web — cualquier navegador</span>
+      <span class="tech-tag">📅 Cal.com — agenda online</span>
+      <span class="tech-tag">🔄 n8n — automatizaciones</span>
+    </div>
+  </div>
+
+  <!-- Inversión -->
+  <div class="card mb-6">
+    <h2 class="text-2xl font-bold mb-2">Inversión</h2>
+    <p class="text-slate-600 mb-6">Todo claro, sin letra chica.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <!-- Implementación -->
+      <div class="price-card">
+        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-2">Pago único</div>
+        <div class="flex items-baseline gap-2 mb-3">
+          <span class="price-amount">USD 300</span>
+        </div>
+        <div class="font-bold text-slate-900 mb-3">Implementación completa</div>
+        <ul class="text-sm text-slate-700 space-y-2">
+          <li>✅ Configuración del bot WhatsApp con tu info</li>
+          <li>✅ Desarrollo del CRM web a medida</li>
+          <li>✅ Registro WhatsApp Business oficial</li>
+          <li>✅ Carga inicial de tus paquetes</li>
+          <li>✅ Capacitación al equipo</li>
+          <li>✅ 15 días de soporte gratuito post-lanzamiento</li>
+        </ul>
+      </div>
+
+      <!-- Mensualidad -->
+      <div class="price-card secondary">
+        <div class="text-xs font-semibold text-sky-700 uppercase tracking-wide mb-2">Mensualidad</div>
+        <div class="flex items-baseline gap-2 mb-3">
+          <span class="price-amount">USD 80</span>
+          <span class="price-period">/mes</span>
+        </div>
+        <div class="font-bold text-slate-900 mb-3">Mantenimiento y actualizaciones</div>
+        <ul class="text-sm text-slate-700 space-y-2">
+          <li>✅ Hosting y conectividad 24/7</li>
+          <li>✅ Actualizaciones técnicas y de seguridad</li>
+          <li>✅ Ajustes del bot según feedback real</li>
+          <li>✅ Soporte por WhatsApp priorizado</li>
+          <li>✅ Reportes mensuales de performance</li>
+          <li>✅ Costos de IA y servidores incluidos</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+      <div class="flex gap-3 items-start">
+        <span class="text-xl">💡</span>
+        <div class="text-sm text-amber-900">
+          <strong>Importante:</strong> el bot y el CRM son 100% tuyos. Si en algún momento decidís no seguir con el mantenimiento,
+          el sistema queda funcionando con los servicios que vos pagues directamente (WhatsApp Business, Airtable, servidor).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cronograma -->
+  <div class="card mb-6">
+    <h2 class="text-2xl font-bold mb-5">Cronograma de entrega</h2>
+    <div class="timeline">
+
+      <div class="timeline-item">
+        <div class="font-bold text-slate-900">Día 1 — Brief completado</div>
+        <div class="text-sm text-slate-600 mt-1">Recibo tu formulario con todos los datos de la agencia.</div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="font-bold text-slate-900">Días 2-5 — Desarrollo</div>
+        <div class="text-sm text-slate-600 mt-1">Configuro el bot con tu info, armo el CRM web, cargo tus paquetes.</div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="font-bold text-slate-900">Días 6-8 — Testing</div>
+        <div class="text-sm text-slate-600 mt-1">Probamos juntos todos los flujos. Ajusto tono del bot, respuestas, etc.</div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="font-bold text-slate-900">Día 9-10 — Lanzamiento</div>
+        <div class="text-sm text-slate-600 mt-1">Capacitación al equipo, cambio de número oficial de WhatsApp, arrancamos.</div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="font-bold text-emerald-700">Día 11+ — 15 días de soporte</div>
+        <div class="text-sm text-slate-600 mt-1">Ajustes finos en base al uso real de los primeros clientes.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Próximos pasos -->
+  <div class="card mb-6 bg-gradient-to-br from-sky-50 to-indigo-50 border-sky-200">
+    <h2 class="text-2xl font-bold mb-4">Próximos pasos</h2>
+
+    <div class="space-y-4">
+      <div class="flex gap-4 items-start">
+        <div class="flex-shrink-0 w-8 h-8 bg-sky-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+        <div>
+          <div class="font-bold text-slate-900">Completá el formulario</div>
+          <div class="text-sm text-slate-600 mt-1">Te mando el link por WhatsApp. Te toma ~10 minutos completarlo.</div>
+        </div>
+      </div>
+
+      <div class="flex gap-4 items-start">
+        <div class="flex-shrink-0 w-8 h-8 bg-sky-500 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+        <div>
+          <div class="font-bold text-slate-900">Coordinamos el pago de la implementación</div>
+          <div class="text-sm text-slate-600 mt-1">Por WhatsApp te paso los datos para transferencia. Trabajo con USDT / transferencia / MercadoPago.</div>
+        </div>
+      </div>
+
+      <div class="flex gap-4 items-start">
+        <div class="flex-shrink-0 w-8 h-8 bg-sky-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+        <div>
+          <div class="font-bold text-slate-900">Arranca el desarrollo</div>
+          <div class="text-sm text-slate-600 mt-1">7-10 días hábiles hasta el lanzamiento.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 text-center">
+      <a href="https://wa.me/5493765384843?text=Hola%20Arnaldo%2C%20le%C3%AD%20la%20propuesta%20y%20quiero%20arrancar" class="cta-button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Conversemos por WhatsApp
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="text-center text-xs text-slate-500 mt-8 pb-10">
+    <div class="mb-2">
+      <strong class="text-slate-700">Arnaldo Ayala</strong> · Estratega en IA y Marketing
+    </div>
+    <div>
+      <a href="https://arnaldoayalaestratega.cloud" class="text-sky-600 hover:underline">arnaldoayalaestratega.cloud</a>
+      <span class="mx-2">·</span>
+      Posadas, Misiones, Argentina
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

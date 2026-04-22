@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brief — Bot + CRM para tu agencia de turismo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%);
+    min-height: 100vh;
+  }
+  .card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.05);
+    border: 1px solid #e5e7eb;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+    color: white;
+  }
+  .section-title {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #0ea5e9;
+    margin-bottom: 20px;
+  }
+  .field-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .field-hint {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  textarea,
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #0f172a;
+    background: white;
+    transition: all 0.15s;
+  }
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+  }
+  textarea {
+    resize: vertical;
+    min-height: 90px;
+    font-family: inherit;
+  }
+  .check-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 0.9rem;
+  }
+  .check-item:hover {
+    background: #f0f9ff;
+    border-color: #0ea5e9;
+  }
+  .check-item input {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: #0ea5e9;
+  }
+  .check-item.checked {
+    background: #eff6ff;
+    border-color: #0ea5e9;
+  }
+  .radio-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .radio-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.15s;
+  }
+  .radio-item:hover { background: #f0f9ff; }
+  .radio-item input { accent-color: #0ea5e9; }
+  .radio-item.checked {
+    background: #0ea5e9;
+    color: white;
+    border-color: #0ea5e9;
+  }
+  .radio-item.checked input { display: none; }
+  .btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+  }
+  .btn-secondary {
+    background: white;
+    color: #0f172a;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover {
+    border-color: #0ea5e9;
+    color: #0ea5e9;
+  }
+  .paquete-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .paquete-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .btn-remove {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .btn-add {
+    background: white;
+    color: #0ea5e9;
+    border: 2px dashed #0ea5e9;
+    padding: 10px;
+    border-radius: 10px;
+    width: 100%;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+  }
+  .btn-add:hover { background: #f0f9ff; }
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #0f172a;
+    color: white;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    transform: translateY(-100px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 1000;
+  }
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+</style>
+</head>
+<body class="py-6 sm:py-10 px-3 sm:px-6">
+
+<!-- Toast -->
+<div id="toast" class="toast">✓ Copiado al portapapeles</div>
+
+<!-- Hero -->
+<div class="max-w-3xl mx-auto mb-6">
+  <div class="hero rounded-2xl p-6 sm:p-8">
+    <div class="flex items-center gap-3 mb-3">
+      <span class="text-3xl">✈️</span>
+      <h1 class="text-xl sm:text-2xl font-bold">Brief — Bot + CRM para tu agencia de turismo</h1>
+    </div>
+    <p class="text-sky-100 text-sm sm:text-base leading-relaxed">
+      Contame sobre tu agencia y qué ofrecés. Con esta info te armo el bot que atiende tus consultas 24/7
+      y el CRM para que controles todo desde un solo lugar.
+    </p>
+    <p class="text-sky-200 text-xs mt-3">
+      ⏱ Te va a tomar unos 10 minutos. Podés saltar campos que no apliquen.
+    </p>
+  </div>
+</div>
+
+<form id="briefForm" class="max-w-3xl mx-auto space-y-4">
+
+  <!-- 1. AGENCIA -->
+  <div class="card p-6">
+    <div class="section-title"><span>🏢</span> Tu agencia</div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="field-label">Nombre comercial *</label>
+        <input type="text" name="nombre_comercial" placeholder="Ej: Viajes del Sol" required />
+      </div>
+      <div>
+        <label class="field-label">Razón social o CUIT</label>
+        <input type="text" name="razon_social" placeholder="Opcional" />
+      </div>
+      <div>
+        <label class="field-label">Ciudad y provincia *</label>
+        <input type="text" name="ciudad" placeholder="Ej: Posadas, Misiones" required />
+      </div>
+      <div>
+        <label class="field-label">Sitio web</label>
+        <input type="url" name="web" placeholder="https://..." />
+      </div>
+      <div>
+        <label class="field-label">Instagram</label>
+        <input type="text" name="instagram" placeholder="@tuagencia" />
+      </div>
+      <div>
+        <label class="field-label">Facebook</label>
+        <input type="text" name="facebook" placeholder="facebook.com/tuagencia" />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="field-label">Horario de atención</label>
+        <input type="text" name="horario" placeholder="Ej: Lun-Vie 9-18hs, Sáb 9-13hs" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. EQUIPO -->
+  <div class="card p-6">
+    <div class="section-title"><span>👥</span> Equipo que atiende clientes</div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+      <div>
+        <label class="field-label">Tu nombre (dueño/gerente) *</label>
+        <input type="text" name="duenio_nombre" placeholder="Cesar Posada" required />
+      </div>
+      <div>
+        <label class="field-label">Tu WhatsApp *</label>
+        <input type="tel" name="duenio_whatsapp" placeholder="+54 9 376 555 1234" required />
+      </div>
+    </div>
+
+    <label class="field-label">Asesores de venta</label>
+    <div id="asesoresList" class="space-y-3"></div>
+    <button type="button" onclick="addAsesor()" class="btn-add mt-3">+ Agregar asesor</button>
+
+    <div class="mt-5">
+      <label class="field-label">WhatsApp oficial del bot *</label>
+      <input type="tel" name="whatsapp_bot" placeholder="+54 9 376 555 0000" required />
+      <div class="field-hint">Este es el número donde la gente te escribe y el bot responde. Puede ser tu WhatsApp actual o uno nuevo.</div>
+    </div>
+  </div>
+
+  <!-- 3. SERVICIOS -->
+  <div class="card p-6">
+    <div class="section-title"><span>🌎</span> ¿Qué tipo de servicios ofrecés?</div>
+
+    <label class="field-label">Marcá todos los que apliquen *</label>
+    <div class="check-group" id="serviciosCheck">
+      <label class="check-item"><input type="checkbox" name="servicios" value="Viajes nacionales" /> Viajes nacionales</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Viajes internacionales" /> Viajes internacionales</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Cruceros" /> Cruceros</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Paquetes all-inclusive" /> Paquetes all-inclusive</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Vuelos sueltos" /> Vuelos sueltos</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Alojamiento" /> Solo alojamiento</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Turismo receptivo" /> Turismo receptivo</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Viajes corporativos" /> Viajes corporativos</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Luna de miel" /> Luna de miel</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Viajes familiares" /> Viajes familiares</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Turismo aventura" /> Turismo aventura</label>
+      <label class="check-item"><input type="checkbox" name="servicios" value="Excursiones día" /> Excursiones de día</label>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+      <div>
+        <label class="field-label">Destinos principales que vendés</label>
+        <textarea name="destinos" placeholder="Ej: Cataratas, Bariloche, Cancún, Miami, Europa..."></textarea>
+      </div>
+      <div>
+        <label class="field-label">Temporadas fuertes del año</label>
+        <textarea name="temporadas" placeholder="Ej: Enero-Febrero (playa), Julio (esquí), Diciembre (fiestas)..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. PAQUETES -->
+  <div class="card p-6">
+    <div class="section-title"><span>📦</span> Tus paquetes principales</div>
+    <p class="text-sm text-slate-600 mb-4">
+      Cargá los paquetes que querés que el bot pueda ofrecer. Podés saltar este paso y mandarme la lista aparte por WhatsApp si preferís.
+    </p>
+
+    <div id="paquetesList"></div>
+    <button type="button" onclick="addPaquete()" class="btn-add">+ Agregar paquete</button>
+  </div>
+
+  <!-- 5. PROCESO DE VENTA -->
+  <div class="card p-6">
+    <div class="section-title"><span>💬</span> Cómo vendés hoy</div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="field-label">¿Qué te preguntan más los clientes al primer contacto?</label>
+        <textarea name="preguntas_frecuentes" placeholder="Ej: Precio, fechas disponibles, si incluye vuelo, qué lugares visitan..."></textarea>
+      </div>
+
+      <div>
+        <label class="field-label">¿Qué info clave necesitás para cotizar un viaje?</label>
+        <textarea name="info_cotizar" placeholder="Ej: Destino, fechas, cantidad de personas, presupuesto, ciudad de origen..."></textarea>
+      </div>
+
+      <div>
+        <label class="field-label">¿Cuándo considerás que un cliente está "caliente" (listo para comprar)?</label>
+        <textarea name="lead_caliente" placeholder="Ej: Cuando tiene fecha definida, presupuesto claro y son más de 2 personas..."></textarea>
+      </div>
+
+      <div>
+        <label class="field-label">¿Usás Cal.com / Calendly / agenda online?</label>
+        <input type="url" name="calendar_url" placeholder="URL de tu calendario (opcional)" />
+        <div class="field-hint">Si tenés, el bot puede ofrecer al cliente agendar llamada directamente.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. TONO DEL BOT -->
+  <div class="card p-6">
+    <div class="section-title"><span>🤖</span> Personalidad del bot</div>
+
+    <div class="space-y-5">
+      <div>
+        <label class="field-label">¿Cómo querés que hable?</label>
+        <div class="radio-group" id="tonoRadio">
+          <label class="radio-item"><input type="radio" name="tono" value="Informal y cercano" checked /> Informal y cercano</label>
+          <label class="radio-item"><input type="radio" name="tono" value="Neutro profesional" /> Neutro profesional</label>
+          <label class="radio-item"><input type="radio" name="tono" value="Formal" /> Formal</label>
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label">¿Usa emojis?</label>
+        <div class="radio-group" id="emojisRadio">
+          <label class="radio-item"><input type="radio" name="emojis" value="Sí" checked /> Sí, moderado</label>
+          <label class="radio-item"><input type="radio" name="emojis" value="Muchos" /> Bien expresivo</label>
+          <label class="radio-item"><input type="radio" name="emojis" value="No" /> Sin emojis</label>
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label">Cómo se presenta el bot (primer mensaje)</label>
+        <textarea name="saludo" placeholder="Ej: ¡Hola! Soy el asistente de Viajes del Sol ☀️ Contame qué viaje estás buscando y te ayudo..."></textarea>
+      </div>
+
+      <div>
+        <label class="field-label">Si el bot no sabe una respuesta, ¿qué hace?</label>
+        <div class="radio-group" id="fallbackRadio">
+          <label class="radio-item"><input type="radio" name="fallback" value="Deriva a asesor humano al instante" checked /> Deriva a asesor humano al instante</label>
+          <label class="radio-item"><input type="radio" name="fallback" value="Toma nota y asesor responde después" /> Toma nota y asesor responde después</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. EXTRAS -->
+  <div class="card p-6">
+    <div class="section-title"><span>✨</span> Funcionalidades extra</div>
+    <p class="text-sm text-slate-600 mb-4">Marcá las que te interesen (todas son opcionales):</p>
+
+    <div class="check-group">
+      <label class="check-item"><input type="checkbox" name="extras" value="Recordatorio post-viaje para reseña" /> Mensaje post-viaje pidiendo reseña</label>
+      <label class="check-item"><input type="checkbox" name="extras" value="Follow-up a leads fríos" /> Follow-up automático a clientes que no respondieron</label>
+      <label class="check-item"><input type="checkbox" name="extras" value="Recordatorio de pago" /> Recordatorios de vencimiento de pago</label>
+      <label class="check-item"><input type="checkbox" name="extras" value="Campañas estacionales" /> Campañas por temporada (verano, invierno)</label>
+      <label class="check-item"><input type="checkbox" name="extras" value="Integración Google Calendar" /> Integración Google Calendar</label>
+      <label class="check-item"><input type="checkbox" name="extras" value="Integración Mailchimp" /> Lista de email marketing</label>
+    </div>
+
+    <div class="mt-5">
+      <label class="field-label">¿Algo más que quieras contarme?</label>
+      <textarea name="observaciones" placeholder="Cualquier detalle adicional, preocupación, idea..."></textarea>
+    </div>
+  </div>
+
+  <!-- ENVIAR -->
+  <div class="card p-6">
+    <div class="text-center mb-5">
+      <div class="text-2xl mb-2">🚀</div>
+      <h2 class="text-lg font-bold text-slate-900 mb-1">¡Listo para enviar!</h2>
+      <p class="text-sm text-slate-600 max-w-md mx-auto">
+        Al apretar el botón se descarga tu brief en tu celular/compu y se abre WhatsApp con Arnaldo. Solo tenés que adjuntar el archivo que se acaba de bajar.
+      </p>
+    </div>
+
+    <button type="button" onclick="enviarBrief()" class="btn-primary w-full flex items-center justify-center gap-2">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Descargar y enviar por WhatsApp
+    </button>
+
+    <!-- Instrucciones paso a paso -->
+    <div class="mt-5 bg-sky-50 border border-sky-200 rounded-lg p-4">
+      <p class="text-xs font-semibold text-sky-900 mb-2">Cómo funciona:</p>
+      <ol class="text-xs text-sky-800 space-y-1 list-decimal list-inside">
+        <li>Se baja automáticamente un archivo <code class="bg-white px-1 rounded">brief-tu-agencia.md</code> a tu dispositivo</li>
+        <li>Se abre WhatsApp con el chat de Arnaldo y un mensaje listo</li>
+        <li>En WhatsApp, apretá el 📎 y adjuntá el archivo que se acaba de bajar</li>
+        <li>Enviar ✅</li>
+      </ol>
+    </div>
+
+    <p class="text-xs text-slate-500 text-center mt-4">
+      Tu información no queda guardada en ningún servidor — solo llega directamente al WhatsApp de Arnaldo.
+    </p>
+  </div>
+
+</form>
+
+<div class="max-w-3xl mx-auto mt-8 text-center text-xs text-slate-500 pb-10">
+  Arnaldo Ayala · Estratega en IA y Marketing ·
+  <a href="https://arnaldoayalaestratega.cloud" class="text-sky-600 hover:underline">arnaldoayalaestratega.cloud</a>
+</div>
+
+<script>
+  // Número WhatsApp de Arnaldo (destino del brief)
+  const ARNALDO_WHATSAPP = '5493765384843';
+
+  // ── Helpers UI ─────────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = '✓ ' + msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Toggle visual checkboxes/radios
+  document.addEventListener('change', (e) => {
+    if (e.target.type === 'checkbox' && e.target.closest('.check-item')) {
+      e.target.closest('.check-item').classList.toggle('checked', e.target.checked);
+    }
+    if (e.target.type === 'radio') {
+      const group = e.target.closest('.radio-group');
+      if (group) {
+        group.querySelectorAll('.radio-item').forEach(i => i.classList.remove('checked'));
+        e.target.closest('.radio-item').classList.add('checked');
+      }
+    }
+  });
+
+  // Inicializar radios marcados por default
+  document.querySelectorAll('input[type="radio"]:checked').forEach(r => {
+    r.closest('.radio-item')?.classList.add('checked');
+  });
+
+  // ── Asesores dinámicos ────────────────────────────────────────────────────
+  let asesorCount = 0;
+  function addAsesor() {
+    asesorCount++;
+    const id = asesorCount;
+    const html = `
+      <div class="paquete-card" id="asesor-${id}">
+        <div class="paquete-header">
+          <span class="font-semibold text-sm text-slate-700">👤 Asesor ${id}</span>
+          <button type="button" class="btn-remove" onclick="document.getElementById('asesor-${id}').remove()">Quitar</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <input type="text" name="asesor_nombre_${id}" placeholder="Nombre" />
+          <input type="tel" name="asesor_tel_${id}" placeholder="+54 9 376..." />
+          <input type="email" name="asesor_email_${id}" placeholder="email@..." />
+        </div>
+      </div>
+    `;
+    document.getElementById('asesoresList').insertAdjacentHTML('beforeend', html);
+  }
+  addAsesor(); // primer asesor por default
+
+  // ── Paquetes dinámicos ────────────────────────────────────────────────────
+  let paqueteCount = 0;
+  function addPaquete() {
+    paqueteCount++;
+    const id = paqueteCount;
+    const html = `
+      <div class="paquete-card" id="paq-${id}">
+        <div class="paquete-header">
+          <span class="font-semibold text-sm text-slate-700">📦 Paquete ${id}</span>
+          <button type="button" class="btn-remove" onclick="document.getElementById('paq-${id}').remove()">Quitar</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <input type="text" name="paq_nombre_${id}" placeholder="Nombre (ej: Cancún 7 días)" />
+          <input type="text" name="paq_destino_${id}" placeholder="Destino" />
+          <input type="text" name="paq_duracion_${id}" placeholder="Duración (ej: 7 días / 6 noches)" />
+          <input type="text" name="paq_precio_${id}" placeholder="Precio desde (ej: USD 1.200 p/persona)" />
+        </div>
+        <textarea name="paq_incluye_${id}" placeholder="Qué incluye (vuelo, hotel, comidas, traslados...)"></textarea>
+        <input type="text" name="paq_temporada_${id}" placeholder="Temporada disponible (opcional)" class="mt-3" />
+      </div>
+    `;
+    document.getElementById('paquetesList').insertAdjacentHTML('beforeend', html);
+  }
+  addPaquete(); // primer paquete por default
+
+  // ── Generar el .md ─────────────────────────────────────────────────────────
+  function buildMarkdown() {
+    const form = document.getElementById('briefForm');
+    const fd = new FormData(form);
+    const get = (k) => (fd.get(k) || '').trim();
+    const getAll = (k) => fd.getAll(k);
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    const nombre = get('nombre_comercial') || '(sin nombre)';
+    const duenio = get('duenio_nombre') || '(sin nombre)';
+
+    let md = `# Brief — ${nombre}\n`;
+    md += `**Cliente**: ${duenio}\n`;
+    md += `**Fecha**: ${hoy}\n`;
+    md += `**Proyecto**: Bot WhatsApp + CRM para agencia de turismo\n\n`;
+
+    // 1. Agencia
+    md += `## 1. Datos de la agencia\n`;
+    md += `- **Nombre comercial**: ${get('nombre_comercial') || '—'}\n`;
+    if (get('razon_social')) md += `- **Razón social / CUIT**: ${get('razon_social')}\n`;
+    md += `- **Ciudad**: ${get('ciudad') || '—'}\n`;
+    if (get('web')) md += `- **Web**: ${get('web')}\n`;
+    if (get('instagram')) md += `- **Instagram**: ${get('instagram')}\n`;
+    if (get('facebook')) md += `- **Facebook**: ${get('facebook')}\n`;
+    if (get('horario')) md += `- **Horario**: ${get('horario')}\n`;
+    md += `\n`;
+
+    // 2. Equipo
+    md += `## 2. Equipo\n`;
+    md += `### Dueño / Gerente\n`;
+    md += `- **Nombre**: ${get('duenio_nombre') || '—'}\n`;
+    md += `- **WhatsApp**: ${get('duenio_whatsapp') || '—'}\n\n`;
+
+    md += `### Asesores de venta\n`;
+    let hayAsesor = false;
+    for (let i = 1; i <= asesorCount; i++) {
+      const n = get(`asesor_nombre_${i}`);
+      const t = get(`asesor_tel_${i}`);
+      const e = get(`asesor_email_${i}`);
+      if (n || t || e) {
+        hayAsesor = true;
+        md += `${i}. **${n || 'Sin nombre'}** — Tel: ${t || '—'} — Email: ${e || '—'}\n`;
+      }
+    }
+    if (!hayAsesor) md += `_Sin asesores cargados_\n`;
+    md += `\n`;
+
+    md += `### WhatsApp del bot\n`;
+    md += `**Número que atenderá el bot**: ${get('whatsapp_bot') || '—'}\n\n`;
+
+    // 3. Servicios
+    md += `## 3. Servicios que ofrece\n`;
+    const servicios = getAll('servicios');
+    if (servicios.length) {
+      servicios.forEach(s => md += `- ${s}\n`);
+    } else {
+      md += `_(No se marcó ningún servicio)_\n`;
+    }
+    if (get('destinos')) md += `\n**Destinos principales**: ${get('destinos')}\n`;
+    if (get('temporadas')) md += `\n**Temporadas fuertes**: ${get('temporadas')}\n`;
+    md += `\n`;
+
+    // 4. Paquetes
+    md += `## 4. Paquetes\n`;
+    let hayPaq = false;
+    for (let i = 1; i <= paqueteCount; i++) {
+      const n = get(`paq_nombre_${i}`);
+      if (!n) continue;
+      hayPaq = true;
+      md += `\n### ${i}. ${n}\n`;
+      if (get(`paq_destino_${i}`)) md += `- **Destino**: ${get(`paq_destino_${i}`)}\n`;
+      if (get(`paq_duracion_${i}`)) md += `- **Duración**: ${get(`paq_duracion_${i}`)}\n`;
+      if (get(`paq_precio_${i}`)) md += `- **Precio desde**: ${get(`paq_precio_${i}`)}\n`;
+      if (get(`paq_incluye_${i}`)) md += `- **Incluye**: ${get(`paq_incluye_${i}`)}\n`;
+      if (get(`paq_temporada_${i}`)) md += `- **Temporada**: ${get(`paq_temporada_${i}`)}\n`;
+    }
+    if (!hayPaq) md += `_Los paquetes se envían aparte por WhatsApp_\n`;
+    md += `\n`;
+
+    // 5. Proceso de venta
+    md += `## 5. Proceso de venta actual\n`;
+    if (get('preguntas_frecuentes')) md += `### Preguntas frecuentes al primer contacto\n${get('preguntas_frecuentes')}\n\n`;
+    if (get('info_cotizar')) md += `### Info que necesita el asesor para cotizar\n${get('info_cotizar')}\n\n`;
+    if (get('lead_caliente')) md += `### Criterio "lead caliente"\n${get('lead_caliente')}\n\n`;
+    if (get('calendar_url')) md += `### Agenda online\n${get('calendar_url')}\n\n`;
+
+    // 6. Tono del bot
+    md += `## 6. Personalidad del bot\n`;
+    md += `- **Tono**: ${get('tono') || '—'}\n`;
+    md += `- **Emojis**: ${get('emojis') || '—'}\n`;
+    if (get('saludo')) md += `- **Saludo inicial**: ${get('saludo')}\n`;
+    md += `- **Si no sabe responder**: ${get('fallback') || '—'}\n\n`;
+
+    // 7. Extras
+    md += `## 7. Funcionalidades extra solicitadas\n`;
+    const extras = getAll('extras');
+    if (extras.length) {
+      extras.forEach(e => md += `- ${e}\n`);
+    } else {
+      md += `_Sin funcionalidades extra seleccionadas_\n`;
+    }
+    md += `\n`;
+
+    if (get('observaciones')) {
+      md += `## 8. Observaciones adicionales\n${get('observaciones')}\n\n`;
+    }
+
+    md += `---\n_Generado desde formulario web · ${hoy}_\n`;
+    return md;
+  }
+
+  // ── Acción principal: descarga .md + abre WhatsApp en secuencia ───────────
+  function enviarBrief() {
+    // Validar campos obligatorios
+    const fd = new FormData(document.getElementById('briefForm'));
+    const required = ['nombre_comercial', 'ciudad', 'duenio_nombre', 'duenio_whatsapp', 'whatsapp_bot'];
+    const faltan = required.filter(k => !(fd.get(k) || '').trim());
+    if (faltan.length) {
+      const labels = {
+        nombre_comercial: 'Nombre comercial de la agencia',
+        ciudad: 'Ciudad',
+        duenio_nombre: 'Tu nombre',
+        duenio_whatsapp: 'Tu WhatsApp',
+        whatsapp_bot: 'WhatsApp oficial del bot',
+      };
+      alert('Antes de enviar completá estos campos obligatorios:\n\n• ' + faltan.map(k => labels[k]).join('\n• '));
+      document.querySelector(`[name="${faltan[0]}"]`)?.scrollIntoView({behavior:'smooth', block:'center'});
+      document.querySelector(`[name="${faltan[0]}"]`)?.focus();
+      return;
+    }
+
+    // Validar al menos 1 servicio marcado
+    const servicios = fd.getAll('servicios');
+    if (!servicios.length) {
+      alert('Marcá al menos 1 servicio en la sección "¿Qué tipo de servicios ofrecés?"');
+      document.getElementById('serviciosCheck')?.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+
+    // 1. Descargar archivo .md
+    const filename = descargarMD();
+
+    // 2. Abrir WhatsApp con mensaje corto
+    const nombre = fd.get('nombre_comercial') || '';
+    const duenio = fd.get('duenio_nombre') || '';
+    const shortMsg =
+      `Hola Arnaldo! 👋 Acá te envío el brief completo de ${nombre}.\n\n` +
+      `Acabo de descargar el archivo "${filename}" — te lo adjunto en el próximo mensaje.\n\n` +
+      `— ${duenio}`;
+    const url = `https://wa.me/${ARNALDO_WHATSAPP}?text=${encodeURIComponent(shortMsg)}`;
+
+    // Pequeño delay para que el usuario vea el toast de descarga antes que abra WhatsApp
+    setTimeout(() => {
+      window.open(url, '_blank');
+    }, 600);
+  }
+
+  function descargarMD() {
+    const md = buildMarkdown();
+    const nombre = (new FormData(document.getElementById('briefForm')).get('nombre_comercial') || 'brief')
+      .toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const hoy = new Date().toISOString().slice(0, 10);
+    const filename = `brief-${nombre}-${hoy}.md`;
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast(`Archivo descargado: ${filename}`);
+    return filename;
+  }
+</script>
+</body>
+</html>

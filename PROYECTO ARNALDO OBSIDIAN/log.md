@@ -258,3 +258,12 @@ Estado wiki: 12 entidades + 7 conceptos = 19 páginas. Falta ingestar fuentes of
 - Ingesta: `raw/mica/sesion-2026-04-22-crm-v3-mica.md`
 - Síntesis: `wiki/sintesis/2026-04-22-crm-v3-mica.md`
 - 4 commits backend+frontend (5ef5303 → a9dc86a → a616f70 → e3817bb), 11/11 endpoints Mica producción OK, frontend Vercel deployado inmediatamente. UI ámbar respetada (0 purple Robert). IDs Airtable strings rec... sin parseInt. Polimorfismo con 3 linkedRecord + serializer.
+
+## [2026-04-22] sesion-claude | Onboarding Cesar Posada (cliente nuevo Arnaldo — turismo)
+- Entidad nueva: `wiki/entidades/cesar-posada.md` (estado: propuesta-enviada)
+- Raw: `raw/arnaldo/sesion-2026-04-22-brief-cesar-posada.md`
+- Concepto nuevo: `wiki/conceptos/onboarding-cliente-nuevo-arnaldo.md` (patrón reutilizable)
+- Entregables LIVE: brief.html + propuesta.html en agentes.arnaldoayalaestratega.cloud/propuestas/cesar-posada/
+- Stack asignado: Airtable + YCloud + Coolify Hostinger (matriz estándar clientes Arnaldo)
+- Precios: USD 300 implementación + USD 80/mes mantenimiento
+- Próximo paso: esperar que Cesar complete y envíe el brief .md por WhatsApp
