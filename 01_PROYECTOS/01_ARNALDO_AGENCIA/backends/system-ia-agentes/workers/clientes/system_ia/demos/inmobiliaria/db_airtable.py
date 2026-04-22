@@ -960,7 +960,7 @@ def _at_filter(table_id: str, formula: str, max_records: int = 100) -> list[dict
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_all_asesores() -> list[dict]:
-    return _at_get_all(TABLE_ASESORES)
+    return [_unmap_asesor(r) for r in _at_get_all(TABLE_ASESORES)]
 
 
 def create_asesor(campos: dict) -> dict:
@@ -980,7 +980,7 @@ def delete_asesor(record_id: str) -> bool:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_all_propietarios() -> list[dict]:
-    return _at_get_all(TABLE_PROPIETARIOS)
+    return [_unmap_propietario(r) for r in _at_get_all(TABLE_PROPIETARIOS)]
 
 
 def create_propietario(campos: dict) -> dict:
@@ -993,6 +993,279 @@ def update_propietario(record_id: str, campos: dict) -> bool:
 
 def delete_propietario(record_id: str) -> bool:
     return _at_delete(TABLE_PROPIETARIOS, record_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HELPERS DE NORMALIZACIÓN — Airtable PascalCase → frontend lowercase
+# Espejo inverso de los _map_* de escritura. Se aplican en los GET para que el
+# frontend reciba campos lowercase tal como los espera en cada panel JS.
+# Convención: si el campo ya es id (string rec...), se preserva como string.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _unmap_loteo(rec: dict) -> dict:
+    """Airtable Loteos → frontend lowercase."""
+    f = rec.get("fields", rec)  # acepta raw Airtable {id, fields} o ya flattened {id, Nombre, ...}
+    rec_id = rec.get("id") or f.get("id", "")
+    return {
+        "id": rec_id,
+        "nombre": f.get("Nombre") or "",
+        "slug": f.get("Slug") or "",
+        "descripcion": f.get("Descripcion") or "",
+        "ubicacion": f.get("Ubicacion") or "",
+        "ciudad": f.get("Ciudad") or "",
+        "mapa_svg_url": f.get("Mapa_SVG_URL") or "",
+        "total_lotes": f.get("Total_Lotes") or 0,
+        "lotes_disponibles": f.get("Lotes_Disponibles") or 0,
+        "lotes_reservados": f.get("Lotes_Reservados") or 0,
+        "lotes_vendidos": f.get("Lotes_Vendidos") or 0,
+        "precio_desde": f.get("Precio_Desde") or None,
+        "moneda": f.get("Moneda") or "USD",
+        "activo": f.get("Activo") if f.get("Activo") is not None else True,
+        "created_at": f.get("Created_At") or "",
+        "updated_at": f.get("Updated_At") or "",
+    }
+
+
+def _unmap_lote_mapa(rec: dict) -> dict:
+    """Airtable LotesMapa → frontend lowercase."""
+    f = rec.get("fields", rec)
+    rec_id = rec.get("id") or f.get("id", "")
+    proyecto_ids = f.get("Proyecto") or []
+    contrato_ids = f.get("Contratos") or []
+    return {
+        "id": rec_id,
+        "numero_lote": f.get("Numero_Lote") or "",
+        "manzana": f.get("Manzana") or "",
+        "estado": f.get("Estado") or "disponible",
+        "coord_x": f.get("Coord_X") or None,
+        "coord_y": f.get("Coord_Y") or None,
+        "precio": f.get("Precio") or None,
+        "proyecto_id": proyecto_ids[0] if isinstance(proyecto_ids, list) and proyecto_ids else (proyecto_ids or None),
+        "contrato_id": contrato_ids[0] if isinstance(contrato_ids, list) and contrato_ids else (contrato_ids or None),
+        "created_at": f.get("Created_At") or "",
+        "updated_at": f.get("Updated_At") or "",
+    }
+
+
+def _unmap_propietario(rec: dict) -> dict:
+    """Airtable Propietarios → frontend lowercase."""
+    f = rec.get("fields", rec)
+    rec_id = rec.get("id") or f.get("id", "")
+    return {
+        "id": rec_id,
+        "nombre": f.get("Nombre") or "",
+        "telefono": f.get("Telefono") or "",
+        "email": f.get("Email") or "",
+        "dni_cuit": f.get("DNI_CUIT") or "",
+        "direccion": f.get("Direccion") or "",
+        "comision_pactada": f.get("Comision_Pactada") or None,
+        "cantidad_propiedades": f.get("Cantidad_Propiedades") or 0,
+        "notas": f.get("Notas") or "",
+        "created_at": f.get("Created_At") or "",
+        "updated_at": f.get("Updated_At") or "",
+    }
+
+
+def _unmap_asesor(rec: dict) -> dict:
+    """Airtable Asesores → frontend lowercase."""
+    f = rec.get("fields", rec)
+    rec_id = rec.get("id") or f.get("id", "")
+    return {
+        "id": rec_id,
+        "nombre": f.get("Nombre") or "",
+        "apellido": f.get("Apellido") or "",
+        "email": f.get("Email") or "",
+        "telefono": f.get("Telefono") or "",
+        "foto_url": f.get("Foto_URL") or "",
+        "rol": f.get("Rol") or "asesor",
+        "comision_pct": f.get("Comision_Pct") or None,
+        "activo": f.get("Activo") if f.get("Activo") is not None else True,
+        "notas": f.get("Notas") or "",
+        "created_at": f.get("Created_At") or "",
+        "updated_at": f.get("Updated_At") or "",
+    }
+
+
+def _unmap_inmueble_renta(rec: dict) -> dict:
+    """Airtable InmueblesRenta → frontend lowercase.
+    Invierte _map_inmueble_renta: Precio_Mensual→precio_alquiler, Estado→disponible.
+    """
+    f = rec.get("fields", rec)
+    rec_id = rec.get("id") or f.get("id", "")
+    prop_ids = f.get("Propietario") or []
+    prop_id = (prop_ids[0] if isinstance(prop_ids, list) and prop_ids else (prop_ids or None))
+    estado_at = f.get("Estado") or "disponible"
+    return {
+        "id": rec_id,
+        "titulo": f.get("Titulo") or "",
+        "tipo": f.get("Tipo") or "",
+        "direccion": f.get("Direccion") or "",
+        "ciudad": f.get("Ciudad") or "",
+        "barrio": f.get("Barrio") or "",
+        "zona": f.get("Zona") or f.get("Ciudad") or "",
+        "dormitorios": f.get("Dormitorios") or None,
+        "banios": f.get("Banios") or None,
+        "metros_cubiertos": f.get("Metros_Cubiertos") or None,
+        "metros_terreno": f.get("Metros_Terreno") or None,
+        "amoblado": f.get("Amoblado") or False,
+        "permite_mascotas": f.get("Permite_Mascotas") or False,
+        "precio_alquiler": f.get("Precio_Mensual") or None,
+        "precio_mensual": f.get("Precio_Mensual") or None,
+        "expensas": f.get("Expensas") or None,
+        "moneda": f.get("Moneda") or "ARS",
+        "comision_pct": f.get("Comision_Pct") or None,
+        "deposito_meses": f.get("Deposito_Meses") or None,
+        "disponible": estado_at in ("disponible", "reservado"),
+        "estado": estado_at,
+        "disponible_desde": f.get("Disponible_Desde") or "",
+        "fecha_disponibilidad": f.get("Disponible_Desde") or "",
+        "imagen_url": f.get("Imagen_URL") or "",
+        "maps_url": f.get("Maps_URL") or "",
+        "descripcion": f.get("Descripcion") or "",
+        "notas": f.get("Descripcion") or "",
+        "asesor_asignado": f.get("Asesor_Asignado") or "",
+        "propietario_id": prop_id,
+        "created_at": f.get("Created_At") or "",
+        "updated_at": f.get("Updated_At") or "",
+    }
+
+
+def _unmap_inquilino(rec: dict) -> dict:
+    """Airtable Inquilinos → frontend lowercase."""
+    f = rec.get("fields", rec)
+    rec_id = rec.get("id") or f.get("id", "")
+    return {
+        "id": rec_id,
+        "nombre": f.get("Nombre") or "",
+        "apellido": f.get("Apellido") or "",
+        "telefono": f.get("Telefono") or "",
+        "email": f.get("Email") or "",
+        "documento": f.get("DNI_CUIT") or "",
+        "dni_cuit": f.get("DNI_CUIT") or "",
+        "fecha_nacimiento": f.get("Fecha_Nacimiento") or "",
+        "ocupacion": f.get("Ocupacion") or "",
+        "ingresos_mensuales": f.get("Ingresos_Mensuales") or None,
+        "garante_nombre": f.get("Garante_Nombre") or "",
+        "garante_telefono": f.get("Garante_Telefono") or "",
+        "garante_dni": f.get("Garante_DNI") or "",
+        "garante_tipo": f.get("Garante_Tipo") or "",
+        "contacto_emergencia_nombre": f.get("Contacto_Emergencia_Nombre") or "",
+        "contacto_emergencia_telefono": f.get("Contacto_Emergencia_Telefono") or "",
+        "estado": f.get("Estado") or "activo",
+        "notas": f.get("Notas") or "",
+        "created_at": f.get("Created_At") or "",
+        "updated_at": f.get("Updated_At") or "",
+    }
+
+
+def _unmap_pago_alquiler(rec: dict) -> dict:
+    """Airtable PagosAlquiler → frontend lowercase.
+    Invierte _map_pago_alquiler: Periodo_Mes + Periodo_Anio → mes_anio string "YYYY-MM".
+    Inquilino (linkedRecord) → inquilino_id string.
+    """
+    f = rec.get("fields", rec)
+    rec_id = rec.get("id") or f.get("id", "")
+    inq_ids = f.get("Inquilino") or []
+    inq_id = (inq_ids[0] if isinstance(inq_ids, list) and inq_ids else (inq_ids or None))
+    # Reconstruir mes_anio desde Periodo_Anio + Periodo_Mes
+    periodo_mes = f.get("Periodo_Mes")
+    periodo_anio = f.get("Periodo_Anio")
+    if periodo_anio and periodo_mes:
+        mes_anio = f"{int(periodo_anio):04d}-{int(periodo_mes):02d}"
+    else:
+        mes_anio = ""
+    return {
+        "id": rec_id,
+        "inquilino_id": inq_id,
+        "mes_anio": mes_anio,
+        "periodo_mes": periodo_mes,
+        "periodo_anio": periodo_anio,
+        "monto": f.get("Monto_Alquiler") or None,
+        "monto_alquiler": f.get("Monto_Alquiler") or None,
+        "monto_expensas": f.get("Monto_Expensas") or None,
+        "monto_mora": f.get("Monto_Mora") or None,
+        "monto_total": f.get("Monto_Total") or None,
+        "fecha_vencimiento": f.get("Fecha_Vencimiento") or "",
+        "fecha_pago": f.get("Fecha_Pago") or "",
+        "metodo": f.get("Metodo_Pago") or "",
+        "metodo_pago": f.get("Metodo_Pago") or "",
+        "comprobante_url": f.get("Comprobante_URL") or "",
+        "estado": f.get("Estado") or "pendiente",
+        "moneda": f.get("Moneda") or "ARS",
+        "notas": f.get("Notas") or "",
+        "created_at": f.get("Created_At") or "",
+        "updated_at": f.get("Updated_At") or "",
+    }
+
+
+def _unmap_liquidacion(rec: dict) -> dict:
+    """Airtable Liquidaciones → frontend lowercase.
+    Invierte _map_liquidacion: Periodo_Mes + Periodo_Anio → mes_anio.
+    Propietario (linkedRecord) → propietario_id.
+    """
+    f = rec.get("fields", rec)
+    rec_id = rec.get("id") or f.get("id", "")
+    prop_ids = f.get("Propietario") or []
+    prop_id = (prop_ids[0] if isinstance(prop_ids, list) and prop_ids else (prop_ids or None))
+    periodo_mes = f.get("Periodo_Mes")
+    periodo_anio = f.get("Periodo_Anio")
+    if periodo_anio and periodo_mes:
+        mes_anio = f"{int(periodo_anio):04d}-{int(periodo_mes):02d}"
+    else:
+        mes_anio = ""
+    return {
+        "id": rec_id,
+        "propietario_id": prop_id,
+        "mes_anio": mes_anio,
+        "periodo_mes": periodo_mes,
+        "periodo_anio": periodo_anio,
+        "bruto": f.get("Monto_Bruto") or None,
+        "monto_bruto": f.get("Monto_Bruto") or None,
+        "comision_agencia": f.get("Comision_Inmobiliaria") or None,
+        "comision_inmobiliaria": f.get("Comision_Inmobiliaria") or None,
+        "neto_propietario": f.get("Monto_Neto") or None,
+        "monto_neto": f.get("Monto_Neto") or None,
+        "moneda": f.get("Moneda") or "ARS",
+        "metodo_transferencia": f.get("Metodo_Transferencia") or "",
+        "cbu_destino": f.get("CBU_Destino") or "",
+        "fecha_liquidacion": f.get("Fecha_Liquidacion") or "",
+        "comprobante_url": f.get("Comprobante_URL") or "",
+        "estado": f.get("Estado") or "pendiente",
+        "notas": f.get("Notas") or "",
+        "created_at": f.get("Created_At") or "",
+        "updated_at": f.get("Updated_At") or "",
+    }
+
+
+def _unmap_clientes_activos(rec: dict) -> dict:
+    """Airtable CLIENTES_ACTIVOS → frontend lowercase.
+    Campos usados por /crm/clientes (que alimenta el panel de Clientes Activos
+    y el cache de clientes en Loteos para cruzar propiedad asignada).
+    """
+    f = rec.get("fields", rec)
+    rec_id = rec.get("id") or f.get("id", "")
+    asesor_ids = f.get("Asesor_Asignado") or []
+    asesor_id = (asesor_ids[0] if isinstance(asesor_ids, list) and asesor_ids else (asesor_ids or None))
+    return {
+        "id": rec_id,
+        "nombre": f.get("Nombre") or "",
+        "apellido": f.get("Apellido") or "",
+        "telefono": f.get("Telefono") or "",
+        "email": f.get("Email") or "",
+        "documento": f.get("Documento") or "",
+        "ciudad": f.get("Ciudad") or "",
+        "propiedad": f.get("Propiedad") or "",
+        "cuotas_total": f.get("Cuotas_Total") or 0,
+        "cuotas_pagadas": f.get("Cuotas_Pagadas") or 0,
+        "monto_cuota": f.get("Monto_Cuota") or None,
+        "proximo_vencimiento": f.get("Proximo_Vencimiento") or "",
+        "estado_pago": f.get("Estado_Pago") or "",
+        "notas": f.get("Notas") or "",
+        "fecha_alta": f.get("Fecha_Alta") or "",
+        "roles": f.get("Roles") or [],
+        "origen_creacion": f.get("Origen_Creacion") or "",
+        "asesor_asignado_id": asesor_id,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1230,7 +1503,7 @@ def _map_liquidacion(campos: dict) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_all_loteos() -> list[dict]:
-    return _at_get_all(TABLE_LOTEOS)
+    return [_unmap_loteo(r) for r in _at_get_all(TABLE_LOTEOS)]
 
 
 def create_loteo(campos: dict) -> dict:
@@ -1251,10 +1524,11 @@ def delete_loteo(record_id: str) -> bool:
 
 def get_lotes_mapa(loteo_id: str = None) -> list[dict]:
     if loteo_id:
-        # Airtable linkedRecord: filtrar por campo Proyecto que sea array con este ID
         formula = f"FIND('{loteo_id}', ARRAYJOIN({{Proyecto}}, ','))>0"
-        return _at_filter(TABLE_LOTES_MAPA, formula, max_records=500)
-    return _at_get_all(TABLE_LOTES_MAPA)
+        recs = _at_filter(TABLE_LOTES_MAPA, formula, max_records=500)
+    else:
+        recs = _at_get_all(TABLE_LOTES_MAPA)
+    return [_unmap_lote_mapa(r) for r in recs]
 
 
 def create_lote_mapa(campos: dict) -> dict:
@@ -1426,33 +1700,18 @@ def get_contratos_by_cliente(cliente_id: str) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _serialize_inmueble(rec: dict) -> dict:
-    prop_ids = rec.get("Propietario") or []
-    prop_id = (prop_ids[0] if isinstance(prop_ids, list) else prop_ids) if prop_ids else None
-    return {
-        "id": rec.get("id", ""),
-        "titulo": rec.get("Titulo") or rec.get("Nombre", ""),
-        "Titulo": rec.get("Titulo") or rec.get("Nombre", ""),
-        "tipo": rec.get("Tipo", ""),
-        "Tipo": rec.get("Tipo", ""),
-        "direccion": rec.get("Direccion", ""),
-        "zona": rec.get("Zona", ""),
-        "precio_mensual": rec.get("Precio_Mensual") or rec.get("Precio") or None,
-        "disponible": rec.get("Disponible", True),
-        "propietario_id": prop_id,
-        "Propietario": prop_ids,
-        "notas": rec.get("Notas", ""),
-        **{k: v for k, v in rec.items() if k not in ("id",)},
-    }
+    """Alias de _unmap_inmueble_renta — unificado para GET responses."""
+    return _unmap_inmueble_renta(rec)
 
 
 def get_all_inmuebles_renta() -> list[dict]:
     recs = _at_get_all(TABLE_INMUEBLES_RENTA)
-    return [_serialize_inmueble(r) for r in recs]
+    return [_unmap_inmueble_renta(r) for r in recs]
 
 
 def create_inmueble_renta(campos: dict) -> dict:
     rec = _at_create(TABLE_INMUEBLES_RENTA, _map_inmueble_renta(campos))
-    return _serialize_inmueble(rec) if "error" not in rec else rec
+    return _unmap_inmueble_renta(rec) if "error" not in rec else rec
 
 
 def update_inmueble_renta(record_id: str, campos: dict) -> bool:
@@ -1470,8 +1729,10 @@ def delete_inmueble_renta(record_id: str) -> bool:
 def get_all_inquilinos(inmueble_id: str = None) -> list[dict]:
     if inmueble_id:
         formula = f"FIND('{inmueble_id}', ARRAYJOIN({{Inmueble}}, ','))>0"
-        return _at_filter(TABLE_INQUILINOS, formula)
-    return _at_get_all(TABLE_INQUILINOS)
+        recs = _at_filter(TABLE_INQUILINOS, formula)
+    else:
+        recs = _at_get_all(TABLE_INQUILINOS)
+    return [_unmap_inquilino(r) for r in recs]
 
 
 def create_inquilino(campos: dict) -> dict:
@@ -1498,8 +1759,10 @@ def get_all_pagos_alquiler(inquilino_id: str = None, mes_anio: str = None) -> li
         filtros.append(f"{{Mes_Anio}}='{mes_anio}'")
     if filtros:
         formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
-        return _at_filter(TABLE_PAGOS_ALQUILER, formula)
-    return _at_get_all(TABLE_PAGOS_ALQUILER)
+        recs = _at_filter(TABLE_PAGOS_ALQUILER, formula)
+    else:
+        recs = _at_get_all(TABLE_PAGOS_ALQUILER)
+    return [_unmap_pago_alquiler(r) for r in recs]
 
 
 def create_pago_alquiler(campos: dict) -> dict:
@@ -1526,8 +1789,10 @@ def get_all_liquidaciones(propietario_id: str = None, mes_anio: str = None) -> l
         filtros.append(f"{{Mes_Anio}}='{mes_anio}'")
     if filtros:
         formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
-        return _at_filter(TABLE_LIQUIDACIONES, formula)
-    return _at_get_all(TABLE_LIQUIDACIONES)
+        recs = _at_filter(TABLE_LIQUIDACIONES, formula)
+    else:
+        recs = _at_get_all(TABLE_LIQUIDACIONES)
+    return [_unmap_liquidacion(r) for r in recs]
 
 
 def create_liquidacion(campos: dict) -> dict:

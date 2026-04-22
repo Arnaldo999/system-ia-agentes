@@ -3024,22 +3024,30 @@ def crm_metricas():
 @router.get("/crm/leads")
 @router.get("/crm/clientes")
 def crm_clientes():
+    """Lista CLIENTES_ACTIVOS normalizados en lowercase + wrapper {items, total}.
+    El panel-loteos.js consume data.items para cruzar propiedad asignada.
+    Mantiene 'records' como alias para retrocompatibilidad con otros consumidores.
+    """
     if USE_POSTGRES:
         records = db.get_all_leads()
-        return {"total": len(records), "records": records}
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_LEADS:
-        return {"records": [], "error": "DB no configurada"}
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_LEADS}"
-    records, offset = [], None
+        items = [db._unmap_clientes_activos(r) if hasattr(db, '_unmap_clientes_activos') else r for r in records]
+        return {"items": items, "total": len(items), "records": items}
+    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_ACTIVOS:
+        return {"items": [], "records": [], "error": "DB no configurada"}
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ACTIVOS}"
+    raw, offset = [], None
     while True:
         params = {"pageSize": 100}
-        if offset: params["offset"] = offset
+        if offset:
+            params["offset"] = offset
         r = requests.get(url, headers=AT_HEADERS, params=params, timeout=10)
         data = r.json()
-        records += [{"id": rec["id"], **rec["fields"]} for rec in data.get("records", [])]
+        raw += data.get("records", [])
         offset = data.get("offset")
-        if not offset: break
-    return {"total": len(records), "records": records}
+        if not offset:
+            break
+    items = [db._unmap_clientes_activos({"id": rec["id"], **rec.get("fields", {})}) for rec in raw]
+    return {"items": items, "total": len(items), "records": items}
 
 
 @router.patch("/crm/clientes/{record_id}")
@@ -3588,7 +3596,8 @@ def _at_result(result) -> dict:
 @router.get("/crm/asesores")
 def crm_asesores_list():
     _check_at()
-    return db.get_all_asesores()
+    items = db.get_all_asesores()
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/asesores")
 async def crm_asesor_create(request: Request):
@@ -3610,7 +3619,8 @@ def crm_asesor_delete(record_id: str):
 @router.get("/crm/propietarios")
 def crm_propietarios_list():
     _check_at()
-    return db.get_all_propietarios()
+    items = db.get_all_propietarios()
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/propietarios")
 async def crm_propietario_create(request: Request):
@@ -3632,7 +3642,8 @@ def crm_propietario_delete(record_id: str):
 @router.get("/crm/loteos")
 def crm_loteos_list():
     _check_at()
-    return db.get_all_loteos()
+    items = db.get_all_loteos()
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/loteos")
 async def crm_loteo_create(request: Request):
@@ -3654,7 +3665,8 @@ def crm_loteo_delete(record_id: str):
 @router.get("/crm/lotes-mapa")
 def crm_lotes_mapa_list(loteo_id: str = None):
     _check_at()
-    return db.get_lotes_mapa(loteo_id)
+    items = db.get_lotes_mapa(loteo_id)
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/lotes-mapa")
 async def crm_lote_mapa_create(request: Request):
@@ -3676,7 +3688,8 @@ def crm_lote_mapa_delete(record_id: str):
 @router.get("/crm/contratos")
 def crm_contratos_list():
     _check_at()
-    return db.get_all_contratos()
+    items = db.get_all_contratos()
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/contratos")
 async def crm_contrato_create(request: Request):
@@ -3717,7 +3730,8 @@ def crm_contratos_by_cliente(cliente_id: str):
 @router.get("/crm/visitas")
 def crm_visitas_list():
     _check_at()
-    return db.get_all_visitas()
+    items = db.get_all_visitas()
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/visitas")
 async def crm_visita_create(request: Request):
@@ -3739,7 +3753,8 @@ def crm_visita_delete(record_id: str):
 @router.get("/crm/inmuebles-renta")
 def crm_inmuebles_renta_list():
     _check_at()
-    return db.get_all_inmuebles_renta()
+    items = db.get_all_inmuebles_renta()
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/inmuebles-renta")
 async def crm_inmueble_renta_create(request: Request):
@@ -3761,7 +3776,8 @@ def crm_inmueble_renta_delete(record_id: str):
 @router.get("/crm/inquilinos")
 def crm_inquilinos_list(inmueble_renta_id: str = None):
     _check_at()
-    return db.get_all_inquilinos(inmueble_renta_id)
+    items = db.get_all_inquilinos(inmueble_renta_id)
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/inquilinos")
 async def crm_inquilino_create(request: Request):
@@ -3783,7 +3799,8 @@ def crm_inquilino_delete(record_id: str):
 @router.get("/crm/pagos-alquiler")
 def crm_pagos_alquiler_list(inquilino_id: str = None, mes_anio: str = None):
     _check_at()
-    return db.get_all_pagos_alquiler(inquilino_id, mes_anio)
+    items = db.get_all_pagos_alquiler(inquilino_id, mes_anio)
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/pagos-alquiler")
 async def crm_pago_alquiler_create(request: Request):
@@ -3805,7 +3822,8 @@ def crm_pago_alquiler_delete(record_id: str):
 @router.get("/crm/liquidaciones")
 def crm_liquidaciones_list(propietario_id: str = None, mes_anio: str = None):
     _check_at()
-    return db.get_all_liquidaciones(propietario_id, mes_anio)
+    items = db.get_all_liquidaciones(propietario_id, mes_anio)
+    return {"items": items, "total": len(items)}
 
 @router.post("/crm/liquidaciones")
 async def crm_liquidacion_create(request: Request):
