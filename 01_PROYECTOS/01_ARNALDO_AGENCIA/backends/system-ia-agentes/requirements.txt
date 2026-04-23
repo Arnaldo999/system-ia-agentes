@@ -10,3 +10,4 @@ supabase>=2.3.0
 cloudinary>=1.36.0
 python-dotenv>=1.0.0
 psycopg2-binary>=2.9.0
+redis>=5.0.0
