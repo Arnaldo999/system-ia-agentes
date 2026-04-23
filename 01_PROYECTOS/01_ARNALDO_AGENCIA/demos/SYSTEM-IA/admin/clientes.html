@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lovbot Admin — Gestión de Clientes</title>
+<title>System IA Admin — Gestión de Clientes</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
@@ -48,8 +48,8 @@
 <div id="loginScreen" style="display:flex;position:fixed;inset:0;background:#0f1117;z-index:9999;align-items:center;justify-content:center">
   <div class="card" style="max-width:380px;text-align:center">
     <div style="font-size:40px;margin-bottom:12px">🔐</div>
-    <h1 style="font-size:1.3rem;font-weight:700;margin-bottom:6px">Lovbot Admin</h1>
-    <p style="color:#8b92a5;font-size:13px;margin-bottom:24px">Panel de gestión de clientes CRM</p>
+    <h1 style="font-size:1.3rem;font-weight:700;margin-bottom:6px">System IA Admin</h1>
+    <p style="color:#8b92a5;font-size:13px;margin-bottom:24px">Panel de gestión System IA</p>
     <input type="password" id="adminToken" placeholder="Token de acceso" style="margin-bottom:12px;text-align:center">
     <button class="btn btn-primary" style="width:100%;padding:10px" onclick="loginAdmin()">Ingresar</button>
     <div id="loginError" style="color:#f87171;font-size:12px;margin-top:10px;min-height:18px"></div>
@@ -65,22 +65,28 @@
       <!-- Logo -->
       <div style="padding:20px 16px 12px;border-bottom:1px solid #2e3347">
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-size:22px">❤️</div>
+          <div style="font-size:22px">🤖</div>
           <div>
-            <div style="font-weight:700;font-size:14px">Lovbot Admin</div>
+            <div style="font-weight:700;font-size:14px">System IA Admin</div>
             <div style="font-size:10px;color:#8b92a5">Panel de gestión</div>
           </div>
         </div>
       </div>
       <!-- Nav -->
       <div style="padding:12px 8px;flex:1">
-        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px">Principal</div>
+        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px">Panel</div>
         <div class="nav-item active" onclick="navAdmin('dashboard',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;background:#222636;color:#e8eaf0">
           📊 Dashboard
         </div>
         <div class="nav-item" onclick="navAdmin('clientes-crm',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;color:#8b92a5">
           🏢 Clientes CRM
         </div>
+        <!-- Secciones del admin — System IA solo tiene Clientes CRM (no es agencia-de-agencias) -->
+        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Secciones</div>
+        <a href="/system-ia/admin/clientes" style="display:flex;flex-direction:column;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:2px;background:#2d1f00;border-left:3px solid #f59e0b;color:#e8eaf0;text-decoration:none">
+          🏢 Clientes CRM
+          <span style="font-size:10px;color:#8b92a5;margin-top:2px">Supabase tenants</span>
+        </a>
         <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Próximamente</div>
         <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
           🤖 Automatizaciones
@@ -331,7 +337,7 @@ function renderTabla() {
     } else {
       acciones += `<button class="btn btn-red" onclick="suspender('${t.slug}')" style="font-size:11px">🔒 Suspender</button> `;
     }
-    acciones += `<a href="https://crm.lovbot.ai/?tenant=${t.slug}" target="_blank" class="btn" style="font-size:11px">🔗 CRM</a>`;
+    acciones += `<a href="https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2?tenant=${t.slug}" target="_blank" class="btn" style="font-size:11px">🔗 CRM</a>`;
 
     return `<tr>
       <td>

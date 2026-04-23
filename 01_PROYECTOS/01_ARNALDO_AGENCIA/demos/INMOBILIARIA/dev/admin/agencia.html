@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lovbot Agencia — CRM Gestión de Leads</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#0f1117; color:#e8eaf0; min-height:100vh; }
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge-lead { background:#1e3a5f; color:#60a5fa; }
+  .badge-contactado { background:#2e1a5f; color:#a78bfa; }
+  .badge-propuesta { background:#451a03; color:#fb923c; }
+  .badge-negociacion { background:#4a0d2e; color:#f472b6; }
+  .badge-cliente { background:#064e3b; color:#34d399; }
+  .badge-perdido { background:#1f2937; color:#6b7280; }
+  .btn { padding:6px 14px; border-radius:8px; border:1px solid #2e3347; background:#1a1d27; color:#e8eaf0; font-size:12px; cursor:pointer; font-weight:500; transition:all .15s; }
+  .btn:hover { background:#222636; }
+  .btn-primary { background:#6c63ff; border-color:#6c63ff; color:#fff; }
+  .btn-primary:hover { background:#5a52d5; }
+  .btn-disabled { opacity:0.4; cursor:not-allowed; }
+  .btn-wa { background:#064e3b; border-color:#1a5c33; color:#34d399; }
+  .btn-wa:hover { background:#065f46; }
+  .card { background:#1a1d27; border:1px solid #2e3347; border-radius:12px; padding:20px; }
+  input, select { background:#0f1117; border:1px solid #2e3347; border-radius:8px; padding:8px 12px; color:#e8eaf0; font-size:13px; }
+  input:focus, select:focus { outline:none; border-color:#6c63ff; }
+  label { font-size:12px; color:#8b92a5; margin-bottom:4px; display:block; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; padding:10px 12px; font-size:11px; color:#8b92a5; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #2e3347; }
+  td { padding:10px 12px; font-size:13px; border-bottom:1px solid #1e2233; vertical-align:middle; }
+  tr:hover td { background:#1e2233; }
+  .stat-card { text-align:center; padding:16px; }
+  .stat-num { font-size:26px; font-weight:700; }
+  .stat-label { font-size:10px; color:#8b92a5; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+  .nav-item:hover { background:#222636 !important; color:#e8eaf0 !important; }
+  .nav-item.active { background:#222636 !important; color:#e8eaf0 !important; }
+  .notas-cell { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#8b92a5; font-size:12px; }
+  [title]:hover { cursor:help; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN ADMIN -->
+<div id="loginScreen" style="display:flex;position:fixed;inset:0;background:#0f1117;z-index:9999;align-items:center;justify-content:center">
+  <div class="card" style="max-width:380px;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px">🔐</div>
+    <h1 style="font-size:1.3rem;font-weight:700;margin-bottom:6px">Lovbot Agencia</h1>
+    <p style="color:#8b92a5;font-size:13px;margin-bottom:24px">Panel de leads y funnel de agencia</p>
+    <input type="password" id="adminToken" placeholder="Token de acceso" style="margin-bottom:12px;text-align:center;width:100%">
+    <button class="btn btn-primary" style="width:100%;padding:10px" onclick="loginAdmin()">Ingresar</button>
+    <div id="loginError" style="color:#f87171;font-size:12px;margin-top:10px;min-height:18px"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div style="display:flex;min-height:100vh">
+
+    <!-- SIDEBAR -->
+    <div style="width:220px;background:#1a1d27;border-right:1px solid #2e3347;display:flex;flex-direction:column;flex-shrink:0">
+      <!-- Logo -->
+      <div style="padding:20px 16px 12px;border-bottom:1px solid #2e3347">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:22px">🎯</div>
+          <div>
+            <div style="font-weight:700;font-size:14px">Lovbot Agencia</div>
+            <div style="font-size:10px;color:#8b92a5">Funnel propio</div>
+          </div>
+        </div>
+      </div>
+      <!-- Nav interna del panel -->
+      <div style="padding:12px 8px;flex:1">
+        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px">Panel</div>
+        <div class="nav-item active" id="nav-embudo" onclick="mostrarVista('embudo',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;background:#222636;color:#e8eaf0">
+          📊 Embudo
+        </div>
+        <div class="nav-item" id="nav-leads" onclick="mostrarVista('leads',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;color:#8b92a5">
+          📋 Todos los leads
+        </div>
+        <!-- Secciones del admin — navegacion entre clientes y agencia -->
+        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Secciones</div>
+        <a href="/dev/admin/clientes" style="display:flex;flex-direction:column;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:2px;color:#8b92a5;text-decoration:none" onmouseover="this.style.background='#222636'" onmouseout="this.style.background='transparent'">
+          🏢 Clientes CRM
+          <span style="font-size:10px;color:#4b5563;margin-top:2px">Supabase tenants</span>
+        </a>
+        <a href="/dev/admin/agencia" style="display:flex;flex-direction:column;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:2px;background:#1e1a3a;border-left:3px solid #6c63ff;color:#e8eaf0;text-decoration:none">
+          🎯 Leads Agencia
+          <span style="font-size:10px;color:#8b92a5;margin-top:2px">Postgres Lovbot</span>
+        </a>
+        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Próximamente</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
+          🤖 Automatizaciones
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
+          📈 Reportes
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
+          ⚙️ Configuración
+        </div>
+      </div>
+      <!-- Footer sidebar -->
+      <div style="padding:12px 16px;border-top:1px solid #2e3347">
+        <span id="totalLeads" style="font-size:11px;color:#8b92a5">0 leads</span>
+        <button onclick="logout()" style="display:block;margin-top:8px;background:none;border:none;color:#4b5563;font-size:11px;cursor:pointer">🚪 Cerrar sesión</button>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div style="flex:1;overflow-y:auto">
+      <!-- TOP BAR -->
+      <div style="background:#1a1d27;border-bottom:1px solid #2e3347;padding:12px 24px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-weight:600;font-size:15px" id="panelTitle">Embudo de leads</div>
+        <button class="btn btn-primary btn-disabled" title="Backend pendiente: agentes.lovbot.ai/agencia/leads" disabled>+ Nuevo Lead</button>
+      </div>
+
+      <!-- BANNER MOCKUP -->
+      <div style="margin:20px 24px 0;background:rgba(245,158,11,0.08);border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px">
+        <strong style="color:#f59e0b;font-size:13px">MOCKUP — sin backend conectado</strong>
+        <p style="margin:4px 0 0 0;color:#8b92a5;font-size:12px">
+          Datos de ejemplo. Backend pendiente: <code style="background:#0f1117;padding:1px 5px;border-radius:3px;font-size:11px">agentes.lovbot.ai/agencia/leads</code> + BD <code style="background:#0f1117;padding:1px 5px;border-radius:3px;font-size:11px">lovbot_agencia_crm</code> en Hetzner.
+        </p>
+      </div>
+
+      <!-- VISTA: EMBUDO -->
+      <div id="vista-embudo" style="padding:20px 24px">
+        <!-- Cards de embudo -->
+        <div id="funnel-cards" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:28px"></div>
+        <!-- Resumen rapido -->
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid #2e3347;font-weight:600;font-size:14px">Leads recientes</div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr><th>Lead / Empresa</th><th>Canal</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+              </thead>
+              <tbody id="tabla-resumen"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA: TODOS LOS LEADS -->
+      <div id="vista-leads" style="padding:20px 24px;display:none">
+        <!-- Filtros -->
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <input type="text" id="buscar-lead" placeholder="Buscar lead..." style="width:220px" oninput="filtrarLeads()">
+          <select id="filtro-canal" onchange="filtrarLeads()" style="width:180px">
+            <option value="">Todos los canales</option>
+            <option value="landing">Landing lovbot.ai</option>
+            <option value="bot-whatsapp">Bot WhatsApp</option>
+            <option value="referido">Referido</option>
+            <option value="otro">Otro</option>
+          </select>
+          <select id="filtro-estado" onchange="filtrarLeads()" style="width:200px">
+            <option value="">Todos los estados</option>
+            <option value="lead">Lead nuevo</option>
+            <option value="contactado">Contactado</option>
+            <option value="propuesta">Propuesta enviada</option>
+            <option value="negociacion">En negociacion</option>
+            <option value="cliente">Cliente activo</option>
+            <option value="perdido">Perdido</option>
+          </select>
+        </div>
+        <!-- Tabla completa -->
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead / Empresa</th>
+                  <th>WhatsApp</th>
+                  <th>Canal</th>
+                  <th>Fecha contacto</th>
+                  <th>Estado</th>
+                  <th>Notas</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-leads"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── MOCK DATA ────────────────────────────────────────────────────────────────
+const LEADS_MOCK = [
+  {
+    id: 1,
+    nombre: "Inmobiliaria Vega",
+    contacto: "Carlos Vega",
+    whatsapp: "+5491155551234",
+    canal: "landing",
+    fecha_contacto: "2026-04-20",
+    estado: "negociacion",
+    notas: "Interesado en CRM + bot. Pidio demo. Sigue en stand-by por presupuesto Q2."
+  },
+  {
+    id: 2,
+    nombre: "Grupo Andinos",
+    contacto: "Lucia Pereyra",
+    whatsapp: "+5491155555678",
+    canal: "bot-whatsapp",
+    fecha_contacto: "2026-04-21",
+    estado: "propuesta",
+    notas: "Pidio propuesta formal. Le interesa multi-tenant para sus 3 sucursales."
+  },
+  {
+    id: 3,
+    nombre: "Brokers Unidos",
+    contacto: "Roberto Mendez",
+    whatsapp: "+5491155559012",
+    canal: "referido",
+    fecha_contacto: "2026-04-22",
+    estado: "lead",
+    notas: "Referido por Maicol. Charla inicial pendiente."
+  },
+  {
+    id: 4,
+    nombre: "RealtyAR",
+    contacto: "Sofia Mendoza",
+    whatsapp: "+5491155553456",
+    canal: "landing",
+    fecha_contacto: "2026-04-15",
+    estado: "perdido",
+    notas: "Decidio ir con Hubspot. No price-fit."
+  },
+  {
+    id: 5,
+    nombre: "Construcciones del Sur",
+    contacto: "Diego Aranda",
+    whatsapp: "+5491155557890",
+    canal: "landing",
+    fecha_contacto: "2026-04-18",
+    estado: "contactado",
+    notas: "Llamada agendada para el 24/04. Suena interesado."
+  }
+];
+
+const ESTADOS = {
+  lead:        { label: "Nuevo",         emoji: "🆕", badgeClass: "badge-lead",       color: "#60a5fa" },
+  contactado:  { label: "Contactado",    emoji: "📞", badgeClass: "badge-contactado",  color: "#a78bfa" },
+  propuesta:   { label: "Propuesta",     emoji: "📋", badgeClass: "badge-propuesta",   color: "#fb923c" },
+  negociacion: { label: "Negociacion",   emoji: "💬", badgeClass: "badge-negociacion", color: "#f472b6" },
+  cliente:     { label: "Cliente",       emoji: "✅", badgeClass: "badge-cliente",     color: "#34d399" },
+  perdido:     { label: "Perdido",       emoji: "❌", badgeClass: "badge-perdido",     color: "#6b7280" }
+};
+
+const CANALES = {
+  landing:       { label: "Landing lovbot.ai", emoji: "🌐" },
+  "bot-whatsapp": { label: "Bot WhatsApp",     emoji: "💬" },
+  referido:      { label: "Referido",          emoji: "🤝" },
+  otro:          { label: "Otro",              emoji: "📍" }
+};
+
+// ── AUTH (solo abre el panel — no hay backend real aun) ───────────────────────
+let AUTENTICADO = false;
+
+function loginAdmin() {
+  const token = document.getElementById('adminToken').value.trim();
+  if (!token) { document.getElementById('loginError').textContent = 'Ingresa el token'; return; }
+  // Mockup: cualquier token no vacío abre el panel
+  AUTENTICADO = true;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  inicializar();
+}
+
+function logout() {
+  AUTENTICADO = false;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminToken').value = '';
+}
+
+document.getElementById('adminToken').addEventListener('keydown', e => {
+  if (e.key === 'Enter') loginAdmin();
+});
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function inicializar() {
+  document.getElementById('totalLeads').textContent = LEADS_MOCK.length + ' leads';
+  renderFunnelCards();
+  renderResumen();
+  filtrarLeads();
+}
+
+function renderFunnelCards() {
+  const container = document.getElementById('funnel-cards');
+  container.innerHTML = Object.entries(ESTADOS).map(([key, est]) => {
+    const count = LEADS_MOCK.filter(l => l.estado === key).length;
+    return `<div class="card stat-card" style="cursor:default">
+      <div style="font-size:20px;margin-bottom:6px">${est.emoji}</div>
+      <div class="stat-num" style="color:${est.color}">${count}</div>
+      <div class="stat-label">${est.label}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderResumen() {
+  const tbody = document.getElementById('tabla-resumen');
+  const recientes = [...LEADS_MOCK].sort((a,b) => b.fecha_contacto.localeCompare(a.fecha_contacto)).slice(0,5);
+  tbody.innerHTML = recientes.map(l => {
+    const est = ESTADOS[l.estado] || { label: l.estado, emoji: '?', badgeClass: 'badge-lead' };
+    const can = CANALES[l.canal] || { label: l.canal, emoji: '?' };
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${l.nombre}</div>
+        <div style="font-size:11px;color:#8b92a5">${l.contacto}</div>
+      </td>
+      <td style="font-size:12px">${can.emoji} ${can.label}</td>
+      <td><span class="badge ${est.badgeClass}">${est.emoji} ${est.label}</span></td>
+      <td style="font-size:12px">${l.fecha_contacto}</td>
+      <td>${accionesRow(l)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarLeads() {
+  const buscar = (document.getElementById('buscar-lead').value || '').toLowerCase();
+  const canal = document.getElementById('filtro-canal').value;
+  const estado = document.getElementById('filtro-estado').value;
+
+  const filtrado = LEADS_MOCK.filter(l => {
+    const matchBuscar = !buscar ||
+      l.nombre.toLowerCase().includes(buscar) ||
+      l.contacto.toLowerCase().includes(buscar) ||
+      l.notas.toLowerCase().includes(buscar);
+    const matchCanal = !canal || l.canal === canal;
+    const matchEstado = !estado || l.estado === estado;
+    return matchBuscar && matchCanal && matchEstado;
+  });
+
+  const tbody = document.getElementById('tabla-leads');
+  if (filtrado.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8b92a5">Sin resultados</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtrado.map(l => {
+    const est = ESTADOS[l.estado] || { label: l.estado, emoji: '?', badgeClass: 'badge-lead' };
+    const can = CANALES[l.canal] || { label: l.canal, emoji: '?' };
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${l.nombre}</div>
+        <div style="font-size:11px;color:#8b92a5">${l.contacto}</div>
+      </td>
+      <td style="font-size:12px;white-space:nowrap">${formatWA(l.whatsapp)}</td>
+      <td style="font-size:12px">${can.emoji} ${can.label}</td>
+      <td style="font-size:12px">${l.fecha_contacto}</td>
+      <td><span class="badge ${est.badgeClass}">${est.emoji} ${est.label}</span></td>
+      <td class="notas-cell" title="${escHtml(l.notas)}">${escHtml(l.notas)}</td>
+      <td style="white-space:nowrap">${accionesRow(l)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function formatWA(num) {
+  return num ? num.replace(/(\+\d{2})(\d{2})(\d{4})(\d{4})/, '$1 $2 $3-$4') : '—';
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function accionesRow(l) {
+  const waLink = `https://wa.me/${l.whatsapp.replace(/\D/g,'')}`;
+  return `
+    <button class="btn btn-disabled" disabled title="Backend pendiente" style="font-size:11px;margin-right:3px">✏️ Editar</button>
+    <a href="${waLink}" target="_blank" class="btn btn-wa" style="font-size:11px;margin-right:3px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">💬 WA</a>
+    <button class="btn btn-disabled" disabled title="Futuro: insertar en tenants Supabase" style="font-size:11px;margin-right:3px">✅ Convertir</button>
+    <button class="btn btn-disabled" disabled title="Backend pendiente" style="font-size:11px;color:#f87171">🗑️</button>
+  `;
+}
+
+// ── NAVEGACION DE VISTAS ──────────────────────────────────────────────────────
+function mostrarVista(vista, el) {
+  document.getElementById('vista-embudo').style.display = vista === 'embudo' ? 'block' : 'none';
+  document.getElementById('vista-leads').style.display = vista === 'leads' ? 'block' : 'none';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const titles = { embudo: 'Embudo de leads', leads: 'Todos los leads' };
+  document.getElementById('panelTitle').textContent = titles[vista] || vista;
+}
+</script>
+</body>
+</html>
