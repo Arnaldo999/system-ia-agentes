@@ -416,14 +416,41 @@ def _parse_evolution(body: dict) -> Optional[dict]:
 
         remote_jid = key.get("remoteJid", "")
         # WhatsApp privacy update 2025-2026: si el JID viene como '<id>@lid'
-        # (Linked ID), el telefono REAL viene en `remoteJidAlt`. Ej:
-        #   key.remoteJid = "199406758436896@lid"
-        #   key.remoteJidAlt = "5493765384843@s.whatsapp.net"  ← este es el de verdad
-        # Ver tambien: addressingMode == "lid".
+        # (Linked ID), el telefono REAL puede venir en varios campos segun
+        # version de Evolution/WhatsApp. Probamos en orden:
+        #   1. key.remoteJidAlt        (Evolution v2 — mas comun)
+        #   2. key.participant         (mensajes desde WhatsApp Web/Desktop)
+        #   3. key.participantAlt      (fallback alt)
+        #   4. data.participant        (algunas versiones)
+        #   5. data.senderKeyJid       (Evolution v2.3+)
+        # Si ninguno funciona, descartamos el mensaje (logear para debug).
         if "@lid" in remote_jid:
-            jid_alt = key.get("remoteJidAlt", "") or ""
-            if jid_alt and "@s.whatsapp.net" in jid_alt:
-                remote_jid = jid_alt
+            candidates = [
+                key.get("remoteJidAlt"),
+                key.get("participant"),
+                key.get("participantAlt"),
+                data.get("participant"),
+                data.get("senderKeyJid"),
+            ]
+            resolved = None
+            for cand in candidates:
+                if cand and isinstance(cand, str) and "@s.whatsapp.net" in cand:
+                    resolved = cand
+                    break
+            if resolved:
+                remote_jid = resolved
+            else:
+                # Ninguna alternativa resolvio el numero real. Logear TODO el
+                # payload para debug y descartar — evita abrir sesion con ID
+                # falso y respuestas que Evolution descarta silenciosamente.
+                logger.warning(
+                    f"[WA-PARSE-EVO-LID] @lid sin alternativa valida. "
+                    f"remoteJid={remote_jid} "
+                    f"key_fields={list(key.keys())} "
+                    f"data_fields={list(data.keys())} "
+                    f"raw_key={key}"
+                )
+                return None
         telefono = _clean_phone(re.sub(r"@.*", "", remote_jid))
 
         message = data.get("message", {}) or {}
