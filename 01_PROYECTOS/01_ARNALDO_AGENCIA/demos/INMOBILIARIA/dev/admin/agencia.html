@@ -20,12 +20,15 @@
   .btn:hover { background:#222636; }
   .btn-primary { background:#6c63ff; border-color:#6c63ff; color:#fff; }
   .btn-primary:hover { background:#5a52d5; }
-  .btn-disabled { opacity:0.4; cursor:not-allowed; }
+  .btn-danger { background:#7f1d1d; border-color:#991b1b; color:#fca5a5; }
+  .btn-danger:hover { background:#991b1b; }
+  .btn-success { background:#064e3b; border-color:#065f46; color:#34d399; }
+  .btn-success:hover { background:#065f46; }
   .btn-wa { background:#064e3b; border-color:#1a5c33; color:#34d399; }
   .btn-wa:hover { background:#065f46; }
   .card { background:#1a1d27; border:1px solid #2e3347; border-radius:12px; padding:20px; }
-  input, select { background:#0f1117; border:1px solid #2e3347; border-radius:8px; padding:8px 12px; color:#e8eaf0; font-size:13px; }
-  input:focus, select:focus { outline:none; border-color:#6c63ff; }
+  input, select, textarea { background:#0f1117; border:1px solid #2e3347; border-radius:8px; padding:8px 12px; color:#e8eaf0; font-size:13px; width:100%; font-family:inherit; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:#6c63ff; }
   label { font-size:12px; color:#8b92a5; margin-bottom:4px; display:block; }
   table { width:100%; border-collapse:collapse; }
   th { text-align:left; padding:10px 12px; font-size:11px; color:#8b92a5; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #2e3347; }
@@ -38,6 +41,16 @@
   .nav-item.active { background:#222636 !important; color:#e8eaf0 !important; }
   .notas-cell { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#8b92a5; font-size:12px; }
   [title]:hover { cursor:help; }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:500; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#1a1d27; border:1px solid #2e3347; border-radius:12px; padding:24px; max-width:560px; width:100%; max-height:90vh; overflow-y:auto; }
+  .modal h3 { font-size:16px; font-weight:700; margin-bottom:16px; }
+  .form-row { margin-bottom:12px; }
+  .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .toast { position:fixed; bottom:20px; right:20px; background:#1a1d27; border:1px solid #2e3347; border-radius:10px; padding:12px 18px; font-size:13px; z-index:1000; display:none; animation:slidein .2s ease; }
+  .toast.ok { border-color:#065f46; color:#34d399; }
+  .toast.err { border-color:#991b1b; color:#fca5a5; }
+  @keyframes slidein { from { transform:translateY(20px); opacity:0; } to { transform:none; opacity:1; } }
 </style>
 </head>
 <body>
@@ -60,7 +73,6 @@
 
     <!-- SIDEBAR -->
     <div style="width:220px;background:#1a1d27;border-right:1px solid #2e3347;display:flex;flex-direction:column;flex-shrink:0">
-      <!-- Logo -->
       <div style="padding:20px 16px 12px;border-bottom:1px solid #2e3347">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-size:22px">🎯</div>
@@ -70,7 +82,6 @@
           </div>
         </div>
       </div>
-      <!-- Nav interna del panel -->
       <div style="padding:12px 8px;flex:1">
         <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px">Panel</div>
         <div class="nav-item active" id="nav-embudo" onclick="mostrarVista('embudo',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;background:#222636;color:#e8eaf0">
@@ -79,7 +90,6 @@
         <div class="nav-item" id="nav-leads" onclick="mostrarVista('leads',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;color:#8b92a5">
           📋 Todos los leads
         </div>
-        <!-- Secciones del admin — navegacion entre clientes y agencia -->
         <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Secciones</div>
         <a href="/clientes" style="display:flex;flex-direction:column;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:2px;color:#8b92a5;text-decoration:none" onmouseover="this.style.background='#222636'" onmouseout="this.style.background='transparent'">
           🏢 Clientes CRM
@@ -90,17 +100,10 @@
           <span style="font-size:10px;color:#8b92a5;margin-top:2px">Postgres Lovbot</span>
         </a>
         <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Próximamente</div>
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
-          🤖 Automatizaciones
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
-          📈 Reportes
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
-          ⚙️ Configuración
-        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">🤖 Automatizaciones</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">📈 Reportes</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">⚙️ Configuración</div>
       </div>
-      <!-- Footer sidebar -->
       <div style="padding:12px 16px;border-top:1px solid #2e3347">
         <span id="totalLeads" style="font-size:11px;color:#8b92a5">0 leads</span>
         <button onclick="logout()" style="display:block;margin-top:8px;background:none;border:none;color:#4b5563;font-size:11px;cursor:pointer">🚪 Cerrar sesión</button>
@@ -112,22 +115,12 @@
       <!-- TOP BAR -->
       <div style="background:#1a1d27;border-bottom:1px solid #2e3347;padding:12px 24px;display:flex;align-items:center;justify-content:space-between">
         <div style="font-weight:600;font-size:15px" id="panelTitle">Embudo de leads</div>
-        <button class="btn btn-primary btn-disabled" title="Backend pendiente: agentes.lovbot.ai/agencia/leads" disabled>+ Nuevo Lead</button>
-      </div>
-
-      <!-- BANNER MOCKUP -->
-      <div style="margin:20px 24px 0;background:rgba(245,158,11,0.08);border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px">
-        <strong style="color:#f59e0b;font-size:13px">MOCKUP — sin backend conectado</strong>
-        <p style="margin:4px 0 0 0;color:#8b92a5;font-size:12px">
-          Datos de ejemplo. Backend pendiente: <code style="background:#0f1117;padding:1px 5px;border-radius:3px;font-size:11px">agentes.lovbot.ai/agencia/leads</code> + BD <code style="background:#0f1117;padding:1px 5px;border-radius:3px;font-size:11px">lovbot_agencia_crm</code> en Hetzner.
-        </p>
+        <button class="btn btn-primary" onclick="abrirNuevoLead()">+ Nuevo Lead</button>
       </div>
 
       <!-- VISTA: EMBUDO -->
       <div id="vista-embudo" style="padding:20px 24px">
-        <!-- Cards de embudo -->
         <div id="funnel-cards" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:28px"></div>
-        <!-- Resumen rapido -->
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:16px 20px;border-bottom:1px solid #2e3347;font-weight:600;font-size:14px">Leads recientes</div>
           <div style="overflow-x:auto">
@@ -143,27 +136,22 @@
 
       <!-- VISTA: TODOS LOS LEADS -->
       <div id="vista-leads" style="padding:20px 24px;display:none">
-        <!-- Filtros -->
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-          <input type="text" id="buscar-lead" placeholder="Buscar lead..." style="width:220px" oninput="filtrarLeads()">
-          <select id="filtro-canal" onchange="filtrarLeads()" style="width:180px">
+          <input type="text" id="buscar-lead" placeholder="Buscar lead..." style="width:220px" oninput="renderLeadsFiltrados()">
+          <select id="filtro-canal" onchange="renderLeadsFiltrados()" style="width:200px">
             <option value="">Todos los canales</option>
-            <option value="landing">Landing lovbot.ai</option>
-            <option value="bot-whatsapp">Bot WhatsApp</option>
-            <option value="referido">Referido</option>
-            <option value="otro">Otro</option>
           </select>
-          <select id="filtro-estado" onchange="filtrarLeads()" style="width:200px">
+          <select id="filtro-estado" onchange="renderLeadsFiltrados()" style="width:200px">
             <option value="">Todos los estados</option>
             <option value="lead">Lead nuevo</option>
             <option value="contactado">Contactado</option>
             <option value="propuesta">Propuesta enviada</option>
-            <option value="negociacion">En negociacion</option>
+            <option value="negociacion">En negociación</option>
             <option value="cliente">Cliente activo</option>
             <option value="perdido">Perdido</option>
           </select>
+          <button class="btn" onclick="cargarLeads()" style="margin-left:auto">🔄 Actualizar</button>
         </div>
-        <!-- Tabla completa -->
         <div class="card" style="padding:0;overflow:hidden">
           <div style="overflow-x:auto">
             <table>
@@ -172,7 +160,7 @@
                   <th>Lead / Empresa</th>
                   <th>WhatsApp</th>
                   <th>Canal</th>
-                  <th>Fecha contacto</th>
+                  <th>Fecha</th>
                   <th>Estado</th>
                   <th>Notas</th>
                   <th>Acciones</th>
@@ -188,92 +176,213 @@
   </div>
 </div>
 
+<!-- MODAL: NUEVO / EDITAR LEAD -->
+<div class="modal-overlay" id="modal-lead">
+  <div class="modal">
+    <h3 id="modal-lead-titulo">➕ Nuevo Lead</h3>
+    <input type="hidden" id="lead-id">
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Nombre contacto *</label>
+        <input type="text" id="lead-nombre-contacto" placeholder="Carlos">
+      </div>
+      <div class="form-row">
+        <label>Apellido</label>
+        <input type="text" id="lead-apellido-contacto" placeholder="Vega">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Empresa</label>
+      <input type="text" id="lead-nombre-empresa" placeholder="Inmobiliaria Vega">
+    </div>
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>WhatsApp</label>
+        <input type="text" id="lead-whatsapp" placeholder="+5491155551234">
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        <input type="email" id="lead-email" placeholder="carlos@vega.com">
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Canal / Fuente</label>
+        <select id="lead-fuente"></select>
+      </div>
+      <div class="form-row">
+        <label>Estado</label>
+        <select id="lead-estado">
+          <option value="lead">Nuevo</option>
+          <option value="contactado">Contactado</option>
+          <option value="propuesta">Propuesta enviada</option>
+          <option value="negociacion">En negociación</option>
+          <option value="cliente">Cliente activo</option>
+          <option value="perdido">Perdido</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Ciudad</label>
+        <input type="text" id="lead-ciudad" placeholder="Buenos Aires">
+      </div>
+      <div class="form-row">
+        <label>País</label>
+        <input type="text" id="lead-pais" placeholder="Argentina" value="Argentina">
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Presupuesto aprox.</label>
+        <input type="text" id="lead-presupuesto" placeholder="USD 300 + 80/mes">
+      </div>
+      <div class="form-row">
+        <label>Próximo contacto</label>
+        <input type="date" id="lead-proximo-contacto">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Notas</label>
+      <textarea id="lead-notas" rows="3" placeholder="Interesado en CRM + bot..."></textarea>
+    </div>
+    <div class="form-row" id="form-motivo-perdida" style="display:none">
+      <label>Motivo de pérdida</label>
+      <input type="text" id="lead-motivo-perdida" placeholder="Ej: decidió Hubspot">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="cerrarModal('modal-lead')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarLead()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMAR ELIMINAR -->
+<div class="modal-overlay" id="modal-eliminar">
+  <div class="modal" style="max-width:400px">
+    <h3>🗑️ Marcar como perdido</h3>
+    <p style="color:#8b92a5;font-size:13px;margin-bottom:16px">El lead no se borra — queda archivado con estado "perdido".</p>
+    <input type="hidden" id="eliminar-id">
+    <div class="form-row">
+      <label>Motivo (opcional)</label>
+      <input type="text" id="eliminar-motivo" placeholder="Ej: no respondió, precio, fue con otro">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="cerrarModal('modal-eliminar')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarEliminar()">Marcar perdido</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONVERTIR A CLIENTE -->
+<div class="modal-overlay" id="modal-convertir">
+  <div class="modal">
+    <h3>✅ Convertir a Cliente</h3>
+    <input type="hidden" id="convertir-id">
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Plan contratado</label>
+        <select id="convertir-plan">
+          <option value="starter">Starter</option>
+          <option value="pro">Pro</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Monto mensual (USD)</label>
+        <input type="number" id="convertir-monto" placeholder="80">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Tenant slug (opcional)</label>
+      <input type="text" id="convertir-tenant" placeholder="inmobiliaria-vega">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="cerrarModal('modal-convertir')">Cancelar</button>
+      <button class="btn btn-success" onclick="confirmarConvertir()">Convertir a cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
 <script>
-// ── MOCK DATA ────────────────────────────────────────────────────────────────
-const LEADS_MOCK = [
-  {
-    id: 1,
-    nombre: "Inmobiliaria Vega",
-    contacto: "Carlos Vega",
-    whatsapp: "+5491155551234",
-    canal: "landing",
-    fecha_contacto: "2026-04-20",
-    estado: "negociacion",
-    notas: "Interesado en CRM + bot. Pidio demo. Sigue en stand-by por presupuesto Q2."
-  },
-  {
-    id: 2,
-    nombre: "Grupo Andinos",
-    contacto: "Lucia Pereyra",
-    whatsapp: "+5491155555678",
-    canal: "bot-whatsapp",
-    fecha_contacto: "2026-04-21",
-    estado: "propuesta",
-    notas: "Pidio propuesta formal. Le interesa multi-tenant para sus 3 sucursales."
-  },
-  {
-    id: 3,
-    nombre: "Brokers Unidos",
-    contacto: "Roberto Mendez",
-    whatsapp: "+5491155559012",
-    canal: "referido",
-    fecha_contacto: "2026-04-22",
-    estado: "lead",
-    notas: "Referido por Maicol. Charla inicial pendiente."
-  },
-  {
-    id: 4,
-    nombre: "RealtyAR",
-    contacto: "Sofia Mendoza",
-    whatsapp: "+5491155553456",
-    canal: "landing",
-    fecha_contacto: "2026-04-15",
-    estado: "perdido",
-    notas: "Decidio ir con Hubspot. No price-fit."
-  },
-  {
-    id: 5,
-    nombre: "Construcciones del Sur",
-    contacto: "Diego Aranda",
-    whatsapp: "+5491155557890",
-    canal: "landing",
-    fecha_contacto: "2026-04-18",
-    estado: "contactado",
-    notas: "Llamada agendada para el 24/04. Suena interesado."
-  }
-];
+// ══════════════════════════════════════════════════════════════════════════════
+// CONFIG + AUTH
+// ══════════════════════════════════════════════════════════════════════════════
+const API_BASE = 'https://agentes.lovbot.ai/agencia';
+let TOKEN = sessionStorage.getItem('lovbot_agencia_token') || '';
+let LEADS_CACHE = [];
+let FUENTES_CACHE = [];
 
 const ESTADOS = {
-  lead:        { label: "Nuevo",         emoji: "🆕", badgeClass: "badge-lead",       color: "#60a5fa" },
-  contactado:  { label: "Contactado",    emoji: "📞", badgeClass: "badge-contactado",  color: "#a78bfa" },
-  propuesta:   { label: "Propuesta",     emoji: "📋", badgeClass: "badge-propuesta",   color: "#fb923c" },
-  negociacion: { label: "Negociacion",   emoji: "💬", badgeClass: "badge-negociacion", color: "#f472b6" },
-  cliente:     { label: "Cliente",       emoji: "✅", badgeClass: "badge-cliente",     color: "#34d399" },
-  perdido:     { label: "Perdido",       emoji: "❌", badgeClass: "badge-perdido",     color: "#6b7280" }
+  lead:        { label: "Nuevo",        emoji: "🆕", badgeClass: "badge-lead",        color: "#60a5fa" },
+  contactado:  { label: "Contactado",   emoji: "📞", badgeClass: "badge-contactado",  color: "#a78bfa" },
+  propuesta:   { label: "Propuesta",    emoji: "📋", badgeClass: "badge-propuesta",   color: "#fb923c" },
+  negociacion: { label: "Negociación",  emoji: "💬", badgeClass: "badge-negociacion", color: "#f472b6" },
+  cliente:     { label: "Cliente",      emoji: "✅", badgeClass: "badge-cliente",     color: "#34d399" },
+  perdido:     { label: "Perdido",      emoji: "❌", badgeClass: "badge-perdido",     color: "#6b7280" }
 };
 
-const CANALES = {
-  landing:       { label: "Landing lovbot.ai", emoji: "🌐" },
-  "bot-whatsapp": { label: "Bot WhatsApp",     emoji: "💬" },
-  referido:      { label: "Referido",          emoji: "🤝" },
-  otro:          { label: "Otro",              emoji: "📍" }
-};
+// ══════════════════════════════════════════════════════════════════════════════
+// FETCH HELPER
+// ══════════════════════════════════════════════════════════════════════════════
+async function api(path, opts = {}) {
+  const res = await fetch(API_BASE + path, {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + TOKEN,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {})
+    }
+  });
+  if (res.status === 401) {
+    toast('Token inválido o expirado', 'err');
+    logout();
+    throw new Error('401');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data.detail || data.message || ('HTTP ' + res.status);
+    toast(msg, 'err');
+    throw new Error(msg);
+  }
+  return data;
+}
 
-// ── AUTH (solo abre el panel — no hay backend real aun) ───────────────────────
-let AUTENTICADO = false;
+function toast(msg, tipo = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + tipo;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
 
-function loginAdmin() {
+// ══════════════════════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════════════════════
+async function loginAdmin() {
   const token = document.getElementById('adminToken').value.trim();
   if (!token) { document.getElementById('loginError').textContent = 'Ingresa el token'; return; }
-  // Mockup: cualquier token no vacío abre el panel
-  AUTENTICADO = true;
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  inicializar();
+
+  TOKEN = token;
+  try {
+    await api('/fuentes');
+    sessionStorage.setItem('lovbot_agencia_token', TOKEN);
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    inicializar();
+  } catch (e) {
+    TOKEN = '';
+    document.getElementById('loginError').textContent = 'Token inválido';
+  }
 }
 
 function logout() {
-  AUTENTICADO = false;
+  TOKEN = '';
+  sessionStorage.removeItem('lovbot_agencia_token');
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminToken').value = '';
@@ -283,19 +392,63 @@ document.getElementById('adminToken').addEventListener('keydown', e => {
   if (e.key === 'Enter') loginAdmin();
 });
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
-function inicializar() {
-  document.getElementById('totalLeads').textContent = LEADS_MOCK.length + ' leads';
-  renderFunnelCards();
-  renderResumen();
-  filtrarLeads();
+// Auto-login si hay token en sessionStorage
+if (TOKEN) {
+  (async () => {
+    try {
+      await api('/fuentes');
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      inicializar();
+    } catch (e) {
+      logout();
+    }
+  })();
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// INIT + CARGA
+// ══════════════════════════════════════════════════════════════════════════════
+async function inicializar() {
+  await cargarFuentes();
+  await cargarLeads();
+}
+
+async function cargarFuentes() {
+  try {
+    const data = await api('/fuentes');
+    FUENTES_CACHE = data.fuentes || [];
+
+    // Poblar select de filtros
+    const selectFiltro = document.getElementById('filtro-canal');
+    selectFiltro.innerHTML = '<option value="">Todos los canales</option>' +
+      FUENTES_CACHE.map(f => `<option value="${f.slug}">${f.nombre}</option>`).join('');
+
+    // Poblar select del modal
+    const selectModal = document.getElementById('lead-fuente');
+    selectModal.innerHTML = FUENTES_CACHE.map(f => `<option value="${f.slug}">${f.nombre}</option>`).join('');
+  } catch (e) { /* ya mostró toast */ }
+}
+
+async function cargarLeads() {
+  try {
+    const data = await api('/leads?limit=200');
+    LEADS_CACHE = data.leads || data.rows || [];
+    document.getElementById('totalLeads').textContent = LEADS_CACHE.length + ' leads';
+    renderFunnelCards();
+    renderResumen();
+    renderLeadsFiltrados();
+  } catch (e) { /* toast */ }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════════════════════
 function renderFunnelCards() {
   const container = document.getElementById('funnel-cards');
   container.innerHTML = Object.entries(ESTADOS).map(([key, est]) => {
-    const count = LEADS_MOCK.filter(l => l.estado === key).length;
-    return `<div class="card stat-card" style="cursor:default">
+    const count = LEADS_CACHE.filter(l => l.estado === key).length;
+    return `<div class="card stat-card" style="cursor:pointer" onclick="filtrarPorEstado('${key}')">
       <div style="font-size:20px;margin-bottom:6px">${est.emoji}</div>
       <div class="stat-num" style="color:${est.color}">${count}</div>
       <div class="stat-label">${est.label}</div>
@@ -303,36 +456,55 @@ function renderFunnelCards() {
   }).join('');
 }
 
+function leadTitulo(l) {
+  const nombre = [l.nombre_contacto, l.apellido_contacto].filter(Boolean).join(' ').trim();
+  return l.nombre_empresa || nombre || '(sin nombre)';
+}
+
+function leadSubtitulo(l) {
+  const nombre = [l.nombre_contacto, l.apellido_contacto].filter(Boolean).join(' ').trim();
+  return l.nombre_empresa ? nombre : '';
+}
+
 function renderResumen() {
   const tbody = document.getElementById('tabla-resumen');
-  const recientes = [...LEADS_MOCK].sort((a,b) => b.fecha_contacto.localeCompare(a.fecha_contacto)).slice(0,5);
+  const recientes = [...LEADS_CACHE]
+    .sort((a,b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    .slice(0,5);
+  if (recientes.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8b92a5">No hay leads todavía. Creá el primero con <strong style="color:#e8eaf0">+ Nuevo Lead</strong>.</td></tr>';
+    return;
+  }
   tbody.innerHTML = recientes.map(l => {
     const est = ESTADOS[l.estado] || { label: l.estado, emoji: '?', badgeClass: 'badge-lead' };
-    const can = CANALES[l.canal] || { label: l.canal, emoji: '?' };
+    const canalLabel = nombreFuente(l.fuente_slug || l.fuente_id);
     return `<tr>
       <td>
-        <div style="font-weight:600">${l.nombre}</div>
-        <div style="font-size:11px;color:#8b92a5">${l.contacto}</div>
+        <div style="font-weight:600">${escHtml(leadTitulo(l))}</div>
+        <div style="font-size:11px;color:#8b92a5">${escHtml(leadSubtitulo(l))}</div>
       </td>
-      <td style="font-size:12px">${can.emoji} ${can.label}</td>
+      <td style="font-size:12px">${escHtml(canalLabel)}</td>
       <td><span class="badge ${est.badgeClass}">${est.emoji} ${est.label}</span></td>
-      <td style="font-size:12px">${l.fecha_contacto}</td>
+      <td style="font-size:12px">${fmtFecha(l.created_at)}</td>
       <td>${accionesRow(l)}</td>
     </tr>`;
   }).join('');
 }
 
-function filtrarLeads() {
+function renderLeadsFiltrados() {
   const buscar = (document.getElementById('buscar-lead').value || '').toLowerCase();
   const canal = document.getElementById('filtro-canal').value;
   const estado = document.getElementById('filtro-estado').value;
 
-  const filtrado = LEADS_MOCK.filter(l => {
-    const matchBuscar = !buscar ||
-      l.nombre.toLowerCase().includes(buscar) ||
-      l.contacto.toLowerCase().includes(buscar) ||
-      l.notas.toLowerCase().includes(buscar);
-    const matchCanal = !canal || l.canal === canal;
+  const filtrado = LEADS_CACHE.filter(l => {
+    const hay = (
+      (l.nombre_contacto || '') + ' ' +
+      (l.apellido_contacto || '') + ' ' +
+      (l.nombre_empresa || '') + ' ' +
+      (l.notas || '')
+    ).toLowerCase();
+    const matchBuscar = !buscar || hay.includes(buscar);
+    const matchCanal = !canal || l.fuente_slug === canal;
     const matchEstado = !estado || l.estado === estado;
     return matchBuscar && matchCanal && matchEstado;
   });
@@ -344,41 +516,220 @@ function filtrarLeads() {
   }
   tbody.innerHTML = filtrado.map(l => {
     const est = ESTADOS[l.estado] || { label: l.estado, emoji: '?', badgeClass: 'badge-lead' };
-    const can = CANALES[l.canal] || { label: l.canal, emoji: '?' };
     return `<tr>
       <td>
-        <div style="font-weight:600">${l.nombre}</div>
-        <div style="font-size:11px;color:#8b92a5">${l.contacto}</div>
+        <div style="font-weight:600">${escHtml(leadTitulo(l))}</div>
+        <div style="font-size:11px;color:#8b92a5">${escHtml(leadSubtitulo(l))}</div>
       </td>
       <td style="font-size:12px;white-space:nowrap">${formatWA(l.whatsapp)}</td>
-      <td style="font-size:12px">${can.emoji} ${can.label}</td>
-      <td style="font-size:12px">${l.fecha_contacto}</td>
+      <td style="font-size:12px">${escHtml(nombreFuente(l.fuente_slug || l.fuente_id))}</td>
+      <td style="font-size:12px">${fmtFecha(l.created_at)}</td>
       <td><span class="badge ${est.badgeClass}">${est.emoji} ${est.label}</span></td>
-      <td class="notas-cell" title="${escHtml(l.notas)}">${escHtml(l.notas)}</td>
+      <td class="notas-cell" title="${escHtml(l.notas || '')}">${escHtml(l.notas || '—')}</td>
       <td style="white-space:nowrap">${accionesRow(l)}</td>
     </tr>`;
   }).join('');
 }
 
-function formatWA(num) {
-  return num ? num.replace(/(\+\d{2})(\d{2})(\d{4})(\d{4})/, '$1 $2 $3-$4') : '—';
-}
-
-function escHtml(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 function accionesRow(l) {
-  const waLink = `https://wa.me/${l.whatsapp.replace(/\D/g,'')}`;
+  const waLink = l.whatsapp ? `https://wa.me/${String(l.whatsapp).replace(/\D/g,'')}` : '#';
+  const waBtn = l.whatsapp
+    ? `<a href="${waLink}" target="_blank" class="btn btn-wa" style="font-size:11px;margin-right:3px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">💬</a>`
+    : '';
+  const convertirBtn = l.estado !== 'cliente' && l.estado !== 'perdido'
+    ? `<button class="btn btn-success" onclick="abrirConvertir(${l.id})" style="font-size:11px;margin-right:3px" title="Convertir a cliente">✅</button>`
+    : '';
   return `
-    <button class="btn btn-disabled" disabled title="Backend pendiente" style="font-size:11px;margin-right:3px">✏️ Editar</button>
-    <a href="${waLink}" target="_blank" class="btn btn-wa" style="font-size:11px;margin-right:3px;display:inline-flex;align-items:center;gap:4px;text-decoration:none">💬 WA</a>
-    <button class="btn btn-disabled" disabled title="Futuro: insertar en tenants Supabase" style="font-size:11px;margin-right:3px">✅ Convertir</button>
-    <button class="btn btn-disabled" disabled title="Backend pendiente" style="font-size:11px;color:#f87171">🗑️</button>
+    <button class="btn" onclick="abrirEditar(${l.id})" style="font-size:11px;margin-right:3px" title="Editar">✏️</button>
+    ${waBtn}
+    ${convertirBtn}
+    <button class="btn btn-danger" onclick="abrirEliminar(${l.id})" style="font-size:11px" title="Marcar perdido">🗑️</button>
   `;
 }
 
-// ── NAVEGACION DE VISTAS ──────────────────────────────────────────────────────
+function filtrarPorEstado(estado) {
+  document.getElementById('filtro-estado').value = estado;
+  mostrarVista('leads', document.getElementById('nav-leads'));
+  renderLeadsFiltrados();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODAL: NUEVO / EDITAR LEAD
+// ══════════════════════════════════════════════════════════════════════════════
+function limpiarFormLead() {
+  document.getElementById('lead-id').value = '';
+  document.getElementById('lead-nombre-contacto').value = '';
+  document.getElementById('lead-apellido-contacto').value = '';
+  document.getElementById('lead-nombre-empresa').value = '';
+  document.getElementById('lead-whatsapp').value = '';
+  document.getElementById('lead-email').value = '';
+  document.getElementById('lead-ciudad').value = '';
+  document.getElementById('lead-pais').value = 'Argentina';
+  document.getElementById('lead-presupuesto').value = '';
+  document.getElementById('lead-proximo-contacto').value = '';
+  document.getElementById('lead-estado').value = 'lead';
+  document.getElementById('lead-notas').value = '';
+  document.getElementById('lead-motivo-perdida').value = '';
+  document.getElementById('form-motivo-perdida').style.display = 'none';
+}
+
+function abrirNuevoLead() {
+  document.getElementById('modal-lead-titulo').textContent = '➕ Nuevo Lead';
+  limpiarFormLead();
+  abrirModal('modal-lead');
+}
+
+function abrirEditar(id) {
+  const lead = LEADS_CACHE.find(l => l.id === id);
+  if (!lead) return;
+  document.getElementById('modal-lead-titulo').textContent = '✏️ Editar Lead';
+  document.getElementById('lead-id').value = lead.id;
+  document.getElementById('lead-nombre-contacto').value = lead.nombre_contacto || '';
+  document.getElementById('lead-apellido-contacto').value = lead.apellido_contacto || '';
+  document.getElementById('lead-nombre-empresa').value = lead.nombre_empresa || '';
+  document.getElementById('lead-whatsapp').value = lead.whatsapp || '';
+  document.getElementById('lead-email').value = lead.email || '';
+  document.getElementById('lead-ciudad').value = lead.ciudad || '';
+  document.getElementById('lead-pais').value = lead.pais || 'Argentina';
+  document.getElementById('lead-presupuesto').value = lead.presupuesto_aprox || '';
+  document.getElementById('lead-proximo-contacto').value = lead.proximo_contacto ? String(lead.proximo_contacto).slice(0,10) : '';
+  document.getElementById('lead-fuente').value = lead.fuente_slug || (FUENTES_CACHE[0]?.slug || '');
+  document.getElementById('lead-estado').value = lead.estado || 'lead';
+  document.getElementById('lead-notas').value = lead.notas || '';
+  document.getElementById('lead-motivo-perdida').value = lead.motivo_perdida || '';
+  document.getElementById('form-motivo-perdida').style.display = lead.estado === 'perdido' ? 'block' : 'none';
+  abrirModal('modal-lead');
+}
+
+document.getElementById('lead-estado').addEventListener('change', (e) => {
+  document.getElementById('form-motivo-perdida').style.display = e.target.value === 'perdido' ? 'block' : 'none';
+});
+
+async function guardarLead() {
+  const id = document.getElementById('lead-id').value;
+  const nombreContacto = document.getElementById('lead-nombre-contacto').value.trim();
+  const nombreEmpresa = document.getElementById('lead-nombre-empresa').value.trim();
+
+  if (!nombreContacto && !nombreEmpresa) {
+    toast('Ingresá al menos nombre de contacto o empresa', 'err');
+    return;
+  }
+
+  const fuenteSlug = document.getElementById('lead-fuente').value;
+  const fuente = FUENTES_CACHE.find(f => f.slug === fuenteSlug);
+
+  const payload = {
+    nombre_contacto: nombreContacto || nombreEmpresa,  // backend requiere nombre_contacto obligatorio
+    apellido_contacto: document.getElementById('lead-apellido-contacto').value.trim() || null,
+    nombre_empresa: nombreEmpresa || null,
+    whatsapp: document.getElementById('lead-whatsapp').value.trim() || null,
+    email: document.getElementById('lead-email').value.trim() || null,
+    ciudad: document.getElementById('lead-ciudad').value.trim() || null,
+    pais: document.getElementById('lead-pais').value.trim() || null,
+    fuente_id: fuente ? fuente.id : null,
+    estado: document.getElementById('lead-estado').value,
+    presupuesto_aprox: document.getElementById('lead-presupuesto').value.trim() || null,
+    proximo_contacto: document.getElementById('lead-proximo-contacto').value || null,
+    notas: document.getElementById('lead-notas').value.trim() || null
+  };
+
+  const motivoPerdida = document.getElementById('lead-motivo-perdida').value.trim();
+  if (motivoPerdida && payload.estado === 'perdido') {
+    payload.motivo_perdida = motivoPerdida;
+  }
+
+  try {
+    if (id) {
+      await api('/leads/' + id, { method: 'PATCH', body: JSON.stringify(payload) });
+      toast('Lead actualizado');
+    } else {
+      await api('/leads', { method: 'POST', body: JSON.stringify(payload) });
+      toast('Lead creado');
+    }
+    cerrarModal('modal-lead');
+    cargarLeads();
+  } catch (e) { /* toast */ }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODAL: ELIMINAR (soft — marca perdido)
+// ══════════════════════════════════════════════════════════════════════════════
+function abrirEliminar(id) {
+  document.getElementById('eliminar-id').value = id;
+  document.getElementById('eliminar-motivo').value = '';
+  abrirModal('modal-eliminar');
+}
+
+async function confirmarEliminar() {
+  const id = document.getElementById('eliminar-id').value;
+  const motivo = document.getElementById('eliminar-motivo').value.trim() || null;
+  try {
+    await api('/leads/' + id, {
+      method: 'DELETE',
+      body: JSON.stringify({ motivo_perdida: motivo })
+    });
+    toast('Lead archivado como perdido');
+    cerrarModal('modal-eliminar');
+    cargarLeads();
+  } catch (e) { /* toast */ }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODAL: CONVERTIR A CLIENTE
+// ══════════════════════════════════════════════════════════════════════════════
+function abrirConvertir(id) {
+  document.getElementById('convertir-id').value = id;
+  document.getElementById('convertir-plan').value = 'starter';
+  document.getElementById('convertir-monto').value = '';
+  document.getElementById('convertir-tenant').value = '';
+  abrirModal('modal-convertir');
+}
+
+async function confirmarConvertir() {
+  const id = document.getElementById('convertir-id').value;
+  const payload = {
+    plan: document.getElementById('convertir-plan').value,
+    monto_mensual: parseFloat(document.getElementById('convertir-monto').value) || null,
+    tenant_slug: document.getElementById('convertir-tenant').value.trim() || null
+  };
+  try {
+    await api('/leads/' + id + '/convertir-cliente', { method: 'POST', body: JSON.stringify(payload) });
+    toast('Lead convertido a cliente 🎉');
+    cerrarModal('modal-convertir');
+    cargarLeads();
+  } catch (e) { /* toast */ }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
+function abrirModal(id) { document.getElementById(id).classList.add('open'); }
+function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
+});
+
+function nombreFuente(slugOrId) {
+  if (!slugOrId) return '—';
+  const f = FUENTES_CACHE.find(x => x.slug === slugOrId || x.id === slugOrId);
+  return f ? f.nombre : String(slugOrId);
+}
+
+function formatWA(num) {
+  if (!num) return '—';
+  return String(num).replace(/(\+\d{2})(\d{2})(\d{4})(\d{4})/, '$1 $2 $3-$4');
+}
+
+function fmtFecha(iso) {
+  if (!iso) return '—';
+  return String(iso).slice(0, 10);
+}
+
+function escHtml(str) {
+  return (str || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function mostrarVista(vista, el) {
   document.getElementById('vista-embudo').style.display = vista === 'embudo' ? 'block' : 'none';
   document.getElementById('vista-leads').style.display = vista === 'leads' ? 'block' : 'none';
