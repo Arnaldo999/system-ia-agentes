@@ -74,19 +74,13 @@
       </div>
       <!-- Nav -->
       <div style="padding:12px 8px;flex:1">
-        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px">Panel</div>
+        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px">Principal</div>
         <div class="nav-item active" onclick="navAdmin('dashboard',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;background:#222636;color:#e8eaf0">
           📊 Dashboard
         </div>
         <div class="nav-item" onclick="navAdmin('clientes-crm',this)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:2px;color:#8b92a5">
           🏢 Clientes CRM
         </div>
-        <!-- Secciones del admin — System IA solo tiene Clientes CRM (no es agencia-de-agencias) -->
-        <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Secciones</div>
-        <a href="/system-ia/admin/clientes" style="display:flex;flex-direction:column;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:2px;background:#2d1f00;border-left:3px solid #f59e0b;color:#e8eaf0;text-decoration:none">
-          🏢 Clientes CRM
-          <span style="font-size:10px;color:#8b92a5;margin-top:2px">Supabase tenants</span>
-        </a>
         <div style="font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;margin-top:16px">Próximamente</div>
         <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:#3d4250;margin-bottom:2px">
           🤖 Automatizaciones
@@ -337,7 +331,7 @@ function renderTabla() {
     } else {
       acciones += `<button class="btn btn-red" onclick="suspender('${t.slug}')" style="font-size:11px">🔒 Suspender</button> `;
     }
-    acciones += `<a href="https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2?tenant=${t.slug}" target="_blank" class="btn" style="font-size:11px">🔗 CRM</a>`;
+    acciones += `<a href="https://lovbot-demos.vercel.app/system-ia/crm?tenant=${t.slug}" target="_blank" class="btn" style="font-size:11px">🔗 CRM</a>`;
 
     return `<tr>
       <td>
