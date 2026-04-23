@@ -1,5 +1,43 @@
 # Debug y errores frecuentes
 
+## [2026-04-23] deploy | CRM modelo Lovbot migrado a Coolify Hetzner
+
+**Razón**: cuota Vercel Hobby cerca del límite. CRM es el frontend principal de clientes Lovbot.
+
+**App Coolify creada**:
+- Nombre: `lovbot-crm-modelo`
+- UUID: `wcgg4kk0sw0g0wgw4swowog0`
+- Project: `Agentes` (`ck0kccsws4occ88488kw0g80`) / Env: `production`
+- Repo: `Arnaldo999/system-ia-agentes` / branch `main`
+- base_directory: `/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev`
+- Dockerfile: `dev/Dockerfile` (nginx:alpine, nombre estándar — Coolify lo busca automaticamente)
+- FQDN: `https://crm.lovbot.ai`
+- Deploy status: `running:healthy` (2026-04-23)
+- Commit: `27367cf`
+
+**DNS pendiente (Arnaldo debe hacer manualmente)**:
+- Proveedor DNS: cPanel de `lovbot.ai`
+- Registro: A record `crm` → `5.161.235.99`
+- TTL recomendado: 300 (5 min para propagación rápida)
+- Hasta que el DNS propague: Vercel sigue respondiendo en `crm.lovbot.ai` (fallback OK)
+
+**Validación pre-DNS (via Host header al VPS)**:
+- `https://5.161.235.99/` con `Host: crm.lovbot.ai` → HTTP 200 (CRM v2)
+- `https://5.161.235.99/dev/crm-v2.html` → HTTP 200
+- `https://5.161.235.99/dev/js/panel-loteos.js` → HTTP 200
+- `https://5.161.235.99/health` → HTTP 200
+- Title del HTML: `CRM — Powered by LovBot IA` (correcto)
+
+**Monitor**: 2 checks nuevos en `guardia_critica.py`:
+- `robert_crm_modelo_internal` → `https://crm.lovbot.ai/dev/crm-v2.html`
+- `robert_crm_js_panel_loteos` → `https://crm.lovbot.ai/dev/js/panel-loteos.js`
+
+**Vercel**: `lovbot-demos.vercel.app/dev/crm-v2` intacto como fallback (NO tocar vercel.json)
+
+**Nota técnica**: Coolify beta.442 no acepta `dockerfile_location` via API — el Dockerfile debe llamarse `Dockerfile` (nombre estándar) en el `base_directory`. Por eso el archivo físico es `dev/Dockerfile` y `dev/Dockerfile.crm` queda solo como referencia/doc.
+
+---
+
 ## [2026-04-22] deploy | Admin Robert migrado a Coolify Hetzner
 
 **Razón**: cuota Vercel Hobby cerca del límite. Admin es uso interno — no necesita CDN global.

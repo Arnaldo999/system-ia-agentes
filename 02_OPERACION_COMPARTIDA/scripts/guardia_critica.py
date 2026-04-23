@@ -175,6 +175,16 @@ def check_admin_agencia_internal() -> tuple[bool, str]:
     return _http_check("https://admin.lovbot.ai/agencia.html", expect=[200])
 
 
+def check_crm_modelo_internal() -> tuple[bool, str]:
+    """crm.lovbot.ai/dev/crm-v2.html — Coolify Hetzner (CRM modelo Lovbot v2 — lovbot-crm-modelo)."""
+    return _http_check("https://crm.lovbot.ai/dev/crm-v2.html", expect=[200])
+
+
+def check_crm_js_panel_loteos() -> tuple[bool, str]:
+    """crm.lovbot.ai/dev/js/panel-loteos.js — Coolify Hetzner (asset JS clave del CRM modelo)."""
+    return _http_check("https://crm.lovbot.ai/dev/js/panel-loteos.js", expect=[200])
+
+
 # ── Telegram ──────────────────────────────────────────────────────────────────
 
 def enviar_telegram(mensaje: str):
@@ -202,6 +212,8 @@ def main():
         "coolify":                       check_coolify,
         "robert_admin_clientes_internal": check_admin_clientes_internal,
         "robert_admin_agencia_internal":  check_admin_agencia_internal,
+        "robert_crm_modelo_internal":     check_crm_modelo_internal,
+        "robert_crm_js_panel_loteos":     check_crm_js_panel_loteos,
     }
 
     nombres = {
@@ -210,6 +222,8 @@ def main():
         "coolify":                       "Coolify app",
         "robert_admin_clientes_internal": "Robert admin /clientes (Coolify)",
         "robert_admin_agencia_internal":  "Robert admin /agencia (Coolify)",
+        "robert_crm_modelo_internal":     "Robert CRM modelo /dev/crm-v2.html (Coolify)",
+        "robert_crm_js_panel_loteos":     "Robert CRM JS panel-loteos.js (Coolify)",
     }
 
     for servicio, fn in checks.items():

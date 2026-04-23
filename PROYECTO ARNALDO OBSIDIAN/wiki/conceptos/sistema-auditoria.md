@@ -61,7 +61,7 @@ Resultado incluido en el reporte Telegram como sección "🔧 AUTO-REPARACIÓN".
 - **Kill switch**: env var `GUARDIA_DISABLED=1` desactiva el script sin tocar el cron.
 - **Estado persistido**: `/tmp/guardia_estado.json` (cooldown por servicio).
 
-### 16 checks activos + 2 preparados (deshabilitados)
+### 18 checks activos + 2 preparados (deshabilitados)
 
 #### Arnaldo
 | Check | URL / acción |
@@ -86,6 +86,8 @@ Resultado incluido en el reporte Telegram como sección "🔧 AUTO-REPARACIÓN".
 | `robert_crm_cors` | OPTIONS preflight `agentes.lovbot.ai/health` con Origin `crm.lovbot.ai` |
 | `robert_admin_clientes_internal` | `https://admin.lovbot.ai/clientes.html` — Coolify Hetzner (2026-04-22) |
 | `robert_admin_agencia_internal` | `https://admin.lovbot.ai/agencia.html` — Coolify Hetzner (2026-04-22) |
+| `robert_crm_modelo_internal` | `https://crm.lovbot.ai/dev/crm-v2.html` — Coolify Hetzner (lovbot-crm-modelo, 2026-04-23) |
+| `robert_crm_js_panel_loteos` | `https://crm.lovbot.ai/dev/js/panel-loteos.js` — Coolify Hetzner (asset JS clave, 2026-04-23) |
 
 #### Mica (deshabilitados, env var `MICA_CRM_ENABLED=0`)
 | Check | URL / acción |

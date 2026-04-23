@@ -4,6 +4,18 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-23] deploy | CRM modelo Lovbot migrado a Coolify Hetzner — crm.lovbot.ai
+
+- App Coolify creada: `lovbot-crm-modelo` (UUID `wcgg4kk0sw0g0wgw4swowog0`), project `Agentes`, FQDN `https://crm.lovbot.ai`
+- base_directory: `demos/INMOBILIARIA/dev` — Dockerfile (nombre estándar) + nginx.crm.conf
+- Sirve `crm-v2.html` en `/`, `/dev/crm-v2`, `/dev/crm-v2.html` y JS bundles en `/dev/js/*`
+- Catch-all: `crm.lovbot.ai/?tenant=X` redirige a crm-v2.html (compat Vercel)
+- Deploy status: `running:healthy` (commit `27367cf`)
+- DNS pendiente: Arnaldo debe cambiar A record `crm` → `5.161.235.99` en cPanel lovbot.ai
+- Vercel queda como fallback (`lovbot-demos.vercel.app/dev/crm-v2` intacto)
+- Monitor `guardia_critica.py` actualizado: 2 checks nuevos (`robert_crm_modelo_internal` + `robert_crm_js_panel_loteos`)
+- Wiki actualizada: `panel-gestion-robert.md`, `sistema-auditoria.md`
+
 ## [2026-04-22] deploy | Admin Robert migrado a Coolify Hetzner — admin.lovbot.ai con /clientes + /agencia
 
 - App Coolify creada: `lovbot-admin-internal` (UUID `v0k8480sw800o00og0oo04g8`), project `Agentes`, FQDN `https://admin.lovbot.ai`

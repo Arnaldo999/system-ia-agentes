@@ -55,6 +55,8 @@ El admin solo gestiona la **capa 1** (Supabase). Para entrar al CRM real de un c
 
 El botón "🔗 CRM" de cada tenant abre `https://crm.lovbot.ai/dev/crm-v2?tenant=<slug>` → ver [[crm-v2-modelo-robert]].
 
+> **Actualización 2026-04-23**: `crm.lovbot.ai` ahora sirve desde **Coolify Hetzner** (app `lovbot-crm-modelo`, UUID `wcgg4kk0sw0g0wgw4swowog0`) — migrado de Vercel. Ver sección "CRM modelo en Coolify" más abajo.
+
 > **Bug arreglado 2026-04-22**: el botón apuntaba a `crm.lovbot.ai/?tenant=<slug>` (URL del v1 viejo, que por catch-all servía v2 pero no era explícito). Cambiado al path explícito `/dev/crm-v2`.
 
 ## Hermano por agencia
@@ -95,6 +97,23 @@ Checks en [[sistema-auditoria|guardia_critica.py]]:
 - ❌ NO mezclar lógica con el admin de Mica — son archivos separados a propósito.
 - ✅ Modificar SOLO `INMOBILIARIA/dev/admin/clientes.html` (no hay admin.html raíz — fue movido).
 - ✅ Si se agrega feature al panel Robert que también beneficia al de Mica, replicarla manualmente en `SYSTEM-IA/admin/clientes.html`.
+
+## CRM modelo en Coolify Hetzner (migración 2026-04-23)
+
+- **App Coolify**: `lovbot-crm-modelo`, UUID `wcgg4kk0sw0g0wgw4swowog0`
+- **Project**: `Agentes` (UUID `ck0kccsws4occ88488kw0g80`) / Env: `production`
+- **Repo/branch**: `Arnaldo999/system-ia-agentes` / `main`
+- **base_directory**: `/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev`
+- **Dockerfile**: `Dockerfile` (nombre estándar en `dev/`) — imagen `nginx:alpine`
+- **FQDN**: `https://crm.lovbot.ai`
+- **DNS**: A record `crm` → `5.161.235.99` (cambio pendiente por Arnaldo en cPanel lovbot.ai)
+- **SSL**: Let's Encrypt via Traefik (automático cuando DNS propague)
+- **Healthcheck**: `/health` cada 30s, start-period 15s
+- **Watch paths**: `demos/INMOBILIARIA/dev/**` (deploy automático solo estos archivos)
+- **Estado deploy**: `running:healthy` (2026-04-23)
+- **Fallback**: Vercel `lovbot-demos.vercel.app/dev/crm-v2` intacto (no tocar vercel.json)
+- **Razón migración**: cuota Vercel Hobby cerca del límite con clientes Lovbot reales
+- **Commit**: `27367cf`
 
 ## Fuentes que lo mencionan
 
