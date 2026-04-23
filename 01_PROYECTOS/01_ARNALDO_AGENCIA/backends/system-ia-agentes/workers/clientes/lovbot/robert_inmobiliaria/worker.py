@@ -34,6 +34,7 @@ import threading
 import requests
 from google import genai
 from fastapi import APIRouter, Request
+from workers.shared.message_buffer import buffer_and_schedule
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
@@ -2764,6 +2765,12 @@ async def verificar_webhook_meta(request: Request):
     return Response(status_code=403)
 
 
+def _procesar_from_buffer(wa_id: str, texto: str, extra: dict | None):
+    """Adapter entre message_buffer (wa_id, texto, extra) y _procesar (tel, texto, referral)."""
+    referral = (extra or {}).get("referral")
+    _procesar(wa_id, texto, referral)
+
+
 @router.post("/whatsapp")
 async def webhook_whatsapp(request: Request):
     """Recibe mensajes — soporta payload bridge interno y Meta Graph API completo.
@@ -2861,7 +2868,15 @@ async def webhook_whatsapp(request: Request):
     if referral and (referral.get("headline") or referral.get("source_url")):
         print(f"[WEBHOOK] Lead vino de ad: {referral.get('headline', '')[:60]}")
 
-    threading.Thread(target=_procesar, args=(tel_clean, texto, referral), daemon=True).start()
+    buffer_and_schedule(
+        tenant_slug="robert-demo",
+        wa_id=tel_clean,
+        texto=texto,
+        callback=_procesar_from_buffer,
+        extra={"referral": referral},
+        debounce_seconds=8,
+        separator=" ",
+    )
     return {"status": "processing"}
 
 
