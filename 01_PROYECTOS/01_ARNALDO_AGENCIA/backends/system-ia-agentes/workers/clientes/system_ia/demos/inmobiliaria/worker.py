@@ -43,6 +43,7 @@ import re
 import json
 import threading
 import requests
+from workers.shared.message_buffer import buffer_and_schedule
 from google import genai
 from fastapi import APIRouter, Request
 
@@ -2852,6 +2853,17 @@ async def api_estado_bot(telefono: str):
 META_VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "mica_webhook_2026")
 
 
+def _procesar_from_buffer(wa_id: str, texto: str, extra: dict | None):
+    """Adapter entre buffer_and_schedule y _procesar_safe.
+
+    buffer_and_schedule llama callback(wa_id, texto, extra) donde extra es el
+    dict pasado al momento de buffer_and_schedule (ej: {"referral": {...}}).
+    _procesar_safe espera (tel_clean, texto, referral) — extraemos referral del dict.
+    """
+    referral = (extra or {}).get("referral")
+    _procesar_safe(wa_id, texto, referral)
+
+
 async def _webhook_handler(request: Request, provider_forzado: str = ""):
     """Handler unificado para ambos routers (Evolution + Meta via Tech Provider).
 
@@ -2927,7 +2939,14 @@ async def _webhook_handler(request: Request, provider_forzado: str = ""):
     if provider_forzado:
         referral = {**referral, "_provider_forzado": provider_forzado}
 
-    threading.Thread(target=_procesar_safe, args=(tel_clean, texto, referral), daemon=True).start()
+    buffer_and_schedule(
+        tenant_slug="mica-demo",
+        wa_id=tel_clean,
+        texto=texto,
+        callback=_procesar_from_buffer,
+        extra={"referral": referral},
+        debounce_seconds=8,
+    )
     return {"status": "processing", "provider_detectado": parsed.get("provider", "?")}
 
 
