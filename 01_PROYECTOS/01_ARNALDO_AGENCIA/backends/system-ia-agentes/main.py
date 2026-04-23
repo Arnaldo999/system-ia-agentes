@@ -77,6 +77,7 @@ from workers.clientes.arnaldo.prueba.worker import router as prueba_router
 
 # ── Clientes Lovbot ───────────────────────────────────────────────────────────
 from workers.clientes.lovbot.robert_inmobiliaria.worker import router as robert_inmo_router
+from workers.clientes.lovbot.agencia_crm.router import router as agencia_crm_router
 from workers.clientes.lovbot.robert_inmobiliaria.worker import _procesar as robert_inmo_procesar
 
 # ── Cliente Lovbot — Inmobiliaria García ──
@@ -158,6 +159,7 @@ app.include_router(admin_router)
 app.include_router(maicol_router)
 app.include_router(prueba_router)
 app.include_router(robert_inmo_router)
+app.include_router(agencia_crm_router)
 app.include_router(inmobiliaria_garcia_router)
 app.include_router(test_arnaldo_router)
 app.include_router(demo_inmobiliaria_router)
