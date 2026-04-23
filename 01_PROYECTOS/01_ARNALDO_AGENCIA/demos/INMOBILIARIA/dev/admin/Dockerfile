@@ -33,4 +33,8 @@ RUN printf 'server {\n\
     }\n\
 }\n' > /etc/nginx/conf.d/default.conf
 
+# Deshabilitar healthcheck de Docker — Coolify usa su propio mecanismo
+# nginx:alpine no tiene wget/curl para el check interno por defecto
+HEALTHCHECK NONE
+
 EXPOSE 80
