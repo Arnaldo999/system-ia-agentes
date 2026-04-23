@@ -44,8 +44,8 @@
 </head>
 <body>
 
-<!-- LOGIN ADMIN -->
-<div id="loginScreen" style="display:flex;position:fixed;inset:0;background:#0f1117;z-index:9999;align-items:center;justify-content:center">
+<!-- LOGIN ADMIN (solo primera vez — token persiste en sessionStorage) -->
+<div id="loginScreen" style="display:none;position:fixed;inset:0;background:#0f1117;z-index:9999;align-items:center;justify-content:center">
   <div class="card" style="max-width:380px;text-align:center">
     <div style="font-size:40px;margin-bottom:12px">🔐</div>
     <h1 style="font-size:1.3rem;font-weight:700;margin-bottom:6px">Lovbot Admin</h1>
@@ -56,7 +56,7 @@
   </div>
 </div>
 
-<!-- APP -->
+<!-- APP (se muestra cuando hay token válido) -->
 <div id="app" style="display:none">
   <div style="display:flex;min-height:100vh">
 
@@ -197,35 +197,66 @@
 
 <script>
 const API = 'https://agentes.arnaldoayalaestratega.cloud';
-let TOKEN = '';
+const TOKEN_KEY = 'admin_token';
+let TOKEN = sessionStorage.getItem(TOKEN_KEY) || '';
 let TENANTS = [];
 
-function loginAdmin() {
-  TOKEN = document.getElementById('adminToken').value.trim();
-  if (!TOKEN) { document.getElementById('loginError').textContent = 'Ingresá el token'; return; }
-  fetch(`${API}/admin/tenants`, { headers: { 'Authorization': `Bearer ${TOKEN}` } })
-    .then(r => {
-      if (!r.ok) throw new Error('Token inválido');
-      return r.json();
-    })
-    .then(data => {
-      TENANTS = data.tenants || [];
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      renderTabla();
-    })
-    .catch(e => {
-      document.getElementById('loginError').textContent = e.message;
-    });
-}
-
-function logout() {
-  TOKEN = '';
-  sessionStorage.removeItem('admin_token');
+function mostrarLogin() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminToken').value = '';
 }
+
+function mostrarApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+async function validarTokenYCargar() {
+  try {
+    const r = await fetch(`${API}/admin/tenants`, { headers: { 'Authorization': `Bearer ${TOKEN}` } });
+    if (!r.ok) throw new Error('Token inválido');
+    const data = await r.json();
+    TENANTS = data.tenants || [];
+    mostrarApp();
+    renderTabla();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function loginAdmin() {
+  TOKEN = document.getElementById('adminToken').value.trim();
+  if (!TOKEN) { document.getElementById('loginError').textContent = 'Ingresá el token'; return; }
+  const ok = await validarTokenYCargar();
+  if (ok) {
+    sessionStorage.setItem(TOKEN_KEY, TOKEN);
+    document.getElementById('loginError').textContent = '';
+  } else {
+    TOKEN = '';
+    document.getElementById('loginError').textContent = 'Token inválido';
+  }
+}
+
+function logout() {
+  TOKEN = '';
+  sessionStorage.removeItem(TOKEN_KEY);
+  mostrarLogin();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const tokenInput = document.getElementById('adminToken');
+  if (tokenInput) {
+    tokenInput.addEventListener('keydown', e => { if (e.key === 'Enter') loginAdmin(); });
+  }
+  if (TOKEN) {
+    const ok = await validarTokenYCargar();
+    if (!ok) mostrarLogin();
+  } else {
+    mostrarLogin();
+  }
+});
 
 function cargar() {
   fetch(`${API}/admin/tenants`, { headers: { 'Authorization': `Bearer ${TOKEN}` } })
@@ -367,10 +398,6 @@ async function guardarNuevo() {
   }
 }
 
-// Auto-login si hay token en sessionStorage
-document.getElementById('adminToken').addEventListener('keydown', e => {
-  if (e.key === 'Enter') loginAdmin();
-});
 </script>
 </body>
 </html>
