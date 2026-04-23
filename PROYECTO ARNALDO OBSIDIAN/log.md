@@ -4,6 +4,26 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-22] deploy | Admin Robert migrado a Coolify Hetzner — admin.lovbot.ai con /clientes + /agencia
+
+- App Coolify creada: `lovbot-admin-internal` (UUID `v0k8480sw800o00og0oo04g8`), project `Agentes`, FQDN `https://admin.lovbot.ai`
+- Dockerfile creado en `demos/INMOBILIARIA/dev/admin/Dockerfile` — nginx:alpine, sirve clientes.html + agencia.html
+- DNS pendiente: Arnaldo debe cambiar A record `admin` → `5.161.235.99` en el proveedor DNS de `lovbot.ai`
+- Vercel queda como fallback (`lovbot-demos.vercel.app/dev/admin/*` intacto)
+- Monitor `guardia_critica.py` actualizado: 2 checks nuevos (`robert_admin_clientes_internal` + `robert_admin_agencia_internal`)
+- Wiki actualizada: `panel-gestion-robert.md`, `crm-agencia-lovbot.md`, `sistema-auditoria.md`
+
+## [2026-04-22] update | CRM Agencia Lovbot — mockup HTML Fase 1 deployado + reorganizacion admin
+
+- Reorganizada carpeta `admin/` para ambas agencias: `admin.html` → `admin/clientes.html` (git mv, historial preservado)
+- Nuevo `admin/agencia.html` (Robert/Lovbot): tabla leads mockup + vista embudo, 5 leads ejemplo, filtros cliente, sidebar con navegacion entre secciones
+- Panel Mica: `admin/clientes.html` con sidebar secciones solo Clientes CRM (Mica no es agencia-de-agencias)
+- Paleta Robert: purple `#6c63ff` (active sidebar agencia=active), Mica: ambar `#f59e0b` (active sidebar clientes=active)
+- `vercel.json` actualizado: rutas nuevas `/dev/admin/clientes`, `/dev/admin/agencia`, `/system-ia/admin/clientes` + retro-compat `/dev/admin` y `/system-ia/admin`
+- Validacion Vercel: todas 200 — nuevas + viejas + `admin.lovbot.ai`
+- Wiki actualizada: `conceptos/crm-agencia-lovbot.md` status `mockup-listo-pendiente-backend` + sección Fase 1; `entidades/panel-gestion-robert.md` rutas actualizadas
+- Commit `b56e4e4`, push `master:main`
+
 ## [2026-04-21] sesion-claude | Setup CRM v2 Mica + decisión Embedded Signup compartido
 - Replicado el trabajo de CRM v2 de Robert para Mica (System IA), adaptando al stack Mica: Airtable `appA8QxIhBYYAHw0F` + Evolution API + Coolify Arnaldo. Respeta regla #0 de aislamiento entre stacks (nada de Postgres ni Meta Graph API propio, por ahora).
 - Creado `demos/SYSTEM-IA/dev/crm-v2.html` clonado del de Robert con: paleta ámbar/rojo `#f59e0b` + `#dc2626` (vs purple/cyan Robert), branding "System IA / Inmobiliaria Demo Mica", endpoints `/clientes/system_ia/*`, sidebar con 3 subnichos.
@@ -274,3 +294,36 @@ Estado wiki: 12 entidades + 7 conceptos = 19 páginas. Falta ingestar fuentes of
 - Motivo: cupo Vercel Hobby 100/día se agotó 2 veces en sesiones de refactor intenso. Coolify Hostinger no tiene límite, mismo VPS ya pagado.
 - Pendiente: migrar CRM v2 Robert de Vercel a Coolify Hetzner Robert (agendado 2026-04-23 tras reset cupo Vercel)
 - Mica queda en Vercel hasta que compre dominio propio
+
+## [2026-04-22] migración | CRM v1 → v2 unificado para Robert y Mica
+
+- Eliminados archivos legacy frontend HTML:
+  - Robert: `INMOBILIARIA/demo-crm-mvp.html` + `INMOBILIARIA/dev/crm.html`
+  - Mica: `SYSTEM-IA/crm.html` + `SYSTEM-IA/dev/crm.html`
+- Único modelo vigente para cada agencia: `dev/crm-v2.html` (un archivo, multi-tenant via `?tenant=`)
+- URLs viejas siguen vivas vía rewrite Vercel (alias al v2) — no rompen links pegados
+- Commits: Robert `83d24c8`, Mica `a674c3d` + `ab879fb`
+- Entidades nuevas en wiki:
+  - `wiki/entidades/crm-v2-modelo-robert.md` — frontend HTML modelo Lovbot
+  - `wiki/entidades/crm-v2-modelo-mica.md` — frontend HTML modelo System IA
+- Validado por Robert el mismo día (chat con Arnaldo)
+- Monitor `guardia_critica.py` cubre Robert (3 checks LIVE), Mica deshabilitado (URL no definitiva)
+- Postgres Robert: confirmada limpieza previa de BDs legacy (`robert_crm`, `lovbot_crm`, `demo_crm` ya no existen). Solo queda `lovbot_crm_modelo`. `.env` local del backend corregido.
+
+## [2026-04-22] sesion-claude | Sesión completa CORS+Monitor+CRMv2+Postgres ingestada
+- Fuente raw: `raw/compartido/sesion-2026-04-22.md`
+- Página fuente: `wiki/fuentes/sesion-2026-04-22.md`
+- Entidades nuevas: `panel-gestion-robert`, `panel-gestion-mica`
+- Conceptos nuevos: `cors-preflight-monitoreo`, `env-quoting-tokens`, `supabase-tenants`
+- Conceptos actualizados: `sistema-auditoria` (refactor `guardia_critica.py` con 14 checks Capa 1)
+- Entidades actualizadas: `lovbot-crm-modelo` (legacy ya eliminadas), `lovbot-ai` y `system-ia` (wikilinks a paneles + supabase-tenants), `crm-v2-modelo-robert` y `crm-v2-modelo-mica` (cross-refs a sus paneles)
+- Fix arquitectural aclarado: ambos admins pegan a backend Arnaldo porque Supabase es de Arnaldo (compartida) — NO viola aislamiento
+- Bug crítico arreglado: panel admin Mica apuntaba a dominio Robert (`lovbot-demos.vercel.app/system-ia/crm`) — corregido a dominio propio Mica
+
+## [2026-04-22] update | CRM Agencia Lovbot — propuesta arquitectural documentada
+- Concepto nuevo: `wiki/conceptos/crm-agencia-lovbot.md` (status: pendiente de implementar)
+- Entidad nueva: `wiki/entidades/landing-lovbot-ai.md` (status: parcial — landing dice "Próximamente")
+- Decisión arquitectural clave: storage de leads agencia en **Postgres Hetzner Robert** (NO Supabase). Razones: aislamiento de leads vs catálogo público, reuso de infra Lovbot, coherencia de stack v3.
+- Stack confirmado: bot agencia usará Tech Provider Robert + nuevo número WABA (cuando esté habilitado)
+- Frontend: replicar `crm-v2.html` adaptado, quitando paneles inmobiliarios específicos
+- Cross-refs agregadas: lovbot-ai, supabase-tenants, panel-gestion-robert, sesion-2026-04-22 — todos mencionan el nuevo CRM agencia y aclaran cómo se diferencia de los productos existentes

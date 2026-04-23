@@ -1,5 +1,52 @@
 # Debug y errores frecuentes
 
+## [2026-04-22] deploy | Admin Robert migrado a Coolify Hetzner
+
+**Razón**: cuota Vercel Hobby cerca del límite. Admin es uso interno — no necesita CDN global.
+
+**App Coolify creada**:
+- Nombre: `lovbot-admin-internal`
+- UUID: `v0k8480sw800o00og0oo04g8`
+- Project: `Agentes` (`ck0kccsws4occ88488kw0g80`) / Env: `production`
+- Repo: `Arnaldo999/system-ia-agentes` / branch `main`
+- base_directory: `/01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/admin`
+- Dockerfile: `dev/admin/Dockerfile` (nginx:alpine)
+- FQDN: `https://admin.lovbot.ai`
+
+**DNS pendiente (Arnaldo debe hacer manualmente)**:
+- Proveedor DNS de `lovbot.ai`: cambiar A record `admin` → `5.161.235.99`
+- TTL recomendado: 300 (5 min para propagación rápida)
+- Hasta que el DNS propague: Vercel sigue respondiendo en `admin.lovbot.ai` (fallback OK)
+
+**Deploy status**: pendiente (DNS no propagado — trigger deploy después de DNS)
+
+**Vercel**: `lovbot-demos.vercel.app/dev/admin/*` intacto como fallback (NO tocar vercel.json)
+
+**Monitor**: 2 checks nuevos en `guardia_critica.py`:
+- `robert_admin_clientes_internal` → `https://admin.lovbot.ai/clientes.html`
+- `robert_admin_agencia_internal` → `https://admin.lovbot.ai/agencia.html`
+
+---
+
+## [2026-04-22] feature | CRM Agencia Lovbot — mockup HTML inicial deployado
+
+**Commit**: `b56e4e4` — feat(crm-agencia-lovbot): HTML inicial mockeado + reorganizacion admin
+
+**Cambios**:
+- `demos/INMOBILIARIA/dev/admin.html` → movido a `demos/INMOBILIARIA/dev/admin/clientes.html` (git mv)
+- `demos/SYSTEM-IA/admin.html` → movido a `demos/SYSTEM-IA/admin/clientes.html` (git mv)
+- NUEVO: `demos/INMOBILIARIA/dev/admin/agencia.html` — CRM agencia mockup (5 leads mock, filtros, embudo)
+- `vercel.json` actualizado: rutas `/dev/admin/clientes`, `/dev/admin/agencia`, `/system-ia/admin/clientes` + retro-compat
+- Sidebar en ambos `clientes.html` con nav de Secciones (Robert: clientes activo + agencia; Mica: solo clientes)
+- Paleta: Robert purple `#6c63ff` (active sidebar), Mica ambar `#f59e0b` (active sidebar)
+
+**Pendiente Fase 2**:
+- BD `lovbot_agencia_crm` en Hetzner Postgres
+- Endpoints `agentes.lovbot.ai/agencia/leads`
+- Conectar frontend al backend real
+
+---
+
 ## 2026-04-22 — Migración CRM v2 definitiva Robert (Lovbot.ai)
 
 **Decisión**: Robert (dueño Lovbot.ai) y Arnaldo (socio técnico) decidieron el 22/04/2026 que `dev/crm-v2.html` reemplaza definitivamente al CRM v1 (`dev/crm.html`) y al legacy MVP (`demo-crm-mvp.html`). El v2 estaba validado en producción.

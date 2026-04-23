@@ -147,6 +147,34 @@ def check_coolify() -> tuple[bool, str]:
     return False, "error API Coolify"
 
 
+def _http_check(url: str, expect: list[int] = None) -> tuple[bool, str]:
+    """Check HTTP genérico: retorna (ok, detalle). ok=True si status code en expect."""
+    if expect is None:
+        expect = [200]
+    for intento in range(2):
+        try:
+            r = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            if r.status_code in expect:
+                return True, f"HTTP {r.status_code}"
+            return False, f"HTTP {r.status_code} (esperado {expect})"
+        except Exception as e:
+            if intento == 0:
+                time.sleep(RETRY_WAIT)
+            else:
+                return False, f"no responde: {e}"
+    return False, "no responde"
+
+
+def check_admin_clientes_internal() -> tuple[bool, str]:
+    """admin.lovbot.ai/clientes.html — Coolify Hetzner (deploy interno Robert)."""
+    return _http_check("https://admin.lovbot.ai/clientes.html", expect=[200])
+
+
+def check_admin_agencia_internal() -> tuple[bool, str]:
+    """admin.lovbot.ai/agencia.html — Coolify Hetzner (CRM agencia Lovbot mockup)."""
+    return _http_check("https://admin.lovbot.ai/agencia.html", expect=[200])
+
+
 # ── Telegram ──────────────────────────────────────────────────────────────────
 
 def enviar_telegram(mensaje: str):
@@ -169,15 +197,19 @@ def main():
     estado = cargar_estado()
 
     checks = {
-        "fastapi":  check_fastapi,
-        "n8n":      check_n8n,
-        "coolify":  check_coolify,
+        "fastapi":                       check_fastapi,
+        "n8n":                           check_n8n,
+        "coolify":                       check_coolify,
+        "robert_admin_clientes_internal": check_admin_clientes_internal,
+        "robert_admin_agencia_internal":  check_admin_agencia_internal,
     }
 
     nombres = {
-        "fastapi": "FastAPI Arnaldo",
-        "n8n":     "n8n Arnaldo",
-        "coolify": "Coolify app",
+        "fastapi":                       "FastAPI Arnaldo",
+        "n8n":                           "n8n Arnaldo",
+        "coolify":                       "Coolify app",
+        "robert_admin_clientes_internal": "Robert admin /clientes (Coolify)",
+        "robert_admin_agencia_internal":  "Robert admin /agencia (Coolify)",
     }
 
     for servicio, fn in checks.items():

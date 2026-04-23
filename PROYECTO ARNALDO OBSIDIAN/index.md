@@ -1,14 +1,13 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-22 | Total páginas: 41 (18 entidades + 18 conceptos + 5 síntesis)
+Última actualización: 2026-04-22 | Total páginas: 49 (1 fuente + 20 entidades + 22 conceptos + 5 síntesis + 1 mapa de prod)
 
-## Fuentes (0)
+## Fuentes (1)
 | Página | Resumen | Fecha | Proyecto | Tags |
 |--------|---------|-------|----------|------|
+| [[wiki/fuentes/sesion-2026-04-22]] | Sesión densa: CORS Maicol + Monitor Capa 1 + CRM v2 unificado Robert+Mica + audit Postgres + bug tokens .env | 2026-04-22 | compartido | cors, monitoreo, crm-v2, postgres, env-vars, telegram, coolify |
 
-_Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "ingerir fuente"._
-
-## Entidades (15)
+## Entidades (20)
 
 ### Las 3 agencias del ecosistema
 | Página | Dueño | Estado |
@@ -38,6 +37,23 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | [[wiki/entidades/lovbot-crm-modelo]] | BD Postgres modelo (plantilla para clientes Lovbot) | robert |
 | [[wiki/entidades/inmobiliaria-demo-mica-airtable]] | Base Airtable modelo (plantilla para clientes System IA) | mica |
 
+### Productos / Frontends CRM modelo (HTML)
+| Página | Tipo | Proyecto |
+|--------|------|----------|
+| [[wiki/entidades/crm-v2-modelo-robert]] | Frontend HTML CRM modelo Lovbot (`crm.lovbot.ai/dev/crm-v2`) | robert |
+| [[wiki/entidades/crm-v2-modelo-mica]] | Frontend HTML CRM modelo System IA (`/system-ia/dev/crm-v2`) | mica |
+
+### Productos / Paneles Gestión (admin de tenants/clientes)
+| Página | Tipo | Proyecto |
+|--------|------|----------|
+| [[wiki/entidades/panel-gestion-robert]] | Admin Lovbot (`admin.lovbot.ai` — Coolify Hetzner desde 2026-04-22, Vercel fallback) — gestiona clientes Lovbot | robert |
+| [[wiki/entidades/panel-gestion-mica]] | Admin System IA (`system-ia-agencia.vercel.app/system-ia/admin`) — gestiona clientes Mica | mica |
+
+### Productos / Marketing y captura
+| Página | Tipo | Proyecto |
+|--------|------|----------|
+| [[wiki/entidades/landing-lovbot-ai]] | Landing pública Lovbot (`https://lovbot.ai/`) — captura leads agencia | robert |
+
 ### Infraestructura — VPS
 | Página | Tipo | Proyecto |
 |--------|------|----------|
@@ -52,7 +68,7 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | [[wiki/entidades/coolify-robert]] | orquestador | robert |
 | [[wiki/entidades/easypanel-mica]] | orquestador | mica |
 
-## Conceptos (14)
+## Conceptos (18)
 
 ### Reglas transversales (leer PRIMERO)
 | Página | Resumen breve | Proyectos |
@@ -107,6 +123,22 @@ _Aún no hay fuentes ingestadas. Agregá archivos en `raw/[proyecto]/` y pedí "
 | Página | Resumen breve | Proyectos |
 |--------|--------------|-----------|
 | [[wiki/conceptos/coolify-default-deploy]] | ⚡ Coolify como default para HTMLs/sitios nuevos (no Vercel). Sin cupo 100/día. 2026-04-22 | compartido |
+
+### Tenants / catálogo de clientes
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/supabase-tenants]] | 🔗 Supabase compartido (cuenta Arnaldo) guarda catálogo de clientes que adquirieron CRM. Lo leen ambos paneles admin | robert, mica |
+
+### Proyectos pendientes (propuestos, NO implementados aún)
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/crm-agencia-lovbot]] | 📋 CRM propio Robert+Arnaldo para gestionar leads agencia (landing + bot WhatsApp). Storage: Postgres Hetzner (NO Supabase). Status: pendiente | robert |
+
+### Operación / Reglas del repo
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/cors-preflight-monitoreo]] | Patrón de check con OPTIONS + Origin header — detecta CORS roto antes que el cliente | arnaldo, robert, mica |
+| [[wiki/conceptos/env-quoting-tokens]] | 🔒 REGLA — tokens con `|` requieren comillas dobles en `.env`. Bash source rompe sin ellas | global |
 
 ## Síntesis (5)
 | Página | Origen | Fecha | Proyecto |

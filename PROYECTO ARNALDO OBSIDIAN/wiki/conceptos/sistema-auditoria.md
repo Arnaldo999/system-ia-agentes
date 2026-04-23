@@ -1,15 +1,22 @@
 ---
-title: Sistema de Auditoría Diaria
-tags: [compartido, auditoria, monitoreo, coolify, n8n, telegram]
-source_count: 0
+title: Sistema de Auditoría — Capa 1 (cada 5 min) + Capa 2 (diaria 8am)
+tags: [compartido, auditoria, monitoreo, coolify, n8n, telegram, capa-1, capa-2]
+source_count: 1
 proyectos_aplicables: [arnaldo, robert, mica]
 ---
 
-# Sistema de Auditoría Diaria
+# Sistema de Auditoría — 2 capas
 
 ## Definición
 
-Sistema automatizado que corre cada mañana a las 8:00 AM ARG y verifica el estado de los 3 proyectos del ecosistema. Ante alertas, intenta auto-reparar y reporta por Telegram.
+El ecosistema tiene **2 monitores complementarios** corriendo en paralelo, ambos en el mismo container Coolify Hostinger Arnaldo (`system-ia-agentes`):
+
+| Capa | Script | Frecuencia | Propósito |
+|------|--------|------------|-----------|
+| **1 — Healthchecks** | `guardia_critica.py` | Cada 5 min | Detectar caídas en tiempo real (frontends, backends, n8n, Coolify, CORS) |
+| **2 — Auditoría profunda** | `auditor_runner.py` | Diaria 8am ARG | Verificar workflows n8n, tokens OAuth, instancias WhatsApp, schemas DB, etc. |
+
+Ambos avisan vía Telegram al chat de Arnaldo (`863363759`). La Capa 2 también dispara `auto_reparador.py` ante alertas conocidas.
 
 ## Arquitectura (3 capas)
 
@@ -36,13 +43,63 @@ n8n Arnaldo
 | Meta Tech Provider | `auditor_meta_provider.py` | WABA Robert — estado de la cuenta Meta |
 | CRM / Tenants | `auditor_crm.py` | Tenants activos en PostgreSQL / Airtable |
 
-## Auto-reparación
+## Auto-reparación (solo Capa 2)
 
 Si hay alertas, `auto_reparador.py` intenta:
 1. **FastAPI Arnaldo caído** → restart Coolify → si falla → deploy completo con force
 2. **Evolution instancia desconectada** → restart instancia via API
 
 Resultado incluido en el reporte Telegram como sección "🔧 AUTO-REPARACIÓN".
+
+## Capa 1 — `guardia_critica.py` (refactor 2026-04-22)
+
+### Configuración
+
+- **Schedule Coolify**: `*/5 * * * *  cd /app/scripts && python guardia_critica.py` (Scheduled Task UUID `fo5l5or8bbz3bl8d0n47dj9a`, activa desde 2026-04-11).
+- **Cooldown**: 30 min por servicio (no spamea si un servicio queda caído mucho tiempo).
+- **Mensaje Telegram CONSOLIDADO**: 1 ciclo = 1 mensaje con TODOS los servicios caídos juntos (refactor 2026-04-22 a pedido de Arnaldo — antes era 1 mensaje por servicio).
+- **Kill switch**: env var `GUARDIA_DISABLED=1` desactiva el script sin tocar el cron.
+- **Estado persistido**: `/tmp/guardia_estado.json` (cooldown por servicio).
+
+### 16 checks activos + 2 preparados (deshabilitados)
+
+#### Arnaldo
+| Check | URL / acción |
+|---|---|
+| `fastapi` | `https://agentes.arnaldoayalaestratega.cloud/health` (status=healthy + workers≥6) |
+| `n8n` | `https://n8n.arnaldoayalaestratega.cloud/healthz` |
+| `n8n_mica` | `https://sytem-ia-pruebas-n8n.6g0gdj.easypanel.host/healthz` |
+| `n8n_lovbot` | `https://n8n.lovbot.ai/healthz` |
+| `coolify` | API Coolify Arnaldo — app `system-ia-agentes` status `running:healthy` |
+| `chatwoot_arnaldo` | `https://chatwoot.arnaldoayalaestratega.cloud/` HTTP 200/302 |
+| `maicol_crm_frontend` | `https://crm.backurbanizaciones.com/` HTTP 200 |
+| `maicol_crm_cors` | OPTIONS preflight con Origin del CRM (ver [[cors-preflight-monitoreo]]) |
+
+#### Robert
+| Check | URL / acción |
+|---|---|
+| `backend_robert` | `https://agentes.lovbot.ai/health` HTTP 200 |
+| `robert_crm_modelo` | `https://crm.lovbot.ai/dev/crm-v2` ([[crm-v2-modelo-robert]]) |
+| `robert_crm_dominio` | `https://crm.lovbot.ai/` |
+| `robert_panel_gestion` | `https://lovbot-demos.vercel.app/dev/admin` ([[panel-gestion-robert]]) |
+| `robert_admin` | `https://admin.lovbot.ai/` |
+| `robert_crm_cors` | OPTIONS preflight `agentes.lovbot.ai/health` con Origin `crm.lovbot.ai` |
+| `robert_admin_clientes_internal` | `https://admin.lovbot.ai/clientes.html` — Coolify Hetzner (2026-04-22) |
+| `robert_admin_agencia_internal` | `https://admin.lovbot.ai/agencia.html` — Coolify Hetzner (2026-04-22) |
+
+#### Mica (deshabilitados, env var `MICA_CRM_ENABLED=0`)
+| Check | URL / acción |
+|---|---|
+| `mica_crm` | URL pendiente — hoy `https://system-ia-agencia.vercel.app/system-ia/dev/crm-v2` ([[crm-v2-modelo-mica]]) |
+| `mica_crm_cors` | OPTIONS preflight análogo cuando se defina dominio prod ([[panel-gestion-mica]]) |
+
+> **Para activar Mica**: en Coolify → app `system-ia-agentes` → env vars: `MICA_CRM_URL=<dominio>` + `MICA_CRM_ENABLED=1`. Próximo ciclo cron picks up sin redeploy.
+
+### Commits relevantes del refactor 2026-04-22
+
+- `e628985` — refactor consolidado + 4 checks Arnaldo (agregó Maicol CRM CORS preflight + frontend + Chatwoot + Backend Robert)
+- `e9604dd` — 3 checks Robert + 2 placeholders Mica
+- `7856abd` — refinar Robert URL al CRM modelo real (`/dev/crm-v2`)
 
 ## Dónde vive el código
 
