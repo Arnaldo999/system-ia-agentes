@@ -18,7 +18,16 @@
 - TTL recomendado: 300 (5 min para propagación rápida)
 - Hasta que el DNS propague: Vercel sigue respondiendo en `admin.lovbot.ai` (fallback OK)
 
-**Deploy status**: pendiente (DNS no propagado — trigger deploy después de DNS)
+**Deploy status**: running:healthy (2026-04-23 01:03:40 UTC) — commit d969e90
+
+**Historial de fixes en el Dockerfile**:
+- `3ab0ce0` — Dockerfile inicial con printf (healthcheck via HEALTHCHECK NONE)
+- `bb412f4` — HEALTHCHECK NONE (fallido: Coolify no puede leer State.Health sin esa key)
+- `9640318` — wget healthcheck (fallido: Connection refused — nginx no arrancaba porque printf malformaba nginx.conf)
+- `6403c32` — nginx.conf como archivo separado + wget --spider (fallido: Connection refused aún)
+- `d969e90` — wget con 127.0.0.1 -O /dev/null + start-period 15s (EXITOSO — running:healthy)
+
+**Causa raíz del problema de healthcheck**: el `printf` en el Dockerfile generaba nginx.conf mal formateado (los `\n` no se interpretaban correctamente), nginx no arrancaba → Connection refused en el healthcheck.
 
 **Vercel**: `lovbot-demos.vercel.app/dev/admin/*` intacto como fallback (NO tocar vercel.json)
 

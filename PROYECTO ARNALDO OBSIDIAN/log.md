@@ -7,7 +7,8 @@
 ## [2026-04-22] deploy | Admin Robert migrado a Coolify Hetzner — admin.lovbot.ai con /clientes + /agencia
 
 - App Coolify creada: `lovbot-admin-internal` (UUID `v0k8480sw800o00og0oo04g8`), project `Agentes`, FQDN `https://admin.lovbot.ai`
-- Dockerfile creado en `demos/INMOBILIARIA/dev/admin/Dockerfile` — nginx:alpine, sirve clientes.html + agencia.html
+- Dockerfile en `demos/INMOBILIARIA/dev/admin/Dockerfile` — nginx:alpine, nginx.conf como archivo separado, healthcheck wget 127.0.0.1
+- Deploy status: `running:healthy` (commit `d969e90`)
 - DNS pendiente: Arnaldo debe cambiar A record `admin` → `5.161.235.99` en el proveedor DNS de `lovbot.ai`
 - Vercel queda como fallback (`lovbot-demos.vercel.app/dev/admin/*` intacto)
 - Monitor `guardia_critica.py` actualizado: 2 checks nuevos (`robert_admin_clientes_internal` + `robert_admin_agencia_internal`)
