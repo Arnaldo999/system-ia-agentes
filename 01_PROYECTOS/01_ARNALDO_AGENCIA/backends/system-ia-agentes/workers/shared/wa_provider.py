@@ -411,18 +411,6 @@ def _parse_evolution(body: dict) -> Optional[dict]:
     try:
         data = body.get("data", body)
         key = data.get("key", {})
-        # DEBUG: loguear payload completo para diagnosticar bugs WhatsApp Web/Desktop
-        # TODO: quitar despues de diagnosticar el caso "no responde desde PC" de Mica
-        logger.warning(
-            f"[WA-PARSE-EVO-DEBUG] key_fields={list(key.keys())} "
-            f"data_fields={list(data.keys())} "
-            f"remoteJid={key.get('remoteJid','')} "
-            f"fromMe={key.get('fromMe')} "
-            f"msg_keys={list((data.get('message') or {}).keys())} "
-            f"pushName={data.get('pushName','')} "
-            f"source={data.get('source','')} "
-            f"messageType={data.get('messageType','')}"
-        )
         if key.get("fromMe"):
             return None
 
@@ -466,17 +454,31 @@ def _parse_evolution(body: dict) -> Optional[dict]:
         telefono = _clean_phone(re.sub(r"@.*", "", remote_jid))
 
         message = data.get("message", {}) or {}
-        msg_type = list(message.keys())[0] if message else ""
+        # NO tomar la primera key: Evolution puede mandar multiples keys en
+        # message (ej: WhatsApp Web/Desktop manda ['messageContextInfo',
+        # 'conversation']). Si tomabamos [0] ciegamente, caiamos en
+        # 'messageContextInfo' y el texto quedaba vacio → mensaje descartado.
+        # Buscar en orden de prioridad los tipos de mensaje soportados.
         texto = ""
-
-        if msg_type == "conversation":
+        msg_type = ""
+        if "conversation" in message:
+            msg_type = "conversation"
             texto = message.get("conversation", "")
-        elif msg_type == "extendedTextMessage":
+        elif "extendedTextMessage" in message:
+            msg_type = "extendedTextMessage"
             texto = message.get("extendedTextMessage", {}).get("text", "")
-        elif msg_type == "buttonsResponseMessage":
+        elif "buttonsResponseMessage" in message:
+            msg_type = "buttonsResponseMessage"
             texto = message.get("buttonsResponseMessage", {}).get("selectedDisplayText", "")
-        elif msg_type == "listResponseMessage":
+        elif "listResponseMessage" in message:
+            msg_type = "listResponseMessage"
             texto = message.get("listResponseMessage", {}).get("title", "")
+        else:
+            # Ningun tipo conocido — tomar primera key no-metadata como fallback
+            for k in message.keys():
+                if k != "messageContextInfo":
+                    msg_type = k
+                    break
 
         nombre = data.get("pushName", "")
 
