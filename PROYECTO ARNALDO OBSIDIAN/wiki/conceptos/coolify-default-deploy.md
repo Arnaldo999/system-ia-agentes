@@ -13,8 +13,10 @@ proyecto: compartido
 Desde el 22 de abril de 2026, **cualquier HTML, sitio web, propuesta, formulario o proyecto estático nuevo se deploya en Coolify (no en Vercel)**.
 
 Vercel queda solo para:
-- Apps existentes que ya tienen dominios configurados ahí y mueven volumen (ej: `crm.lovbot.ai` hasta que se migre)
-- Casos donde el CDN edge global es crítico (contenido público con tráfico internacional masivo — no es el caso de los proyectos actuales)
+- ~~Apps existentes que ya tienen dominios configurados ahí (ej: `crm.lovbot.ai`)~~ → **MIGRADO A COOLIFY 2026-04-23**: ya no hay productos Lovbot en Vercel.
+- Mica/System IA: `system-ia-agencia.vercel.app/system-ia/*` — sigue en Vercel hasta que Mica defina dominio propio.
+- Maicol (Arnaldo): `crm.backurbanizaciones.com` — sigue en Vercel.
+- Casos donde el CDN edge global es crítico (contenido público con tráfico internacional masivo — no es el caso de los proyectos actuales).
 
 ## Por qué
 
@@ -102,11 +104,35 @@ Checklist para migrar:
 
 Si los 4 OK → migrar. Si alguno falla → mantener en Vercel.
 
-## Historial de migración planeada
+## Historial de migración
 
-- **Robert** (`crm.lovbot.ai`): agendada para **23 de abril 2026** después del reset de cupo Vercel de hoy, para que los commits pendientes se deployen primero y después se apague Vercel con todo actualizado.
+- **Robert** (`crm.lovbot.ai` + `admin.lovbot.ai`): ✅ **EJECUTADA 2026-04-23** — los 2 dominios viven 100% en [[coolify-robert|Coolify Hetzner]] desde esa fecha. 3 apps: `lovbot-crm-modelo`, `lovbot-admin-internal`, `system-ia-agentes` (backend Robert). Cero downtime durante migración. Vercel queda como fallback temporal. Ver síntesis [[wiki/sintesis/2026-04-23-migracion-lovbot-coolify]].
 - **Mica** (`system-ia-agencia.vercel.app`): diferida hasta que Mica compre dominio propio. Sin dominio de ella, no tiene sentido migrar.
+- **Maicol** (`crm.backurbanizaciones.com`): sigue en Vercel — no hay razón para migrar ahora (cliente externo, dominio propio, funciona estable).
 - **Clientes nuevos (Cesar, Patricia, futuros)**: **directo a Coolify desde el minuto 1** — ya aplicada esta regla.
+
+## Patrones aprendidos durante la migración Lovbot 2026-04-23
+
+### Tipos de source de Coolify y autodeploy
+
+Cuando creás una app Coolify conectada a un repo GitHub, hay 2 formas de configurar el source:
+
+| Source | Autodeploy en push | Configuración necesaria |
+|--------|---------------------|--------------------------|
+| **GitHub App oficial Coolify** (recomendado) | ✅ Automático sin más | Click "Connect GitHub" → autoriza la app → listo |
+| **Public Repository / Manual webhook** | ❌ Necesita webhook manual en GitHub repo | Generar secret en Coolify → crear webhook en GitHub → pegar URL+secret |
+
+**Anécdota 2026-04-23**: las 2 apps nuevas Lovbot se crearon con sources distintos por error. `lovbot-crm-modelo` quedó con GitHub App (autodeploy OK) pero `lovbot-admin-internal` quedó con "Public Repository" (sin autodeploy). Tuvimos que configurar webhook manual en GitHub apuntando a `https://coolify.lovbot.ai/webhooks/source/github/events/manual` con secret compartido.
+
+### Múltiples Coolify escuchando el mismo repo
+
+GitHub manda el push event a TODOS los webhooks/Apps configurados, en paralelo. Cada Coolify recibe copia y decide independientemente qué app redespliega. **No interfieren entre sí**:
+
+- Coolify Hostinger Arnaldo → redeploya `system-ia-agentes` (backend Arnaldo)
+- Coolify Hetzner Robert → redeploya `system-ia-agentes` (backend Robert) + `lovbot-crm-modelo`
+- Webhook manual Coolify Robert (otro endpoint) → redeploya `lovbot-admin-internal`
+
+3 receptores distintos, 1 push, 4 apps redeployan en paralelo.
 
 ## Fuentes
 

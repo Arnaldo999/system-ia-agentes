@@ -16,25 +16,30 @@ Panel HTML de administración de tenants (clientes) de la agencia [[lovbot-ai|Lo
 - Suspender / reactivar / renovar suscripción de un cliente.
 - Abrir directamente el CRM v2 de cada cliente con su `tenant=<slug>` precargado.
 
-## URL canónica (Coolify Hetzner — desde 2026-04-22)
+## URL canónica (Coolify Hetzner — desde 2026-04-23 con DNS propagado)
 
-- `https://admin.lovbot.ai/clientes.html` (canónica definitiva — Coolify Hetzner)
-- `https://admin.lovbot.ai/agencia.html` (CRM agencia Lovbot — mismo host)
+- `https://admin.lovbot.ai/clientes` (canónica — admin de tenants Supabase)
+- `https://admin.lovbot.ai/agencia` (CRM agencia Lovbot — ver [[crm-agencia-lovbot]])
 - `https://admin.lovbot.ai/` (redirect → `clientes.html`)
 
-## URL Vercel (fallback temporal — mientras DNS propaga)
+## Acceso
 
-- `https://lovbot-demos.vercel.app/dev/admin/clientes` (fallback — no tocar)
-- `https://lovbot-demos.vercel.app/dev/admin` (alias retro-compatible)
+🔑 Token de acceso: `lovbot-admin-2026` (env var `LOVBOT_ADMIN_TOKEN`, default del código en `workers/shared/tenants.py`)
+
+## URL Vercel (fallback histórico — sigue funcionando pero NO es canónica)
+
+- `https://lovbot-demos.vercel.app/dev/admin/clientes` (fallback — no tocar `vercel.json` por las dudas)
+- `https://lovbot-demos.vercel.app/dev/admin/agencia` (fallback)
 
 ## Archivo físico
 
-- **Path**: `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/admin/clientes.html`
+- **Path canónico**: `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/admin/clientes.html`
   - Movido de `dev/admin.html` a `dev/admin/clientes.html` el 2026-04-22 (git mv — historial preservado)
 - **Hermano en la misma carpeta**: `dev/admin/agencia.html` — CRM agencia Lovbot ([[crm-agencia-lovbot]])
 - **Dockerfile**: `dev/admin/Dockerfile` — nginx:alpine, sirve ambos HTMLs, agrega redirects `/clientes` → `/clientes.html` y `/agencia` → `/agencia.html`
 - **Servido por**: [[coolify-robert|Coolify Hetzner]] — app `lovbot-admin-internal` (UUID `v0k8480sw800o00og0oo04g8`)
-- **Fallback**: Vercel `lovbot-demos.vercel.app/dev/admin/*` (no tocar — sigue activo)
+- **Autodeploy**: ✅ via webhook manual GitHub (configurado 2026-04-23 — único caso del ecosistema sin GitHub App oficial)
+- **Fallback**: Vercel `lovbot-demos.vercel.app/dev/admin/*` (sigue activo mientras no se limpie `vercel.json`)
 
 ## A qué backend pega — y por qué
 
@@ -53,11 +58,10 @@ El admin solo gestiona la **capa 1** (Supabase). Para entrar al CRM real de un c
 
 ## Vínculo con el CRM modelo
 
-El botón "🔗 CRM" de cada tenant abre `https://crm.lovbot.ai/dev/crm-v2?tenant=<slug>` → ver [[crm-v2-modelo-robert]].
+El botón "🔗 CRM" de cada tenant abre `https://crm.lovbot.ai/dev/crm-v2?tenant=<slug>` → ver [[crm-v2-modelo-robert]] (también desde [[coolify-robert|Coolify Hetzner]] desde 2026-04-23).
 
-> **Actualización 2026-04-23**: `crm.lovbot.ai` ahora sirve desde **Coolify Hetzner** (app `lovbot-crm-modelo`, UUID `wcgg4kk0sw0g0wgw4swowog0`) — migrado de Vercel. Ver sección "CRM modelo en Coolify" más abajo.
-
-> **Bug arreglado 2026-04-22**: el botón apuntaba a `crm.lovbot.ai/?tenant=<slug>` (URL del v1 viejo, que por catch-all servía v2 pero no era explícito). Cambiado al path explícito `/dev/crm-v2`.
+> **Bug arreglado 2026-04-22**: el botón apuntaba a `crm.lovbot.ai/?tenant=<slug>` (URL del v1 viejo). Cambiado al path explícito `/dev/crm-v2`.
+> **Bug arreglado 2026-04-23**: nav del sidebar tenía `href="/dev/admin/clientes"` que daba 404 en Coolify (path Vercel viejo). Cambiado a `/clientes` y `/agencia` (commit `1851623`).
 
 ## Hermano por agencia
 
@@ -65,13 +69,17 @@ El botón "🔗 CRM" de cada tenant abre `https://crm.lovbot.ai/dev/crm-v2?tenan
 
 **No hay sincronización automática** entre ambos. Si se modifica uno y el otro debería tener la misma feature, hay que copiar manualmente.
 
-## NO confundir con el futuro CRM agencia
+⚠️ **Diferencia importante**: el de Mica sigue en Vercel (no se migró). Solo Lovbot está 100% en Hetzner.
+
+## NO confundir con el CRM agencia
 
 Este panel gestiona **clientes que YA compraron el CRM** (catálogo `tenants` en [[supabase-tenants|Supabase]]).
 
-El futuro [[crm-agencia-lovbot]] (pendiente de implementar) gestiona **leads de la agencia que AÚN NO compraron** (Postgres Hetzner, captura desde [[landing-lovbot-ai]] + bot agencia).
+El [[crm-agencia-lovbot]] (mockup deployado, backend pendiente) gestiona **leads de la agencia que AÚN NO compraron** (futuro Postgres Hetzner, captura desde [[landing-lovbot-ai]] + bot agencia).
 
 Son productos complementarios: leads → conversión → cliente. Cuando un lead del CRM agencia se convierte, se inserta un row en `tenants` y aparece en este panel.
+
+Los 2 viven en el mismo dominio `admin.lovbot.ai` con sidebar compartido para alternar (`Clientes CRM` ↔ `Leads Agencia`).
 
 ## Despliegue en Coolify Hetzner (migración 2026-04-22)
 

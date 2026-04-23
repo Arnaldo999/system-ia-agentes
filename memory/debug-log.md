@@ -1,5 +1,49 @@
 # Debug y errores frecuentes
 
+## [2026-04-23] migración completa | Lovbot 100% en Coolify Hetzner — sale de Vercel productivo
+
+**DNS propagado** (Arnaldo cambió en cPanel):
+- `crm.lovbot.ai`: CNAME Vercel → A `5.161.235.99` ✅
+- `admin.lovbot.ai`: CNAME Vercel → A `5.161.235.99` ✅
+
+**Estado post-migración (validado con `--resolve` + ventana incógnito)**:
+- `https://crm.lovbot.ai/dev/crm-v2` → nginx Coolify, "CRM — Powered by LovBot IA" ✅
+- `https://admin.lovbot.ai/clientes` → nginx Coolify, "Lovbot Admin — Gestión de Clientes" ✅
+- `https://admin.lovbot.ai/agencia` → nginx Coolify, "Lovbot Agencia — CRM Gestión de Leads" ✅
+- SSL Let's Encrypt automático (Traefik provisionó solo cuando DNS resolvió)
+- Server header: `nginx/1.29.8` (ya no Vercel)
+
+**Bug fix nav del sidebar (commit `1851623`)**:
+- Sintoma: click en "Clientes CRM" desde `agencia` daba 404
+- Causa: hrefs apuntaban a `/dev/admin/clientes` (path Vercel viejo). En Coolify los archivos están en raíz.
+- Fix: `/dev/admin/clientes` → `/clientes`, `/dev/admin/agencia` → `/agencia` (4 ocurrencias en 2 archivos).
+
+**Bug autodeploy `lovbot-admin-internal` no funcionaba**:
+- Causa: app fue creada con source "Public Repository" en lugar de "GitHub App oficial"
+- Resultado: GitHub no avisaba a Coolify Hetzner cuando había push (solo a Coolify Hostinger Arnaldo)
+- Fix: configurar webhook manual en GitHub Settings → Webhooks
+  - URL: `https://coolify.lovbot.ai/webhooks/source/github/events/manual`
+  - Secret: `a8f3d2e1b9c7456082f1a3d4e5b6c7d8a9e0f1b2c3d4e5f6a7b8c9d0e1f2a3b4`
+  - Validado con ping ✅
+- **Lección**: cuando se crea app Coolify nueva, SIEMPRE elegir "GitHub App oficial" para autodeploy automático sin trámites.
+
+**Token admin (LOVBOT_ADMIN_TOKEN)**:
+- Valor actual: `lovbot-admin-2026` (default del código en `workers/shared/tenants.py:213`)
+- ⚠️ Pendiente seguridad: rotar a token random fuerte (`openssl rand -hex 32`) + override en Coolify env vars
+
+**Hoy NO se tocó** (mantenido como fallback):
+- `vercel.json` raíz Mission Control → sigue sirviendo URLs Lovbot via Vercel
+- App Mica (`system-ia-agencia.vercel.app/system-ia/*`) → sigue en Vercel hasta dominio propio
+- Maicol (`crm.backurbanizaciones.com`) → sigue en Vercel
+
+**Wiki Obsidian actualizada masivamente**:
+- 7 páginas Robert con info Vercel desactualizada → actualizadas a Coolify Hetzner
+- Síntesis nueva: `wiki/sintesis/2026-04-23-migracion-lovbot-coolify.md`
+- Memoria persistente Silo 1: `feedback_lovbot_100_coolify_2026_04_23.md`
+- 3 feedbacks actualizados: `feedback_crm_dev_prod`, `feedback_no_tocar_lovbot_robert`, `feedback_supabase_tenants_lovbot`
+
+---
+
 ## [2026-04-23] deploy | CRM modelo Lovbot migrado a Coolify Hetzner
 
 **Razón**: cuota Vercel Hobby cerca del límite. CRM es el frontend principal de clientes Lovbot.

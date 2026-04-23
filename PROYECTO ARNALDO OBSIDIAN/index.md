@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-22 | Total páginas: 49 (1 fuente + 20 entidades + 22 conceptos + 5 síntesis + 1 mapa de prod)
+Última actualización: 2026-04-23 | Total páginas: 50 (1 fuente + 20 entidades + 22 conceptos + 6 síntesis + 1 mapa de prod)
 
 ## Fuentes (1)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -46,7 +46,7 @@
 ### Productos / Paneles Gestión (admin de tenants/clientes)
 | Página | Tipo | Proyecto |
 |--------|------|----------|
-| [[wiki/entidades/panel-gestion-robert]] | Admin Lovbot (`admin.lovbot.ai` — Coolify Hetzner desde 2026-04-22, Vercel fallback) — gestiona clientes Lovbot | robert |
+| [[wiki/entidades/panel-gestion-robert]] | Admin Lovbot (`admin.lovbot.ai/clientes` — Coolify Hetzner desde 2026-04-23 con DNS propagado) — gestiona clientes Lovbot | robert |
 | [[wiki/entidades/panel-gestion-mica]] | Admin System IA (`system-ia-agencia.vercel.app/system-ia/admin`) — gestiona clientes Mica | mica |
 
 ### Productos / Marketing y captura
@@ -148,6 +148,7 @@
 | [[wiki/sintesis/2026-04-21-crm-v2-mica]] | Setup CRM v2 Mica con stack Airtable + Evolution + decisión Embedded Signup compartido via TP Robert | 2026-04-21 | mica |
 | [[wiki/sintesis/2026-04-22-crm-v3-robert]] | Refactor CRM v3 Robert — persona única + contratos polimórficos + lotes granulares + GESTIÓN editable | 2026-04-22 | robert |
 | [[wiki/sintesis/2026-04-22-crm-v3-mica]] | Replicación CRM v3 Mica (Airtable) — mismo modelo persona única + contratos + UI ámbar — backend 11/11 OK, frontend Vercel deployado | 2026-04-22 | mica |
+| [[wiki/sintesis/2026-04-23-migracion-lovbot-coolify]] | 🏆 Migración completa Lovbot Vercel → Coolify Hetzner. `crm.lovbot.ai` y `admin.lovbot.ai` ahora 100% en Hetzner. Cero downtime. CRM Agencia LIVE como mockup | 2026-04-23 | robert |
 
 ---
 

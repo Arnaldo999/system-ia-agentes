@@ -38,8 +38,11 @@ Las 3 agencias son entidades separadas. Jamás atribuir clientes de una a otra.
 - Socio técnico → [[arnaldo-ayala]]
 - Infra propia → [[vps-hostinger-mica]] + [[easypanel-mica]]
 - Infra compartida con Arnaldo → backend FastAPI en [[coolify-arnaldo]]
-- Base de datos → [[airtable]]
+- Base de datos → [[airtable]] (base modelo: [[inmobiliaria-demo-mica-airtable]])
 - WhatsApp provider → [[evolution-api]]
+- **CRM modelo (frontend HTML)** → [[crm-v2-modelo-mica]] (`/system-ia/dev/crm-v2`, desde 2026-04-22)
+- **Panel Gestión (admin)** → [[panel-gestion-mica]] (`system-ia-agencia.vercel.app/system-ia/admin`, lee tenants de [[supabase-tenants]])
+- Catálogo de clientes (Supabase compartida con Lovbot) → [[supabase-tenants]]
 - Clientes comerciales propios → (pendiente ingestar briefs)
 - Agencia hermana → [[agencia-arnaldo-ayala]]
 - Agencia hermana → [[lovbot-ai]]

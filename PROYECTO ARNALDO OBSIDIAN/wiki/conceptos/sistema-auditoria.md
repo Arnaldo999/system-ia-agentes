@@ -81,7 +81,7 @@ Resultado incluido en el reporte Telegram como sección "🔧 AUTO-REPARACIÓN".
 | `backend_robert` | `https://agentes.lovbot.ai/health` HTTP 200 |
 | `robert_crm_modelo` | `https://crm.lovbot.ai/dev/crm-v2` ([[crm-v2-modelo-robert]]) |
 | `robert_crm_dominio` | `https://crm.lovbot.ai/` |
-| `robert_panel_gestion` | `https://lovbot-demos.vercel.app/dev/admin` ([[panel-gestion-robert]]) |
+| `robert_panel_gestion` | `https://admin.lovbot.ai/clientes` ([[panel-gestion-robert]]) — Coolify Hetzner desde 2026-04-23 |
 | `robert_admin` | `https://admin.lovbot.ai/` |
 | `robert_crm_cors` | OPTIONS preflight `agentes.lovbot.ai/health` con Origin `crm.lovbot.ai` |
 | `robert_admin_clientes_internal` | `https://admin.lovbot.ai/clientes.html` — Coolify Hetzner (2026-04-22) |

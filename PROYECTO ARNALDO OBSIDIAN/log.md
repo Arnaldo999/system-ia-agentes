@@ -340,3 +340,23 @@ Estado wiki: 12 entidades + 7 conceptos = 19 páginas. Falta ingestar fuentes of
 - Stack confirmado: bot agencia usará Tech Provider Robert + nuevo número WABA (cuando esté habilitado)
 - Frontend: replicar `crm-v2.html` adaptado, quitando paneles inmobiliarios específicos
 - Cross-refs agregadas: lovbot-ai, supabase-tenants, panel-gestion-robert, sesion-2026-04-22 — todos mencionan el nuevo CRM agencia y aclaran cómo se diferencia de los productos existentes
+
+## [2026-04-23] hito | Lovbot 100% migrado a Coolify Hetzner — sale de Vercel productivo
+- 2 dominios productivos migrados: `crm.lovbot.ai` y `admin.lovbot.ai`
+- 2 apps Coolify Hetzner nuevas: `lovbot-crm-modelo` (UUID `wcgg4kk0sw0g0wgw4swowog0`) + `lovbot-admin-internal` (UUID `v0k8480sw800o00og0oo04g8`)
+- DNS cambiados en cPanel (Arnaldo manual): CNAME Vercel → A record `5.161.235.99` Hetzner
+- SSL Let's Encrypt automático via Traefik, cero downtime durante propagación
+- Webhook manual GitHub configurado para `lovbot-admin-internal` (la app no usa GitHub App oficial — único caso del ecosistema)
+- Bug fix nav del sidebar: `/dev/admin/clientes` → `/clientes` (commit `1851623`)
+- Monitor `guardia_critica.py` ampliado a 18 checks (4 nuevos para validar Coolify)
+- Vercel queda como fallback temporal (no se tocó `vercel.json`)
+- Síntesis nueva: [[wiki/sintesis/2026-04-23-migracion-lovbot-coolify]]
+- Entidades actualizadas con nueva URL/host: `crm-v2-modelo-robert`, `panel-gestion-robert`, `coolify-robert`, `lovbot-ai`, `robert-bazan`
+- Conceptos actualizados: `coolify-default-deploy` (Robert ya no es "pendiente migrar"), `crm-agencia-lovbot` (decisiones de URL+backend resueltas), `sistema-auditoria` (URL canónica nueva del check `robert_panel_gestion`)
+
+## [2026-04-23] update | Bug histórico Robert/Vercel — limpieza retroactiva de wiki
+- Auditoría: encontradas 7 páginas wiki con URLs `lovbot-demos.vercel.app` o "servido por Vercel" desactualizadas
+- Reemplazadas por URLs canónicas Coolify Hetzner
+- Frontmatter actualizado con `hosting_actual: coolify-hetzner-robert` y `fecha_migracion_coolify: 2026-04-23` donde aplicaba
+- Tags `vercel` removidas, agregadas `coolify-hetzner` donde corresponde
+- Las páginas `raw/` (fuentes inmutables) NO se tocaron por regla de la wiki

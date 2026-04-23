@@ -97,13 +97,15 @@ URL pública sugerida (a decidir): `gestion.lovbot.ai` o `crm.lovbot.ai/agencia`
 
 Solo Robert + Arnaldo. Probable autenticación simple por PIN o sesión persistente como [[panel-gestion-robert]].
 
-## Comparativa de los 3 productos Lovbot
+## Comparativa de los 3 productos Lovbot (todos en Coolify Hetzner desde 2026-04-23)
 
 | Producto | Para quién | Backend | Storage | URL |
 |----------|-----------|---------|---------|-----|
-| [[crm-v2-modelo-robert]] | Cliente inmobiliaria final | `agentes.lovbot.ai` | Postgres por cliente (clonado de `lovbot_crm_modelo`) | `crm.lovbot.ai/dev/crm-v2?tenant=X` |
-| [[panel-gestion-robert]] | Robert+Arnaldo (gestión clientes que compraron CRM) | `agentes.arnaldoayalaestratega.cloud/admin/tenants` | [[supabase-tenants\|Supabase]] | `lovbot-demos.vercel.app/dev/admin` |
-| 🆕 **CRM Agencia Lovbot** (este) | Robert+Arnaldo (gestión leads agencia) | A definir (probablemente `agentes.lovbot.ai/agencia/...`) | 🆕 Postgres Hetzner BD `lovbot_agencia_crm` | A definir (`gestion.lovbot.ai`?) |
+| [[crm-v2-modelo-robert]] | Cliente inmobiliaria final | `agentes.lovbot.ai` | Postgres por cliente (clonado de `lovbot_crm_modelo`) | `https://crm.lovbot.ai/dev/crm-v2?tenant=X` |
+| [[panel-gestion-robert]] | Robert+Arnaldo (gestión clientes que compraron CRM) | `agentes.arnaldoayalaestratega.cloud/admin/tenants` | [[supabase-tenants\|Supabase]] | `https://admin.lovbot.ai/clientes` |
+| 🆕 **CRM Agencia Lovbot** (este) | Robert+Arnaldo (gestión leads agencia) | A definir (probablemente `agentes.lovbot.ai/agencia/...`) | 🆕 Postgres Hetzner BD `lovbot_agencia_crm` | `https://admin.lovbot.ai/agencia` (mockup deployado) |
+
+> Los 3 productos comparten el dominio `admin.lovbot.ai` (admin + agencia) o `crm.lovbot.ai` (modelo cliente). Todos vivos desde [[coolify-robert|Coolify Hetzner]]. Vercel queda solo como fallback temporal.
 
 ## Pasos de implementación (orden sugerido)
 
@@ -119,8 +121,8 @@ Solo Robert + Arnaldo. Probable autenticación simple por PIN o sesión persiste
 
 ## Decisiones diferidas
 
-- ¿Subdomino dedicado (`gestion.lovbot.ai`) o subruta (`crm.lovbot.ai/agencia`)?
-- ¿Mismo backend FastAPI Arnaldo o nuevo en Lovbot Hetzner?
+- ~~¿Subdomino dedicado (`gestion.lovbot.ai`) o subruta (`crm.lovbot.ai/agencia`)?~~ → **RESUELTO 2026-04-23**: vive en `https://admin.lovbot.ai/agencia` (mismo host que el panel de clientes — un solo dominio admin para todo lo interno).
+- ~~¿Mismo backend FastAPI Arnaldo o nuevo en Lovbot Hetzner?~~ → **RESUELTO 2026-04-23**: backend nuevo en `agentes.lovbot.ai` (Hetzner), endpoints `/agencia/*` (pendientes de implementar).
 - ¿Auth simple PIN o algo más robusto (JWT, OAuth Google)?
 - Estructura definitiva de tablas (extender o no el patrón v3 completo).
 

@@ -44,7 +44,17 @@ Instancia de Coolify (self-hosted PaaS) instalada en [[vps-hetzner-robert]]. Es 
 - Mismo repo que Arnaldo (`github.com/Arnaldo999/system-ia-agentes`) pero deploy a `coolify.lovbot.ai` en vez de `coolify.arnaldoayalaestratega.cloud`.
 - Scripts de deploy: pasar `--vps robert` a `deploy_service.py` o usar `CoolifyManager(vps="robert")`.
 
+## Apps deployadas (al 2026-04-23)
+
+| App | UUID | FQDN | Stack | Autodeploy |
+|-----|------|------|-------|-----------|
+| `system-ia-agentes` | `ywg48w0gswwk0skokow48o8k` | `agentes.lovbot.ai` | FastAPI Python (Dockerfile) | ✅ GitHub App oficial |
+| `lovbot-crm-modelo` | `wcgg4kk0sw0g0wgw4swowog0` | `crm.lovbot.ai` | nginx alpine estático | ✅ GitHub App oficial |
+| `lovbot-admin-internal` | `v0k8480sw800o00og0oo04g8` | `admin.lovbot.ai` | nginx alpine estático (sirve `clientes.html` + `agencia.html`) | ✅ Webhook manual GitHub (configurado 2026-04-23) |
+
+> **Cambio histórico 2026-04-23**: el frontend CRM de Robert (`crm.lovbot.ai`) y el panel admin (`admin.lovbot.ai`) se migraron de Vercel a [[coolify-robert]] para escapar del límite Vercel Hobby. Ahora **toda la stack productiva de Lovbot vive en Hetzner** (cero Vercel productivo). Solo Mica y los demás demos siguen en Vercel. Ver [[crm-v2-modelo-robert]] y [[panel-gestion-robert]].
+
 ## Notas
 
-- Frontend CRM de Robert se sirve desde Vercel (`crm.lovbot.ai`, `lovbot-demos.vercel.app/dev/*`), no desde Coolify.
 - El PostgreSQL convive en la misma red Docker que la app FastAPI — conexión via hostname del container.
+- Las apps estáticas nginx alpine consumen <10MB RAM cada una — el VPS Hetzner las maneja sin problema sumadas a backend + Postgres + n8n + Chatwoot.
