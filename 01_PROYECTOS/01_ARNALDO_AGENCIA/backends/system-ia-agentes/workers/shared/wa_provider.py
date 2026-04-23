@@ -411,6 +411,18 @@ def _parse_evolution(body: dict) -> Optional[dict]:
     try:
         data = body.get("data", body)
         key = data.get("key", {})
+        # DEBUG: loguear payload completo para diagnosticar bugs WhatsApp Web/Desktop
+        # TODO: quitar despues de diagnosticar el caso "no responde desde PC" de Mica
+        logger.warning(
+            f"[WA-PARSE-EVO-DEBUG] key_fields={list(key.keys())} "
+            f"data_fields={list(data.keys())} "
+            f"remoteJid={key.get('remoteJid','')} "
+            f"fromMe={key.get('fromMe')} "
+            f"msg_keys={list((data.get('message') or {}).keys())} "
+            f"pushName={data.get('pushName','')} "
+            f"source={data.get('source','')} "
+            f"messageType={data.get('messageType','')}"
+        )
         if key.get("fromMe"):
             return None
 
