@@ -63,9 +63,10 @@ NOMBRE_ASESOR  = os.environ.get("INMO_DEMO_ASESOR",  "Roberto")
 NUMERO_ASESOR  = os.environ.get("INMO_DEMO_NUMERO_ASESOR", "")
 MONEDA         = os.environ.get("INMO_DEMO_MONEDA",  "USD")
 SITIO_WEB      = os.environ.get("INMO_DEMO_SITIO_WEB", "")
-CAL_API_KEY    = os.environ.get("INMO_DEMO_CAL_API_KEY", "")
-CAL_EVENT_ID   = os.environ.get("INMO_DEMO_CAL_EVENT_ID", "")
-CAL_TIMEZONE   = os.environ.get("INMO_DEMO_CAL_TIMEZONE", "America/Argentina/Buenos_Aires")
+CAL_API_KEY       = os.environ.get("INMO_DEMO_CAL_API_KEY", "")
+CAL_EVENT_ID      = os.environ.get("INMO_DEMO_CAL_EVENT_ID", "")
+CAL_TIMEZONE      = os.environ.get("INMO_DEMO_CAL_TIMEZONE", "America/Argentina/Buenos_Aires")
+HORARIO_ATENCION  = os.environ.get("INMO_DEMO_HORARIO", "lunes a viernes de 9 a 18 hs")
 
 # Mapeo timezone → offset UTC para conversión de slots
 _TZ_OFFSETS = {
@@ -1562,8 +1563,7 @@ REGLAS:
 "¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
 
 Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos
-en {zonas_breve or 'distintas zonas premium'}. Atendemos de lunes a viernes
-de 9 a 18 hs 🕐
+en {zonas_breve or 'distintas zonas premium'}. Atendemos de {HORARIO_ATENCION} 🕐
 
 ¿Hablo con {nombre_primero}, correcto?"
 
@@ -1580,8 +1580,7 @@ o buscás más una opción de inversión?"
 "¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
 
 Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos
-en {zonas_breve or 'distintas zonas premium'}. Atendemos de lunes a viernes
-de 9 a 18 hs 🕐
+en {zonas_breve or 'distintas zonas premium'}. Atendemos de {HORARIO_ATENCION} 🕐
 
 Antes de seguir, *¿con quién tengo el gusto de conversar?* 😊"
 
@@ -1663,6 +1662,19 @@ Este cliente ({nombre or 'sin nombre'}) ya está en la base de datos. Datos prev
 → Emití `ACCION: agendar` para conseguir la cita, sin texto conversacional adicional.
 """
     else:
+        # Construir regla #1 fuera del f-string (Python 3.11 no parsea
+        # f-strings triples anidados con ternario y comillas dobles dentro).
+        es_primer_turno_saludo = (siguiente_campo == "nombre" and not bot_ya_saludo)
+        if es_primer_turno_saludo:
+            regla_1 = (
+                "1. En este PRIMER turno tenés que hacer DOS cosas en UN solo mensaje:\n"
+                "   (a) Saludo completo: bienvenida + presentación de la empresa (nombre + ciudad + zonas + horario)\n"
+                "   (b) Confirmar/preguntar el nombre al final.\n"
+                "   El saludo completo es OBLIGATORIO antes de la pregunta. NO cortes corto."
+            )
+        else:
+            regla_1 = f"1. SOLO podés preguntar por **{siguiente_campo}**. Cualquier otra pregunta está PROHIBIDA."
+
         bloque_siguiente = f"""## 🎯 SIGUIENTE PREGUNTA (única permitida este turno)
 
 Campo a capturar: **{siguiente_campo}**
@@ -1670,7 +1682,7 @@ Ejemplo de cómo formularla (adaptá con tu tono, NO copies literal):
   "{siguiente_pregunta_ejemplo}"
 
 🚫 REGLAS IRROMPIBLES DE ESTE TURNO:
-1. SOLO podés preguntar por **{siguiente_campo}**. Cualquier otra pregunta está PROHIBIDA.
+{regla_1}
 2. Si el lead ya respondió `{siguiente_campo}` en un turno anterior (ver DATOS YA CAPTURADOS),
    NO vuelvas a preguntarlo — avanzá al siguiente campo pendiente.
 3. Si el lead te pregunta algo (precio, ubicación, horario), respondé brevemente Y DESPUÉS
