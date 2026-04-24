@@ -210,3 +210,50 @@ def random_typing_duration(min_s: float = 1.8, max_s: float = 2.5) -> float:
     Uniforme en rango [min_s, max_s]. Un humano no siempre tarda lo mismo.
     """
     return random.uniform(min_s, max_s)
+
+
+def mark_read_meta(
+    message_id: str,
+    access_token: str,
+    phone_id: str,
+) -> bool:
+    """
+    Marca un mensaje de Meta Graph WhatsApp como leído (tilde azul).
+
+    Uso típico: apenas llega el webhook de un mensaje entrante, llamar esta
+    función para que el cliente vea inmediatamente la tilde azul. Así no
+    queda con 1 tilde sola durante los 8s que espera el buffer + typing.
+
+    No bloquea (sync rápido ~200ms). Fallback silencioso si falla.
+
+    API Meta: POST /{phone_id}/messages con body:
+        {"messaging_product": "whatsapp", "status": "read", "message_id": "<ID>"}
+
+    Este endpoint es distinto del que usa send_typing_meta (que hace read
+    + typing_indicator en la misma llamada). Acá solo marcamos leído,
+    sin disparar typing — porque typing se dispara más tarde (en _enviar_texto).
+
+    Ref: https://developers.facebook.com/docs/whatsapp/cloud-api/guides/mark-message-as-read
+    """
+    if not message_id or not access_token or not phone_id:
+        return False
+    try:
+        r = requests.post(
+            f"https://graph.facebook.com/v21.0/{phone_id}/messages",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "messaging_product": "whatsapp",
+                "status": "read",
+                "message_id": message_id,
+            },
+            timeout=5,
+        )
+        if r.status_code not in (200, 201):
+            logger.info("mark_read_meta: HTTP %s — %s", r.status_code, r.text[:150])
+        return r.status_code in (200, 201)
+    except Exception as exc:
+        logger.warning("mark_read_meta: fallo (%s)", exc)
+        return False

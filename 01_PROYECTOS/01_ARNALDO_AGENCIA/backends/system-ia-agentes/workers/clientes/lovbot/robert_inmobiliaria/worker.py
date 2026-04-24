@@ -36,7 +36,7 @@ from google import genai
 from fastapi import APIRouter, Request
 from workers.shared.message_buffer import buffer_and_schedule
 from workers.shared.image_describer import describe_image, download_media_meta
-from workers.shared.typing_indicator import send_typing
+from workers.shared.typing_indicator import send_typing, mark_read_meta
 from workers.shared.message_splitter import split_greeting
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
@@ -2967,6 +2967,15 @@ async def webhook_whatsapp(request: Request):
         sesion_mid = SESIONES.get(tel_clean, {})
         sesion_mid["ultimo_msg_id"] = msg_id_entrante
         SESIONES[tel_clean] = sesion_mid
+        # Marcar como leído INMEDIATO (tilde azul) — en background para no
+        # bloquear el webhook. El cliente ve tilde azul al instante, luego
+        # el buffer espera 8s y recién ahí aparecen typing + respuesta.
+        # Evita percepción de "el bot me está ignorando" durante el buffer.
+        threading.Thread(
+            target=mark_read_meta,
+            args=(msg_id_entrante, META_ACCESS_TOKEN, META_PHONE_ID),
+            daemon=True,
+        ).start()
     if nombre_meta:
         sesion_pre = SESIONES.get(tel_clean, {})
         if not sesion_pre.get("nombre"):
