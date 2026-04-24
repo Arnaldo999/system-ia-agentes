@@ -4,9 +4,10 @@
     "Arnaldo Ayala",
     "Micaela Colmenares"
   ],
-  "timestamp_ultima_actualizacion": "2026-04-16T13:51:00",
+  "timestamp_ultima_actualizacion": "2026-04-24T10:45:00",
   "agente_activo": "dev",
-  "ultimo_modelo": "gemini-3.1-pro",
+  "ultimo_modelo": "claude-opus-4-7",
+  "ultima_sesion_resumen": "Humanización v2 workers demo (Mica+Robert): typing indicator + partición saludo 2-3 chunks + horarios de atención + sanitización nombre. 10 commits pusheados, 3 bugs durables documentados (Python 3.11 f-string triples, Coolify cache no rebuild usar force=true, reglas prompt BANT chocan). Validado end-to-end con WhatsApp real en ambos bots. Pendiente: incluir waba_clients en seed SQL lovbot_crm_modelo, configurar horarios por cliente via env var, replicar humanización a workers reales cuando haya LIVE. Ver memory/ESTADO_ACTUAL.md y wiki/sintesis/2026-04-24-humanizacion-v2-horarios-sanitizacion.md",
 
   "infraestructura_por_proyecto": {
     "arnaldo_proyectos_propios": {

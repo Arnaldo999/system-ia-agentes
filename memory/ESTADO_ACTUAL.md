@@ -1,7 +1,259 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-22 (tarde) ART
+Fecha: 2026-04-24 (medio día) ART
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## 🕑 Hito mediodía 2026-04-24 — Bot comentarios + DMs Messenger + fix Robert horario
+
+Sesión ~4h (06:30→12:30 ART) continuación directa de la sesión de la madrugada que dejó publicación FB + comentarios funcionando. Hoy expandimos a DM y emparejamos el saludo de Robert al de Mica.
+
+### 🎯 Features completadas
+
+| Feature | Estado | Notas |
+|---|---|---|
+| Bot comentarios FB con link `wa.me` dinámico | ✅ LIVE | Confirmado con comentario real ("¡Hola! Entiendo tu interés en conocer más...") |
+| Fix Robert saludo menciona horario (igual que Mica) | ✅ Deployado (commit 91b9924) | Replicación del patrón `HORARIO_ATENCION` env var |
+| Page Access Token permanente (Back Urbanizaciones) | ✅ En Supabase | Type PAGE, Expires NEVER, 12 scopes incluido `pages_messaging` |
+| Persistent Menu eliminado | ✅ DELETE via Graph API | Liberó el channel de DMs para que lleguen al webhook |
+| Handler `_responder_dm` código deployado | ✅ commit 675dc9e | Multi-tenant via Supabase. Responde con link wa.me. Probado con simulación |
+| Webhook subscription `messages` | ✅ Subscrito | `feed`, `mention`, `ratings`, `messages` |
+
+### 🐛 Bugs descubiertos + fixeados hoy (cadena)
+
+1. **Python 3.11 f-string con comillas simples en `{}`** (commit 8be66c7) — UPDATE triple anidado con ternario crasheaba backend.
+2. **Python 3.11 f-string triple anidado con ternario** (commit 570a473) — caso distinto del worker Mica demo. Misma raíz.
+3. **Token lost via bash curl** — mi propio bug: intenté hacer UPDATE de Supabase via `curl -d ... python3 -c ...` con env vars mal escapadas → sobreescribió token con string vacío. Documentado en Gotcha #8 del runbook. **Regla nueva**: agente NO escribe tokens via bash. Solo usuario via SQL Editor.
+4. **Tokens pegados en columna equivocada** (token_notas en vez de meta_access_token) — 2 veces en la misma sesión con Table Editor Supabase. Fix: regla de usar siempre SQL Editor.
+5. **Automatizaciones Meta ocultas** — toggle "Preguntas frecuentes" decía gris pero seguía respondiendo. Persistent Menu era lo que interceptaba.
+
+### ⏸️ Pendiente (no resuelto hoy)
+
+**DMs reales de Messenger NO llegan al webhook del backend** aunque:
+- Token válido con `pages_messaging`
+- Suscripción al field `messages` activa
+- Persistent Menu eliminado
+- Automatización "Preguntas frecuentes" desactivada
+
+**Código + simulación funcionan**: `_responder_dm` responde perfecto con link wa.me cuando se llama con payload manual. Pero Meta no dispara webhook cuando llega un DM real.
+
+**Causas posibles a verificar** (documentadas en `feedback_meta_dm_webhook_debugging.md`):
+- Automatizaciones adicionales ocultas en Business Suite Inbox
+- Meta Argentina requiere opt-in previo del usuario
+- Propagación de subscribe tarda 30+ min
+- Config webhook a nivel App vs Page (verificar en developers.facebook.com)
+- Otra capa de config que no mapeamos
+
+**Dejar para próxima sesión** con screenshot completo de Business Suite Inbox Automations + verificación de webhook config en el developer console.
+
+### 📦 Commits de la sesión (6 en master:main)
+
+- `2e4f905` ← fix bug bot Mica WhatsApp Web (ayer madrugada, para contexto)
+- `b450ac0` feat wa.me bot comentarios
+- `8be66c7` fix syntax Python 3.11 #1
+- `570a473` fix syntax Python 3.11 #2 (Mica demo)
+- `91b9924` fix Robert horario HORARIO_ATENCION
+- `675dc9e` feat bot DM Messenger
+
+### 📝 Docs sincronizadas (4 silos)
+
+- Silo 1 auto-memory: `feedback_meta_dm_webhook_debugging.md` nuevo
+- Silo 2 wiki: `runbook-meta-social-automation.md` actualizado con Gotchas #5, #6, #7, #8
+- Silo 3 operativo: este ESTADO_ACTUAL + debug-log actualizados
+- Silo 4 código: 6 commits
+
+### ⏭️ Próxima sesión
+
+1. Screenshot completo Business Suite Inbox Automations para detectar automations ocultas
+2. Verificar webhook config a nivel App en developers.facebook.com (tab Page → field messages activo?)
+3. Si nada de eso resuelve → test con cuenta que nunca interactuó con la Page (opt-in AR)
+4. Agregar soporte Instagram DMs cuando Maicol conecte IG a Page (scope `instagram_manage_messages`)
+5. 2026-04-30: migrar a System User Admin permanente (regla 7 días Meta)
+
+---
+
+## ☀️ Hito mañana 2026-04-24 — Humanización v2: typing + splitter + horarios + sanitización
+
+Sesión matutina ~3h (07:30→10:30 ART). Continuación de la sesión nocturna del 2026-04-23 que dejó buffer debounce + image describer funcionando. Hoy completamos las 2 features restantes de humanización + fixes derivados.
+
+### 🎯 Features completadas (ambos bots demo)
+
+| Feature | Mica | Robert |
+|---|---|---|
+| Typing indicator en todas las respuestas | ✅ Evolution + Meta | ✅ Meta context-aware con msg_id |
+| Partición saludo en 2-3 chunks (solo primer turno) | ✅ GPT-4o-mini | ✅ GPT-4o-mini |
+| Horarios de atención en saludo | ✅ hardcoded | ✅ variable `HORARIO_ATENCION` |
+| Sanitización de nombre (`@rn@ldo → Arnaldo`) | ✅ ya existía | ✅ copiado de Mica |
+
+### 🧱 Módulos nuevos en `workers/shared/`
+
+- `typing_indicator.py` — wrapper genérico Meta + Evolution + YCloud fallback
+- `message_splitter.py` — partición con gpt-4o-mini + fallback a 3 env keys (`OPENAI_API_KEY`, `LOVBOT_OPENAI_API_KEY`, `MICA_OPENAI_API_KEY`)
+
+### 🐛 3 bugs descubiertos y fixeados (LECCIONES DURABLES)
+
+1. **Python 3.11 no soporta f-strings triples anidadas** — commit `5fd48de` crasheó ambos backends ~15 min. Fix: variable intermedia `regla_1`. Ver `feedback_REGLA_python311_fstring_triples.md`.
+2. **Coolify v4 beta no rebuildea automáticamente** — commits `105e113` y `91b9924` no se deployaron solos. Fix: `force=true` en API/UI. Ver `feedback_REGLA_coolify_cache_force.md`.
+3. **Reglas del prompt BANT chocan entre sí** — "máximo 3-4 líneas" anulaba horarios. Fix: excepción explícita para primer turno. Ver `feedback_REGLA_prompt_bant_conflictos.md`.
+
+### 🤹 Observación importante — múltiples agentes Claude paralelos
+
+Durante la sesión aparecieron commits que no hice yo: `570a473`, `91b9924`, `b450ac0`, `8be66c7`. Arnaldo tiene sesiones Claude paralelas corriendo sobre el mismo repo. No hubo conflictos de merge (tocaron líneas distintas). Regla implícita: antes de tocar archivos del monorepo, `git pull` + `git log --oneline -5` para ver si otro agente ya hizo algo.
+
+### 📦 Commits de la sesión (10 en master:main)
+
+`6a2617e` módulos, `15eeda0` fix api_key, `888a258` Mica integrado, `5b21e15` Robert integrado, `5fd48de` primer fix (rompió), `570a473` fix Python 3.11 (otro agente), `017badb` horarios Mica, `105e113` horarios+sanitize Robert, `91b9924` refactor HORARIO_ATENCION (otro agente), `5a99bb1` excepción brevedad.
+
+### 📝 Docs sincronizadas en 4 silos
+
+- **Silo 1** (auto-memory): 3 reglas irrompibles nuevas — Python 3.11 triples, Coolify cache force, prompt BANT conflictos
+- **Silo 2** (wiki): 2 conceptos nuevos (`typing-indicator-pattern`, `message-splitter-pattern`) + 1 síntesis (`2026-04-24-humanizacion-v2-horarios-sanitizacion`)
+- **Silo 3** (memory operativo): este ESTADO_ACTUAL + debug-log
+- **Silo 4** (código): 10 commits
+
+### ⏳ Pendiente próxima sesión
+
+1. **Deuda técnica `waba_clients`**: incluir schema en seed SQL de `lovbot_crm_modelo` para auto-clone
+2. **Rotación de secrets** expuestos en screenshots de ayer (no urgente): `LOVBOT_OPENAI_API_KEY`, `OPENAI_API_KEY`, Redis Hetzner password
+3. **Configuración de horarios por cliente** — hoy hardcoded, a futuro `INMO_DEMO_HORARIO` env var o campo Airtable/Postgres
+4. **Replicar humanización a workers reales de clientes** — hoy solo en demos
+
+---
+
+## 🌅 Hito madrugada 2026-04-24 — Maicol Social Automation LIVE + bug bot Mica WhatsApp Web resuelto
+
+Sesión ~6h (19:00 ART 23/04 → 01:30 ART 24/04). 2 logros grandes + documentación de runbook para no repetir debugging.
+
+### 🏆 Logro #1 — Facebook publicando automático para Maicol (Back Urbanizaciones)
+
+Primer cliente Arnaldo con social automation LIVE. Stack validado end-to-end:
+- App Meta única: `Social Media Automator AI` (895855323149729) compartida con BM Back Urbanizaciones como Socio.
+- Tabla multi-tenant Supabase `clientes` con registro `Back_Urbanizaciones` (Page Access Token permanente).
+- Airtable Maicol `appaDT7uwHnimVZLM/tbl0QeaY3oO2P5WaU` populada con branding completo.
+- Workflow n8n `xp49TY9WSjMtPvZK` schedule 10am ARG diario.
+- Primera publicación FB verificada: Post ID `985390181332410_122106926216809418` con imagen IA aérea + branding (verde/dorado) + copy "Zonas de mayor crecimiento en Misiones para invertir".
+
+**Pendiente**: Maicol debe conectar su IG `@backurbanizaciones` a la Page FB vía link `https://www.facebook.com/settings/?tab=linked_instagram` (30 seg de su parte). Cuando lo haga, IG se suma automático al feed diario sin tocar nada más.
+
+### 🐛 Logro #2 — Bug bot Mica WhatsApp Web resuelto (commit 2e4f905)
+
+Arnaldo reportó que el bot demo Mica (`+54 9 3765 00-5465`) no respondía cuando él escribía desde WhatsApp Web en la PC. Desde el celular sí respondía. Tras 5h descartando 3 falsos positivos (EVOLUTION_INSTANCE, fromMe filter, protocolo @lid), la causa real fue:
+
+WhatsApp Web envía `message = {messageContextInfo: {...}, conversation: "hola"}` (2 keys). El parser `wa_provider._parse_evolution()` hacía `list(message.keys())[0]` → tomaba `messageContextInfo` como tipo → texto vacío → mensaje descartado silenciosamente.
+
+Fix: iterar tipos conocidos (`conversation`, `extendedTextMessage`, `buttonsResponseMessage`, `listResponseMessage`) buscándolos por nombre en lugar de tomar primera key ciegamente. Mismo patrón robusto que ya usaba el worker de Lau.
+
+Impacto: bug afectaba a todos los workers que usan `wa_provider` compartido. Leads desde WhatsApp Web se caían silenciosamente hace tiempo.
+
+### 📚 Logro #3 — Documentación completa para próximos clientes
+
+Sesión generó runbook definitivo para que onboarding social de cliente nuevo tome **30 min** en lugar de 6h:
+- Silo 2 Wiki: `PROYECTO ARNALDO OBSIDIAN/wiki/conceptos/runbook-meta-social-automation.md` (300+ líneas con los 3 gotchas, SQL snippets, comandos curl de test, checklist).
+- Silo 1 auto-memory: `feedback_REGLA_meta_social_onboarding.md` (regla irrompible: consultar runbook ANTES de improvisar) + `project_maicol_social_automation_live.md` (estado hito Maicol).
+- Silo 3 operativo: este ESTADO_ACTUAL + `debug-log.md` con bug Mica + feature Maicol detallados.
+- Silo 4 código: commit `2e4f905` (fix wa_provider) + `setup-social-automation.md` en `clientes/maicol/`.
+
+### Estado técnico global al cierre sesión
+
+| Componente | Estado |
+|------------|--------|
+| Bot Mica demo WhatsApp Web | ✅ Funciona desde PC y celular |
+| Workflow social Arnaldo | ✅ Activo (`aJILcfjRoKDFvGWY`, 9am ARG) |
+| Workflow social Maicol | ✅ Activo (`xp49TY9WSjMtPvZK`, 10am ARG) |
+| Facebook Maicol | ✅ Publicando automático |
+| Instagram Maicol | ⚠️ Bloqueado hasta Maicol conecte IG↔Page |
+| LinkedIn Maicol | ⚠️ N/A (Maicol no tiene cuenta) |
+| Bot comentarios Maicol | ⏸️ Fase 2 (endpoint `/social/meta-webhook` listo, solo falta suscribir webhook) |
+| Token Maicol | ⏸️ Page Token permanente hoy — migrar a System User Admin 2026-04-30 |
+
+### Próxima sesión — pendientes
+
+1. Esperar que Maicol conecte IG (link enviado). Re-disparar test manual cuando confirme.
+2. Activar webhook Meta para bot de comentarios automáticos (Fase 2).
+3. Considerar generar 20 posts educativos pre-cargados para Back Urbanizaciones (rotación manual vs automática del worker).
+4. Aplicar runbook para onboardear Cesar Posada cuando devuelva el brief.
+5. 2026-04-30: migrar Maicol a System User Admin permanente (regla 7 días Meta se cumple).
+
+---
+
+## 🌙 Hito previo — noche 2026-04-23 — Humanización workers con Redis buffer + Vision GPT
+
+Sesión nocturna ~5h (17:00→22:30 ART). Workers demo de Mica y Robert ahora **consolidan mensajes fragmentados** y **describen imágenes** antes de que el LLM responda. Validado end-to-end con WhatsApp real en ambos.
+
+**Infra nueva**:
+- Redis `redis-workers` en Coolify Hostinger (project microservicios) y Coolify Hetzner (project Agentes). Imagen `redis:7.2`, no expuesto al host.
+- Env var `REDIS_BUFFER_URL` en `system-ia-agentes` de ambos VPS.
+- Paquete `redis>=5.0.0` agregado a requirements.txt.
+
+**Módulos nuevos** en `workers/shared/`:
+- `message_buffer.py` — buffer debounce 8s (patrón Kevin Bellier). API: `buffer_and_schedule(tenant_slug, wa_id, texto, callback, extra, debounce_seconds)`.
+- `image_describer.py` — normalizador imágenes → texto con GPT-4o-mini Vision. Helpers `download_media_meta()` (Meta) y `download_media_evolution()` (endpoint `/chat/getBase64FromMediaMessage`).
+
+**Workers integrados** (tenant slugs):
+- `workers/clientes/system_ia/demos/inmobiliaria/worker.py` → `mica-demo`
+- `workers/clientes/lovbot/robert_inmobiliaria/worker.py` → `robert-demo`
+
+**Workers NO tocados** (respetando REGLA #0): Maicol, Lau, inmobiliaria_garcia, test_arnaldo, social, demos viejos Arnaldo, _legacy.
+
+**Bugs fixeados en la misma sesión**:
+1. Coolify v4 beta marca env vars nuevas con `is_preview: True` → no se inyectan al container. Fix: recrear sin marcar "Is Preview".
+2. `waba_clients` faltaba en `lovbot_crm_modelo` tras migración → bot Robert descartaba webhooks Meta Graph. Fix: `setup-table` + `register-existing` con phone_id `735319949657644`.
+3. OpenAI Vision rechazaba bytes de Evolution (URLs encriptadas). Fix: usar endpoint `/chat/getBase64FromMediaMessage/{instance}` que descifra internamente.
+
+**Commits pusheados** a master:main de `Arnaldo999/system-ia-agentes`:
+- `dbaca83` chore: redis>=5.0.0 en requirements
+- `58d5d85` feat(shared): message_buffer
+- `3cafbc1` feat(mica-demo): integrar buffer
+- `3d4753b` feat(robert-demo): integrar buffer
+- `1de9697` feat(shared): image_describer
+- `8236a0e` refactor(wa_provider): normalizar tipos image/audio Evolution
+- `bb42bd5` feat(mica-demo): integrar image_describer
+- `153330e` feat(robert-demo): integrar image_describer
+- `6158186` fix(image_describer): sanitizar mime
+- `5f9e178` fix(image_describer,mica-demo): Evolution download correcto + guard bytes
+
+**Documentación creada (4 silos sincronizados)**:
+- Silo 1 auto-memory: `feedback_buffer_debounce_workers.md`, `feedback_bug_waba_clients_migraciones.md`
+- Silo 2 wiki: `wiki/conceptos/message-buffer-debounce.md`, `wiki/conceptos/image-describer.md`, `wiki/sintesis/2026-04-23-humanizacion-workers-redis.md`
+- Silo 3 memory operativo: este ESTADO_ACTUAL + debug-log + ai.context.json actualizados
+- Silo 4 código: 10 commits en master:main
+
+**Pendiente próxima sesión**:
+1. Feature #3 — Typing indicator "escribiendo..." (~20 min, Evolution `/chat/sendPresence` + Meta typing_indicator)
+2. Feature #4 — Partición respuesta 2-3 chunks SOLO en saludo/presentación/horarios (~40 min)
+3. Deuda técnica: incluir `waba_clients` en seed SQL de `lovbot_crm_modelo` para que se clone automáticamente en onboarding de cada cliente nuevo
+
+---
+
+## 🚀 Hito tarde — CRM Gestión Agencia Lovbot ✅ LIVE end-to-end (2026-04-23)
+
+El CRM de gestión de la agencia Lovbot (leads → clientes → facturación) pasó de mockup HTML (22/04) a **LIVE end-to-end** hoy: BD + backend + frontend conectados y funcionales.
+
+**Stack**:
+- **BD**: `lovbot_agencia` en Postgres Hetzner (container `lovbot-postgres-p8s8kcgckgoc484wwo4w8wck`)
+  - 6 tablas + 1 vista + triggers `updated_at` + 8 seeds (fuentes + pipeline stages)
+- **Backend**: `https://agentes.lovbot.ai/agencia/*` — router FastAPI con **15 endpoints** (leads CRUD + conversión a cliente + soft delete + fuentes + pipeline)
+- **Frontend agencia**: `https://admin.lovbot.ai/agencia` — login + listado leads + filtros + modal "Nuevo Lead" + modal detalle + convertir a cliente + soft delete
+- **Frontend clientes**: `https://admin.lovbot.ai/clientes` — simplificado hoy (panel único fusionado + sidebar minimalista + token persistente sessionStorage)
+- **Auth**: env var `LOVBOT_ADMIN_TOKEN` (64 chars, override en Coolify — NO el hardcoded `lovbot-admin-2026`)
+
+**Env var nueva en Coolify Hetzner**:
+- `LOVBOT_AGENCIA_PG_DB=lovbot_agencia` agregada a app FastAPI Robert (uuid `wwww8kwc4s044ow4s8ckw8og`)
+
+**Slots preparados para integración futura con lead.center + Zapier**:
+- `agencia_leads.fb_lead_id` (TEXT, UNIQUE) — ID lead en Facebook Ads
+- `agencia_leads.lead_center_id` (TEXT) — ID lead en lead.center
+- `agencia_leads.zapier_data` (JSONB) — payload completo del webhook Zapier
+
+**Commits pusheados a master:main de `Arnaldo999/system-ia-agentes`**:
+- `aa6ba94` — backend inicial (BD + router 15 endpoints)
+- `f0d85f4` — frontend agencia conectado al backend
+- `43c36c9` — dashboard `/clientes` fusionado (panel único + sidebar minimalista)
+- `b4178a2` — token persistente en sessionStorage
+
+⏳ **Pendiente — adelantos de Robert sobre lead.center + Zapier**:
+Robert dijo por WhatsApp "te explico la próxima semana, te muestro lo que tengo y uso". Esperando que mande info para armar el webhook FB Ads → lead.center → Zapier → `POST /agencia/leads` con payload completo (campos `fb_lead_id`, `lead_center_id`, `zapier_data` ya reservados en la tabla).
+
+---
 
 ## 🎯 Regla operativa NUEVA — Coolify default (2026-04-22)
 

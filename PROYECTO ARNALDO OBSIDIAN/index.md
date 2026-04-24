@@ -1,6 +1,6 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-23 | Total páginas: 50 (1 fuente + 20 entidades + 22 conceptos + 6 síntesis + 1 mapa de prod)
+Última actualización: 2026-04-24 | Total páginas: 64 (1 fuente + 20 entidades + 27 conceptos + 8 síntesis + 1 mapa de prod + **7 playbooks** incluyendo README)
 
 ## Fuentes (1)
 | Página | Resumen | Fecha | Proyecto | Tags |
@@ -68,7 +68,7 @@
 | [[wiki/entidades/coolify-robert]] | orquestador | robert |
 | [[wiki/entidades/easypanel-mica]] | orquestador | mica |
 
-## Conceptos (18)
+## Conceptos (27)
 
 ### Reglas transversales (leer PRIMERO)
 | Página | Resumen breve | Proyectos |
@@ -118,6 +118,7 @@
 | Página | Resumen breve | Proyectos |
 |--------|--------------|-----------|
 | [[wiki/conceptos/onboarding-cliente-nuevo-arnaldo]] | Patrón brief HTML + propuesta HTML + deploy Coolify — USD 300 impl + USD 80/mes. Primer uso: Cesar Posada | arnaldo |
+| [[wiki/conceptos/runbook-meta-social-automation]] | 🔒 RUNBOOK — Onboarding publicación automática FB+IG + bot comentarios. 3 gotchas documentados (User vs Page Token, regla 7 días System User, IG-Page link). 30 min siguiendo pasos vs 6h improvisando. Probado con Maicol 2026-04-23 | compartido |
 
 ### Infraestructura y deploys
 | Página | Resumen breve | Proyectos |
@@ -140,7 +141,15 @@
 | [[wiki/conceptos/cors-preflight-monitoreo]] | Patrón de check con OPTIONS + Origin header — detecta CORS roto antes que el cliente | arnaldo, robert, mica |
 | [[wiki/conceptos/env-quoting-tokens]] | 🔒 REGLA — tokens con `|` requieren comillas dobles en `.env`. Bash source rompe sin ellas | global |
 
-## Síntesis (5)
+### Humanización de workers WhatsApp (patrón compartido)
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/message-buffer-debounce]] | 🧠 Buffer Redis debounce 8s — consolida mensajes fragmentados antes del LLM. Patrón Kevin Bellier en Python. Tenant slugs `mica-demo`/`robert-demo`. Redis `redis-workers` en ambos Coolify | compartido |
+| [[wiki/conceptos/image-describer]] | 🖼️ Normalizador imágenes → texto con GPT-4o-mini Vision. Helpers download_media_meta + download_media_evolution. Guard magic numbers + sanitización mime. Costo $0.00015/img | compartido |
+| [[wiki/conceptos/typing-indicator-pattern]] | 💭 "Escribiendo..." en todas las respuestas del bot. Wrapper de `_enviar_texto()` que bloquea 2s. Soporta Meta + Evolution + YCloud (fallback). Guardar `ultimo_msg_id` para typing visual Meta | compartido |
+| [[wiki/conceptos/message-splitter-pattern]] | ✂️ Partición de saludos en 2-3 chunks con GPT-4o-mini. SOLO en primer turno (detección: `"Bot:" not in HISTORIAL`). Costo $0.0001 por split. Fallback `[texto]` si falla | compartido |
+
+## Síntesis (8)
 | Página | Origen | Fecha | Proyecto |
 |--------|--------|-------|----------|
 | [[wiki/sintesis/2026-04-18-limpieza-tenants-supabase]] | Decisión arquitectural: 1 tenant demo por agencia | 2026-04-18 | compartido |
@@ -149,6 +158,25 @@
 | [[wiki/sintesis/2026-04-22-crm-v3-robert]] | Refactor CRM v3 Robert — persona única + contratos polimórficos + lotes granulares + GESTIÓN editable | 2026-04-22 | robert |
 | [[wiki/sintesis/2026-04-22-crm-v3-mica]] | Replicación CRM v3 Mica (Airtable) — mismo modelo persona única + contratos + UI ámbar — backend 11/11 OK, frontend Vercel deployado | 2026-04-22 | mica |
 | [[wiki/sintesis/2026-04-23-migracion-lovbot-coolify]] | 🏆 Migración completa Lovbot Vercel → Coolify Hetzner. `crm.lovbot.ai` y `admin.lovbot.ai` ahora 100% en Hetzner. Cero downtime. CRM Agencia LIVE como mockup | 2026-04-23 | robert |
+| [[wiki/sintesis/2026-04-23-humanizacion-workers-redis]] | 🧠 Humanización bots demo — Redis buffer debounce 8s + Image describer Vision GPT en Mica + Robert. 10 commits. Fix colateral bug `waba_clients` faltante post-migración. Patrón Kevin Bellier aplicado en Python | 2026-04-23 | compartido |
+| [[wiki/sintesis/2026-04-24-humanizacion-v2-horarios-sanitizacion]] | 🎯 Humanización v2 — typing indicator + splitter saludo + horarios atención + sanitizar nombre (`@rn@ldo`→`Arnaldo`). 10 commits. 3 bugs descubiertos: Python 3.11 f-strings triples, Coolify cache no rebuild, reglas prompt chocan entre sí | 2026-04-24 | compartido |
+
+---
+
+## Playbooks (6) — patrones repetibles para construcción
+
+> **LEER ANTES de arrancar un trabajo nuevo del tipo correspondiente.** Evita repetir errores ya resueltos.
+
+| Playbook | Qué construye | Versión | Proyectos |
+|----------|---------------|---------|-----------|
+| [[wiki/playbooks/worker-whatsapp-bot]] | Bot WhatsApp conversacional (BANT, 1-a-1, LLM) | v1 | arnaldo, robert, mica |
+| [[wiki/playbooks/worker-social-automation]] | Publicación auto FB+IG + bot comentarios + DMs | v1 | arnaldo (extensible) |
+| [[wiki/playbooks/crm-html-tailwind]] | CRM/panel con HTML+Tailwind CDN+JS vanilla | v1 | robert, mica, arnaldo |
+| [[wiki/playbooks/postgres-multi-tenant]] | BD Postgres aislada por cliente (workspaces) | v1 | robert |
+| [[wiki/playbooks/airtable-schema-setup]] | Base Airtable con schema estándar | v1 | arnaldo, mica |
+| [[wiki/playbooks/propuesta-cliente-coolify]] | Landing/propuesta pública en `clientes-publicos/{slug}/` | v1 | arnaldo |
+
+Ver [[wiki/playbooks/README]] para reglas de uso y cómo evolucionan.
 
 ---
 

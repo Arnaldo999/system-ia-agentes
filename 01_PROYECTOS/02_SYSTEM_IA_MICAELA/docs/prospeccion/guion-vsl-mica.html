@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guion VSL — System IA para Inmobiliarias</title>
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 1.8cm;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.55;
+    font-size: 11.5pt;
+    margin: 0;
+    padding: 30px;
+    max-width: 820px;
+    margin: 0 auto;
+    background: #fff;
+  }
+  .portada {
+    text-align: center;
+    padding: 40px 20px;
+    border-bottom: 3px solid #f59e0b;
+    margin-bottom: 30px;
+    page-break-after: avoid;
+  }
+  .portada .badge {
+    display: inline-block;
+    background: #f59e0b;
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 9pt;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .portada h1 {
+    font-size: 26pt;
+    color: #111;
+    margin: 0 0 8px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .portada .subtitulo {
+    font-size: 13pt;
+    color: #555;
+    margin-bottom: 22px;
+  }
+  .portada .meta {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    font-size: 10pt;
+    color: #666;
+    margin-top: 12px;
+  }
+  .portada .meta span {
+    display: inline-block;
+  }
+  .portada .meta strong {
+    color: #f59e0b;
+    display: block;
+    font-size: 14pt;
+    margin-bottom: 2px;
+  }
+  h2 {
+    color: #111;
+    font-size: 14pt;
+    margin-top: 28px;
+    margin-bottom: 12px;
+    border-left: 4px solid #f59e0b;
+    padding-left: 12px;
+    page-break-after: avoid;
+  }
+  h3 {
+    color: #333;
+    font-size: 11.5pt;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    page-break-after: avoid;
+  }
+  .intro-box {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 15px 18px;
+    border-radius: 4px;
+    margin-bottom: 25px;
+    font-size: 10.5pt;
+  }
+  .intro-box strong { color: #92400e; }
+  .seccion {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+    background: #fafafa;
+    page-break-inside: avoid;
+  }
+  .seccion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f59e0b;
+  }
+  .seccion-titulo {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #111;
+    margin: 0;
+  }
+  .seccion-timing {
+    background: #f59e0b;
+    color: #fff;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+  .mostrar {
+    font-size: 9.5pt;
+    color: #666;
+    background: #fff3cd;
+    border: 1px dashed #d97706;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-style: italic;
+  }
+  .mostrar strong { color: #92400e; font-style: normal; }
+  .speech {
+    font-size: 12pt;
+    line-height: 1.7;
+    color: #111;
+    background: #fff;
+    padding: 14px 18px;
+    border-radius: 6px;
+    border-left: 3px solid #10b981;
+    white-space: pre-wrap;
+  }
+  .speech em {
+    color: #059669;
+    font-weight: 600;
+    font-style: normal;
+    background: #d1fae5;
+    padding: 0 4px;
+    border-radius: 3px;
+  }
+  .instrucciones {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-top: 30px;
+    page-break-inside: avoid;
+  }
+  .instrucciones h2 {
+    border-left-color: #2563eb;
+    margin-top: 0;
+  }
+  .instrucciones ul {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+  .instrucciones li {
+    margin-bottom: 6px;
+    font-size: 10.5pt;
+  }
+  .checklist {
+    list-style: none;
+    padding-left: 0;
+  }
+  .checklist li {
+    padding-left: 28px;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .checklist li::before {
+    content: '☐';
+    position: absolute;
+    left: 0;
+    top: -2px;
+    font-size: 16pt;
+    color: #2563eb;
+  }
+  .tip {
+    background: #fef9c3;
+    border-left: 3px solid #eab308;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-size: 10pt;
+    color: #713f12;
+  }
+  .tip strong { color: #854d0e; }
+  .footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid #f59e0b;
+    text-align: center;
+    font-size: 9pt;
+    color: #777;
+  }
+  .footer strong { color: #111; }
+  .page-break {
+    page-break-before: always;
+  }
+  @media print {
+    body { padding: 0; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<div class="portada">
+  <span class="badge">Video Sales Letter · System IA</span>
+  <h1>Guion VSL para Inmobiliarias</h1>
+  <p class="subtitulo">Guion palabra por palabra — simple, directo, enfocado en beneficios</p>
+  <div class="meta">
+    <span><strong>2:30</strong>Duración target</span>
+    <span><strong>5</strong>Secciones</span>
+    <span><strong>Loom</strong>Herramienta sugerida</span>
+  </div>
+</div>
+
+<!-- INTRO / CONTEXTO -->
+<div class="intro-box">
+  <strong>📌 ¿De qué trata este video?</strong><br>
+  Un VSL corto (2-3 min) dirigido a dueños y agentes de inmobiliarias. Foco en los <strong>3 beneficios clave</strong> del sistema, no en features técnicos. La idea es que una inmobiliaria en 2 minutos entienda qué resuelve System IA y quiera pedir una demo personalizada.
+  <br><br>
+  <strong>🎯 Estrategia:</strong> hablar como si le hablaras a una amiga dueña de inmobiliaria. Natural, cercano, sin sonar a robot ni a publicidad.
+</div>
+
+<!-- SECCIÓN 1 - HOOK -->
+<div class="seccion">
+  <div class="seccion-header">
+    <h2 class="seccion-titulo">🎬 Sección 1 — Hook (el dolor)</h2>
+    <span class="seccion-timing">0:00 → 0:20</span>
+  </div>
+  <div class="mostrar">
+    <strong>📹 Mostrás:</strong> Tu cara a cámara (o pantalla con logo de System IA).
+  </div>
+  <div class="speech">"Hola, soy Mica de System IA.
+
+Si tenés una inmobiliaria y estás cansada de <em>perder leads porque no llegás a responder a tiempo</em>, o porque se te pierden en el WhatsApp, o porque no tenés idea de cuántos contactos pasaron este mes por tu negocio —
+
+en los próximos 2 minutos te voy a mostrar cómo resolvemos eso."</div>
+</div>
+
+<!-- SECCIÓN 2 - BENEFICIO 1 -->
+<div class="seccion">
+  <div class="seccion-header">
+    <h2 class="seccion-titulo">🎬 Sección 2 — Beneficio 1: Bot WhatsApp 24/7</h2>
+    <span class="seccion-timing">0:20 → 0:55</span>
+  </div>
+  <div class="mostrar">
+    <strong>📹 Mostrás:</strong> Pantalla compartida del WhatsApp del bot. Una conversación real o de ejemplo — se ve cómo el bot saluda, pregunta, manda fotos, agenda.
+  </div>
+  <div class="speech">"Esto es WhatsApp. Un interesado te escribe a las 11 de la noche preguntando por una propiedad.
+
+Sin System IA, ese mensaje se pierde o lo respondés al día siguiente — y para entonces ya contactó a otra inmobiliaria.
+
+<em>Con System IA, el bot le responde en segundos.</em> Lo saluda, le pregunta qué busca, en qué zona, presupuesto, cuántos ambientes. Le manda fotos de propiedades que matcheen. Y le agenda la visita directo al calendario del asesor.
+
+Todo esto, <em>mientras vos dormís</em>."</div>
+  <div class="tip">
+    💡 <strong>Tip:</strong> Mientras hablás, scrolleá despacio la conversación del bot para que el espectador vea el flujo real.
+  </div>
+</div>
+
+<!-- SECCIÓN 3 - BENEFICIO 2 -->
+<div class="seccion">
+  <div class="seccion-header">
+    <h2 class="seccion-titulo">🎬 Sección 3 — Beneficio 2: CRM que no pierde contactos</h2>
+    <span class="seccion-timing">0:55 → 1:35</span>
+  </div>
+  <div class="mostrar">
+    <strong>📹 Mostrás:</strong> Cambiás a la pestaña del CRM. Mostrás el pipeline con los leads en distintas columnas (Nuevo / En conversación / Cita agendada / Negociación / Cerrado).
+  </div>
+  <div class="speech">"Pero lo que pasa en el WhatsApp no queda ahí. <em>Todo cae automáticamente en tu CRM.</em>
+
+Mirá: acá están todos tus leads ordenados por etapa. Los nuevos, los que están en conversación, los que tienen visita agendada, los que están negociando, los que cerraron.
+
+Cada lead tiene su <em>historial completo</em>, su puntaje de interés, de dónde vino, qué busca.
+
+Ya no necesitás Excel, ni cuadernos, ni buscar el chat de WhatsApp de hace 3 meses. Todo lo que pasó con cada contacto, queda guardado acá."</div>
+  <div class="tip">
+    💡 <strong>Tip:</strong> Movés el mouse señalando las columnas del pipeline. No hace falta hacer clicks — solo scroll y señalar.
+  </div>
+</div>
+
+<!-- SECCIÓN 4 - BENEFICIO 3 -->
+<div class="seccion">
+  <div class="seccion-header">
+    <h2 class="seccion-titulo">🎬 Sección 4 — Beneficio 3: Todo el negocio en un lugar</h2>
+    <span class="seccion-timing">1:35 → 2:05</span>
+  </div>
+  <div class="mostrar">
+    <strong>📹 Mostrás:</strong> Navegás por las otras secciones del CRM — clientes activos, agenda, cartera de activos (lotes, terrenos, casas). Sin entrar en detalles, solo mostrar que existen.
+  </div>
+  <div class="speech">"Y no es solo el bot y los leads.
+
+Acá también manejás:
+
+<em>Tus clientes activos</em> — los que ya cerraron, los que están en seguimiento, los inversores recurrentes.
+
+<em>Tu agenda de visitas</em> — todas las citas agendadas por el bot y por tu equipo.
+
+<em>Tu cartera de propiedades</em> — lotes, terrenos, casas, departamentos. Todo en un solo lugar.
+
+Tu inmobiliaria, ordenada, medida, y automatizada. <em>En un solo sistema.</em>"</div>
+</div>
+
+<!-- SECCIÓN 5 - CIERRE + CTA -->
+<div class="seccion">
+  <div class="seccion-header">
+    <h2 class="seccion-titulo">🎬 Sección 5 — Cierre + Llamado a la acción</h2>
+    <span class="seccion-timing">2:05 → 2:30</span>
+  </div>
+  <div class="mostrar">
+    <strong>📹 Mostrás:</strong> Volvés a tu cara a cámara (o pantalla con logo System IA). Tono más personal y directo.
+  </div>
+  <div class="speech">"Mirá, lo más importante que te quiero decir es esto:
+
+<em>Mientras seguís respondiendo WhatsApp a mano, otras inmobiliarias ya están captando el doble de leads con sistemas como este.</em>
+
+Si querés ver cómo se vería System IA funcionando específicamente para tu inmobiliaria, dejame tus datos en el formulario de abajo y te escribo por WhatsApp en menos de 5 minutos para agendarte una demo personalizada.
+
+Son 15 minutos. Te muestro el sistema funcionando con datos reales de tu zona y te digo honestamente si te sirve o no.
+
+Te espero. Nos vemos."</div>
+</div>
+
+<!-- PAGE BREAK -->
+<div class="page-break"></div>
+
+<!-- INSTRUCCIONES DE GRABACIÓN -->
+<div class="instrucciones">
+  <h2>📋 Instrucciones para grabar</h2>
+
+  <h3>✅ Antes de grabar — Checklist</h3>
+  <ul class="checklist">
+    <li>Tener WhatsApp Web abierto con una conversación del bot (real o de ejemplo)</li>
+    <li>Tener el CRM abierto en la pestaña del pipeline</li>
+    <li>Silenciar notificaciones (celular, WhatsApp, Slack, Telegram)</li>
+    <li>Buena iluminación de frente (no luz de atrás)</li>
+    <li>Audio claro — usar auriculares con micrófono si tenés</li>
+    <li>Cerrar pestañas y apps que no vas a mostrar</li>
+    <li>Leer el guion completo 2-3 veces antes de grabar</li>
+  </ul>
+
+  <h3>🎥 Durante la grabación</h3>
+  <ul>
+    <li><strong>Hablar pausado pero natural</strong> — como si le hablaras a una amiga</li>
+    <li><strong>No leer robóticamente</strong> — el guion es guía, no libreto rígido</li>
+    <li><strong>No hace falta ser perfecta</strong> — 1 o 2 errores hacen el video más humano</li>
+    <li><strong>Si te equivocás</strong>, pausá 3 segundos y retomá la frase desde el inicio</li>
+    <li><strong>Mostrás la pantalla sin hacer clicks complejos</strong> — solo scroll y señalar con el mouse</li>
+    <li><strong>Mantener el ritmo</strong> — no te apures, pero tampoco te detengas mucho en cada sección</li>
+  </ul>
+
+  <h3>🛠️ Herramientas sugeridas</h3>
+  <ul>
+    <li><strong>Loom</strong> (recomendado) — gratis, fácil, comparte pantalla + cámara en esquina automáticamente. Link: loom.com</li>
+    <li><strong>Alternativas</strong>: OBS Studio, Zoom (grabando solo tu reunión), cámara nativa de Mac/Windows</li>
+  </ul>
+
+  <h3>📤 Después de grabar</h3>
+  <ul>
+    <li>Recortar inicio/final si hay silencios largos (Loom lo hace automático)</li>
+    <li>No editar mucho — natural funciona mejor que pulido</li>
+    <li>Subir a <strong>YouTube</strong> como <em>"no listado"</em> (privacidad) o usar el link directo de Loom</li>
+    <li>Pasarme el link para embeberlo en la landing</li>
+  </ul>
+
+  <div class="tip" style="margin-top: 18px;">
+    💡 <strong>Consejo final:</strong> grabá 2 o 3 takes. Elegí el que te salga más natural, no el más prolijo. La autenticidad vende más que la perfección.
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <strong>System IA</strong> — Guion VSL v1.0<br>
+  Duración target: 2:30 - 3:00 min · Enfoque: beneficios sobre features · Tono: cercano y directo
+</div>
+
+</body>
+</html>

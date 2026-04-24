@@ -1,16 +1,17 @@
 ---
 title: "CRM Gestión Agencia Lovbot (CRM propio Robert+Arnaldo)"
-tags: [crm-agencia, lovbot, gestion-leads, supabase, postgres, landing, decision-arquitectural, mockup-deployado-coolify]
+tags: [crm-agencia, lovbot, gestion-leads, supabase, postgres, landing, decision-arquitectural, mockup-deployado-coolify, live-en-produccion]
 source_count: 1
 proyectos_aplicables: [robert]
-status: mockup-deployado-coolify-pendiente-backend
+status: LIVE-end-to-end-2026-04-23
 fecha_propuesta: 2026-04-22
+fecha_implementacion: 2026-04-23
 propuesto_por: [robert-bazan, arnaldo-ayala]
 ---
 
 # CRM Gestión Agencia Lovbot (CRM propio)
 
-> **Status**: Mockup HTML deployado en Coolify Hetzner (2026-04-22) — URL pública `https://admin.lovbot.ai/agencia.html`. Backend + BD pendientes. Propuesto por [[robert-bazan]] el 2026-04-22 en chat WhatsApp con [[arnaldo-ayala]].
+> **Status**: LIVE end-to-end desde 2026-04-23. BD Postgres `lovbot_agencia` corriendo en Hetzner, backend FastAPI `/agencia/*` LIVE en `agentes.lovbot.ai`, frontend LIVE en `https://admin.lovbot.ai/agencia`. Propuesto por [[robert-bazan|Robert]] el 2026-04-22, implementado en sesión con [[arnaldo-ayala|Arnaldo]] el 2026-04-23.
 
 ## Qué es
 
@@ -54,6 +55,8 @@ notas_interaccion      -- log de cada contacto/conversación
 ```
 
 > **No es necesario** replicar todas las tablas del CRM inmobiliaria (`propiedades`, `loteos`, `inmuebles_renta`, etc.). Acá los "items" son los **servicios de la agencia** (CRM, futuros productos).
+
+**Implementado tal cual 2026-04-23**: BD `lovbot_agencia` (no `lovbot_agencia_crm` como se proponía — Arnaldo decidió nombre más corto).
 
 ## Origen de los leads (canales)
 
@@ -177,6 +180,86 @@ demos/SYSTEM-IA/
 3. Conectar `agencia.html` al backend real (quitar mock, conectar fetch)
 4. Decidir autenticacion: ¿mismo `LOVBOT_ADMIN_TOKEN` del panel clientes, o token separado?
 5. Agregar al [[sistema-auditoria]] cuando el backend exista
+
+## Implementación final (2026-04-23)
+
+### BD Postgres `lovbot_agencia`
+
+Creada en el cluster Hetzner [[vps-hetzner-robert]]. Container `lovbot-postgres-p8s8kcgckgoc484wwo4w8wck`. 6 tablas implementadas:
+
+| Tabla | Rol |
+|-------|-----|
+| `agencia_fuentes` | Catálogo de canales de origen (8 seeds cargados) |
+| `agencia_leads` | Prospectos del funnel de la agencia |
+| `agencia_clientes` | Leads convertidos a clientes activos |
+| `agencia_contactos_log` | Log de cada interacción con un lead/cliente |
+| `agencia_propuestas` | Propuestas enviadas (estado, monto, link) |
+| `agencia_pagos` | Pagos registrados por cliente |
+
+Adicionalmente: vista `agencia_funnel_resumen` (agrupa leads por estado para el embudo), 3 triggers de `updated_at` (en leads, clientes, propuestas), y 8 seeds de fuentes: `landing`, `fb_ads`, `referido`, `bot_whatsapp`, `evento`, `lead_center`, `zapier`, `otro`.
+
+Env var Coolify: `LOVBOT_AGENCIA_PG_DB=lovbot_agencia`.
+
+### Backend FastAPI
+
+Router en `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/system-ia-agentes/workers/clientes/lovbot/agencia_crm/router.py`. Prefijo `/agencia`. Registrado en `main.py`.
+
+15 endpoints disponibles:
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/agencia/funnel-resumen` | GET | Datos del embudo por estado (usa vista PG) |
+| `/agencia/leads` | GET | Lista leads con filtros opcionales |
+| `/agencia/leads` | POST | Crear nuevo lead |
+| `/agencia/leads/{id}` | PATCH | Editar lead |
+| `/agencia/leads/{id}` | DELETE | Soft delete (estado=eliminado) |
+| `/agencia/leads/{id}/convertir-cliente` | POST | Convierte lead en cliente activo |
+| `/agencia/contactos-log` | GET | Historial de contactos |
+| `/agencia/contactos-log` | POST | Registrar nuevo contacto |
+| `/agencia/propuestas` | GET | Lista de propuestas |
+| `/agencia/propuestas` | POST | Crear propuesta |
+| `/agencia/propuestas/{id}` | PATCH | Actualizar propuesta |
+| `/agencia/clientes` | GET | Lista de clientes activos |
+| `/agencia/clientes/{id}` | GET | Detalle de cliente |
+| `/agencia/fuentes` | GET | Catálogo de fuentes/canales |
+| `/agencia/pagos` | GET + POST | Registro de pagos |
+
+### Auth
+
+Bearer token. Valor del env var `LOVBOT_ADMIN_TOKEN` en Coolify Hetzner (token largo de 64 chars, el mismo token que protege `/admin/*`). NO usar el hardcoded `lovbot-admin-2026` — ese solo es default para dev local. Arnaldo tiene un token personalizado que sabe de memoria.
+
+### Schema Pydantic — campos clave
+
+- `nombre_contacto`: str (obligatorio)
+- `fuente_id`: INT (no slug de texto)
+- `pais`: default `"Mexico"`
+- `responsable`: default `"Robert"`
+
+### Frontend
+
+Archivo `01_PROYECTOS/01_ARNALDO_AGENCIA/demos/INMOBILIARIA/dev/admin/agencia.html`. URL pública `https://admin.lovbot.ai/agencia`.
+
+Login con token persistido en `sessionStorage` bajo key `lovbot_agencia_token`. Dos vistas navegables desde sidebar interno:
+
+- **Embudo**: 6 cards clickables (Nuevo / Contactado / Propuesta / Negociacion / Cliente / Perdido) — al hacer click filtra la tabla
+- **Todos los leads**: tabla completa con filtros de búsqueda por texto, canal, estado
+
+Modales implementados:
+- **Nuevo Lead**: todos los campos del schema (nombre_contacto, apellido, empresa, fuente_id, email, teléfono, país, responsable, notas)
+- **Editar lead**: mismos campos pre-populados
+- **Convertir a cliente**: plan, monto mensual, tenant_slug
+- **Marcar perdido**: motivo obligatorio
+
+### Slot preparado para lead.center / Zapier
+
+Campos `fb_lead_id`, `lead_center_id`, `zapier_data` (JSONB) ya presentes en `agencia_leads`. Fuentes seed `lead_center` y `zapier` ya cargadas. Cuando Robert mande detalles de su flujo actual, el conector solo tiene que hacer `POST /agencia/leads` con `fuente_id` correspondiente y `zapier_data` con el payload original. Sin cambios de schema requeridos.
+
+### Decisiones tomadas en la implementación
+
+- BD se llama `lovbot_agencia` (no `lovbot_agencia_crm`) — Arnaldo eligió nombre más corto porque "hace referencia a todo el proyecto Robert, no solo al CRM".
+- Los 2 paneles admin (`/clientes` y `/agencia`) mantienen tokens separados porque apuntan a backends distintos (`agentes.arnaldoayalaestratega.cloud` vs `agentes.lovbot.ai`). No se unificó auth.
+- Panel `/clientes` (gestión tenants Supabase): 5 stat cards + tabla con buscador, sin tabs internos.
+- Panel `/agencia` (CRM leads agencia): 2 vistas navegables (Embudo + Todos los leads).
 
 ## Fuentes que lo mencionan
 

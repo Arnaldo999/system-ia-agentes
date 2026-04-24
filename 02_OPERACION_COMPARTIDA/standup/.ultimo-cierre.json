@@ -1,0 +1,5 @@
+{
+  "ultimo_cierre": null,
+  "inicializado_at": "2026-04-24T12:20:00-03:00",
+  "notas": "Este archivo se actualiza automáticamente cada vez que corre /cierre. Si ultimo_cierre == null, el hook SessionStart te avisará que nunca ejecutaste /cierre aún."
+}

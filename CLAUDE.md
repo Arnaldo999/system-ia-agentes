@@ -87,12 +87,25 @@ El ecosistema tiene **4 silos separados** con roles no solapados. Cada informaci
 
 1. Al arrancar: auto-memory (silo 1) ya está cargado. Leo `CLAUDE.md` (router) + `ai.context.json` (silo 3) para saber estado actual.
 2. Si la tarea toca una agencia específica: invoco subagente `proyecto-[arnaldo|robert|mica]`, que consulta la wiki (silo 2) para cargar stack.
-3. Para estado operativo del día (qué falta, qué quedó a medias): leo `memory/ESTADO_ACTUAL.md` (silo 3).
-4. Trabajo en el código (silo 4).
-5. Al terminar:
+3. **Si la tarea es un tipo de trabajo repetitivo (bot WhatsApp, CRM, landing, social, Postgres, Airtable): leer el playbook correspondiente en `PROYECTO ARNALDO OBSIDIAN/wiki/playbooks/` ANTES de codear.** Evita repetir errores ya resueltos.
+4. Para estado operativo del día (qué falta, qué quedó a medias): leo `memory/ESTADO_ACTUAL.md` (silo 3).
+5. Trabajo en el código (silo 4).
+6. Al terminar:
    - Decisión durable / conocimiento nuevo → ingestar a wiki (silo 2) vía `raw/[agencia]/sesion-YYYY-MM-DD.md`.
+   - **Si aprendí algo nuevo de un tipo de trabajo que tiene playbook: actualizar el playbook con el descubrimiento** (sección "Histórico de descubrimientos" o nuevo gotcha).
    - Estado efímero del día → actualizar `memory/ESTADO_ACTUAL.md` o `debug-log.md` (silo 3).
    - Preferencia nueva del usuario → auto-memory (silo 1).
+
+### Mapa pedido → playbook a consultar
+
+| Si el pedido menciona... | Leer ANTES de arrancar |
+|--------------------------|-------------------------|
+| bot whatsapp, worker bot, BANT | `wiki/playbooks/worker-whatsapp-bot.md` |
+| redes sociales auto, FB posts, IG posts, comentarios auto, Meta DMs | `wiki/playbooks/worker-social-automation.md` |
+| CRM, panel admin, dashboard cliente | `wiki/playbooks/crm-html-tailwind.md` |
+| BD nueva cliente, postgres cliente, workspace | `wiki/playbooks/postgres-multi-tenant.md` |
+| base Airtable cliente, schema cliente | `wiki/playbooks/airtable-schema-setup.md` |
+| landing cliente, propuesta cliente, formulario público | `wiki/playbooks/propuesta-cliente-coolify.md` |
 
 ---
 
@@ -117,7 +130,7 @@ Actualiza `ai.context.json` al completar cada hito.
 | `worker`, `bot`, `fastapi`, `endpoint` | `/fastapi-worker` |
 | `debug`, `error`, `falla`, `no funciona` | `/debug-worker` |
 | `n8n`, `workflow`, `flujo` | `/dev-n8n-architect` |
-| `html`, `tailwind`, `crm`, `panel`, `landing` | `/tailwind-builder` |
+| `html`, `tailwind`, `crm`, `panel`, `landing`, `dashboard`, `formulario`, `propuesta`, `sitio web`, `diseño web` | **PRIMERO** `/agencia-frontend-rules` (guardrails técnicos) + DESPUÉS `/frontend-design` (estética) + `/tailwind-builder` (convenciones internas) |
 | `airtable`, `tabla`, `campo`, `filtro` | `/airtable-expert` |
 | `inmobiliaria`, `lote`, `terreno` | `/nicho-inmobiliaria` |
 | `restaurante`, `cafetería`, `delivery` | `/nicho-gastronomia` |
@@ -125,6 +138,11 @@ Actualiza `ai.context.json` al completar cada hito.
 | `copy`, `landing copy`, `propuesta` | `/copywriting` |
 | `redes sociales`, `contenido`, `post` | `/social-content` |
 | `pdf`, `excel`, `presentación` | `/pdf` `/xlsx` `/pptx` |
+| `plan`, `planificar`, `refactor grande`, `migración`, `nuevo cliente pago` | `/crear-plan` (genera plan en `02_OPERACION_COMPARTIDA/planes/`) |
+| `ejecutá el plan`, `implementar plan`, `correr plan` | `/implementar <ruta-al-plan>` |
+| `cierre del día`, `cerrar día`, `terminar jornada`, `qué quedó pendiente` | `/cierre` (genera daily + actualiza backlog) |
+| `buen día`, `arrancar día`, `qué tengo hoy`, `empezar` | `/apertura` (reporte completo con urgencias) |
+| `urgencias`, `qué es urgente`, `qué hago ahora` | `/urgencias` (versión compacta) |
 
 ---
 
@@ -197,9 +215,25 @@ el usuario debe detenerme y recordarme esta regla.
   01_ARNALDO_AGENCIA/    ← backends, workflows, demos, clientes, memory
   02_SYSTEM_IA_MICAELA/  ← idem para Mica
   03_LOVBOT_ROBERT/      ← idem para Robert
-02_OPERACION_COMPARTIDA/ ← scripts, tools, tests, execution, handoff, logs
+02_OPERACION_COMPARTIDA/ ← scripts, tools, tests, execution, handoff, logs, planes
 99_ARCHIVO/              ← archive legacy
 ```
+
+**Planes formales** (patrón adaptado de Nexum Academy):
+- `02_OPERACION_COMPARTIDA/planes/YYYY-MM-DD-{slug}.md` — planes de features grandes archivados
+- Se crean con `/crear-plan <descripción>` y se ejecutan con `/implementar <ruta>`
+- Estados: Borrador → Listo → Implementado → Archivado
+- Ver `02_OPERACION_COMPARTIDA/planes/README.md` para reglas de uso
+- NO usar planes para bugs, tareas <30min, ni trabajo que ya tiene playbook
+
+**Sistema de standup diario** (escala con cantidad de proyectos):
+- `02_OPERACION_COMPARTIDA/standup/backlog.md` — fuente única de TODOs abiertos multi-proyecto
+- `02_OPERACION_COMPARTIDA/standup/daily/YYYY-MM-DD.md` — snapshot cierre de cada día
+- `/cierre` al final del día → escanea silos, consolida backlog, genera daily
+- `/apertura` al arrancar → reporta estado con urgencias 🔴 🟠 🟡 🟢 priorizadas
+- `/urgencias` → versión compacta solo críticos + altos
+- Hook automático `SessionStart` te avisa si nunca cerraste o si el backlog está desactualizado (>12h)
+- Ver `02_OPERACION_COMPARTIDA/standup/README.md` para filosofía y criterios de priorización
 
 **Rutas actualizadas:**
 - backends monorepo → `01_PROYECTOS/01_ARNALDO_AGENCIA/backends/` (era `02_DEV_N8N_ARCHITECT/backends/`)

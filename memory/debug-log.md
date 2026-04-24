@@ -1,5 +1,254 @@
 # Debug y errores frecuentes
 
+## [2026-04-24 mañana] feature + 3 bugs | Humanización v2 — typing + splitter + horarios + sanitización
+
+Sesión matutina ~3h (07:30→10:30 ART). Completamos features #3 (typing indicator) y #4 (partición saludo) más ajustes derivados (horarios + sanitize nombre Robert). Durante el camino aparecieron 3 bugs que ya tienen regla durable en auto-memory.
+
+### Bug #1 — Python 3.11 no soporta f-strings con comillas triples anidadas
+
+**Síntoma**: ambos backends crashearon tras push del commit `5fd48de`. Log:
+```
+File "/app/workers/clientes/system_ia/demos/inmobiliaria/worker.py", line 1751
+    {f"""1. En este PRIMER turno tenés que hacer DOS cosas en UN solo mensaje:
+    ^^
+SyntaxError: f-string: expecting '}'
+```
+
+**Diagnóstico**: intenté usar ternaria inline `{f"""..."""  if X else f"""..."""}` dentro de un f-string padre. Python 3.11 no parsea ese patrón (Python 3.12+ sí, pero Coolify usa 3.11).
+
+**Fix** (commit `570a473` — lo hizo otro agente Claude paralelo): variable intermedia `regla_1` fuera del f-string padre:
+```python
+if es_primer_turno_saludo:
+    regla_1 = "En este PRIMER turno tenés que hacer DOS cosas..."
+else:
+    regla_1 = f"SOLO podés preguntar por **{siguiente_campo}**..."
+
+bloque_siguiente = f"""...
+🚫 REGLAS IRROMPIBLES:
+{regla_1}
+..."""
+```
+
+**Regla durable**: ver `feedback_REGLA_python311_fstring_triples.md` en auto-memory. Es el segundo incidente del mismo patrón (antes fue `re.sub()` con backslash dentro de f-string).
+
+### Bug #2 — Coolify v4 beta no rebuildea automáticamente aunque haya commits nuevos
+
+**Síntoma**: después de pushear commits `105e113` (horarios Robert) y luego `91b9924` (refactor a variable `HORARIO_ATENCION`), el bot seguía respondiendo SIN horarios. Verificación por terminal Coolify confirmó que el código estaba en el container, pero el container runtime usaba imagen cacheada.
+
+**Diagnóstico**:
+- `last_online_at` del API Coolify mostraba timestamp de un deploy anterior al commit nuevo
+- El endpoint `/api/v1/deploy?force=false` marcaba `status: finished` pero no rebuildeaba
+- Incluso `/api/v1/applications/{uuid}/restart` dejaba el mismo timestamp
+
+**Fix**: siempre disparar con `force=true`:
+```bash
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  "COOLIFY/api/v1/deploy?uuid=XXX&force=true"
+```
+
+O en UI: botón naranja **"Redeploy"** (NO "Restart").
+
+**Señal temprana**: si hacés push y `last_online_at` del API no cambia en ~5 min, auto-deploy falló. Disparar manual.
+
+**Regla durable**: ver `feedback_REGLA_coolify_cache_force.md` en auto-memory.
+
+### Bug #3 — Reglas del prompt BANT se anulan entre sí
+
+**Síntoma**: agregué horarios al `ejemplo_saludo` del worker Robert. Código deployado OK (verificado con grep en container). Pero el LLM respondía sin mencionar horarios.
+
+**Diagnóstico**: línea 1745 del prompt decía *"Mensajes cortos: máximo 3-4 líneas"*. Esa regla de brevedad general chocaba contra "incluir bienvenida + empresa + zonas + horarios + pregunta nombre". El LLM elige la restricción más dura y descarta contenido nuevo.
+
+**Fix** (commit `5a99bb1`): excepción explícita en la regla:
+> *"máximo 3-4 líneas **en turnos BANT (después del saludo)**. EXCEPCIÓN: en el PRIMER turno, el mensaje DEBE incluir bienvenida + empresa + zonas + HORARIOS DE ATENCIÓN + pregunta de nombre. No lo recortes por brevedad."*
+
+Aplicado en ambos workers (Mica y Robert) para prevención.
+
+**Regla durable**: ver `feedback_REGLA_prompt_bant_conflictos.md` en auto-memory. Antes de agregar requisitos al prompt BANT, grep de restricciones existentes (`máximo\|breve\|corto`) y coordinar con excepciones explícitas.
+
+### Docs relacionadas
+
+- Wiki: `wiki/sintesis/2026-04-24-humanizacion-v2-horarios-sanitizacion.md`, `wiki/conceptos/typing-indicator-pattern.md`, `wiki/conceptos/message-splitter-pattern.md`
+- Auto-memory: 3 feedback_REGLA_* nuevos detallados arriba
+
+---
+
+## [2026-04-23 noche] feature + 3 bugs | Humanización workers — Redis buffer + Vision GPT + fix routing WABA
+
+Sesión ~5h (17:00→22:30 ART). Workers demo de Mica y Robert ahora consolidan mensajes fragmentados y describen imágenes. Validado end-to-end con WhatsApp real. Durante la implementación aparecieron 3 bugs — 2 son clase de error que se van a repetir.
+
+### Bug #1 — Coolify v4 beta marca env vars nuevas con `is_preview: True` por default
+
+**Síntoma**: `os.environ['REDIS_BUFFER_URL']` levanta `KeyError` en runtime aunque la API de Coolify confirma que la env var existe con valor correcto.
+
+**Diagnóstico**: la env var aparece en `/api/v1/applications/{uuid}/envs` con `is_runtime: True` y valor correcto — PERO también con `is_preview: True`. El flag hace que la var SOLO se inyecte en deploys preview, no en production. El container productivo levanta SIN esa env var.
+
+**Cómo detectarlo**: `curl -H "Authorization: Bearer TOKEN" https://coolify.xxx/api/v1/applications/{uuid}/envs | grep -A5 REDIS_BUFFER_URL`. Si ves `is_preview: True`, es este bug.
+
+**Fix**: borrar la env var (`DELETE /api/v1/applications/{uuid}/envs/{env_uuid}`) y recrearla por UI desmarcando explícitamente "Is Preview" si aparece. La API pública no permite editar ese flag después de crear.
+
+**Regla**: al crear una env var nueva por UI de Coolify, **explícitamente desmarcar "Is Preview"**. Si ya la creaste y ves comportamiento raro, borrá y recreá — no pierdas tiempo debugeando el código del worker.
+
+### Bug #2 — Tabla `waba_clients` faltante en `lovbot_crm_modelo` tras migración Coolify
+
+**Síntoma**: bot Robert demo deja de responder a WhatsApp. Logs del webhook Meta multi-tenant:
+```
+POST /webhook/meta/events HTTP/1.1 200 OK
+[META-EVENTS] phone_id='735319949657644' no registrado en waba_clients — ignorado
+[DB] Error obtener_waba_client_por_phone: relation "waba_clients" does not exist
+```
+
+**Diagnóstico**: Meta Graph entrega el webhook al router centralizado `/webhook/meta/events` que hace lookup en tabla `waba_clients` para enrutar por `phone_number_id`. Tras la migración Lovbot a Coolify Hetzner del 2026-04-23 mañana, el worker apunta a DB `lovbot_crm_modelo` que NO tiene esa tabla (seed SQL de la DB modelo no la incluye).
+
+**Fix aplicado** desde terminal del container Hetzner:
+```bash
+# 1) Crear tabla (idempotente)
+curl -X POST "http://localhost:8000/clientes/lovbot/inmobiliaria/admin/waba/setup-table" \
+  -H "X-Admin-Token: lovbot-admin-2026"
+
+# 2) Registrar el bot (usa $META_ACCESS_TOKEN del env del container)
+curl -X POST "http://localhost:8000/clientes/lovbot/inmobiliaria/admin/waba/register-existing" \
+  -H "X-Admin-Token: lovbot-admin-2026" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"client_name\": \"Robert Demo Inmobiliaria\",
+    \"client_slug\": \"robert-demo\",
+    \"waba_id\": \"1416819116022399\",
+    \"phone_number_id\": \"735319949657644\",
+    \"access_token\": \"$META_ACCESS_TOKEN\",
+    \"worker_url\": \"https://agentes.lovbot.ai/clientes/lovbot/inmobiliaria/whatsapp\",
+    \"display_phone\": \"+52 1 998 743 4234\"
+  }"
+```
+
+**Fix durable pendiente**: agregar schema `waba_clients` al seed SQL de `lovbot_crm_modelo` para que se clone automáticamente con cada cliente nuevo creado vía `/admin/crear-db-cliente`. Documentado en `feedback_bug_waba_clients_migraciones.md` del auto-memory.
+
+**Regla**: si un bot Lovbot migrado o de cliente nuevo no responde después de que todos los checks usuales pasan (webhook OK, env vars OK), chequear primero que la tabla `waba_clients` existe y que el `phone_number_id` está registrado.
+
+### Bug #3 — OpenAI Vision rechaza bytes de media Evolution (HTTP 400)
+
+**Síntoma**: `image_describer: OpenAI HTTP 400 — "You uploaded an unsupported image. Please make sure your image has of one the following formats: ['png', 'jpeg', 'gif', 'webp']"`.
+
+**Diagnóstico paso a paso**:
+1. Primera sospecha: mime incorrecto. Evolution devolvía `Content-Type: application/octet-stream`. Implementamos sanitización de mime con magic numbers de los bytes. Siguió fallando.
+2. Agregamos log defensivo `_looks_like_image()` + `size=X first_bytes_hex=Y` antes de llamar OpenAI. Confirmó que los bytes NO eran imagen real.
+3. Causa real: las URLs `imageMessage.url` que Evolution devuelve en el webhook **apuntan a media encriptado de WhatsApp**. Un GET directo a esa URL NO descarga la imagen — devuelve bytes inútiles (encriptados o payload de error).
+
+**Fix aplicado**: usar endpoint `/chat/getBase64FromMediaMessage/{instance}` de Evolution API. Ese endpoint descifra internamente el media de WhatsApp y devuelve base64 decodificable a JPEG real. Patrón copiado del worker de Lau que ya lo hacía bien.
+
+**Regla**: para descargar media de Evolution, NUNCA usar la URL del payload. Siempre usar el endpoint `/chat/getBase64FromMediaMessage/{instance}` con el `message_id` extraído de `raw["key"]["id"]`. El endpoint prueba 3 variantes de payload (Evolution v1 y v2) para compatibilidad.
+
+### Commits de esta sesión
+
+`dbaca83` chore: redis>=5.0.0 | `58d5d85` feat: message_buffer | `3cafbc1`+`3d4753b` integrar buffer en Mica+Robert | `1de9697` feat: image_describer | `8236a0e` refactor wa_provider | `bb42bd5`+`153330e` integrar describer | `6158186` fix mime | `5f9e178` fix Evolution download
+
+### Docs relacionados
+
+- Wiki: `wiki/sintesis/2026-04-23-humanizacion-workers-redis.md`, `wiki/conceptos/message-buffer-debounce.md`, `wiki/conceptos/image-describer.md`
+- Auto-memory: `feedback_buffer_debounce_workers.md`, `feedback_bug_waba_clients_migraciones.md`
+
+---
+
+## [2026-04-23] bug crítico + feature | Bot Mica WhatsApp Web + Maicol Social Automation LIVE
+
+### Bug #1 — Bot Mica no respondía desde WhatsApp Web (5h diagnóstico, fix en 20 líneas)
+
+**Síntoma**: Arnaldo le escribía "Hola" al bot demo Mica (+54 9 3765 00-5465) desde WhatsApp Web en la PC y el bot no respondía nada. Desde el celular SÍ respondía. Los otros bots del ecosistema (Lau, Robert) funcionaban normal desde PC.
+
+**Falsos positivos descartados** (NO eran la causa, gastaron tiempo):
+1. `EVOLUTION_INSTANCE` mal seteado en Coolify → el valor correcto `MICA_DEMO_EVOLUTION_INSTANCE=Demos` ya estaba bien.
+2. Filtro `fromMe` de Evolution → el mensaje no venía marcado como fromMe.
+3. Protocolo `@lid` de WhatsApp Web (Linked Devices) → agregué fallbacks por robustez pero no era la causa.
+
+**Causa real identificada con logging temporal**: WhatsApp Web manda el campo `message` con **2 keys** en lugar de 1. Ejemplo de payload:
+```json
+"message": {
+  "messageContextInfo": {...},    ← metadata, primer key
+  "conversation": "hola"          ← texto real, segundo key
+}
+```
+
+Mientras que desde el celular manda solo `{"conversation": "hola"}`.
+
+El parser `wa_provider._parse_evolution()` línea 430 hacía `msg_type = list(message.keys())[0]` → tomaba `messageContextInfo` (metadata) como tipo → no matcheaba ninguna rama del if/elif → `texto` quedaba vacío → handler descartaba el mensaje con `return None`.
+
+**Fix** (commit `2e4f905` en `wa_provider.py`):
+```python
+# ANTES:
+msg_type = list(message.keys())[0] if message else ""
+
+# DESPUÉS:
+texto = ""
+msg_type = ""
+if "conversation" in message:
+    msg_type = "conversation"
+    texto = message.get("conversation", "")
+elif "extendedTextMessage" in message:
+    msg_type = "extendedTextMessage"
+    texto = message.get("extendedTextMessage", {}).get("text", "")
+# ... iteración similar para buttonsResponseMessage / listResponseMessage
+```
+
+El worker de Lau no tenía el bug porque usa su propio parser local con `.get()` encadenado robusto, no `wa_provider.parse_incoming()`.
+
+**Impacto**: bug afectaba a TODOS los workers que usan `wa_provider` (Mica, Maicol si hubiera usado Evolution, social comments). Leads desde WhatsApp Web se caían silenciosamente desde hacía tiempo.
+
+**Regla**: antes de confiar en `list(dict.keys())[0]` para tomar primera key, validar que el dict tenga UNA sola key esperada. WhatsApp Web / Desktop agrega metadata extra.
+
+### Feature — Maicol Back Urbanizaciones primer cliente Arnaldo con Social Automation LIVE
+
+**Qué**: publicación automática diaria en Facebook (y pronto Instagram) para la página Back Urbanizaciones de Maicol, usando el worker social del backend + Gemini para generar copy + imagen con branding + Page Access Token de Meta.
+
+**Stack implementado**:
+- App Meta única del ecosistema: `Social Media Automator AI` (App ID `895855323149729`, dueño BM `Emprender en lo Digital` de Arnaldo) compartida con BM cliente como Socio.
+- Tabla multi-tenant Supabase: `clientes` (proyecto `pczrezpmdugdsjrxspjh`). Cada fila = un cliente con su `fb_page_id`, `ig_account_id`, `meta_access_token`, `airtable_base_id`, `airtable_table_id`.
+- Airtable Maicol: `appaDT7uwHnimVZLM` tabla Branding `tbl0QeaY3oO2P5WaU` record `rec8ZOSA7fZaAQAd4`. Tiene: Industria, Servicio, Público, Tono, Reglas, Estilo Visual, Colores, CTA, Logo, Facebook Page ID, IG Business Account ID.
+- Endpoint orquestador: `POST /social/publicar-completo` en backend `agentes.arnaldoayalaestratega.cloud`. Recibe `cliente_id` + `datos_marca` (brandbook), genera copy + imagen + publica en las 3 redes.
+- Workflow n8n: `xp49TY9WSjMtPvZK` (📱 Maicol — Publicación Diaria) schedule 10am ARG diario. Trigger → Airtable brandbook → POST endpoint → IF error → Telegram alert.
+
+**Gotchas descubiertos (documentados en runbook)**:
+1. **User Token ≠ Page Access Token**. Primer intento falló con error 190 "Invalid JSON for postcard". Fix: desde Graph API Explorer query `<fb_page_id>?fields=access_token` devuelve Page Token derivado. Si el User Token era long-lived (60 días), el Page Token es **permanente** (no expira mientras no cambie password FB).
+2. **System User Admin requiere 7 días de antigüedad** del admin del BM cliente. Arnaldo fue agregado al BM Back Urbanizaciones hoy, no puede crear System User Admin hasta 2026-04-30. Workaround: Page Access Token permanente cubre el gap.
+3. **IG debe estar conectado a Page FB**. Error 10 "Application does not have permission for this action" apareció al publicar en IG. Causa: Back Urbanizaciones IG no estaba vinculado a la Page FB (aunque ambos estén en el mismo BM). Solución: link directo para el dueño del IG `https://www.facebook.com/settings/?tab=linked_instagram` → Click "Conectar cuenta" → login IG → aceptar permisos. Este paso lo hace el cliente (tiene sus creds IG).
+
+**Resultado sesión**:
+- ✅ Facebook publicando automático. Primera publicación verificada visualmente: imagen aérea generada por IA con zonas rojas/amarillas, headline "Zonas de mayor crecimiento en Misiones para invertir", logo BACK en esquina, colores de marca aplicados. Post ID `985390181332410_122106926216809418`.
+- ⚠️ Instagram pendiente solo de que Maicol conecte su IG a la Page FB (link ya enviado).
+- ✅ Documentación completa en [wiki runbook](../PROYECTO%20ARNALDO%20OBSIDIAN/wiki/conceptos/runbook-meta-social-automation.md) + auto-memory `feedback_REGLA_meta_social_onboarding.md` para replicar en 30 min con próximos clientes.
+
+**Regla**: onboarding social de cliente nuevo **SIEMPRE** consultar el runbook ANTES de improvisar. Los 3 gotchas no son obvios de docs oficiales de Meta y cuestan 6h si se re-debugean.
+
+---
+
+## [2026-04-23] feature | CRM Agencia Lovbot LIVE end-to-end — incidentes menores durante el build
+
+Durante la construcción end-to-end del CRM Agencia Lovbot (commits `aa6ba94`, `f0d85f4`, `43c36c9`, `b4178a2`) aparecieron 2 incidentes menores que se resolvieron en sesión. Dejo registro para no repetir.
+
+### Incidente 1 — Puerto Coolify Hetzner no accesible desde fuera (IP:puerto directo)
+
+**Síntoma**: `curl http://5.161.235.99:8000/api/v1/...` timeout después de 136 segundos. Intento de llamar API Coolify Hetzner vía IP directa para agregar env var nueva.
+
+**Causa**: El puerto 8000 de Coolify Hetzner solo está accesible por HTTPS en `https://coolify.lovbot.ai` (el IP:puerto directo está firewalleado en el VPS Hetzner).
+
+**Fix**: Siempre usar `https://coolify.lovbot.ai/api/v1/...` para llamadas a la API Coolify de Robert. La var `COOLIFY_ROBERT_URL=http://5.161.235.99:8000` del `.env` es LEGACY — hay que actualizarla a `https://coolify.lovbot.ai`.
+
+**Regla**: Si la llamada a Coolify Hetzner timeouta, chequear que estés usando el dominio HTTPS y no el IP:puerto. Para Coolify Hostinger (Arnaldo) el patrón es el mismo: `https://coolify.arnaldoayalaestratega.cloud`.
+
+### Incidente 2 — Contrato frontend/backend desajustado en primer smoke test del CRM Agencia
+
+**Síntoma**: Primer `POST /agencia/leads` desde el frontend devolvía `422 {"type":"missing","loc":["body","nombre_contacto"],"msg":"Field required"}`.
+
+**Causa**: El frontend mandaba campos con nombres viejos del mockup (`nombre`, `contacto_nombre`) pero el schema Pydantic del backend espera el contrato real:
+- `nombre_contacto` (required) + `apellido_contacto` (opcional) + `nombre_empresa` (opcional) — tres campos SEPARADOS, no un "nombre" único
+- `fuente_id` (INT, required) — no `fuente_slug` (string)
+
+**Fix aplicado**: Frontend adaptado al contrato real del backend:
+- Modal de "Nuevo Lead" con inputs separados: `nombre_contacto`, `apellido_contacto`, `nombre_empresa`
+- Select de fuente guarda el **slug visible** para UX pero internamente mapea a `fuente_id` INT usando `FUENTES_CACHE` local (se carga al iniciar desde `GET /agencia/fuentes`)
+
+**Regla**: Antes de conectar frontend a backend nuevo, hacer **1 POST de prueba desde curl** con el contrato exacto del schema Pydantic, confirmar la shape real del payload, y recién ahí construir el formulario. Evita ciclos fix/deploy/test por discrepancias de nombres de campos.
+
+---
+
 ## [2026-04-23] migración completa | Lovbot 100% en Coolify Hetzner — sale de Vercel productivo
 
 **DNS propagado** (Arnaldo cambió en cPanel):

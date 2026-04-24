@@ -4,6 +4,63 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-24] sesion-claude | Humanización v2 — typing indicator + splitter saludo + horarios + sanitización nombre
+
+- Sesión matutina ~3h (07:30→10:30 ART) con Arnaldo + Claude. Proyecto: compartido (Mica demo + Robert demo).
+- **Features completadas** (continuación de sesión nocturna 2026-04-23):
+  - Typing "escribiendo..." en TODAS las respuestas del bot (Meta context-aware + Evolution `/chat/sendPresence`)
+  - Partición de saludo en 2-3 chunks con GPT-4o-mini (SOLO primer turno)
+  - Horarios de atención en el saludo (`"lunes a viernes de 9 a 18 hs 🕐"`)
+  - Sanitización de nombre `@rn@ldo → Arnaldo` (patrón copiado de Mica a Robert)
+- **Módulos nuevos**: `workers/shared/typing_indicator.py` + `workers/shared/message_splitter.py`
+- **3 bugs descubiertos y fixeados** (lecciones durables):
+  1. Python 3.11 no soporta f-strings con triples comillas anidadas — ambos backends crashearon ~15 min
+  2. Coolify v4 beta no rebuildea aunque haya commits nuevos — siempre usar `force=true`
+  3. Reglas del prompt BANT chocan entre sí — "máximo 3-4 líneas" anulaba horarios
+- **Commits** (10 en master:main): `6a2617e` módulos, `15eeda0` fix api_key, `888a258` Mica, `5b21e15` Robert, `5fd48de` rompió, `570a473` fix, `017badb` horarios Mica, `105e113` horarios+sanitize Robert, `91b9924` refactor HORARIO_ATENCION, `5a99bb1` excepción brevedad
+- **Fenómeno nuevo**: múltiples agentes Claude paralelos haciendo commits al mismo repo sin conflictos reales de merge (trabajan en líneas distintas)
+- **Docs generadas (4 silos sincronizados)**:
+  - Silo 1: 3 reglas irrompibles nuevas (`feedback_REGLA_coolify_cache_force`, `feedback_REGLA_python311_fstring_triples`, `feedback_REGLA_prompt_bant_conflictos`)
+  - Silo 2: 2 conceptos (`typing-indicator-pattern`, `message-splitter-pattern`) + síntesis `2026-04-24-humanizacion-v2-horarios-sanitizacion`
+  - Silo 3: ESTADO_ACTUAL + debug-log actualizados
+  - Silo 4: 10 commits pusheados
+- **Pendiente próxima sesión**: Incluir `waba_clients` en seed SQL de `lovbot_crm_modelo`; configuración de horarios por cliente via env var; replicar humanización a workers reales cuando haya clientes LIVE.
+
+## [2026-04-24] sesion-claude | Maicol Back Urbanizaciones Social Automation LIVE + bug bot Mica WhatsApp Web
+
+- Sesión ~6h (19:00 ART 23/04 → 01:30 ART 24/04) con Arnaldo + Claude. Proyecto: arnaldo (Maicol) + compartido (bug Mica).
+- **🏆 Hito**: primer cliente Arnaldo con social automation LIVE — Facebook publicando automático para Back Urbanizaciones. Post ID `985390181332410_122106926216809418` verificado visualmente.
+- **Stack implementado**:
+  - App Meta única del ecosistema: `Social Media Automator AI` (895855323149729) compartida con BM Back Urbanizaciones.
+  - Tabla multi-tenant en Supabase `clientes` con registro `Back_Urbanizaciones` (Page Access Token permanente).
+  - Workflow n8n `xp49TY9WSjMtPvZK` (📱 Maicol — Publicación Diaria Redes Sociales) schedule 10am ARG diario.
+  - Airtable Maicol `appaDT7uwHnimVZLM` tabla Branding `tbl0QeaY3oO2P5WaU` con brandbook completo.
+- **3 gotchas críticos descubiertos** (documentados en runbook nuevo):
+  1. User Token ≠ Page Access Token → error 190 "Invalid JSON for postcard". Fix: query `<fb_page_id>?fields=access_token` intercambia User (60d) → Page (permanente).
+  2. System User Admin requiere 7 días de antigüedad como admin del BM cliente. Workaround: Page Access Token permanente cubre el gap.
+  3. IG debe estar conectado a Page FB (aunque ambos estén en el mismo BM). Error 10. Link directo para el dueño IG: `https://www.facebook.com/settings/?tab=linked_instagram`.
+- **Bug crítico resuelto (commit 2e4f905)**: `wa_provider._parse_evolution()` tomaba primera key del dict `message` ciegamente. WhatsApp Web manda `[messageContextInfo, conversation]` → caía en metadata → texto vacío → mensaje descartado. Bot Mica desde PC no respondía. Fix: iterar tipos conocidos por nombre. Patrón igual al worker Lau que ya funcionaba bien.
+- **Concepto nuevo**: [[wiki/conceptos/runbook-meta-social-automation]] — procedimiento definitivo (30 min vs 6h improvisando) para onboardear cliente nuevo con los 3 gotchas, SQL snippets, comandos de test, checklist.
+- **Memorias Silo 1 nuevas**: `feedback_REGLA_meta_social_onboarding.md` (regla irrompible) + `project_maicol_social_automation_live.md` (hito Maicol).
+- **Pendiente próxima sesión**:
+  1. Maicol conecta IG vía link enviado → IG se suma automático (30 seg de Maicol)
+  2. Activar bot de comentarios automáticos (endpoint `/social/meta-webhook` ya implementado, solo suscribir webhook Meta)
+  3. 2026-04-30: migrar Maicol de Page Token a System User Admin permanente (regla 7 días de Meta se cumple)
+  4. Aplicar runbook para Cesar Posada cuando devuelva brief de turismo
+
+## [2026-04-23] sesion-claude | Humanización workers — Redis buffer + Vision GPT + fix routing WABA
+
+- Sesión ~5h (17:00→22:30 ART) con Arnaldo + Claude. Proyecto: compartido (Mica demo + Robert demo)
+- **Infra nueva**: Redis `redis-workers` en Coolify Hostinger (UUID `q11d3uxyizlkwinvhw0d8lgs`, project microservicios) + Coolify Hetzner (UUID `agws408ss8wg48040kk8w880`, project Agentes). Imagen `redis:7.2`, sin persistencia, puertos no expuestos.
+- **Módulos nuevos**: `workers/shared/message_buffer.py` (buffer debounce 8s patrón Kevin Bellier) + `workers/shared/image_describer.py` (normalizador imágenes a texto con GPT-4o-mini Vision)
+- **Integrados en**: `workers/clientes/system_ia/demos/inmobiliaria/worker.py` (tenant `mica-demo`) + `workers/clientes/lovbot/robert_inmobiliaria/worker.py` (tenant `robert-demo`)
+- **Validación E2E**: ambos bots procesaron 3 mensajes fragmentados → 1 respuesta consolidada. Imágenes reales descritas correctamente tras fixes
+- **Bugs fixeados**: (a) Coolify v4 beta marca env vars con `is_preview:True` por default → bloquea inyección; fix: recrear sin marcar "Is Preview". (b) `waba_clients` no existía en `lovbot_crm_modelo` post-migración → bot Robert descartaba webhooks; fix: setup-table + register-existing via admin endpoint. (c) Evolution URLs encriptadas → OpenAI rechazaba bytes; fix: usar `/chat/getBase64FromMediaMessage`.
+- **Commits**: `dbaca83`, `58d5d85`, `3cafbc1`, `3d4753b`, `1de9697`, `8236a0e`, `bb42bd5`, `153330e`, `6158186`, `5f9e178`
+- **Síntesis**: [[wiki/sintesis/2026-04-23-humanizacion-workers-redis]]
+- **Conceptos nuevos**: [[wiki/conceptos/message-buffer-debounce]] + [[wiki/conceptos/image-describer]]
+- **Pendiente próxima sesión**: typing indicator + partición respuesta 2-3 chunks + fix durable `waba_clients` en seed SQL
+
 ## [2026-04-23] deploy | CRM modelo Lovbot migrado a Coolify Hetzner — crm.lovbot.ai
 
 - App Coolify creada: `lovbot-crm-modelo` (UUID `wcgg4kk0sw0g0wgw4swowog0`), project `Agentes`, FQDN `https://crm.lovbot.ai`
@@ -353,6 +410,9 @@ Estado wiki: 12 entidades + 7 conceptos = 19 páginas. Falta ingestar fuentes of
 - Síntesis nueva: [[wiki/sintesis/2026-04-23-migracion-lovbot-coolify]]
 - Entidades actualizadas con nueva URL/host: `crm-v2-modelo-robert`, `panel-gestion-robert`, `coolify-robert`, `lovbot-ai`, `robert-bazan`
 - Conceptos actualizados: `coolify-default-deploy` (Robert ya no es "pendiente migrar"), `crm-agencia-lovbot` (decisiones de URL+backend resueltas), `sistema-auditoria` (URL canónica nueva del check `robert_panel_gestion`)
+
+## [2026-04-23] update | CRM Agencia Lovbot LIVE end-to-end. BD lovbot_agencia en Hetzner + 15 endpoints FastAPI /agencia/* + frontend admin.lovbot.ai/agencia conectado. Ver [[crm-agencia-lovbot]] + [[sesion-2026-04-23-crm-agencia-live]].
+## [2026-04-23] ingest | sesion-2026-04-23-crm-agencia-live (tipo sesion-claude, proyecto robert)
 
 ## [2026-04-23] update | Bug histórico Robert/Vercel — limpieza retroactiva de wiki
 - Auditoría: encontradas 7 páginas wiki con URLs `lovbot-demos.vercel.app` o "servido por Vercel" desactualizadas
