@@ -1809,6 +1809,110 @@ def _responder_comentario(
         return {"success": False, "error": str(e)}
 
 
+def _responder_dm(
+    sender_id: str, texto: str, cliente: dict, page_id: str = "", token: str = ""
+) -> dict:
+    """Genera respuesta con Gemini y la envía como DM (Messenger Send API).
+
+    Estrategia identica a _responder_comentario: valor + link al bot WhatsApp.
+    El DM lo recibio la Page de Facebook (no el IG); se responde con Send API
+    usando el Page Access Token.
+    """
+    nombre = cliente.get("Nombre Comercial", "la agencia")
+    tono = cliente.get("Tono de Voz", "cercano y profesional")
+    servicio = cliente.get("Industria", cliente.get("Servicio Principal", "inmobiliaria"))
+    reglas = cliente.get("Reglas Estrictas (Lo que NO debe hacer)", "")
+    if not token:
+        token_map = _build_page_token_map()
+        token = token_map.get(page_id, META_ACCESS_TOKEN)
+
+    # ── Resolver numero del bot WhatsApp desde Supabase ─────────────────────
+    wa_number = ""
+    if page_id:
+        supa_creds = _get_supa_credenciales_by_page(page_id)
+        if supa_creds:
+            wa_number = re.sub(r"\D", "", supa_creds.get("whatsapp_numero_notificacion", "") or "")
+    if not wa_number:
+        wa_number = re.sub(r"\D", "", cliente.get("Numero Bot WhatsApp", "") or
+                           cliente.get("WhatsApp Bot", "") or "")
+    link_bot = f"https://wa.me/{wa_number}" if wa_number else ""
+
+    # ── Guardrails ──────────────────────────────────────────────────────────
+    if detect_injection(texto, worker="social_dm"):
+        return {"success": True, "respuesta": FALLBACK_SOCIAL, "_guardrail": "injection_detected"}
+    texto_safe = sanitize_for_llm(texto, context="dm_usuario")
+
+    # Construir CTA fuera del f-string (Python 3.11 compat).
+    if link_bot:
+        cta_instruction = (
+            "3. SIEMPRE terminar invitando a continuar por WhatsApp con el link LITERAL: " + link_bot + "\n"
+            "   Ejemplo: 'Seguimos por WhatsApp asi te armo una propuesta a medida: " + link_bot + "'"
+        )
+        link_header = "LINK AL BOT WHATSAPP (incluir SIEMPRE literal): " + link_bot
+    else:
+        cta_instruction = "3. Invitar amablemente a escribir al WhatsApp de la empresa"
+        link_header = ""
+
+    prompt = (
+        f"Sos el asistente de {nombre} respondiendo un DM (mensaje directo) en Messenger.\n"
+        f"TONO: {tono}\n"
+        f"NEGOCIO: {servicio}\n"
+        f"RESTRICCIONES ABSOLUTAS: {reglas}\n"
+        f"{link_header}\n\n"
+        f"MENSAJE RECIBIDO:\n{texto_safe}\n\n"
+        f"Escribi UNA respuesta de MAXIMO 3 LINEAS que:\n"
+        f"1. Salude y agradezca el contacto brevemente (1 linea).\n"
+        f"2. Respuesta util y contextual al mensaje, SIN revelar precios/ubicaciones "
+        f"especificas — eso se trabaja por WhatsApp con calificacion del lead.\n"
+        f"{cta_instruction}\n\n"
+        f"REGLAS DE FORMATO:\n"
+        f"- Maximo 3 emojis naturales (flecha 👉 permitida para el link).\n"
+        f"- NO asteriscos, NO markdown, solo texto plano.\n"
+        f"- Si hay link, incluirlo LITERAL como aparece arriba (no acortar, no envolverlo).\n"
+        f"- Tono {tono} — servicial, no agresivo.\n"
+    )
+
+    try:
+        gemini_resp = req.post(
+            GEMINI_TEXT_URL,
+            params={"key": GEMINI_API_KEY},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=30,
+        )
+        respuesta = gemini_resp.json()["candidates"][0]["content"]["parts"][0][
+            "text"
+        ].strip()
+    except Exception:
+        respuesta = FALLBACK_SOCIAL
+
+    if not validate_output(respuesta, worker="social_dm"):
+        respuesta = FALLBACK_SOCIAL
+
+    # Asegurar que el link aparezca aunque Gemini lo haya omitido.
+    if link_bot and link_bot not in respuesta:
+        respuesta = respuesta.rstrip() + "\n\n👉 " + link_bot
+
+    # ── Enviar DM via Messenger Send API ─────────────────────────────────────
+    try:
+        send_resp = req.post(
+            f"https://graph.facebook.com/v22.0/me/messages",
+            params={"access_token": token},
+            json={
+                "recipient": {"id": sender_id},
+                "messaging_type": "RESPONSE",
+                "message": {"text": respuesta},
+            },
+            timeout=15,
+        )
+        print(
+            f"[DM-REPLY] status={send_resp.status_code} body={send_resp.text[:200]}",
+            flush=True,
+        )
+        return {"success": send_resp.ok, "respuesta": respuesta}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @router.get("/meta-webhook")
 async def meta_webhook_verificar(request: Request):
     """Verificación del webhook de Meta."""
@@ -1848,6 +1952,43 @@ async def meta_webhook_eventos(request: Request):
             flush=True,
         )
 
+        # ── 3. Procesar DMs de Messenger (entry.messaging) ─────────────────
+        # Messenger manda DMs en entry.messaging (estructura distinta a
+        # entry.changes que usan comentarios). Cada item es un evento.
+        for msg_event in entry.get("messaging", []) or []:
+            sender_id = msg_event.get("sender", {}).get("id", "")
+            recipient_id = msg_event.get("recipient", {}).get("id", "")
+            message = msg_event.get("message", {}) or {}
+            texto_dm = message.get("text", "")
+            mid = message.get("mid", "")
+
+            # Anti-loop: ignorar si es_eco (la pagina enviando a alguien)
+            if message.get("is_echo"):
+                print(f"[WEBHOOK-DM] SKIP is_echo mid={mid!r}", flush=True)
+                continue
+            # Anti-loop: ignorar si sender es la propia page
+            if sender_id and sender_id in own_ids:
+                print(f"[WEBHOOK-DM] SKIP own sender={sender_id!r}", flush=True)
+                continue
+            # Verificar que el destinatario es la page correcta
+            if recipient_id and recipient_id != page_id:
+                print(
+                    f"[WEBHOOK-DM] SKIP recipient={recipient_id!r} != page_id={page_id!r}",
+                    flush=True,
+                )
+                continue
+
+            print(
+                f"[WEBHOOK-DM] from={sender_id!r} to={recipient_id!r} texto={texto_dm[:40]!r}",
+                flush=True,
+            )
+            if texto_dm and len(texto_dm) >= 2 and sender_id:
+                result = _responder_dm(
+                    sender_id, texto_dm, cliente or {}, page_id, token=token_cliente
+                )
+                print(f"[WEBHOOK-DM] result={result}", flush=True)
+
+        # ── 4. Procesar cambios de feed/comments (entry.changes) ───────────
         for change in entry.get("changes", []):
             field = change.get("field", "")
             value = change.get("value", {})
