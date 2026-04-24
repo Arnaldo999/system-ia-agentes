@@ -1741,19 +1741,25 @@ def _responder_comentario(
     # ── Guardrail 2: sanitizar el comentario antes de insertarlo en el prompt ─
     texto_safe = sanitize_for_llm(texto, context="comentario_usuario")
 
-    cta_instruction = (
-        f"3. SIEMPRE derivar al WhatsApp del bot con el link LITERAL: {link_bot}\n"
-        f"   Ejemplo: 'Te cuento todo por WhatsApp 👉 {link_bot}'"
-        if link_bot else
-        f"3. Derivar amablemente a que nos escriban por WhatsApp"
-    )
+    # Construir CTA y header de link fuera del f-string (Python 3.11 no permite
+    # comillas simples ni expresiones complejas dentro de {} en f-strings).
+    if link_bot:
+        ejemplo_cta = "Te cuento todo por WhatsApp 👉 " + link_bot
+        cta_instruction = (
+            "3. SIEMPRE derivar al WhatsApp del bot con el link LITERAL: " + link_bot + "\n"
+            "   Ejemplo: " + ejemplo_cta
+        )
+        link_header = "LINK AL BOT WHATSAPP (incluir SIEMPRE literal): " + link_bot
+    else:
+        cta_instruction = "3. Derivar amablemente a que nos escriban por WhatsApp"
+        link_header = ""
 
     prompt = (
         f"Sos el community manager de {nombre}.\n"
         f"TONO: {tono}\n"
         f"NEGOCIO: {servicio}\n"
         f"RESTRICCIONES ABSOLUTAS: {reglas}\n"
-        f"{'LINK AL BOT WHATSAPP (incluir SIEMPRE literal): ' + link_bot if link_bot else ''}\n\n"
+        f"{link_header}\n\n"
         f"COMENTARIO RECIBIDO:\n{texto_safe}\n\n"
         f"Escribi UNA respuesta de MAXIMO 2 LINEAS que:\n"
         f"1. Agradezca o reconozca el comentario brevemente (1 linea)\n"
@@ -1761,7 +1767,7 @@ def _responder_comentario(
         f"o valida el interes, SIN revelar datos especificos (precio, ubicacion exacta)\n"
         f"{cta_instruction}\n\n"
         f"REGLAS DE FORMATO:\n"
-        f"- Maximo 2 emojis naturales (👉 esta permitido para el link).\n"
+        f"- Maximo 2 emojis naturales (flecha 👉 permitida para el link).\n"
         f"- NO asteriscos, NO markdown, solo texto plano.\n"
         f"- Si hay link, incluirlo LITERAL como aparece arriba (no acortar).\n"
         f"- Tono {tono} — nunca presion ni venta agresiva.\n"
