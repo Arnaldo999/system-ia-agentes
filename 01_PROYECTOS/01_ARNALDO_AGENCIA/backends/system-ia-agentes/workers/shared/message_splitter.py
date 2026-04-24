@@ -49,7 +49,7 @@ import json
 import logging
 import os
 import re
-from typing import List
+from typing import List, Optional
 
 import requests
 
@@ -88,11 +88,17 @@ def split_greeting(
     *,
     max_chunks: int = 3,
     lang: str = "es",
+    api_key: Optional[str] = None,
 ) -> List[str]:
     """
     Parte un texto en 1-max_chunks strings. Fallback a [texto] si falla.
 
     No levanta excepciones salvo bugs de programación.
+
+    `api_key`: si no se pasa, intenta leer OPENAI_API_KEY del env. Si
+    tampoco está, intenta LOVBOT_OPENAI_API_KEY (worker Robert) y
+    MICA_OPENAI_API_KEY (por si algún día se separa). Esto permite que
+    cada worker pase su propia clave sin depender de nombres de env var.
     """
     if not texto:
         return [texto]
@@ -104,10 +110,16 @@ def split_greeting(
     if len(texto) < 120:
         return [texto]
 
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if not api_key:
-        logger.warning("message_splitter: OPENAI_API_KEY no seteado")
+    resolved_key = (
+        api_key
+        or os.environ.get("OPENAI_API_KEY", "")
+        or os.environ.get("LOVBOT_OPENAI_API_KEY", "")
+        or os.environ.get("MICA_OPENAI_API_KEY", "")
+    )
+    if not resolved_key:
+        logger.warning("message_splitter: ninguna OPENAI_API_KEY disponible (ni OPENAI_API_KEY, LOVBOT_OPENAI_API_KEY, MICA_OPENAI_API_KEY)")
         return [texto]
+    api_key = resolved_key
 
     model = os.environ.get("MESSAGE_SPLITTER_MODEL", "gpt-4o-mini")
 
