@@ -473,6 +473,17 @@ def _parse_evolution(body: dict) -> Optional[dict]:
         elif "listResponseMessage" in message:
             msg_type = "listResponseMessage"
             texto = message.get("listResponseMessage", {}).get("title", "")
+        elif "imageMessage" in message:
+            # Imagen: caption opcional en imageMessage.caption; tipo normalizado a "image"
+            # para que los workers que miran tipo_msg == "image" funcionen igual
+            # que con Meta. La URL/bytes se extraen desde raw["message"]["imageMessage"].
+            msg_type = "image"
+            texto = message.get("imageMessage", {}).get("caption", "")
+        elif "audioMessage" in message:
+            # Audio via Evolution — tipo normalizado a "audio"; sin transcripción
+            # (el worker Mica solo transcribe cuando viene por Meta con media_id)
+            msg_type = "audio"
+            texto = ""
         else:
             # Ningun tipo conocido — tomar primera key no-metadata como fallback
             for k in message.keys():
