@@ -353,7 +353,7 @@ def listar_tramites(
     abogado_id: Optional[str] = None,
     categoria: Optional[str] = None,
 ):
-    params: dict = {"pageSize": 200, "sort[0][field]": "Fecha Vencimiento"}
+    params: dict = {"pageSize": 100, "sort[0][field]": "Fecha Vencimiento"}
     filters = []
     if estado:
         filters.append(f"{{Estado}}='{estado}'")
@@ -463,7 +463,7 @@ def listar_turnos(
     desde: Optional[str] = None,  # ISO date
     hasta: Optional[str] = None,
 ):
-    params: dict = {"pageSize": 200, "sort[0][field]": "Fecha y Hora"}
+    params: dict = {"pageSize": 100, "sort[0][field]": "Fecha y Hora"}
     filters = []
     if estado:
         filters.append(f"{{Estado}}='{estado}'")
@@ -568,7 +568,7 @@ def dashboard():
 
     # Trámites activos + agrupar por urgencia
     try:
-        d = _at_get(TABLE_TRAMITES, {"filterByFormula": "{Estado}='Activo'", "pageSize": 200})
+        d = _at_get(TABLE_TRAMITES, {"filterByFormula": "{Estado}='Activo'", "pageSize": 100})
         tramites = d.get("records", [])
         out["total_tramites_activos"] = len(tramites)
         for t in tramites:
