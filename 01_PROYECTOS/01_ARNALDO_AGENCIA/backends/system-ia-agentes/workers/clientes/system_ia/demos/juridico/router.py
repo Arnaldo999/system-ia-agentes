@@ -32,6 +32,11 @@ Endpoints expuestos:
     DELETE /crm/tramites/{record_id}               # cerrar trámite (soft)
     GET    /crm/alertas                            # historial alertas enviadas
     POST   /crm/alertas                            # registrar alerta enviada (lo dispara n8n / bot)
+    GET    /crm/turnos                             # lista de turnos (filtros: estado, abogado, cliente, desde/hasta)
+    GET    /crm/turnos/proximos                    # próximos N días (default 30)
+    POST   /crm/turnos                             # crear turno (lo dispara bot WhatsApp + Cal.com webhook)
+    PATCH  /crm/turnos/{record_id}                 # actualizar (estado, recordatorio, confirmación, link)
+    DELETE /crm/turnos/{record_id}                 # cancelar turno (Estado=Cancelado)
     GET    /crm/dashboard                          # stats: total clientes, trámites por urgencia, etc.
 
 Aislamiento: como la base es dedicada, NO hay filtro de Tenant en las queries.
@@ -70,12 +75,13 @@ AIRTABLE_BASE_ID = (
     or "appSjeRUoBGZo5DtO"  # Estudio Jurídico Demo (Mica) — fallback hardcoded
 )
 
-# Tablas (env vars completar tras crearlas en Airtable)
-TABLE_ESTUDIOS = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ESTUDIOS", "")
-TABLE_ABOGADOS = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ABOGADOS", "")
-TABLE_CLIENTES = os.environ.get("MICA_DEMO_JURIDICO_TABLE_CLIENTES", "")
-TABLE_TRAMITES = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TRAMITES", "")
-TABLE_ALERTAS  = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ALERTAS", "")
+# Tablas — IDs creadas el 2026-04-24 vía API en base appSjeRUoBGZo5DtO
+TABLE_ESTUDIOS = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ESTUDIOS", "tbluLhi7Dj27JNwxt")
+TABLE_ABOGADOS = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ABOGADOS", "tblbxhuWCNGFhM60R")
+TABLE_CLIENTES = os.environ.get("MICA_DEMO_JURIDICO_TABLE_CLIENTES", "tblM2IZ15DAgRCgXO")
+TABLE_TRAMITES = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TRAMITES", "tblqoCRfPqbOgHetV")
+TABLE_TURNOS   = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TURNOS",   "tblIg1rFN5e4IKB4s")
+TABLE_ALERTAS  = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ALERTAS",  "tbl13tRhUoMSUsaKc")
 
 router = APIRouter(tags=["juridico-mica-demo"])
 
@@ -188,6 +194,25 @@ class AlertaCreate(BaseModel):
     mensaje_enviado: str
     canal: str = "WhatsApp"
     estado_envio: str = "Enviado"
+
+
+class TurnoCreate(BaseModel):
+    estudio_id: Optional[str] = None
+    cliente_id: str
+    abogado_id: Optional[str] = None
+    tramite_relacionado_id: Optional[str] = None
+    titulo: str
+    tipo_reunion: str = "Presencial"  # Presencial / Llamada / Videollamada
+    fecha_hora: str  # ISO datetime con tz
+    duracion_min: int = 30
+    estado: str = "Pendiente"
+    cal_booking_id: Optional[str] = None
+    cal_event_type: Optional[str] = None
+    link_reunion: Optional[str] = None
+    ubicacion: Optional[str] = None
+    motivo: Optional[str] = None
+    agendado_por: str = "Bot WhatsApp"  # Bot WhatsApp / Cliente directo / Abogado / Manual
+    notas_previas: Optional[str] = None
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -430,6 +455,91 @@ def registrar_alerta(payload: AlertaCreate):
     return _serialize_record(rec)
 
 
+@router.get("/crm/turnos")
+def listar_turnos(
+    estado: Optional[str] = None,
+    cliente_id: Optional[str] = None,
+    abogado_id: Optional[str] = None,
+    desde: Optional[str] = None,  # ISO date
+    hasta: Optional[str] = None,
+):
+    params: dict = {"pageSize": 200, "sort[0][field]": "Fecha y Hora"}
+    filters = []
+    if estado:
+        filters.append(f"{{Estado}}='{estado}'")
+    if cliente_id:
+        filters.append(f"FIND('{cliente_id}',ARRAYJOIN({{Cliente}}))")
+    if abogado_id:
+        filters.append(f"FIND('{abogado_id}',ARRAYJOIN({{Abogado}}))")
+    if desde:
+        filters.append(f"IS_AFTER({{Fecha y Hora}},'{desde}')")
+    if hasta:
+        filters.append(f"IS_BEFORE({{Fecha y Hora}},'{hasta}')")
+    if filters:
+        params["filterByFormula"] = "AND(" + ",".join(filters) + ")" if len(filters) > 1 else filters[0]
+    data = _at_get(TABLE_TURNOS, params)
+    return {"turnos": [_serialize_record(r) for r in data.get("records", [])]}
+
+
+@router.get("/crm/turnos/proximos")
+def turnos_proximos(dias: int = Query(30, ge=1, le=365)):
+    """Turnos confirmados/pendientes en los próximos N días, ordenados por fecha."""
+    formula = f"AND(OR({{Estado}}='Pendiente',{{Estado}}='Confirmado'),DATETIME_DIFF({{Fecha y Hora}},NOW(),'days')>=0,DATETIME_DIFF({{Fecha y Hora}},NOW(),'days')<={dias})"
+    data = _at_get(
+        TABLE_TURNOS,
+        {
+            "filterByFormula": formula,
+            "sort[0][field]": "Fecha y Hora",
+            "pageSize": 100,
+        },
+    )
+    return {"turnos": [_serialize_record(r) for r in data.get("records", [])]}
+
+
+@router.post("/crm/turnos")
+def crear_turno(payload: TurnoCreate):
+    """Crear turno — lo dispara el bot WhatsApp tras recibir solicitud + Cal.com webhook."""
+    fields = {
+        "Título": payload.titulo,
+        "Tipo Reunión": payload.tipo_reunion,
+        "Fecha y Hora": payload.fecha_hora,
+        "Duración (min)": payload.duracion_min,
+        "Estado": payload.estado,
+        "Cal.com Booking ID": payload.cal_booking_id,
+        "Cal.com Event Type": payload.cal_event_type,
+        "Link Reunión": payload.link_reunion,
+        "Ubicación": payload.ubicacion,
+        "Motivo / Asunto": payload.motivo,
+        "Agendado Por": payload.agendado_por,
+        "Notas Previas": payload.notas_previas,
+        "Recordatorio Enviado": False,
+        "Confirmación Cliente": "Sin respuesta",
+        "Cliente": [payload.cliente_id],
+        "Fecha Creación": date.today().isoformat(),
+    }
+    if payload.estudio_id:
+        fields["Estudio"] = [payload.estudio_id]
+    if payload.abogado_id:
+        fields["Abogado"] = [payload.abogado_id]
+    if payload.tramite_relacionado_id:
+        fields["Trámite Relacionado"] = [payload.tramite_relacionado_id]
+    fields = {k: v for k, v in fields.items() if v is not None}
+    rec = _at_post(TABLE_TURNOS, fields)
+    return _serialize_record(rec)
+
+
+@router.patch("/crm/turnos/{record_id}")
+def actualizar_turno(record_id: str, payload: dict):
+    rec = _at_patch(TABLE_TURNOS, record_id, payload)
+    return _serialize_record(rec)
+
+
+@router.delete("/crm/turnos/{record_id}")
+def cancelar_turno(record_id: str):
+    rec = _at_patch(TABLE_TURNOS, record_id, {"Estado": "Cancelado"})
+    return {"ok": True, "id": rec["id"]}
+
+
 @router.get("/crm/dashboard")
 def dashboard():
     """Stats agregados para el panel principal del CRM."""
@@ -445,6 +555,8 @@ def dashboard():
             "ok": 0,
         },
         "alertas_ultimos_7_dias": 0,
+        "turnos_proximos_7_dias": 0,
+        "turnos_pendientes_confirmar": 0,
     }
 
     # Clientes activos
@@ -481,6 +593,22 @@ def dashboard():
             {"filterByFormula": "DATETIME_DIFF(NOW(),{Fecha Envío},'days')<=7", "pageSize": 100},
         )
         out["alertas_ultimos_7_dias"] = len(d.get("records", []))
+    except Exception:
+        pass
+
+    # Turnos próximos 7 días + pendientes de confirmar
+    try:
+        d = _at_get(
+            TABLE_TURNOS,
+            {
+                "filterByFormula": "AND(OR({Estado}='Pendiente',{Estado}='Confirmado'),DATETIME_DIFF({Fecha y Hora},NOW(),'days')>=0,DATETIME_DIFF({Fecha y Hora},NOW(),'days')<=7)",
+                "pageSize": 100,
+            },
+        )
+        out["turnos_proximos_7_dias"] = len(d.get("records", []))
+        out["turnos_pendientes_confirmar"] = sum(
+            1 for r in d.get("records", []) if r.get("fields", {}).get("Estado") == "Pendiente"
+        )
     except Exception:
         pass
 

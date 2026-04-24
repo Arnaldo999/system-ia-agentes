@@ -222,8 +222,9 @@ tailwind.config = {
         <span class="nav-icon">📋</span> Trámites
         <span class="nav-badge danger" id="navBadgeTramites">2</span>
       </div>
-      <div class="nav-item" onclick="nav('agenda', this)">
-        <span class="nav-icon">📅</span> Agenda Vencimientos
+      <div class="nav-item" onclick="nav('turnos', this)">
+        <span class="nav-icon">📅</span> Agenda Turnos
+        <span class="nav-badge" id="navBadgeTurnos"></span>
       </div>
       <div class="nav-item" onclick="nav('alertas', this)">
         <span class="nav-icon">🔔</span> Alertas Enviadas
@@ -261,7 +262,7 @@ tailwind.config = {
           <div class="kpi" style="--c:#ff6b6b"><div class="kpi-icon">🔴</div><div class="kpi-val" id="kpiVencidos">1</div><div class="kpi-label">Vencidos</div></div>
           <div class="kpi" style="--c:#ff8c5c"><div class="kpi-icon">⏰</div><div class="kpi-val" id="kpiHoyManana">2</div><div class="kpi-label">Hoy / Mañana</div></div>
           <div class="kpi" style="--c:#fbbf24"><div class="kpi-icon">📆</div><div class="kpi-val" id="kpiSemana">2</div><div class="kpi-label">Esta semana</div></div>
-          <div class="kpi" style="--c:#4d9fff"><div class="kpi-icon">🔔</div><div class="kpi-val" id="kpiAlertas">12</div><div class="kpi-label">Alertas (7d)</div></div>
+          <div class="kpi" style="--c:#4d9fff"><div class="kpi-icon">📅</div><div class="kpi-val" id="kpiTurnos7d">0</div><div class="kpi-label">Turnos (7d)</div></div>
         </div>
 
         <div class="sh">
@@ -269,7 +270,7 @@ tailwind.config = {
             <div class="sh-title">Próximos vencimientos</div>
             <div class="sh-sub">Trámites con vencimiento en los próximos 30 días</div>
           </div>
-          <button class="btn btn-sm" onclick="nav('agenda', null)">Ver agenda completa →</button>
+          <button class="btn btn-sm" onclick="nav('turnos', null)">Ver turnos →</button>
         </div>
 
         <div id="dashAgenda"></div>
@@ -352,21 +353,30 @@ tailwind.config = {
         </div>
       </section>
 
-      <!-- ─── AGENDA ─── -->
-      <section id="panel-agenda" class="panel">
+      <!-- ─── TURNOS (Cal.com) ─── -->
+      <section id="panel-turnos" class="panel">
         <div class="sh">
           <div>
-            <div class="sh-title">Agenda de vencimientos</div>
-            <div class="sh-sub">Próximos 30 días — agrupado por día</div>
+            <div class="sh-title">Agenda de turnos</div>
+            <div class="sh-sub">Reuniones agendadas via bot WhatsApp + Cal.com (presencial / llamada / videollamada)</div>
           </div>
           <div style="display:flex; gap: 8px;">
-            <button class="btn btn-sm" onclick="setAgendaDias(7)">7 días</button>
-            <button class="btn btn-sm" onclick="setAgendaDias(15)">15 días</button>
-            <button class="btn btn-sm" onclick="setAgendaDias(30)">30 días</button>
-            <button class="btn btn-sm" onclick="setAgendaDias(60)">60 días</button>
+            <button class="btn btn-sm" onclick="setTurnosDias(7)">7 días</button>
+            <button class="btn btn-sm" onclick="setTurnosDias(15)">15 días</button>
+            <button class="btn btn-sm" onclick="setTurnosDias(30)">30 días</button>
+            <button class="btn btn-sm" onclick="setTurnosDias(60)">60 días</button>
+            <button class="btn btn-primary" onclick="openModalTurno()">+ Nuevo turno</button>
           </div>
         </div>
-        <div id="agendaContent"></div>
+
+        <div class="kpis" style="margin-bottom: 16px;">
+          <div class="kpi" style="--c:#34d399"><div class="kpi-icon">✅</div><div class="kpi-val" id="kpiTurnosConfirmados">0</div><div class="kpi-label">Confirmados</div></div>
+          <div class="kpi" style="--c:#fbbf24"><div class="kpi-icon">⏳</div><div class="kpi-val" id="kpiTurnosPendientes">0</div><div class="kpi-label">Pendientes confirmación</div></div>
+          <div class="kpi" style="--c:#4d9fff"><div class="kpi-icon">📹</div><div class="kpi-val" id="kpiTurnosVideo">0</div><div class="kpi-label">Videollamadas</div></div>
+          <div class="kpi" style="--c:#f59e0b"><div class="kpi-icon">🤖</div><div class="kpi-val" id="kpiTurnosBot">0</div><div class="kpi-label">Agendados por bot</div></div>
+        </div>
+
+        <div id="turnosContent"></div>
       </section>
 
       <!-- ─── ALERTAS ─── -->
@@ -597,6 +607,71 @@ tailwind.config = {
   </div>
 </div>
 
+<!-- MODAL — NUEVO TURNO -->
+<div id="modalTurno" class="modal-bg">
+  <div class="modal">
+    <div class="modal-title">Nuevo turno</div>
+    <div class="modal-sub">Agendar reunión presencial / llamada / videollamada</div>
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Cliente *</label>
+        <select id="tu_cliente"></select>
+      </div>
+      <div class="form-row">
+        <label>Abogado *</label>
+        <select id="tu_abogado"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Título *</label>
+      <input type="text" id="tu_titulo" placeholder="Ej: Reunión preparatoria audiencia">
+    </div>
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Tipo reunión</label>
+        <select id="tu_tipo">
+          <option>Presencial</option>
+          <option>Llamada</option>
+          <option>Videollamada</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Estado</label>
+        <select id="tu_estado">
+          <option>Pendiente</option>
+          <option>Confirmado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Fecha y hora *</label>
+        <input type="datetime-local" id="tu_fecha">
+      </div>
+      <div class="form-row">
+        <label>Duración (min)</label>
+        <input type="number" id="tu_duracion" value="30" min="15" max="240">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Ubicación / Link reunión</label>
+      <input type="text" id="tu_ubicacion" placeholder="Estudio (Av. Corrientes 1500) o https://meet.cal.com/...">
+    </div>
+    <div class="form-row">
+      <label>Motivo / Asunto</label>
+      <textarea id="tu_motivo" placeholder="¿De qué se trata la reunión?"></textarea>
+    </div>
+    <div class="form-row">
+      <label>Notas previas</label>
+      <textarea id="tu_notas" placeholder="Documentos a traer, contexto, etc."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalTurno')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarTurno()">Guardar turno</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL — NUEVO ABOGADO -->
 <div id="modalAbogado" class="modal-bg">
   <div class="modal">
@@ -711,7 +786,14 @@ const MOCK_ALERTAS = [
   { id: 'rec_al4', 'Trámite': ['rec_tr8'], 'Cliente Destinatario': ['rec_cl3'], 'Fecha Envío': fechaRel(-1) + 'T08:00', 'Días Anticipación': 2, 'Mensaje Enviado': 'Laura, recordatorio inscripción en registro vence pasado mañana.', 'Canal': 'WhatsApp', 'Estado Envío': 'Enviado', 'Confirmación Cliente': 'Sin respuesta' },
 ];
 
-let DATA = { abogados: [], clientes: [], tramites: [], alertas: [], usandoMock: false };
+const MOCK_TURNOS = [
+  { id: 'rec_tu1', 'Título': 'Reunión preparatoria audiencia', 'Tipo Reunión': 'Presencial', 'Fecha y Hora': fechaRel(1) + 'T15:00:00.000Z', 'Duración (min)': 60, 'Estado': 'Confirmado', 'Cal.com Booking ID': 'cal_demo_001', 'Cal.com Event Type': 'reunion-preparatoria-30min', 'Ubicación': 'Estudio - Av. Corrientes 1500, piso 5', 'Motivo / Asunto': 'Repasar testigos y documentación para audiencia preliminar', 'Agendado Por': 'Bot WhatsApp', 'Recordatorio Enviado': true, 'Confirmación Cliente': 'Confirmó', 'Cliente': ['rec_cl1'], 'Abogado': ['rec_ab1'], 'Trámite Relacionado': ['rec_tr1'] },
+  { id: 'rec_tu2', 'Título': 'Consulta inicial — laboral', 'Tipo Reunión': 'Videollamada', 'Fecha y Hora': fechaRel(2) + 'T11:00:00.000Z', 'Duración (min)': 45, 'Estado': 'Pendiente', 'Cal.com Booking ID': 'cal_demo_002', 'Link Reunión': 'https://meet.cal.com/estudio-demo/cal_demo_002', 'Motivo / Asunto': 'Cliente nuevo necesita asesoramiento por despido sin causa', 'Agendado Por': 'Bot WhatsApp', 'Recordatorio Enviado': false, 'Confirmación Cliente': 'Sin respuesta', 'Cliente': ['rec_cl5'], 'Abogado': ['rec_ab2'] },
+  { id: 'rec_tu3', 'Título': 'Firma renovación poder', 'Tipo Reunión': 'Presencial', 'Fecha y Hora': fechaRel(4) + 'T10:30:00.000Z', 'Duración (min)': 30, 'Estado': 'Confirmado', 'Cal.com Booking ID': 'cal_demo_003', 'Ubicación': 'Escribanía Pérez (Av. Santa Fe 2000)', 'Motivo / Asunto': 'Firmar nuevo poder general en escribanía', 'Agendado Por': 'Abogado', 'Recordatorio Enviado': true, 'Confirmación Cliente': 'Confirmó', 'Cliente': ['rec_cl3'], 'Abogado': ['rec_ab1'], 'Trámite Relacionado': ['rec_tr3'] },
+  { id: 'rec_tu4', 'Título': 'Llamada estado caso', 'Tipo Reunión': 'Llamada', 'Fecha y Hora': fechaRel(5) + 'T17:00:00.000Z', 'Duración (min)': 20, 'Estado': 'Pendiente', 'Cal.com Booking ID': 'cal_demo_004', 'Motivo / Asunto': 'Update sobre balance y demanda en curso', 'Agendado Por': 'Cliente directo', 'Recordatorio Enviado': false, 'Confirmación Cliente': 'Sin respuesta', 'Cliente': ['rec_cl2'], 'Abogado': ['rec_ab2'] },
+];
+
+let DATA = { abogados: [], clientes: [], tramites: [], turnos: [], alertas: [], usandoMock: false };
 
 /* ═══════════════════════════════════════════════════════════════════
    LOGIN
@@ -743,21 +825,24 @@ async function cargarTodo() {
   const airtableOk = health?.airtable_configured && Object.values(health?.tables || {}).every(Boolean);
 
   if (airtableOk) {
-    const [ab, cl, tr, al] = await Promise.all([
+    const [ab, cl, tr, tu, al] = await Promise.all([
       api('/crm/abogados'),
       api('/crm/clientes'),
       api('/crm/tramites'),
+      api('/crm/turnos'),
       api('/crm/alertas?limit=50'),
     ]);
     DATA.abogados = ab?.abogados || [];
     DATA.clientes = cl?.clientes || [];
     DATA.tramites = tr?.tramites || [];
+    DATA.turnos   = tu?.turnos   || [];
     DATA.alertas  = al?.alertas  || [];
     DATA.usandoMock = false;
   } else {
     DATA.abogados = MOCK_ABOGADOS;
     DATA.clientes = MOCK_CLIENTES;
     DATA.tramites = MOCK_TRAMITES;
+    DATA.turnos   = MOCK_TURNOS;
     DATA.alertas  = MOCK_ALERTAS;
     DATA.usandoMock = true;
   }
@@ -777,7 +862,7 @@ async function cargarTodo() {
   renderDashboard();
   renderClientes();
   renderTramites();
-  renderAgenda();
+  renderTurnos();
   renderAlertas();
   renderAbogados();
 }
@@ -873,12 +958,21 @@ function renderDashboard() {
   const hoyManana = activos.filter(t => t._urgencia === 'hoy').length;
   const semana = activos.filter(t => t._urgencia === 'semana').length;
 
+  // Turnos próximos 7 días
+  const ahora = new Date();
+  const dentro7 = new Date(ahora); dentro7.setDate(dentro7.getDate() + 7);
+  const turnos7d = DATA.turnos.filter(t => {
+    if (!t['Fecha y Hora']) return false;
+    const f = new Date(t['Fecha y Hora']);
+    return f >= ahora && f <= dentro7 && (t['Estado'] === 'Pendiente' || t['Estado'] === 'Confirmado');
+  });
+
   document.getElementById('kpiClientes').textContent = DATA.clientes.filter(c => c['Estado'] === 'Activo').length;
   document.getElementById('kpiTramites').textContent = activos.length;
   document.getElementById('kpiVencidos').textContent = vencidos;
   document.getElementById('kpiHoyManana').textContent = hoyManana;
   document.getElementById('kpiSemana').textContent = semana;
-  document.getElementById('kpiAlertas').textContent = DATA.alertas.length;
+  document.getElementById('kpiTurnos7d').textContent = turnos7d.length;
 
   document.getElementById('navBadgeClientes').textContent = DATA.clientes.length;
   const urgentes = vencidos + hoyManana;
@@ -991,19 +1085,96 @@ function renderTramites() {
   `).join('');
 }
 
-let agendaDias = 30;
-function setAgendaDias(d) { agendaDias = d; renderAgenda(); }
-function renderAgenda() {
-  const lista = DATA.tramites.filter(t =>
-    t['Estado'] === 'Activo' && (t._dias ?? 9999) <= agendaDias
-  ).sort((a, b) => a._dias - b._dias);
+let turnosDias = 30;
+function setTurnosDias(d) { turnosDias = d; renderTurnos(); }
+function renderTurnos() {
+  const ahora = new Date();
+  const limite = new Date(ahora);
+  limite.setDate(limite.getDate() + turnosDias);
 
-  const cont = document.getElementById('agendaContent');
+  const lista = DATA.turnos.filter(t => {
+    if (!t['Fecha y Hora']) return false;
+    const f = new Date(t['Fecha y Hora']);
+    return f >= ahora && f <= limite;
+  }).sort((a, b) => new Date(a['Fecha y Hora']) - new Date(b['Fecha y Hora']));
+
+  // KPIs
+  const confirmados = lista.filter(t => t['Estado'] === 'Confirmado').length;
+  const pendientes = lista.filter(t => t['Estado'] === 'Pendiente').length;
+  const videos = lista.filter(t => t['Tipo Reunión'] === 'Videollamada').length;
+  const bot = lista.filter(t => t['Agendado Por'] === 'Bot WhatsApp').length;
+  document.getElementById('kpiTurnosConfirmados').textContent = confirmados;
+  document.getElementById('kpiTurnosPendientes').textContent = pendientes;
+  document.getElementById('kpiTurnosVideo').textContent = videos;
+  document.getElementById('kpiTurnosBot').textContent = bot;
+
+  // Badge sidebar
+  const badgeT = document.getElementById('navBadgeTurnos');
+  if (badgeT) {
+    badgeT.textContent = lista.length || '';
+    badgeT.style.display = lista.length ? 'inline-block' : 'none';
+  }
+
+  const cont = document.getElementById('turnosContent');
   if (!lista.length) {
-    cont.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">Sin vencimientos en los próximos ' + agendaDias + ' días</div></div>';
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">Sin turnos en los próximos ' + turnosDias + ' días</div><div class="empty-sub">Cuando el bot de WhatsApp agende una reunión via Cal.com aparecerá acá automáticamente</div></div>';
     return;
   }
-  cont.innerHTML = renderAgendaItems(lista);
+  cont.innerHTML = renderTurnosItems(lista);
+}
+
+function renderTurnosItems(turnos) {
+  // Agrupar por fecha (sin hora)
+  const grupos = {};
+  for (const t of turnos) {
+    const k = t['Fecha y Hora'].slice(0, 10);
+    if (!grupos[k]) grupos[k] = [];
+    grupos[k].push(t);
+  }
+  const fechas = Object.keys(grupos).sort();
+  return fechas.map(f => {
+    const items = grupos[f].map(t => {
+      const hora = new Date(t['Fecha y Hora']).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      const tipoIcon = { 'Presencial': '🏢', 'Llamada': '📞', 'Videollamada': '📹' }[t['Tipo Reunión']] || '📅';
+      const estadoBadge = t['Estado'] === 'Confirmado' ? '<span class="badge b-ok">✅ Confirmado</span>'
+                       : t['Estado'] === 'Pendiente' ? '<span class="badge b-semana">⏳ Pendiente</span>'
+                       : t['Estado'] === 'Cancelado' ? '<span class="badge b-vencido">❌ Cancelado</span>'
+                       : t['Estado'] === 'Realizado' ? '<span class="badge b-mes">✓ Realizado</span>'
+                       : '<span class="badge b-cerrado">' + (t['Estado'] || '—') + '</span>';
+      const agendadoPor = t['Agendado Por'] === 'Bot WhatsApp' ? '🤖 Bot WhatsApp'
+                        : t['Agendado Por'] === 'Cliente directo' ? '👤 Cliente'
+                        : t['Agendado Por'] === 'Abogado' ? '👨‍⚖️ Abogado'
+                        : '✋ Manual';
+      const link = t['Link Reunión'] ? `<a href="${t['Link Reunión']}" target="_blank" style="color:var(--accent);font-size:11px">🔗 Link reunión</a>` : '';
+      const ubicacion = t['Ubicación'] ? `📍 ${t['Ubicación']}` : '';
+      return `
+        <div class="agenda-item">
+          <div class="agenda-bullet"></div>
+          <div class="agenda-content">
+            <div class="agenda-tipo">${tipoIcon} ${t['Título']} ${estadoBadge}</div>
+            <div class="agenda-meta">
+              🕐 ${hora} (${t['Duración (min)']}min) ·
+              👤 ${nombreCliente(t['Cliente'])} ·
+              👨‍⚖️ ${nombreAbogado(t['Abogado'])} ·
+              ${agendadoPor}
+              ${ubicacion ? '<br>' + ubicacion : ''}
+              ${link ? '<br>' + link : ''}
+              ${t['Motivo / Asunto'] ? '<br><span style="color:var(--text)">💬 ' + t['Motivo / Asunto'] + '</span>' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="agenda-day">
+        <div class="agenda-day-title">
+          <div class="agenda-day-date">${fmtFecha(f)}</div>
+          <div class="agenda-day-count">${grupos[f].length} turno(s)</div>
+        </div>
+        ${items}
+      </div>
+    `;
+  }).join('');
 }
 
 function renderAlertas() {
@@ -1056,12 +1227,14 @@ function poblarSelects() {
     `<option value="${c.id}">${c['Nombre Completo / Razón Social']}</option>`
   ).join('');
 
-  ['cli_abogado', 'tr_abogado'].forEach(id => {
+  ['cli_abogado', 'tr_abogado', 'tu_abogado'].forEach(id => {
     const sel = document.getElementById(id);
     if (sel) sel.innerHTML = opcionesAbogados;
   });
-  const trCliente = document.getElementById('tr_cliente');
-  if (trCliente) trCliente.innerHTML = '<option value="">— elegí cliente —</option>' + opcionesClientes;
+  ['tr_cliente', 'tu_cliente'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel) sel.innerHTML = '<option value="">— elegí cliente —</option>' + opcionesClientes;
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1082,6 +1255,15 @@ function openModalTramite() {
 }
 function openModalAbogado() {
   document.getElementById('modalAbogado').classList.add('active');
+}
+function openModalTurno() {
+  poblarSelects();
+  // default: mañana 10am
+  const d = new Date(HOY);
+  d.setDate(d.getDate() + 1);
+  d.setHours(10, 0, 0, 0);
+  document.getElementById('tu_fecha').value = d.toISOString().slice(0, 16);
+  document.getElementById('modalTurno').classList.add('active');
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('active');
@@ -1170,10 +1352,63 @@ async function guardarTramite() {
   }
   closeModal('modalTramite');
   renderTramites();
-  renderAgenda();
   renderDashboard();
   // limpiar form
   ['tr_tipo', 'tr_fuero', 'tr_expte', 'tr_desc', 'tr_notas_cli'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function guardarTurno() {
+  const cliId = document.getElementById('tu_cliente').value;
+  const aboId = document.getElementById('tu_abogado').value;
+  const titulo = document.getElementById('tu_titulo').value.trim();
+  const fecha = document.getElementById('tu_fecha').value;
+  if (!cliId) return alert('Elegí el cliente');
+  if (!titulo) return alert('Título obligatorio');
+  if (!fecha) return alert('Fecha y hora obligatorios');
+
+  // Convertir fecha local a ISO con timezone
+  const fechaIso = new Date(fecha).toISOString();
+
+  const payload = {
+    cliente_id: cliId,
+    abogado_id: aboId || null,
+    titulo: titulo,
+    tipo_reunion: document.getElementById('tu_tipo').value,
+    estado: document.getElementById('tu_estado').value,
+    fecha_hora: fechaIso,
+    duracion_min: parseInt(document.getElementById('tu_duracion').value, 10) || 30,
+    ubicacion: document.getElementById('tu_ubicacion').value.trim() || null,
+    motivo: document.getElementById('tu_motivo').value.trim() || null,
+    notas_previas: document.getElementById('tu_notas').value.trim() || null,
+    agendado_por: 'Manual',
+  };
+
+  if (DATA.usandoMock) {
+    const nuevo = {
+      id: 'rec_tu_' + Date.now(),
+      'Título': payload.titulo,
+      'Tipo Reunión': payload.tipo_reunion,
+      'Fecha y Hora': payload.fecha_hora,
+      'Duración (min)': payload.duracion_min,
+      'Estado': payload.estado,
+      'Ubicación': payload.ubicacion,
+      'Motivo / Asunto': payload.motivo,
+      'Agendado Por': payload.agendado_por,
+      'Notas Previas': payload.notas_previas,
+      'Recordatorio Enviado': false,
+      'Confirmación Cliente': 'Sin respuesta',
+      'Cliente': [cliId],
+      'Abogado': aboId ? [aboId] : [],
+    };
+    DATA.turnos.push(nuevo);
+  } else {
+    const r = await api('/crm/turnos', { method: 'POST', body: JSON.stringify(payload) });
+    if (r) DATA.turnos.push(r);
+  }
+  closeModal('modalTurno');
+  renderTurnos();
+  renderDashboard();
+  ['tu_titulo', 'tu_ubicacion', 'tu_motivo', 'tu_notas'].forEach(id => document.getElementById(id).value = '');
 }
 
 async function guardarAbogado() {
