@@ -1706,15 +1706,33 @@ def _get_cliente_por_page_id(page_id: str, airtable_base_id: str = "", airtable_
 def _responder_comentario(
     comentario_id: str, texto: str, cliente: dict, page_id: str = "", token: str = ""
 ) -> dict:
-    """Genera respuesta con Gemini y la publica como reply al comentario."""
+    """Genera respuesta con Gemini y la publica como reply al comentario.
+
+    Estrategia: responder con valor (insight breve) pero SIEMPRE derivar al
+    bot WhatsApp con link wa.me directo. Nunca dar precio/info detallada en
+    publico — esa conversacion se tiene por DM/WhatsApp para calificar lead.
+    """
     nombre = cliente.get("Nombre Comercial", "la agencia")
     tono = cliente.get("Tono de Voz", "cercano y profesional")
     servicio = cliente.get("Industria", cliente.get("Servicio Principal", "automatización con IA"))
     reglas = cliente.get("Reglas Estrictas (Lo que NO debe hacer)", "")
-    cta = cliente.get("CTA", "escribinos un DM")
     if not token:
         token_map = _build_page_token_map()
         token = token_map.get(page_id, META_ACCESS_TOKEN)
+
+    # ── Resolver numero del bot WhatsApp desde Supabase (multi-tenant) ──────
+    # El link wa.me es el CTA obligatorio — sin numero no hay link.
+    wa_number = ""
+    if page_id:
+        supa_creds = _get_supa_credenciales_by_page(page_id)
+        if supa_creds:
+            wa_number = re.sub(r"\D", "", supa_creds.get("whatsapp_numero_notificacion", "") or "")
+    # Fallback: buscar en el brandbook (Airtable) si no esta en Supabase
+    if not wa_number:
+        wa_number = re.sub(r"\D", "", cliente.get("Numero Bot WhatsApp", "") or
+                           cliente.get("WhatsApp Bot", "") or "")
+    # Link wa.me (si no hay numero, CTA degrada a texto solo)
+    link_bot = f"https://wa.me/{wa_number}" if wa_number else ""
 
     # ── Guardrail 1: detección de prompt injection en el comentario ──────────
     if detect_injection(texto, worker="social"):
@@ -1723,17 +1741,32 @@ def _responder_comentario(
     # ── Guardrail 2: sanitizar el comentario antes de insertarlo en el prompt ─
     texto_safe = sanitize_for_llm(texto, context="comentario_usuario")
 
+    cta_instruction = (
+        f"3. SIEMPRE derivar al WhatsApp del bot con el link LITERAL: {link_bot}\n"
+        f"   Ejemplo: 'Te cuento todo por WhatsApp 👉 {link_bot}'"
+        if link_bot else
+        f"3. Derivar amablemente a que nos escriban por WhatsApp"
+    )
+
     prompt = (
         f"Sos el community manager de {nombre}.\n"
         f"TONO: {tono}\n"
         f"NEGOCIO: {servicio}\n"
-        f"RESTRICCIONES: {reglas}\n\n"
-        f"Alguien dejó este comentario en tu post:\n{texto_safe}\n\n"
-        f"Escribí UNA respuesta (máximo 3 líneas) que:\n"
-        f"1. Agradezca de forma genuina y específica al comentario\n"
-        f"2. Dé UN consejo o insight concreto relacionado al negocio\n"
-        f"3. Cierre con: {cta}\n\n"
-        f"USA emojis naturales (máximo 2). NO uses asteriscos ni markdown. Solo texto plano."
+        f"RESTRICCIONES ABSOLUTAS: {reglas}\n"
+        f"{'LINK AL BOT WHATSAPP (incluir SIEMPRE literal): ' + link_bot if link_bot else ''}\n\n"
+        f"COMENTARIO RECIBIDO:\n{texto_safe}\n\n"
+        f"Escribi UNA respuesta de MAXIMO 2 LINEAS que:\n"
+        f"1. Agradezca o reconozca el comentario brevemente (1 linea)\n"
+        f"2. Si hay interes real (pregunta precio/zona/info): da UN insight chico "
+        f"o valida el interes, SIN revelar datos especificos (precio, ubicacion exacta)\n"
+        f"{cta_instruction}\n\n"
+        f"REGLAS DE FORMATO:\n"
+        f"- Maximo 2 emojis naturales (👉 esta permitido para el link).\n"
+        f"- NO asteriscos, NO markdown, solo texto plano.\n"
+        f"- Si hay link, incluirlo LITERAL como aparece arriba (no acortar).\n"
+        f"- Tono {tono} — nunca presion ni venta agresiva.\n"
+        f"- Si el comentario es una objecion o critica: NO debatir publicamente, "
+        f"invitar a hablar por WhatsApp con el link.\n"
     )
 
     try:

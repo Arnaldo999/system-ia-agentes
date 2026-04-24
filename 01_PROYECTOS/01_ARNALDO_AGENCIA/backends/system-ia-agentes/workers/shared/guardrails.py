@@ -391,7 +391,7 @@ FALLBACK_GASTRO = (
 
 FALLBACK_SOCIAL = (
     "¡Gracias por tu comentario! 😊 "
-    "Si querés más información, escribinos un mensaje directo."
+    "Si querés más información, escribinos por WhatsApp."
 )
 
 FALLBACK_COMERCIO = (
