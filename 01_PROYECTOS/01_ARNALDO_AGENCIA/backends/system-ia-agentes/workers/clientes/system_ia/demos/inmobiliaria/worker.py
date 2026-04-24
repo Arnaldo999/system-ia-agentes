@@ -115,6 +115,18 @@ except Exception as _e:
     _WA_SHARED_OK = False
     print(f"[MICA] wa_provider no disponible: {_e}")
 
+# ── Image describer: visión GPT para imágenes entrantes ──────────────────────
+try:
+    from workers.shared.image_describer import (
+        describe_image,
+        download_media_meta,
+        download_media_url,
+    )
+    _IMAGE_DESCRIBER_OK = True
+except Exception as _e_img:
+    _IMAGE_DESCRIBER_OK = False
+    print(f"[MICA] image_describer no disponible: {_e_img}")
+
 # Dos routers: uno oficial (Evolution, productivo Mica) + uno v2 (Meta, tech-provider Robert)
 router    = APIRouter(prefix="/clientes/system_ia/demos/inmobiliaria",    tags=["Mica — Inmobiliaria"])
 router_v2 = APIRouter(prefix="/clientes/system_ia/mica-demo-inmo",        tags=["Mica — Inmobiliaria (Tech Provider)"])
@@ -558,6 +570,72 @@ def _transcribir_audio_meta(media_id: str) -> str:
     except Exception as e:
         print(f"[ROBERT-AUDIO] Excepción: {e}")
         return ""
+
+
+def _describir_imagen_incoming(parsed: dict) -> str:
+    """
+    Descarga y describe una imagen entrante de WhatsApp.
+
+    Detecta el provider del parsed dict y usa el helper correcto:
+      - Meta  → download_media_meta(media_id) con META_ACCESS_TOKEN
+      - Evolution → download_media_url(url) desde imageMessage.url / jpegThumbnail
+      - Otros → devuelve ""
+
+    Devuelve f"[Imagen: {descripcion}]" si hay descripción, o "" si falla.
+    No levanta excepciones.
+    """
+    if not _IMAGE_DESCRIBER_OK:
+        return ""
+
+    provider = parsed.get("provider", "")
+    raw = parsed.get("raw", {}) or {}
+
+    imagen_bytes = b""
+    mime = "image/jpeg"
+
+    if provider == "meta":
+        # raw es el message dict de Meta: msg["image"]["id"]
+        media_id = raw.get("image", {}).get("id", "") if isinstance(raw, dict) else ""
+        if not media_id or not META_ACCESS_TOKEN:
+            return ""
+        imagen_bytes, mime = download_media_meta(media_id, META_ACCESS_TOKEN)
+
+    elif provider == "evolution":
+        # raw es data dict de Evolution; la imagen viene en message["imageMessage"]
+        message = raw.get("message", {}) or {}
+        img_msg = message.get("imageMessage", {}) or {}
+        # Evolution puede incluir URL directa o jpegThumbnail (base64)
+        url = img_msg.get("url", "") or img_msg.get("directPath", "")
+        if url:
+            evo_url = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
+            evo_key = os.environ.get("EVOLUTION_API_KEY", "")
+            # URL completa si ya la incluye Evolution, sino construir con base
+            if not url.startswith("http"):
+                url = f"{evo_url}/{url.lstrip('/')}"
+            imagen_bytes, mime = download_media_url(url, bearer_token=evo_key or None)
+        if not imagen_bytes:
+            # Fallback: jpegThumbnail (base64) — calidad baja pero usable
+            import base64 as _b64
+            thumb = img_msg.get("jpegThumbnail", "")
+            if thumb:
+                try:
+                    imagen_bytes = _b64.b64decode(thumb)
+                    mime = "image/jpeg"
+                except Exception:
+                    pass
+
+    else:
+        # bridge / ycloud / desconocido — sin soporte de descarga por ahora
+        return ""
+
+    if not imagen_bytes:
+        return ""
+
+    descripcion = describe_image(imagen_bytes, mime=mime)
+    if not descripcion:
+        return ""
+
+    return f"[Imagen: {descripcion}]"
 
 
 # Provider activo: prioridad override-por-sesion (router v2) → env → default evolution.
@@ -2902,6 +2980,17 @@ async def _webhook_handler(request: Request, provider_forzado: str = ""):
                     _enviar_texto(tel_tmp,
                         "No pude escuchar bien el audio 😔. ¿Me lo escribís o lo grabás de nuevo?")
                 return {"status": "ignored", "reason": "audio-no-transcrito"}
+
+    # Imagen: describir con visión GPT y anteponerlo al caption (si existe)
+    # tipo "image" → Meta parseó caption en `texto`; "imageMessage" → Evolution, texto vacío
+    if tipo_msg in ("image", "imageMessage"):
+        descripcion_img = _describir_imagen_incoming(parsed)
+        if descripcion_img:
+            # Si ya viene caption (Meta pone caption en texto, Evolution suele estar vacío)
+            texto = f"{descripcion_img} {texto}".strip() if texto else descripcion_img
+        # Si no hay descripción ni caption → texto sigue vacío → caerá en el guard de abajo
+        # y el mensaje será ignorado silenciosamente (imagen irreconocible/corrupta)
+        print(f"[MICA-IMG] tipo={tipo_msg} desc={bool(descripcion_img)} caption_orig={bool(parsed.get('texto'))}")
 
     if not telefono or not texto:
         return {"status": "ignored"}
