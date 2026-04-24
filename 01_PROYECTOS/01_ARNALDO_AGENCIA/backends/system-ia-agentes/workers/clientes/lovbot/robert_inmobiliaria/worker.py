@@ -235,6 +235,29 @@ def _agregar_historial(telefono: str, quien: str, texto: str):
         HISTORIAL[tel] = HISTORIAL[tel][-MAX_HISTORIAL:]
 
 
+def _sanitizar_nombre(raw: str) -> str:
+    """Limpia el nombre del perfil de WhatsApp.
+
+    Trampa comun: usuarios usan '@' como ofuscacion del nombre real para evitar
+    spam (ej: '@rn@ldo' = 'Arnaldo'). Antes el regex eliminaba el '@' dejando
+    'rnldo' (sin la primera A). Ahora mapeamos '@' → 'a' y luego limpiamos
+    el resto de caracteres especiales.
+
+    Tambien normaliza otros leetspeak comunes:
+      4 → a, 3 → e, 1 → i, 0 → o (cuando no hay otros digitos cerca)
+    """
+    if not raw:
+        return ""
+    s = raw.strip()
+    # Mapear leetspeak basico ANTES de eliminar caracteres no-alfa
+    s = s.replace("@", "a").replace("@", "a")  # @ unicode + ascii
+    # Eliminar todo lo que no sea letra o espacio
+    import re as _re
+    s = _re.sub(r"[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]", "", s).strip()
+    # Title case
+    return s.title() if s else ""
+
+
 def _guardar_historial_at(telefono: str):
     """Guarda el historial en Airtable campo Notas_Bot (async)."""
     tel = re.sub(r'\D', '', telefono)
@@ -1534,14 +1557,15 @@ REGLAS:
                 f"'¿Con quién tengo el gusto de conversar?' — el nombre del perfil puede ser "
                 f"incorrecto o un apodo. Una vez que confirme, usalo en toda la conversación."
             )
+            nombre_primero = nombre.split()[0]
             ejemplo_saludo = f"""Ejemplo de tono cálido (NO copiar literal, adaptá):
 "¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
 
 Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos
-en {zonas_breve or 'distintas zonas premium'}. Estoy acá para acompañarte
-en lo que necesités 🏡
+en {zonas_breve or 'distintas zonas premium'}. Atendemos de lunes a viernes
+de 9 a 18 hs 🕐
 
-¿Hablo con {nombre.split()[0]}, correcto?"
+¿Hablo con {nombre_primero}, correcto?"
 
 → Cuando confirme su nombre, saludalo por su nombre y preguntá Need:
 "¡Perfecto, [nombre]! Contame, ¿la propiedad sería para vos / tu familia,
@@ -1556,8 +1580,8 @@ o buscás más una opción de inversión?"
 "¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
 
 Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos
-en {zonas_breve or 'distintas zonas premium'}. Estoy acá para ayudarte a
-encontrar lo que estás buscando 🏡
+en {zonas_breve or 'distintas zonas premium'}. Atendemos de lunes a viernes
+de 9 a 18 hs 🕐
 
 Antes de seguir, *¿con quién tengo el gusto de conversar?* 😊"
 
@@ -2933,9 +2957,9 @@ async def webhook_whatsapp(request: Request):
     if nombre_meta:
         sesion_pre = SESIONES.get(tel_clean, {})
         if not sesion_pre.get("nombre"):
-            nombre_limpio = re.sub(r'[^A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]', '', nombre_meta).strip()
+            nombre_limpio = _sanitizar_nombre(nombre_meta)
             if nombre_limpio and len(nombre_limpio) >= 2:
-                sesion_pre["nombre"] = nombre_limpio.title()
+                sesion_pre["nombre"] = nombre_limpio
                 SESIONES[tel_clean] = sesion_pre
                 print(f"[WEBHOOK] Nombre precargado desde Meta: {nombre_meta} → {nombre_limpio} → {tel_clean}")
             else:
