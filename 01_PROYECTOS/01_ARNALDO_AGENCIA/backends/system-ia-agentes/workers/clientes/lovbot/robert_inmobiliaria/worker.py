@@ -35,6 +35,7 @@ import requests
 from google import genai
 from fastapi import APIRouter, Request
 from workers.shared.message_buffer import buffer_and_schedule
+from workers.shared.image_describer import describe_image, download_media_meta
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
@@ -505,6 +506,27 @@ def _transcribir_audio_meta(media_id: str) -> str:
     except Exception as e:
         print(f"[ROBERT-AUDIO] Excepción: {e}")
         return ""
+
+
+def _describir_imagen_meta(media_id: str) -> str:
+    """Descarga imagen de Meta Graph API y la describe con GPT-4o Vision (OpenAI Robert).
+
+    Devuelve string con prefijo '[Imagen: ...]' si hay descripción, '' si algo falla.
+    No levanta excepción.
+    """
+    if not META_ACCESS_TOKEN:
+        print("[ROBERT-IMG] Falta META_ACCESS_TOKEN")
+        return ""
+    bytes_img, mime = download_media_meta(media_id, META_ACCESS_TOKEN)
+    if not bytes_img:
+        print("[ROBERT-IMG] No se pudieron descargar bytes de la imagen")
+        return ""
+    descripcion = describe_image(bytes_img, mime=mime)
+    if not descripcion:
+        print("[ROBERT-IMG] describe_image devolvió cadena vacía")
+        return ""
+    print(f"[ROBERT-IMG] Descripción: '{descripcion[:100]}'")
+    return f"[Imagen: {descripcion}]"
 
 
 def _enviar_texto(telefono: str, mensaje: str) -> bool:
@@ -2825,7 +2847,18 @@ async def webhook_whatsapp(request: Request):
                                     "No pude escuchar bien el audio 😔. ¿Me lo escribís o lo grabás de nuevo?")
                             return {"status": "ignored", "reason": "audio-no-transcrito"}
                 elif msg_type == "image":
-                    texto = msg.get("image", {}).get("caption", "") or "[imagen recibida]"
+                    img_media_id = msg.get("image", {}).get("id", "")
+                    caption = msg.get("image", {}).get("caption", "")
+                    if img_media_id:
+                        descripcion_img = _describir_imagen_meta(img_media_id)
+                        if descripcion_img and caption:
+                            texto = f"{descripcion_img} {caption}"
+                        elif descripcion_img:
+                            texto = descripcion_img
+                        else:
+                            texto = caption or "[imagen recibida]"
+                    else:
+                        texto = caption or "[imagen recibida]"
 
                 # Referral del anuncio (CRÍTICO para Caso A)
                 if "referral" in msg:
