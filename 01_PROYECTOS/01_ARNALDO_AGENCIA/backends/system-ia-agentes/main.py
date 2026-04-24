@@ -101,6 +101,7 @@ from workers.clientes.system_ia.demos.inmobiliaria.worker import (
     router as mica_demo_inmo_router,
     router_v2 as mica_demo_inmo_router_v2,
 )
+from workers.clientes.system_ia.demos.juridico.router import router as mica_demo_juridico_router
 from workers.clientes.system_ia.onboarding.router import router as mica_onboarding_router
 
 # ── System IA ─────────────────────────────────────────────────────────────────
@@ -171,11 +172,30 @@ app.include_router(mica_onboarding_router)
 app.include_router(social_router)
 app.include_router(meta_tp_router)
 
+# ── Mica — Demo Jurídico (CRM estudio + bot abogados) ────────────────────────
+app.include_router(
+    mica_demo_juridico_router,
+    prefix="/clientes/system_ia/demos/juridico",
+)
+
 # ── Archivos estáticos — Propuestas de clientes ──────────────────────────────
 import pathlib
 _static_dir = pathlib.Path(__file__).parent / "clientes-publicos"
 if _static_dir.exists():
     app.mount("/propuestas", StaticFiles(directory=str(_static_dir)), name="propuestas")
+
+# ── Archivos estáticos — Demos SYSTEM-IA (CRMs HTML servidos desde Coolify) ──
+# Sirve los CRMs demo de Mica (jurídico, inmobiliario, etc.) desde el backend
+# Coolify Arnaldo, evitando depender de Vercel para nuevos demos.
+# Path repo: 01_PROYECTOS/01_ARNALDO_AGENCIA/demos/SYSTEM-IA/dev/
+# URL final: https://agentes.arnaldoayalaestratega.cloud/system-ia/dev/<archivo>.html
+_systemia_demo_dir = pathlib.Path(__file__).parent.parent / "demos" / "SYSTEM-IA"
+if _systemia_demo_dir.exists():
+    app.mount(
+        "/system-ia",
+        StaticFiles(directory=str(_systemia_demo_dir), html=True),
+        name="system-ia-demos",
+    )
 
 
 
