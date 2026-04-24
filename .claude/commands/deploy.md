@@ -42,6 +42,28 @@ Al invocar este comando:
    - `X-API-Key` generada
    - Configuración del nodo HTTP Request para n8n
 
+5. **Notificar por Telegram el resultado del deploy**:
+
+   ```bash
+   # Si el deploy falló:
+   "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/02_OPERACION_COMPARTIDA/scripts/notify_telegram.sh" \
+     "🚨 Deploy FALLÓ" \
+     "Servicio: {nombre}
+VPS: {arnaldo|robert}
+Error: {resumen breve}
+
+Revisá logs Coolify."
+
+   # Si el deploy tuvo éxito:
+   "/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/02_OPERACION_COMPARTIDA/scripts/notify_telegram.sh" \
+     "✅ Deploy OK" \
+     "Servicio: {nombre}
+VPS: {arnaldo|robert}
+URL interna: http://alias:8000"
+   ```
+
+   Si el script de notificación falla, NO bloquear el reporte al usuario — el deploy es lo importante.
+
 ## Notas críticas
 
 - El repo siempre es **privado**

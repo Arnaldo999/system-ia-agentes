@@ -141,6 +141,31 @@ Cada item con formato:
 - [ ] <descripción corta> | origen: `<archivo>` | detectado: YYYY-MM-DD
 ```
 
+### Fase 4.5 — Notificar Telegram SI hay críticos o altos ≥3
+
+Si el backlog final tiene:
+- **1+ items 🔴 Críticos**, O
+- **3+ items 🟠 Altos**
+
+Entonces disparar notificación Telegram con resumen. Usar helper:
+
+```bash
+"/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/02_OPERACION_COMPARTIDA/scripts/notify_telegram.sh" \
+  "📋 Cierre YYYY-MM-DD" \
+  "Backlog al cierre: N críticos 🔴 + N altos 🟠.
+
+Top urgencias mañana:
+1. <tarea 1>
+2. <tarea 2>
+3. <tarea 3>
+
+Ver detalle: 02_OPERACION_COMPARTIDA/standup/daily/YYYY-MM-DD.md"
+```
+
+Si el script falla (código != 0), NO bloquear el cierre — solo mencionarlo al usuario en el reporte final. El cierre es más importante que el aviso Telegram.
+
+Si no hay críticos ni ≥3 altos → **NO enviar Telegram**. Evitar ruido. El usuario lo verá en la apertura de mañana si necesita.
+
 ### Fase 5 — Actualizar `.ultimo-cierre.json` + reportar al usuario
 
 1. Escribir en `02_OPERACION_COMPARTIDA/standup/.ultimo-cierre.json`:

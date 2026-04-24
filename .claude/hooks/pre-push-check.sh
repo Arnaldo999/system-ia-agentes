@@ -40,6 +40,17 @@ if [[ $ERRORS -gt 0 ]]; then
   echo -e "$ERROR_FILES" >&2
   echo "" >&2
   echo "Corregí los errores y volvé a intentar el push." >&2
+
+  # Notificar Telegram (silencioso si falla)
+  NOTIFY="/home/arna/PROYECTOS SYSTEM IA/SYSTEM_IA_MISSION_CONTROL/02_OPERACION_COMPARTIDA/scripts/notify_telegram.sh"
+  if [[ -x "$NOTIFY" ]]; then
+    # Extraer solo paths de archivos con error (sin el detalle del error)
+    ERROR_LIST=$(echo -e "$ERROR_FILES" | grep "❌" | sed 's|.*/||' | head -3 | tr '\n' ' ')
+    "$NOTIFY" "🚫 Push bloqueado" "Sintaxis Python rota en $ERRORS archivo(s): $ERROR_LIST
+
+Push al repo cancelado. Corregí antes de reintentar." 2>/dev/null || true
+  fi
+
   exit 2
 fi
 
