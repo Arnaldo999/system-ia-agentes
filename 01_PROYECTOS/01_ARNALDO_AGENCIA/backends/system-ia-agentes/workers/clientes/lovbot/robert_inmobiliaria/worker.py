@@ -36,6 +36,8 @@ from google import genai
 from fastapi import APIRouter, Request
 from workers.shared.message_buffer import buffer_and_schedule
 from workers.shared.image_describer import describe_image, download_media_meta
+from workers.shared.typing_indicator import send_typing
+from workers.shared.message_splitter import split_greeting
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY", "")
@@ -534,6 +536,19 @@ def _enviar_texto(telefono: str, mensaje: str) -> bool:
     if not META_ACCESS_TOKEN or not META_PHONE_ID:
         print(f"[ROBERT-META] Sin token/phone_id. Msg: {mensaje[:80]}")
         return False
+    # Typing indicator: bloquea ~2s antes de enviar para humanizar la respuesta.
+    # Usa el último msg_id entrante guardado en sesión (si existe) para activar
+    # el indicador visual real en Meta. Si no hay msg_id, igual bloquea 2s.
+    tel_clean = re.sub(r'\D', '', telefono)
+    _ultimo_msg_id = SESIONES.get(tel_clean, {}).get("ultimo_msg_id")
+    send_typing(
+        provider="meta",
+        phone=tel_clean,
+        duration=2.0,
+        meta_access_token=META_ACCESS_TOKEN,
+        meta_phone_id=META_PHONE_ID,
+        message_id=_ultimo_msg_id,
+    )
     try:
         r = requests.post(
             f"https://graph.facebook.com/v21.0/{META_PHONE_ID}/messages",
@@ -2623,7 +2638,26 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
 
     # ── Respuesta LLM estándar ─────────────────────────────────────────────
     if mensaje_final:
-        _enviar_texto(telefono, mensaje_final)
+        # Primer turno del bot: no hay ningún mensaje previo del bot en historial.
+        # Se detecta antes de enviar mensaje_final (el historial ya tiene el msg
+        # del lead de este turno, pero todavía ningún "Bot:" previo).
+        _hist_actual = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
+        _es_primer_turno_bot = not any(
+            "] Bot:" in h or (isinstance(h, str) and h.startswith("Bot:"))
+            for h in _hist_actual
+        )
+        if _es_primer_turno_bot:
+            # Solo en primer turno: partir el saludo en chunks y enviar cada
+            # uno con typing indicator propio (send_typing ya está dentro de
+            # _enviar_texto, así que cada chunk lleva su propia pausa de 2s).
+            # Nota: split_greeting usa OPENAI_API_KEY — si el env tiene solo
+            # LOVBOT_OPENAI_API_KEY el módulo devuelve [mensaje_final] como
+            # fallback (sin partir). Ver bug reportado al pie del archivo.
+            _chunks = split_greeting(mensaje_final, max_chunks=3)
+            for _chunk in _chunks:
+                _enviar_texto(telefono, _chunk)
+        else:
+            _enviar_texto(telefono, mensaje_final)
 
     # Actualizar step si el LLM extrajo datos suficientes para avanzar
     # Inferencia de presupuesto: requiere NÚMERO + (k|mil|usd|ars|pesos|$)
@@ -2811,6 +2845,7 @@ async def webhook_whatsapp(request: Request):
     texto    = data.get("text", "")
     referral = data.get("referral", {}) or {}
     nombre_meta = data.get("nombre", "")
+    msg_id_entrante = ""  # se llena en Caso 2 con msg["id"] de Meta
 
     # Caso 2: payload crudo de Meta Graph API
     if not telefono and "entry" in data:
@@ -2824,6 +2859,8 @@ async def webhook_whatsapp(request: Request):
             if messages:
                 msg = messages[0]
                 telefono = msg.get("from", "")
+                # Guardar msg_id para typing indicator de Meta (context-aware)
+                msg_id_entrante = msg.get("id", "")
                 # Soportar varios tipos de mensaje
                 msg_type = msg.get("type", "")
                 if msg_type == "text":
@@ -2885,8 +2922,14 @@ async def webhook_whatsapp(request: Request):
     if not telefono or not texto:
         return {"status": "ignored"}
 
-    # Pre-cargar nombre en sesión si vino del payload y no está ya guardado
+    # Pre-cargar nombre y msg_id en sesión si vino del payload
     tel_clean = re.sub(r'\D', '', telefono)
+    # Guardar último msg_id entrante en sesión para que send_typing() pueda
+    # activar el typing indicator visual real de Meta (context-aware).
+    if msg_id_entrante:
+        sesion_mid = SESIONES.get(tel_clean, {})
+        sesion_mid["ultimo_msg_id"] = msg_id_entrante
+        SESIONES[tel_clean] = sesion_mid
     if nombre_meta:
         sesion_pre = SESIONES.get(tel_clean, {})
         if not sesion_pre.get("nombre"):
