@@ -1640,8 +1640,8 @@ REGLAS:
 "¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
 
 Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos
-en {zonas_breve or 'distintas zonas premium'}. Estoy acá para acompañarte
-en lo que necesités 🏡
+en {zonas_breve or 'distintas zonas premium'}. Atendemos de lunes a viernes
+de 9 a 18 hs 🕐
 
 ¿Hablo con {nombre.split()[0]}, correcto?"
 
@@ -1658,8 +1658,8 @@ o buscás más una opción de inversión?"
 "¡Hola! 👋 Bienvenido/a a *{NOMBRE_EMPRESA}*, gracias por escribirnos.
 
 Somos una desarrolladora inmobiliaria en {CIUDAD} con proyectos
-en {zonas_breve or 'distintas zonas premium'}. Estoy acá para ayudarte a
-encontrar lo que estás buscando 🏡
+en {zonas_breve or 'distintas zonas premium'}. Atendemos de lunes a viernes
+de 9 a 18 hs 🕐
 
 Antes de seguir, *¿con quién tengo el gusto de conversar?* 😊"
 
