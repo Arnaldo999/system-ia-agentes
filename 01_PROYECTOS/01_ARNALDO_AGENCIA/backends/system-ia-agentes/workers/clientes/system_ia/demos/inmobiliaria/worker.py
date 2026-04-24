@@ -1748,7 +1748,10 @@ Ejemplo de cómo formularla (adaptá con tu tono, NO copies literal):
   "{siguiente_pregunta_ejemplo}"
 
 🚫 REGLAS IRROMPIBLES DE ESTE TURNO:
-1. SOLO podés preguntar por **{siguiente_campo}**. Cualquier otra pregunta está PROHIBIDA.
+{f"""1. En este PRIMER turno tenés que hacer DOS cosas en UN solo mensaje:
+   (a) Saludo completo: bienvenida + presentación de la empresa (nombre + ciudad + zonas)
+   (b) Confirmar/preguntar el nombre al final.
+   El saludo completo es OBLIGATORIO antes de la pregunta. NO cortes corto.""" if (siguiente_campo == "nombre" and not bot_ya_saludo) else f"""1. SOLO podés preguntar por **{siguiente_campo}**. Cualquier otra pregunta está PROHIBIDA."""}
 2. Si el lead ya respondió `{siguiente_campo}` en un turno anterior (ver DATOS YA CAPTURADOS),
    NO vuelvas a preguntarlo — avanzá al siguiente campo pendiente.
 3. Si el lead te pregunta algo (precio, ubicación, horario), respondé brevemente Y DESPUÉS
