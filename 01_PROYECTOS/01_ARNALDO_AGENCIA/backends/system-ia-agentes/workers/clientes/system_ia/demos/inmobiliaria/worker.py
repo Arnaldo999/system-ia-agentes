@@ -44,6 +44,8 @@ import json
 import threading
 import requests
 from workers.shared.message_buffer import buffer_and_schedule
+from workers.shared.typing_indicator import send_typing
+from workers.shared.message_splitter import split_greeting
 from google import genai
 from fastapi import APIRouter, Request
 
@@ -662,13 +664,31 @@ def _provider_activo(telefono: str = "") -> str:
     return (os.environ.get("WHATSAPP_PROVIDER", "") or "evolution").lower().strip()
 
 
-def _enviar_texto(telefono: str, mensaje: str) -> bool:
-    """Envia texto via wa_provider. Provider: override-sesion → env → evolution."""
+def _enviar_texto(telefono: str, mensaje: str, _incoming_message_id: str = "") -> bool:
+    """Envia texto via wa_provider. Provider: override-sesion → env → evolution.
+
+    Antes de enviar muestra "escribiendo..." 2s via typing_indicator (humanización).
+    """
     _agregar_historial(telefono, "Bot", mensaje)
     if not _WA_SHARED_OK:
         print(f"[MICA-SEND] wa_provider no disponible. Msg: {mensaje[:80]}")
         return False
-    ok = _wa.send_text(telefono, mensaje, provider=_provider_activo(telefono))
+    provider = _provider_activo(telefono)
+    send_typing(
+        provider=provider,
+        phone=telefono,
+        duration=2.0,
+        evolution_url=os.environ.get("EVOLUTION_API_URL", ""),
+        evolution_instance=(
+            os.environ.get("MICA_DEMO_EVOLUTION_INSTANCE", "")
+            or os.environ.get("EVOLUTION_INSTANCE", "")
+        ),
+        evolution_api_key=os.environ.get("EVOLUTION_API_KEY", ""),
+        meta_access_token=META_ACCESS_TOKEN,
+        meta_phone_id=META_PHONE_ID,
+        message_id=_incoming_message_id or None,
+    )
+    ok = _wa.send_text(telefono, mensaje, provider=provider)
     if ok:
         _cw_mirror_msg(telefono, mensaje, es_bot=True)
     return ok
@@ -2790,7 +2810,20 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
 
     # ── Respuesta LLM estándar ─────────────────────────────────────────────
     if mensaje_final:
-        _enviar_texto(telefono, mensaje_final)
+        # Primer turno del bot en esta conversación → partir el saludo en 2-3 chunks.
+        # Detección: ninguna entrada del historial pertenece al bot todavía.
+        # (El historial ya incluye el mensaje del lead actual, pero no tiene "Bot:" entries.)
+        _hist_check = HISTORIAL.get(re.sub(r'\D', '', telefono), [])
+        _es_primer_turno_bot = not any(
+            "Bot:" in h or "(bot)" in h
+            for h in _hist_check
+        )
+        if _es_primer_turno_bot:
+            chunks = split_greeting(mensaje_final, max_chunks=3)
+            for chunk in chunks:
+                _enviar_texto(telefono, chunk)
+        else:
+            _enviar_texto(telefono, mensaje_final)
 
     # Actualizar step si el LLM extrajo datos suficientes para avanzar
     # Inferencia de presupuesto: requiere NÚMERO + (k|mil|usd|ars|pesos|$)
