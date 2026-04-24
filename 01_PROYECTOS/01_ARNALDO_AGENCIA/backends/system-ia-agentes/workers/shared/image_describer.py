@@ -66,6 +66,41 @@ def _describer_enabled() -> bool:
     return True
 
 
+_ALLOWED_MIMES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+
+
+def _detect_mime_from_bytes(data: bytes) -> str:
+    """
+    Detecta el mime inspeccionando los primeros bytes (magic numbers).
+    Devuelve uno de los 4 mimes que OpenAI acepta, o "image/jpeg" como fallback.
+    """
+    if not data or len(data) < 4:
+        return "image/jpeg"
+    if data[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    if data[:4] == b"RIFF" and len(data) >= 12 and data[8:12] == b"WEBP":
+        return "image/webp"
+    return "image/jpeg"
+
+
+def _sanitize_mime(mime: str, image_bytes: bytes) -> str:
+    """
+    OpenAI Vision solo acepta image/jpeg, png, gif, webp. Si el mime declarado
+    no cumple (p.ej. 'application/octet-stream' que Evolution a veces manda),
+    detectamos por magic numbers.
+    """
+    m = (mime or "").lower().split(";")[0].strip()
+    if m in _ALLOWED_MIMES:
+        return m
+    detected = _detect_mime_from_bytes(image_bytes)
+    logger.info("image_describer: mime reemplazado de '%s' a '%s'", mime, detected)
+    return detected
+
+
 def describe_image(
     image_bytes: bytes,
     *,
@@ -95,9 +130,11 @@ def describe_image(
     model = os.environ.get("IMAGE_DESCRIBER_MODEL", "gpt-4o-mini")
     context = context_hint or _DEFAULT_CONTEXT
 
+    safe_mime = _sanitize_mime(mime, image_bytes)
+
     try:
         b64 = base64.b64encode(image_bytes).decode("ascii")
-        data_url = f"data:{mime};base64,{b64}"
+        data_url = f"data:{safe_mime};base64,{b64}"
     except Exception as exc:
         logger.warning("image_describer: fallo encoding base64 (%s)", exc)
         return ""
