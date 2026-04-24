@@ -101,6 +101,21 @@ def _sanitize_mime(mime: str, image_bytes: bytes) -> str:
     return detected
 
 
+def _looks_like_image(image_bytes: bytes) -> bool:
+    """True si los primeros bytes matchean algún formato de imagen conocido."""
+    if not image_bytes or len(image_bytes) < 12:
+        return False
+    if image_bytes[:3] == b"\xff\xd8\xff":
+        return True
+    if image_bytes[:8] == b"\x89PNG\r\n\x1a\n":
+        return True
+    if image_bytes[:6] in (b"GIF87a", b"GIF89a"):
+        return True
+    if image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
+        return True
+    return False
+
+
 def describe_image(
     image_bytes: bytes,
     *,
@@ -130,7 +145,21 @@ def describe_image(
     model = os.environ.get("IMAGE_DESCRIBER_MODEL", "gpt-4o-mini")
     context = context_hint or _DEFAULT_CONTEXT
 
+    # Guard: los bytes deben ser una imagen real. Evolution/WhatsApp a veces
+    # devuelven payloads encriptados/HTML si falta auth — mandarlos a OpenAI
+    # solo gasta tokens y devuelve 400.
+    if not _looks_like_image(image_bytes):
+        hex_prefix = image_bytes[:16].hex() if image_bytes else ""
+        logger.warning(
+            "image_describer: bytes no son imagen válida — size=%d first_bytes_hex=%s",
+            len(image_bytes), hex_prefix,
+        )
+        return ""
+
     safe_mime = _sanitize_mime(mime, image_bytes)
+    logger.info(
+        "image_describer: bytes OK size=%d mime_final=%s", len(image_bytes), safe_mime,
+    )
 
     try:
         b64 = base64.b64encode(image_bytes).decode("ascii")
@@ -240,7 +269,11 @@ def download_media_meta(media_id: str, meta_access_token: str) -> tuple[bytes, s
 
 def download_media_url(url: str, bearer_token: Optional[str] = None) -> tuple[bytes, str]:
     """
-    Descarga una imagen desde URL pública (Evolution API, YCloud).
+    Descarga una imagen desde URL pública (YCloud u otro provider con URLs directas).
+
+    NOTA: las URLs `imageMessage.url` que devuelve Evolution apuntan a media
+    encriptado de WhatsApp y no se pueden descargar directamente. Para
+    Evolution usar `download_media_evolution()` con el message_id.
 
     Devuelve (bytes, mime_type). Si falla devuelve (b"", "").
     """
@@ -259,3 +292,96 @@ def download_media_url(url: str, bearer_token: Optional[str] = None) -> tuple[by
     except Exception as exc:
         logger.warning("image_describer: fallo descargando url (%s)", exc)
         return b"", ""
+
+
+def download_media_evolution(
+    message_id: str,
+    evolution_url: str,
+    evolution_instance: str,
+    evolution_api_key: str,
+) -> tuple[bytes, str]:
+    """
+    Descarga un media de Evolution API usando el endpoint getBase64FromMediaMessage.
+
+    Evolution no expone URLs descargables directas — usa un endpoint específico
+    que descifra el media de WhatsApp y devuelve base64. Este helper prueba las
+    variantes conocidas de distintas versiones de Evolution (v1 y v2).
+
+    Devuelve (bytes, mime_type). Si falla devuelve (b"", "").
+    """
+    if not message_id or not evolution_url or not evolution_instance:
+        return b"", ""
+
+    base = evolution_url.rstrip("/")
+    headers = {
+        "Content-Type": "application/json",
+        "apikey": evolution_api_key,
+    }
+
+    endpoints = [
+        {
+            "method": "POST",
+            "url": f"{base}/chat/getBase64FromMediaMessage/{evolution_instance}",
+            "json": {"message": {"key": {"id": message_id}}},
+        },
+        {
+            "method": "POST",
+            "url": f"{base}/chat/getBase64FromMediaMessage/{evolution_instance}",
+            "json": {"key": {"id": message_id}},
+        },
+        {
+            "method": "GET",
+            "url": f"{base}/chat/getMediaMessage/{evolution_instance}/{message_id}",
+            "json": None,
+        },
+    ]
+
+    for ep in endpoints:
+        try:
+            if ep["method"] == "POST":
+                r = requests.post(ep["url"], headers=headers, json=ep["json"], timeout=20)
+            else:
+                r = requests.get(ep["url"], headers=headers, timeout=20)
+
+            if r.status_code not in (200, 201):
+                logger.info(
+                    "image_describer: Evolution endpoint %s devolvió %s",
+                    ep["url"].rsplit("/", 2)[-2], r.status_code,
+                )
+                continue
+
+            data = r.json() if r.content else {}
+            if not isinstance(data, dict):
+                continue
+
+            b64 = (
+                data.get("base64")
+                or data.get("mediaBase64")
+                or data.get("media")
+                or ""
+            )
+            if not b64:
+                continue
+
+            try:
+                img_bytes = base64.b64decode(b64)
+            except Exception as exc:
+                logger.warning("image_describer: fallo decodificando base64 Evolution (%s)", exc)
+                continue
+
+            mime = (
+                data.get("mimetype")
+                or data.get("mimeType")
+                or "image/jpeg"
+            )
+            return img_bytes, mime
+
+        except Exception as exc:
+            logger.warning("image_describer: fallo Evolution endpoint %s (%s)", ep["url"], exc)
+            continue
+
+    logger.warning(
+        "image_describer: ningún endpoint Evolution devolvió media para message_id=%s",
+        message_id,
+    )
+    return b"", ""

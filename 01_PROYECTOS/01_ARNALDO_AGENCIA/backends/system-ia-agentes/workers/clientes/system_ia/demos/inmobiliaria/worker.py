@@ -120,7 +120,7 @@ try:
     from workers.shared.image_describer import (
         describe_image,
         download_media_meta,
-        download_media_url,
+        download_media_evolution,
     )
     _IMAGE_DESCRIBER_OK = True
 except Exception as _e_img:
@@ -578,7 +578,9 @@ def _describir_imagen_incoming(parsed: dict) -> str:
 
     Detecta el provider del parsed dict y usa el helper correcto:
       - Meta  → download_media_meta(media_id) con META_ACCESS_TOKEN
-      - Evolution → download_media_url(url) desde imageMessage.url / jpegThumbnail
+      - Evolution → download_media_evolution(message_id) — endpoint que descifra
+                    el media de WhatsApp. La URL directa no sirve (encriptada).
+                    Fallback: jpegThumbnail base64 del payload.
       - Otros → devuelve ""
 
     Devuelve f"[Imagen: {descripcion}]" si hay descripción, o "" si falla.
@@ -601,21 +603,30 @@ def _describir_imagen_incoming(parsed: dict) -> str:
         imagen_bytes, mime = download_media_meta(media_id, META_ACCESS_TOKEN)
 
     elif provider == "evolution":
-        # raw es data dict de Evolution; la imagen viene en message["imageMessage"]
-        message = raw.get("message", {}) or {}
-        img_msg = message.get("imageMessage", {}) or {}
-        # Evolution puede incluir URL directa o jpegThumbnail (base64)
-        url = img_msg.get("url", "") or img_msg.get("directPath", "")
-        if url:
-            evo_url = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
-            evo_key = os.environ.get("EVOLUTION_API_KEY", "")
-            # URL completa si ya la incluye Evolution, sino construir con base
-            if not url.startswith("http"):
-                url = f"{evo_url}/{url.lstrip('/')}"
-            imagen_bytes, mime = download_media_url(url, bearer_token=evo_key or None)
+        # Evolution: el media viene encriptado en la URL del payload. El único
+        # camino confiable es usar el endpoint /chat/getBase64FromMediaMessage
+        # con el message_id — Evolution descifra internamente y devuelve base64.
+        key = raw.get("key", {}) or {}
+        message_id = key.get("id", "")
+        evo_url = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
+        evo_instance = os.environ.get("MICA_DEMO_EVOLUTION_INSTANCE") \
+            or os.environ.get("EVOLUTION_INSTANCE", "")
+        evo_key = os.environ.get("EVOLUTION_API_KEY", "")
+
+        if message_id and evo_url and evo_instance:
+            imagen_bytes, mime = download_media_evolution(
+                message_id=message_id,
+                evolution_url=evo_url,
+                evolution_instance=evo_instance,
+                evolution_api_key=evo_key,
+            )
+
         if not imagen_bytes:
-            # Fallback: jpegThumbnail (base64) — calidad baja pero usable
+            # Fallback: jpegThumbnail (base64) — calidad muy baja, pero útil si
+            # el endpoint de Evolution falla
             import base64 as _b64
+            message = raw.get("message", {}) or {}
+            img_msg = message.get("imageMessage", {}) or {}
             thumb = img_msg.get("jpegThumbnail", "")
             if thumb:
                 try:
