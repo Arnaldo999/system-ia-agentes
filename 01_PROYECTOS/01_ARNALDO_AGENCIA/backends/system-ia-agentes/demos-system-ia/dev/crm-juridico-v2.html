@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<!-- build: 2026-04-24-juridico-v2-marcas -->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estudio Demo — Propiedad Intelectual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg: #F5F5F7; --surface: #FFFFFF; --surface-2: #FAFAFA;
+    --border: #E5E5E7; --border-2: #D2D2D7;
+    --text: #1D1D1F; --text-2: #6E6E73; --text-3: #98989D;
+    --accent: #C9A24A; --accent-hover: #B58E36; --accent-light: #F5E9D0;
+    --green: #34C759; --green-light: #E8F8EC; --green-dark: #248A3D;
+    --blue: #007AFF; --blue-light: #E3F2FD;
+    --red: #FF3B30; --red-light: #FFEBEA;
+    --yellow: #FFCC00; --yellow-light: #FFF8DC;
+    --purple: #AF52DE; --purple-light: #F4E8FF;
+    --gray-badge: #F2F2F7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; height: 100%; overflow: hidden; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+  .serif { font-family: 'Playfair Display', serif; }
+
+  /* LAYOUT */
+  .layout { display: flex; height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+  .brand { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .brand-icon { width: 38px; height: 38px; flex-shrink: 0; }
+  .brand-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .brand-sub { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+
+  .nav { padding: 14px 10px; flex: 1; overflow-y: auto; }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; color: var(--text-2); cursor: pointer; font-size: 13.5px; transition: all 0.15s; border-radius: 8px; margin: 1px 0; }
+  .nav-item:hover { background: var(--surface-2); color: var(--text); }
+  .nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  .nav-icon { width: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .nav-badge { margin-left: auto; background: var(--gray-badge); color: var(--text-2); font-size: 11px; padding: 1px 8px; border-radius: 10px; font-weight: 600; }
+  .nav-item.active .nav-badge { background: var(--accent); color: white; }
+  .nav-badge.danger { background: var(--red-light); color: var(--red); }
+
+  .sidebar-footer { padding: 14px 10px; border-top: 1px solid var(--border); }
+  .logout { display: flex; align-items: center; gap: 12px; padding: 10px 14px; color: var(--text-2); cursor: pointer; font-size: 13px; border-radius: 8px; }
+  .logout:hover { background: var(--red-light); color: var(--red); }
+
+  /* MAIN */
+  .main { flex: 1; overflow-y: auto; padding: 32px 40px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* SECTION HEADER */
+  .sh { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+  .sh-title { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .sh-sub { color: var(--text-2); font-size: 14px; margin-top: 6px; }
+
+  /* BUTTONS */
+  .btn { padding: 9px 16px; border-radius: 9px; border: 1px solid var(--border-2); background: white; color: var(--text); cursor: pointer; font-size: 13px; transition: all 0.15s; font-family: inherit; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { background: var(--surface-2); border-color: var(--text-3); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: white; }
+  .btn-sm { padding: 6px 11px; font-size: 12px; }
+  .btn-icon { padding: 7px; aspect-ratio: 1; justify-content: center; }
+  .btn-danger { color: var(--red); border-color: var(--red-light); }
+  .btn-danger:hover { background: var(--red-light); border-color: var(--red); }
+
+  /* KPI CARDS */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; transition: all 0.18s; }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+  .kpi-info { flex: 1; min-width: 0; }
+  .kpi-label { font-size: 12px; color: var(--text-2); margin-bottom: 6px; font-weight: 500; }
+  .kpi-value { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; line-height: 1; color: var(--text); }
+  .kpi-icon-wrap { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* CARDS */
+  .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 12px; transition: all 0.15s; }
+  .item-card:hover { border-color: var(--border-2); }
+  .item-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .item-info { flex: 1; min-width: 220px; }
+  .item-title { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .item-meta { font-size: 13px; color: var(--text-2); margin-top: 6px; line-height: 1.55; }
+  .item-meta strong { color: var(--text); font-weight: 500; }
+  .item-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .b-tramite { background: var(--blue-light); color: var(--blue); }
+  .b-publicacion { background: #E0F7FA; color: #006064; }
+  .b-oposicion { background: #FFE4D6; color: #B45309; }
+  .b-concedida { background: var(--green-light); color: var(--green-dark); }
+  .b-renovada { background: #DCFCE7; color: #166534; }
+  .b-vencida { background: var(--gray-badge); color: var(--text-2); }
+  .b-pendiente { background: var(--yellow-light); color: #8B6914; }
+  .b-aceptada { background: var(--green-light); color: var(--green-dark); }
+  .b-rechazada { background: var(--red-light); color: var(--red); }
+  .b-borrador { background: var(--gray-badge); color: var(--text-2); }
+  .b-vista-previa { background: #FFF4D9; color: #806600; }
+  .b-enviada { background: var(--blue-light); color: var(--blue); }
+  .b-archivo { background: var(--green-light); color: var(--green-dark); display: inline-flex; align-items: center; gap: 4px; }
+  .b-nuevo { background: var(--blue-light); color: var(--blue); }
+  .b-contactando { background: var(--yellow-light); color: #8B6914; }
+  .b-calificado { background: #FFE4D6; color: #B45309; }
+  .b-agendado { background: var(--purple-light); color: var(--purple); }
+  .b-cliente { background: var(--green-light); color: var(--green-dark); }
+  .b-perdido { background: var(--gray-badge); color: var(--text-3); }
+  .b-activa { background: var(--green-light); color: var(--green-dark); }
+  .b-en-analisis { background: var(--yellow-light); color: #8B6914; }
+  .b-comunicado { background: var(--green-light); color: var(--green-dark); }
+  .b-en-curso { background: var(--blue-light); color: var(--blue); }
+  .b-cargada { background: var(--green-light); color: var(--green-dark); }
+
+  /* DASHBOARD WIDGETS */
+  .widgets { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; }
+  .widget-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .widget-empty { color: var(--text-3); font-size: 13px; text-align: center; padding: 20px 0; }
+  .widget-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .widget-row:last-child { border-bottom: none; }
+  .widget-row-info { flex: 1; min-width: 0; }
+  .widget-row-title { font-weight: 600; font-size: 13.5px; }
+  .widget-row-sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+  /* TIMELINE OPOSICIONES */
+  .timeline { position: relative; padding-left: 30px; margin-top: 14px; }
+  .timeline::before { content: ''; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+  .timeline-step { position: relative; padding-bottom: 14px; }
+  .timeline-step::before { content: ''; position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--border-2); border: 2px solid var(--surface); }
+  .timeline-step.done::before { background: var(--green); }
+  .timeline-step.current::before { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-light); }
+  .timeline-step.future { opacity: 0.45; }
+  .timeline-step-title { font-size: 13px; font-weight: 600; }
+  .timeline-step-meta { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
+
+  /* MODALS */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
+  .modal-bg.active { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px; padding: 30px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.18); }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { color: var(--text-2); font-size: 13px; margin-bottom: 22px; }
+  .form-row { margin-bottom: 16px; }
+  .form-row label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 6px; font-weight: 500; }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border-2); border-radius: 9px;
+    padding: 10px 13px; color: var(--text); font-size: 13.5px; font-family: inherit; outline: none; transition: border-color 0.15s;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: var(--accent); }
+  .form-row textarea { resize: vertical; min-height: 80px; font-family: 'Inter', sans-serif; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+  /* ANALISIS PIZARRA (Mica style) */
+  .pizarra-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+  .pizarra-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+  .pizarra-section-label { font-size: 13px; font-weight: 600; margin: 16px 0 8px; }
+  .pizarra-section-sub { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
+  .pizarra-textarea { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 12px; font-family: 'Inter', sans-serif; font-size: 12.5px; line-height: 1.6; color: var(--text); min-height: 120px; resize: vertical; }
+  .pizarra-textarea:focus { outline: none; border-color: var(--accent); }
+
+  /* LOGIN */
+  .login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 40px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.06); }
+  .login-icon { font-size: 48px; margin-bottom: 14px; color: var(--accent); }
+  .login-card h1 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .login-card p { color: var(--text-2); font-size: 13px; margin-bottom: 26px; }
+  .login-card input { width: 100%; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 10px; padding: 12px 16px; color: var(--text); font-size: 15px; text-align: center; outline: none; margin-bottom: 14px; }
+  .login-card input:focus { border-color: var(--accent); background: white; }
+  .login-card .btn-primary { width: 100%; padding: 12px; font-size: 14px; justify-content: center; }
+  .login-error { color: var(--red); font-size: 12px; min-height: 18px; margin-top: 12px; }
+
+  /* TOPBAR */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+  .topbar-search { position: relative; flex: 1; max-width: 360px; }
+  .topbar-search input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px 9px 38px; font-size: 13.5px; color: var(--text); }
+  .topbar-search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-3); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-chip { display: flex; align-items: center; gap: 9px; padding: 6px 12px 6px 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #B58E36); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 60px 24px; color: var(--text-2); background: var(--surface); border: 1px dashed var(--border-2); border-radius: 14px; }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+  .empty-sub { font-size: 12.5px; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-icon">⚖️</div>
+    <h1 class="serif">Estudio Demo</h1>
+    <p>Propiedad Intelectual · Powered by System IA</p>
+    <input type="password" id="pinInput" placeholder="PIN de acceso" maxlength="4" autocomplete="off">
+    <button class="btn btn-primary" onclick="login()">Ingresar</button>
+    <div id="loginError" class="login-error"></div>
+    <div style="margin-top: 18px; font-size: 11.5px; color: var(--text-3);">Demo: PIN <code style="background: var(--surface-2); padding: 2px 8px; border-radius: 5px; font-weight: 600;">1234</code></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 40 40" fill="none">
+        <path d="M20 4 L20 36" stroke="#C9A24A" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M8 14 L20 8 L32 14" stroke="#C9A24A" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M6 14 L10 26 L14 14 Z" fill="#C9A24A" fill-opacity="0.85"/>
+        <path d="M26 14 L30 26 L34 14 Z" fill="#C9A24A" fill-opacity="0.85"/>
+        <rect x="14" y="34" width="12" height="2.5" rx="1" fill="#C9A24A"/>
+      </svg>
+      <div>
+        <div class="brand-name">Estudio Demo</div>
+        <div class="brand-sub">Propiedad Intelectual</div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <div class="nav-item active" onclick="nav('dashboard', this)">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="nav('leads', this)">
+        <span class="nav-icon">📞</span> Leads
+        <span class="nav-badge" id="badgeLeads"></span>
+      </div>
+      <div class="nav-item" onclick="nav('propuestas', this)">
+        <span class="nav-icon">📄</span> Propuestas
+        <span class="nav-badge" id="badgePropuestas"></span>
+      </div>
+      <div class="nav-item" onclick="nav('marcas', this)">
+        <span class="nav-icon">📖</span> Marcas Nuevas
+        <span class="nav-badge" id="badgeMarcas"></span>
+      </div>
+      <div class="nav-item" onclick="nav('comunicaciones', this)">
+        <span class="nav-icon">🛡️</span> Comunicaciones
+        <span class="nav-badge danger" id="badgeComunicaciones"></span>
+      </div>
+      <div class="nav-item" onclick="nav('oposiciones', this)">
+        <span class="nav-icon">⚖️</span> Oposiciones
+        <span class="nav-badge danger" id="badgeOposiciones"></span>
+      </div>
+      <div class="nav-item" onclick="nav('cargar', this)">
+        <span class="nav-icon">⬆️</span> Marcas para Cargar
+        <span class="nav-badge" id="badgeCargar"></span>
+      </div>
+      <div class="nav-item" onclick="nav('analisis', this)">
+        <span class="nav-icon">🔍</span> Análisis Confundibilidad
+      </div>
+      <div class="nav-item" onclick="nav('turnos', this)">
+        <span class="nav-icon">📅</span> Agenda Turnos
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="logout" onclick="logout()">
+        <span class="nav-icon">⏎</span> Cerrar Sesión
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Buscar marca, cliente, expediente..." />
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-icon" title="Notificaciones">🔔</button>
+        <div class="user-chip">
+          <div class="avatar">MG</div>
+          <span style="font-size: 13px; font-weight: 500;">Dra. González</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── DASHBOARD ─── -->
+    <section id="panel-dashboard" class="panel active">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Dashboard</div>
+          <div class="sh-sub">Vista general del estudio</div>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi-card">
+          <div class="kpi-info"><div class="kpi-label">Leads activos</div><div class="kpi-value" id="kpiLeads">0</div></div>
+          <div class="kpi-icon-wrap" style="background:#E3F2FD;color:#007AFF">📞</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info"><div class="kpi-label">Propuestas</div><div class="kpi-value" id="kpiPropuestas">0</div></div>
+          <div class="kpi-icon-wrap" style="background:#FFF8DC;color:#806600">📄</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info"><div class="kpi-label">Marcas Nuevas</div><div class="kpi-value" id="kpiMarcas">0</div></div>
+          <div class="kpi-icon-wrap" style="background:#E8F8EC;color:#248A3D">📖</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info"><div class="kpi-label">Oposiciones</div><div class="kpi-value" id="kpiOposiciones">0</div></div>
+          <div class="kpi-icon-wrap" style="background:#FFE4D6;color:#B45309">⚖️</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-info"><div class="kpi-label">Marcas para Cargar</div><div class="kpi-value" id="kpiCargar">0</div></div>
+          <div class="kpi-icon-wrap" style="background:#F4E8FF;color:#AF52DE">⬆️</div>
+        </div>
+      </div>
+
+      <div class="widgets">
+        <div class="widget">
+          <div class="widget-title">⏳ Propuestas Pendientes</div>
+          <div id="widgetPropuestas"></div>
+        </div>
+        <div class="widget">
+          <div class="widget-title">🛡️ Oposiciones Recientes</div>
+          <div id="widgetOposiciones"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── LEADS ─── -->
+    <section id="panel-leads" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Leads</div>
+          <div class="sh-sub">Consultas que llegan vía publicidad, web, referidos</div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Nuevo Lead</button>
+      </div>
+      <div id="leadsList"></div>
+    </section>
+
+    <!-- ─── PROPUESTAS ─── -->
+    <section id="panel-propuestas" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Propuestas de Registración</div>
+          <div class="sh-sub">Gestión de nuevas propuestas de registro de marcas</div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Nueva Propuesta</button>
+      </div>
+      <div id="propuestasList"></div>
+    </section>
+
+    <!-- ─── MARCAS ─── -->
+    <section id="panel-marcas" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Marcas Nuevas</div>
+          <div class="sh-sub">Marcas aceptadas y en proceso de registración</div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Nueva Marca</button>
+      </div>
+      <div id="marcasList"></div>
+    </section>
+
+    <!-- ─── COMUNICACIONES ─── -->
+    <section id="panel-comunicaciones" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Comunicaciones de Oposición</div>
+          <div class="sh-sub">Notificaciones a clientes sobre marcas que pueden oponerse</div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Nueva Comunicación</button>
+      </div>
+      <div id="comunicacionesList"></div>
+    </section>
+
+    <!-- ─── OPOSICIONES ─── -->
+    <section id="panel-oposiciones" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Oposiciones</div>
+          <div class="sh-sub">Workflow de las 8 etapas — Resol. INPI 183/18 + 295/24</div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Nueva Oposición</button>
+      </div>
+      <div id="oposicionesList"></div>
+    </section>
+
+    <!-- ─── MARCAS PARA CARGAR ─── -->
+    <section id="panel-cargar" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Marcas para Cargar en el Sistema</div>
+          <div class="sh-sub">Registro rápido de marcas pendientes de carga</div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Agregar Marca</button>
+      </div>
+      <div id="cargarList"></div>
+    </section>
+
+    <!-- ─── ANÁLISIS ─── -->
+    <section id="panel-analisis" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Análisis de Confundibilidad</div>
+          <div class="sh-sub">Gestión de análisis de conflictos entre marcas</div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Nuevo Análisis</button>
+      </div>
+      <div id="analisisList"></div>
+    </section>
+
+    <!-- ─── TURNOS ─── -->
+    <section id="panel-turnos" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Agenda de Turnos</div>
+          <div class="sh-sub">Reuniones agendadas via bot WhatsApp + Cal.com</div>
+        </div>
+      </div>
+      <div id="turnosList"></div>
+    </section>
+
+  </main>
+</div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   API
+   ════════════════════════════════════════════════════════════════ */
+const API_BASE = (() => {
+  const host = window.location.hostname;
+  if (host.includes('lovbot')) return 'https://agentes.lovbot.ai';
+  if (host.includes('arnaldoayalaestratega')) return 'https://agentes.arnaldoayalaestratega.cloud';
+  if (host.includes('system-ia-agencia')) return 'https://agentes.arnaldoayalaestratega.cloud';
+  return 'http://localhost:8000';
+})();
+const API_PREFIX = '/clientes/system_ia/demos/juridico';
+
+async function api(path, opts = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+      ...opts,
+    });
+    if (!res.ok) throw new Error(`${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.warn(`API ${path}: ${e.message}`);
+    return null;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DATA STORE
+   ════════════════════════════════════════════════════════════════ */
+let DATA = {
+  abogados: [], clientes: [], leads: [], propuestas: [], marcas: [],
+  oposiciones: [], comunicaciones: [], analisis: [], cargar: [], turnos: [],
+  dashboard: {},
+};
+
+/* ════════════════════════════════════════════════════════════════
+   LOGIN
+   ════════════════════════════════════════════════════════════════ */
+function login() {
+  const pin = document.getElementById('pinInput').value;
+  if (pin === '1234') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    sessionStorage.setItem('juridico_pin', pin);
+    cargarTodo();
+  } else {
+    document.getElementById('loginError').textContent = 'PIN incorrecto';
+  }
+}
+function logout() { sessionStorage.removeItem('juridico_pin'); location.reload(); }
+document.getElementById('pinInput')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') login();
+});
+if (sessionStorage.getItem('juridico_pin') === '1234') {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CARGA INICIAL
+   ════════════════════════════════════════════════════════════════ */
+async function cargarTodo() {
+  const [
+    health, dashboard, abogados, clientes, leads, propuestas, marcas,
+    oposiciones, comunicaciones, analisis, cargar, turnos
+  ] = await Promise.all([
+    api('/crm/health'),
+    api('/crm/dashboard'),
+    api('/crm/abogados'),
+    api('/crm/clientes'),
+    api('/crm/leads'),
+    api('/crm/propuestas'),
+    api('/crm/marcas'),
+    api('/crm/oposiciones'),
+    api('/crm/comunicaciones'),
+    api('/crm/analisis'),
+    api('/crm/marcas-cargar'),
+    api('/crm/turnos'),
+  ]);
+
+  DATA.dashboard = dashboard || {};
+  DATA.abogados = abogados?.abogados || [];
+  DATA.clientes = clientes?.clientes || [];
+  DATA.leads = leads?.leads || [];
+  DATA.propuestas = propuestas?.propuestas || [];
+  DATA.marcas = marcas?.marcas || [];
+  DATA.oposiciones = oposiciones?.oposiciones || [];
+  DATA.comunicaciones = comunicaciones?.comunicaciones || [];
+  DATA.analisis = analisis?.analisis || [];
+  DATA.cargar = cargar?.marcas_para_cargar || [];
+  DATA.turnos = turnos?.turnos || [];
+
+  renderAll();
+}
+
+function renderAll() {
+  renderDashboard();
+  renderLeads();
+  renderPropuestas();
+  renderMarcas();
+  renderComunicaciones();
+  renderOposiciones();
+  renderCargar();
+  renderAnalisis();
+  renderTurnos();
+  updateBadges();
+}
+
+function updateBadges() {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (val > 0) { el.textContent = val; el.style.display = 'inline-block'; }
+    else { el.style.display = 'none'; }
+  };
+  set('badgeLeads', DATA.leads.filter(l => ['Nuevo','Contactando','Calificado','Agendado'].includes(l['Estado'])).length);
+  set('badgePropuestas', DATA.propuestas.filter(p => p['Estado'] === 'Pendiente').length);
+  set('badgeMarcas', DATA.marcas.filter(m => ['En trámite','En publicación','Solicitada'].includes(m['Estado'])).length);
+  set('badgeComunicaciones', DATA.comunicaciones.filter(c => ['Borrador','Vista previa'].includes(c['Estado'])).length);
+  set('badgeOposiciones', DATA.oposiciones.filter(o => o['Estado'] === 'Activa').length);
+  set('badgeCargar', DATA.cargar.filter(c => c['Estado'] === 'Pendiente').length);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════════════════ */
+function findById(arr, id) { return arr.find(r => r.id === id); }
+function nombreCliente(linkArr) {
+  if (!linkArr || !linkArr.length) return '—';
+  const c = findById(DATA.clientes, linkArr[0]);
+  return c ? c['Nombre Completo / Razón Social'] : '—';
+}
+function nombreAbogado(linkArr) {
+  if (!linkArr || !linkArr.length) return '—';
+  const a = findById(DATA.abogados, linkArr[0]);
+  return a ? a['Nombre Completo'] : '—';
+}
+function fmtFecha(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function badgeEstado(estado, type) {
+  if (!estado) return '';
+  const slug = estado.toLowerCase()
+    .replace(/[áéíóú]/g, c => 'aeiou'['áéíóú'.indexOf(c)])
+    .replace(/\s+/g, '-')
+    .replace(/[()]/g, '')
+    .replace(/[^a-z-]/g, '');
+  return `<span class="badge b-${slug}">${estado}</span>`;
+}
+function archivoBadge() {
+  return '<span class="badge b-archivo">✓ Archivo cargado</span>';
+}
+function btnIcon(emoji, title, onclick) {
+  return `<button class="btn btn-icon btn-sm" title="${title}" onclick="${onclick}">${emoji}</button>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   NAV
+   ════════════════════════════════════════════════════════════════ */
+function nav(pid, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if (n.getAttribute('onclick')?.includes(`'${pid}'`)) n.classList.add('active');
+    });
+  }
+  document.getElementById(`panel-${pid}`).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RENDERS
+   ════════════════════════════════════════════════════════════════ */
+function renderDashboard() {
+  const d = DATA.dashboard;
+  document.getElementById('kpiLeads').textContent = (d.leads_nuevos || 0) + (d.leads_calificados || 0);
+  document.getElementById('kpiPropuestas').textContent = d.propuestas_pendientes || 0;
+  document.getElementById('kpiMarcas').textContent = d.marcas_en_tramite || 0;
+  document.getElementById('kpiOposiciones').textContent = d.oposiciones_activas || 0;
+  document.getElementById('kpiCargar').textContent = d.marcas_para_cargar_pendientes || 0;
+
+  // Widget Propuestas Pendientes
+  const propuestasPend = DATA.propuestas.filter(p => ['Pendiente','Borrador'].includes(p['Estado']));
+  const wp = document.getElementById('widgetPropuestas');
+  if (!propuestasPend.length) {
+    wp.innerHTML = '<div class="widget-empty">No hay propuestas pendientes</div>';
+  } else {
+    wp.innerHTML = propuestasPend.slice(0, 5).map(p => `
+      <div class="widget-row">
+        <div class="widget-row-info">
+          <div class="widget-row-title">${p['Marca'] || '—'}</div>
+          <div class="widget-row-sub">${nombreCliente(p['Cliente'])} · Clase ${p['Clases Niza'] || '—'}</div>
+        </div>
+        ${badgeEstado(p['Estado'])}
+      </div>
+    `).join('');
+  }
+
+  // Widget Oposiciones Recientes
+  const wo = document.getElementById('widgetOposiciones');
+  if (!DATA.oposiciones.length) {
+    wo.innerHTML = '<div class="widget-empty">No hay oposiciones recientes</div>';
+  } else {
+    wo.innerHTML = DATA.oposiciones.slice(0, 5).map(o => `
+      <div class="widget-row">
+        <div class="widget-row-info">
+          <div class="widget-row-title">${o['Marca del Tercero'] || o['Título']}</div>
+          <div class="widget-row-sub">Cliente: ${nombreCliente(o['Cliente'])}</div>
+        </div>
+        ${badgeEstado(o['Estado'])}
+      </div>
+    `).join('');
+  }
+}
+
+function renderLeads() {
+  const cont = document.getElementById('leadsList');
+  if (!DATA.leads.length) { cont.innerHTML = emptyState('📞','No hay leads aún','Cuando llegue uno por publicidad o referido aparecerá acá'); return; }
+  cont.innerHTML = DATA.leads.map(l => `
+    <div class="item-card">
+      <div class="item-row">
+        <div class="item-info">
+          <div class="item-title">${l['Nombre']} ${badgeEstado(l['Estado'])}</div>
+          <div class="item-meta">
+            ${l['Empresa / Razón Social'] ? `<strong>${l['Empresa / Razón Social']}</strong> · ` : ''}
+            ${l['Origen'] || '—'}${l['Campaña'] ? ` (${l['Campaña']})` : ''}<br>
+            📱 ${l['Teléfono WhatsApp'] || '—'} · ${l['Email'] || '—'}<br>
+            <strong>Servicio:</strong> ${l['Servicio Consultado'] || '—'}
+            ${l['Marca de Interés'] ? ` · <strong>Marca:</strong> ${l['Marca de Interés']}` : ''}
+            ${l['Score'] ? ` · Score: <strong>${l['Score']}</strong>` : ''}
+          </div>
+        </div>
+        <div class="item-actions">
+          ${btnIcon('✏️','Editar','alert(\\'Edit pendiente\\')')}
+          ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPropuestas() {
+  const cont = document.getElementById('propuestasList');
+  if (!DATA.propuestas.length) { cont.innerHTML = emptyState('📄','No hay propuestas','Las propuestas que envíes aparecerán acá'); return; }
+  cont.innerHTML = DATA.propuestas.map(p => {
+    const archivo = p['Archivo Propuesta'] && p['Archivo Propuesta'].length ? archivoBadge() : '';
+    const reemplazar = p['Estado'] === 'Aceptada' ? `<button class="btn btn-sm">Reemplazar</button>` : '';
+    return `
+      <div class="item-card">
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-title">${p['Marca']} ${badgeEstado(p['Estado'])} ${archivo}</div>
+            <div class="item-meta">
+              <strong>Cliente:</strong> ${nombreCliente(p['Cliente'])} · <strong>Clase ${p['Clases Niza'] || '—'}</strong><br>
+              ${p['Descripción Servicio/Producto'] || ''}
+              ${p['Cotización (ARS)'] ? `<br>💰 Cotización: $${parseInt(p['Cotización (ARS)']).toLocaleString('es-AR')}` : ''}
+            </div>
+          </div>
+          <div class="item-actions">
+            ${reemplazar}
+            ${btnIcon('✏️','Editar','alert(\\'Edit pendiente\\')')}
+            ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMarcas() {
+  const cont = document.getElementById('marcasList');
+  if (!DATA.marcas.length) { cont.innerHTML = emptyState('📖','Sin marcas','Las marcas en trámite aparecerán acá'); return; }
+  cont.innerHTML = DATA.marcas.map(m => `
+    <div class="item-card">
+      <div class="item-row">
+        <div class="item-info">
+          <div class="item-title">${m['Denominación']} ${badgeEstado(m['Estado'])}</div>
+          <div class="item-meta">
+            <strong>Cliente:</strong> ${nombreCliente(m['Cliente Titular'])} · <strong>Clase ${m['Clases Niza'] || '—'}</strong>
+            ${m['N° Expediente'] ? `<br><strong>Expediente:</strong> ${m['N° Expediente']}` : ''}
+            ${m['N° Acta'] ? ` · <strong>Acta:</strong> ${m['N° Acta']}` : ''}
+            ${m['N° Boletín INPI'] ? ` · Boletín ${m['N° Boletín INPI']}` : ''}
+            ${m['Última Novedad'] ? `<br>🕐 ${m['Última Novedad']}` : ''}
+          </div>
+        </div>
+        <div class="item-actions">
+          ${btnIcon('✏️','Editar','alert(\\'Edit pendiente\\')')}
+          ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderComunicaciones() {
+  const cont = document.getElementById('comunicacionesList');
+  if (!DATA.comunicaciones.length) { cont.innerHTML = emptyState('🛡️','Sin comunicaciones','Las notificaciones a clientes sobre oposiciones aparecerán acá'); return; }
+  cont.innerHTML = DATA.comunicaciones.map(c => {
+    const archivo = c['Archivo Adjunto'] && c['Archivo Adjunto'].length ? archivoBadge() : '';
+    const isBorrador = c['Estado'] === 'Borrador' || c['Estado'] === 'Vista previa';
+    return `
+      <div class="item-card">
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-title">${c['Título'] || 'Comunicación'} ${badgeEstado(c['Estado'])} ${archivo}</div>
+            <div class="item-meta">
+              <strong>Cliente:</strong> ${nombreCliente(c['Cliente'])} · <strong>Marca del cliente:</strong> ${c['Marca del Cliente'] || '—'}<br>
+              <strong>Tercero:</strong> ${c['Marca del Tercero']} (Clase ${c['Clase Tercero'] || '—'}, Acta ${c['Acta Tercero'] || '—'})
+              ${c['Recomendación'] ? `<br>💡 ${c['Recomendación']}` : ''}
+            </div>
+          </div>
+          <div class="item-actions">
+            ${isBorrador ? `<button class="btn btn-sm">Reemplazar</button>` : ''}
+            ${isBorrador ? `<button class="btn btn-sm">Vista previa</button>` : ''}
+            ${isBorrador ? `<button class="btn btn-primary btn-sm">📧 Enviar</button>` : ''}
+            <button class="btn btn-sm">Editar</button>
+            ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderOposiciones() {
+  const cont = document.getElementById('oposicionesList');
+  if (!DATA.oposiciones.length) { cont.innerHTML = emptyState('⚖️','Sin oposiciones activas','Las oposiciones presentadas o recibidas aparecerán acá'); return; }
+  const stages = [
+    "1. Inicio de la oposición",
+    "2. Etapa de negociación (3 meses)",
+    "3. Ratificación de la oposición",
+    "4. Respuesta del solicitante",
+    "5. Etapa de prueba",
+    "6. Alegatos finales",
+    "7. Decisión del INPI",
+    "8. Posible apelación",
+  ];
+  cont.innerHTML = DATA.oposiciones.map(o => {
+    const currentIdx = stages.indexOf(o['Etapa']);
+    const timeline = stages.map((s, i) => {
+      const cls = i < currentIdx ? 'done' : i === currentIdx ? 'current' : 'future';
+      return `<div class="timeline-step ${cls}"><div class="timeline-step-title">${s}</div></div>`;
+    }).join('');
+    return `
+      <div class="item-card">
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-title">${o['Título']} ${badgeEstado(o['Estado'])}</div>
+            <div class="item-meta">
+              <strong>${o['Tipo']}</strong> · <strong>Cliente:</strong> ${nombreCliente(o['Cliente'])}<br>
+              <strong>Marca tercero:</strong> ${o['Marca del Tercero']} (Clase ${o['Clase Tercero'] || '—'}, Acta ${o['Acta Tercero'] || '—'})<br>
+              ${o['Última Novedad'] ? `🕐 ${o['Última Novedad']}` : ''}
+              ${o['Fecha Vencimiento Plazo Actual'] ? `<br>⏰ <strong>Vence plazo:</strong> ${fmtFecha(o['Fecha Vencimiento Plazo Actual'])}` : ''}
+            </div>
+            <div class="timeline">${timeline}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCargar() {
+  const cont = document.getElementById('cargarList');
+  if (!DATA.cargar.length) { cont.innerHTML = emptyState('⬆️','Sin marcas pendientes','El equipo puede pegar marcas para cargar aquí'); return; }
+  cont.innerHTML = DATA.cargar.map(c => `
+    <div class="item-card">
+      <div class="item-row">
+        <div class="item-info">
+          <div class="item-title">${c['Nombre']} ${badgeEstado(c['Estado'])}</div>
+          <div class="item-meta">
+            ${c['Instrucciones'] || ''}
+            ${c['Sistema Destino'] ? `<br>🎯 <strong>Sistema:</strong> ${c['Sistema Destino']}` : ''}
+            ${c['Carpeta / Ubicación'] ? ` · 📁 ${c['Carpeta / Ubicación']}` : ''}
+            ${c['Fecha Creación'] ? `<br>📅 Creado: ${fmtFecha(c['Fecha Creación'])}` : ''}
+          </div>
+        </div>
+        <div class="item-actions">
+          ${btnIcon('✏️','Editar','alert(\\'Edit pendiente\\')')}
+          ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAnalisis() {
+  const cont = document.getElementById('analisisList');
+  if (!DATA.analisis.length) { cont.innerHTML = emptyState('🔍','Sin análisis','Pegá marcas del Boletín INPI para analizar conflictos'); return; }
+  cont.innerHTML = DATA.analisis.map(a => `
+    <div class="pizarra-card" style="margin-bottom: 20px;">
+      <div class="pizarra-header">
+        <div>
+          <div class="item-title">${a['Título']} ${badgeEstado(a['Estado'])}</div>
+          <div class="item-meta">${a['Fecha Análisis'] ? `Fecha: ${fmtFecha(a['Fecha Análisis'])}` : ''}${a['N° Boletín INPI'] ? ` · Boletín ${a['N° Boletín INPI']}` : ''}</div>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-sm">Reemplazar archivo</button>
+          <button class="btn btn-sm">Ver archivo</button>
+          ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+        </div>
+      </div>
+      <div class="pizarra-section-label">Análisis de Confundibilidad</div>
+      <textarea class="pizarra-textarea" readonly>${a['Análisis de Confundibilidad'] || ''}</textarea>
+      <div class="pizarra-section-label" style="margin-top: 18px;">Marcas a Comunicar</div>
+      <div class="pizarra-section-sub">El socio que decida qué marcas comunicar puede pegarlas aquí para que todos lo vean.</div>
+      <textarea class="pizarra-textarea" readonly>${a['Marcas a Comunicar'] || ''}</textarea>
+    </div>
+  `).join('');
+}
+
+function renderTurnos() {
+  const cont = document.getElementById('turnosList');
+  if (!DATA.turnos.length) { cont.innerHTML = emptyState('📅','Sin turnos','Las reuniones agendadas via Cal.com aparecerán acá'); return; }
+  cont.innerHTML = DATA.turnos.map(t => {
+    const link = t['Link Reunión'] ? `<a href="${t['Link Reunión']}" target="_blank" style="color:var(--accent);font-weight:600;text-decoration:none">🔗 Reservar / ver reunión</a>` : '';
+    return `
+      <div class="item-card">
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-title">${t['Título']} ${badgeEstado(t['Estado'])}</div>
+            <div class="item-meta">
+              <strong>${t['Tipo Reunión'] || ''}</strong> ·
+              📅 ${t['Fecha y Hora'] ? new Date(t['Fecha y Hora']).toLocaleString('es-AR', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) : '—'}
+              · ⏱ ${t['Duración (min)'] || '?'}min
+              <br>👤 ${nombreCliente(t['Cliente'])} · 👨‍⚖️ ${nombreAbogado(t['Abogado'])}
+              ${t['Ubicación'] ? `<br>📍 ${t['Ubicación']}` : ''}
+              ${t['Motivo / Asunto'] ? `<br>💬 ${t['Motivo / Asunto']}` : ''}
+              ${link ? `<br>${link}` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function emptyState(icon, title, sub) {
+  return `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-sub">${sub}</div></div>`;
+}
+
+// Inicializar si ya hay sesión
+if (sessionStorage.getItem('juridico_pin') === '1234') cargarTodo();
+</script>
+</body>
+</html>
