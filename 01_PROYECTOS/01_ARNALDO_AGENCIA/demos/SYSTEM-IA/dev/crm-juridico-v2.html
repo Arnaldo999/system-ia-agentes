@@ -669,8 +669,8 @@ function renderLeads() {
           </div>
         </div>
         <div class="item-actions">
-          ${btnIcon('✏️','Editar','alert(\\'Edit pendiente\\')')}
-          ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+          ${btnIcon('✏️','Editar','todoPendiente()')}
+          ${btnIcon('🗑️','Eliminar','todoPendiente()')}
         </div>
       </div>
     </div>
@@ -696,8 +696,8 @@ function renderPropuestas() {
           </div>
           <div class="item-actions">
             ${reemplazar}
-            ${btnIcon('✏️','Editar','alert(\\'Edit pendiente\\')')}
-            ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+            ${btnIcon('✏️','Editar','todoPendiente()')}
+            ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
       </div>
@@ -722,8 +722,8 @@ function renderMarcas() {
           </div>
         </div>
         <div class="item-actions">
-          ${btnIcon('✏️','Editar','alert(\\'Edit pendiente\\')')}
-          ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+          ${btnIcon('✏️','Editar','todoPendiente()')}
+          ${btnIcon('🗑️','Eliminar','todoPendiente()')}
         </div>
       </div>
     </div>
@@ -752,7 +752,7 @@ function renderComunicaciones() {
             ${isBorrador ? `<button class="btn btn-sm">Vista previa</button>` : ''}
             ${isBorrador ? `<button class="btn btn-primary btn-sm">📧 Enviar</button>` : ''}
             <button class="btn btn-sm">Editar</button>
-            ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+            ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
       </div>
@@ -814,8 +814,8 @@ function renderCargar() {
           </div>
         </div>
         <div class="item-actions">
-          ${btnIcon('✏️','Editar','alert(\\'Edit pendiente\\')')}
-          ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+          ${btnIcon('✏️','Editar','todoPendiente()')}
+          ${btnIcon('🗑️','Eliminar','todoPendiente()')}
         </div>
       </div>
     </div>
@@ -835,7 +835,7 @@ function renderAnalisis() {
         <div class="item-actions">
           <button class="btn btn-sm">Reemplazar archivo</button>
           <button class="btn btn-sm">Ver archivo</button>
-          ${btnIcon('🗑️','Eliminar','alert(\\'Delete pendiente\\')')}
+          ${btnIcon('🗑️','Eliminar','todoPendiente()')}
         </div>
       </div>
       <div class="pizarra-section-label">Análisis de Confundibilidad</div>
@@ -871,6 +871,11 @@ function renderTurnos() {
       </div>
     `;
   }).join('');
+}
+
+
+function todoPendiente() {
+  alert('Funcionalidad pendiente — versión final tendrá CRUD completo conectado.');
 }
 
 function emptyState(icon, title, sub) {
