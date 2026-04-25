@@ -96,7 +96,7 @@ from workers.demos.gastronomico.worker  import router as demo_gastronomico_route
 from workers.shared.tenants import router as tenants_router, crm_router, admin_router
 
 # ── System IA — Clientes ──────────────────────────────────────────────────────
-from workers.clientes.system_ia.lau.worker import router as lau_router
+from workers.clientes.arnaldo.lau.worker import router as lau_router
 from workers.clientes.system_ia.demos.inmobiliaria.worker import (
     router as mica_demo_inmo_router,
     router_v2 as mica_demo_inmo_router_v2,
