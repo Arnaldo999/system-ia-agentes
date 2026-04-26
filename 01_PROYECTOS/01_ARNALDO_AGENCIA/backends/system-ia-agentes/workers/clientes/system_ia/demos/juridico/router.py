@@ -66,6 +66,7 @@ TABLE_COMUNICACIONES = os.environ.get("MICA_DEMO_JURIDICO_TABLE_COMUNICACIONES",
 TABLE_ANALISIS      = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ANALISIS",      "tblcZlzitnTxRevYQ")
 TABLE_PARA_CARGAR   = os.environ.get("MICA_DEMO_JURIDICO_TABLE_PARA_CARGAR",   "tblji7DIl9FwdZ06Q")
 TABLE_TRAMITES_MARCA = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TRAMITES_MARCA", "tblOwjxoDCCOiYrMG")
+TABLE_PLANTILLAS    = os.environ.get("MICA_DEMO_JURIDICO_TABLE_PLANTILLAS",    "tblluoLMnPlfIuInn")
 TABLE_TURNOS        = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TURNOS",        "tblIg1rFN5e4IKB4s")
 TABLE_ALERTAS       = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ALERTAS",       "tbl13tRhUoMSUsaKc")
 
@@ -171,6 +172,7 @@ def health():
             "analisis": bool(TABLE_ANALISIS),
             "para_cargar": bool(TABLE_PARA_CARGAR),
             "tramites_marca": bool(TABLE_TRAMITES_MARCA),
+            "plantillas": bool(TABLE_PLANTILLAS),
             "turnos": bool(TABLE_TURNOS),
             "alertas": bool(TABLE_ALERTAS),
         },
@@ -399,6 +401,200 @@ _make_crud_endpoints("marcas-cargar", lambda: TABLE_PARA_CARGAR, "marcas_para_ca
 # ── Trámites accesorios (cesión, DJUM, renovación, cambio domicilio, etc.) ──
 
 _make_crud_endpoints("tramites", lambda: TABLE_TRAMITES_MARCA, "tramites")
+
+
+# ── Plantillas de Email ─────────────────────────────────────────────────────
+
+_make_crud_endpoints("plantillas", lambda: TABLE_PLANTILLAS, "plantillas")
+
+
+@router.post("/crm/plantillas/{plantilla_id}/render")
+def render_plantilla(plantilla_id: str, payload: dict):
+    """
+    Toma una plantilla y un dict de variables, retorna asunto + cuerpo merged.
+    Reemplaza {{variable}} con el valor del dict.
+
+    Body:
+      {
+        "variables": {
+          "nombre_cliente": "Pedro Sanchez",
+          "marca_cliente": "SENIT",
+          "marca_tercero": "WELLNESS CLINIC",
+          ...
+        }
+      }
+    """
+    import requests as rq
+    r = rq.get(f"{_airtable_url(TABLE_PLANTILLAS)}/{plantilla_id}", headers=_headers(), timeout=15)
+    if r.status_code != 200:
+        raise HTTPException(404, "Plantilla no encontrada")
+    plantilla = r.json().get("fields", {})
+    variables = payload.get("variables", {})
+
+    asunto = plantilla.get("Asunto", "")
+    cuerpo_html = plantilla.get("Cuerpo HTML", "")
+    cuerpo_texto = plantilla.get("Cuerpo Texto Plano", "")
+
+    # Reemplazar {{variables}}
+    for key, value in variables.items():
+        marker = "{{" + key + "}}"
+        asunto = asunto.replace(marker, str(value or ""))
+        cuerpo_html = cuerpo_html.replace(marker, str(value or ""))
+        cuerpo_texto = cuerpo_texto.replace(marker, str(value or ""))
+
+    return {
+        "plantilla_id": plantilla_id,
+        "plantilla_nombre": plantilla.get("Nombre Plantilla", ""),
+        "asunto_generado": asunto,
+        "cuerpo_html_generado": cuerpo_html,
+        "cuerpo_texto_generado": cuerpo_texto,
+        "variables_aplicadas": list(variables.keys()),
+    }
+
+
+@router.post("/crm/comunicaciones/crear-y-enviar")
+def crear_y_enviar_comunicacion(payload: dict):
+    """
+    Crea una Comunicación nueva, aplica plantilla, prepara email y opcionalmente lo envía.
+
+    Body:
+      {
+        "cliente_id": "rec...",
+        "marca_cliente_id": "rec..." (opcional, se autoresuelve por marca),
+        "plantilla_id": "rec...",
+        "variables": {
+          "fecha_publicacion": "15/04/2026",
+          "marca_tercero": "WELLNESS CLINIC",
+          "clase_tercero": "44",
+          "descripcion_tercero": "servicios médicos de salud y estética",
+          "marca_cliente": "ÉTOILE DE LA VIE WELLNESS CENTER",
+          "clase_cliente": "44",
+          "fecha_limite": "28 de abril de 2026",
+          "tasa_inpi": "36.000",
+          "honorarios": "250.000"
+        },
+        "enviar_email": true | false  (default false: solo guarda borrador)
+      }
+
+    Retorna: comunicacion creada con asunto + cuerpo renderizados + estado.
+    """
+    cliente_id = payload.get("cliente_id")
+    plantilla_id = payload.get("plantilla_id")
+    variables_input = payload.get("variables", {})
+    enviar = payload.get("enviar_email", False)
+
+    if not cliente_id or not plantilla_id:
+        raise HTTPException(400, "cliente_id y plantilla_id requeridos")
+
+    # Crear la comunicación primero
+    fields_comm = {
+        "Título": f"Comunicación oposición — {variables_input.get('marca_tercero', 'sin marca')}",
+        "Marca del Tercero": variables_input.get("marca_tercero", ""),
+        "Clase Tercero": str(variables_input.get("clase_tercero", "")),
+        "Acta Tercero": variables_input.get("acta_tercero", ""),
+        "Marca del Cliente": variables_input.get("marca_cliente", ""),
+        "Clase Cliente": str(variables_input.get("clase_cliente", "")),
+        "Estado": "Borrador",
+        "Cliente": [cliente_id],
+        "Plantilla Usada": [plantilla_id],
+    }
+    if payload.get("marca_cliente_id"):
+        fields_comm["Marca del Cliente Link"] = [payload["marca_cliente_id"]]
+
+    rec = _at_post(TABLE_COMUNICACIONES, fields_comm)
+    comunicacion_id = rec["id"]
+
+    # Aplicar plantilla
+    resultado = aplicar_plantilla_a_comunicacion(
+        comunicacion_id,
+        {"plantilla_id": plantilla_id, "variables_extra": variables_input}
+    )
+
+    # Si enviar_email=true, marcar como Enviada (mock — el envío SMTP real es feature futura)
+    if enviar:
+        _at_patch(TABLE_COMUNICACIONES, comunicacion_id, {
+            "Estado": "Enviada",
+            "Fecha Envío": __import__("datetime").date.today().isoformat(),
+        })
+        resultado["estado_envio"] = "Enviada (mock — SMTP pendiente de configurar)"
+    else:
+        resultado["estado_envio"] = "Guardada como borrador"
+
+    resultado["comunicacion_id"] = comunicacion_id
+    return resultado
+
+
+@router.post("/crm/comunicaciones/{comunicacion_id}/aplicar-plantilla")
+def aplicar_plantilla_a_comunicacion(comunicacion_id: str, payload: dict):
+    """
+    Aplica una plantilla a una comunicación existente:
+    - Toma datos de la comunicación + cliente + marca
+    - Renderiza la plantilla con esos datos
+    - Guarda asunto + cuerpo en la comunicación
+
+    Body: {"plantilla_id": "rec...", "variables_extra": {opcional}}
+    """
+    import requests as rq
+
+    plantilla_id = payload.get("plantilla_id")
+    if not plantilla_id:
+        raise HTTPException(400, "plantilla_id requerido")
+
+    # Cargar comunicación
+    r = rq.get(f"{_airtable_url(TABLE_COMUNICACIONES)}/{comunicacion_id}", headers=_headers(), timeout=15)
+    if r.status_code != 200:
+        raise HTTPException(404, "Comunicación no encontrada")
+    comm = r.json().get("fields", {})
+
+    # Cargar cliente linkeado
+    cliente_data = {}
+    cliente_links = comm.get("Cliente", [])
+    if cliente_links:
+        rc = rq.get(f"{_airtable_url(TABLE_CLIENTES)}/{cliente_links[0]}", headers=_headers(), timeout=15)
+        if rc.status_code == 200:
+            cliente_data = rc.json().get("fields", {})
+
+    # Construir variables auto desde la comunicación + cliente
+    variables = {
+        "nombre_cliente": cliente_data.get("Nombre Completo / Razón Social", ""),
+        "email_cliente": cliente_data.get("Email", ""),
+        "marca_cliente": comm.get("Marca del Cliente", ""),
+        "clase_cliente": comm.get("Clase Cliente", ""),
+        "marca_tercero": comm.get("Marca del Tercero", ""),
+        "clase_tercero": comm.get("Clase Tercero", ""),
+        "acta_tercero": comm.get("Acta Tercero", ""),
+        "fecha_limite": comm.get("Fecha Límite Decisión", ""),
+        "n_boletin": comm.get("N° Boletín INPI", ""),
+        "fecha_publicacion": comm.get("Fecha Publicación Boletín", ""),
+        "descripcion_tercero": comm.get("Descripción Tercero", "servicios de la clase mencionada"),
+        # Defaults del estudio (TODO: leer de tabla Estudio)
+        "nombre_estudio": "Estudio Demo Jurídico",
+        "telefono_estudio": "+54 11 4000-0000",
+        "email_estudio": "contacto@estudiodemo.com.ar",
+        "abogado_responsable": "Dra. María González",
+        "tasa_inpi": "36.000",
+        "honorarios": "250.000",
+    }
+    # Merge con variables_extra (overrides explícitos)
+    variables.update(payload.get("variables_extra", {}))
+
+    # Render
+    rendered = render_plantilla(plantilla_id, {"variables": variables})
+
+    # Guardar en la comunicación
+    update_payload = {
+        "Plantilla Usada": [plantilla_id],
+        "Asunto Generado": rendered["asunto_generado"],
+        "Cuerpo Generado": rendered["cuerpo_html_generado"],
+        "Email Destinatario": cliente_data.get("Email", ""),
+    }
+    _at_patch(TABLE_COMUNICACIONES, comunicacion_id, update_payload)
+
+    return {
+        **rendered,
+        "comunicacion_id": comunicacion_id,
+        "email_destinatario": cliente_data.get("Email", ""),
+    }
 
 
 # ── Turnos (Cal.com) ────────────────────────────────────────────────────────

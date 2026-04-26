@@ -485,6 +485,9 @@
       <div class="nav-item" onclick="nav('analisis', this)">
         <span class="nav-icon">🔍</span> Análisis Confundibilidad
       </div>
+      <div class="nav-item" onclick="nav('plantillas', this)">
+        <span class="nav-icon">✉️</span> Plantillas Email
+      </div>
       <div class="nav-item" onclick="nav('turnos', this)">
         <span class="nav-icon">📅</span> Agenda Turnos
       </div>
@@ -661,6 +664,18 @@
       <div id="analisisList"></div>
     </section>
 
+    <!-- ─── PLANTILLAS DE EMAIL ─── -->
+    <section id="panel-plantillas" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Plantillas de Email</div>
+          <div class="sh-sub">Notas estándar reutilizables para comunicaciones a clientes</div>
+        </div>
+        <button class="btn btn-primary" onclick="todoPendiente()">+ Nueva Plantilla</button>
+      </div>
+      <div id="plantillasList"></div>
+    </section>
+
     <!-- ─── TURNOS ─── -->
     <section id="panel-turnos" class="panel">
       <div class="sh">
@@ -674,6 +689,109 @@
 
   </main>
 </div>
+</div>
+
+<!-- MODAL — GENERAR COMUNICACIÓN -->
+<div id="modalGenerarComunicacion" class="modal-bg">
+  <div class="modal" style="max-width: 900px;">
+    <div class="modal-title">📧 Generar Comunicación de Oposición</div>
+    <div class="modal-sub">Buscá el cliente, completá los datos editables y enviá la nota automáticamente.</div>
+
+    <!-- Step 1: Buscador de cliente -->
+    <div class="form-row" style="position: relative;">
+      <label>🔍 Cliente destinatario *</label>
+      <input type="text" id="gc_buscarCliente" placeholder="Escribí nombre, razón social o DNI..." autocomplete="off" oninput="buscarClienteGen()">
+      <div id="gc_resultadosBusqueda" style="display:none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border-2); border-radius: 8px; box-shadow: var(--shadow-lg); z-index: 10; max-height: 240px; overflow-y: auto; margin-top: 4px;"></div>
+    </div>
+
+    <div id="gc_clienteSeleccionado" style="display:none; padding: 12px 14px; background: var(--green-light); border: 1px solid var(--green); border-radius: 9px; margin-bottom: 16px;">
+      <div style="font-size: 12px; color: var(--green-dark); font-weight: 600;">✓ Cliente seleccionado:</div>
+      <div id="gc_clienteInfo" style="font-size: 14px; color: var(--text); margin-top: 4px;"></div>
+    </div>
+
+    <!-- Step 2: Campos editables -->
+    <div id="gc_camposForm" style="display:none;">
+      <div style="background: var(--accent-light); padding: 12px 14px; border-radius: 9px; margin: 16px 0; font-size: 12px; color: var(--accent-hover);">
+        ✏️ <strong>Estos son los únicos campos que se editan</strong> — el resto del texto de la nota es fijo (texto legal del estudio).
+      </div>
+
+      <div class="pizarra-section-label">📝 Primer párrafo (datos de la marca del tercero)</div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Fecha publicación boletín</label>
+          <input type="text" id="gc_fechaPublicacion" placeholder="15/04/2026" oninput="actualizarPreviewGen()">
+        </div>
+        <div class="form-row">
+          <label>Marca del tercero</label>
+          <input type="text" id="gc_marcaTercero" placeholder="WELLNESS CLINIC" oninput="actualizarPreviewGen()">
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Clase tercero</label>
+          <input type="text" id="gc_claseTercero" placeholder="44" oninput="actualizarPreviewGen()">
+        </div>
+        <div class="form-row">
+          <label>Acta tercero (opcional)</label>
+          <input type="text" id="gc_actaTercero" placeholder="4684370">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Descripción del servicio/producto del tercero</label>
+        <input type="text" id="gc_descripcionTercero" placeholder="servicios médicos de salud y estética" oninput="actualizarPreviewGen()">
+      </div>
+
+      <div class="pizarra-section-label" style="margin-top: 18px;">🛡️ Segundo párrafo (marca del cliente a defender)</div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Marca del cliente</label>
+          <input type="text" id="gc_marcaCliente" placeholder="ÉTOILE DE LA VIE WELLNESS CENTER" oninput="actualizarPreviewGen()">
+        </div>
+        <div class="form-row">
+          <label>Clase cliente</label>
+          <input type="text" id="gc_claseCliente" placeholder="44" oninput="actualizarPreviewGen()">
+        </div>
+      </div>
+
+      <div class="pizarra-section-label" style="margin-top: 18px;">💰 Sección Costos</div>
+      <div class="form-row">
+        <label>Fecha límite para oponerse</label>
+        <input type="text" id="gc_fechaLimite" placeholder="28 de abril de 2026" oninput="actualizarPreviewGen()">
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Tasa oficial INPI ($)</label>
+          <input type="text" id="gc_tasaInpi" placeholder="36.000" oninput="actualizarPreviewGen()">
+        </div>
+        <div class="form-row">
+          <label>Honorarios profesionales ($)</label>
+          <input type="text" id="gc_honorarios" placeholder="250.000" oninput="actualizarPreviewGen()">
+        </div>
+      </div>
+
+      <!-- Preview en vivo (Vista Previa del Correo — estilo Rawson) -->
+      <div class="pizarra-section-label" style="margin-top: 22px; display: flex; justify-content: space-between; align-items: center;">
+        <span>📄 Vista Previa del Correo</span>
+        <button class="btn btn-sm" onclick="togglePreviewGen()">Mostrar/Ocultar preview</button>
+      </div>
+      <div id="gc_previewWrap" style="display:block; background: #FAFAFA; border: 1px solid var(--border-2); border-radius: 12px; padding: 26px 28px; max-height: 480px; overflow-y: auto; box-shadow: var(--shadow-sm);">
+        <div style="font-size: 13px; color: var(--text-2); margin-bottom: 6px;"><strong style="color: var(--text);">De:</strong> <span id="gc_emailDe">adrian@estudiodemo.com.ar</span></div>
+        <div style="font-size: 13px; color: var(--text-2); margin-bottom: 6px;"><strong style="color: var(--text);">Para:</strong> <span id="gc_emailDestino">—</span></div>
+        <div style="font-size: 13px; color: var(--text-2); margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);"><strong style="color: var(--text);">Asunto:</strong> Notificación de oposición de marca — Estudio Demo</div>
+        <div id="gc_previewContent" style="font-size: 13px; line-height: 1.65; color: var(--text); font-family: 'Inter', sans-serif;"></div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 22px;">
+        <button class="btn" onclick="closeModal('modalGenerarComunicacion')">Cancelar</button>
+        <button class="btn" onclick="enviarComunicacion(false)">💾 Guardar borrador</button>
+        <button class="btn btn-primary" onclick="enviarComunicacion(true)" style="font-size: 14px; padding: 11px 22px;">📧 Enviar al cliente</button>
+      </div>
+    </div>
+
+    <div id="gc_sinCliente" style="text-align: center; padding: 30px; color: var(--text-2); font-size: 13px;">
+      👆 Buscá un cliente arriba para continuar
+    </div>
+  </div>
 </div>
 
 <script>
@@ -709,7 +827,7 @@ async function api(path, opts = {}) {
 let DATA = {
   abogados: [], clientes: [], leads: [], propuestas: [], marcas: [],
   oposiciones: [], comunicaciones: [], analisis: [], cargar: [], turnos: [],
-  tramites: [],
+  tramites: [], plantillas: [],
   dashboard: {},
 };
 
@@ -742,7 +860,7 @@ if (sessionStorage.getItem('juridico_pin') === '1234') {
 async function cargarTodo() {
   const [
     health, dashboard, abogados, clientes, leads, propuestas, marcas,
-    oposiciones, comunicaciones, analisis, cargar, turnos, tramites
+    oposiciones, comunicaciones, analisis, cargar, turnos, tramites, plantillas
   ] = await Promise.all([
     api('/crm/health'),
     api('/crm/dashboard'),
@@ -757,6 +875,7 @@ async function cargarTodo() {
     api('/crm/marcas-cargar'),
     api('/crm/turnos'),
     api('/crm/tramites'),
+    api('/crm/plantillas'),
   ]);
 
   DATA.dashboard = dashboard || {};
@@ -771,6 +890,7 @@ async function cargarTodo() {
   DATA.cargar = cargar?.marcas_para_cargar || [];
   DATA.turnos = turnos?.turnos || [];
   DATA.tramites = tramites?.tramites || [];
+  DATA.plantillas = plantillas?.plantillas || [];
 
   renderAll();
 }
@@ -785,8 +905,38 @@ function renderAll() {
   renderOposiciones();
   renderCargar();
   renderAnalisis();
+  renderPlantillas();
   renderTurnos();
   updateBadges();
+}
+
+function renderPlantillas() {
+  const cont = document.getElementById('plantillasList');
+  if (!cont) return;
+  if (!DATA.plantillas.length) { cont.innerHTML = emptyState('✉️','Sin plantillas','Cargá la nota estándar del estudio'); return; }
+  cont.innerHTML = DATA.plantillas.map(p => {
+    const cuerpo = (p['Cuerpo HTML'] || '').replace(/<[^>]*>/g, ' ').substring(0, 220) + '...';
+    const numVars = (p['Cuerpo HTML'] || '').match(/\{\{\w+\}\}/g)?.length || 0;
+    return `
+      <div class="item-card">
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-title">${p['Nombre Plantilla']} ${badgeEstado(p['Tipo'])} ${p['Activa'] ? '<span class="badge b-aceptada">✓ Activa</span>' : '<span class="badge b-borrador">Inactiva</span>'}</div>
+            <div class="item-meta">
+              <strong>Asunto:</strong> ${p['Asunto'] || '—'}<br>
+              <strong>Variables:</strong> ${numVars} campos editables ({{...}})
+              <div style="margin-top: 8px; font-style: italic; color: var(--text-3); font-size: 12px; line-height: 1.5;">${cuerpo}</div>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="btn btn-sm" onclick="todoPendiente()">👁️ Ver completa</button>
+            <button class="btn btn-sm" onclick="todoPendiente()">✏️ Editar</button>
+            ${btnIcon('🗑️','Eliminar','todoPendiente()')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function updateBadges() {
@@ -1173,27 +1323,43 @@ function renderCargar() {
 
 function renderAnalisis() {
   const cont = document.getElementById('analisisList');
-  if (!DATA.analisis.length) { cont.innerHTML = emptyState('🔍','Sin análisis','Pegá marcas del Boletín INPI para analizar conflictos'); return; }
-  cont.innerHTML = DATA.analisis.map(a => `
+  if (!DATA.analisis.length) { cont.innerHTML = emptyState('🔍','Sin análisis','Subí el Excel del Boletín INPI los miércoles/jueves'); return; }
+  cont.innerHTML = DATA.analisis.map(a => {
+    const tieneArchivo = a['Archivo Excel Boletín'] && a['Archivo Excel Boletín'].length;
+    return `
     <div class="pizarra-card" style="margin-bottom: 20px;">
       <div class="pizarra-header">
         <div>
           <div class="item-title">${a['Título']} ${badgeEstado(a['Estado'])}</div>
-          <div class="item-meta">${a['Fecha Análisis'] ? `Fecha: ${fmtFecha(a['Fecha Análisis'])}` : ''}${a['N° Boletín INPI'] ? ` · Boletín ${a['N° Boletín INPI']}` : ''}</div>
+          <div class="item-meta">
+            ${a['Fecha Análisis'] ? `📅 Fecha: ${fmtFecha(a['Fecha Análisis'])}` : ''}
+            ${a['N° Boletín INPI'] ? ` · 📰 Boletín ${a['N° Boletín INPI']}` : ''}
+            ${a['Día Semana'] ? ` · ${a['Día Semana']}` : ''}
+          </div>
         </div>
         <div class="item-actions">
-          <button class="btn btn-sm">Reemplazar archivo</button>
-          <button class="btn btn-sm">Ver archivo</button>
+          <button class="btn btn-sm" onclick="todoPendiente()">📤 ${tieneArchivo ? 'Reemplazar Excel' : 'Subir Excel Boletín'}</button>
+          ${tieneArchivo ? '<button class="btn btn-sm" onclick="todoPendiente()">📥 Ver archivo</button>' : ''}
           ${btnIcon('🗑️','Eliminar','todoPendiente()')}
         </div>
       </div>
       <div class="pizarra-section-label">Análisis de Confundibilidad</div>
+      <div class="pizarra-section-sub">Los socios escriben aquí las marcas similares que detectan en el Boletín del INPI (nombre, clase, limitaciones).</div>
       <textarea class="pizarra-textarea" readonly>${a['Análisis de Confundibilidad'] || ''}</textarea>
+
       <div class="pizarra-section-label" style="margin-top: 18px;">Marcas a Comunicar</div>
-      <div class="pizarra-section-sub">El socio que decida qué marcas comunicar puede pegarlas aquí para que todos lo vean.</div>
+      <div class="pizarra-section-sub">El dueño del estudio decide qué marcas finalmente se comunican a los clientes para que decidan oponerse.</div>
       <textarea class="pizarra-textarea" readonly>${a['Marcas a Comunicar'] || ''}</textarea>
+
+      <div style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; padding: 14px; background: var(--accent-light); border-radius: 10px; align-items: center; justify-content: space-between;">
+        <div style="font-size: 13px; color: var(--accent-hover); font-weight: 600;">
+          🚀 ¿Listo para enviar la nota a los clientes?
+        </div>
+        <button class="btn btn-primary" onclick="abrirGenerarComunicacion('${a.id}')">📧 Generar Comunicación al cliente</button>
+      </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function renderTurnos() {
@@ -1229,6 +1395,188 @@ function todoPendiente() {
 
 function emptyState(icon, title, sub) {
   return `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-sub">${sub}</div></div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   GENERAR COMUNICACIÓN (modal)
+   ════════════════════════════════════════════════════════════════ */
+let gcClienteSeleccionado = null;
+let gcAnalisisOrigenId = null;
+let gcPlantillaActiva = null;
+
+function abrirGenerarComunicacion(analisisId) {
+  gcAnalisisOrigenId = analisisId;
+  gcClienteSeleccionado = null;
+  // Buscar plantilla activa de Comunicación de Oposición
+  gcPlantillaActiva = DATA.plantillas.find(p =>
+    p['Tipo'] === 'Comunicación de Oposición' && p['Activa']
+  ) || DATA.plantillas[0];
+
+  if (!gcPlantillaActiva) {
+    alert('No hay plantilla de Comunicación de Oposición configurada. Andá a "Plantillas de Email" para crear una.');
+    return;
+  }
+
+  // Reset campos
+  ['gc_buscarCliente','gc_fechaPublicacion','gc_marcaTercero','gc_claseTercero',
+   'gc_actaTercero','gc_descripcionTercero','gc_marcaCliente','gc_claseCliente',
+   'gc_fechaLimite','gc_tasaInpi','gc_honorarios'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  // Defaults sugeridos
+  document.getElementById('gc_tasaInpi').value = '36.000';
+  document.getElementById('gc_honorarios').value = '250.000';
+
+  document.getElementById('gc_clienteSeleccionado').style.display = 'none';
+  document.getElementById('gc_camposForm').style.display = 'none';
+  document.getElementById('gc_sinCliente').style.display = 'block';
+  document.getElementById('gc_previewWrap').style.display = 'none';
+  document.getElementById('gc_resultadosBusqueda').style.display = 'none';
+
+  document.getElementById('modalGenerarComunicacion').classList.add('active');
+}
+
+function buscarClienteGen() {
+  const q = document.getElementById('gc_buscarCliente').value.trim().toLowerCase();
+  const cont = document.getElementById('gc_resultadosBusqueda');
+  if (q.length < 2) {
+    cont.style.display = 'none';
+    return;
+  }
+  const resultados = DATA.clientes.filter(c => {
+    const nombre = (c['Nombre Completo / Razón Social'] || '').toLowerCase();
+    const dni = (c['DNI / CUIT'] || '').toLowerCase();
+    const email = (c['Email'] || '').toLowerCase();
+    return nombre.includes(q) || dni.includes(q) || email.includes(q);
+  }).slice(0, 8);
+
+  if (!resultados.length) {
+    cont.innerHTML = '<div style="padding: 14px; color: var(--text-2); font-size: 13px;">Sin resultados. Recordá: solo se envían a clientes fijos del estudio.</div>';
+    cont.style.display = 'block';
+    return;
+  }
+  cont.innerHTML = resultados.map(c => `
+    <div style="padding: 12px 14px; cursor: pointer; border-bottom: 1px solid var(--border);"
+         onmouseover="this.style.background='var(--surface-2)'"
+         onmouseout="this.style.background='white'"
+         onclick="seleccionarClienteGen('${c.id}')">
+      <div style="font-weight: 600; font-size: 14px;">${c['Nombre Completo / Razón Social']}</div>
+      <div style="font-size: 12px; color: var(--text-2); margin-top: 2px;">
+        ${c['Tipo'] || ''} · ${c['DNI / CUIT'] || 's/dni'} · ${c['Email'] || '<span style="color:var(--red)">⚠️ sin email</span>'}
+      </div>
+    </div>
+  `).join('');
+  cont.style.display = 'block';
+}
+
+function seleccionarClienteGen(clienteId) {
+  gcClienteSeleccionado = findById(DATA.clientes, clienteId);
+  if (!gcClienteSeleccionado) return;
+  const email = gcClienteSeleccionado['Email'];
+  const sinEmail = !email;
+
+  document.getElementById('gc_clienteInfo').innerHTML = `
+    <strong>${gcClienteSeleccionado['Nombre Completo / Razón Social']}</strong><br>
+    ${gcClienteSeleccionado['Tipo'] || ''} · ${gcClienteSeleccionado['DNI / CUIT'] || 's/dni'}<br>
+    📧 ${sinEmail ? '<span style="color:var(--red); font-weight:600;">⚠️ Cliente sin email — no se podrá enviar</span>' : email}
+  `;
+
+  // Auto-precargar marca del cliente desde sus marcas registradas
+  const marcasCliente = DATA.marcas.filter(m =>
+    m['Cliente Titular'] && m['Cliente Titular'].includes(clienteId)
+  );
+  if (marcasCliente.length === 1) {
+    document.getElementById('gc_marcaCliente').value = marcasCliente[0]['Denominación'] || '';
+    document.getElementById('gc_claseCliente').value = marcasCliente[0]['Clases Niza'] || '';
+  }
+
+  document.getElementById('gc_clienteSeleccionado').style.display = 'block';
+  document.getElementById('gc_camposForm').style.display = 'block';
+  document.getElementById('gc_sinCliente').style.display = 'none';
+  document.getElementById('gc_resultadosBusqueda').style.display = 'none';
+  document.getElementById('gc_buscarCliente').value = gcClienteSeleccionado['Nombre Completo / Razón Social'];
+  document.getElementById('gc_emailDestino').textContent = email || '⚠️ sin email';
+
+  actualizarPreviewGen();
+}
+
+function togglePreviewGen() {
+  const w = document.getElementById('gc_previewWrap');
+  w.style.display = w.style.display === 'none' ? 'block' : 'none';
+  if (w.style.display === 'block') actualizarPreviewGen();
+}
+
+function obtenerVariablesGen() {
+  return {
+    nombre_cliente: gcClienteSeleccionado ? gcClienteSeleccionado['Nombre Completo / Razón Social'] : '...',
+    fecha_publicacion: document.getElementById('gc_fechaPublicacion').value || '...',
+    marca_tercero: document.getElementById('gc_marcaTercero').value || '...',
+    clase_tercero: document.getElementById('gc_claseTercero').value || '...',
+    acta_tercero: document.getElementById('gc_actaTercero').value || '',
+    descripcion_tercero: document.getElementById('gc_descripcionTercero').value || '...',
+    marca_cliente: document.getElementById('gc_marcaCliente').value || '...',
+    clase_cliente: document.getElementById('gc_claseCliente').value || '...',
+    fecha_limite: document.getElementById('gc_fechaLimite').value || '...',
+    tasa_inpi: document.getElementById('gc_tasaInpi').value || '...',
+    honorarios: document.getElementById('gc_honorarios').value || '...',
+  };
+}
+
+function actualizarPreviewGen() {
+  if (!gcPlantillaActiva) return;
+  const vars = obtenerVariablesGen();
+  let cuerpo = gcPlantillaActiva['Cuerpo HTML'] || '';
+  Object.keys(vars).forEach(k => {
+    cuerpo = cuerpo.split('{{' + k + '}}').join(`<span style="background:#FFF3CD; padding:1px 4px; border-radius:3px; font-weight:600;">${vars[k]}</span>`);
+  });
+  document.getElementById('gc_previewContent').innerHTML = cuerpo;
+}
+
+async function enviarComunicacion(enviar) {
+  if (!gcClienteSeleccionado) { alert('Elegí un cliente primero'); return; }
+  if (!gcPlantillaActiva) { alert('No hay plantilla activa'); return; }
+
+  const vars = obtenerVariablesGen();
+
+  // Validación mínima
+  if (vars.marca_tercero === '...' || vars.marca_cliente === '...') {
+    alert('Completá al menos: marca tercero y marca cliente');
+    return;
+  }
+  if (enviar && !gcClienteSeleccionado['Email']) {
+    alert('⚠️ El cliente no tiene email cargado. Cargalo en la sección Clientes antes de enviar.');
+    return;
+  }
+
+  const payload = {
+    cliente_id: gcClienteSeleccionado.id,
+    plantilla_id: gcPlantillaActiva.id,
+    variables: vars,
+    enviar_email: !!enviar,
+  };
+
+  const r = await api('/crm/comunicaciones/crear-y-enviar', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+  if (!r) {
+    alert('Error al guardar la comunicación. Revisá la consola.');
+    return;
+  }
+
+  closeModal('modalGenerarComunicacion');
+  alert(enviar
+    ? `✅ Comunicación enviada a ${gcClienteSeleccionado['Nombre Completo / Razón Social']}\n📧 ${gcClienteSeleccionado['Email']}\n\n(Email mock — SMTP real pendiente de configurar)`
+    : `💾 Borrador guardado en Comunicaciones de Oposición.`
+  );
+
+  // Recargar comunicaciones
+  const comm = await api('/crm/comunicaciones');
+  DATA.comunicaciones = comm?.comunicaciones || [];
+  renderComunicaciones();
+  updateBadges();
 }
 
 // Inicializar si ya hay sesión
