@@ -1238,7 +1238,8 @@ async function pasarLeadAPropuesta(leadId) {
     'Clases Niza': l['Clase Niza Estimada'] || '',
     'Descripción Servicio/Producto': l['BANT — Necesidad'] || l['Resumen Conversación'] || '',
     'Estado': 'Borrador',
-    'Notas Internas': `Lead origen: ${l['Nombre']} · ${l['Email'] || 's/email'} · ${l['Teléfono WhatsApp'] || 's/tel'}\nServicio: ${l['Servicio Consultado'] || '—'}\nScore BANT: ${l['Score'] || '—'}`,
+    'Notas': `Lead origen: ${l['Nombre']} · ${l['Email'] || 's/email'} · ${l['Teléfono WhatsApp'] || 's/tel'}\nServicio: ${l['Servicio Consultado'] || '—'}\nScore BANT: ${l['Score'] || '—'}`,
+    'Lead Origen': [leadId],
   };
   const nuevaProp = await api('/crm/propuestas', {
     method: 'POST',
@@ -1351,7 +1352,7 @@ function renderPropuestas() {
               ${p['Descripción Servicio/Producto'] || ''}
               ${p['Cotización (ARS)'] ? `<br>💰 Cotización: $${parseInt(p['Cotización (ARS)']).toLocaleString('es-AR')}` : ''}
               ${fechas.length ? '<br>' + fechas.join(' · ') : ''}
-              ${p['Notas Internas'] ? `<br>📝 <span style="font-size:12px; color:var(--text-2);">${p['Notas Internas'].split('\\n')[0]}</span>` : ''}
+              ${p['Notas'] ? `<br>📝 <span style="font-size:12px; color:var(--text-2);">${p['Notas'].split('\\n')[0]}</span>` : ''}
             </div>
           </div>
           <div class="item-actions">
