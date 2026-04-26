@@ -794,6 +794,57 @@
   </div>
 </div>
 
+<!-- MODAL — COMUNICACIÓN MARCA (Presentación / Publicación Boletín) -->
+<div id="modalComMarca" class="modal-bg">
+  <div class="modal" style="max-width: 720px;">
+    <div class="modal-header">
+      <h3 id="cm_titulo" class="modal-title">📧 Comunicación de Presentación de Marca Nueva</h3>
+      <button class="modal-close" onclick="closeModal('modalComMarca')">✕</button>
+    </div>
+
+    <div style="padding: 16px 22px; background: var(--surface-2); border-radius: 10px; margin-bottom: 18px;">
+      <div id="cm_clienteInfo" style="font-size: 14px; color: var(--text); line-height: 1.6;"></div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px;">
+      <div class="form-group">
+        <label class="form-label" id="cm_fechaLabel">Fecha</label>
+        <input id="cm_fecha" class="form-control" placeholder="ej: 26/04/2026" oninput="cmActualizarPreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Marca del cliente</label>
+        <input id="cm_marcaCliente" class="form-control" oninput="cmActualizarPreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Clase/s NIZA</label>
+        <input id="cm_clasesNiza" class="form-control" placeholder="ej: 35, 41" oninput="cmActualizarPreview()">
+      </div>
+      <div class="form-group" id="cm_actaWrap">
+        <label class="form-label">N° de Acta INPI</label>
+        <input id="cm_numeroActa" class="form-control" placeholder="ej: 4612345" oninput="cmActualizarPreview()">
+      </div>
+      <div class="form-group" id="cm_boletinWrap" style="display:none;">
+        <label class="form-label">N° Boletín INPI</label>
+        <input id="cm_boletin" class="form-control" placeholder="ej: 4892" oninput="cmActualizarPreview()">
+      </div>
+    </div>
+
+    <div style="background: white; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-top: 14px;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: 700; margin-bottom: 10px;">Vista previa del correo</div>
+      <div style="font-size: 13px; color: var(--text-2); margin-bottom: 4px;"><strong style="color: var(--text);">De:</strong> adrian@estudiodemo.com.ar</div>
+      <div style="font-size: 13px; color: var(--text-2); margin-bottom: 4px;"><strong style="color: var(--text);">Para:</strong> <span id="cm_emailDestino">—</span></div>
+      <div style="font-size: 13px; color: var(--text-2); margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border);"><strong style="color: var(--text);">Asunto:</strong> <span id="cm_asuntoPreview">—</span></div>
+      <div id="cm_previewContent" style="font-size: 13px; line-height: 1.65; color: var(--text); font-family: 'Inter', sans-serif; max-height: 320px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top: 22px;">
+      <button class="btn" onclick="closeModal('modalComMarca')">Cancelar</button>
+      <button class="btn" onclick="cmEnviar(false)">💾 Guardar borrador</button>
+      <button class="btn btn-primary" onclick="cmEnviar(true)" style="font-size: 14px; padding: 11px 22px;">📧 Enviar al cliente</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════════════════════════════
    API
@@ -1108,10 +1159,24 @@ function renderPropuestas() {
   if (!DATA.propuestas.length) { cont.innerHTML = emptyState('📄','No hay propuestas','Las propuestas que envíes aparecerán acá'); return; }
   cont.innerHTML = DATA.propuestas.map(p => {
     const archivo = p['Archivo Propuesta'] && p['Archivo Propuesta'].length ? archivoBadge() : '';
-    const reemplazar = p['Estado'] === 'Aceptada' ? `<button class="btn btn-sm">Reemplazar</button>` : '';
     const fechas = [];
     if (p['Fecha Envío']) fechas.push(`📤 <strong>Enviada:</strong> ${fmtFecha(p['Fecha Envío'])}`);
     if (p['Fecha Aceptación']) fechas.push(`✅ <strong>Aceptada:</strong> ${fmtFecha(p['Fecha Aceptación'])}`);
+    if (p['Fecha Rechazo']) fechas.push(`❌ <strong>Rechazada:</strong> ${fmtFecha(p['Fecha Rechazo'])}`);
+
+    // Botones de decisión solo si está Pendiente o Enviada
+    const esDecidible = ['Pendiente','Enviada','Borrador'].includes(p['Estado']);
+    const botonesDecision = esDecidible ? `
+      <div style="display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
+        <button class="btn btn-sm" style="background:#10b981; color:white; border-color:#10b981; flex:1;"
+                onclick="aceptarPropuesta('${p.id}')">✅ Aceptada</button>
+        <button class="btn btn-sm" style="background:#ef4444; color:white; border-color:#ef4444; flex:1;"
+                onclick="rechazarPropuesta('${p.id}')">❌ No aceptada</button>
+      </div>
+    ` : '';
+
+    const reemplazar = p['Estado'] === 'Aceptada' ? `<button class="btn btn-sm" onclick="todoPendiente()">Reemplazar</button>` : '';
+
     return `
       <div class="item-card">
         <div class="item-row">
@@ -1130,20 +1195,114 @@ function renderPropuestas() {
             ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
+        ${botonesDecision}
       </div>
     `;
   }).join('');
 }
 
+async function aceptarPropuesta(propuestaId) {
+  const p = findById(DATA.propuestas, propuestaId);
+  if (!p) return;
+  if (!confirm(`¿Confirmás aceptar la propuesta "${p['Marca']}"?\n\nSe va a:\n1. Marcar la propuesta como Aceptada\n2. Crear automáticamente la marca en "Marcas Nuevas → Para Presentar en INPI"`)) return;
+
+  // 1. Actualizar propuesta a Aceptada
+  const hoy = new Date().toISOString().split('T')[0];
+  await api(`/crm/propuestas/${propuestaId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ 'Estado': 'Aceptada', 'Fecha Aceptación': hoy }),
+  });
+
+  // 2. Crear marca asociada en estado "Para presentar"
+  const fieldsMarca = {
+    'Denominación': p['Marca'],
+    'Clases Niza': p['Clases Niza'] || '',
+    'Descripción Productos/Servicios': p['Descripción Servicio/Producto'] || '',
+    'Estado': 'Para Presentar',
+    'Cliente Titular': p['Cliente'] || [],
+    'Última Novedad': `Propuesta aceptada ${fmtFecha(hoy)} — pendiente presentación INPI`,
+  };
+  const nueva = await api('/crm/marcas', {
+    method: 'POST',
+    body: JSON.stringify(fieldsMarca),
+  });
+
+  // Recargar
+  const [pr, ma] = await Promise.all([api('/crm/propuestas'), api('/crm/marcas')]);
+  DATA.propuestas = pr?.propuestas || [];
+  DATA.marcas = ma?.marcas || [];
+  renderPropuestas();
+  renderMarcas();
+  updateBadges();
+
+  alert(`✅ Propuesta aceptada.\n📋 Marca "${p['Marca']}" creada en Marcas Nuevas → "Para Presentar en INPI".`);
+  switchPanel('marcas');
+}
+
+async function rechazarPropuesta(propuestaId) {
+  const p = findById(DATA.propuestas, propuestaId);
+  if (!p) return;
+  const motivo = prompt(`¿Motivo del rechazo de "${p['Marca']}"? (opcional)`);
+  if (motivo === null) return;
+  const hoy = new Date().toISOString().split('T')[0];
+  await api(`/crm/propuestas/${propuestaId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      'Estado': 'Rechazada',
+      'Fecha Rechazo': hoy,
+      'Motivo Rechazo': motivo || '',
+    }),
+  });
+  const pr = await api('/crm/propuestas');
+  DATA.propuestas = pr?.propuestas || [];
+  renderPropuestas();
+  updateBadges();
+  alert(`❌ Propuesta marcada como No Aceptada.`);
+}
+
 function renderMarcas() {
   const cont = document.getElementById('marcasList');
   if (!DATA.marcas.length) { cont.innerHTML = emptyState('📖','Sin marcas','Las marcas en trámite aparecerán acá'); return; }
-  cont.innerHTML = DATA.marcas.map(m => {
+
+  // Separar en 2 listas
+  const paraPresentar = DATA.marcas.filter(m => m['Estado'] === 'Para Presentar');
+  const yaPresentadas = DATA.marcas.filter(m => m['Estado'] !== 'Para Presentar');
+
+  const renderCard = (m, esYaPresentada) => {
     const fechas = [];
-    if (m['Fecha Solicitud']) fechas.push(`📤 <strong>Solicitada:</strong> ${fmtFecha(m['Fecha Solicitud'])}`);
+    if (m['Fecha Solicitud']) fechas.push(`📤 <strong>Presentada:</strong> ${fmtFecha(m['Fecha Solicitud'])}`);
     if (m['Fecha Publicación Boletín']) fechas.push(`📰 <strong>Publicada:</strong> ${fmtFecha(m['Fecha Publicación Boletín'])}`);
     if (m['Fecha Concesión']) fechas.push(`✅ <strong>Concedida:</strong> ${fmtFecha(m['Fecha Concesión'])}`);
     if (m['Fecha Vencimiento']) fechas.push(`⏰ <strong>Vence:</strong> ${fmtFecha(m['Fecha Vencimiento'])}`);
+
+    let botonesAccion = '';
+    if (!esYaPresentada) {
+      // Para Presentar → botón "Marcar como Presentada"
+      botonesAccion = `
+        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
+          <button class="btn btn-sm btn-primary" onclick="marcarComoPresentada('${m.id}')">
+            📤 Marcar como Presentada en INPI
+          </button>
+        </div>
+      `;
+    } else {
+      // Ya Presentada → botón "Enviar mail al cliente"
+      const yaPublicada = !!m['Fecha Publicación Boletín'];
+      botonesAccion = `
+        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-primary" onclick="abrirComMarca('${m.id}','presentacion')">
+            📧 Enviar mail "Presentación de Marca"
+          </button>
+          ${yaPublicada ? `
+            <button class="btn btn-sm" style="background:var(--accent-light); border-color:var(--accent);"
+                    onclick="abrirComMarca('${m.id}','publicacion')">
+              📰 Enviar mail "Publicación en Boletín"
+            </button>
+          ` : ''}
+        </div>
+      `;
+    }
+
     return `
       <div class="item-card">
         <div class="item-row">
@@ -1163,9 +1322,57 @@ function renderMarcas() {
             ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
+        ${botonesAccion}
       </div>
     `;
-  }).join('');
+  };
+
+  cont.innerHTML = `
+    <div style="margin-bottom: 28px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:16px; color:var(--text-1);">📋 Para Presentar en INPI</h3>
+        <span class="pill" style="background:#fff3cd; color:#856404; border-color:#ffeaa7;">${paraPresentar.length}</span>
+      </div>
+      <div style="font-size:13px; color:var(--text-2); margin-bottom:14px;">
+        Marcas con propuesta aceptada que aún no fueron presentadas formalmente al organismo.
+      </div>
+      ${paraPresentar.length
+        ? paraPresentar.map(m => renderCard(m, false)).join('')
+        : emptyState('🟡','Ninguna pendiente','Cuando aceptes una propuesta aparece acá automáticamente')}
+    </div>
+
+    <div style="margin-top: 32px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:16px; color:var(--text-1);">✅ Ya Presentadas</h3>
+        <span class="pill" style="background:#d1fae5; color:#065f46; border-color:#a7f3d0;">${yaPresentadas.length}</span>
+      </div>
+      <div style="font-size:13px; color:var(--text-2); margin-bottom:14px;">
+        Marcas presentadas en INPI con sus respectivas fechas. Desde acá enviás los mails al cliente.
+      </div>
+      ${yaPresentadas.length
+        ? yaPresentadas.map(m => renderCard(m, true)).join('')
+        : emptyState('📖','Sin presentaciones aún','Cuando marques una como "Presentada en INPI" aparece acá')}
+    </div>
+  `;
+}
+
+async function marcarComoPresentada(marcaId) {
+  const m = findById(DATA.marcas, marcaId);
+  if (!m) return;
+  const acta = prompt(`Marcar "${m['Denominación']}" como Presentada en INPI.\n\n¿N° de Acta INPI? (opcional, podés cargarlo después)`);
+  if (acta === null) return;
+  const hoy = new Date().toISOString().split('T')[0];
+  const fields = {
+    'Estado': 'En trámite',
+    'Fecha Solicitud': hoy,
+    'Última Novedad': `Presentada en INPI el ${fmtFecha(hoy)}`,
+  };
+  if (acta) fields['N° Acta'] = acta;
+  await api(`/crm/marcas/${marcaId}`, { method: 'PATCH', body: JSON.stringify(fields) });
+  const ma = await api('/crm/marcas');
+  DATA.marcas = ma?.marcas || [];
+  renderMarcas();
+  alert(`✅ "${m['Denominación']}" marcada como Presentada.\n\nAhora podés enviar el mail al cliente desde "Ya Presentadas".`);
 }
 
 function renderComunicaciones() {
@@ -1390,7 +1597,7 @@ function renderTurnos() {
 
 
 function todoPendiente() {
-  alert('Funcionalidad pendiente — versión final tendrá CRUD completo conectado.');
+  alert('Próximamente disponible. Esta acción se está desarrollando.');
 }
 
 function emptyState(icon, title, sub) {
@@ -1573,6 +1780,142 @@ async function enviarComunicacion(enviar) {
   );
 
   // Recargar comunicaciones
+  const comm = await api('/crm/comunicaciones');
+  DATA.comunicaciones = comm?.comunicaciones || [];
+  renderComunicaciones();
+  updateBadges();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   GENERAR COMUNICACIÓN MARCA (Presentación / Publicación Boletín)
+   ════════════════════════════════════════════════════════════════ */
+let cmMarcaSeleccionada = null;
+let cmPlantillaActiva = null;
+let cmTipoFlujo = 'presentacion'; // 'presentacion' | 'publicacion'
+
+function abrirComMarca(marcaId, tipo) {
+  cmMarcaSeleccionada = findById(DATA.marcas, marcaId);
+  if (!cmMarcaSeleccionada) { alert('Marca no encontrada'); return; }
+  cmTipoFlujo = tipo || 'presentacion';
+
+  // Buscar plantilla según tipo
+  const tipoPlantilla = cmTipoFlujo === 'publicacion'
+    ? 'Comunicación Publicación Boletín'
+    : 'Comunicación Presentación Marca Nueva';
+  cmPlantillaActiva = DATA.plantillas.find(p => p['Tipo'] === tipoPlantilla && p['Activa']);
+
+  if (!cmPlantillaActiva) {
+    alert(`No hay plantilla activa de tipo "${tipoPlantilla}" en Plantillas Email.`);
+    return;
+  }
+
+  // Resolver cliente desde la marca
+  const clienteIds = cmMarcaSeleccionada['Cliente Titular'] || [];
+  const cliente = clienteIds.length ? findById(DATA.clientes, clienteIds[0]) : null;
+  if (!cliente) { alert('Esta marca no tiene cliente titular asignado.'); return; }
+
+  // Precargar campos
+  document.getElementById('cm_titulo').textContent = cmTipoFlujo === 'publicacion'
+    ? '📰 Comunicación de Publicación en Boletín'
+    : '📧 Comunicación de Presentación de Marca Nueva';
+
+  document.getElementById('cm_clienteInfo').innerHTML = `
+    <strong>${cliente['Nombre Completo / Razón Social']}</strong><br>
+    📧 ${cliente['Email'] || '<span style="color:var(--red)">⚠️ sin email cargado</span>'}<br>
+    Marca: <strong>${cmMarcaSeleccionada['Denominación']}</strong>
+  `;
+  document.getElementById('cm_emailDestino').textContent = cliente['Email'] || '⚠️ sin email';
+
+  // Campos editables (los XXXX de Mica)
+  const hoyStr = (cmMarcaSeleccionada['Fecha Solicitud'])
+    ? fmtFecha(cmMarcaSeleccionada['Fecha Solicitud'])
+    : fmtFecha(new Date().toISOString().split('T')[0]);
+
+  document.getElementById('cm_marcaCliente').value = cmMarcaSeleccionada['Denominación'] || '';
+  document.getElementById('cm_clasesNiza').value = cmMarcaSeleccionada['Clases Niza'] || '';
+  document.getElementById('cm_numeroActa').value = cmMarcaSeleccionada['N° Acta'] || '';
+
+  if (cmTipoFlujo === 'publicacion') {
+    document.getElementById('cm_fechaLabel').textContent = 'Fecha de publicación en boletín';
+    document.getElementById('cm_fecha').value = cmMarcaSeleccionada['Fecha Publicación Boletín']
+      ? fmtFecha(cmMarcaSeleccionada['Fecha Publicación Boletín'])
+      : '';
+    document.getElementById('cm_boletinWrap').style.display = 'block';
+    document.getElementById('cm_boletin').value = cmMarcaSeleccionada['N° Boletín INPI'] || '';
+    document.getElementById('cm_actaWrap').style.display = 'none';
+  } else {
+    document.getElementById('cm_fechaLabel').textContent = 'Fecha de presentación en INPI';
+    document.getElementById('cm_fecha').value = hoyStr;
+    document.getElementById('cm_boletinWrap').style.display = 'none';
+    document.getElementById('cm_actaWrap').style.display = 'block';
+  }
+
+  cmActualizarPreview();
+  document.getElementById('modalComMarca').classList.add('active');
+}
+
+function cmObtenerVariables() {
+  const cliente = cmMarcaSeleccionada
+    ? (findById(DATA.clientes, (cmMarcaSeleccionada['Cliente Titular'] || [])[0]) || {})
+    : {};
+  return {
+    nombre_cliente: cliente['Nombre Completo / Razón Social'] || '...',
+    fecha_presentacion: document.getElementById('cm_fecha').value || '...',
+    fecha_publicacion: document.getElementById('cm_fecha').value || '...',
+    marca_cliente: document.getElementById('cm_marcaCliente').value || '...',
+    clases_niza: document.getElementById('cm_clasesNiza').value || '...',
+    numero_acta: document.getElementById('cm_numeroActa').value || '...',
+    numero_boletin: document.getElementById('cm_boletin').value || '...',
+    telefono_estudio: '+54 11 4000-0000',
+    nombre_estudio: 'Estudio Demo — Propiedad Intelectual',
+    abogado_responsable: 'Dra. María González',
+  };
+}
+
+function cmActualizarPreview() {
+  if (!cmPlantillaActiva) return;
+  const vars = cmObtenerVariables();
+  let cuerpo = cmPlantillaActiva['Cuerpo HTML'] || '';
+  Object.keys(vars).forEach(k => {
+    cuerpo = cuerpo.split('{{' + k + '}}').join(
+      `<span style="background:#FFF3CD; padding:1px 4px; border-radius:3px; font-weight:600;">${vars[k]}</span>`
+    );
+  });
+  let asunto = cmPlantillaActiva['Asunto'] || '';
+  Object.keys(vars).forEach(k => {
+    asunto = asunto.split('{{' + k + '}}').join(vars[k]);
+  });
+  document.getElementById('cm_asuntoPreview').textContent = asunto;
+  document.getElementById('cm_previewContent').innerHTML = cuerpo;
+}
+
+async function cmEnviar(enviar) {
+  if (!cmMarcaSeleccionada) return;
+  const cliente = findById(DATA.clientes, (cmMarcaSeleccionada['Cliente Titular'] || [])[0]);
+  if (!cliente) { alert('Cliente no encontrado'); return; }
+  if (enviar && !cliente['Email']) {
+    alert('⚠️ El cliente no tiene email cargado.');
+    return;
+  }
+  const vars = cmObtenerVariables();
+  const payload = {
+    cliente_id: cliente.id,
+    marca_cliente_id: cmMarcaSeleccionada.id,
+    plantilla_id: cmPlantillaActiva.id,
+    variables: vars,
+    enviar_email: !!enviar,
+  };
+  const r = await api('/crm/comunicaciones/crear-y-enviar', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!r) { alert('Error al guardar. Revisá la consola.'); return; }
+
+  closeModal('modalComMarca');
+  alert(enviar
+    ? `✅ Mail enviado a ${cliente['Nombre Completo / Razón Social']}\n📧 ${cliente['Email']}\n\n(Mock — SMTP real pendiente)`
+    : `💾 Borrador guardado en Comunicaciones.`
+  );
   const comm = await api('/crm/comunicaciones');
   DATA.comunicaciones = comm?.comunicaciones || [];
   renderComunicaciones();
