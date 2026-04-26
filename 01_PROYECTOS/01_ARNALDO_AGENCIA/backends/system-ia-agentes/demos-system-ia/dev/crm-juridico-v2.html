@@ -1131,49 +1131,213 @@ function renderDashboard() {
 function renderLeads() {
   const cont = document.getElementById('leadsList');
   if (!DATA.leads.length) { cont.innerHTML = emptyState('📞','No hay leads aún','Cuando llegue uno por publicidad o referido aparecerá acá'); return; }
-  cont.innerHTML = DATA.leads.map(l => `
-    <div class="item-card">
-      <div class="item-row">
-        <div class="item-info">
-          <div class="item-title">${l['Nombre']} ${badgeEstado(l['Estado'])}</div>
-          <div class="item-meta">
-            ${l['Empresa / Razón Social'] ? `<strong>${l['Empresa / Razón Social']}</strong> · ` : ''}
-            ${l['Origen'] || '—'}${l['Campaña'] ? ` (${l['Campaña']})` : ''}<br>
-            📱 ${l['Teléfono WhatsApp'] || '—'} · ${l['Email'] || '—'}<br>
-            <strong>Servicio:</strong> ${l['Servicio Consultado'] || '—'}
-            ${l['Marca de Interés'] ? ` · <strong>Marca:</strong> ${l['Marca de Interés']}` : ''}
-            ${l['Score'] ? ` · Score: <strong>${l['Score']}</strong>` : ''}
+
+  // 2 listas: activos (Nuevo/Contactando/Calificado/Agendado) vs nutrición (En Nutrición/Perdido)
+  const enNutricion = DATA.leads.filter(l => ['En Nutrición','Perdido','Cliente'].includes(l['Estado']));
+  const activos = DATA.leads.filter(l => !['En Nutrición','Perdido','Cliente'].includes(l['Estado']));
+
+  const renderCard = (l, esNutricion) => {
+    const decidible = ['Nuevo','Contactando'].includes(l['Estado']);
+    const yaTieneProps = l['Propuestas'] && l['Propuestas'].length;
+
+    let botones = '';
+    if (decidible && !yaTieneProps) {
+      botones = `
+        <div style="display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
+          <button class="btn btn-sm" style="background:#10b981; color:white; border-color:#10b981; flex:1;"
+                  onclick="pasarLeadAPropuesta('${l.id}')">✅ Acepta — Pasar a Propuestas</button>
+          <button class="btn btn-sm" style="background:#9ca3af; color:white; border-color:#9ca3af; flex:1;"
+                  onclick="archivarLead('${l.id}')">📭 No acepta — A nutrición</button>
+        </div>
+      `;
+    } else if (yaTieneProps) {
+      botones = `
+        <div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:12px; color:var(--text-2);">
+          ✅ Ya tiene propuesta generada · <a href="#" onclick="switchPanel('propuestas');return false;" style="color:var(--accent); text-decoration:underline;">Ver propuesta</a>
+        </div>
+      `;
+    } else if (esNutricion) {
+      botones = `
+        <div style="display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
+          <button class="btn btn-sm" onclick="reactivarLead('${l.id}')">🔄 Reactivar lead</button>
+          <span style="font-size:12px; color:var(--text-2); align-self:center;">📨 Sigue recibiendo nutrición</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="item-card">
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-title">${l['Nombre']} ${badgeEstado(l['Estado'])}</div>
+            <div class="item-meta">
+              ${l['Empresa / Razón Social'] ? `<strong>${l['Empresa / Razón Social']}</strong> · ` : ''}
+              ${l['Origen'] || '—'}${l['Campaña'] ? ` (${l['Campaña']})` : ''}<br>
+              📱 ${l['Teléfono WhatsApp'] || '—'} · ${l['Email'] || '—'}<br>
+              <strong>Servicio:</strong> ${l['Servicio Consultado'] || '—'}
+              ${l['Marca de Interés'] ? ` · <strong>Marca:</strong> ${l['Marca de Interés']}` : ''}
+              ${l['Clase Niza Estimada'] ? ` · <strong>Clase:</strong> ${l['Clase Niza Estimada']}` : ''}
+              ${l['Score'] ? `<br>⭐ Score: <strong>${l['Score']}</strong>` : ''}
+              ${l['BANT — Necesidad'] ? `<br>💡 ${l['BANT — Necesidad']}` : ''}
+            </div>
+          </div>
+          <div class="item-actions">
+            ${btnIcon('✏️','Editar','todoPendiente()')}
+            ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
-        <div class="item-actions">
-          ${btnIcon('✏️','Editar','todoPendiente()')}
-          ${btnIcon('🗑️','Eliminar','todoPendiente()')}
-        </div>
+        ${botones}
       </div>
+    `;
+  };
+
+  cont.innerHTML = `
+    <div style="margin-bottom:28px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:16px; color:var(--text-1);">📞 Leads activos</h3>
+        <span class="pill" style="background:#dbeafe; color:#1e40af; border-color:#bfdbfe;">${activos.length}</span>
+      </div>
+      <div style="font-size:13px; color:var(--text-2); margin-bottom:14px;">
+        Nuevos contactos esperando que decidas si avanzar con propuesta o pasarlo a nutrición.
+      </div>
+      ${activos.length
+        ? activos.map(l => renderCard(l, false)).join('')
+        : emptyState('📞','Ninguno activo','Cuando llegue un lead nuevo aparece acá')}
     </div>
-  `).join('');
+
+    <div style="margin-top:32px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:16px; color:var(--text-1);">📨 En nutrición / archivados</h3>
+        <span class="pill" style="background:#f3f4f6; color:#4b5563; border-color:#e5e7eb;">${enNutricion.length}</span>
+      </div>
+      <div style="font-size:13px; color:var(--text-2); margin-bottom:14px;">
+        Leads que no avanzaron ahora pero les mandamos contenido (newsletter, tips, casos) para que vuelvan más adelante.
+      </div>
+      ${enNutricion.length
+        ? enNutricion.map(l => renderCard(l, true)).join('')
+        : emptyState('📨','Sin leads en nutrición','Los que no avancen ahora caen acá automáticamente')}
+    </div>
+  `;
+}
+
+async function pasarLeadAPropuesta(leadId) {
+  const l = findById(DATA.leads, leadId);
+  if (!l) return;
+  if (!confirm(`¿Pasar a "${l['Nombre']}" a Propuestas?\n\nSe va a:\n1. Marcar el lead como Calificado\n2. Crear automáticamente una Propuesta Pendiente con sus datos\n3. (Opcional) Vas a poder cargar el cliente en el siguiente paso`)) return;
+
+  // 1. Actualizar lead a Calificado
+  await api(`/crm/leads/${leadId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ 'Estado': 'Calificado' }),
+  });
+
+  // 2. Crear propuesta en estado Borrador ("para hacer") con los datos del lead
+  // Cliente Titular se asocia cuando el cliente acepta la propuesta y se convierte en titular
+  const fieldsProp = {
+    'Marca': (l['Marca de Interés'] || 'MARCA SIN DEFINIR').toUpperCase(),
+    'Clases Niza': l['Clase Niza Estimada'] || '',
+    'Descripción Servicio/Producto': l['BANT — Necesidad'] || l['Resumen Conversación'] || '',
+    'Estado': 'Borrador',
+    'Notas Internas': `Lead origen: ${l['Nombre']} · ${l['Email'] || 's/email'} · ${l['Teléfono WhatsApp'] || 's/tel'}\nServicio: ${l['Servicio Consultado'] || '—'}\nScore BANT: ${l['Score'] || '—'}`,
+  };
+  const nuevaProp = await api('/crm/propuestas', {
+    method: 'POST',
+    body: JSON.stringify(fieldsProp),
+  });
+
+  if (!nuevaProp) {
+    alert('⚠️ El lead se marcó como Calificado pero la propuesta falló. Revisá la consola.');
+    return;
+  }
+
+  // 3. Linkear el lead con la propuesta nueva
+  try {
+    await api(`/crm/leads/${leadId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ 'Propuestas': [nuevaProp.id] }),
+    });
+  } catch (e) { /* ignore link error */ }
+
+  // Recargar
+  const [le, pr] = await Promise.all([api('/crm/leads'), api('/crm/propuestas')]);
+  DATA.leads = le?.leads || [];
+  DATA.propuestas = pr?.propuestas || [];
+  renderLeads();
+  renderPropuestas();
+  updateBadges();
+
+  alert(`✅ Lead pasado a Propuestas.\n📄 Propuesta "${nuevaProp['Marca']}" creada en "🟢 Para hacer".\n\nDesde Propuestas → Para hacer → "Preparar y Enviar al cliente" cargás cotización y la mandás.`);
+  switchPanel('propuestas');
+}
+
+async function archivarLead(leadId) {
+  const l = findById(DATA.leads, leadId);
+  if (!l) return;
+  const motivo = prompt(`Mover "${l['Nombre']}" a nutrición.\n\n¿Motivo? (opcional — ej: "no ahora, retomar en 3 meses")`);
+  if (motivo === null) return;
+  const fields = { 'Estado': 'En Nutrición' };
+  if (motivo) {
+    const notasPrev = l['Notas'] || '';
+    fields['Notas'] = (notasPrev ? notasPrev + '\n\n' : '') + `📭 ${new Date().toLocaleDateString('es-AR')} — Pasó a nutrición. ${motivo}`;
+  }
+  await api(`/crm/leads/${leadId}`, { method: 'PATCH', body: JSON.stringify(fields) });
+  const le = await api('/crm/leads');
+  DATA.leads = le?.leads || [];
+  renderLeads();
+  updateBadges();
+  alert(`📨 Lead movido a nutrición.\nSeguirá recibiendo contenido para reactivarlo más adelante.`);
+}
+
+async function reactivarLead(leadId) {
+  const l = findById(DATA.leads, leadId);
+  if (!l) return;
+  if (!confirm(`Reactivar a "${l['Nombre']}" como lead activo?`)) return;
+  await api(`/crm/leads/${leadId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ 'Estado': 'Contactando' }),
+  });
+  const le = await api('/crm/leads');
+  DATA.leads = le?.leads || [];
+  renderLeads();
+  updateBadges();
+  alert(`🔄 Lead reactivado. Volvió a la lista de leads activos.`);
 }
 
 function renderPropuestas() {
   const cont = document.getElementById('propuestasList');
   if (!DATA.propuestas.length) { cont.innerHTML = emptyState('📄','No hay propuestas','Las propuestas que envíes aparecerán acá'); return; }
-  cont.innerHTML = DATA.propuestas.map(p => {
+
+  // 2 listas: "para hacer" (Borrador) vs "enviadas" (resto)
+  const paraHacer = DATA.propuestas.filter(p => p['Estado'] === 'Borrador');
+  const enviadas  = DATA.propuestas.filter(p => p['Estado'] !== 'Borrador');
+
+  const renderCard = (p, esBorrador) => {
     const archivo = p['Archivo Propuesta'] && p['Archivo Propuesta'].length ? archivoBadge() : '';
     const fechas = [];
-    if (p['Fecha Envío']) fechas.push(`📤 <strong>Enviada:</strong> ${fmtFecha(p['Fecha Envío'])}`);
+    if (p['Fecha Envío'])      fechas.push(`📤 <strong>Enviada:</strong> ${fmtFecha(p['Fecha Envío'])}`);
     if (p['Fecha Aceptación']) fechas.push(`✅ <strong>Aceptada:</strong> ${fmtFecha(p['Fecha Aceptación'])}`);
-    if (p['Fecha Rechazo']) fechas.push(`❌ <strong>Rechazada:</strong> ${fmtFecha(p['Fecha Rechazo'])}`);
+    if (p['Fecha Rechazo'])    fechas.push(`❌ <strong>Rechazada:</strong> ${fmtFecha(p['Fecha Rechazo'])}`);
 
-    // Botones de decisión solo si está Pendiente o Enviada
-    const esDecidible = ['Pendiente','Enviada','Borrador'].includes(p['Estado']);
-    const botonesDecision = esDecidible ? `
-      <div style="display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
-        <button class="btn btn-sm" style="background:#10b981; color:white; border-color:#10b981; flex:1;"
-                onclick="aceptarPropuesta('${p.id}')">✅ Aceptada</button>
-        <button class="btn btn-sm" style="background:#ef4444; color:white; border-color:#ef4444; flex:1;"
-                onclick="rechazarPropuesta('${p.id}')">❌ No aceptada</button>
-      </div>
-    ` : '';
+    let botones = '';
+    if (esBorrador) {
+      botones = `
+        <div style="display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
+          <button class="btn btn-sm btn-primary" style="flex:1;" onclick="prepararYEnviarPropuesta('${p.id}')">
+            📝 Preparar y Enviar al cliente
+          </button>
+          <button class="btn btn-sm" style="flex:0 0 auto;" onclick="todoPendiente()">Adjuntar PDF</button>
+        </div>
+      `;
+    } else if (['Pendiente','Enviada'].includes(p['Estado'])) {
+      botones = `
+        <div style="display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
+          <button class="btn btn-sm" style="background:#10b981; color:white; border-color:#10b981; flex:1;"
+                  onclick="aceptarPropuesta('${p.id}')">✅ Aceptada</button>
+          <button class="btn btn-sm" style="background:#ef4444; color:white; border-color:#ef4444; flex:1;"
+                  onclick="rechazarPropuesta('${p.id}')">❌ No aceptada</button>
+        </div>
+      `;
+    }
 
     const reemplazar = p['Estado'] === 'Aceptada' ? `<button class="btn btn-sm" onclick="todoPendiente()">Reemplazar</button>` : '';
 
@@ -1187,6 +1351,7 @@ function renderPropuestas() {
               ${p['Descripción Servicio/Producto'] || ''}
               ${p['Cotización (ARS)'] ? `<br>💰 Cotización: $${parseInt(p['Cotización (ARS)']).toLocaleString('es-AR')}` : ''}
               ${fechas.length ? '<br>' + fechas.join(' · ') : ''}
+              ${p['Notas Internas'] ? `<br>📝 <span style="font-size:12px; color:var(--text-2);">${p['Notas Internas'].split('\\n')[0]}</span>` : ''}
             </div>
           </div>
           <div class="item-actions">
@@ -1195,10 +1360,64 @@ function renderPropuestas() {
             ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
-        ${botonesDecision}
+        ${botones}
       </div>
     `;
-  }).join('');
+  };
+
+  cont.innerHTML = `
+    <div style="margin-bottom:28px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:16px; color:var(--text-1);">🟢 Propuestas para hacer</h3>
+        <span class="pill" style="background:#dcfce7; color:#166534; border-color:#bbf7d0;">${paraHacer.length}</span>
+      </div>
+      <div style="font-size:13px; color:var(--text-2); margin-bottom:14px;">
+        Vienen de leads que aceptaron recibir propuesta. Cargá cotización + adjuntá PDF y enviá al cliente.
+      </div>
+      ${paraHacer.length
+        ? paraHacer.map(p => renderCard(p, true)).join('')
+        : emptyState('🟢','Ninguna pendiente de armar','Cuando un lead acepta recibir propuesta, aparece acá')}
+    </div>
+
+    <div style="margin-top:32px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:16px; color:var(--text-1);">🔴 Propuestas enviadas</h3>
+        <span class="pill" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">${enviadas.length}</span>
+      </div>
+      <div style="font-size:13px; color:var(--text-2); margin-bottom:14px;">
+        Ya cotizadas y enviadas al cliente. Cuando el cliente decide, marcala como Aceptada (crea Marca automáticamente) o No Aceptada.
+      </div>
+      ${enviadas.length
+        ? enviadas.map(p => renderCard(p, false)).join('')
+        : emptyState('🔴','Sin propuestas enviadas aún','Las propuestas que envíes aparecerán acá')}
+    </div>
+  `;
+}
+
+async function prepararYEnviarPropuesta(propuestaId) {
+  const p = findById(DATA.propuestas, propuestaId);
+  if (!p) return;
+  const cotizActual = p['Cotización (ARS)'] || '';
+  const cotiz = prompt(`Preparar propuesta "${p['Marca']}" para enviar al cliente.\n\nCotización en ARS:`, cotizActual);
+  if (cotiz === null) return;
+  if (!cotiz || isNaN(parseInt(cotiz))) {
+    alert('Ingresá un número válido');
+    return;
+  }
+  const hoy = new Date().toISOString().split('T')[0];
+  await api(`/crm/propuestas/${propuestaId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      'Estado': 'Pendiente',
+      'Cotización (ARS)': parseInt(cotiz),
+      'Fecha Envío': hoy,
+    }),
+  });
+  const pr = await api('/crm/propuestas');
+  DATA.propuestas = pr?.propuestas || [];
+  renderPropuestas();
+  updateBadges();
+  alert(`📤 Propuesta enviada al cliente.\nAhora aparece en "Propuestas enviadas" esperando su decisión.`);
 }
 
 async function aceptarPropuesta(propuestaId) {
