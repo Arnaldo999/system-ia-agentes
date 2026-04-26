@@ -65,6 +65,7 @@ TABLE_OPOSICIONES   = os.environ.get("MICA_DEMO_JURIDICO_TABLE_OPOSICIONES",   "
 TABLE_COMUNICACIONES = os.environ.get("MICA_DEMO_JURIDICO_TABLE_COMUNICACIONES", "tblX6blYSOCeyu8ve")
 TABLE_ANALISIS      = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ANALISIS",      "tblcZlzitnTxRevYQ")
 TABLE_PARA_CARGAR   = os.environ.get("MICA_DEMO_JURIDICO_TABLE_PARA_CARGAR",   "tblji7DIl9FwdZ06Q")
+TABLE_TRAMITES_MARCA = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TRAMITES_MARCA", "tblOwjxoDCCOiYrMG")
 TABLE_TURNOS        = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TURNOS",        "tblIg1rFN5e4IKB4s")
 TABLE_ALERTAS       = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ALERTAS",       "tbl13tRhUoMSUsaKc")
 
@@ -169,6 +170,7 @@ def health():
             "comunicaciones": bool(TABLE_COMUNICACIONES),
             "analisis": bool(TABLE_ANALISIS),
             "para_cargar": bool(TABLE_PARA_CARGAR),
+            "tramites_marca": bool(TABLE_TRAMITES_MARCA),
             "turnos": bool(TABLE_TURNOS),
             "alertas": bool(TABLE_ALERTAS),
         },
@@ -186,6 +188,7 @@ def dashboard():
         "oposiciones_activas": 0, "oposiciones_recientes": [],
         "comunicaciones_borrador": 0, "comunicaciones_enviadas": 0,
         "marcas_para_cargar_pendientes": 0,
+        "tramites_pendientes": 0, "tramites_en_curso": 0,
         "analisis_en_curso": 0,
         "djum_proximos_90d": 0,
         "renovaciones_proximas_180d": 0,
@@ -241,6 +244,14 @@ def dashboard():
     try:
         cargar = _list(TABLE_PARA_CARGAR, pageSize=100)
         out["marcas_para_cargar_pendientes"] = sum(1 for c in cargar if c.get("Estado") in ("Pendiente", "En curso"))
+    except Exception:
+        pass
+
+    # Trámites accesorios
+    try:
+        tram = _list(TABLE_TRAMITES_MARCA, pageSize=100)
+        out["tramites_pendientes"] = sum(1 for t in tram if t.get("Estado") == "Pendiente")
+        out["tramites_en_curso"] = sum(1 for t in tram if t.get("Estado") in ("En curso", "Presentado en INPI"))
     except Exception:
         pass
 
@@ -383,6 +394,11 @@ _make_crud_endpoints("analisis", lambda: TABLE_ANALISIS, "analisis")
 # ── Marcas para Cargar ──────────────────────────────────────────────────────
 
 _make_crud_endpoints("marcas-cargar", lambda: TABLE_PARA_CARGAR, "marcas_para_cargar")
+
+
+# ── Trámites accesorios (cesión, DJUM, renovación, cambio domicilio, etc.) ──
+
+_make_crud_endpoints("tramites", lambda: TABLE_TRAMITES_MARCA, "tramites")
 
 
 # ── Turnos (Cal.com) ────────────────────────────────────────────────────────

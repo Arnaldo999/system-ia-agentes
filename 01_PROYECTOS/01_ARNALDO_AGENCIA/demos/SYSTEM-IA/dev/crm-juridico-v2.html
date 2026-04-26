@@ -466,6 +466,10 @@
         <span class="nav-icon">📖</span> Marcas Nuevas
         <span class="nav-badge" id="badgeMarcas"></span>
       </div>
+      <div class="nav-item" onclick="nav('tramites', this)">
+        <span class="nav-icon">📑</span> Trámites
+        <span class="nav-badge" id="badgeTramites"></span>
+      </div>
       <div class="nav-item" onclick="nav('comunicaciones', this)">
         <span class="nav-icon">🛡️</span> Comunicaciones
         <span class="nav-badge danger" id="badgeComunicaciones"></span>
@@ -543,6 +547,10 @@
           <div class="kpi-info"><div class="kpi-label">Marcas para Cargar</div><div class="kpi-value" id="kpiCargar">0</div></div>
           <div class="kpi-icon-wrap" style="background:#F4E8FF;color:#AF52DE">⬆️</div>
         </div>
+        <div class="kpi-card">
+          <div class="kpi-info"><div class="kpi-label">Trámites en curso</div><div class="kpi-value" id="kpiTramitesKPI">0</div></div>
+          <div class="kpi-icon-wrap" style="background:#FFF1B8;color:#806600">📑</div>
+        </div>
       </div>
 
       <div class="widgets">
@@ -591,6 +599,18 @@
         <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Nueva Marca</button>
       </div>
       <div id="marcasList"></div>
+    </section>
+
+    <!-- ─── TRÁMITES ACCESORIOS ─── -->
+    <section id="panel-tramites" class="panel">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Trámites</div>
+          <div class="sh-sub">Cesiones, DJUM, renovaciones, cambios de domicilio, recursos</div>
+        </div>
+        <button class="btn btn-primary" onclick="todoPendiente()">+ Nuevo Trámite</button>
+      </div>
+      <div id="tramitesList"></div>
     </section>
 
     <!-- ─── COMUNICACIONES ─── -->
@@ -689,6 +709,7 @@ async function api(path, opts = {}) {
 let DATA = {
   abogados: [], clientes: [], leads: [], propuestas: [], marcas: [],
   oposiciones: [], comunicaciones: [], analisis: [], cargar: [], turnos: [],
+  tramites: [],
   dashboard: {},
 };
 
@@ -721,7 +742,7 @@ if (sessionStorage.getItem('juridico_pin') === '1234') {
 async function cargarTodo() {
   const [
     health, dashboard, abogados, clientes, leads, propuestas, marcas,
-    oposiciones, comunicaciones, analisis, cargar, turnos
+    oposiciones, comunicaciones, analisis, cargar, turnos, tramites
   ] = await Promise.all([
     api('/crm/health'),
     api('/crm/dashboard'),
@@ -735,6 +756,7 @@ async function cargarTodo() {
     api('/crm/analisis'),
     api('/crm/marcas-cargar'),
     api('/crm/turnos'),
+    api('/crm/tramites'),
   ]);
 
   DATA.dashboard = dashboard || {};
@@ -748,6 +770,7 @@ async function cargarTodo() {
   DATA.analisis = analisis?.analisis || [];
   DATA.cargar = cargar?.marcas_para_cargar || [];
   DATA.turnos = turnos?.turnos || [];
+  DATA.tramites = tramites?.tramites || [];
 
   renderAll();
 }
@@ -757,6 +780,7 @@ function renderAll() {
   renderLeads();
   renderPropuestas();
   renderMarcas();
+  renderTramitesList();
   renderComunicaciones();
   renderOposiciones();
   renderCargar();
@@ -778,6 +802,7 @@ function updateBadges() {
   set('badgeComunicaciones', DATA.comunicaciones.filter(c => ['Borrador','Vista previa'].includes(c['Estado'])).length);
   set('badgeOposiciones', DATA.oposiciones.filter(o => o['Estado'] === 'Activa').length);
   set('badgeCargar', DATA.cargar.filter(c => c['Estado'] === 'Pendiente').length);
+  set('badgeTramites', DATA.tramites.filter(t => ['Pendiente','En curso','Presentado en INPI'].includes(t['Estado'])).length);
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -865,6 +890,8 @@ function renderDashboard() {
   document.getElementById('kpiMarcas').textContent = d.marcas_en_tramite || 0;
   document.getElementById('kpiOposiciones').textContent = d.oposiciones_activas || 0;
   document.getElementById('kpiCargar').textContent = d.marcas_para_cargar_pendientes || 0;
+  const kpiT = document.getElementById('kpiTramitesKPI');
+  if (kpiT) kpiT.textContent = (d.tramites_pendientes || 0) + (d.tramites_en_curso || 0);
 
   // Widget Propuestas Pendientes
   const propuestasPend = DATA.propuestas.filter(p => ['Pendiente','Borrador'].includes(p['Estado']));
@@ -932,6 +959,9 @@ function renderPropuestas() {
   cont.innerHTML = DATA.propuestas.map(p => {
     const archivo = p['Archivo Propuesta'] && p['Archivo Propuesta'].length ? archivoBadge() : '';
     const reemplazar = p['Estado'] === 'Aceptada' ? `<button class="btn btn-sm">Reemplazar</button>` : '';
+    const fechas = [];
+    if (p['Fecha Envío']) fechas.push(`📤 <strong>Enviada:</strong> ${fmtFecha(p['Fecha Envío'])}`);
+    if (p['Fecha Aceptación']) fechas.push(`✅ <strong>Aceptada:</strong> ${fmtFecha(p['Fecha Aceptación'])}`);
     return `
       <div class="item-card">
         <div class="item-row">
@@ -941,6 +971,7 @@ function renderPropuestas() {
               <strong>Cliente:</strong> ${nombreCliente(p['Cliente'])} · <strong>Clase ${p['Clases Niza'] || '—'}</strong><br>
               ${p['Descripción Servicio/Producto'] || ''}
               ${p['Cotización (ARS)'] ? `<br>💰 Cotización: $${parseInt(p['Cotización (ARS)']).toLocaleString('es-AR')}` : ''}
+              ${fechas.length ? '<br>' + fechas.join(' · ') : ''}
             </div>
           </div>
           <div class="item-actions">
@@ -957,34 +988,65 @@ function renderPropuestas() {
 function renderMarcas() {
   const cont = document.getElementById('marcasList');
   if (!DATA.marcas.length) { cont.innerHTML = emptyState('📖','Sin marcas','Las marcas en trámite aparecerán acá'); return; }
-  cont.innerHTML = DATA.marcas.map(m => `
-    <div class="item-card">
-      <div class="item-row">
-        <div class="item-info">
-          <div class="item-title">${m['Denominación']} ${badgeEstado(m['Estado'])}</div>
-          <div class="item-meta">
-            <strong>Cliente:</strong> ${nombreCliente(m['Cliente Titular'])} · <strong>Clase ${m['Clases Niza'] || '—'}</strong>
-            ${m['N° Expediente'] ? `<br><strong>Expediente:</strong> ${m['N° Expediente']}` : ''}
-            ${m['N° Acta'] ? ` · <strong>Acta:</strong> ${m['N° Acta']}` : ''}
-            ${m['N° Boletín INPI'] ? ` · Boletín ${m['N° Boletín INPI']}` : ''}
-            ${m['Última Novedad'] ? `<br>🕐 ${m['Última Novedad']}` : ''}
+  cont.innerHTML = DATA.marcas.map(m => {
+    const fechas = [];
+    if (m['Fecha Solicitud']) fechas.push(`📤 <strong>Solicitada:</strong> ${fmtFecha(m['Fecha Solicitud'])}`);
+    if (m['Fecha Publicación Boletín']) fechas.push(`📰 <strong>Publicada:</strong> ${fmtFecha(m['Fecha Publicación Boletín'])}`);
+    if (m['Fecha Concesión']) fechas.push(`✅ <strong>Concedida:</strong> ${fmtFecha(m['Fecha Concesión'])}`);
+    if (m['Fecha Vencimiento']) fechas.push(`⏰ <strong>Vence:</strong> ${fmtFecha(m['Fecha Vencimiento'])}`);
+    return `
+      <div class="item-card">
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-title">${m['Denominación']} ${badgeEstado(m['Estado'])}</div>
+            <div class="item-meta">
+              <strong>Cliente:</strong> ${nombreCliente(m['Cliente Titular'])} · <strong>Clase ${m['Clases Niza'] || '—'}</strong>
+              ${m['N° Expediente'] ? `<br><strong>Expediente:</strong> ${m['N° Expediente']}` : ''}
+              ${m['N° Acta'] ? ` · <strong>Acta:</strong> ${m['N° Acta']}` : ''}
+              ${m['N° Boletín INPI'] ? ` · Boletín ${m['N° Boletín INPI']}` : ''}
+              ${fechas.length ? '<br>' + fechas.join(' · ') : ''}
+              ${m['Última Novedad'] ? `<br>🕐 ${m['Última Novedad']}` : ''}
+            </div>
+          </div>
+          <div class="item-actions">
+            ${btnIcon('✏️','Editar','todoPendiente()')}
+            ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
-        <div class="item-actions">
-          ${btnIcon('✏️','Editar','todoPendiente()')}
-          ${btnIcon('🗑️','Eliminar','todoPendiente()')}
-        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function renderComunicaciones() {
   const cont = document.getElementById('comunicacionesList');
   if (!DATA.comunicaciones.length) { cont.innerHTML = emptyState('🛡️','Sin comunicaciones','Las notificaciones a clientes sobre oposiciones aparecerán acá'); return; }
-  cont.innerHTML = DATA.comunicaciones.map(c => {
+
+  // Banner de email automation arriba
+  const banner = `
+    <div class="item-card" style="background: linear-gradient(135deg, var(--accent-light), #FFF8E5); border-color: var(--accent); margin-bottom: 18px;">
+      <div class="item-row">
+        <div class="item-info">
+          <div class="item-title" style="color: var(--accent-hover);">🤖 Recordatorios automáticos por email</div>
+          <div class="item-meta">
+            Activá el envío automático de recordatorios a clientes que no respondieron una comunicación de oposición.<br>
+            <strong>Configurable cada:</strong> 3 / 7 / 15 días sin respuesta. Vía n8n + SMTP del estudio.
+          </div>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-primary" onclick="todoPendiente()">⚙️ Configurar recordatorios</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  cont.innerHTML = banner + DATA.comunicaciones.map(c => {
     const archivo = c['Archivo Adjunto'] && c['Archivo Adjunto'].length ? archivoBadge() : '';
     const isBorrador = c['Estado'] === 'Borrador' || c['Estado'] === 'Vista previa';
+    const fechas = [];
+    if (c['Fecha Envío']) fechas.push(`📤 <strong>Enviada:</strong> ${fmtFecha(c['Fecha Envío'])}`);
+    if (c['Fecha Respuesta']) fechas.push(`💬 <strong>Respuesta:</strong> ${fmtFecha(c['Fecha Respuesta'])}`);
+    if (c['Fecha Límite Decisión']) fechas.push(`⏰ <strong>Límite:</strong> ${fmtFecha(c['Fecha Límite Decisión'])}`);
     return `
       <div class="item-card">
         <div class="item-row">
@@ -994,13 +1056,14 @@ function renderComunicaciones() {
               <strong>Cliente:</strong> ${nombreCliente(c['Cliente'])} · <strong>Marca del cliente:</strong> ${c['Marca del Cliente'] || '—'}<br>
               <strong>Tercero:</strong> ${c['Marca del Tercero']} (Clase ${c['Clase Tercero'] || '—'}, Acta ${c['Acta Tercero'] || '—'})
               ${c['Recomendación'] ? `<br>💡 ${c['Recomendación']}` : ''}
+              ${fechas.length ? '<br>' + fechas.join(' · ') : ''}
             </div>
           </div>
           <div class="item-actions">
-            ${isBorrador ? `<button class="btn btn-sm">Reemplazar</button>` : ''}
-            ${isBorrador ? `<button class="btn btn-sm">Vista previa</button>` : ''}
-            ${isBorrador ? `<button class="btn btn-primary btn-sm">📧 Enviar</button>` : ''}
-            <button class="btn btn-sm">Editar</button>
+            ${isBorrador ? `<button class="btn btn-sm" onclick="todoPendiente()">Reemplazar</button>` : ''}
+            ${isBorrador ? `<button class="btn btn-sm" onclick="todoPendiente()">Vista previa</button>` : ''}
+            ${isBorrador ? `<button class="btn btn-primary btn-sm" onclick="todoPendiente()">📧 Enviar</button>` : ''}
+            <button class="btn btn-sm" onclick="todoPendiente()">Editar</button>
             ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
@@ -1028,6 +1091,9 @@ function renderOposiciones() {
       const cls = i < currentIdx ? 'done' : i === currentIdx ? 'current' : 'future';
       return `<div class="timeline-step ${cls}"><div class="timeline-step-title">${s}</div></div>`;
     }).join('');
+    const fechas = [];
+    if (o['Fecha Inicio']) fechas.push(`📅 <strong>Inicio:</strong> ${fmtFecha(o['Fecha Inicio'])}`);
+    if (o['Fecha Vencimiento Plazo Actual']) fechas.push(`⏰ <strong>Vence plazo:</strong> ${fmtFecha(o['Fecha Vencimiento Plazo Actual'])}`);
     return `
       <div class="item-card">
         <div class="item-row">
@@ -1036,10 +1102,44 @@ function renderOposiciones() {
             <div class="item-meta">
               <strong>${o['Tipo']}</strong> · <strong>Cliente:</strong> ${nombreCliente(o['Cliente'])}<br>
               <strong>Marca tercero:</strong> ${o['Marca del Tercero']} (Clase ${o['Clase Tercero'] || '—'}, Acta ${o['Acta Tercero'] || '—'})<br>
+              ${fechas.length ? fechas.join(' · ') + '<br>' : ''}
               ${o['Última Novedad'] ? `🕐 ${o['Última Novedad']}` : ''}
-              ${o['Fecha Vencimiento Plazo Actual'] ? `<br>⏰ <strong>Vence plazo:</strong> ${fmtFecha(o['Fecha Vencimiento Plazo Actual'])}` : ''}
             </div>
             <div class="timeline">${timeline}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTramitesList() {
+  const cont = document.getElementById('tramitesList');
+  if (!cont) return;
+  if (!DATA.tramites.length) { cont.innerHTML = emptyState('📑','Sin trámites activos','Cesiones, DJUM, renovaciones y otros trámites aparecerán acá'); return; }
+  cont.innerHTML = DATA.tramites.map(t => {
+    const fechas = [];
+    if (t['Fecha Solicitud']) fechas.push(`📤 <strong>Solicitado:</strong> ${fmtFecha(t['Fecha Solicitud'])}`);
+    if (t['Fecha Vencimiento Plazo']) fechas.push(`⏰ <strong>Vence:</strong> ${fmtFecha(t['Fecha Vencimiento Plazo'])}`);
+    if (t['Fecha Resolución']) fechas.push(`✅ <strong>Resuelto:</strong> ${fmtFecha(t['Fecha Resolución'])}`);
+    return `
+      <div class="item-card">
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-title">${t['Título']} ${badgeEstado(t['Estado'])}</div>
+            <div class="item-meta">
+              <strong>Tipo:</strong> ${t['Tipo Trámite'] || '—'} ·
+              <strong>Cliente:</strong> ${nombreCliente(t['Cliente'])}
+              ${t['N° Expediente'] ? ` · <strong>Expte:</strong> ${t['N° Expediente']}` : ''}
+              ${t['N° Boletín INPI'] ? ` · Boletín ${t['N° Boletín INPI']}` : ''}
+              ${t['Descripción'] ? `<br>${t['Descripción']}` : ''}
+              ${fechas.length ? '<br>' + fechas.join(' · ') : ''}
+              ${t['Última Novedad'] ? `<br>🕐 ${t['Última Novedad']}` : ''}
+            </div>
+          </div>
+          <div class="item-actions">
+            ${btnIcon('✏️','Editar','todoPendiente()')}
+            ${btnIcon('🗑️','Eliminar','todoPendiente()')}
           </div>
         </div>
       </div>
