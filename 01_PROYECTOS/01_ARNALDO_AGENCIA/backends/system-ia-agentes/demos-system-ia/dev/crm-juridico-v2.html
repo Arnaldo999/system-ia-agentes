@@ -1217,10 +1217,11 @@ async function aceptarPropuesta(propuestaId) {
   const fieldsMarca = {
     'Denominación': p['Marca'],
     'Clases Niza': p['Clases Niza'] || '',
-    'Descripción Productos/Servicios': p['Descripción Servicio/Producto'] || '',
     'Estado': 'Para Presentar',
     'Cliente Titular': p['Cliente'] || [],
+    'Notas': p['Descripción Servicio/Producto'] || '',
     'Última Novedad': `Propuesta aceptada ${fmtFecha(hoy)} — pendiente presentación INPI`,
+    'Propuesta Origen': [propuestaId],
   };
   const nueva = await api('/crm/marcas', {
     method: 'POST',
