@@ -410,6 +410,256 @@
     </div>
   </div>
 
+  <!-- MAPA VISUAL DEL ECOSISTEMA -->
+  <div class="card mb-8">
+    <h2 class="text-2xl font-bold mb-3">🗺️ Mapa visual del ecosistema</h2>
+    <p class="text-slate-600 mb-6">
+      Así se conecta todo el sistema digital del Grupo Back. Lo mostramos en dos vistas complementarias: una vista <strong>de capas</strong> que muestra cómo viaja la información desde el cliente final hasta tu equipo, y una vista <strong>multi-marca</strong> que muestra cómo las 7 firmas conviven en un mismo ecosistema.
+    </p>
+
+    <!-- Vista 1 — Diagrama de capas -->
+    <div class="mb-8">
+      <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+        <span class="inline-block w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-sm flex items-center justify-center font-bold">1</span>
+        Cómo viaja la información — vista por capas
+      </h3>
+
+      <div class="bg-gradient-to-br from-slate-50 to-purple-50/40 rounded-2xl p-4 sm:p-6 border border-slate-200 overflow-x-auto">
+        <svg viewBox="0 0 880 800" class="w-full h-auto" style="min-width: 640px;" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+            </marker>
+            <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#7c3aed"/>
+            </marker>
+            <linearGradient id="grad-cliente" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fef3c7"/>
+              <stop offset="100%" stop-color="#fde68a"/>
+            </linearGradient>
+            <linearGradient id="grad-canales" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#dbeafe"/>
+              <stop offset="100%" stop-color="#bfdbfe"/>
+            </linearGradient>
+            <linearGradient id="grad-infra" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ede9fe"/>
+              <stop offset="100%" stop-color="#ddd6fe"/>
+            </linearGradient>
+            <linearGradient id="grad-datos" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fed7aa"/>
+              <stop offset="100%" stop-color="#fdba74"/>
+            </linearGradient>
+            <linearGradient id="grad-equipo" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#d1fae5"/>
+              <stop offset="100%" stop-color="#a7f3d0"/>
+            </linearGradient>
+          </defs>
+
+          <!-- LAYER 1: Cliente final -->
+          <text x="20" y="60" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="0.1em">CAPA 1 · CLIENTE FINAL</text>
+          <rect x="370" y="30" width="140" height="60" rx="14" fill="url(#grad-cliente)" stroke="#f59e0b" stroke-width="2"/>
+          <text x="440" y="58" text-anchor="middle" font-size="22">👤</text>
+          <text x="440" y="80" text-anchor="middle" font-size="13" font-weight="700" fill="#78350f">Cliente final</text>
+
+          <!-- Flechas Cliente → Canales -->
+          <line x1="410" y1="90" x2="180" y2="155" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="440" y1="90" x2="440" y2="155" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="470" y1="90" x2="700" y2="155" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- LAYER 2: Canales / contacto -->
+          <text x="20" y="180" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="0.1em">CAPA 2 · CANALES</text>
+
+          <rect x="80" y="155" width="200" height="80" rx="12" fill="url(#grad-canales)" stroke="#0ea5e9" stroke-width="2"/>
+          <text x="180" y="180" text-anchor="middle" font-size="22">🌐</text>
+          <text x="180" y="200" text-anchor="middle" font-size="13" font-weight="700" fill="#075985">Sitio web multi-marca</text>
+          <text x="180" y="218" text-anchor="middle" font-size="10" fill="#0c4a6e">grupoback.com (7 sub-páginas)</text>
+
+          <rect x="340" y="155" width="200" height="80" rx="12" fill="url(#grad-canales)" stroke="#10b981" stroke-width="2"/>
+          <text x="440" y="180" text-anchor="middle" font-size="22">💬</text>
+          <text x="440" y="200" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">WhatsApp · 3 bots</text>
+          <text x="440" y="218" text-anchor="middle" font-size="10" fill="#064e3b">Rizoma · Misionerita · Patricio's</text>
+
+          <rect x="600" y="155" width="200" height="80" rx="12" fill="url(#grad-canales)" stroke="#f59e0b" stroke-width="2"/>
+          <text x="700" y="180" text-anchor="middle" font-size="22">📅</text>
+          <text x="700" y="200" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">Agenda Cal.com</text>
+          <text x="700" y="218" text-anchor="middle" font-size="10" fill="#78350f">Visitas, reservas, citas</text>
+
+          <!-- Flechas Canales → Seguridad -->
+          <line x1="180" y1="235" x2="320" y2="305" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="440" y1="235" x2="440" y2="305" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="700" y1="235" x2="560" y2="305" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- LAYER 3: Seguridad (envolvente) -->
+          <text x="20" y="330" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="0.1em">CAPA 3 · SEGURIDAD + INFRAESTRUCTURA</text>
+
+          <!-- Caja seguridad envolvente -->
+          <rect x="100" y="305" width="660" height="180" rx="16" fill="none" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6,4"/>
+          <rect x="115" y="295" width="170" height="22" rx="6" fill="#7c3aed"/>
+          <text x="200" y="311" text-anchor="middle" font-size="11" font-weight="700" fill="white">🛡️ CAPAS DE SEGURIDAD</text>
+
+          <!-- Caja interior agrupando los 4 componentes infra -->
+          <!-- VPS -->
+          <rect x="120" y="335" width="140" height="100" rx="12" fill="url(#grad-infra)" stroke="#7c3aed" stroke-width="2"/>
+          <text x="190" y="362" text-anchor="middle" font-size="22">🖥️</text>
+          <text x="190" y="382" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">VPS dedicado</text>
+          <text x="190" y="400" text-anchor="middle" font-size="10" fill="#4c1d95">Servidor privado</text>
+          <text x="190" y="415" text-anchor="middle" font-size="10" fill="#4c1d95">aislado del resto</text>
+
+          <!-- n8n -->
+          <rect x="280" y="335" width="140" height="100" rx="12" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="350" y="362" text-anchor="middle" font-size="22">🔄</text>
+          <text x="350" y="382" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">n8n</text>
+          <text x="350" y="400" text-anchor="middle" font-size="10" fill="#78350f">Motor de automatizaciones</text>
+          <text x="350" y="415" text-anchor="middle" font-size="10" fill="#78350f">que conecta todo</text>
+
+          <!-- Coolify -->
+          <rect x="440" y="335" width="140" height="100" rx="12" fill="url(#grad-infra)" stroke="#7c3aed" stroke-width="2"/>
+          <text x="510" y="362" text-anchor="middle" font-size="22">⚙️</text>
+          <text x="510" y="382" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">Coolify</text>
+          <text x="510" y="400" text-anchor="middle" font-size="10" fill="#4c1d95">Orquestador de bots,</text>
+          <text x="510" y="415" text-anchor="middle" font-size="10" fill="#4c1d95">CRM y servicios</text>
+
+          <!-- WordPress -->
+          <rect x="600" y="335" width="140" height="100" rx="12" fill="url(#grad-infra)" stroke="#7c3aed" stroke-width="2"/>
+          <text x="670" y="362" text-anchor="middle" font-size="22">🌐</text>
+          <text x="670" y="382" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">WordPress</text>
+          <text x="670" y="400" text-anchor="middle" font-size="10" fill="#4c1d95">Hosting + dominio</text>
+          <text x="670" y="415" text-anchor="middle" font-size="10" fill="#4c1d95">grupoback.com</text>
+
+          <!-- Indicador HTTPS -->
+          <text x="440" y="465" text-anchor="middle" font-size="10" font-weight="600" fill="#7c3aed">🔒 Conexiones encriptadas (HTTPS/SSL) · Tokens protegidos · Backups diarios automáticos</text>
+
+          <!-- Flechas Infra → BD (4 componentes apuntando al Airtable) -->
+          <line x1="190" y1="485" x2="370" y2="555" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+          <line x1="350" y1="485" x2="410" y2="555" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+          <line x1="510" y1="485" x2="470" y2="555" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+          <line x1="670" y1="485" x2="510" y2="555" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+
+          <!-- LAYER 4: Datos -->
+          <text x="20" y="580" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="0.1em">CAPA 4 · DATOS CENTRALIZADOS</text>
+
+          <rect x="290" y="555" width="300" height="90" rx="14" fill="url(#grad-datos)" stroke="#ea580c" stroke-width="2.5"/>
+          <text x="440" y="585" text-anchor="middle" font-size="26">📊</text>
+          <text x="440" y="608" text-anchor="middle" font-size="14" font-weight="700" fill="#7c2d12">Airtable · Base central del Grupo</text>
+          <text x="440" y="626" text-anchor="middle" font-size="10" fill="#7c2d12">Leads · Contactos · Contratos · Reservas · Pedidos · Agenda</text>
+
+          <!-- Flechas BD → Equipo (CRM) -->
+          <line x1="440" y1="645" x2="440" y2="685" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- LAYER 5: Equipo Grupo Back / CRM -->
+          <rect x="290" y="685" width="300" height="22" rx="6" fill="#10b981"/>
+          <text x="440" y="701" text-anchor="middle" font-size="12" font-weight="700" fill="white">📊 CRM · Equipo Grupo Back ve y gestiona todo</text>
+        </svg>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 italic">El cliente final entra por web, WhatsApp o agenda → todo pasa por capas de seguridad → la información se guarda en Airtable → tu equipo gestiona desde el CRM.</p>
+    </div>
+
+    <!-- Vista 2 — Diagrama multi-marca -->
+    <div>
+      <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+        <span class="inline-block w-7 h-7 rounded-full bg-pink-100 text-pink-700 text-sm flex items-center justify-center font-bold">2</span>
+        Las 7 firmas en un solo ecosistema — vista multi-marca
+      </h3>
+
+      <div class="bg-gradient-to-br from-slate-50 to-pink-50/40 rounded-2xl p-4 sm:p-6 border border-slate-200 overflow-x-auto">
+        <svg viewBox="0 0 720 640" class="w-full h-auto" style="min-width: 560px;" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="core-grad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#a78bfa"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </radialGradient>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+              <feOffset dx="0" dy="2"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- Líneas conectoras desde cada marca al núcleo -->
+          <g stroke="#c4b5fd" stroke-width="2" stroke-dasharray="4,3" fill="none">
+            <line x1="360" y1="320" x2="360" y2="80"/>
+            <line x1="360" y1="320" x2="568" y2="180"/>
+            <line x1="360" y1="320" x2="640" y2="380"/>
+            <line x1="360" y1="320" x2="540" y2="555"/>
+            <line x1="360" y1="320" x2="180" y2="555"/>
+            <line x1="360" y1="320" x2="80" y2="380"/>
+            <line x1="360" y1="320" x2="152" y2="180"/>
+          </g>
+
+          <!-- NÚCLEO: Airtable + Coolify + Seguridad -->
+          <circle cx="360" cy="320" r="100" fill="url(#core-grad)" filter="url(#shadow)"/>
+          <text x="360" y="290" text-anchor="middle" font-size="28">🛡️</text>
+          <text x="360" y="318" text-anchor="middle" font-size="14" font-weight="700" fill="white">Núcleo Grupo Back</text>
+          <text x="360" y="336" text-anchor="middle" font-size="10" fill="#ede9fe">Airtable + n8n + Coolify</text>
+          <text x="360" y="350" text-anchor="middle" font-size="10" fill="#ede9fe">+ capas de seguridad</text>
+          <text x="360" y="372" text-anchor="middle" font-size="9" fill="#c4b5fd" font-style="italic">Ficha única cross-marca</text>
+
+          <!-- 7 marcas alrededor (posiciones tipo reloj: 12, 1.5, 4.5, 6, 7.5, 10.5, 12hago 7 espaciados) -->
+          <!-- 1. Rizoma (12 = arriba) -->
+          <g filter="url(#shadow)">
+            <rect x="290" y="30" width="140" height="60" rx="14" fill="white" stroke="#0ea5e9" stroke-width="2.5"/>
+            <text x="305" y="62" font-size="22">🏡</text>
+            <text x="335" y="56" font-size="13" font-weight="700" fill="#075985">Rizoma</text>
+            <text x="335" y="73" font-size="10" fill="#0c4a6e">Propiedades</text>
+          </g>
+
+          <!-- 2. La Misionerita (1.5 = arriba derecha) -->
+          <g filter="url(#shadow)">
+            <rect x="500" y="135" width="140" height="60" rx="14" fill="white" stroke="#f59e0b" stroke-width="2.5"/>
+            <text x="515" y="167" font-size="22">🍽️</text>
+            <text x="545" y="160" font-size="13" font-weight="700" fill="#92400e">Misionerita</text>
+            <text x="545" y="177" font-size="10" fill="#78350f">Restaurant</text>
+          </g>
+
+          <!-- 3. Patricio's (3 = derecha) -->
+          <g filter="url(#shadow)">
+            <rect x="570" y="345" width="140" height="60" rx="14" fill="white" stroke="#ec4899" stroke-width="2.5"/>
+            <text x="585" y="377" font-size="22">🎉</text>
+            <text x="615" y="370" font-size="13" font-weight="700" fill="#be185d">Patricio's</text>
+            <text x="615" y="387" font-size="10" fill="#9d174d">Resto-bar</text>
+          </g>
+
+          <!-- 4. La Martina (5 = abajo derecha) -->
+          <g filter="url(#shadow)">
+            <rect x="470" y="540" width="140" height="60" rx="14" fill="white" stroke="#14b8a6" stroke-width="2.5"/>
+            <text x="485" y="572" font-size="22">🏨</text>
+            <text x="515" y="565" font-size="13" font-weight="700" fill="#0f766e">La Martina</text>
+            <text x="515" y="582" font-size="10" fill="#115e59">Apart Hotel</text>
+          </g>
+
+          <!-- 5. Bocanada (7 = abajo izquierda) -->
+          <g filter="url(#shadow)">
+            <rect x="110" y="540" width="140" height="60" rx="14" fill="white" stroke="#f97316" stroke-width="2.5"/>
+            <text x="125" y="572" font-size="22">🥖</text>
+            <text x="155" y="565" font-size="13" font-weight="700" fill="#c2410c">Bocanada</text>
+            <text x="155" y="582" font-size="10" fill="#9a3412">Panadería</text>
+          </g>
+
+          <!-- 6. Club Progreso (9 = izquierda) -->
+          <g filter="url(#shadow)">
+            <rect x="10" y="345" width="140" height="60" rx="14" fill="white" stroke="#16a34a" stroke-width="2.5"/>
+            <text x="25" y="377" font-size="22">⚽</text>
+            <text x="55" y="370" font-size="13" font-weight="700" fill="#15803d">Club Progreso</text>
+            <text x="55" y="387" font-size="10" fill="#166534">Blog fútbol</text>
+          </g>
+
+          <!-- 7. Misión Emprender (10.5 = arriba izquierda) -->
+          <g filter="url(#shadow)">
+            <rect x="80" y="135" width="140" height="60" rx="14" fill="white" stroke="#6366f1" stroke-width="2.5"/>
+            <text x="95" y="167" font-size="22">💡</text>
+            <text x="125" y="160" font-size="13" font-weight="700" fill="#4338ca">Fundación</text>
+            <text x="125" y="177" font-size="10" fill="#3730a3">Misión Emprender</text>
+          </g>
+
+        </svg>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 italic">Las 7 firmas conviven en un mismo núcleo: comparten infraestructura, seguridad y base de datos. Cada cliente que pasa por cualquier marca queda registrado con <strong>ficha única</strong> — si compra una propiedad en Rizoma hoy y reserva mesa en La Misionerita en 6 meses, el sistema lo reconoce como la misma persona.</p>
+    </div>
+  </div>
+
   <!-- ESTRATEGIA DE CONSTRUCCIÓN -->
   <div class="card mb-8">
     <h2 class="text-2xl font-bold mb-3">Estrategia: una firma por vez 🎯</h2>
@@ -489,8 +739,19 @@
           <div class="text-3xl">🖥️</div>
           <div class="flex-1">
             <div class="font-bold text-emerald-900 mb-1">VPS dedicado</div>
-            <p class="text-xs text-slate-600 mb-2">Servidor privado donde se alojan la base de datos y <strong>n8n</strong> (motor de automatizaciones que conecta WhatsApp, Airtable, agenda y más).</p>
-            <span class="text-xs text-emerald-700 font-semibold">Automatizaciones · Servidor privado</span>
+            <p class="text-xs text-slate-600 mb-2">Servidor privado donde se aloja la base de datos del Grupo y los servicios internos. Aislado del resto de los proyectos.</p>
+            <span class="text-xs text-emerald-700 font-semibold">Servidor privado · Aislamiento</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white border-2 border-yellow-300 rounded-xl p-4">
+        <div class="flex items-start gap-3">
+          <div class="text-3xl">🔄</div>
+          <div class="flex-1">
+            <div class="font-bold text-yellow-800 mb-1">n8n</div>
+            <p class="text-xs text-slate-600 mb-2">Motor de <strong>automatizaciones</strong>. Conecta WhatsApp, Airtable, Cal.com y todos los servicios entre sí: cuando un cliente reserva, contesta o pide algo, n8n hace que la información viaje sola al lugar correcto.</p>
+            <span class="text-xs text-yellow-700 font-semibold">Automatizaciones · Integraciones</span>
           </div>
         </div>
       </div>
