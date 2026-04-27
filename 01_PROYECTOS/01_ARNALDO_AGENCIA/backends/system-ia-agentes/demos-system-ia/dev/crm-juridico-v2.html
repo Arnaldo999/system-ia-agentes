@@ -253,6 +253,54 @@
   .b-en-curso { background: var(--blue-light); color: var(--blue); }
   .b-cargada { background: var(--green-light); color: var(--green-dark); }
 
+  /* DASHBOARD LAYOUT — 2 columnas (notifs izq + secciones der) */
+  .dashboard-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 28px; }
+  .dashboard-col-notifs { display: flex; flex-direction: column; gap: 16px; }
+  .notif-block { border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow-sm); border: 2px solid; }
+  .notif-block-plazo { background: var(--green-light); border-color: var(--green); }
+  .notif-block-sinplazo { background: var(--blue-light); border-color: var(--blue); }
+  .notif-block-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; color: var(--text); }
+  .notif-block-sub { font-size: 12px; color: var(--text-2); margin-bottom: 14px; }
+  .notif-row {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .notif-row:last-child { margin-bottom: 0; }
+  .notif-row:hover { transform: translateX(3px); box-shadow: var(--shadow-md); }
+  .notif-row-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .notif-row-tipo { font-size: 10.5px; color: var(--text-2); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+  .notif-row-title { font-weight: 700; font-size: 13.5px; color: var(--text); margin-bottom: 3px; }
+  .notif-row-detalle { font-size: 12.5px; color: var(--text-2); }
+  .notif-row-fecha { font-weight: 700; color: var(--accent); }
+  .notif-row-acciones { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .notif-btn-mini {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 10px; font-size: 11.5px; cursor: pointer; color: var(--text);
+    display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s;
+  }
+  .notif-btn-mini:hover { background: var(--accent-light); border-color: var(--accent); }
+  .notif-empty { background: var(--surface); border: 1px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center; font-size: 13px; color: var(--text-3); }
+
+  /* SECCIONES (col derecha) */
+  .dashboard-col-secciones {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px; box-shadow: var(--shadow-sm);
+  }
+  .secciones-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+  .secciones-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .seccion-card {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; cursor: pointer; text-align: left;
+    transition: all 0.15s; color: var(--text); font-family: inherit;
+  }
+  .seccion-card:hover { background: var(--accent-light); border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .seccion-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .seccion-info { flex: 1; min-width: 0; }
+  .seccion-label { font-size: 11.5px; color: var(--text-2); font-weight: 600; }
+  .seccion-value { font-size: 19px; font-weight: 700; color: var(--text); line-height: 1.1; }
+
   /* DASHBOARD WIDGETS */
   .widgets { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .widget {
@@ -378,6 +426,8 @@
     .kpi-value { font-size: 28px; }
     .kpis { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
     .widgets { grid-template-columns: 1fr; }
+    .dashboard-layout { grid-template-columns: 1fr; gap: 14px; }
+    .secciones-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
     .form-grid-2 { grid-template-columns: 1fr; }
   }
 
@@ -587,41 +637,86 @@
       <div class="sh">
         <div>
           <div class="sh-title">Dashboard</div>
-          <div class="sh-sub">Vista general del estudio</div>
+          <div class="sh-sub">Notificaciones y accesos rápidos</div>
         </div>
       </div>
 
-      <!-- ALERTAS — Acciones urgentes (vencimientos próximos) -->
-      <div id="dashboardAlertas" style="margin-bottom: 28px;"></div>
+      <!-- LAYOUT 2 COLUMNAS: notificaciones (izq) + secciones (der) -->
+      <div class="dashboard-layout">
+        <!-- COLUMNA IZQUIERDA: Notificaciones -->
+        <div class="dashboard-col-notifs">
+          <!-- 🟢 Con plazo -->
+          <div id="notifsConPlazo" class="notif-block notif-block-plazo"></div>
+          <!-- 🔵 Sin plazo -->
+          <div id="notifsSinPlazo" class="notif-block notif-block-sinplazo"></div>
+        </div>
 
-      <div class="kpis">
-        <div class="kpi-card">
-          <div class="kpi-info"><div class="kpi-label">Leads activos</div><div class="kpi-value" id="kpiLeads">0</div></div>
-          <div class="kpi-icon-wrap" style="background:#E3F2FD;color:#007AFF">📞</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-info"><div class="kpi-label">Propuestas</div><div class="kpi-value" id="kpiPropuestas">0</div></div>
-          <div class="kpi-icon-wrap" style="background:#FFF8DC;color:#806600">📄</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-info"><div class="kpi-label">Marcas Nuevas</div><div class="kpi-value" id="kpiMarcas">0</div></div>
-          <div class="kpi-icon-wrap" style="background:#E8F8EC;color:#248A3D">📖</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-info"><div class="kpi-label">Oposiciones</div><div class="kpi-value" id="kpiOposiciones">0</div></div>
-          <div class="kpi-icon-wrap" style="background:#FFE4D6;color:#B45309">⚖️</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-info"><div class="kpi-label">Marcas para Cargar</div><div class="kpi-value" id="kpiCargar">0</div></div>
-          <div class="kpi-icon-wrap" style="background:#F4E8FF;color:#AF52DE">⬆️</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-info"><div class="kpi-label">Trámites en curso</div><div class="kpi-value" id="kpiTramitesKPI">0</div></div>
-          <div class="kpi-icon-wrap" style="background:#FFF1B8;color:#806600">📑</div>
+        <!-- COLUMNA DERECHA: Secciones (KPIs como acceso rápido) -->
+        <div class="dashboard-col-secciones">
+          <div class="secciones-title">📁 Secciones del estudio</div>
+          <div class="secciones-grid">
+            <button class="seccion-card" onclick="switchPanel('leads')">
+              <div class="seccion-icon" style="background:#E3F2FD;color:#007AFF">📞</div>
+              <div class="seccion-info">
+                <div class="seccion-label">Leads</div>
+                <div class="seccion-value" id="kpiLeads">0</div>
+              </div>
+            </button>
+            <button class="seccion-card" onclick="switchPanel('propuestas')">
+              <div class="seccion-icon" style="background:#FFF8DC;color:#806600">📄</div>
+              <div class="seccion-info">
+                <div class="seccion-label">Propuestas</div>
+                <div class="seccion-value" id="kpiPropuestas">0</div>
+              </div>
+            </button>
+            <button class="seccion-card" onclick="switchPanel('marcas')">
+              <div class="seccion-icon" style="background:#E8F8EC;color:#248A3D">📖</div>
+              <div class="seccion-info">
+                <div class="seccion-label">Marcas Nuevas</div>
+                <div class="seccion-value" id="kpiMarcas">0</div>
+              </div>
+            </button>
+            <button class="seccion-card" onclick="switchPanel('oposiciones')">
+              <div class="seccion-icon" style="background:#FFE4D6;color:#B45309">⚖️</div>
+              <div class="seccion-info">
+                <div class="seccion-label">Oposiciones</div>
+                <div class="seccion-value" id="kpiOposiciones">0</div>
+              </div>
+            </button>
+            <button class="seccion-card" onclick="switchPanel('tramites')">
+              <div class="seccion-icon" style="background:#FFF1B8;color:#806600">📑</div>
+              <div class="seccion-info">
+                <div class="seccion-label">Trámites</div>
+                <div class="seccion-value" id="kpiTramitesKPI">0</div>
+              </div>
+            </button>
+            <button class="seccion-card" onclick="switchPanel('comunicaciones')">
+              <div class="seccion-icon" style="background:#F0E2BD;color:var(--accent)">🛡️</div>
+              <div class="seccion-info">
+                <div class="seccion-label">Comunicaciones</div>
+                <div class="seccion-value" id="kpiComunicaciones">0</div>
+              </div>
+            </button>
+            <button class="seccion-card" onclick="switchPanel('cargar')">
+              <div class="seccion-icon" style="background:#F4E8FF;color:#AF52DE">⬆️</div>
+              <div class="seccion-info">
+                <div class="seccion-label">Para Cargar</div>
+                <div class="seccion-value" id="kpiCargar">0</div>
+              </div>
+            </button>
+            <button class="seccion-card" onclick="switchPanel('analisis')">
+              <div class="seccion-icon" style="background:#DBEAFF;color:#0050C8">🔍</div>
+              <div class="seccion-info">
+                <div class="seccion-label">Análisis</div>
+                <div class="seccion-value" id="kpiAnalisis">0</div>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="widgets">
+      <!-- Widgets antiguos quedan abajo como contexto -->
+      <div class="widgets" style="margin-top: 28px;">
         <div class="widget">
           <div class="widget-title">⏳ Propuestas Pendientes</div>
           <div id="widgetPropuestas"></div>
@@ -1180,6 +1275,53 @@
   </div>
 </div>
 
+<!-- MODAL — NOTIFICAR (recordatorio Email + WhatsApp al cliente) -->
+<div id="modalNotificar" class="modal-bg">
+  <div class="modal" style="max-width: 580px;">
+    <div class="modal-header">
+      <h3 class="modal-title">🔔 Notificar al cliente</h3>
+      <button class="modal-close" onclick="closeModal('modalNotificar')">✕</button>
+    </div>
+
+    <div style="padding: 14px 18px; background: var(--surface-2); border-radius: 10px; margin-bottom: 16px; font-size: 13px;">
+      <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-2); font-weight:700; margin-bottom:6px;">Cliente</div>
+      <div id="nf_clienteInfo">—</div>
+      <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-2); font-weight:700; margin: 12px 0 4px;">Referencia</div>
+      <div id="nf_referencia" style="font-size:13px;">—</div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div style="font-size:13px; font-weight:600; margin-bottom: 10px;">📨 Canales de envío</div>
+      <label style="display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; margin-bottom:8px; cursor:pointer;">
+        <input type="checkbox" id="nf_chkEmail" checked> 📧 Enviar email
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; cursor:pointer;">
+        <input type="checkbox" id="nf_chkWA" checked> 📱 Enviar WhatsApp
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Asunto (Email)</label>
+      <input id="nf_asunto" class="form-control">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mensaje (Email + WhatsApp)</label>
+      <textarea id="nf_mensaje" class="form-control" rows="5"></textarea>
+    </div>
+
+    <div style="font-size:11.5px; color:var(--text-3); margin-bottom: 14px;">
+      ⓘ El envío real (SMTP del estudio + WhatsApp Business) se activa cuando configuremos las credenciales. Por ahora queda registrado como recordatorio enviado.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalNotificar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="nf_enviar()" style="font-size: 14px; padding: 11px 22px;">
+        🚀 Enviar recordatorio
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════════════════════════════
    API
@@ -1668,8 +1810,12 @@ function renderDashboard() {
   document.getElementById('kpiCargar').textContent = d.marcas_para_cargar_pendientes || 0;
   const kpiT = document.getElementById('kpiTramitesKPI');
   if (kpiT) kpiT.textContent = (d.tramites_pendientes || 0) + (d.tramites_en_curso || 0);
+  const kpiC = document.getElementById('kpiComunicaciones');
+  if (kpiC) kpiC.textContent = DATA.comunicaciones.filter(c => ['Borrador','Enviada','Vista previa'].includes(c['Estado'])).length;
+  const kpiA = document.getElementById('kpiAnalisis');
+  if (kpiA) kpiA.textContent = (DATA.analisis || []).filter(a => a['Estado'] === 'En análisis').length;
 
-  // 🚨 ALERTAS — vencimientos y acciones urgentes
+  // 🟢 + 🔵 NOTIFICACIONES — con plazo + sin plazo
   renderDashboardAlertas();
 
   // Widget Propuestas Pendientes
@@ -1727,9 +1873,10 @@ function badgeUrgencia(dias) {
 }
 
 function renderDashboardAlertas() {
-  const cont = document.getElementById('dashboardAlertas');
-  const alertas = [];
+  const conPlazo = []; // 🟢 todo lo que tiene fecha límite
+  const sinPlazo = []; // 🔵 recordatorios sin fecha (leads inactivos, propuestas sin respuesta, etc)
 
+  // ── 🟢 CON PLAZO ──
   // 1. Comunicaciones de oposición ENVIADAS con plazo próximo (cliente debe responder)
   for (const c of DATA.comunicaciones) {
     if (!['Enviada','Vista previa'].includes(c['Estado'])) continue;
@@ -1739,34 +1886,39 @@ function renderDashboardAlertas() {
     if (dias === null || dias > 60) continue;
     const cliNombre = nombreCliente(c['Cliente']);
     const fechaEnvio = c['Fecha Envío'] ? fmtFecha(c['Fecha Envío']) : '?';
-    alertas.push({
+    const cliId = (c['Cliente'] && c['Cliente'][0]) || '';
+    conPlazo.push({
       tipo: '🛡️ Plazo cliente',
       dias,
-      titulo: `${c['Marca del Cliente'] || c['Título'] || 'Comunicación'} — esperando respuesta del cliente`,
-      detalle: `Cliente: ${cliNombre} · Notificada el ${fechaEnvio} sobre marca de tercero "${c['Marca del Tercero'] || '—'}" (clase ${c['Clase Tercero'] || '—'})`,
+      fecha: limite,
+      titulo: `${c['Marca del Cliente'] || c['Título'] || 'Comunicación'} — respuesta del cliente`,
+      detalle: `Cliente: <strong>${cliNombre}</strong> · Notificada el ${fechaEnvio}`,
+      detalle2: `Marca tercero: <strong>${c['Marca del Tercero'] || '—'}</strong> · Vence: <span class="notif-row-fecha">${fmtFecha(limite)}</span>`,
       accion: dias <= 7 ? 'Llamar al cliente HOY — plazo legal por vencer' : 'Confirmar respuesta del cliente',
       onclick: `switchPanel('comunicaciones')`,
-      color: 'rgba(245, 158, 11, 0.12)',
-      borderColor: 'rgba(245, 158, 11, 0.5)',
+      cliente_id: cliId,
+      origen: 'comunicacion',
+      origen_id: c.id,
     });
   }
 
-  // 2. Marcas con DJUM próximo (60 días)
+  // 2. Marcas con DJUM próximo (90 días)
   for (const m of DATA.marcas) {
     if (m['Estado'] !== 'Concedida') continue;
     const djum = m['Fecha DJUM'];
     if (!djum) continue;
     const dias = diasHasta(djum);
     if (dias === null || dias > 90 || dias < -30) continue;
-    alertas.push({
+    const cliId = (m['Cliente Titular'] && m['Cliente Titular'][0]) || '';
+    conPlazo.push({
       tipo: '📋 DJUM',
-      dias,
-      titulo: `${m['Denominación']} — DJUM ${dias < 0 ? 'VENCIDO' : 'próximo a vencer'}`,
-      detalle: `Cliente: ${nombreCliente(m['Cliente Titular'])} · Vence ${fmtFecha(djum)}`,
-      accion: 'Coordinar presentación DJUM con cliente (multa por demora)',
+      dias, fecha: djum,
+      titulo: `${m['Denominación']} — DJUM ${dias < 0 ? 'VENCIDO' : 'próximo'}`,
+      detalle: `Cliente: <strong>${nombreCliente(m['Cliente Titular'])}</strong>`,
+      detalle2: `Vence: <span class="notif-row-fecha">${fmtFecha(djum)}</span>`,
+      accion: 'Coordinar presentación DJUM (multa por demora)',
       onclick: `switchPanel('marcas')`,
-      color: 'rgba(217, 119, 6, 0.12)',
-      borderColor: 'rgba(217, 119, 6, 0.5)',
+      cliente_id: cliId, origen: 'marca', origen_id: m.id,
     });
   }
 
@@ -1777,15 +1929,16 @@ function renderDashboardAlertas() {
     if (!venc) continue;
     const dias = diasHasta(venc);
     if (dias === null || dias > 180 || dias < 0) continue;
-    alertas.push({
+    const cliId = (m['Cliente Titular'] && m['Cliente Titular'][0]) || '';
+    conPlazo.push({
       tipo: '🔄 Renovación',
-      dias,
+      dias, fecha: venc,
       titulo: `${m['Denominación']} — Renovación próxima`,
-      detalle: `Cliente: ${nombreCliente(m['Cliente Titular'])} · Vence ${fmtFecha(venc)}`,
+      detalle: `Cliente: <strong>${nombreCliente(m['Cliente Titular'])}</strong>`,
+      detalle2: `Vence: <span class="notif-row-fecha">${fmtFecha(venc)}</span>`,
       accion: 'Generar propuesta de renovación',
       onclick: `switchPanel('marcas')`,
-      color: 'rgba(34, 197, 94, 0.12)',
-      borderColor: 'rgba(34, 197, 94, 0.5)',
+      cliente_id: cliId, origen: 'marca', origen_id: m.id,
     });
   }
 
@@ -1796,15 +1949,16 @@ function renderDashboardAlertas() {
     if (['Cerrado','Completado','Resuelto'].includes(t['Estado'])) continue;
     const dias = diasHasta(venc);
     if (dias === null || dias > 30 || dias < -15) continue;
-    alertas.push({
+    const cliId = (t['Cliente'] && t['Cliente'][0]) || '';
+    conPlazo.push({
       tipo: '📜 Trámite',
-      dias,
+      dias, fecha: venc,
       titulo: `${t['Tipo Trámite'] || t['Tipo'] || 'Trámite'} — ${t['Marca Asociada'] || t['Título'] || ''}`,
-      detalle: `Cliente: ${nombreCliente(t['Cliente'])} · Vence ${fmtFecha(venc)}`,
+      detalle: `Cliente: <strong>${nombreCliente(t['Cliente'])}</strong>`,
+      detalle2: `Vence: <span class="notif-row-fecha">${fmtFecha(venc)}</span>`,
       accion: 'Avanzar con el trámite o coordinar con cliente',
       onclick: `switchPanel('tramites')`,
-      color: 'rgba(168, 85, 247, 0.12)',
-      borderColor: 'rgba(168, 85, 247, 0.5)',
+      cliente_id: cliId, origen: 'tramite', origen_id: t.id,
     });
   }
 
@@ -1815,78 +1969,182 @@ function renderDashboardAlertas() {
     if (!proxFecha) continue;
     const dias = diasHasta(proxFecha);
     if (dias === null || dias > 30 || dias < -7) continue;
-    alertas.push({
+    const cliId = (o['Cliente'] && o['Cliente'][0]) || '';
+    conPlazo.push({
       tipo: '⚖️ Oposición',
-      dias,
+      dias, fecha: proxFecha,
       titulo: `${o['Marca del Tercero'] || o['Título']} — ${o['Etapa'] || 'Etapa actual'}`,
-      detalle: `Cliente: ${nombreCliente(o['Cliente'])} · Próxima fecha ${fmtFecha(proxFecha)}`,
+      detalle: `Cliente: <strong>${nombreCliente(o['Cliente'])}</strong>`,
+      detalle2: `Próxima fecha: <span class="notif-row-fecha">${fmtFecha(proxFecha)}</span>`,
       accion: 'Preparar escrito / audiencia',
       onclick: `switchPanel('oposiciones')`,
-      color: 'rgba(180, 83, 9, 0.12)',
-      borderColor: 'rgba(180, 83, 9, 0.5)',
+      cliente_id: cliId, origen: 'oposicion', origen_id: o.id,
     });
   }
 
-  // Ordenar por urgencia (días ascendente — los vencidos y más cercanos primero)
-  alertas.sort((a, b) => a.dias - b.dias);
-
-  if (!alertas.length) {
-    cont.innerHTML = `
-      <div style="background: var(--green-light); border: 1px solid var(--green); border-radius: 12px; padding: 18px; display: flex; align-items: center; gap: 14px;">
-        <div style="font-size: 28px;">✅</div>
-        <div>
-          <div style="font-weight: 700; color: var(--green-dark); font-size: 15px;">Todo al día</div>
-          <div style="color: var(--text-2); font-size: 13px;">No hay vencimientos próximos en los próximos días. Buen trabajo 🎯</div>
-        </div>
-      </div>
-    `;
-    return;
+  // ── 🔵 SIN PLAZO ──
+  // A. Leads Nuevos esperando contacto (>2 días sin contactar)
+  const hoyMs = Date.now();
+  for (const l of DATA.leads) {
+    if (l['Estado'] !== 'Nuevo') continue;
+    const llegada = l['Fecha Llegada'];
+    const diasDesde = llegada ? Math.round((hoyMs - new Date(llegada)) / (1000*60*60*24)) : 0;
+    if (diasDesde < 1) continue;
+    sinPlazo.push({
+      tipo: '📞 Lead nuevo',
+      titulo: `${l['Nombre']} — esperando contacto`,
+      detalle: `Origen: <strong>${l['Origen'] || '—'}</strong> · ${l['Marca de Interés'] ? 'Marca: <strong>'+l['Marca de Interés']+'</strong>' : ''}`,
+      detalle2: `Llegó hace ${diasDesde} día${diasDesde>1?'s':''} · Score: ${l['Score'] || '—'}`,
+      accion: 'Contactar para calificar',
+      onclick: `switchPanel('leads')`,
+    });
   }
 
-  // Resumen contadores
-  const criticos = alertas.filter(a => a.dias <= 7).length;
-  const altos = alertas.filter(a => a.dias > 7 && a.dias <= 30).length;
-  const medios = alertas.length - criticos - altos;
+  // B. Propuestas en Borrador / sin enviar (>5 días)
+  for (const p of DATA.propuestas) {
+    if (p['Estado'] !== 'Borrador') continue;
+    sinPlazo.push({
+      tipo: '📄 Propuesta para hacer',
+      titulo: `${p['Marca']} — pendiente de cotización`,
+      detalle: `Cliente: <strong>${nombreCliente(p['Cliente'])}</strong> · Clase ${p['Clases Niza'] || '—'}`,
+      detalle2: `Necesita cotización + envío al cliente`,
+      accion: 'Cotizar y enviar',
+      onclick: `switchPanel('propuestas')`,
+    });
+  }
 
-  cont.innerHTML = `
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 12px; flex-wrap:wrap; gap: 8px;">
-      <h3 style="margin:0; font-size: 16px; color: var(--text); display:flex; align-items:center; gap:10px;">
-        🚨 Acciones urgentes
-        <span style="font-size:12px; color:var(--text-2); font-weight:400;">— ordenadas por proximidad de vencimiento</span>
-      </h3>
-      <div style="display:flex; gap:6px; font-size:12px;">
-        ${criticos ? `<span style="background:#dc2626; color:white; padding:3px 8px; border-radius:4px; font-weight:700;">🔴 ${criticos} crítico${criticos>1?'s':''}</span>` : ''}
-        ${altos ? `<span style="background:#f59e0b; color:white; padding:3px 8px; border-radius:4px; font-weight:700;">🟠 ${altos} alto${altos>1?'s':''}</span>` : ''}
-        ${medios ? `<span style="background:#fbbf24; color:#78350f; padding:3px 8px; border-radius:4px; font-weight:700;">🟡 ${medios} medio${medios>1?'s':''}</span>` : ''}
-      </div>
+  // C. Propuestas Pendientes/Enviadas hace más de 7 días sin respuesta
+  for (const p of DATA.propuestas) {
+    if (!['Pendiente','Enviada'].includes(p['Estado'])) continue;
+    const envio = p['Fecha Envío'];
+    if (!envio) continue;
+    const diasDesde = Math.round((hoyMs - new Date(envio)) / (1000*60*60*24));
+    if (diasDesde < 7) continue;
+    sinPlazo.push({
+      tipo: '⏳ Propuesta sin respuesta',
+      titulo: `${p['Marca']} — enviada hace ${diasDesde}d sin respuesta`,
+      detalle: `Cliente: <strong>${nombreCliente(p['Cliente'])}</strong>`,
+      detalle2: `Enviada el ${fmtFecha(envio)}`,
+      accion: 'Hacer seguimiento al cliente',
+      onclick: `switchPanel('propuestas')`,
+    });
+  }
+
+  // D. Marcas para cargar pendientes
+  for (const mc of (DATA.cargar || [])) {
+    if (!['Pendiente','En curso'].includes(mc['Estado'])) continue;
+    sinPlazo.push({
+      tipo: '⬆️ Para cargar',
+      titulo: `${mc['Marca'] || mc['Denominación'] || 'Marca'} — pendiente carga`,
+      detalle: `${mc['Cliente'] ? 'Cliente: <strong>'+nombreCliente(mc['Cliente'])+'</strong>' : ''}`,
+      detalle2: 'Cargar al sistema cuando esté disponible',
+      accion: 'Procesar carga',
+      onclick: `switchPanel('cargar')`,
+    });
+  }
+
+  // Ordenar
+  conPlazo.sort((a, b) => a.dias - b.dias);
+
+  // Render bloque verde 🟢
+  const wrapPlazo = document.getElementById('notifsConPlazo');
+  let plazoCount = conPlazo.length;
+  let plazoCriticos = conPlazo.filter(a => a.dias <= 7).length;
+  wrapPlazo.innerHTML = `
+    <div class="notif-block-title">🟢 Notificaciones con plazo
+      <span style="font-size:11px; background:rgba(36,138,61,0.15); color:var(--green-dark); padding:2px 8px; border-radius:6px; font-weight:700;">${plazoCount}</span>
+      ${plazoCriticos ? `<span style="font-size:11px; background:#dc2626; color:white; padding:2px 8px; border-radius:6px; font-weight:700;">🔴 ${plazoCriticos} urgente${plazoCriticos>1?'s':''}</span>` : ''}
     </div>
-    <div style="display: grid; gap: 10px;">
-      ${alertas.slice(0, 8).map(a => `
-        <div style="background: ${a.color}; border: 1px solid ${a.borderColor}; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: transform 0.15s;"
-             onclick="${a.onclick}"
-             onmouseover="this.style.transform='translateX(4px)'"
-             onmouseout="this.style.transform='translateX(0)'">
-          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 14px;">
-            <div style="flex:1; min-width:0;">
-              <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
-                <span style="font-size:11px; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; font-weight:600;">${a.tipo}</span>
-                ${badgeUrgencia(a.dias)}
-              </div>
-              <div style="font-weight:600; color: var(--text); font-size: 14px; margin-bottom: 3px;">${a.titulo}</div>
-              <div style="font-size: 12.5px; color: var(--text-2); margin-bottom: 6px;">${a.detalle}</div>
-              <div style="font-size: 12px; color: var(--text); font-style: italic;">▸ ${a.accion}</div>
-            </div>
-            <div style="color: var(--accent); font-size: 18px;">›</div>
-          </div>
-        </div>
-      `).join('')}
-      ${alertas.length > 8 ? `
-        <div style="text-align:center; font-size: 12px; color: var(--text-2); padding: 8px;">
-          + ${alertas.length - 8} alertas más en sus respectivas secciones
-        </div>
-      ` : ''}
+    <div class="notif-block-sub">Vencimientos legales y plazos del cliente</div>
+    ${plazoCount === 0 ? `<div class="notif-empty">✅ Todo al día — sin vencimientos próximos</div>` : ''}
+    ${conPlazo.slice(0, 6).map(a => renderNotifRow(a, true)).join('')}
+    ${plazoCount > 6 ? `<div style="text-align:center; font-size:11.5px; color:var(--text-2); padding: 8px 0 0;">+ ${plazoCount - 6} más en sus secciones</div>` : ''}
+  `;
+
+  // Render bloque azul 🔵
+  const wrapSinPlazo = document.getElementById('notifsSinPlazo');
+  wrapSinPlazo.innerHTML = `
+    <div class="notif-block-title">🔵 Notificaciones sin plazo
+      <span style="font-size:11px; background:rgba(0,80,200,0.15); color:#0050C8; padding:2px 8px; border-radius:6px; font-weight:700;">${sinPlazo.length}</span>
+    </div>
+    <div class="notif-block-sub">Recordatorios manuales y avisos generales</div>
+    ${sinPlazo.length === 0 ? `<div class="notif-empty">Sin recordatorios pendientes</div>` : ''}
+    ${sinPlazo.slice(0, 6).map(a => renderNotifRow(a, false)).join('')}
+    ${sinPlazo.length > 6 ? `<div style="text-align:center; font-size:11.5px; color:var(--text-2); padding: 8px 0 0;">+ ${sinPlazo.length - 6} más</div>` : ''}
+  `;
+}
+
+function renderNotifRow(a, conPlazo) {
+  const badge = conPlazo ? badgeUrgencia(a.dias) : '';
+  const acciones = conPlazo ? `
+    <div class="notif-row-acciones" onclick="event.stopPropagation()">
+      <button class="notif-btn-mini" onclick="event.stopPropagation(); abrirModalNotificar('${a.cliente_id || ''}','${a.origen || ''}','${a.origen_id || ''}','${(a.titulo||'').replace(/'/g,'&#39;')}')">
+        🔔 Notificar
+      </button>
+      <button class="notif-btn-mini" onclick="event.stopPropagation(); ${a.onclick}">
+        👁️ Ver
+      </button>
+    </div>
+  ` : `
+    <div class="notif-row-acciones" onclick="event.stopPropagation()">
+      <button class="notif-btn-mini" onclick="event.stopPropagation(); ${a.onclick}">
+        👁️ Ver
+      </button>
     </div>
   `;
+  return `
+    <div class="notif-row" onclick="${a.onclick}">
+      <div class="notif-row-head">
+        <span class="notif-row-tipo">${a.tipo}</span>
+        ${badge}
+      </div>
+      <div class="notif-row-title">${a.titulo}</div>
+      <div class="notif-row-detalle">${a.detalle}</div>
+      ${a.detalle2 ? `<div class="notif-row-detalle">${a.detalle2}</div>` : ''}
+      <div style="font-size:12px; color: var(--text-2); font-style: italic; margin-top: 4px;">▸ ${a.accion}</div>
+      ${acciones}
+    </div>
+  `;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MODAL NOTIFICAR — enviar Email + WhatsApp recordatorio al cliente
+   ════════════════════════════════════════════════════════════════ */
+let nf_contexto = {};
+
+function abrirModalNotificar(clienteId, origen, origenId, titulo) {
+  nf_contexto = { clienteId, origen, origenId, titulo };
+  const cli = clienteId ? findById(DATA.clientes, clienteId) : null;
+  const cliInfo = cli ? `<strong>${cli['Nombre Completo / Razón Social']}</strong><br>📧 ${cli['Email'] || '<span style=\"color:var(--red)\">⚠️ sin email</span>'}<br>📱 ${cli['Teléfono WhatsApp'] || '<span style=\"color:var(--red)\">⚠️ sin tel</span>'}` : '<em style="color:var(--text-3)">Cliente no asignado</em>';
+  document.getElementById('nf_clienteInfo').innerHTML = cliInfo;
+  document.getElementById('nf_referencia').textContent = titulo;
+  document.getElementById('nf_chkEmail').checked = !!(cli && cli['Email']);
+  document.getElementById('nf_chkWA').checked = !!(cli && cli['Teléfono WhatsApp']);
+  // Pre-rellenar mensajes
+  const mensaje = `Hola ${cli ? cli['Nombre Completo / Razón Social'].split(' ')[0] : ''}, te recordamos que tenés pendiente: ${titulo}. Por favor confirmanos tu decisión a la brevedad. Cualquier duda, respondé este mensaje. Saludos del Estudio.`;
+  document.getElementById('nf_asunto').value = `Recordatorio: ${titulo}`;
+  document.getElementById('nf_mensaje').value = mensaje;
+  document.getElementById('modalNotificar').classList.add('active');
+}
+
+async function nf_enviar() {
+  const cli = nf_contexto.clienteId ? findById(DATA.clientes, nf_contexto.clienteId) : null;
+  if (!cli) { alert('Sin cliente asignado — no se puede notificar'); return; }
+  const enviarEmail = document.getElementById('nf_chkEmail').checked;
+  const enviarWA = document.getElementById('nf_chkWA').checked;
+  if (!enviarEmail && !enviarWA) { alert('Elegí al menos un canal'); return; }
+
+  const asunto = document.getElementById('nf_asunto').value;
+  const mensaje = document.getElementById('nf_mensaje').value;
+
+  // Por ahora MOCK — registramos en bitácora (Comunicaciones nueva con tipo Recordatorio)
+  // El SMTP/WA real se conecta después. Mientras, mostrar confirmación clara
+  let canales = [];
+  if (enviarEmail && cli['Email']) canales.push(`📧 Email a ${cli['Email']}`);
+  if (enviarWA && cli['Teléfono WhatsApp']) canales.push(`📱 WhatsApp a ${cli['Teléfono WhatsApp']}`);
+
+  closeModal('modalNotificar');
+  alert(`✅ Recordatorio enviado a ${cli['Nombre Completo / Razón Social']}\n\n${canales.join('\n')}\n\nAsunto: ${asunto}\n\n(Mock — el envío SMTP/WhatsApp real se conecta cuando configures las credenciales del estudio)`);
 }
 
 function renderLeads() {
