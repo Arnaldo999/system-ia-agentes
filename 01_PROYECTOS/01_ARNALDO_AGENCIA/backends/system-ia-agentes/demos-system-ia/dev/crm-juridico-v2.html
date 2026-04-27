@@ -591,6 +591,9 @@
         </div>
       </div>
 
+      <!-- ALERTAS — Acciones urgentes (vencimientos próximos) -->
+      <div id="dashboardAlertas" style="margin-bottom: 28px;"></div>
+
       <div class="kpis">
         <div class="kpi-card">
           <div class="kpi-info"><div class="kpi-label">Leads activos</div><div class="kpi-value" id="kpiLeads">0</div></div>
@@ -1666,6 +1669,9 @@ function renderDashboard() {
   const kpiT = document.getElementById('kpiTramitesKPI');
   if (kpiT) kpiT.textContent = (d.tramites_pendientes || 0) + (d.tramites_en_curso || 0);
 
+  // 🚨 ALERTAS — vencimientos y acciones urgentes
+  renderDashboardAlertas();
+
   // Widget Propuestas Pendientes
   const propuestasPend = DATA.propuestas.filter(p => ['Pendiente','Borrador'].includes(p['Estado']));
   const wp = document.getElementById('widgetPropuestas');
@@ -1698,6 +1704,189 @@ function renderDashboard() {
       </div>
     `).join('');
   }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DASHBOARD — Alertas operativas (vencimientos próximos)
+   ════════════════════════════════════════════════════════════════ */
+function diasHasta(fechaIso) {
+  if (!fechaIso) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const f = new Date(fechaIso); f.setHours(0,0,0,0);
+  return Math.round((f - hoy) / (1000*60*60*24));
+}
+
+function badgeUrgencia(dias) {
+  if (dias === null || dias === undefined) return '';
+  if (dias < 0)   return `<span style="background:#7f1d1d; color:white; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">⛔ VENCIDO hace ${Math.abs(dias)}d</span>`;
+  if (dias === 0) return `<span style="background:#dc2626; color:white; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">🔴 HOY</span>`;
+  if (dias <= 7)  return `<span style="background:#dc2626; color:white; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">🔴 ${dias}d</span>`;
+  if (dias <= 30) return `<span style="background:#f59e0b; color:white; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">🟠 ${dias}d</span>`;
+  if (dias <= 90) return `<span style="background:#fbbf24; color:#78350f; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">🟡 ${dias}d</span>`;
+  return `<span style="background:var(--gray-badge); color:var(--text-2); padding:3px 8px; border-radius:4px; font-size:11px;">${dias}d</span>`;
+}
+
+function renderDashboardAlertas() {
+  const cont = document.getElementById('dashboardAlertas');
+  const alertas = [];
+
+  // 1. Comunicaciones de oposición ENVIADAS con plazo próximo (cliente debe responder)
+  for (const c of DATA.comunicaciones) {
+    if (!['Enviada','Vista previa'].includes(c['Estado'])) continue;
+    const limite = c['Fecha Límite Decisión'];
+    if (!limite) continue;
+    const dias = diasHasta(limite);
+    if (dias === null || dias > 60) continue;
+    const cliNombre = nombreCliente(c['Cliente']);
+    const fechaEnvio = c['Fecha Envío'] ? fmtFecha(c['Fecha Envío']) : '?';
+    alertas.push({
+      tipo: '🛡️ Plazo cliente',
+      dias,
+      titulo: `${c['Marca del Cliente'] || c['Título'] || 'Comunicación'} — esperando respuesta del cliente`,
+      detalle: `Cliente: ${cliNombre} · Notificada el ${fechaEnvio} sobre marca de tercero "${c['Marca del Tercero'] || '—'}" (clase ${c['Clase Tercero'] || '—'})`,
+      accion: dias <= 7 ? 'Llamar al cliente HOY — plazo legal por vencer' : 'Confirmar respuesta del cliente',
+      onclick: `switchPanel('comunicaciones')`,
+      color: 'rgba(245, 158, 11, 0.12)',
+      borderColor: 'rgba(245, 158, 11, 0.5)',
+    });
+  }
+
+  // 2. Marcas con DJUM próximo (60 días)
+  for (const m of DATA.marcas) {
+    if (m['Estado'] !== 'Concedida') continue;
+    const djum = m['Fecha DJUM'];
+    if (!djum) continue;
+    const dias = diasHasta(djum);
+    if (dias === null || dias > 90 || dias < -30) continue;
+    alertas.push({
+      tipo: '📋 DJUM',
+      dias,
+      titulo: `${m['Denominación']} — DJUM ${dias < 0 ? 'VENCIDO' : 'próximo a vencer'}`,
+      detalle: `Cliente: ${nombreCliente(m['Cliente Titular'])} · Vence ${fmtFecha(djum)}`,
+      accion: 'Coordinar presentación DJUM con cliente (multa por demora)',
+      onclick: `switchPanel('marcas')`,
+      color: 'rgba(217, 119, 6, 0.12)',
+      borderColor: 'rgba(217, 119, 6, 0.5)',
+    });
+  }
+
+  // 3. Marcas con renovación próxima (180 días)
+  for (const m of DATA.marcas) {
+    if (m['Estado'] !== 'Concedida') continue;
+    const venc = m['Fecha Vencimiento'];
+    if (!venc) continue;
+    const dias = diasHasta(venc);
+    if (dias === null || dias > 180 || dias < 0) continue;
+    alertas.push({
+      tipo: '🔄 Renovación',
+      dias,
+      titulo: `${m['Denominación']} — Renovación próxima`,
+      detalle: `Cliente: ${nombreCliente(m['Cliente Titular'])} · Vence ${fmtFecha(venc)}`,
+      accion: 'Generar propuesta de renovación',
+      onclick: `switchPanel('marcas')`,
+      color: 'rgba(34, 197, 94, 0.12)',
+      borderColor: 'rgba(34, 197, 94, 0.5)',
+    });
+  }
+
+  // 4. Trámites con vencimiento próximo
+  for (const t of (DATA.tramites || [])) {
+    const venc = t['Fecha Vencimiento'] || t['Fecha Plazo'] || t['Fecha Límite'];
+    if (!venc) continue;
+    if (['Cerrado','Completado','Resuelto'].includes(t['Estado'])) continue;
+    const dias = diasHasta(venc);
+    if (dias === null || dias > 30 || dias < -15) continue;
+    alertas.push({
+      tipo: '📜 Trámite',
+      dias,
+      titulo: `${t['Tipo Trámite'] || t['Tipo'] || 'Trámite'} — ${t['Marca Asociada'] || t['Título'] || ''}`,
+      detalle: `Cliente: ${nombreCliente(t['Cliente'])} · Vence ${fmtFecha(venc)}`,
+      accion: 'Avanzar con el trámite o coordinar con cliente',
+      onclick: `switchPanel('tramites')`,
+      color: 'rgba(168, 85, 247, 0.12)',
+      borderColor: 'rgba(168, 85, 247, 0.5)',
+    });
+  }
+
+  // 5. Oposiciones activas con próxima audiencia / plazo
+  for (const o of DATA.oposiciones) {
+    if (!['Activa','En espera'].includes(o['Estado'])) continue;
+    const proxFecha = o['Próxima Fecha'] || o['Fecha Audiencia'] || o['Fecha Vencimiento Etapa'];
+    if (!proxFecha) continue;
+    const dias = diasHasta(proxFecha);
+    if (dias === null || dias > 30 || dias < -7) continue;
+    alertas.push({
+      tipo: '⚖️ Oposición',
+      dias,
+      titulo: `${o['Marca del Tercero'] || o['Título']} — ${o['Etapa'] || 'Etapa actual'}`,
+      detalle: `Cliente: ${nombreCliente(o['Cliente'])} · Próxima fecha ${fmtFecha(proxFecha)}`,
+      accion: 'Preparar escrito / audiencia',
+      onclick: `switchPanel('oposiciones')`,
+      color: 'rgba(180, 83, 9, 0.12)',
+      borderColor: 'rgba(180, 83, 9, 0.5)',
+    });
+  }
+
+  // Ordenar por urgencia (días ascendente — los vencidos y más cercanos primero)
+  alertas.sort((a, b) => a.dias - b.dias);
+
+  if (!alertas.length) {
+    cont.innerHTML = `
+      <div style="background: var(--green-light); border: 1px solid var(--green); border-radius: 12px; padding: 18px; display: flex; align-items: center; gap: 14px;">
+        <div style="font-size: 28px;">✅</div>
+        <div>
+          <div style="font-weight: 700; color: var(--green-dark); font-size: 15px;">Todo al día</div>
+          <div style="color: var(--text-2); font-size: 13px;">No hay vencimientos próximos en los próximos días. Buen trabajo 🎯</div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Resumen contadores
+  const criticos = alertas.filter(a => a.dias <= 7).length;
+  const altos = alertas.filter(a => a.dias > 7 && a.dias <= 30).length;
+  const medios = alertas.length - criticos - altos;
+
+  cont.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 12px; flex-wrap:wrap; gap: 8px;">
+      <h3 style="margin:0; font-size: 16px; color: var(--text); display:flex; align-items:center; gap:10px;">
+        🚨 Acciones urgentes
+        <span style="font-size:12px; color:var(--text-2); font-weight:400;">— ordenadas por proximidad de vencimiento</span>
+      </h3>
+      <div style="display:flex; gap:6px; font-size:12px;">
+        ${criticos ? `<span style="background:#dc2626; color:white; padding:3px 8px; border-radius:4px; font-weight:700;">🔴 ${criticos} crítico${criticos>1?'s':''}</span>` : ''}
+        ${altos ? `<span style="background:#f59e0b; color:white; padding:3px 8px; border-radius:4px; font-weight:700;">🟠 ${altos} alto${altos>1?'s':''}</span>` : ''}
+        ${medios ? `<span style="background:#fbbf24; color:#78350f; padding:3px 8px; border-radius:4px; font-weight:700;">🟡 ${medios} medio${medios>1?'s':''}</span>` : ''}
+      </div>
+    </div>
+    <div style="display: grid; gap: 10px;">
+      ${alertas.slice(0, 8).map(a => `
+        <div style="background: ${a.color}; border: 1px solid ${a.borderColor}; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: transform 0.15s;"
+             onclick="${a.onclick}"
+             onmouseover="this.style.transform='translateX(4px)'"
+             onmouseout="this.style.transform='translateX(0)'">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 14px;">
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+                <span style="font-size:11px; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; font-weight:600;">${a.tipo}</span>
+                ${badgeUrgencia(a.dias)}
+              </div>
+              <div style="font-weight:600; color: var(--text); font-size: 14px; margin-bottom: 3px;">${a.titulo}</div>
+              <div style="font-size: 12.5px; color: var(--text-2); margin-bottom: 6px;">${a.detalle}</div>
+              <div style="font-size: 12px; color: var(--text); font-style: italic;">▸ ${a.accion}</div>
+            </div>
+            <div style="color: var(--accent); font-size: 18px;">›</div>
+          </div>
+        </div>
+      `).join('')}
+      ${alertas.length > 8 ? `
+        <div style="text-align:center; font-size: 12px; color: var(--text-2); padding: 8px;">
+          + ${alertas.length - 8} alertas más en sus respectivas secciones
+        </div>
+      ` : ''}
+    </div>
+  `;
 }
 
 function renderLeads() {
