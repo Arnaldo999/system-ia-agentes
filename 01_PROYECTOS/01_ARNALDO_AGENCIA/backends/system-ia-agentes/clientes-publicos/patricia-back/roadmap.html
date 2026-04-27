@@ -52,129 +52,112 @@
   .piece-crm .piece-icon { background: #ede9fe; }
   .piece-cal .piece-icon { background: #fef3c7; }
 
-  /* Marcas sub-rubros */
+  /* Marcas */
   .marca {
     border-radius: 12px;
-    padding: 20px;
+    padding: 18px;
     border: 2px solid;
     background: white;
+    height: 100%;
   }
-  .marca-eventos {
-    border-color: #ec4899;
-    background: linear-gradient(135deg, #fdf2f8 0%, #fef3f9 100%);
-  }
-  .marca-inmo {
-    border-color: #0ea5e9;
-    background: linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%);
-  }
-  .marca-gastro {
-    border-color: #f59e0b;
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  }
+  .marca-rizoma   { border-color: #0ea5e9; background: linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%); }
+  .marca-mision   { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); }
+  .marca-patricio { border-color: #ec4899; background: linear-gradient(135deg, #fdf2f8 0%, #fef3f9 100%); }
+  .marca-martina  { border-color: #14b8a6; background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); }
+  .marca-bocanada { border-color: #f97316; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); }
+  .marca-club     { border-color: #16a34a; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+  .marca-fund     { border-color: #6366f1; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); }
+
   .marca h3 {
-    font-size: 1.125rem;
+    font-size: 1.05rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
-  .marca-eventos h3 { color: #be185d; }
-  .marca-inmo h3    { color: #0369a1; }
-  .marca-gastro h3  { color: #b45309; }
+  .marca-rizoma h3   { color: #0369a1; }
+  .marca-mision h3   { color: #b45309; }
+  .marca-patricio h3 { color: #be185d; }
+  .marca-martina h3  { color: #0f766e; }
+  .marca-bocanada h3 { color: #c2410c; }
+  .marca-club h3     { color: #15803d; }
+  .marca-fund h3     { color: #4338ca; }
 
-  /* Flujo cliente */
-  .flow-step {
+  .badge-orden {
+    display: inline-block;
     background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 14px;
-    position: relative;
-  }
-  .flow-step::before {
-    content: attr(data-step);
-    position: absolute;
-    top: -12px;
-    left: 14px;
-    background: #7c3aed;
-    color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
-
-  /* Timeline de fases */
-  .phase-timeline {
-    position: relative;
-    padding-left: 32px;
-  }
-  .phase-timeline::before {
-    content: '';
-    position: absolute;
-    left: 12px;
-    top: 10px;
-    bottom: 10px;
-    width: 3px;
-    background: linear-gradient(to bottom, #7c3aed, #ec4899, #f59e0b);
-    border-radius: 3px;
-  }
-  .phase-item {
-    position: relative;
-    padding-bottom: 28px;
-  }
-  .phase-item::before {
-    content: attr(data-phase);
-    position: absolute;
-    left: -28px;
-    top: 2px;
+    border: 2px solid currentColor;
     width: 28px;
     height: 28px;
-    background: white;
-    border: 3px solid #7c3aed;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 24px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    margin-right: 6px;
+  }
+  .badge-pieza {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin: 2px 2px 2px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .b-web { background: #cffafe; color: #155e75; }
+  .b-bot { background: #d1fae5; color: #065f46; }
+  .b-crm { background: #ede9fe; color: #5b21b6; }
+  .b-blog { background: #f1f5f9; color: #475569; }
+
+  /* Timeline secuencial */
+  .seq-item {
+    position: relative;
+    padding-left: 50px;
+    padding-bottom: 24px;
+  }
+  .seq-item::before {
+    content: attr(data-step);
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+    color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #7c3aed;
+    font-size: 0.95rem;
+    font-weight: 800;
   }
-  .phase-title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 6px;
-  }
-  .phase-week {
-    display: inline-block;
-    background: #ede9fe;
-    color: #6d28d9;
-    padding: 3px 10px;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  /* Diagrama conexiones */
-  .ecosystem-diagram {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    position: relative;
-  }
-  .conn-arrow {
+  .seq-item:not(:last-child)::after {
+    content: '';
     position: absolute;
-    color: #7c3aed;
-    font-size: 1.5rem;
-    font-weight: 700;
+    left: 17px;
+    top: 38px;
+    bottom: -4px;
+    width: 2px;
+    background: linear-gradient(to bottom, #c4b5fd, #f9a8d4);
   }
 
-  /* CTA */
+  .info-box {
+    background: #eff6ff;
+    border-left: 4px solid #0ea5e9;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #0c4a6e;
+  }
+  .info-box-warn {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #78350f;
+  }
+
   .cta-button {
     background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
     color: white;
@@ -194,15 +177,6 @@
     box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
   }
 
-  .info-box {
-    background: #eff6ff;
-    border-left: 4px solid #0ea5e9;
-    padding: 14px 18px;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    color: #0c4a6e;
-  }
-
   @media print {
     body { background: white; }
     .no-print { display: none !important; }
@@ -218,82 +192,161 @@
   <div class="hero rounded-2xl p-6 sm:p-12 mb-8">
     <div class="flex items-center gap-2 text-purple-100 text-sm mb-3 font-medium">
       <span>🗺️</span>
-      <span>Hoja de Ruta · Ecosistema Digital</span>
+      <span>Hoja de Ruta · Ecosistema Digital · v2 (alcance final)</span>
     </div>
     <h1 class="text-2xl sm:text-4xl font-bold mb-4 leading-tight">
-      Grupo Back — todo el negocio conectado en un solo ecosistema
+      Grupo Back — 7 firmas, un solo ecosistema digital
     </h1>
     <p class="text-purple-100 text-base sm:text-lg leading-relaxed max-w-3xl">
-      Este documento muestra cómo va a funcionar el ecosistema digital que vamos a construir para vos.
-      Sitio web, bot de WhatsApp, CRM y agenda — todo trabajando en conjunto, con cada marca respetando
-      su identidad propia.
+      Este documento muestra el alcance final del ecosistema digital del Grupo Back: las 7 firmas,
+      qué pieza digital tiene cada una, las herramientas que vamos a usar, y en qué orden
+      vamos a construir todo.
     </p>
     <div class="mt-6 flex flex-wrap gap-2 text-xs text-purple-100">
-      <span>📅 Abril 2026</span>
+      <span>📅 Abril 2026 · v2</span>
       <span>·</span>
       <span>Para: Patricia Back</span>
       <span>·</span>
       <span>Preparado por: Arnaldo Ayala — Estratega en IA</span>
     </div>
+    <div class="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-lg px-3 py-2 text-xs text-white">
+      🌐 Dominio propuesto: <strong>grupoback.com</strong> <span class="text-purple-100">(disponible · pendiente confirmación de Patricia)</span>
+    </div>
   </div>
 
-  <!-- LAS 3 MARCAS -->
+  <!-- LAS 7 FIRMAS -->
   <div class="card mb-8">
-    <h2 class="text-2xl font-bold mb-3">Las 3 marcas del grupo</h2>
+    <h2 class="text-2xl font-bold mb-3">Las 7 firmas del Grupo Back</h2>
     <p class="text-slate-600 mb-6">
-      El ecosistema va a respetar que cada marca tiene su personalidad propia — colores, tono y público distintos — pero todas van a trabajar bajo el paraguas de Grupo Back.
+      El ecosistema cubre <strong>5 rubros distintos + 2 blogs informativos</strong>. Cada marca conserva su identidad propia, pero todas conviven bajo el sitio web del Grupo y comparten infraestructura técnica.
     </p>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-      <div class="marca marca-eventos">
-        <div class="text-3xl mb-2">🎉</div>
-        <h3>Patricios</h3>
-        <p class="text-sm text-pink-900 mb-3 font-medium">Eventos y fiestas</p>
-        <ul class="text-xs text-slate-700 space-y-1">
-          <li>• Alquiler de salón</li>
-          <li>• Paquetes de eventos</li>
-          <li>• Reservas y señas</li>
-          <li>• Calendario de disponibilidad</li>
-        </ul>
-      </div>
-
-      <div class="marca marca-inmo">
+      <!-- 1 RIZOMA -->
+      <div class="marca marca-rizoma">
         <div class="text-3xl mb-2">🏡</div>
-        <h3>Inmobiliaria Back</h3>
-        <p class="text-sm text-sky-900 mb-3 font-medium">Alquileres + venta de terrenos y lotes</p>
-        <ul class="text-xs text-slate-700 space-y-1">
-          <li>• Catálogo de propiedades</li>
-          <li>• Mapa interactivo de lotes</li>
-          <li>• Gestión de inquilinos</li>
-          <li>• Contratos y cobros</li>
+        <h3><span class="badge-orden">1</span>Rizoma Propiedades</h3>
+        <p class="text-sm text-sky-900 mb-2 font-medium">Inmobiliaria multi-vertical · Toda Misiones</p>
+        <ul class="text-xs text-slate-700 space-y-1 mb-2">
+          <li>• Venta de lotes, terrenos, casas</li>
+          <li>• Servicios: obras y loteos</li>
+          <li>• Alquileres: casas, habitaciones, deptos</li>
+          <li>• Tasaciones judiciales, asesorías, estados contables</li>
         </ul>
+        <div>
+          <span class="badge-pieza b-web">Sub-sitio</span>
+          <span class="badge-pieza b-bot">Bot WhatsApp</span>
+          <span class="badge-pieza b-crm">CRM</span>
+        </div>
       </div>
 
-      <div class="marca marca-gastro">
+      <!-- 2 LA MISIONERITA -->
+      <div class="marca marca-mision">
         <div class="text-3xl mb-2">🍽️</div>
-        <h3>La Misionerita</h3>
-        <p class="text-sm text-amber-900 mb-3 font-medium">Restaurant · Turismo en colectivos</p>
-        <ul class="text-xs text-slate-700 space-y-1">
-          <li>• Registro de tours entrantes</li>
-          <li>• Reservas grupales</li>
-          <li>• Menú del día</li>
-          <li>• Facturación de grupos</li>
+        <h3><span class="badge-orden">2</span>La Misionerita</h3>
+        <p class="text-sm text-amber-900 mb-2 font-medium">Restaurant + Parador turístico</p>
+        <ul class="text-xs text-slate-700 space-y-1 mb-2">
+          <li>• Comidas + menús personalizados</li>
+          <li>• Contingentes de colectivos</li>
+          <li>• Reservas y carta online</li>
+          <li>• Empresas turísticas ven cartas y agendan visitas</li>
         </ul>
+        <div>
+          <span class="badge-pieza b-web">Sub-sitio</span>
+          <span class="badge-pieza b-bot">Bot WhatsApp</span>
+          <span class="badge-pieza b-crm">CRM</span>
+        </div>
       </div>
 
-    </div>
+      <!-- 3 PATRICIO'S -->
+      <div class="marca marca-patricio">
+        <div class="text-3xl mb-2">🎉</div>
+        <h3><span class="badge-orden">3</span>Patricio's</h3>
+        <p class="text-sm text-pink-900 mb-2 font-medium">Resto-bar + Eventos</p>
+        <ul class="text-xs text-slate-700 space-y-1 mb-2">
+          <li>• Alquiler de salones para fiestas</li>
+          <li>• Carta online + reservas</li>
+          <li>• Turnos para alquiler de salón</li>
+          <li>• Ofertas de catering</li>
+        </ul>
+        <div>
+          <span class="badge-pieza b-web">Sub-sitio</span>
+          <span class="badge-pieza b-bot">Bot (alquiler salón)</span>
+          <span class="badge-pieza b-crm">CRM</span>
+        </div>
+      </div>
 
-    <div class="info-box mt-6">
-      <strong>Nombre del grupo:</strong> Pendiente de confirmar con Patricia. En este documento lo mencionamos como "Grupo Back" como placeholder — lo ajustamos cuando decidas el nombre definitivo.
+      <!-- 4 LA MARTINA -->
+      <div class="marca marca-martina">
+        <div class="text-3xl mb-2">🏨</div>
+        <h3><span class="badge-orden">4</span>La Martina Apart Hotel</h3>
+        <p class="text-sm text-teal-900 mb-2 font-medium">Hospedaje · San Ignacio</p>
+        <ul class="text-xs text-slate-700 space-y-1 mb-2">
+          <li>• Reservas y alquiler de departamentos</li>
+          <li>• Servicio de hospedaje en San Ignacio</li>
+        </ul>
+        <div>
+          <span class="badge-pieza b-web">Sub-sitio</span>
+          <span class="badge-pieza b-crm">CRM reservas</span>
+          <span class="badge-pieza b-bot" style="opacity:.6">Bot (a confirmar)</span>
+        </div>
+      </div>
+
+      <!-- 5 BOCANADA -->
+      <div class="marca marca-bocanada">
+        <div class="text-3xl mb-2">🥖</div>
+        <h3><span class="badge-orden">5</span>Bocanada</h3>
+        <p class="text-sm text-orange-900 mb-2 font-medium">Panadería / Pastelería</p>
+        <ul class="text-xs text-slate-700 space-y-1 mb-2">
+          <li>• Reservas y pedidos personalizados</li>
+          <li>• Productos panificados, confitería</li>
+          <li>• Catering, milanesas</li>
+        </ul>
+        <div>
+          <span class="badge-pieza b-web">Sub-sitio</span>
+          <span class="badge-pieza b-crm">CRM pedidos</span>
+          <span class="badge-pieza b-bot" style="opacity:.6">Bot (a confirmar)</span>
+        </div>
+      </div>
+
+      <!-- 6 CLUB PROGRESO -->
+      <div class="marca marca-club">
+        <div class="text-3xl mb-2">⚽</div>
+        <h3><span class="badge-orden">6</span>Club Progreso</h3>
+        <p class="text-sm text-green-900 mb-2 font-medium">Club de fútbol</p>
+        <ul class="text-xs text-slate-700 space-y-1 mb-2">
+          <li>• Blog informativo del club</li>
+          <li>• Información de las distintas categorías</li>
+        </ul>
+        <div>
+          <span class="badge-pieza b-blog">Solo blog</span>
+        </div>
+      </div>
+
+      <!-- 7 FUNDACION -->
+      <div class="marca marca-fund md:col-span-2">
+        <div class="text-3xl mb-2">💡</div>
+        <h3><span class="badge-orden">7</span>Fundación "Misión Emprender"</h3>
+        <p class="text-sm text-indigo-900 mb-2 font-medium">Educativa / Capacitación</p>
+        <ul class="text-xs text-slate-700 space-y-1 mb-2">
+          <li>• Blog informativo de cursos y talleres</li>
+          <li>• Grilla calendario de cursos</li>
+        </ul>
+        <div>
+          <span class="badge-pieza b-blog">Solo blog</span>
+          <span class="badge-pieza b-web">Calendario público</span>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- 4 PIEZAS DEL ECOSISTEMA -->
+  <!-- LAS 4 PIEZAS -->
   <div class="card mb-8">
-    <h2 class="text-2xl font-bold mb-3">Las 4 piezas del ecosistema</h2>
+    <h2 class="text-2xl font-bold mb-3">Las piezas del ecosistema</h2>
     <p class="text-slate-600 mb-6">
-      Todo lo que vamos a construir son 4 piezas conectadas entre sí. Así funciona cada una:
+      Para cubrir las 7 firmas, vamos a construir 4 tipos de pieza interconectada:
     </p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -302,27 +355,27 @@
         <div class="piece-icon">🌐</div>
         <h3 class="text-lg font-bold mb-2">Sitio web multi-marca</h3>
         <p class="text-sm text-slate-600 mb-3">
-          Un solo sitio con <strong>home general</strong> del grupo y <strong>sub-páginas por marca</strong> — cada una con su propia identidad visual.
+          Un solo dominio (<strong>grupoback.com</strong>) con home del grupo y <strong>7 sub-páginas</strong>, cada una con su skin propio.
         </p>
         <div class="text-xs text-slate-500 space-y-1">
           <div>• <code class="bg-slate-100 px-1 rounded">/</code> → home Grupo Back</div>
-          <div>• <code class="bg-slate-100 px-1 rounded">/patricios</code> → eventos</div>
-          <div>• <code class="bg-slate-100 px-1 rounded">/inmobiliaria</code> → propiedades</div>
-          <div>• <code class="bg-slate-100 px-1 rounded">/la-misionerita</code> → gastronomía</div>
+          <div>• <code class="bg-slate-100 px-1 rounded">/rizoma</code>, <code class="bg-slate-100 px-1 rounded">/misionerita</code>, <code class="bg-slate-100 px-1 rounded">/patricios</code></div>
+          <div>• <code class="bg-slate-100 px-1 rounded">/martina</code>, <code class="bg-slate-100 px-1 rounded">/bocanada</code></div>
+          <div>• <code class="bg-slate-100 px-1 rounded">/club-progreso</code>, <code class="bg-slate-100 px-1 rounded">/mision-emprender</code> (blogs)</div>
         </div>
       </div>
 
       <div class="piece piece-bot">
         <div class="piece-icon">💬</div>
-        <h3 class="text-lg font-bold mb-2">Bot WhatsApp multi-rubro</h3>
+        <h3 class="text-lg font-bold mb-2">Bots WhatsApp dedicados</h3>
         <p class="text-sm text-slate-600 mb-3">
-          Un solo número que atiende <strong>las 3 marcas</strong>. Detecta qué busca el cliente y responde con el tono y la información correspondiente.
+          <strong>3 bots separados</strong> (no un único bot multi-rubro), cada uno con razonamiento propio para su negocio.
         </p>
         <div class="text-xs text-slate-500 space-y-1">
-          <div>• Atiende consultas 24/7</div>
-          <div>• Filtra leads con preguntas clave</div>
-          <div>• Deriva al asesor correcto por rubro</div>
-          <div>• Agenda visitas o reservas</div>
+          <div>• Bot Rizoma — leads inmobiliarios + alquileres</div>
+          <div>• Bot Misionerita — reservas + agenda contingentes</div>
+          <div>• Bot Patricio's — citas alquiler salón</div>
+          <div>• (+ Martina y Bocanada en próxima fase si aplica)</div>
         </div>
       </div>
 
@@ -330,271 +383,245 @@
         <div class="piece-icon">📊</div>
         <h3 class="text-lg font-bold mb-2">CRM multi-negocio</h3>
         <p class="text-sm text-slate-600 mb-3">
-          Un CRM web con <strong>menú lateral separado por marca</strong>. Vos ves todo desde un solo lugar pero los datos quedan organizados por rubro.
+          Un CRM web con <strong>menú lateral por marca</strong>. <strong>Ficha única de cliente</strong> aunque consuma servicios de varias marcas (cross-marca).
         </p>
         <div class="text-xs text-slate-500 space-y-1">
-          <div>• Sidebar: Patricios / Inmo / Misionerita</div>
+          <div>• Sidebar: Rizoma / Misionerita / Patricio's / Martina / Bocanada</div>
           <div>• Pipeline de leads por marca</div>
           <div>• Métricas cruzadas del grupo</div>
-          <div>• Ficha única de cliente (aunque consuma varios servicios)</div>
+          <div>• Persona única + roles cross-marca</div>
         </div>
       </div>
 
       <div class="piece piece-cal">
         <div class="piece-icon">📅</div>
-        <h3 class="text-lg font-bold mb-2">Agenda con múltiples eventos</h3>
+        <h3 class="text-lg font-bold mb-2">Agenda Cal.com multi-evento</h3>
         <p class="text-sm text-slate-600 mb-3">
-          Una sola agenda (Cal.com) con <strong>eventos distintos</strong>. Cada tipo de servicio tiene su propio flujo de reserva.
+          Una agenda con <strong>tipos de evento por marca</strong>:
         </p>
         <div class="text-xs text-slate-500 space-y-1">
-          <div>• "Visita al salón Patricios"</div>
-          <div>• "Visita a propiedad"</div>
-          <div>• "Reserva grupal La Misionerita"</div>
-          <div>• Sincroniza con el CRM automáticamente</div>
+          <div>• "Visita propiedad Rizoma"</div>
+          <div>• "Reserva grupal Misionerita"</div>
+          <div>• "Cita alquiler salón Patricio's"</div>
+          <div>• "Reserva Martina"</div>
         </div>
       </div>
 
     </div>
   </div>
 
-  <!-- CÓMO SE CONECTAN -->
+  <!-- ESTRATEGIA DE CONSTRUCCIÓN -->
   <div class="card mb-8">
-    <h2 class="text-2xl font-bold mb-3">Cómo se conectan las 4 piezas</h2>
+    <h2 class="text-2xl font-bold mb-3">Estrategia: una firma por vez 🎯</h2>
     <p class="text-slate-600 mb-6">
-      El valor del ecosistema está en que <strong>todo habla entre sí automáticamente</strong>. No vas a tener que copiar datos entre sistemas.
+      Construimos las 7 firmas <strong>una por vez en orden de prioridad</strong>. Cada firma se entrega completa (sub-sitio + bot + CRM cuando aplica) antes de pasar a la siguiente. Como ya tenemos la mayor parte de la base técnica pre-construida, el ritmo es ágil y cada marca queda lista en pocos días.
     </p>
 
-    <div class="bg-slate-50 rounded-xl p-6 border border-slate-200">
-      <div class="flex flex-col items-center gap-4">
+    <div class="info-box mb-6">
+      <strong>¿Por qué de a una?</strong>
+      <ul class="mt-2 space-y-1">
+        <li>✅ La primera marca queda andando en pocos días, no en meses</li>
+        <li>✅ Cada firma se entrega cerrada y aprobada antes de pasar a la siguiente</li>
+        <li>✅ Cualquier ajuste se hace en caliente sobre lo que ya está vivo, sin frenar el resto</li>
+        <li>✅ Menor riesgo y mejor seguimiento — paso por paso, con visto bueno entre etapas</li>
+      </ul>
+    </div>
 
-        <!-- Fila 1: Web + Bot -->
-        <div class="flex flex-col sm:flex-row gap-4 w-full">
-          <div class="flex-1 bg-cyan-50 border-2 border-cyan-500 rounded-lg p-4 text-center">
-            <div class="text-2xl mb-1">🌐</div>
-            <div class="font-bold text-cyan-900">Sitio web</div>
-            <div class="text-xs text-cyan-700 mt-1">El cliente descubre las marcas</div>
+    <h3 class="font-bold text-lg mb-4">Orden propuesto de construcción</h3>
+
+    <div class="seq-item" data-step="1">
+      <div class="font-bold text-slate-900">Rizoma Propiedades</div>
+      <div class="text-sm text-slate-600">El nicho más amplio (ventas + alquileres + servicios + tasaciones). Bot WhatsApp + sub-sitio con catálogo + CRM completo. Estimado: 2 días.</div>
+    </div>
+
+    <div class="seq-item" data-step="2">
+      <div class="font-bold text-slate-900">La Misionerita</div>
+      <div class="text-sm text-slate-600">Temporada activa de tours / contingentes. Bot maneja reservas + agenda visitas de empresas turísticas + carta online. Estimado: 1-2 días.</div>
+    </div>
+
+    <div class="seq-item" data-step="3">
+      <div class="font-bold text-slate-900">Patricio's</div>
+      <div class="text-sm text-slate-600">Alcance acotado: bot para citas de alquiler de salón + ofertas de catering. Estimado: 1 día.</div>
+    </div>
+
+    <div class="seq-item" data-step="4">
+      <div class="font-bold text-slate-900">La Martina Apart Hotel</div>
+      <div class="text-sm text-slate-600">Sistema de reservas de departamentos en San Ignacio. Estimado: 1 día.</div>
+    </div>
+
+    <div class="seq-item" data-step="5">
+      <div class="font-bold text-slate-900">Bocanada</div>
+      <div class="text-sm text-slate-600">Pedidos personalizados de panadería, pastelería y catering. Estimado: 1 día.</div>
+    </div>
+
+    <div class="seq-item" data-step="6">
+      <div class="font-bold text-slate-900">Club Progreso + Misión Emprender</div>
+      <div class="text-sm text-slate-600">Las dos en paralelo (son blogs informativos: club por categorías, fundación con calendario público de cursos). Estimado: 1 día las dos juntas.</div>
+    </div>
+
+    <div class="info-box-warn mt-6">
+      <strong>Total estimado del ecosistema completo</strong>: <strong>5 a 10 días</strong> de implementación, con la primera marca andando en menos de una semana. <strong>El orden final lo define Patricia</strong> — esto es propuesta.
+    </div>
+  </div>
+
+  <!-- HERRAMIENTAS -->
+  <div class="card mb-8">
+    <h2 class="text-2xl font-bold mb-3">🛠️ Herramientas que vamos a utilizar</h2>
+    <p class="text-slate-600 mb-6">
+      Todo el ecosistema corre sobre tecnologías profesionales y probadas. Esto es lo que se va a usar para que Grupo Back tenga su infraestructura propia:
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <div class="bg-white border-2 border-cyan-200 rounded-xl p-4">
+        <div class="flex items-start gap-3">
+          <div class="text-3xl">🌐</div>
+          <div class="flex-1">
+            <div class="font-bold text-cyan-900 mb-1">WordPress</div>
+            <p class="text-xs text-slate-600 mb-2">Sitio web del Grupo y sub-sitios de cada marca. Incluye <strong>hosting profesional</strong> y el <strong>dominio</strong> grupoback.com.</p>
+            <span class="text-xs text-cyan-700 font-semibold">Sitio web · Dominio · Hosting</span>
           </div>
-          <div class="flex items-center justify-center text-3xl text-slate-400">↔</div>
-          <div class="flex-1 bg-emerald-50 border-2 border-emerald-500 rounded-lg p-4 text-center">
-            <div class="text-2xl mb-1">💬</div>
-            <div class="font-bold text-emerald-900">Bot WhatsApp</div>
-            <div class="text-xs text-emerald-700 mt-1">El cliente consulta y cotiza</div>
+        </div>
+      </div>
+
+      <div class="bg-white border-2 border-emerald-200 rounded-xl p-4">
+        <div class="flex items-start gap-3">
+          <div class="text-3xl">🖥️</div>
+          <div class="flex-1">
+            <div class="font-bold text-emerald-900 mb-1">VPS dedicado</div>
+            <p class="text-xs text-slate-600 mb-2">Servidor privado donde se alojan la base de datos y <strong>n8n</strong> (motor de automatizaciones que conecta WhatsApp, Airtable, agenda y más).</p>
+            <span class="text-xs text-emerald-700 font-semibold">Automatizaciones · Servidor privado</span>
           </div>
         </div>
-
-        <div class="text-3xl text-slate-400">↓</div>
-
-        <!-- Fila 2: CRM central -->
-        <div class="w-full max-w-md bg-purple-50 border-2 border-purple-500 rounded-lg p-4 text-center">
-          <div class="text-2xl mb-1">📊</div>
-          <div class="font-bold text-purple-900">CRM multi-negocio</div>
-          <div class="text-xs text-purple-700 mt-1">Todas las conversaciones, leads y clientes quedan acá — organizados por marca</div>
-        </div>
-
-        <div class="text-3xl text-slate-400">↓</div>
-
-        <!-- Fila 3: Cal.com -->
-        <div class="w-full max-w-md bg-amber-50 border-2 border-amber-500 rounded-lg p-4 text-center">
-          <div class="text-2xl mb-1">📅</div>
-          <div class="font-bold text-amber-900">Agenda Cal.com</div>
-          <div class="text-xs text-amber-700 mt-1">Si el cliente pide reservar o visitar, se agenda directo desde WhatsApp</div>
-        </div>
-
       </div>
-    </div>
-  </div>
 
-  <!-- FLUJO DEL CLIENTE FINAL -->
-  <div class="card mb-8">
-    <h2 class="text-2xl font-bold mb-3">Un ejemplo real — así vive esto un cliente</h2>
-    <p class="text-slate-600 mb-6">
-      Para que se entienda mejor, veamos un flujo completo. Supongamos que alguien quiere organizar un cumpleaños y visitar el salón de Patricios:
-    </p>
-
-    <div class="space-y-4">
-
-      <div class="flow-step" data-step="1">
-        <div class="pl-8">
-          <div class="font-semibold text-slate-900 mb-1">El cliente entra al sitio web</div>
-          <div class="text-sm text-slate-600">Busca en Google "salón de eventos Posadas" y llega a <code class="bg-slate-100 px-1 rounded text-xs">/patricios</code>. Ve fotos, paquetes, precios. El sitio tiene los colores y el tono festivo de Patricios.</div>
+      <div class="bg-white border-2 border-purple-200 rounded-xl p-4">
+        <div class="flex items-start gap-3">
+          <div class="text-3xl">⚙️</div>
+          <div class="flex-1">
+            <div class="font-bold text-purple-900 mb-1">Coolify</div>
+            <p class="text-xs text-slate-600 mb-2">Plataforma profesional donde se ejecutan y publican los <strong>bots</strong>, el <strong>CRM</strong> y las <strong>bases de datos</strong>. Permite actualizar todo sin cortar el servicio.</p>
+            <span class="text-xs text-purple-700 font-semibold">Bots · CRM · BD · Deploys</span>
+          </div>
         </div>
       </div>
 
-      <div class="flow-step" data-step="2">
-        <div class="pl-8">
-          <div class="font-semibold text-slate-900 mb-1">Hace clic en "Consultar por WhatsApp"</div>
-          <div class="text-sm text-slate-600">Se abre WhatsApp con el número del Grupo. El bot lo saluda con el tono de Patricios y le pregunta qué tipo de evento está planeando.</div>
+      <div class="bg-white border-2 border-amber-200 rounded-xl p-4">
+        <div class="flex items-start gap-3">
+          <div class="text-3xl">📊</div>
+          <div class="flex-1">
+            <div class="font-bold text-amber-900 mb-1">Airtable</div>
+            <p class="text-xs text-slate-600 mb-2">Base de datos central de todo el ecosistema. Acá quedan registrados leads, contactos, contratos, reservas, pedidos y agenda — accesible desde una interfaz fácil de usar.</p>
+            <span class="text-xs text-amber-700 font-semibold">Base de datos central</span>
+          </div>
         </div>
       </div>
 
-      <div class="flow-step" data-step="3">
-        <div class="pl-8">
-          <div class="font-semibold text-slate-900 mb-1">El bot lo califica y le da info</div>
-          <div class="text-sm text-slate-600">Le pregunta fecha, cantidad de invitados, tipo de evento. Le manda los paquetes que aplican a su caso. Todo queda registrado en el CRM como lead caliente de la marca Patricios.</div>
-        </div>
-      </div>
-
-      <div class="flow-step" data-step="4">
-        <div class="pl-8">
-          <div class="font-semibold text-slate-900 mb-1">Agenda visita al salón</div>
-          <div class="text-sm text-slate-600">El bot le ofrece agendar visita presencial. El cliente elige día y hora desde Cal.com. Automáticamente se bloquea en tu agenda y se te avisa por WhatsApp.</div>
-        </div>
-      </div>
-
-      <div class="flow-step" data-step="5">
-        <div class="pl-8">
-          <div class="font-semibold text-slate-900 mb-1">Vos lo atendés y cerrás</div>
-          <div class="text-sm text-slate-600">Desde el CRM ves toda su conversación previa, lo que preguntó, el paquete que le interesa. Entrevista fluida. Cerrás la reserva. El CRM registra el cliente como activo con la seña paga.</div>
-        </div>
-      </div>
-
-      <div class="flow-step" data-step="6">
-        <div class="pl-8">
-          <div class="font-semibold text-slate-900 mb-1">Post-evento</div>
-          <div class="text-sm text-slate-600">Después del evento, el bot le manda un mensaje pidiendo reseña. Si él vuelve en 6 meses queriendo alquilar un departamento, <strong>el sistema lo reconoce como cliente existente</strong> y ya tiene sus datos — solo le cambia el rubro al consultar por Inmobiliaria Back.</div>
+      <div class="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-4 md:col-span-2">
+        <div class="flex items-start gap-3">
+          <div class="text-3xl">🛡️</div>
+          <div class="flex-1">
+            <div class="font-bold text-purple-900 mb-1">Capas de seguridad sobre todo el ecosistema</div>
+            <p class="text-xs text-slate-600">Tokens de acceso protegidos, conexiones encriptadas (HTTPS/SSL en todas las URLs), backups automáticos diarios y aislamiento físico de los datos del Grupo Back. Cada servicio del ecosistema está blindado para que la información interna no quede expuesta.</p>
+          </div>
         </div>
       </div>
 
     </div>
   </div>
 
-  <!-- CRONOGRAMA EN FASES -->
-  <div class="card mb-8">
-    <h2 class="text-2xl font-bold mb-3">Las 6 fases de construcción</h2>
-    <p class="text-slate-600 mb-6">
-      Todo el ecosistema se arma en 6 fases ordenadas. Vamos a ir construyendo y mostrándote cada una a medida que avanzamos.
+  <!-- TRATAMIENTO DE DATOS -->
+  <div class="card mb-8 border-2 border-purple-200" style="background: linear-gradient(135deg, #faf5ff 0%, #fdf4ff 100%);">
+    <h2 class="text-2xl font-bold mb-3">🔒 Tratamiento de los datos del Grupo Back</h2>
+    <p class="text-slate-700 mb-4">
+      Los datos de tus clientes (contactos, conversaciones, contratos, reservas) son <strong>tuyos</strong> y se manejan con los siguientes principios — esto va escrito en el contrato:
     </p>
 
-    <div class="phase-timeline">
-
-      <div class="phase-item" data-phase="1">
-        <div class="phase-week">Fase 1 · Descubrimiento</div>
-        <div class="phase-title">Definir nombres, colores y contenidos</div>
-        <div class="text-sm text-slate-600 leading-relaxed">
-          Confirmamos el nombre del Grupo, compramos el dominio, y tú nos pasás los colores, logos y tono que querés para cada marca.
-          Te mandamos un formulario para que cargues todos los detalles de las 3 marcas (paquetes, propiedades, menú, etc.).
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-lg p-4 border border-purple-200">
+        <div class="font-bold text-purple-900 mb-1">🔐 Aislamiento físico</div>
+        <p class="text-sm text-slate-600">La base de datos del Grupo Back vive en su propio entorno, sin mezclarse con datos de ninguna otra organización.</p>
       </div>
-
-      <div class="phase-item" data-phase="2">
-        <div class="phase-week">Fase 2 · Sitio web</div>
-        <div class="phase-title">Construcción de la web multi-marca</div>
-        <div class="text-sm text-slate-600 leading-relaxed">
-          Armamos la página principal del Grupo Back y las 3 sub-páginas (Patricios, Inmobiliaria, La Misionerita).
-          Cada una con su skin propia, pero navegables desde el menú unificado. Optimizado para celular.
-        </div>
+      <div class="bg-white rounded-lg p-4 border border-purple-200">
+        <div class="font-bold text-purple-900 mb-1">📦 Propiedad y portabilidad</div>
+        <p class="text-sm text-slate-600">Los datos son del Grupo Back. Si algún día querés migrar a otro proveedor, te entregamos toda la base exportada.</p>
       </div>
-
-      <div class="phase-item" data-phase="3">
-        <div class="phase-week">Fase 3 · Bot WhatsApp</div>
-        <div class="phase-title">Registro oficial y configuración del asistente</div>
-        <div class="text-sm text-slate-600 leading-relaxed">
-          Registramos el número con WhatsApp Business oficial.
-          Configuramos el bot con IA para que atienda las 3 marcas, detecte qué quiere el cliente y responda con la información de cada rubro.
-        </div>
+      <div class="bg-white rounded-lg p-4 border border-purple-200">
+        <div class="font-bold text-purple-900 mb-1">🤐 Confidencialidad</div>
+        <p class="text-sm text-slate-600">No se comparten datos con terceros, no se utilizan para entrenar modelos de IA y solo se accede a ellos por necesidad técnica.</p>
       </div>
-
-      <div class="phase-item" data-phase="4">
-        <div class="phase-week">Fase 4 · CRM multi-negocio</div>
-        <div class="phase-title">Panel de control unificado</div>
-        <div class="text-sm text-slate-600 leading-relaxed">
-          Desarrollamos el CRM web con menú lateral organizado por marca.
-          Paneles de eventos (Patricios), propiedades y alquileres (Inmobiliaria), tours y reservas grupales (La Misionerita).
-          Ficha unificada del cliente cuando consume varios servicios.
-        </div>
+      <div class="bg-white rounded-lg p-4 border border-purple-200">
+        <div class="font-bold text-purple-900 mb-1">⚖️ Cumplimiento Ley 25.326</div>
+        <p class="text-sm text-slate-600">Cumplimos la Ley argentina de Protección de Datos Personales. Tus clientes están protegidos.</p>
       </div>
-
-      <div class="phase-item" data-phase="5">
-        <div class="phase-week">Fase 5 · Agenda</div>
-        <div class="phase-title">Cal.com con múltiples tipos de evento</div>
-        <div class="text-sm text-slate-600 leading-relaxed">
-          Configuramos Cal.com con eventos diferenciados para cada servicio: visita al salón,
-          visita a propiedad, reserva grupal del restaurant. Integrado al CRM y al bot.
-        </div>
+      <div class="bg-white rounded-lg p-4 border border-purple-200 md:col-span-2">
+        <div class="font-bold text-purple-900 mb-1">💾 Backups + retención</div>
+        <p class="text-sm text-slate-600">Backups automáticos diarios en almacenamiento externo. Retención de 30 días rotativos. En caso de incidente, recuperamos datos en menos de 24hs.</p>
       </div>
-
-      <div class="phase-item" data-phase="6">
-        <div class="phase-week">Fase 6 · Integración + capacitación</div>
-        <div class="phase-title">Todo funcionando en conjunto + entrenamiento</div>
-        <div class="text-sm text-slate-600 leading-relaxed">
-          Probamos todos los flujos end-to-end. Ajustamos el tono del bot según pruebas reales.
-          Capacitamos a Patricia y al equipo para que sepan usar el CRM, atender desde WhatsApp y cargar novedades.
-          Después seguimos acompañando con soporte los primeros días.
-        </div>
-      </div>
-
     </div>
   </div>
 
   <!-- QUÉ NECESITAMOS DE PATRICIA -->
   <div class="card mb-8">
-    <h2 class="text-2xl font-bold mb-3">Qué vamos a necesitar de vos</h2>
+    <h2 class="text-2xl font-bold mb-3">Qué falta para arrancar</h2>
     <p class="text-slate-600 mb-6">
-      Para arrancar, estas son las decisiones y materiales que necesitamos:
+      Los logos de las 7 marcas ya están entregados — de ahí salen los colores, el tono y la voz de cada una. Lo que falta confirmar para arrancar es:
     </p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
       <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-        <div class="font-bold text-purple-900 mb-2">📝 Decisiones</div>
+        <div class="font-bold text-purple-900 mb-2">✅ Confirmaciones pendientes</div>
         <ul class="text-sm text-slate-700 space-y-1.5">
-          <li>• Nombre definitivo del Grupo</li>
-          <li>• Compra del dominio (.com o .com.ar)</li>
-          <li>• Número de WhatsApp oficial (nuevo o existente)</li>
-          <li>• Asesor responsable de cada marca</li>
-        </ul>
-      </div>
-
-      <div class="bg-pink-50 border border-pink-200 rounded-lg p-4">
-        <div class="font-bold text-pink-900 mb-2">🎨 Identidad visual</div>
-        <ul class="text-sm text-slate-700 space-y-1.5">
-          <li>• Logos de las 3 marcas (si los tiene)</li>
-          <li>• Colores de cada marca</li>
-          <li>• Fotos de referencia (salón, propiedades, restaurant)</li>
-          <li>• Tono de comunicación de cada marca</li>
+          <li>• Confirmación del dominio <code>grupoback.com</code></li>
+          <li>• Estructura legal (1 CUIT o varios)</li>
+          <li>• ¿WhatsApp único compartido o uno por marca?</li>
+          <li>• Asesor / responsable de cada marca</li>
+          <li>• Orden definitivo de construcción</li>
         </ul>
       </div>
 
       <div class="bg-sky-50 border border-sky-200 rounded-lg p-4">
-        <div class="font-bold text-sky-900 mb-2">📦 Contenido por marca</div>
+        <div class="font-bold text-sky-900 mb-2">📦 Contenido de la primera marca (Rizoma)</div>
         <ul class="text-sm text-slate-700 space-y-1.5">
-          <li>• Paquetes de eventos con precios (Patricios)</li>
-          <li>• Lista de propiedades disponibles (Inmo)</li>
-          <li>• Menú y capacidad del restaurant (Misionerita)</li>
-        </ul>
-      </div>
-
-      <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-        <div class="font-bold text-amber-900 mb-2">💬 Info operativa</div>
-        <ul class="text-sm text-slate-700 space-y-1.5">
-          <li>• Preguntas frecuentes de clientes</li>
-          <li>• Horarios de atención de cada marca</li>
-          <li>• Información para cotizar/reservar</li>
-          <li>• Criterio "cliente listo para comprar"</li>
+          <li>• Catálogo de propiedades, lotes y casas en venta y alquiler</li>
+          <li>• Catálogo de servicios (obras, loteos, tasaciones, asesorías)</li>
+          <li>• FAQ y preguntas frecuentes que reciben hoy por WhatsApp</li>
+          <li>• Criterios para considerar a un consultante como cliente listo para avanzar</li>
         </ul>
       </div>
 
     </div>
+  </div>
 
-    <div class="info-box mt-6">
-      Una vez que aprobemos esta hoja de ruta, te pasamos un <strong>formulario web dividido en 3 bloques</strong> (uno por marca) para que completes todos estos datos de forma ordenada. No tenés que armarlo todo junto ni mandarlo por WhatsApp en mil mensajes.
-    </div>
+  <!-- PRÓXIMOS PASOS -->
+  <div class="card mb-8 bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-purple-200">
+    <h2 class="text-2xl font-bold mb-3">📌 Próximos pasos concretos</h2>
+
+    <ol class="list-decimal list-inside space-y-3 text-slate-700">
+      <li><strong>Confirmación del alcance final</strong> (dominio, estructura legal, orden de marcas)</li>
+      <li><strong>Cotización oficial</strong> de la agencia (implementación + mantenimiento mensual)</li>
+      <li><strong>Contrato</strong> con cláusula de tratamiento de datos (Ley 25.326 + aislamiento físico)</li>
+      <li><strong>Firma + pago de implementación</strong> de la primera marca (Rizoma)</li>
+      <li><strong>Compra y configuración del dominio</strong> grupoback.com</li>
+      <li><strong>Arranca construcción de Rizoma Propiedades</strong> — entrega en pocos días</li>
+      <li>Visto bueno de Rizoma → arranca Misionerita → y así con cada marca hasta completar el ecosistema</li>
+    </ol>
   </div>
 
   <!-- CTA -->
   <div class="card mb-8 bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-purple-200">
     <div class="text-center">
       <div class="text-3xl mb-3">🚀</div>
-      <h2 class="text-2xl font-bold mb-3">¿Te hace sentido así?</h2>
+      <h2 class="text-2xl font-bold mb-3">¿Avanzamos con la cotización?</h2>
       <p class="text-slate-600 mb-6 max-w-2xl mx-auto">
-        Esta hoja de ruta es para que veas cómo pensamos armar todo el ecosistema.
-        Si hay algo que quieras cambiar, agregar o quitar, lo conversamos antes de arrancar.
-        Cuando estemos alineados, pasamos al formulario y empezamos a construir.
+        Esta hoja de ruta refleja todo lo conversado en la reunión presencial.
+        Si está alineada con lo esperado, avanzamos con la cotización oficial y el contrato.
       </p>
 
-      <a href="https://wa.me/5493765384843?text=Hola%20Arnaldo%2C%20vi%20la%20hoja%20de%20ruta%20y%20quiero%20conversar" class="cta-button">
+      <a href="https://wa.me/5493765384843?text=Hola%20Arnaldo%2C%20vimos%20la%20hoja%20de%20ruta%20v2%20y%20queremos%20avanzar%20con%20la%20cotizaci%C3%B3n" class="cta-button">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        Conversemos por WhatsApp
+        Avancemos por WhatsApp
       </a>
     </div>
   </div>
