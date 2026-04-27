@@ -568,14 +568,16 @@ def obtener_ficha_marca(marca_id: str):
         if rc.status_code == 200:
             cliente = {"id": rc.json()["id"], **rc.json().get("fields", {})}
 
-    # Socios linkeados a la marca
+    # Socios linkeados a la marca — leer por los IDs del campo reverse-link
     socios = []
-    formula = f"FIND('{marca_id}',ARRAYJOIN({{Marca}}))>0"
-    try:
-        items = _list(TABLE_SOCIOS, filterByFormula=formula)
-        socios = items
-    except Exception:
-        pass
+    socios_ids = marca_fields.get("Socios_Marca", [])
+    for sid in socios_ids:
+        try:
+            rs = rq.get(f"{_airtable_url(TABLE_SOCIOS)}/{sid}", headers=_headers(), timeout=10)
+            if rs.status_code == 200:
+                socios.append({"id": rs.json()["id"], **rs.json().get("fields", {})})
+        except Exception:
+            pass
 
     return {
         "marca": {"id": marca["id"], **marca_fields},
