@@ -69,6 +69,7 @@ TABLE_TRAMITES_MARCA = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TRAMITES_MARCA",
 TABLE_PLANTILLAS    = os.environ.get("MICA_DEMO_JURIDICO_TABLE_PLANTILLAS",    "tblluoLMnPlfIuInn")
 TABLE_TURNOS        = os.environ.get("MICA_DEMO_JURIDICO_TABLE_TURNOS",        "tblIg1rFN5e4IKB4s")
 TABLE_ALERTAS       = os.environ.get("MICA_DEMO_JURIDICO_TABLE_ALERTAS",       "tbl13tRhUoMSUsaKc")
+TABLE_SOCIOS        = os.environ.get("MICA_DEMO_JURIDICO_TABLE_SOCIOS",        "tblX4NQCEzFZRwEar")
 
 router = APIRouter(tags=["juridico-mica-demo"])
 
@@ -406,6 +407,142 @@ _make_crud_endpoints("tramites", lambda: TABLE_TRAMITES_MARCA, "tramites")
 # ── Plantillas de Email ─────────────────────────────────────────────────────
 
 _make_crud_endpoints("plantillas", lambda: TABLE_PLANTILLAS, "plantillas")
+
+
+# ── Socios de Marca ──────────────────────────────────────────────────────────
+
+_make_crud_endpoints("socios", lambda: TABLE_SOCIOS, "socios")
+
+
+@router.post("/crm/propuestas/{propuesta_id}/aceptar-con-datos")
+def aceptar_propuesta_con_datos(propuesta_id: str, payload: dict):
+    """
+    Acepta una propuesta y crea/actualiza los datos completos del titular,
+    crea la Marca y opcionalmente registra socios co-titulares.
+
+    Body esperado:
+      {
+        "titular": {
+          "cliente_id": "rec..." (opcional, si ya existe; sino crea nuevo),
+          "nombre_completo": "...",
+          "dni": "...",
+          "cuit": "...",
+          "pais": "Argentina",
+          "estado_civil": "Casado/a",
+          "ciudad": "...",
+          "provincia": "...",
+          "domicilio": "...",
+          "codigo_postal": "...",
+          "telefono": "+54...",
+          "email": "...",
+          "porcentaje_participacion": 100
+        },
+        "socios": [
+          {
+            "nombre_completo": "...",
+            "dni": "...", "cuit": "...",
+            "pais": "...", "estado_civil": "...",
+            "ciudad": "...", "provincia": "...",
+            "domicilio": "...", "codigo_postal": "...",
+            "telefono": "...", "email": "...",
+            "porcentaje_participacion": 50
+          }
+        ],
+        "marca": {
+          "denominacion": "...",
+          "clases_niza": "43",
+          "rubro": "Cafetería / Gastronomía",
+          "notas": "..."
+        }
+      }
+
+    Retorna: {propuesta_id, cliente_id, marca_id, socios_ids: [...]}
+    """
+    titular = payload.get("titular", {})
+    socios = payload.get("socios", [])
+    marca = payload.get("marca", {})
+
+    if not titular.get("nombre_completo"):
+        raise HTTPException(400, "titular.nombre_completo requerido")
+    if not marca.get("denominacion"):
+        raise HTTPException(400, "marca.denominacion requerido")
+
+    # 1. Crear o actualizar cliente titular
+    cliente_fields = {
+        "Nombre Completo / Razón Social": titular.get("nombre_completo"),
+        "DNI": titular.get("dni", ""),
+        "CUIT": titular.get("cuit", ""),
+        "DNI / CUIT": titular.get("cuit") or titular.get("dni", ""),
+        "Email": titular.get("email", ""),
+        "Teléfono WhatsApp": titular.get("telefono", ""),
+        "País": titular.get("pais", "Argentina"),
+        "Estado Civil": titular.get("estado_civil", ""),
+        "Ciudad": titular.get("ciudad", ""),
+        "Provincia": titular.get("provincia", ""),
+        "Dirección": titular.get("domicilio", ""),
+        "Código Postal": titular.get("codigo_postal", ""),
+    }
+    cliente_id = titular.get("cliente_id")
+    if cliente_id:
+        rec = _at_patch(TABLE_CLIENTES, cliente_id, cliente_fields)
+    else:
+        rec = _at_post(TABLE_CLIENTES, {**cliente_fields, "Tipo": "Persona Física", "Estado": "Activo"})
+        cliente_id = rec["id"]
+
+    # 2. Marcar propuesta como Aceptada
+    import datetime
+    hoy = datetime.date.today().isoformat()
+    _at_patch(TABLE_PROPUESTAS, propuesta_id, {
+        "Estado": "Aceptada",
+        "Fecha Aceptación": hoy,
+        "Cliente": [cliente_id],
+    })
+
+    # 3. Crear Marca con datos completos
+    marca_fields = {
+        "Denominación": marca.get("denominacion"),
+        "Clases Niza": marca.get("clases_niza", ""),
+        "Rubro": marca.get("rubro", ""),
+        "Estado": "Para Presentar",
+        "Cliente Titular": [cliente_id],
+        "Notas": marca.get("notas", ""),
+        "Última Novedad": f"Propuesta aceptada {hoy} — pendiente presentación INPI",
+        "Propuesta Origen": [propuesta_id],
+        "Porcentaje Participación Titular": titular.get("porcentaje_participacion", 100),
+    }
+    marca_rec = _at_post(TABLE_MARCAS, marca_fields)
+    marca_id = marca_rec["id"]
+
+    # 4. Crear socios (si hay)
+    socios_ids = []
+    for s in socios:
+        if not s.get("nombre_completo"):
+            continue
+        socio_fields = {
+            "Nombre Completo": s.get("nombre_completo"),
+            "DNI": s.get("dni", ""),
+            "CUIT": s.get("cuit", ""),
+            "País": s.get("pais", "Argentina"),
+            "Estado Civil": s.get("estado_civil", ""),
+            "Ciudad": s.get("ciudad", ""),
+            "Provincia": s.get("provincia", ""),
+            "Domicilio": s.get("domicilio", ""),
+            "Código Postal": s.get("codigo_postal", ""),
+            "Teléfono": s.get("telefono", ""),
+            "Email": s.get("email", ""),
+            "Porcentaje Participación": s.get("porcentaje_participacion", 0),
+            "Marca": [marca_id],
+        }
+        srec = _at_post(TABLE_SOCIOS, socio_fields)
+        socios_ids.append(srec["id"])
+
+    return {
+        "propuesta_id": propuesta_id,
+        "cliente_id": cliente_id,
+        "marca_id": marca_id,
+        "socios_ids": socios_ids,
+        "mensaje": f"Propuesta aceptada. Marca '{marca.get('denominacion')}' creada con {len(socios_ids)} socio(s).",
+    }
 
 
 @router.post("/crm/plantillas/{plantilla_id}/render")
