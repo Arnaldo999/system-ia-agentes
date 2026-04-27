@@ -142,11 +142,95 @@ _ROTACION_TEMAS_INMOBILIARIA = {
 }
 
 
-def _get_tema_del_dia(industria: str = "") -> dict:
-    """Retorna el dict de tema/ángulo/idea_central según el día y la industria del cliente."""
+# ── Rotación AGENCIA → vertical INMOBILIARIAS ────────────────────────────────
+# Para las cuentas de la AGENCIA (System IA + Arnaldo Ayala) cuando queremos
+# pitchearle el sistema a INMOBILIARIAS. NO confundir con _ROTACION_TEMAS_INMOBILIARIA
+# que es para clientes finales que VENDEN lotes.
+#
+# Pedido Mica WhatsApp 2026-04-28: "estas semanas modificar prompt enfocado a
+# inmobiliarias, énfasis en WhatsApp + agendamientos + CRM personalizado".
+# Aplica a tenants de Mica (System IA) y de Arnaldo Ayala.
+_ROTACION_TEMAS_AGENCIA_INMOBILIARIA = {
+    0: {  # Lunes — WhatsApp
+        "tema": "Tu inmobiliaria atendiendo consultas en WhatsApp 24/7",
+        "angulo": "El 70% de los compradores te consulta fuera del horario de oficina y nunca te enteras",
+        "idea_central": "Un asistente inteligente en WhatsApp responde en segundos cualquier consulta sobre tus propiedades, califica al lead (BANT), y te avisa solo cuando ya está listo para visitar. Tu inmobiliaria deja de perder leads que llegan a las 22hs.",
+        "prompt_imagen": "real estate agent looking at smartphone WhatsApp chat with automated AI replies about property listings, modern office background, business automation, flat design colorful, no text in image",
+    },
+    1: {  # Martes — Agendamiento
+        "tema": "Agendamiento automático de visitas a propiedades",
+        "angulo": "Cuántas visitas perdiste por no coordinar a tiempo con el corredor disponible",
+        "idea_central": "El cliente elige día y hora desde el chat, el sistema verifica la agenda de tu equipo y confirma automáticamente. Sin idas y vueltas. La visita queda agendada en Google Calendar de tu corredor con recordatorio y dirección de la propiedad.",
+        "prompt_imagen": "calendar app showing automated property visit booking, real estate agent confirming appointment on phone, clean professional UI, flat design colorful, no text in image",
+    },
+    2: {  # Miércoles — CRM personalizado
+        "tema": "CRM inmobiliario personalizado: dejá de perder leads en planillas",
+        "angulo": "El 80% de tus oportunidades se enfría porque nadie hizo seguimiento a tiempo",
+        "idea_central": "Un CRM hecho a medida de tu inmobiliaria sigue cada lead desde la primera consulta hasta la firma de la reserva. Filtros por zona, presupuesto, tipo de propiedad. Recordatorios automáticos por WhatsApp al cliente. Vos mirás el dashboard, el sistema mueve los leads.",
+        "prompt_imagen": "real estate CRM dashboard with property leads pipeline, automated lead cards moving through stages, modern interface, flat design colorful, no text in image",
+    },
+    3: {  # Jueves — Combo WhatsApp + Agenda
+        "tema": "Lead frío a visita confirmada en menos de 5 minutos",
+        "angulo": "Los compradores se van con la primera inmobiliaria que les responde rápido",
+        "idea_central": "WhatsApp + agendamiento conectados: el lead llega, el bot lo califica, le manda fotos de propiedades que coinciden con su búsqueda y le abre la agenda del corredor para que reserve visita. Todo automático. El corredor recibe el dato cuando ya está cerrada la visita.",
+        "prompt_imagen": "split screen showing WhatsApp chat on left with AI calendar booking on right, real estate property listings flowing through, modern automation concept, flat design colorful, no text in image",
+    },
+    4: {  # Viernes — Caso de uso real / testimonios
+        "tema": "Cómo una inmobiliaria pasó de 30 a 100 visitas mensuales sin contratar nadie",
+        "angulo": "El secreto está en automatizar lo repetitivo y dejar que el corredor cierre",
+        "idea_central": "Implementar WhatsApp inteligente + CRM personalizado + agenda automática libera al equipo del 70% de tareas repetitivas. Los corredores dejan de coordinar visitas por chat y se dedican solo a cerrar. Mismas personas, 3x más visitas.",
+        "prompt_imagen": "happy real estate team in modern office celebrating sales results, growth chart on screen behind, automated tools concept, flat design colorful, no text in image",
+    },
+    5: {  # Sábado — Costo de no automatizar
+        "tema": "Cuánto te cuesta NO tener tu WhatsApp inmobiliario automatizado",
+        "angulo": "El cálculo concreto de leads perdidos por mes",
+        "idea_central": "10 leads que llegan fuera de horario × 4 días/semana × 4 semanas = 160 leads/mes. Si solo 1 de cada 10 cerraba una operación, son 16 ventas perdidas. Automatizar el WhatsApp + agendamiento te recupera ese pipeline en menos de 30 días.",
+        "prompt_imagen": "calculator and notebook with money loss diagram, real estate icons, business cost analysis, professional concept, flat design colorful, no text in image",
+    },
+    6: {  # Domingo — Vender el sistema (CTA claro)
+        "tema": "Sistema completo para tu inmobiliaria: WhatsApp + Agendamiento + CRM",
+        "angulo": "Una sola implementación, tres herramientas que se hablan entre sí",
+        "idea_central": "No se trata de instalar 3 apps separadas que después no se conectan. El sistema es UNO: el bot de WhatsApp alimenta el CRM, el CRM dispara recordatorios, el agendamiento se sincroniza solo. Implementación en 1 semana, primera operación cerrada en menos de 30 días.",
+        "prompt_imagen": "integrated system diagram showing WhatsApp + Calendar + CRM connected, real estate property in center, modern flat design colorful illustration, no text in image",
+    },
+}
+
+
+# Foco vertical de la AGENCIA controlable por env var.
+# Setear SOCIAL_AGENCIA_VERTICAL_FOCO=inmobiliaria para que durante las semanas
+# que dure ese foco, las cuentas de la agencia (System IA + Arnaldo) publiquen
+# sobre vertical inmobiliarias. Borrar la env var o ponerla en "" para volver al
+# rotativo genérico.
+_AGENCIA_VERTICAL_FOCO = os.environ.get("SOCIAL_AGENCIA_VERTICAL_FOCO", "").strip().lower()
+
+
+def _es_cuenta_agencia(industria: str, publico: str = "") -> bool:
+    """¿Esta cuenta es de la propia AGENCIA (Mica/Arnaldo) que vende automatizaciones,
+    no un cliente final? Detecta por industria o público objetivo."""
+    bag = f"{industria} {publico}".lower()
+    if "agencia" in bag and ("automatiz" in bag or "ia" in bag):
+        return True
+    if "system ia" in bag or "system_ia" in bag:
+        return True
+    if "arnaldo ayala" in bag:
+        return True
+    return False
+
+
+def _get_tema_del_dia(industria: str = "", publico: str = "") -> dict:
+    """Retorna el dict de tema/ángulo/idea_central según el día, la industria y
+    el foco vertical actual de la agencia."""
     dia = datetime.now().weekday()  # 0=Lunes … 6=Domingo
-    if "inmobiliaria" in industria.lower() or "lote" in industria.lower() or "terreno" in industria.lower():
+
+    # Cliente final que vende lotes / inmobiliaria
+    industria_low = (industria or "").lower()
+    if any(k in industria_low for k in ["inmobiliaria", "lote", "terreno"]) and not _es_cuenta_agencia(industria, publico):
         return _ROTACION_TEMAS_INMOBILIARIA.get(dia, _ROTACION_TEMAS_INMOBILIARIA[0])
+
+    # Cuenta de la agencia con foco vertical activo
+    if _es_cuenta_agencia(industria, publico) and _AGENCIA_VERTICAL_FOCO == "inmobiliaria":
+        return _ROTACION_TEMAS_AGENCIA_INMOBILIARIA.get(dia, _ROTACION_TEMAS_AGENCIA_INMOBILIARIA[0])
+
     return _ROTACION_TEMAS.get(dia, _ROTACION_TEMAS[0])
 
 
@@ -242,6 +326,40 @@ async def crear_post(entrada: DatosCrearPost):
     tema = cliente_data.get("Tema del Día", "Automatización con IA")
     angulo = cliente_data.get("Ángulo", "Beneficios prácticos para el negocio")
 
+    # Si esta cuenta es de la AGENCIA (Mica/Arnaldo) y hay foco vertical activo,
+    # sobreescribimos tema/ángulo del día por la rotación específica del foco.
+    es_agencia = _es_cuenta_agencia(industria, publico)
+    rotacion_dia = _get_tema_del_dia(industria=industria, publico=publico)
+    if es_agencia and _AGENCIA_VERTICAL_FOCO == "inmobiliaria":
+        tema = rotacion_dia.get("tema", tema)
+        angulo = rotacion_dia.get("angulo", angulo)
+        idea_central = rotacion_dia.get("idea_central", "")
+    else:
+        idea_central = ""
+
+    # Bloque CTA reforzado para cuentas de la agencia con foco inmobiliaria
+    bloque_cta_agencia = ""
+    if es_agencia and _AGENCIA_VERTICAL_FOCO == "inmobiliaria":
+        bloque_cta_agencia = """
+
+CONTEXTO ESTRATÉGICO (cuenta de la AGENCIA — vendiendo a INMOBILIARIAS):
+Estás escribiendo para la cuenta de una agencia que ofrece automatizaciones a INMOBILIARIAS.
+El foco de TODOS los posts debe ser uno o varios de estos 3 servicios estrella (siempre conectados):
+  1. 🟢 WhatsApp inteligente para inmobiliarias (atención 24/7, calificación BANT de leads)
+  2. 📅 Agendamiento automático de visitas (sincroniza con Google Calendar del corredor)
+  3. 🗂️ CRM personalizado para inmobiliarias (pipeline de leads, recordatorios, seguimiento)
+
+Reglas duras:
+- En CADA post mencioná al menos UNO de los 3 servicios por nombre.
+- En al menos 1 de los 3 posts (idealmente Instagram), mostrá los 3 servicios conectados como UN sistema.
+- El público son DUEÑOS / BROKERS / GERENTES de inmobiliarias en LATAM, no compradores finales de propiedades.
+- NO escribas como si fueras una inmobiliaria. Escribís como agencia que VENDE el sistema.
+- Cierre obligatorio en los 3 posts: invitar a una llamada/demo o a escribir por WhatsApp.
+- Tono: directo, ejemplos numéricos concretos (ej: "10 leads/día fuera de horario × 22 días = 220 leads/mes").
+"""
+        if idea_central:
+            bloque_cta_agencia += f"\nIDEA CENTRAL DEL DÍA (usar como guía narrativa, no copiar literal): {idea_central}\n"
+
     prompt = f"""Eres el Estratega y Copywriter de una agencia de automatizaciones IA para LATAM.
 
 BRANDBOOK DEL CLIENTE:
@@ -252,7 +370,7 @@ BRANDBOOK DEL CLIENTE:
 - RESTRICCIONES ABSOLUTAS: {reglas}
 
 TEMA DEL DÍA: {tema}
-ÁNGULO: {angulo}
+ÁNGULO: {angulo}{bloque_cta_agencia}
 
 TAREA: Crea 3 posts únicos y diferenciados, uno por red social.
 Separa cada post EXACTAMENTE con: |||
@@ -1165,10 +1283,34 @@ async def publicar_completo(entrada: DatosPublicarCompleto):
     errores = []
 
     # ── Tema del día: rotación automática por día de semana ──────────────────
-    rotacion = _get_tema_del_dia(industria=marca.get("Industria", ""))
+    industria_marca = marca.get("Industria", "")
+    publico_marca = marca.get("Público Objetivo", "")
+    rotacion = _get_tema_del_dia(industria=industria_marca, publico=publico_marca)
     tema = rotacion["tema"]
     angulo = rotacion["angulo"]
     idea_central = rotacion["idea_central"]
+
+    # Bloque CTA reforzado si esta cuenta es de la agencia con foco inmobiliaria
+    es_agencia = _es_cuenta_agencia(industria_marca, publico_marca)
+    bloque_cta_agencia = ""
+    if es_agencia and _AGENCIA_VERTICAL_FOCO == "inmobiliaria":
+        bloque_cta_agencia = """
+
+CONTEXTO ESTRATÉGICO (cuenta de la AGENCIA — vendiendo a INMOBILIARIAS):
+Estás escribiendo para la cuenta de una agencia que ofrece automatizaciones a INMOBILIARIAS.
+El foco de TODOS los posts debe ser uno o varios de estos 3 servicios estrella (siempre conectados):
+  1. 🟢 WhatsApp inteligente para inmobiliarias (atención 24/7, calificación BANT de leads)
+  2. 📅 Agendamiento automático de visitas (sincroniza con Google Calendar del corredor)
+  3. 🗂️ CRM personalizado para inmobiliarias (pipeline de leads, recordatorios, seguimiento)
+
+Reglas duras:
+- En CADA post mencioná al menos UNO de los 3 servicios por nombre.
+- En al menos 1 de los 3 posts (idealmente Instagram), mostrá los 3 servicios conectados como UN sistema.
+- El público son DUEÑOS / BROKERS / GERENTES de inmobiliarias en LATAM, no compradores finales de propiedades.
+- NO escribas como si fueras una inmobiliaria. Escribís como agencia que VENDE el sistema.
+- Cierre obligatorio en los 3 posts: invitar a una llamada/demo o a escribir por WhatsApp.
+- Tono: directo, ejemplos numéricos concretos (ej: "10 leads/día fuera de horario × 22 días = 220 leads/mes").
+"""
 
     # ── 1. Generar textos IA ─────────────────────────────────────────────────
     try:
@@ -1183,7 +1325,7 @@ BRANDBOOK:
 
 TEMA DEL DÍA: {tema}
 ÁNGULO: {angulo}
-IDEA CENTRAL: {idea_central}
+IDEA CENTRAL: {idea_central}{bloque_cta_agencia}
 
 FORMATO (OBLIGATORIO):
 - PROHIBIDO usar markdown: sin **, sin *, sin #, sin __, sin guiones como viñetas. Solo texto plano.
