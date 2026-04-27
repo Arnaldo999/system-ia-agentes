@@ -197,6 +197,14 @@ if _systemia_demo_dir.exists():
         name="system-ia-demos",
     )
 
+# ── Uploads — archivos subidos por usuarios (Nota Poder, DNI, Logo, etc.) ────
+# Sirve los archivos que se suben al CRM jurídico para que Airtable pueda
+# descargarlos y guardarlos como attachments.
+# URL final: https://agentes.arnaldoayalaestratega.cloud/uploads/<filename>
+_uploads_dir = pathlib.Path(__file__).parent / "uploads"
+_uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(_uploads_dir)), name="uploads")
+
 
 
 # ── Meta Webhook — Tech Provider Robert/Lovbot ───────────────────────────────

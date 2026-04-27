@@ -32,10 +32,12 @@ from __future__ import annotations
 
 import os
 import logging
+import pathlib
+import uuid as _uuid
 from typing import Optional
 
 import requests
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Form
 from pydantic import BaseModel
 
 logger = logging.getLogger("juridico.router")
@@ -414,6 +416,70 @@ _make_crud_endpoints("plantillas", lambda: TABLE_PLANTILLAS, "plantillas")
 _make_crud_endpoints("socios", lambda: TABLE_SOCIOS, "socios")
 
 
+# ── Upload de archivos (Nota Poder, DNI, Logo, etc.) ─────────────────────────
+
+_UPLOADS_BASE_URL = os.environ.get(
+    "UPLOADS_BASE_URL",
+    "https://agentes.arnaldoayalaestratega.cloud/uploads",
+)
+
+
+@router.post("/crm/upload")
+async def upload_archivo(file: UploadFile = File(...), tipo: str = Form("general")):
+    """
+    Sube un archivo al servidor (Coolify) y retorna su URL pública.
+
+    El frontend después puede pasar esa URL al endpoint de Airtable para
+    adjuntarla a un campo multipleAttachments (Airtable descarga el archivo).
+
+    Body: multipart/form-data con `file` (archivo) y `tipo` (categoría: "nota-poder",
+          "dni-titular", "dni-socio", "logo-marca", etc.)
+
+    Retorna: {url, filename, size, content_type}
+    """
+    # Path absoluto al directorio uploads/ dentro del WORKDIR del Dockerfile
+    uploads_dir = pathlib.Path(__file__).resolve().parents[5] / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    # Sanitizar tipo + generar nombre único
+    tipo_clean = "".join(c for c in tipo.lower() if c.isalnum() or c in "-_")[:30] or "general"
+    ext = pathlib.Path(file.filename or "").suffix.lower()[:10]
+    if not ext:
+        ext = ""
+    unique = _uuid.uuid4().hex[:12]
+    fname = f"{tipo_clean}_{unique}{ext}"
+    dest = uploads_dir / fname
+
+    contents = await file.read()
+    if len(contents) > 25 * 1024 * 1024:  # 25 MB cap
+        raise HTTPException(413, "Archivo muy grande (máx 25 MB)")
+    dest.write_bytes(contents)
+
+    return {
+        "url": f"{_UPLOADS_BASE_URL}/{fname}",
+        "filename": file.filename,
+        "stored_as": fname,
+        "size": len(contents),
+        "content_type": file.content_type or "application/octet-stream",
+        "tipo": tipo_clean,
+    }
+
+
+@router.post("/crm/marcas/{marca_id}/marcar-listo-inpi")
+def marcar_listo_inpi(marca_id: str, payload: dict = None):
+    """Marca una marca como 'datos completos para INPI' (botón Listo ✅)."""
+    import datetime
+    fields = {
+        "Datos Listos para INPI": True,
+        "Fecha Datos Listos": datetime.date.today().isoformat(),
+    }
+    if payload and "listo" in payload and payload["listo"] is False:
+        fields["Datos Listos para INPI"] = False
+        fields["Fecha Datos Listos"] = ""
+    rec = _at_patch(TABLE_MARCAS, marca_id, fields)
+    return _serialize(rec)
+
+
 @router.post("/crm/propuestas/{propuesta_id}/aceptar-con-datos")
 def aceptar_propuesta_con_datos(propuesta_id: str, payload: dict):
     """
@@ -482,6 +548,11 @@ def aceptar_propuesta_con_datos(propuesta_id: str, payload: dict):
         "Dirección": titular.get("domicilio", ""),
         "Código Postal": titular.get("codigo_postal", ""),
     }
+    # Adjuntar DNI del titular si vino URL
+    dni_url = titular.get("dni_url")
+    dni_filename = titular.get("dni_filename")
+    if dni_url:
+        cliente_fields["Adjunto DNI"] = [{"url": dni_url, "filename": dni_filename or "dni-titular"}]
     cliente_id = titular.get("cliente_id")
     if cliente_id:
         rec = _at_patch(TABLE_CLIENTES, cliente_id, cliente_fields)
@@ -510,6 +581,14 @@ def aceptar_propuesta_con_datos(propuesta_id: str, payload: dict):
         "Propuesta Origen": [propuesta_id],
         "Porcentaje Participación Titular": titular.get("porcentaje_participacion", 100),
     }
+    # Adjuntar Logo si vino URL
+    logo_url = marca.get("logo_url")
+    if logo_url:
+        marca_fields["Logo"] = [{"url": logo_url, "filename": marca.get("logo_filename") or "logo-marca"}]
+    # Adjuntar Nota Poder si vino URL
+    np_url = marca.get("nota_poder_url")
+    if np_url:
+        marca_fields["Nota Poder"] = [{"url": np_url, "filename": marca.get("nota_poder_filename") or "nota-poder"}]
     marca_rec = _at_post(TABLE_MARCAS, marca_fields)
     marca_id = marca_rec["id"]
 
@@ -533,6 +612,9 @@ def aceptar_propuesta_con_datos(propuesta_id: str, payload: dict):
             "Porcentaje Participación": s.get("porcentaje_participacion", 0),
             "Marca": [marca_id],
         }
+        # Adjuntar DNI del socio si vino URL
+        if s.get("dni_url"):
+            socio_fields["Adjunto DNI"] = [{"url": s["dni_url"], "filename": s.get("dni_filename") or f"dni-socio"}]
         srec = _at_post(TABLE_SOCIOS, socio_fields)
         socios_ids.append(srec["id"])
 
@@ -615,6 +697,11 @@ def actualizar_ficha_marca(marca_id: str, payload: dict):
         if "notas" in marca_in:        marca_fields["Notas"] = marca_in["notas"]
         if "porcentaje_titular" in marca_in:
             marca_fields["Porcentaje Participación Titular"] = marca_in["porcentaje_titular"]
+        # Adjuntos opcionales (URLs subidas via /crm/upload)
+        if marca_in.get("logo_url"):
+            marca_fields["Logo"] = [{"url": marca_in["logo_url"], "filename": marca_in.get("logo_filename") or "logo-marca"}]
+        if marca_in.get("nota_poder_url"):
+            marca_fields["Nota Poder"] = [{"url": marca_in["nota_poder_url"], "filename": marca_in.get("nota_poder_filename") or "nota-poder"}]
         if marca_fields:
             _at_patch(TABLE_MARCAS, marca_id, marca_fields)
 
@@ -633,6 +720,8 @@ def actualizar_ficha_marca(marca_id: str, payload: dict):
         for k, fname in mapping.items():
             if k in cli_in:
                 cli_fields[fname] = cli_in[k]
+        if cli_in.get("dni_url"):
+            cli_fields["Adjunto DNI"] = [{"url": cli_in["dni_url"], "filename": cli_in.get("dni_filename") or "dni-titular"}]
         if cli_fields:
             _at_patch(TABLE_CLIENTES, cli_in["id"], cli_fields)
             out["cliente_id"] = cli_in["id"]
@@ -652,6 +741,8 @@ def actualizar_ficha_marca(marca_id: str, payload: dict):
         for k, fname in smap.items():
             if k in socio:
                 s_fields[fname] = socio[k]
+        if socio.get("dni_url"):
+            s_fields["Adjunto DNI"] = [{"url": socio["dni_url"], "filename": socio.get("dni_filename") or "dni-socio"}]
         if not s_fields.get("Nombre Completo"):
             continue
         if socio.get("id"):

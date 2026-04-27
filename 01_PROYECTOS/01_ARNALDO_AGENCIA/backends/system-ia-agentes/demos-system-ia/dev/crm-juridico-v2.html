@@ -1088,12 +1088,13 @@
         </div>
       </div>
 
-      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; align-items: center; gap: 12px;">
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <button class="btn btn-sm" onclick="document.getElementById('ap_t_dniFile').click()">
           📎 Cargar DNI del titular
         </button>
         <input type="file" id="ap_t_dniFile" style="display:none" accept="image/*,application/pdf"
-               onchange="ap_mostrarArchivo('ap_t_dniFile','ap_t_dniLabel')">
+               onchange="ap_uploadArchivo(this,'ap_t_dniLabel','dni-titular','ap_t_dniUrl')">
+        <input type="hidden" id="ap_t_dniUrl">
         <span id="ap_t_dniLabel" style="font-size: 12px; color: var(--text-2);">Ningún archivo seleccionado</span>
       </div>
     </div>
@@ -1130,13 +1131,26 @@
         </div>
       </div>
 
-      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; align-items: center; gap: 12px;">
-        <button class="btn btn-sm" onclick="document.getElementById('ap_m_logoFile').click()">
-          🎨 Cargar Logo de la Marca
-        </button>
-        <input type="file" id="ap_m_logoFile" style="display:none" accept="image/*"
-               onchange="ap_mostrarArchivo('ap_m_logoFile','ap_m_logoLabel')">
-        <span id="ap_m_logoLabel" style="font-size: 12px; color: var(--text-2);">Ningún archivo seleccionado</span>
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <button class="btn btn-sm" onclick="document.getElementById('ap_m_logoFile').click()">
+            🎨 Cargar Logo de la Marca
+          </button>
+          <input type="file" id="ap_m_logoFile" style="display:none" accept="image/*"
+                 onchange="ap_uploadArchivo(this,'ap_m_logoLabel','logo-marca','ap_m_logoUrl')">
+          <input type="hidden" id="ap_m_logoUrl">
+          <span id="ap_m_logoLabel" style="font-size: 12px; color: var(--text-2);">Ningún archivo seleccionado</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <button class="btn btn-sm" onclick="document.getElementById('ap_m_notaPoderFile').click()">
+            📜 Cargar Nota Poder
+          </button>
+          <input type="file" id="ap_m_notaPoderFile" style="display:none" accept="image/*,application/pdf,.doc,.docx"
+                 onchange="ap_uploadArchivo(this,'ap_m_notaPoderLabel','nota-poder','ap_m_notaPoderUrl')">
+          <input type="hidden" id="ap_m_notaPoderUrl">
+          <span id="ap_m_notaPoderLabel" style="font-size: 12px; color: var(--text-2);">Ningún archivo seleccionado</span>
+          <span style="font-size: 11px; color: var(--text-3); font-style: italic;">(autorización del titular al estudio)</span>
+        </div>
       </div>
     </div>
 
@@ -1317,6 +1331,35 @@
       <button class="btn" onclick="closeModal('modalNotificar')">Cancelar</button>
       <button class="btn btn-primary" onclick="nf_enviar()" style="font-size: 14px; padding: 11px 22px;">
         🚀 Enviar recordatorio
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL — DATOS PARA CARGAR (archivos descargables de la marca + cliente + socios) -->
+<div id="modalDatosCarga" class="modal-bg">
+  <div class="modal" style="max-width: 720px;">
+    <div class="modal-header">
+      <h3 class="modal-title">📂 Datos para cargar al INPI</h3>
+      <button class="modal-close" onclick="closeModal('modalDatosCarga')">✕</button>
+    </div>
+
+    <div id="dc_loading" style="text-align:center; padding:40px; color:var(--text-2);">
+      ⏳ Cargando archivos...
+    </div>
+
+    <div id="dc_contenido" style="display:none;">
+      <div id="dc_marcaInfo" style="padding: 14px 18px; background: var(--surface-2); border-radius: 10px; margin-bottom: 16px; font-size: 13px;"></div>
+
+      <div id="dc_archivos"></div>
+
+      <div id="dc_estadoListo" style="margin-top: 16px; padding: 14px; border-radius: 10px;"></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top: 18px;">
+      <button class="btn" onclick="closeModal('modalDatosCarga')">Cerrar</button>
+      <button id="dc_btnListo" class="btn btn-primary" onclick="dc_toggleListo()" style="font-size: 14px; padding: 11px 22px;">
+        ✅ Marcar como Listo
       </button>
     </div>
   </div>
@@ -1887,14 +1930,17 @@ function renderDashboardAlertas() {
     const cliNombre = nombreCliente(c['Cliente']);
     const fechaEnvio = c['Fecha Envío'] ? fmtFecha(c['Fecha Envío']) : '?';
     const cliId = (c['Cliente'] && c['Cliente'][0]) || '';
+    // Pedido Mica: al lado del nombre marca, el contexto/trámite específico
+    const marcaCli = c['Marca del Cliente'] || c['Título'] || 'Comunicación';
+    const tipoNotif = c['Tipo Notificación'] || 'Recomendación de Oposición';
     conPlazo.push({
       tipo: '🛡️ Plazo cliente',
       dias,
       fecha: limite,
-      titulo: `${c['Marca del Cliente'] || c['Título'] || 'Comunicación'} — respuesta del cliente`,
+      titulo: `${marcaCli} — ${tipoNotif}`,
       detalle: `Cliente: <strong>${cliNombre}</strong> · Notificada el ${fechaEnvio}`,
-      detalle2: `Marca tercero: <strong>${c['Marca del Tercero'] || '—'}</strong> · Vence: <span class="notif-row-fecha">${fmtFecha(limite)}</span>`,
-      accion: dias <= 7 ? 'Llamar al cliente HOY — plazo legal por vencer' : 'Confirmar respuesta del cliente',
+      detalle2: `Marca tercero: <strong>${c['Marca del Tercero'] || '—'}</strong> · Plazo cliente vence: <span class="notif-row-fecha">${fmtFecha(limite)}</span>`,
+      accion: dias <= 7 ? 'Llamar al cliente HOY — plazo legal por vencer' : 'Esperando respuesta del cliente',
       onclick: `switchPanel('comunicaciones')`,
       cliente_id: cliId,
       origen: 'comunicacion',
@@ -2145,6 +2191,140 @@ async function nf_enviar() {
 
   closeModal('modalNotificar');
   alert(`✅ Recordatorio enviado a ${cli['Nombre Completo / Razón Social']}\n\n${canales.join('\n')}\n\nAsunto: ${asunto}\n\n(Mock — el envío SMTP/WhatsApp real se conecta cuando configures las credenciales del estudio)`);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DATOS PARA CARGAR — modal listando archivos descargables + toggle Listo
+   ════════════════════════════════════════════════════════════════ */
+let dc_marcaActual = null;
+let dc_listo = false;
+
+async function abrirDatosCarga(marcaId) {
+  document.getElementById('modalDatosCarga').classList.add('active');
+  document.getElementById('dc_loading').style.display = 'block';
+  document.getElementById('dc_contenido').style.display = 'none';
+
+  const r = await api(`/crm/marcas/${marcaId}/ficha-completa`);
+  if (!r) {
+    alert('Error cargando datos. Cerrá y reintentá.');
+    closeModal('modalDatosCarga');
+    return;
+  }
+  dc_marcaActual = r;
+  dc_listo = !!(r.marca && r.marca['Datos Listos para INPI']);
+
+  const m = r.marca;
+  document.getElementById('dc_marcaInfo').innerHTML = `
+    <strong style="font-size: 14px; color: var(--text);">${m['Denominación']}</strong>
+    <span style="color: var(--text-2); font-size: 13px;"> · ${nombreCliente(m['Cliente Titular'])}</span>
+    <span style="color: var(--text-2); font-size: 13px;"> · Clase ${m['Clases Niza'] || '—'}</span>
+    ${m['Rubro'] ? `<br><span style="font-size: 12px; color: var(--text-2);">Rubro: ${m['Rubro']}</span>` : ''}
+  `;
+
+  // Lista de archivos posibles
+  const archivos = [];
+  // Logo de la marca
+  if (m['Logo'] && m['Logo'].length) {
+    archivos.push({ tipo: '🎨 Logo de la marca', items: m['Logo'] });
+  } else {
+    archivos.push({ tipo: '🎨 Logo de la marca', items: [], faltante: true });
+  }
+  // Nota Poder
+  if (m['Nota Poder'] && m['Nota Poder'].length) {
+    archivos.push({ tipo: '📜 Nota Poder', items: m['Nota Poder'] });
+  } else {
+    archivos.push({ tipo: '📜 Nota Poder', items: [], faltante: true });
+  }
+  // DNI del titular (en cliente)
+  if (r.cliente) {
+    if (r.cliente['Adjunto DNI'] && r.cliente['Adjunto DNI'].length) {
+      archivos.push({ tipo: `🪪 DNI del titular — ${r.cliente['Nombre Completo / Razón Social']}`, items: r.cliente['Adjunto DNI'] });
+    } else {
+      archivos.push({ tipo: `🪪 DNI del titular — ${r.cliente['Nombre Completo / Razón Social']}`, items: [], faltante: true });
+    }
+  }
+  // DNI de cada socio
+  for (const s of (r.socios || [])) {
+    if (s['Adjunto DNI'] && s['Adjunto DNI'].length) {
+      archivos.push({ tipo: `🪪 DNI socio — ${s['Nombre Completo'] || ''}`, items: s['Adjunto DNI'] });
+    } else {
+      archivos.push({ tipo: `🪪 DNI socio — ${s['Nombre Completo'] || ''}`, items: [], faltante: true });
+    }
+  }
+
+  const cont = document.getElementById('dc_archivos');
+  cont.innerHTML = `
+    <div style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text);">📎 Archivos cargados</div>
+    ${archivos.map(a => `
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div style="font-size: 13px; font-weight: 600; color: ${a.faltante ? 'var(--text-2)' : 'var(--text)'};">
+            ${a.tipo}
+            ${a.faltante ? '<span style="font-size:11px; background:#FEE2E2; color:#991B1B; padding:2px 7px; border-radius:4px; margin-left:6px; font-weight:600;">⚠️ FALTA</span>' : ''}
+          </div>
+          ${a.items.length ? `
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              ${a.items.map(it => `
+                <a href="${it.url}" target="_blank" download="${it.filename || 'archivo'}"
+                   style="font-size: 11.5px; background: var(--accent-light); color: var(--text); padding: 4px 10px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--accent);">
+                  ⬇️ ${it.filename || 'descargar'}
+                </a>
+              `).join('')}
+            </div>
+          ` : `<span style="font-size:11.5px; color:var(--text-3); font-style:italic;">No cargado</span>`}
+        </div>
+      </div>
+    `).join('')}
+  `;
+
+  // Estado Listo
+  const estado = document.getElementById('dc_estadoListo');
+  const btnListo = document.getElementById('dc_btnListo');
+  if (dc_listo) {
+    const fechaListo = m['Fecha Datos Listos'];
+    estado.style.background = 'var(--green-light)';
+    estado.style.border = '1px solid var(--green)';
+    estado.style.color = 'var(--green-dark)';
+    estado.innerHTML = `<strong>✅ Datos marcados como cargados al sistema INPI</strong>${fechaListo ? `<br><span style="font-size: 12px;">Marcado el ${fmtFecha(fechaListo)}</span>` : ''}`;
+    btnListo.textContent = '↩️ Desmarcar como Listo';
+  } else {
+    estado.style.background = '#FFF3CD';
+    estado.style.border = '1px solid #ffeaa7';
+    estado.style.color = '#856404';
+    const faltantes = archivos.filter(a => a.faltante).length;
+    estado.innerHTML = `<strong>⏳ Pendiente</strong>${faltantes > 0 ? `<br><span style="font-size: 12px;">Faltan ${faltantes} archivo${faltantes>1?'s':''} antes de marcar como Listo</span>` : `<br><span style="font-size: 12px;">Todos los archivos están cargados</span>`}`;
+    btnListo.textContent = '✅ Marcar como Listo';
+  }
+
+  document.getElementById('dc_loading').style.display = 'none';
+  document.getElementById('dc_contenido').style.display = 'block';
+}
+
+async function dc_toggleListo() {
+  if (!dc_marcaActual) return;
+  await toggleDatosListos(dc_marcaActual.marca.id, !dc_listo, false);
+  // Refrescar el modal con el nuevo estado
+  await abrirDatosCarga(dc_marcaActual.marca.id);
+}
+
+async function toggleDatosListos(marcaId, listo, recargar = true) {
+  const r = await api(`/crm/marcas/${marcaId}/marcar-listo-inpi`, {
+    method: 'POST',
+    body: JSON.stringify({ listo }),
+  });
+  if (!r) { alert('Error al actualizar estado'); return; }
+  if (recargar) {
+    const ma = await api('/crm/marcas');
+    DATA.marcas = ma?.marcas || [];
+    renderMarcas();
+    updateBadges();
+  } else {
+    // Actualizar local solo
+    const idx = DATA.marcas.findIndex(m => m.id === marcaId);
+    if (idx >= 0) {
+      DATA.marcas[idx]['Datos Listos para INPI'] = !!listo;
+    }
+  }
 }
 
 function renderLeads() {
@@ -2483,35 +2663,52 @@ function renderMarcas() {
     if (m['Fecha Concesión']) fechas.push(`✅ <strong>Concedida:</strong> ${fmtFecha(m['Fecha Concesión'])}`);
     if (m['Fecha Vencimiento']) fechas.push(`⏰ <strong>Vence:</strong> ${fmtFecha(m['Fecha Vencimiento'])}`);
 
+    const datosListos = !!m['Datos Listos para INPI'];
+    const badgeListo = datosListos
+      ? `<span style="background:var(--green-light); color:var(--green-dark); padding:3px 9px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid var(--green); margin-left:6px;">✅ Listo</span>`
+      : `<span style="background:#FFF3CD; color:#856404; padding:3px 9px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #ffeaa7; margin-left:6px;">⏳ Datos pendientes</span>`;
+
     let botonesAccion = '';
     if (!esYaPresentada) {
-      // Para Presentar → botón "Marcar como Presentada" + Ver ficha
+      // Para Presentar → Marcar Presentada + Ver datos para cargar + Listo + Ficha
       botonesAccion = `
         <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn btn-sm btn-primary" onclick="marcarComoPresentada('${m.id}')">
             📤 Marcar como Presentada en INPI
           </button>
+          <button class="btn btn-sm" style="background:#FFF3CD; border-color:#856404; color:#856404;"
+                  onclick="abrirDatosCarga('${m.id}')">
+            📂 Ver datos para cargar
+          </button>
+          <button class="btn btn-sm" style="background:${datosListos ? 'var(--green-light)' : 'var(--surface-2)'}; border-color:${datosListos ? 'var(--green)' : 'var(--border)'}; color:${datosListos ? 'var(--green-dark)' : 'var(--text)'};"
+                  onclick="toggleDatosListos('${m.id}', ${!datosListos})">
+            ${datosListos ? '✅ Datos cargados' : '☑️ Marcar como Listo'}
+          </button>
           <button class="btn btn-sm" onclick="abrirFichaMarca('${m.id}')">
-            📂 Ver ficha completa
+            📋 Ficha completa
           </button>
         </div>
       `;
     } else {
-      // Ya Presentada → botones de mail + Ver ficha
+      // Ya Presentada → mails + datos para cargar + ficha
       const yaPublicada = !!m['Fecha Publicación Boletín'];
       botonesAccion = `
         <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn btn-sm btn-primary" onclick="abrirComMarca('${m.id}','presentacion')">
-            📧 Enviar mail "Presentación de Marca"
+            📧 Mail "Presentación de Marca"
           </button>
           ${yaPublicada ? `
             <button class="btn btn-sm" style="background:var(--accent-light); border-color:var(--accent);"
                     onclick="abrirComMarca('${m.id}','publicacion')">
-              📰 Enviar mail "Publicación en Boletín"
+              📰 Mail "Publicación en Boletín"
             </button>
           ` : ''}
+          <button class="btn btn-sm" style="background:#FFF3CD; border-color:#856404; color:#856404;"
+                  onclick="abrirDatosCarga('${m.id}')">
+            📂 Ver datos cargados
+          </button>
           <button class="btn btn-sm" onclick="abrirFichaMarca('${m.id}')">
-            📂 Ver ficha completa
+            📋 Ficha completa
           </button>
         </div>
       `;
@@ -2521,7 +2718,7 @@ function renderMarcas() {
       <div class="item-card">
         <div class="item-row">
           <div class="item-info">
-            <div class="item-title">${m['Denominación']} ${badgeEstado(m['Estado'])}</div>
+            <div class="item-title">${m['Denominación']} ${badgeEstado(m['Estado'])} ${badgeListo}</div>
             <div class="item-meta">
               <strong>Cliente:</strong> ${nombreCliente(m['Cliente Titular'])} · <strong>Clase ${m['Clases Niza'] || '—'}</strong>
               ${m['N° Expediente'] ? `<br><strong>Expediente:</strong> ${m['N° Expediente']}` : ''}
@@ -3156,8 +3353,13 @@ function abrirModalAceptarPropuesta(propuestaId) {
   document.getElementById('ap_t_pais').value = 'Argentina';
   document.getElementById('ap_t_estadocivil').value = '';
   document.getElementById('ap_t_porcentaje').value = '100';
-  document.getElementById('ap_t_dniLabel').textContent = 'Ningún archivo seleccionado';
-  document.getElementById('ap_m_logoLabel').textContent = 'Ningún archivo seleccionado';
+  // Reset uploads (label + hidden URL)
+  ['ap_t_dni','ap_m_logo','ap_m_notaPoder'].forEach(prefix => {
+    const lbl = document.getElementById(prefix + 'Label');
+    const url = document.getElementById(prefix + 'Url');
+    if (lbl) { lbl.textContent = 'Ningún archivo seleccionado'; lbl.style.color = 'var(--text-2)'; }
+    if (url) { url.value = ''; delete url.dataset.filename; }
+  });
 
   // Precargar marca desde la propuesta
   document.getElementById('ap_m_denominacion').value = p['Marca'] || '';
@@ -3304,26 +3506,70 @@ function ap_renderSocios() {
           📎 Cargar DNI del socio ${i + 1}
         </button>
         <input type="file" id="ap_socio_${i}_dni" style="display:none" accept="image/*,application/pdf"
-               onchange="ap_mostrarArchivo('ap_socio_${i}_dni','ap_socio_${i}_dniLabel')">
-        <span id="ap_socio_${i}_dniLabel" style="font-size: 12px; color: var(--text-2); margin-left: 10px;">Ningún archivo seleccionado</span>
+               onchange="ap_uploadSocioDni(${i}, this)">
+        <span id="ap_socio_${i}_dniLabel" style="font-size: 12px; color: var(--text-2); margin-left: 10px;">${s.dni_url ? '✅ Cargado' : 'Ningún archivo seleccionado'}</span>
       </div>
     </div>
   `).join('');
 }
 
-function ap_mostrarArchivo(inputId, labelId) {
-  const inp = document.getElementById(inputId);
+/**
+ * Sube un archivo al backend (/crm/upload) y guarda la URL pública en un input hidden.
+ * Mientras sube, muestra "subiendo..." en el label.
+ */
+async function uploadArchivoAlBackend(file, tipo) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('tipo', tipo);
+  const url = `${API_BASE}/clientes/system_ia/demos/juridico/crm/upload`;
+  const r = await fetch(url, { method: 'POST', body: fd });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`Upload falló: ${r.status} ${t.slice(0,200)}`);
+  }
+  return await r.json();
+}
+
+async function ap_uploadArchivo(inputEl, labelId, tipo, hiddenUrlId) {
   const lbl = document.getElementById(labelId);
-  if (inp.files && inp.files[0]) {
-    lbl.textContent = `✅ ${inp.files[0].name} (${Math.round(inp.files[0].size/1024)} KB)`;
-    lbl.style.color = 'var(--text)';
-  } else {
-    lbl.textContent = 'Ningún archivo seleccionado';
-    lbl.style.color = 'var(--text-2)';
+  const hidden = document.getElementById(hiddenUrlId);
+  if (!inputEl.files || !inputEl.files[0]) return;
+  const file = inputEl.files[0];
+  lbl.textContent = `⏳ Subiendo ${file.name}...`;
+  lbl.style.color = 'var(--text-2)';
+  try {
+    const data = await uploadArchivoAlBackend(file, tipo);
+    hidden.value = data.url;
+    hidden.dataset.filename = data.filename || file.name;
+    lbl.textContent = `✅ ${file.name} (${Math.round(file.size/1024)} KB)`;
+    lbl.style.color = 'var(--green-dark)';
+  } catch (e) {
+    lbl.textContent = `❌ Error subiendo: ${e.message}`;
+    lbl.style.color = 'var(--red)';
+    hidden.value = '';
+  }
+}
+
+async function ap_uploadSocioDni(idx, inputEl) {
+  const lbl = document.getElementById(`ap_socio_${idx}_dniLabel`);
+  if (!inputEl.files || !inputEl.files[0]) return;
+  const file = inputEl.files[0];
+  lbl.textContent = `⏳ Subiendo...`;
+  lbl.style.color = 'var(--text-2)';
+  try {
+    const data = await uploadArchivoAlBackend(file, 'dni-socio');
+    ap_socios[idx].dni_url = data.url;
+    ap_socios[idx].dni_filename = data.filename || file.name;
+    lbl.textContent = `✅ ${file.name}`;
+    lbl.style.color = 'var(--green-dark)';
+  } catch (e) {
+    lbl.textContent = `❌ ${e.message}`;
+    lbl.style.color = 'var(--red)';
   }
 }
 
 async function ap_confirmarAceptacion() {
+  const dniUrl = document.getElementById('ap_t_dniUrl');
   const titular = {
     nombre_completo: document.getElementById('ap_t_nombre').value.trim(),
     dni: document.getElementById('ap_t_dni').value.trim(),
@@ -3337,6 +3583,8 @@ async function ap_confirmarAceptacion() {
     telefono: document.getElementById('ap_t_telefono').value.trim(),
     email: document.getElementById('ap_t_email').value.trim(),
     porcentaje_participacion: parseFloat(document.getElementById('ap_t_porcentaje').value) || 100,
+    dni_url: dniUrl.value || undefined,
+    dni_filename: dniUrl.dataset.filename || undefined,
   };
 
   // Si la propuesta ya tenía Cliente linkeado, mandamos su id para actualizar (no crear duplicado)
@@ -3347,11 +3595,17 @@ async function ap_confirmarAceptacion() {
   if (!titular.nombre_completo) { alert('Nombre del titular es obligatorio'); return; }
   if (!titular.email) { alert('Email del titular es obligatorio'); return; }
 
+  const logoUrl = document.getElementById('ap_m_logoUrl');
+  const npUrl = document.getElementById('ap_m_notaPoderUrl');
   const marca = {
     denominacion: document.getElementById('ap_m_denominacion').value.trim(),
     clases_niza: document.getElementById('ap_m_clases').value.trim(),
     rubro: document.getElementById('ap_m_rubro').value.trim(),
     notas: document.getElementById('ap_m_notas').value.trim(),
+    logo_url: logoUrl.value || undefined,
+    logo_filename: logoUrl.dataset.filename || undefined,
+    nota_poder_url: npUrl.value || undefined,
+    nota_poder_filename: npUrl.dataset.filename || undefined,
   };
   if (!marca.denominacion) { alert('La denominación de la marca es obligatoria'); return; }
 
