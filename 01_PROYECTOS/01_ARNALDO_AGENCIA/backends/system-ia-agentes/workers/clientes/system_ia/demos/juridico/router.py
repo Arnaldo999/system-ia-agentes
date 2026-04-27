@@ -545,6 +545,134 @@ def aceptar_propuesta_con_datos(propuesta_id: str, payload: dict):
     }
 
 
+@router.get("/crm/marcas/{marca_id}/ficha-completa")
+def obtener_ficha_marca(marca_id: str):
+    """
+    Devuelve la ficha completa de una marca: datos de la marca + cliente titular + socios.
+    Útil para mostrar/editar la "ficha modificable" desde Marcas Nuevas.
+    """
+    import requests as rq
+
+    # Marca
+    r = rq.get(f"{_airtable_url(TABLE_MARCAS)}/{marca_id}", headers=_headers(), timeout=15)
+    if r.status_code != 200:
+        raise HTTPException(404, "Marca no encontrada")
+    marca = r.json()
+    marca_fields = marca.get("fields", {})
+
+    # Cliente titular
+    cliente = None
+    cliente_links = marca_fields.get("Cliente Titular", [])
+    if cliente_links:
+        rc = rq.get(f"{_airtable_url(TABLE_CLIENTES)}/{cliente_links[0]}", headers=_headers(), timeout=15)
+        if rc.status_code == 200:
+            cliente = {"id": rc.json()["id"], **rc.json().get("fields", {})}
+
+    # Socios linkeados a la marca
+    socios = []
+    formula = f"FIND('{marca_id}',ARRAYJOIN({{Marca}}))>0"
+    try:
+        items = _list(TABLE_SOCIOS, filterByFormula=formula)
+        socios = items
+    except Exception:
+        pass
+
+    return {
+        "marca": {"id": marca["id"], **marca_fields},
+        "cliente": cliente,
+        "socios": socios,
+    }
+
+
+@router.post("/crm/marcas/{marca_id}/actualizar-ficha")
+def actualizar_ficha_marca(marca_id: str, payload: dict):
+    """
+    Actualiza la ficha completa: marca + cliente titular + socios (CRUD en lote).
+
+    Body esperado:
+      {
+        "marca": { "denominacion": "...", "clases_niza": "...", "rubro": "...", "notas": "...",
+                   "porcentaje_titular": 60 },
+        "cliente": { "id": "rec...", "nombre_completo": "...", "dni": "...", ... },
+        "socios": [
+          { "id": "rec..." (si existe; sino se crea), "nombre_completo": "...", ... },
+          ...
+        ],
+        "socios_eliminados": ["rec...", ...]  (opcional, IDs de socios a borrar)
+      }
+    """
+    out = {"marca_id": marca_id, "cliente_id": None, "socios_ids": [], "socios_creados": [], "socios_actualizados": [], "socios_borrados": []}
+
+    # 1. Marca
+    marca_in = payload.get("marca", {})
+    if marca_in:
+        marca_fields = {}
+        if "denominacion" in marca_in: marca_fields["Denominación"] = marca_in["denominacion"]
+        if "clases_niza" in marca_in:  marca_fields["Clases Niza"] = marca_in["clases_niza"]
+        if "rubro" in marca_in:        marca_fields["Rubro"] = marca_in["rubro"]
+        if "notas" in marca_in:        marca_fields["Notas"] = marca_in["notas"]
+        if "porcentaje_titular" in marca_in:
+            marca_fields["Porcentaje Participación Titular"] = marca_in["porcentaje_titular"]
+        if marca_fields:
+            _at_patch(TABLE_MARCAS, marca_id, marca_fields)
+
+    # 2. Cliente
+    cli_in = payload.get("cliente", {})
+    if cli_in and cli_in.get("id"):
+        cli_fields = {}
+        mapping = {
+            "nombre_completo": "Nombre Completo / Razón Social",
+            "dni": "DNI", "cuit": "CUIT", "email": "Email",
+            "telefono": "Teléfono WhatsApp",
+            "pais": "País", "estado_civil": "Estado Civil",
+            "ciudad": "Ciudad", "provincia": "Provincia",
+            "domicilio": "Dirección", "codigo_postal": "Código Postal",
+        }
+        for k, fname in mapping.items():
+            if k in cli_in:
+                cli_fields[fname] = cli_in[k]
+        if cli_fields:
+            _at_patch(TABLE_CLIENTES, cli_in["id"], cli_fields)
+            out["cliente_id"] = cli_in["id"]
+
+    # 3. Socios — crear, actualizar o borrar
+    for socio in payload.get("socios", []):
+        s_fields = {}
+        smap = {
+            "nombre_completo": "Nombre Completo",
+            "dni": "DNI", "cuit": "CUIT",
+            "pais": "País", "estado_civil": "Estado Civil",
+            "ciudad": "Ciudad", "provincia": "Provincia",
+            "domicilio": "Domicilio", "codigo_postal": "Código Postal",
+            "telefono": "Teléfono", "email": "Email",
+            "porcentaje_participacion": "Porcentaje Participación",
+        }
+        for k, fname in smap.items():
+            if k in socio:
+                s_fields[fname] = socio[k]
+        if not s_fields.get("Nombre Completo"):
+            continue
+        if socio.get("id"):
+            _at_patch(TABLE_SOCIOS, socio["id"], s_fields)
+            out["socios_actualizados"].append(socio["id"])
+            out["socios_ids"].append(socio["id"])
+        else:
+            s_fields["Marca"] = [marca_id]
+            srec = _at_post(TABLE_SOCIOS, s_fields)
+            out["socios_creados"].append(srec["id"])
+            out["socios_ids"].append(srec["id"])
+
+    for sid in payload.get("socios_eliminados", []):
+        try:
+            _at_delete(TABLE_SOCIOS, sid)
+            out["socios_borrados"].append(sid)
+        except Exception:
+            pass
+
+    out["mensaje"] = "Ficha actualizada"
+    return out
+
+
 @router.post("/crm/plantillas/{plantilla_id}/render")
 def render_plantilla(plantilla_id: str, payload: dict):
     """
