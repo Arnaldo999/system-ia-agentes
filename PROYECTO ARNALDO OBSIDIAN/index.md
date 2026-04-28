@@ -1,13 +1,14 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-24 | Total páginas: 64 (1 fuente + 20 entidades + 27 conceptos + 8 síntesis + 1 mapa de prod + **7 playbooks** incluyendo README)
+Última actualización: 2026-04-27 | Total páginas: 71 (2 fuentes + 23 entidades + **29 conceptos** + 8 síntesis + 1 mapa de prod + **8 playbooks** incluyendo README)
 
-## Fuentes (1)
+## Fuentes (2)
 | Página | Resumen | Fecha | Proyecto | Tags |
 |--------|---------|-------|----------|------|
 | [[wiki/fuentes/sesion-2026-04-22]] | Sesión densa: CORS Maicol + Monitor Capa 1 + CRM v2 unificado Robert+Mica + audit Postgres + bug tokens .env | 2026-04-22 | compartido | cors, monitoreo, crm-v2, postgres, env-vars, telegram, coolify |
+| [[wiki/fuentes/sesion-2026-04-27-grupo-back-confirmacion]] | Patricia Back confirma hoja de ruta + expande alcance de 3 a 6 marcas. Ingesta entidades grupo-back, patricia-back, hernan-weninger | 2026-04-27 | arnaldo | grupo-back, descubrimiento, multi-marca |
 
-## Entidades (20)
+## Entidades (23)
 
 ### Las 3 agencias del ecosistema
 | Página | Dueño | Estado |
@@ -25,11 +26,14 @@
 | [[wiki/entidades/lau]] | persona / cliente-propio (familia) | arnaldo |
 | [[wiki/entidades/maicol]] | cliente externo de Arnaldo | arnaldo |
 | [[wiki/entidades/cesar-posada]] | cliente nuevo de Arnaldo — agencia turismo (propuesta enviada 2026-04-22) | arnaldo |
+| [[wiki/entidades/patricia-back]] | persona / dueña Grupo Back (descubrimiento, hoja de ruta confirmada 2026-04-27) | arnaldo |
+| [[wiki/entidades/hernan-weninger]] | persona / coordinador Grupo Back (mano derecha de Patricia) | arnaldo |
 
 ### Marcas de clientes
 | Página | Tipo | Proyecto |
 |--------|------|----------|
 | [[wiki/entidades/back-urbanizaciones]] | marca comercial (cliente Maicol) | arnaldo |
+| [[wiki/entidades/grupo-back]] | grupo empresarial multi-marca (6 firmas — descubrimiento en curso) | arnaldo |
 
 ### Productos / BDs modelo
 | Página | Tipo | Proyecto |
@@ -163,13 +167,14 @@
 
 ---
 
-## Playbooks (6) — patrones repetibles para construcción
+## Playbooks (7) — patrones repetibles para construcción
 
 > **LEER ANTES de arrancar un trabajo nuevo del tipo correspondiente.** Evita repetir errores ya resueltos.
 
 | Playbook | Qué construye | Versión | Proyectos |
 |----------|---------------|---------|-----------|
 | [[wiki/playbooks/worker-whatsapp-bot]] | Bot WhatsApp conversacional (BANT, 1-a-1, LLM) | v1 | arnaldo, robert, mica |
+| [[wiki/playbooks/worker-voz-elevenlabs]] | 🆕 Bot voz telefónica (ElevenLabs + Twilio + tools FastAPI) | v1 | arnaldo, robert, mica |
 | [[wiki/playbooks/worker-social-automation]] | Publicación auto FB+IG + bot comentarios + DMs | v1 | arnaldo (extensible) |
 | [[wiki/playbooks/crm-html-tailwind]] | CRM/panel con HTML+Tailwind CDN+JS vanilla | v1 | robert, mica, arnaldo |
 | [[wiki/playbooks/postgres-multi-tenant]] | BD Postgres aislada por cliente (workspaces) | v1 | robert |

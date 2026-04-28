@@ -80,17 +80,13 @@ from workers.clientes.lovbot.robert_inmobiliaria.worker import router as robert_
 from workers.clientes.lovbot.agencia_crm.router import router as agencia_crm_router
 from workers.clientes.lovbot.robert_inmobiliaria.worker import _procesar as robert_inmo_procesar
 
-# ── Cliente Lovbot — Inmobiliaria García ──
-from workers.clientes.lovbot.inmobiliaria_garcia.worker import router as inmobiliaria_garcia_router
-from workers.clientes.lovbot.inmobiliaria_garcia.worker import _procesar as inmobiliaria_garcia_procesar
-from workers.clientes.lovbot.test_arnaldo.worker import router as test_arnaldo_router
-
 # ── Tech Provider Lovbot — Meta Webhooks (reemplaza n8n workflows) ────────────
 from workers.clientes.lovbot.tech_provider.webhook_meta import router as meta_tp_router
 
 # ── Demos ─────────────────────────────────────────────────────────────────────
 from workers.demos.inmobiliaria.worker  import router as demo_inmobiliaria_router
 from workers.demos.gastronomico.worker  import router as demo_gastronomico_router
+from workers.demos.inmobiliaria_voz.worker import router as demo_voz_inmobiliaria_router
 
 # ── SaaS ──────────────────────────────────────────────────────────────────────
 from workers.shared.tenants import router as tenants_router, crm_router, admin_router
@@ -161,10 +157,9 @@ app.include_router(maicol_router)
 app.include_router(prueba_router)
 app.include_router(robert_inmo_router)
 app.include_router(agencia_crm_router)
-app.include_router(inmobiliaria_garcia_router)
-app.include_router(test_arnaldo_router)
 app.include_router(demo_inmobiliaria_router)
 app.include_router(demo_gastronomico_router)
+app.include_router(demo_voz_inmobiliaria_router)
 app.include_router(lau_router)
 app.include_router(mica_demo_inmo_router)
 app.include_router(mica_demo_inmo_router_v2)

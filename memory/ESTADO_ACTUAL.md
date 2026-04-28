@@ -1,7 +1,53 @@
 # ESTADO ACTUAL
 
-Fecha: 2026-04-24 (medio día) ART
+Fecha: 2026-04-27 (tarde) ART
 Responsable última actualización: Claude Opus 4.7 / Arnaldo
+
+## 🎙️ Hito 2026-04-27 — Bot voz Robert dev-ready + limpieza workers legacy
+
+Construcción completa del primer agente de voz del ecosistema (cuenta dev ElevenCreative Arnaldo, pendiente Twilio AR + pago Robert).
+
+### 🎯 Entregado
+
+| Componente | Estado | Path |
+|---|---|---|
+| Limpieza `workers/clientes/lovbot/` | ✅ Borrados `_base/`, `inmobiliaria_garcia/`, `test_arnaldo/` | Solo quedan `agencia_crm/`, `robert_inmobiliaria/`, `tech_provider/` |
+| `workers/shared/calcom_client.py` | ✅ Nuevo | wrapper Cal.com v2 reusable |
+| `workers/shared/catalog.py` | ✅ Nuevo | wrapper búsqueda Postgres |
+| `workers/shared/lead_matcher.py` | ✅ Nuevo | match cross-channel últimos 10 dígitos |
+| `workers/shared/bant.py` | ✅ Nuevo | extracción señales BANT + scoring |
+| `workers/demos/inmobiliaria_voz/worker.py` | ✅ Nuevo | 5 endpoints `/voz/*` + healthz |
+| `main.py` registro router voz | ✅ | prefix `/demos/voz/inmobiliaria` |
+| Handoff doc Robert (5 archivos) | ✅ | `02_OPERACION_COMPARTIDA/handoff/elevenlabs-robert/` |
+| Playbook wiki `worker-voz-elevenlabs.md` | ✅ v1 con 11 gotchas | `wiki/playbooks/` |
+| Concepto wiki ElevenLabs + Twilio | ✅ | `wiki/conceptos/` |
+
+### 📋 Pendiente para activación productiva
+
+- [ ] Deploy backend a Coolify Hetzner Robert (`agentes.lovbot.ai`)
+- [ ] Validar `curl https://agentes.lovbot.ai/demos/voz/inmobiliaria/healthz`
+- [ ] Configurar agente en ElevenLabs (cuenta dev ElevenCreative Arnaldo) siguiendo `README-handoff.md` pasos 2-5
+- [ ] Test desde "Test AI agent" — 5 flujos mínimo
+- [ ] Robert paga ElevenLabs Creator (USD 22/mes)
+- [ ] Robert compra Twilio AR (KYC 3-10 días)
+- [ ] Conectar Twilio ↔ ElevenLabs en cuenta Robert
+- [ ] Promover `workers/demos/inmobiliaria_voz/` → `workers/clientes/lovbot/robert_voz/`
+
+### 🐛 Aprendizaje crítico de la sesión
+
+Casi caí en asumir info errónea (worker Robert con Airtable LIVE en prod). Verdad real estaba en wiki Obsidian (Postgres + nada productivo aún). **Regla nueva**: consultar `PROYECTO ARNALDO OBSIDIAN/wiki/` ANTES de inferir stack desde código. Los docstrings de archivos pueden estar desactualizados (caso `robert_inmobiliaria/worker.py` decía Airtable cuando ya era Postgres).
+
+### 📦 Commits pendientes (no ejecutados — esperan validación + push manual)
+
+```
+limpieza: remove workers legacy (_base, test_arnaldo, inmobiliaria_garcia)
+feat(shared): calcom_client + catalog + lead_matcher + bant
+feat(voz): worker demo voz inmobiliaria con 5 endpoints ElevenLabs
+docs(handoff): elevenlabs-robert handoff completo (system prompt + tools + KB + README)
+docs(wiki): playbook worker-voz-elevenlabs + conceptos ElevenLabs/Twilio
+```
+
+---
 
 ## 🕑 Hito mediodía 2026-04-24 — Bot comentarios + DMs Messenger + fix Robert horario
 

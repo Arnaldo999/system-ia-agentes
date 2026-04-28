@@ -1,0 +1,167 @@
+{
+  "_comment": "Custom tools del agente de voz Lovbot Inmobiliaria. Pegar cada tool en ElevenLabs UI (Agent → Tools → Add Custom Tool → Edit as JSON). URL base: https://agentes.lovbot.ai/demos/voz/inmobiliaria — al promover a producción cambiar prefix a /clientes/lovbot/robert/voz",
+  "_voice_id": "16UXUey4OpoKrC9IiRNt",
+  "_llm": "gemini-2.5-flash",
+  "_temperature": 0.5,
+  "_token_limit": -1,
+  "_response_timeout_seconds": 40,
+  "_pre_tool_speech": "Un momento, lo verifico.",
+  "_dynamic_variables": {
+    "system_time_utc": "auto",
+    "system_timezone": "America/Argentina/Buenos_Aires",
+    "caller_id": "auto"
+  },
+  "_advanced": {
+    "turn_timeout_seconds": 7,
+    "silence_call_timeout_seconds": 60,
+    "max_conversation_seconds": 600
+  },
+  "tools": [
+    {
+      "name": "identificar_lead",
+      "description": "Identifica si el número que llama (caller_id) es un lead conocido. Llamar SIEMPRE al inicio de la conversación. Si existing=true, saludar por nombre y referenciar interés previo.",
+      "method": "POST",
+      "url": "https://agentes.lovbot.ai/demos/voz/inmobiliaria/identificar-lead",
+      "headers": {},
+      "body_parameters": [
+        {
+          "name": "caller_id",
+          "type": "string",
+          "required": true,
+          "value_type": "dynamic",
+          "dynamic_variable": "caller_id",
+          "description": "Número de teléfono del que llama (auto del sistema)"
+        }
+      ]
+    },
+    {
+      "name": "buscar_propiedad",
+      "description": "Busca propiedades en el catálogo en tiempo real. Filtra por tipo, operación, zona y presupuesto. Úsala SIEMPRE antes de hablar de precios o disponibilidad de propiedades.",
+      "method": "POST",
+      "url": "https://agentes.lovbot.ai/demos/voz/inmobiliaria/buscar-propiedad",
+      "headers": {},
+      "body_parameters": [
+        {
+          "name": "tipo",
+          "type": "string",
+          "required": false,
+          "value_type": "llm_prompt",
+          "description": "Tipo de propiedad: casa, departamento, lote, ph, local"
+        },
+        {
+          "name": "operacion",
+          "type": "string",
+          "required": false,
+          "value_type": "llm_prompt",
+          "description": "venta o alquiler"
+        },
+        {
+          "name": "zona",
+          "type": "string",
+          "required": false,
+          "value_type": "llm_prompt",
+          "description": "Zona o barrio de interés (ej: Posadas Centro)"
+        },
+        {
+          "name": "presupuesto",
+          "type": "string",
+          "required": false,
+          "value_type": "llm_prompt",
+          "description": "Bucket de presupuesto: hata_50k, 50k_100k, 100k_200k, mas_200k"
+        }
+      ]
+    },
+    {
+      "name": "disponibilidad",
+      "description": "Consulta horarios disponibles para visitas presenciales (Cal.com). Úsala SIEMPRE antes de proponer fecha/hora. Devuelve hasta 6 slots en próximos 7 días.",
+      "method": "POST",
+      "url": "https://agentes.lovbot.ai/demos/voz/inmobiliaria/disponibilidad",
+      "headers": {},
+      "body_parameters": [
+        {
+          "name": "dias",
+          "type": "integer",
+          "required": false,
+          "value_type": "llm_prompt",
+          "description": "Cantidad de días hacia adelante a buscar (default 7, máx 14)"
+        },
+        {
+          "name": "system_time_utc",
+          "type": "string",
+          "required": false,
+          "value_type": "dynamic",
+          "dynamic_variable": "system_time_utc",
+          "description": "Hora actual UTC (para que el bot sepa qué es hoy)"
+        }
+      ]
+    },
+    {
+      "name": "agendar_visita",
+      "description": "Agenda una visita en el calendario. SOLO llamarla después de haber: 1) confirmado el slot con el cliente, 2) deletreado el email letra por letra, 3) confirmado nombre completo. Crea booking en Cal.com + actualiza CRM.",
+      "method": "POST",
+      "url": "https://agentes.lovbot.ai/demos/voz/inmobiliaria/agendar-visita",
+      "headers": {},
+      "body_parameters": [
+        {
+          "name": "slot_iso",
+          "type": "string",
+          "required": true,
+          "value_type": "llm_prompt",
+          "description": "Horario elegido en formato ISO 8601 UTC, devuelto por la tool disponibilidad (campo time)"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "value_type": "llm_prompt",
+          "description": "Nombre y apellido completo del cliente"
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "required": true,
+          "value_type": "llm_prompt",
+          "description": "Email del cliente (deletreado y confirmado)"
+        },
+        {
+          "name": "caller_id",
+          "type": "string",
+          "required": true,
+          "value_type": "dynamic",
+          "dynamic_variable": "caller_id",
+          "description": "Número que llama"
+        },
+        {
+          "name": "notas",
+          "type": "string",
+          "required": false,
+          "value_type": "llm_prompt",
+          "description": "Resumen breve del interés del cliente (tipo, zona, presupuesto)"
+        }
+      ]
+    },
+    {
+      "name": "cancelar_visita",
+      "description": "Cancela una visita existente. Solo si el cliente lo pide explícitamente y tiene el código de la reserva.",
+      "method": "POST",
+      "url": "https://agentes.lovbot.ai/demos/voz/inmobiliaria/cancelar-visita",
+      "headers": {},
+      "body_parameters": [
+        {
+          "name": "booking_uid",
+          "type": "string",
+          "required": true,
+          "value_type": "llm_prompt",
+          "description": "UID del booking a cancelar (lo da el cliente)"
+        },
+        {
+          "name": "razon",
+          "type": "string",
+          "required": false,
+          "value_type": "llm_prompt",
+          "description": "Motivo de cancelación según el cliente"
+        }
+      ]
+    }
+  ]
+}

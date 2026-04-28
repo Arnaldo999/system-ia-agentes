@@ -1,30 +1,38 @@
 """
-Worker — Robert Bazán / Lovbot — Inmobiliaria Completa v2
-==========================================================
-Inmobiliaria completa con:
-  - Captación y precalificación inteligente de leads (Gemini)
-  - Búsqueda de propiedades en Airtable con filtros
+Worker — Robert Bazán / Lovbot — Inmobiliaria Demo (modelo)
+============================================================
+Bot demo inmobiliaria de Robert. Es la BASE/MODELO desde la cual se
+clonan los workers de clientes nuevos de Lovbot.
+
+Stack (Lovbot — NO Airtable, NO YCloud, NO Evolution):
+  - Canal: Meta Graph API (WhatsApp Business API) — Robert es Tech Provider
+  - BD: PostgreSQL `lovbot_crm_modelo` (Coolify Hetzner) vía db_postgres.py
+  - LLM: Gemini (compartido) + OpenAI propio Robert (LOVBOT_OPENAI_API_KEY)
+  - Cal.com: cuenta compartida de Arnaldo
+  - Chatwoot: chatwoot.lovbot.ai
+
+Funcionalidad:
+  - Captación y precalificación BANT (Gemini)
+  - Búsqueda de propiedades en Postgres con filtros
   - Fichas completas con imagen
   - Score caliente/tibio/frío + notificación al asesor
-  - Registro automático de leads en Airtable
-  - Canal: Meta Graph API (WhatsApp Business API)
+  - Registro automático de leads en `leads` (Postgres)
 
-Variables de entorno:
+Variables de entorno principales:
   META_ACCESS_TOKEN        Token permanente del System User
   META_PHONE_NUMBER_ID     ID del número de WhatsApp
   GEMINI_API_KEY           Compartida
-  AIRTABLE_TOKEN           Token Airtable
-  ROBERT_AIRTABLE_BASE     Base ID de Robert en Airtable
-  ROBERT_TABLE_PROPS       ID tabla propiedades
-  ROBERT_TABLE_CLIENTES    ID tabla clientes/leads
+  LOVBOT_OPENAI_API_KEY    OpenAI cuenta propia de Robert
+  LOVBOT_PG_*              Conexión Postgres lovbot_crm_modelo
 
   INMO_DEMO_NOMBRE         Nombre empresa (def: "Lovbot — Inmobiliaria")
-  INMO_DEMO_CIUDAD         Ciudad (def: "México")
+  INMO_DEMO_CIUDAD         Ciudad
   INMO_DEMO_ASESOR         Nombre asesor (def: "Roberto")
   INMO_DEMO_NUMERO_ASESOR  Número asesor para notificaciones
   INMO_DEMO_ZONAS          Zonas separadas por coma
   INMO_DEMO_MONEDA         Moneda (def: USD)
-  INMO_DEMO_SITIO_WEB      URL del sitio web (opcional)
+  INMO_DEMO_CAL_API_KEY    Cal.com API key (Arnaldo compartida)
+  INMO_DEMO_CAL_EVENT_ID   Cal.com event type ID
 """
 
 import os
