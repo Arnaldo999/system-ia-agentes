@@ -878,31 +878,6 @@ def _at_guardar_cita(telefono: str, fecha_cita: str) -> None:
         print(f"[ROBERT-AT] Cita guardada tel={telefono}")
 
 
-def _at_buscar_propiedades(tipo: str = None, operacion: str = None,
-                           zona: str = None, presupuesto: str = None) -> list[dict]:
-    if not AIRTABLE_BASE_ID or not AIRTABLE_TABLE_PROPS:
-        return []
-    filtros = ["OR({Disponible}='✅ Disponible',{Disponible}='⏳ Reservado')"]
-    if tipo:
-        filtros.append(f"LOWER({{Tipo}})='{tipo.lower()}'")
-    if operacion:
-        filtros.append(f"LOWER({{Operacion}})='{operacion.lower()}'")
-    if zona and zona.lower() not in ("otra zona", "otra", "no sé", "no se"):
-        filtros.append(f"{{Zona}}='{zona}'")
-    if presupuesto and presupuesto in ("hata_50k", "50k_100k", "100k_200k", "mas_200k"):
-        filtros.append(f"{{Presupuesto}}='{presupuesto}'")
-    formula = "AND(" + ",".join(filtros) + ")" if len(filtros) > 1 else filtros[0]
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_PROPS}"
-    try:
-        r = requests.get(url, headers=AT_HEADERS,
-            params={"filterByFormula": formula, "maxRecords": 5,
-                    "sort[0][field]": "Precio", "sort[0][direction]": "asc"}, timeout=8)
-        return [rec["fields"] for rec in r.json().get("records", [])]
-    except Exception as e:
-        print(f"[ROBERT-AT] Error buscar props: {e}")
-        return []
-
-
 # ─── LLM (OpenAI principal → Gemini fallback) ───────────────────────────────
 
 def _llm(prompt: str, system: str = "") -> str:
@@ -2135,8 +2110,8 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         zona_busq   = sesion.get("resp_zona", "")
         operac_busq = sesion.get("operacion_at", "venta")
         presp_busq  = sesion.get("presupuesto_at", "")
-        props_d = _at_buscar_propiedades(tipo=tipo_busq, operacion=operac_busq,
-                                          zona=zona_busq, presupuesto=presp_busq)
+        props_d = db.buscar_propiedades(tipo=tipo_busq, operacion=operac_busq,
+                                         zona=zona_busq, presupuesto=presp_busq) if USE_POSTGRES else []
         if props_d:
             sesion_nueva = {**sesion, "step": "explorando",
                             "props": props_d, "prop_idx": 0,
@@ -2477,8 +2452,8 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         zona_mp   = sesion_nueva.get("resp_zona", "")
         oper_mp   = sesion_nueva.get("operacion_at", "venta")
         presp_mp  = sesion_nueva.get("presupuesto_at", "")
-        props_mp  = _at_buscar_propiedades(tipo=tipo_mp, operacion=oper_mp,
-                                            zona=zona_mp, presupuesto=presp_mp)
+        props_mp  = db.buscar_propiedades(tipo=tipo_mp, operacion=oper_mp,
+                                           zona=zona_mp, presupuesto=presp_mp) if USE_POSTGRES else []
         if props_mp:
             SESIONES[telefono] = {**sesion_nueva, "step": "explorando",
                                    "props": props_mp, "prop_idx": 0,
