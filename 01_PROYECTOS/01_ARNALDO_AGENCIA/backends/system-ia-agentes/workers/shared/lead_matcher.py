@@ -91,7 +91,7 @@ def upsert_lead_voice(phone: str, name: str = "", email: str = "",
         nombre=name,
         score=score or "tibio",
         notas=notes,
-        fuente_detalle="canal:voz",
+        fuente_detalle="canal:voz_elevenlabs",
     )
     if email:
         db.guardar_email(digits, email)

@@ -59,7 +59,12 @@ def registrar_lead(telefono: str, nombre: str, score: str = "",
     apellido_p = partes[1] if len(partes) > 1 else ""
 
     # Fuente
-    fuente = "meta_ads" if fuente_detalle and fuente_detalle.startswith("ad:") else "whatsapp_directo"
+    if fuente_detalle and fuente_detalle.startswith("ad:"):
+        fuente = "meta_ads"
+    elif fuente_detalle and fuente_detalle.startswith("canal:voz"):
+        fuente = "voz"
+    else:
+        fuente = "whatsapp_directo"
 
     try:
         conn = _conn()
