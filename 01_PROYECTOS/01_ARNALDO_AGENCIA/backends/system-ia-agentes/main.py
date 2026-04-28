@@ -74,7 +74,7 @@ def registrar_error(endpoint: str, error: Exception, contexto: dict = {}):
 # ── Clientes Arnaldo ──────────────────────────────────────────────────────────
 from workers.clientes.arnaldo.maicol.worker import router as maicol_router
 from workers.clientes.arnaldo.prueba.worker import router as prueba_router
-from workers.clientes.arnaldo.grupo_back_rizoma.worker import router as rizoma_router
+from workers.clientes.arnaldo.p_back_argentina_rizoma.worker import router as rizoma_router
 
 # ── Clientes Lovbot ───────────────────────────────────────────────────────────
 from workers.clientes.lovbot.robert_inmobiliaria.worker import router as robert_inmo_router
