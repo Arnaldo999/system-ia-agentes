@@ -536,8 +536,45 @@
 </div>
 
 <!-- ════════════════════════════════════════════════
+     PANTALLA DE LOGIN
+════════════════════════════════════════════════ -->
+<div id="login-screen" style="display:none; position:fixed; inset:0; background:#0f172a; z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+  <div style="background:white; border-radius:20px; padding:48px 40px; width:100%; max-width:380px; box-shadow:0 25px 60px rgba(0,0,0,.4); text-align:center;">
+    <div style="width:56px; height:56px; background:#0ea5e9; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:900; color:white; margin:0 auto 20px; font-family:'Manrope',sans-serif;">R</div>
+    <h1 style="font-family:'Manrope',sans-serif; font-size:1.4rem; font-weight:800; color:#0f172a; margin-bottom:4px;">Rizoma Propiedades</h1>
+    <p style="font-size:0.82rem; color:#64748b; margin-bottom:28px; font-family:'Inter',sans-serif;">CRM · P. Back Argentina</p>
+    <p style="font-size:0.88rem; font-weight:600; color:#0f172a; text-align:left; margin-bottom:8px; font-family:'Inter',sans-serif;">PIN de acceso</p>
+    <input
+      id="login-pin"
+      type="password"
+      inputmode="numeric"
+      maxlength="4"
+      placeholder="• • • •"
+      style="width:100%; border:2px solid #e2e8f0; border-radius:12px; padding:14px 16px; font-size:1.5rem; text-align:center; letter-spacing:0.5em; outline:none; font-family:'Inter',sans-serif; color:#0f172a; transition:border-color .2s; margin-bottom:8px;"
+      onfocus="this.style.borderColor='#0ea5e9'"
+      onblur="this.style.borderColor='#e2e8f0'"
+    />
+    <p id="login-error" style="display:none; color:#ef4444; font-size:0.82rem; margin-bottom:12px; font-family:'Inter',sans-serif;"></p>
+    <button
+      id="login-btn"
+      onclick="doLogin()"
+      style="width:100%; background:#0369a1; color:white; border:none; border-radius:12px; padding:14px; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:background .2s; margin-top:4px;"
+      onmouseover="this.style.background='#0284c7'"
+      onmouseout="this.style.background='#0369a1'"
+    >Ingresar al CRM</button>
+    <p style="margin-top:20px; font-size:0.75rem; color:#94a3b8; font-family:'Inter',sans-serif;">
+      🔒 Acceso protegido · Sesión de 8 horas
+    </p>
+  </div>
+  <p style="margin-top:16px; font-size:0.72rem; color:#475569; font-family:'Inter',sans-serif;">
+    🌐 <a href="https://arnaldoayalaestratega.com" style="color:#94a3b8; text-decoration:none;">arnaldoayalaestratega.com</a>
+  </p>
+</div>
+
+<!-- ════════════════════════════════════════════════
      LAYOUT PRINCIPAL
 ════════════════════════════════════════════════ -->
+<div id="app-shell" style="display:none; width:100%;">
 <div class="dashboard-layout">
   <button class="hamburger" onclick="toggleSidebar()">☰</button>
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -563,6 +600,7 @@
     </nav>
     <div class="sidebar-footer">
       <div class="nav-item" onclick="loadAll()"><span class="nav-icon">↻</span> Sincronizar</div>
+      <div class="nav-item" onclick="doLogout()" style="color:#ef4444; margin-top:4px;"><span class="nav-icon">🔒</span> Cerrar sesión</div>
     </div>
   </aside>
 
@@ -762,21 +800,97 @@
 // ── Config ────────────────────────────────────────────────────────────────────
 const API_BASE = (() => {
   const h = window.location.hostname;
-  if (h.includes('arnaldoayalaestratega') || h.includes('p-back-argentina'))
+  if (h.includes('arnaldoayalaestratega') || h.includes('pbackargentina') || h.includes('p-back'))
     return 'https://agentes.arnaldoayalaestratega.cloud';
   return 'http://localhost:8000';
 })();
-const PFX = '/clientes/arnaldo/p-back-argentina/rizoma';
+const PFX         = '/clientes/arnaldo/p-back-argentina/rizoma';
+const TENANT_SLUG = 'p-back-argentina-rizoma';
+const TOKEN_KEY   = `crm_token_${TENANT_SLUG}`;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function getToken()           { return localStorage.getItem(TOKEN_KEY) || ''; }
+function saveToken(t)         { localStorage.setItem(TOKEN_KEY, t); }
+function clearToken()         { localStorage.removeItem(TOKEN_KEY); }
+function isAuthenticated()    { return getToken().length > 10; }
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-shell').style.display = 'none';
+}
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'flex';
+}
+
+async function doLogin() {
+  const pin = document.getElementById('login-pin').value.trim();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  if (!pin) { err.textContent = 'Ingresá tu PIN de 4 dígitos'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  try {
+    const res = await fetch(`${API_BASE}/tenant/${TENANT_SLUG}/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        err.textContent = d.detail || 'Demasiados intentos. Esperá unos minutos.';
+      } else {
+        err.textContent = 'PIN incorrecto. Intentá de nuevo.';
+      }
+      err.style.display = 'block';
+      return;
+    }
+    const data = await res.json();
+    saveToken(data.token);
+    showApp();
+    loadAll();
+  } catch(e) {
+    err.textContent = 'Error de conexión. Revisá tu internet.';
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Ingresar al CRM';
+  }
+}
+
+function doLogout() {
+  clearToken();
+  document.getElementById('login-pin').value = '';
+  showLogin();
+}
+
+// Enter en el PIN
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('login-pin').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  if (isAuthenticated()) { showApp(); loadAll(); }
+  else showLogin();
+});
 
 // ── Cache de datos ────────────────────────────────────────────────────────────
 let _leads = [], _propiedades = [], _personas = [], _contratos = [], _tasaciones = [], _asesores = [];
 
-// ── API helper ────────────────────────────────────────────────────────────────
+// ── API helper (con token automático) ─────────────────────────────────────────
 async function api(path, opts = {}) {
+  const token = getToken();
   const res = await fetch(`${API_BASE}${PFX}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
     ...opts,
   });
+  if (res.status === 401) {
+    clearToken();
+    showLogin();
+    throw new Error('Sesión expirada. Ingresá tu PIN de nuevo.');
+  }
   if (!res.ok) {
     const txt = await res.text();
     throw new Error(`${res.status}: ${txt}`);
@@ -1489,8 +1603,8 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-loadAll();
+// Init manejado por DOMContentLoaded arriba (verifica token antes de loadAll)
 </script>
+</div><!-- /app-shell -->
 </body>
 </html>

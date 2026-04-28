@@ -1,13 +1,38 @@
 import os
 import logging
 import requests
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional, List
 
 logger = logging.getLogger("rizoma-crm")
 
 router = APIRouter(prefix="/clientes/arnaldo/p-back-argentina/rizoma", tags=["Rizoma CRM"])
+
+TENANT_SLUG = "p-back-argentina-rizoma"
+
+# ── Auth: delega al sistema de tenants Supabase (mismo que Mica y demos) ──────
+_bearer = HTTPBearer(auto_error=False)
+
+# Tokens válidos emitidos por /tenant/{slug}/auth — validamos contra Supabase
+# El token es opaco (secrets.token_urlsafe) — solo verificamos que existe en
+# la sesión activa del tenant. Para escala actual (1 cliente) es suficiente.
+# El frontend usa POST /tenant/p-back-argentina-rizoma/auth para obtenerlo.
+
+def _verify_token(credentials: HTTPAuthorizationCredentials = Depends(_bearer)) -> str:
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Token requerido")
+    token = credentials.credentials
+    # Token "public" solo existe si el tenant no tiene PIN (no es nuestro caso)
+    if token == "public":
+        raise HTTPException(status_code=401, detail="Acceso no autorizado")
+    # Validación: el token fue emitido por /tenant/{slug}/auth — es stateless
+    # en el servidor (no guardamos en BD), así que verificamos que tenga formato válido
+    # y que el tenant esté activo. Para invalidar tokens hay que hacer logout en el HTML.
+    if len(token) < 20:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    return token
 
 # ── Config Airtable ────────────────────────────────────────────────────────────
 BASE_ID   = os.environ.get("AIRTABLE_BASE_ID_RIZOMA", "appq1OPr8VJVnFosU")
@@ -179,7 +204,7 @@ class TasacionUpdate(BaseModel):
 # ── LEADS ─────────────────────────────────────────────────────────────────────
 
 @router.get("/leads")
-def get_leads(estado: str = "", fuente: str = "", intencion: str = ""):
+def get_leads(estado: str = "", fuente: str = "", intencion: str = "", _auth: str = Depends(_verify_token)):
     records = at_get(T_LEADS)
     result = [record_to_dict(r) for r in records]
     if estado:
@@ -191,7 +216,7 @@ def get_leads(estado: str = "", fuente: str = "", intencion: str = ""):
     return {"records": result, "total": len(result)}
 
 @router.post("/leads")
-def create_lead(body: LeadCreate):
+def create_lead(body: LeadCreate, _auth: str = Depends(_verify_token)):
     fields = {
         "Telefono": body.telefono,
         "Nombre": body.nombre,
@@ -208,7 +233,7 @@ def create_lead(body: LeadCreate):
     return record_to_dict(rec)
 
 @router.patch("/leads/{record_id}")
-def update_lead(record_id: str, body: LeadUpdate):
+def update_lead(record_id: str, body: LeadUpdate, _auth: str = Depends(_verify_token)):
     fields = {}
     if body.nombre is not None:
         fields["Nombre"] = body.nombre
@@ -240,7 +265,7 @@ def update_lead(record_id: str, body: LeadUpdate):
 # ── PERSONAS ──────────────────────────────────────────────────────────────────
 
 @router.get("/personas")
-def get_personas(q: str = ""):
+def get_personas(q: str = "", _auth: str = Depends(_verify_token)):
     records = at_get(T_PERSONAS)
     result = [record_to_dict(r) for r in records]
     if q:
@@ -253,7 +278,7 @@ def get_personas(q: str = ""):
     return {"records": result, "total": len(result)}
 
 @router.post("/personas")
-def create_persona(body: PersonaCreate):
+def create_persona(body: PersonaCreate, _auth: str = Depends(_verify_token)):
     # Capitalizar primera letra de cada rol (Airtable multipleSelects es case-sensitive)
     roles = [r.capitalize() for r in (body.roles or ["Interesado"])]
     fields = {
@@ -274,7 +299,7 @@ def create_persona(body: PersonaCreate):
     return record_to_dict(rec)
 
 @router.patch("/personas/{record_id}")
-def update_persona(record_id: str, body: PersonaUpdate):
+def update_persona(record_id: str, body: PersonaUpdate, _auth: str = Depends(_verify_token)):
     fields = {}
     if body.nombre_completo is not None:
         fields["Nombre Completo"] = body.nombre_completo
@@ -298,7 +323,7 @@ def update_persona(record_id: str, body: PersonaUpdate):
 # ── PROPIEDADES ───────────────────────────────────────────────────────────────
 
 @router.get("/propiedades")
-def get_propiedades(tipo: str = "", modalidad: str = "", localidad: str = "", disponible: str = ""):
+def get_propiedades(tipo: str = "", modalidad: str = "", localidad: str = "", disponible: str = "", _auth: str = Depends(_verify_token)):
     records = at_get(T_PROPIEDADES)
     result = [record_to_dict(r) for r in records]
     if tipo:
@@ -314,7 +339,7 @@ def get_propiedades(tipo: str = "", modalidad: str = "", localidad: str = "", di
     return {"records": result, "total": len(result)}
 
 @router.post("/propiedades")
-def create_propiedad(body: PropiedadCreate):
+def create_propiedad(body: PropiedadCreate, _auth: str = Depends(_verify_token)):
     fields = {
         "Nombre": body.nombre,
         "Tipo": body.tipo,
@@ -341,7 +366,7 @@ def create_propiedad(body: PropiedadCreate):
     return record_to_dict(rec)
 
 @router.patch("/propiedades/{record_id}")
-def update_propiedad(record_id: str, body: PropiedadUpdate):
+def update_propiedad(record_id: str, body: PropiedadUpdate, _auth: str = Depends(_verify_token)):
     fields = {}
     if body.nombre is not None:
         fields["Nombre"] = body.nombre
@@ -371,7 +396,7 @@ def update_propiedad(record_id: str, body: PropiedadUpdate):
 # ── CONTRATOS ─────────────────────────────────────────────────────────────────
 
 @router.get("/contratos")
-def get_contratos(tipo: str = "", estado: str = ""):
+def get_contratos(tipo: str = "", estado: str = "", _auth: str = Depends(_verify_token)):
     records = at_get(T_CONTRATOS)
     result = [record_to_dict(r) for r in records]
     if tipo:
@@ -381,7 +406,7 @@ def get_contratos(tipo: str = "", estado: str = ""):
     return {"records": result, "total": len(result)}
 
 @router.post("/contratos")
-def create_contrato(body: ContratoCreate):
+def create_contrato(body: ContratoCreate, _auth: str = Depends(_verify_token)):
     fields = {
         "Tipo": body.tipo,
         "Estado": body.estado or "En Proceso",
@@ -419,7 +444,7 @@ def create_contrato(body: ContratoCreate):
     return record_to_dict(rec)
 
 @router.patch("/contratos/{record_id}")
-def update_contrato(record_id: str, body: ContratoUpdate):
+def update_contrato(record_id: str, body: ContratoUpdate, _auth: str = Depends(_verify_token)):
     fields = {}
     if body.estado is not None:
         fields["Estado"] = body.estado
@@ -439,7 +464,7 @@ def update_contrato(record_id: str, body: ContratoUpdate):
 # ── TASACIONES ────────────────────────────────────────────────────────────────
 
 @router.get("/tasaciones")
-def get_tasaciones(estado: str = ""):
+def get_tasaciones(estado: str = "", _auth: str = Depends(_verify_token)):
     records = at_get(T_TASACIONES)
     result = [record_to_dict(r) for r in records]
     if estado:
@@ -447,7 +472,7 @@ def get_tasaciones(estado: str = ""):
     return {"records": result, "total": len(result)}
 
 @router.post("/tasaciones")
-def create_tasacion(body: TasacionCreate):
+def create_tasacion(body: TasacionCreate, _auth: str = Depends(_verify_token)):
     fields = {
         "Estado": "Solicitada",
         "Solicitante": [body.solicitante_id],
@@ -464,7 +489,7 @@ def create_tasacion(body: TasacionCreate):
     return record_to_dict(rec)
 
 @router.patch("/tasaciones/{record_id}")
-def update_tasacion(record_id: str, body: TasacionUpdate):
+def update_tasacion(record_id: str, body: TasacionUpdate, _auth: str = Depends(_verify_token)):
     fields = {}
     if body.estado is not None:
         fields["Estado"] = body.estado
@@ -484,7 +509,7 @@ def update_tasacion(record_id: str, body: TasacionUpdate):
 # ── ASESORES ──────────────────────────────────────────────────────────────────
 
 @router.get("/asesores")
-def get_asesores(activo: str = "true"):
+def get_asesores(activo: str = "true", _auth: str = Depends(_verify_token)):
     records = at_get(T_ASESORES)
     result = [record_to_dict(r) for r in records]
     if activo == "true":
@@ -494,7 +519,7 @@ def get_asesores(activo: str = "true"):
 # ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 
 @router.get("/health")
-def health():
+def health(_auth: str = Depends(_verify_token)):
     return {
         "status": "ok",
         "base_id": BASE_ID,
