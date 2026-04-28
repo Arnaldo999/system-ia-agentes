@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checklist Pendientes — Iglesia Nueva Vida</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    background: #f7f5f0;
+    color: #1a1a1a;
+    line-height: 1.55;
+    padding: 24px 16px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  header {
+    border-bottom: 2px solid #c2185b;
+    padding-bottom: 18px;
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #666;
+    font-weight: 400;
+  }
+  .meta {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #888;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .meta-item { display: inline-flex; align-items: center; gap: 4px; }
+
+  .intro {
+    background: #fff;
+    border: 1px solid #e0d8c5;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .intro b { color: #c2185b; }
+
+  section.item {
+    background: #fff;
+    border: 1px solid #e8e0cd;
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 12px;
+    align-items: start;
+    page-break-inside: avoid;
+  }
+  .check {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #c2185b;
+    border-radius: 4px;
+    margin-top: 2px;
+  }
+  .item-content h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .item-content h2 .icon { font-size: 20px; }
+  .item-content p {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.55;
+    margin-bottom: 6px;
+  }
+  .item-content .pregunta {
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
+    margin-top: 6px;
+    border-top: 1px dashed #ccc;
+    padding-top: 6px;
+  }
+  .respuesta-line {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: #faf6ee;
+    border: 1px dashed #c2a05f;
+    border-radius: 4px;
+    min-height: 28px;
+    font-size: 12px;
+    color: #666;
+  }
+
+  .footer {
+    margin-top: 30px;
+    padding-top: 18px;
+    border-top: 1px solid #ccc;
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .no-print { display: none; }
+    section.item { box-shadow: none; }
+  }
+
+  .no-print {
+    text-align: center;
+    margin-top: 24px;
+  }
+  .btn-print {
+    background: #c2185b;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .btn-print:hover { background: #a01548; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 Checklist Pendientes — Iglesia Nueva Vida</h1>
+  <div class="subtitle">Lista de información y archivos que el equipo de medios debe aportar para que el sistema funcione con su contenido real.</div>
+  <div class="meta">
+    <span class="meta-item">📅 Reunión sábado 10 AM</span>
+    <span class="meta-item">👤 Pastor Pablo</span>
+    <span class="meta-item">⚙ Por: Arnaldo Ayala</span>
+  </div>
+</header>
+
+<div class="intro">
+  El sistema YA está construido y funcionando. Lo que ven hoy en la demo usa <b>datos de muestra</b> (12 versículos genéricos + 8 canciones populares de adoración latina). Para que el sistema sea <b>de ustedes</b> y refleje su identidad, necesitamos lo siguiente. <b>Una vez recibido</b>, cargamos todo del lado nuestro y queda 100% personalizado para el próximo culto.
+</div>
+
+<section class="item">
+  <div class="check"></div>
+  <div class="item-content">
+    <h2><span class="icon">📖</span> Versión bíblica que usan</h2>
+    <p>El sistema permite cargar cualquier versión. Necesitamos saber cuál usan habitualmente para precargarla.</p>
+    <p class="pregunta">Opciones comunes: Reina-Valera 1960 (RV1960), Nueva Versión Internacional (NVI), Nueva Traducción Viviente (NTV), Dios Habla Hoy (DHH), Reina-Valera Contemporánea (RVC), otra.</p>
+    <p class="pregunta">¿Tienen el archivo digital? Word, PDF, JSON, base de datos, o solo está dentro del software actual.</p>
+    <div class="respuesta-line"></div>
+  </div>
+</section>
+
+<section class="item">
+  <div class="check"></div>
+  <div class="item-content">
+    <h2><span class="icon">🎵</span> Repertorio de canciones</h2>
+    <p>Lista de canciones que cantan habitualmente en cultos. Por cada una necesitamos: título, autor, letra completa con estrofas y coros separados.</p>
+    <p class="pregunta">¿Tienen un cancionero ya armado (Word, PDF, app)? ¿O usan cada vez la app del músico?</p>
+    <p class="pregunta">¿Cuántas canciones tienen en repertorio activo? (10 / 30 / 100+)</p>
+    <p class="pregunta">¿Tienen licencia CCLI / SongSelect? Es importante para legalidad.</p>
+    <div class="respuesta-line"></div>
+  </div>
+</section>
+
+<section class="item">
+  <div class="check"></div>
+  <div class="item-content">
+    <h2><span class="icon">🎤</span> Grabaciones MP3 — versión propia de cada canción</h2>
+    <p>Para que las letras avancen automáticamente sincronizadas con el grupo de cantos, necesitamos un MP3 grabado por <b>su banda</b> (no del autor original). Así el sistema sigue el tempo, las pausas y los arreglos exactos que ellos tocan.</p>
+    <p class="pregunta">¿La consola de audio tiene grabación USB? Esa es la mejor opción (audio limpio).</p>
+    <p class="pregunta">Si no, alcanza con un celular cerca del altavoz principal durante un ensayo.</p>
+    <p class="pregunta">Una vez grabado: 1 archivo MP3 por canción, sin editar. El sistema lo procesa con IA y genera los timestamps automáticos.</p>
+    <div class="respuesta-line"></div>
+  </div>
+</section>
+
+<section class="item">
+  <div class="check"></div>
+  <div class="item-content">
+    <h2><span class="icon">🖼</span> Logo en alta resolución</h2>
+    <p>El logo actual que tenemos cargado es de baja resolución (~250x250 px). Para proyectarlo en pantalla gigante sin que se pixele necesitamos una versión más grande.</p>
+    <p class="pregunta">Ideal: archivo vector (.SVG, .AI, .PSD, .EPS) — escala a cualquier tamaño sin perder calidad.</p>
+    <p class="pregunta">Aceptable: PNG mínimo 1080x1080 px con fondo transparente.</p>
+    <p class="pregunta">¿Quién diseñó el logo? Capaz tienen los archivos originales.</p>
+    <div class="respuesta-line"></div>
+  </div>
+</section>
+
+<section class="item">
+  <div class="check"></div>
+  <div class="item-content">
+    <h2><span class="icon">🎨</span> Identidad visual de la iglesia</h2>
+    <p>Para que el sistema se sienta de ustedes, necesitamos saber:</p>
+    <p class="pregunta">¿Tienen colores definidos? (ej: el magenta del logo + alguno secundario)</p>
+    <p class="pregunta">¿Tipografía oficial? Si no, elegimos una que combine.</p>
+    <p class="pregunta">¿Manual de marca o brand book? (Si no existe, lo armamos basado en el logo)</p>
+    <p class="pregunta">¿Hay alguna palabra/frase que los identifica? (lema, versículo distintivo)</p>
+    <div class="respuesta-line"></div>
+  </div>
+</section>
+
+<section class="item">
+  <div class="check"></div>
+  <div class="item-content">
+    <h2><span class="icon">📺</span> Material gráfico para anexos</h2>
+    <p>El sistema permite mostrar imágenes y videos en la pantalla gigante entre cantos o durante anuncios. Útil para:</p>
+    <p class="pregunta">Flyer del culto del día / próximos eventos</p>
+    <p class="pregunta">Fotos del equipo pastoral, eventos, retiros</p>
+    <p class="pregunta">Videos cortos de testimonios, llamados a ofrenda, anuncios</p>
+    <p class="pregunta">¿Tienen carpeta o drive con material existente? Pueden ir cargándolo cuando lo tengan listo.</p>
+    <div class="respuesta-line"></div>
+  </div>
+</section>
+
+<section class="item">
+  <div class="check"></div>
+  <div class="item-content">
+    <h2><span class="icon">⚙</span> Información técnica del setup actual</h2>
+    <p>Para garantizar que el sistema funcione bien con el equipo que ya tienen:</p>
+    <p class="pregunta">¿Qué PC usan para presentar? (marca, modelo, RAM, sistema operativo)</p>
+    <p class="pregunta">¿Cuántas salidas de video tiene? (HDMI, VGA) — ideal 2: una para el operador, otra para la pantalla gigante.</p>
+    <p class="pregunta">¿Cómo se conecta a la pantalla gigante? (HDMI directo, extensor, wireless)</p>
+    <p class="pregunta">¿La consola de audio tiene salida AUX o USB para que llegue audio limpio a la PC?</p>
+    <p class="pregunta">¿Streaming a YouTube/Facebook desde la misma PC u otra?</p>
+    <div class="respuesta-line"></div>
+  </div>
+</section>
+
+<section class="item">
+  <div class="check"></div>
+  <div class="item-content">
+    <h2><span class="icon">👥</span> Equipo de medios — quiénes operan</h2>
+    <p>Para coordinar capacitaciones y entregar el sistema a personas concretas:</p>
+    <p class="pregunta">¿Cuántas personas están en el equipo de medios?</p>
+    <p class="pregunta">¿Quién opera la pantalla durante el culto? Nombre y contacto.</p>
+    <p class="pregunta">¿Rotan o siempre es la misma persona?</p>
+    <p class="pregunta">¿Qué nivel técnico tienen? (autodidactas / curso formal / programadores)</p>
+    <p class="pregunta">¿Días/horarios disponibles para una sesión de capacitación de 1 hora?</p>
+    <div class="respuesta-line"></div>
+  </div>
+</section>
+
+<div class="intro" style="margin-top:30px; border-left-color: #10b981;">
+  <b>Próximo paso después de la demo del sábado:</b><br>
+  <ol style="margin-top:8px; padding-left: 20px;">
+    <li>El equipo de medios reúne todo lo de arriba (puede tomar 1-2 semanas)</li>
+    <li>Pasan los archivos y respuestas al WhatsApp de Arnaldo</li>
+    <li>Cargamos todo en el sistema del lado nuestro</li>
+    <li>Coordinamos sesión de capacitación al equipo (1 hora)</li>
+    <li>Sistema queda 100% personalizado y operativo para el siguiente culto</li>
+  </ol>
+</div>
+
+<div class="footer">
+  Arnaldo Ayala — Estratega en IA y Marketing<br>
+  Sistema de presentación inteligente para iglesias · v0.2 · 2026-04-27
+</div>
+
+<div class="no-print">
+  <button class="btn-print" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+</div>
+
+</body>
+</html>

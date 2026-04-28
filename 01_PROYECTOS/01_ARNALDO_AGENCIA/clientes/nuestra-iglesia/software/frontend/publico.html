@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iglesia Nueva Vida — Pantalla Pública</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     PANTALLA PÚBLICA — Iglesia Nueva Vida
+     1920x1080 projection canvas. Optimized for low-light worship.
+     ============================================================ */
+
+  :root {
+    /* Atmosphere — deep night with violet undertone */
+    --bg-deep:    #07060d;
+    --bg-violet:  #14102a;
+    --bg-indigo:  #0c1230;
+    --bg-ember:   #1a0f1f;
+
+    /* Text */
+    --ink:        #f8f5ee;
+    --ink-soft:   rgba(248, 245, 238, 0.55);
+    --ink-faint:  rgba(248, 245, 238, 0.22);
+
+    /* Warm accent — "presencia" */
+    --gold:       #fbbf24;
+    --gold-warm:  #f59e0b;
+    --gold-glow:  rgba(251, 191, 36, 0.35);
+
+    /* Typography — optimizada para legibilidad a distancia desde el púlpito */
+    --serif: "Spectral", "Lora", "Georgia", serif;
+    --sans:  "Plus Jakarta Sans", system-ui, sans-serif;
+
+    /* Motion */
+    --t-scene: 800ms;
+    --ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-deep);
+    color: var(--ink);
+    font-family: var(--sans);
+    cursor: none;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ─────────────────────────────────────────────
+     ATMOSPHERE — layered gradient that breathes
+     ───────────────────────────────────────────── */
+  .atmosphere {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 110%, var(--bg-violet) 0%, transparent 60%),
+      radial-gradient(ellipse 70% 60% at 50% -10%, var(--bg-indigo) 0%, transparent 55%),
+      var(--bg-deep);
+  }
+
+  .atmosphere::before {
+    /* slow breathing wash */
+    content: "";
+    position: absolute;
+    inset: -10%;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(99, 102, 241, 0.10) 0%, transparent 45%),
+      radial-gradient(circle at 70% 60%, rgba(245, 158, 11, 0.06) 0%, transparent 45%);
+    animation: breathe 14s var(--ease-soft) infinite;
+    filter: blur(40px);
+  }
+
+  .atmosphere::after {
+    /* faint film grain — kills the digital flatness */
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.85; }
+    50%      { transform: scale(1.08) translate(2%, -1%); opacity: 1; }
+  }
+
+  /* Drifting light orbs — "presencia" without literal symbols */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.55;
+    will-change: transform;
+  }
+  .orb-1 {
+    width: 600px; height: 600px;
+    left: -10%; top: 20%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.35), transparent 70%);
+    animation: drift1 28s ease-in-out infinite;
+  }
+  .orb-2 {
+    width: 500px; height: 500px;
+    right: -8%; bottom: 10%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.25), transparent 70%);
+    animation: drift2 34s ease-in-out infinite;
+  }
+  .orb-3 {
+    width: 700px; height: 700px;
+    left: 40%; top: -20%;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.12), transparent 70%);
+    animation: drift3 40s ease-in-out infinite;
+  }
+  @keyframes drift1 {
+    0%, 100% { transform: translate(0, 0); }
+    50%      { transform: translate(20vw, 10vh); }
+  }
+  @keyframes drift2 {
+    0%, 100% { transform: translate(0, 0); }
+    50%      { transform: translate(-15vw, -8vh); }
+  }
+  @keyframes drift3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-10vw, 20vh) scale(1.1); }
+  }
+
+  /* ─────────────────────────────────────────────
+     SCENE STAGE
+     ───────────────────────────────────────────── */
+  .stage {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--t-scene) var(--ease-soft),
+                visibility var(--t-scene) var(--ease-soft);
+  }
+  .scene.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* ─────────────────────────────────────────────
+     SCENE: IDLE
+     ───────────────────────────────────────────── */
+  .idle {
+    flex-direction: column;
+    text-align: center;
+    padding: 0 8vw;
+  }
+  .idle .mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 56px;
+  }
+  .idle .mark .rule {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.7;
+  }
+  .idle .mark .ornament {
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--gold);
+    transform: rotate(45deg);
+    position: relative;
+  }
+  .idle .mark .ornament::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    background: var(--gold);
+    opacity: 0.4;
+  }
+
+  .idle .church {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(48px, 6vw, 96px);
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--ink);
+    margin-bottom: 28px;
+  }
+  .idle .church em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--gold);
+  }
+
+  .idle .welcome {
+    font-family: var(--sans);
+    font-weight: 200;
+    font-size: clamp(20px, 1.6vw, 28px);
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .idle .breath-ring {
+    position: absolute;
+    width: 80vmin;
+    height: 80vmin;
+    border-radius: 50%;
+    border: 1px solid rgba(251, 191, 36, 0.08);
+    animation: pulse-ring 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .idle .breath-ring.r2 {
+    width: 60vmin; height: 60vmin;
+    animation-delay: -2s;
+    border-color: rgba(251, 191, 36, 0.05);
+  }
+  .idle .breath-ring.r3 {
+    width: 40vmin; height: 40vmin;
+    animation-delay: -4s;
+    border-color: rgba(251, 191, 36, 0.04);
+  }
+  @keyframes pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50%      { transform: scale(1.1); opacity: 1; }
+  }
+
+  /* ─────────────────────────────────────────────
+     SCENE: VERSÍCULO
+     ───────────────────────────────────────────── */
+  .versiculo {
+    flex-direction: column;
+    text-align: center;
+    padding: 8vh 8vw;
+    gap: 0;
+  }
+
+  .versiculo .reference {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: clamp(18px, 1.5vw, 26px);
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8vh;
+    text-shadow: 0 0 20px var(--gold-glow);
+  }
+  .versiculo .reference::before,
+  .versiculo .reference::after {
+    content: "";
+    display: inline-block;
+    width: 32px;
+    height: 1px;
+    background: currentColor;
+    vertical-align: middle;
+    opacity: 0.5;
+  }
+  .versiculo .reference::before { margin-right: 28px; }
+  .versiculo .reference::after  { margin-left: 28px; }
+
+  .versiculo .text {
+    font-family: var(--serif);
+    font-weight: 500;            /* peso normal — legible a distancia */
+    font-style: normal;          /* sin cursiva: la cursiva en pantalla pública es ilegible */
+    font-size: clamp(40px, 4.2vw, 76px);
+    line-height: 1.32;           /* más aire entre líneas */
+    letter-spacing: -0.005em;
+    color: var(--ink);
+    text-wrap: pretty;
+    max-width: 28ch;
+    text-shadow: 0 0 40px rgba(248, 245, 238, 0.08);
+    padding: 0 4vw;
+  }
+  .versiculo .text .quote {
+    font-family: var(--serif);
+    color: var(--gold);
+    opacity: 0.55;
+    font-size: 1.3em;
+    font-weight: 400;
+    line-height: 0;
+    vertical-align: -0.2em;
+    margin: 0 0.06em;
+  }
+
+  .versiculo .version {
+    font-family: var(--sans);
+    font-weight: 400;
+    font-size: clamp(14px, 1vw, 18px);
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-top: 8vh;
+  }
+
+  /* Entry animation for verse */
+  .scene.active .versiculo-anim .reference { animation: rise 1100ms var(--ease-soft) 200ms backwards; }
+  .scene.active .versiculo-anim .text      { animation: rise 1200ms var(--ease-soft) 400ms backwards; }
+  .scene.active .versiculo-anim .version   { animation: rise 1100ms var(--ease-soft) 700ms backwards; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(20px); filter: blur(8px); }
+    to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+  }
+
+  /* ─────────────────────────────────────────────
+     SCENE: LETRA / CANCIÓN — estilo Spotify lyrics
+     Muchas líneas visibles, con highlight en la actual.
+     Fondo cálido tipo culto: gradient ámbar tenue + violeta.
+     ───────────────────────────────────────────── */
+  .scene[data-scene="letra"] {
+    /* Fondo más cálido específico para cantos */
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 100%, rgba(245, 158, 11, 0.10) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(168, 85, 247, 0.08) 0%, transparent 55%);
+  }
+
+  .letra {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 11vh 4vw 12vh;
+    gap: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+  .letra .song-title {
+    position: absolute;
+    top: 5vh;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: clamp(15px, 1.1vw, 22px);
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+  .letra .song-title::before {
+    content: "♪";
+    color: var(--gold);
+    margin-right: 24px;
+    opacity: 0.7;
+  }
+
+  /* Stack scrollable de TODAS las líneas — la actual centrada vertical */
+  .letra .lines-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 1600px;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    /* Mask superior e inferior para que las líneas lejanas se desvanezcan */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+  }
+
+  .letra .lines-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.2vh;
+    width: 100%;
+    /* Smooth scroll — el JS calcula translateY para centrar la actual */
+    transition: transform 700ms var(--ease-soft);
+    will-change: transform;
+    padding: 30vh 0;
+  }
+
+  .letra .line {
+    font-family: var(--sans);
+    font-weight: 400;
+    line-height: 1.25;
+    text-wrap: balance;
+    transition: all 600ms var(--ease-soft);
+    padding: 0 4vw;
+    max-width: 36ch;
+    text-align: center;
+  }
+
+  /* Líneas alejadas (offset >= 3) — casi invisibles */
+  .letra .line.far {
+    font-size: clamp(20px, 1.8vw, 32px);
+    color: var(--ink-soft);
+    opacity: 0.18;
+    font-weight: 300;
+  }
+
+  /* Líneas cerca pero no actuales (offset 1-2) — visibles pero atenuadas */
+  .letra .line.near {
+    font-size: clamp(26px, 2.4vw, 42px);
+    color: var(--ink-soft);
+    opacity: 0.4;
+    font-weight: 400;
+  }
+
+  /* Línea ACTUAL — protagonista */
+  .letra .line.current {
+    font-size: clamp(48px, 5.6vw, 96px);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.012em;
+    line-height: 1.15;
+    text-shadow:
+      0 0 60px rgba(248, 245, 238, 0.2),
+      0 0 120px rgba(251, 191, 36, 0.18);
+    max-width: 26ch;
+    /* Brillo cálido que pulsa sutil */
+    animation: current-pulse 3.5s ease-in-out infinite;
+  }
+  @keyframes current-pulse {
+    0%, 100% { text-shadow: 0 0 60px rgba(248, 245, 238, 0.2), 0 0 120px rgba(251, 191, 36, 0.18); }
+    50%      { text-shadow: 0 0 80px rgba(248, 245, 238, 0.3), 0 0 160px rgba(251, 191, 36, 0.28); }
+  }
+
+  /* Líneas vacías = pausa (separador entre estrofas) */
+  .letra .line.empty {
+    height: 1.2vh;
+    width: 60px;
+    border-top: 1px solid rgba(248, 245, 238, 0.15);
+    padding: 0;
+    opacity: 0.4;
+  }
+
+  /* Entry animation cuando cambia la actual */
+  .letra .line.current.animating {
+    animation: line-enter 700ms var(--ease-soft), current-pulse 3.5s ease-in-out 700ms infinite;
+  }
+  @keyframes line-enter {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+      filter: blur(10px);
+      letter-spacing: 0.02em;
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+      letter-spacing: -0.015em;
+    }
+  }
+
+  /* Progress bar */
+  .progress {
+    position: absolute;
+    bottom: 5vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60vw;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .progress .track {
+    flex: 1;
+    height: 1px;
+    background: rgba(248, 245, 238, 0.1);
+    overflow: hidden;
+    border-radius: 1px;
+  }
+  .progress .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-warm), var(--gold));
+    box-shadow: 0 0 12px var(--gold-glow);
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform 700ms var(--ease-soft);
+  }
+  .progress .count {
+    font-family: var(--sans);
+    font-size: clamp(11px, 0.8vw, 14px);
+    font-weight: 400;
+    color: var(--ink-faint);
+    letter-spacing: 0.25em;
+    font-variant-numeric: tabular-nums;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* ─────────────────────────────────────────────
+     SCENE: MEDIA (imagen / video anexo)
+     ───────────────────────────────────────────── */
+  .media-wrap {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+  .media-wrap img,
+  .media-wrap video {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    animation: media-in 600ms var(--ease-soft);
+  }
+  @keyframes media-in {
+    from { opacity: 0; transform: scale(0.98); filter: blur(8px); }
+    to   { opacity: 1; transform: scale(1);    filter: blur(0); }
+  }
+
+  /* ─────────────────────────────────────────────
+     CONNECTION INDICATOR (very subtle)
+     ───────────────────────────────────────────── */
+  .conn {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #555;
+    z-index: 10;
+    transition: background 400ms ease, box-shadow 400ms ease;
+    opacity: 0.3;
+  }
+  .conn.on  { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.6); }
+  .conn.off { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, 0.6); }
+
+  /* ─────────────────────────────────────────────
+     DEMO / ENSAYO PANEL
+     Auto-shown when no WebSocket backend is detected,
+     or when ?demo=1 is in the URL. Toggle with [D] key.
+     Hidden in production once WS connects.
+     ───────────────────────────────────────────── */
+  .demo {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: rgba(10, 8, 20, 0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    cursor: auto;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--ink-soft);
+    max-width: 200px;
+  }
+  body.demo-on { cursor: auto; }
+  body.demo-on .demo { display: flex; }
+  .demo .hint {
+    font-size: 10px;
+    color: var(--ink-faint);
+    line-height: 1.5;
+    margin-top: 4px;
+  }
+  .demo .hint kbd {
+    font-family: ui-monospace, monospace;
+    background: rgba(255,255,255,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .demo button {
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--ink);
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 6px;
+  }
+  .demo button:hover { background: rgba(251, 191, 36, 0.15); border-color: var(--gold); }
+  .demo .label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; }
+
+</style>
+</head>
+<body>
+
+  <!-- Atmospheric backdrop -->
+  <div class="atmosphere">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Stage -->
+  <div class="stage">
+
+    <!-- IDLE -->
+    <div class="scene active" data-scene="idle">
+      <div class="idle">
+        <div class="breath-ring"></div>
+        <div class="breath-ring r2"></div>
+        <div class="breath-ring r3"></div>
+
+        <div class="mark">
+          <span class="rule"></span>
+          <span class="ornament"></span>
+          <span class="rule"></span>
+        </div>
+
+        <h1 class="church">Iglesia <em>Nueva Vida</em></h1>
+        <p class="welcome">Bienvenidos a la presencia del Señor</p>
+      </div>
+    </div>
+
+    <!-- VERSÍCULO -->
+    <div class="scene" data-scene="versiculo">
+      <div class="versiculo versiculo-anim">
+        <p class="reference" id="v-ref">JUAN 3:16</p>
+        <p class="text" id="v-text">
+          <span class="quote">“</span>Porque de tal manera amó Dios al mundo, que ha dado a su Hijo unigénito<span class="quote">”</span>
+        </p>
+        <p class="version" id="v-version">RV1960</p>
+      </div>
+    </div>
+
+    <!-- LETRA -->
+    <div class="scene" data-scene="letra">
+      <div class="letra">
+        <p class="song-title" id="l-title">Cuán grande es Él</p>
+        <div class="lines-stack" id="l-stack">
+          <!-- líneas se renderizan dinámicamente por JS -->
+        </div>
+        <div class="progress">
+          <div class="track"><div class="fill" id="l-fill"></div></div>
+          <span class="count" id="l-count">0 / 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEDIA (imagen/video anexo) -->
+    <div class="scene" data-scene="media">
+      <div class="media-wrap">
+        <img id="m-img" alt="" style="display:none" />
+        <video id="m-vid" playsinline muted autoplay preload="auto" controls style="display:none"></video>
+        <div id="m-error" style="display:none; color:#fff; text-align:center; padding:40px; font-family:var(--sans);">
+          <div style="font-size:24px; margin-bottom:12px;">⚠ No se puede reproducir este video</div>
+          <div id="m-error-detail" style="font-size:14px; opacity:0.7;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Connection dot -->
+  <div class="conn" id="conn"></div>
+
+  <!-- Demo controls (only visible with ?demo=1) -->
+  <div class="demo">
+    <span class="label">Vista previa</span>
+    <button data-demo="idle">Idle</button>
+    <button data-demo="versiculo">Versículo</button>
+    <button data-demo="letra-1">Letra · línea 1</button>
+    <button data-demo="letra-4">Letra · línea 4</button>
+    <button data-demo="letra-end">Letra · final</button>
+    <button data-demo="fullscreen">Pantalla completa</button>
+    <p class="hint">Tecla <kbd>D</kbd> oculta este panel. Se esconde solo cuando se conecta el backend.</p>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ────────────────  STATE / DOM  ──────────────── */
+  const scenes = {
+    idle:      document.querySelector('[data-scene="idle"]'),
+    versiculo: document.querySelector('[data-scene="versiculo"]'),
+    letra:     document.querySelector('[data-scene="letra"]'),
+    media:     document.querySelector('[data-scene="media"]'),
+  };
+  const $ = (id) => document.getElementById(id);
+  const conn = $('conn');
+
+  let currentScene = 'idle';
+  let lastLineKey  = '';
+  let lastVerseKey = '';
+
+  /* ────────────────  SCENE SWITCHING  ──────────────── */
+  function showScene(name) {
+    if (currentScene === name) return;
+    Object.entries(scenes).forEach(([k, el]) => {
+      el.classList.toggle('active', k === name);
+    });
+    currentScene = name;
+  }
+
+  /* ────────────────  RENDERERS  ──────────────── */
+  function renderVersiculo(data) {
+    const ref     = (data.referencia || '').toUpperCase();
+    const text    = data.texto || '';
+    const version = (data.version || '').toUpperCase();
+
+    const key = ref + '|' + text + '|' + version;
+    const changed = key !== lastVerseKey;
+    lastVerseKey = key;
+
+    $('v-ref').textContent = ref;
+    $('v-text').innerHTML  =
+      '<span class="quote">“</span>' +
+      escapeHtml(text) +
+      '<span class="quote">”</span>';
+    $('v-version').textContent = version;
+
+    // Replay entry animation when content changes
+    if (changed) {
+      const wrap = document.querySelector('.versiculo-anim');
+      wrap.classList.remove('versiculo-anim');
+      void wrap.offsetWidth;
+      wrap.classList.add('versiculo-anim');
+    }
+    showScene('versiculo');
+  }
+
+  let lastLetraSong = '';
+  function renderLetra(data) {
+    const title  = data.cancion_titulo  || '';
+    const idx    = Number.isFinite(data.linea_index)  ? data.linea_index  : 0;
+    const total  = Number.isFinite(data.total_lineas) ? data.total_lineas : 0;
+    const todasLineas = Array.isArray(data.todas_las_lineas) ? data.todas_las_lineas : null;
+
+    $('l-title').textContent = title;
+    const stack = $('l-stack');
+
+    // Si cambió de canción O no hay stack todavía: re-renderizar todas las líneas
+    if (title !== lastLetraSong || !stack.querySelector('.lines-inner')) {
+      stack.innerHTML = '<div class="lines-inner" id="l-inner"></div>';
+      const inner = $('l-inner');
+      const lineas = todasLineas || [data.linea_anterior, data.linea_actual, data.linea_siguiente].filter(l => l != null);
+      lineas.forEach((linea, i) => {
+        const div = document.createElement('div');
+        div.className = 'line';
+        div.dataset.idx = String(i);
+        if (!linea || !String(linea).trim()) {
+          div.classList.add('empty');
+        } else {
+          div.textContent = linea;
+        }
+        inner.appendChild(div);
+      });
+      lastLetraSong = title;
+    }
+
+    // Aplicar clases según offset relativo a la actual
+    const inner = $('l-inner');
+    if (inner) {
+      const allLines = inner.querySelectorAll('.line');
+      allLines.forEach((el, i) => {
+        const isEmpty = el.classList.contains('empty');
+        el.classList.remove('current', 'near', 'far', 'animating');
+        if (isEmpty) return;
+        const offset = Math.abs(i - idx);
+        if (i === idx) {
+          el.classList.add('current');
+          void el.offsetWidth;
+          el.classList.add('animating');
+        } else if (offset <= 2) {
+          el.classList.add('near');
+        } else {
+          el.classList.add('far');
+        }
+      });
+
+      // Scroll: centrar la línea actual con translateY
+      requestAnimationFrame(() => {
+        const currentEl = inner.querySelector('.line.current');
+        if (!currentEl) return;
+        const stackRect = stack.getBoundingClientRect();
+        const lineRect = currentEl.getBoundingClientRect();
+        const currentTransform = inner.style.transform || '';
+        const m = currentTransform.match(/translateY\(([-\d.]+)px\)/);
+        const currentY = m ? parseFloat(m[1]) : 0;
+        const stackCenter = stackRect.top + stackRect.height / 2;
+        const lineCenter = lineRect.top + lineRect.height / 2;
+        const newY = currentY + (stackCenter - lineCenter);
+        inner.style.transform = 'translateY(' + newY + 'px)';
+      });
+    }
+
+    // Progress
+    const pct = total > 0 ? Math.min(1, Math.max(0, (idx + 1) / total)) : 0;
+    $('l-fill').style.transform = 'scaleX(' + pct + ')';
+    $('l-count').textContent = total > 0 ? ((idx + 1) + ' / ' + total) : '';
+
+    lastLineKey = title + '|' + idx;
+    showScene('letra');
+  }
+
+
+  function renderIdle() {
+    // Si veníamos viendo un video, lo paramos para que no quede sonando
+    const vid = $('m-vid');
+    if (vid && !vid.paused) { try { vid.pause(); vid.currentTime = 0; } catch(e) {} }
+    showScene('idle');
+  }
+
+  let lastMediaUrl = '';
+  function renderMedia(data) {
+    const url = data.url || '';
+    const tipo = data.media_tipo || 'imagen';
+    const img = $('m-img');
+    const vid = $('m-vid');
+    const err = $('m-error');
+    const errDetail = $('m-error-detail');
+
+    // Reset error overlay
+    if (err) err.style.display = 'none';
+
+    if (tipo === 'imagen') {
+      if (vid && !vid.paused) { try { vid.pause(); } catch(e) {} }
+      vid.style.display = 'none';
+      vid.removeAttribute('src');
+      img.style.display = 'block';
+      img.onerror = () => {
+        console.error('[media] no se pudo cargar imagen:', url);
+        if (err && errDetail) {
+          err.style.display = 'block';
+          errDetail.textContent = 'No se pudo cargar la imagen: ' + url;
+          img.style.display = 'none';
+        }
+      };
+      if (url !== lastMediaUrl) {
+        img.src = url;
+        lastMediaUrl = url;
+      }
+    } else if (tipo === 'video') {
+      img.style.display = 'none';
+      img.removeAttribute('src');
+      vid.style.display = 'block';
+      vid.loop = !!data.loop;
+      vid.muted = true;          // CRÍTICO: navegadores bloquean autoplay con sonido
+      vid.playsInline = true;
+      vid.preload = 'auto';
+
+      // Error handlers MUY visibles
+      vid.onerror = () => {
+        const e = vid.error;
+        let msg = 'Error desconocido';
+        if (e) {
+          const codes = {
+            1: 'Carga abortada (MEDIA_ERR_ABORTED)',
+            2: 'Error de red (MEDIA_ERR_NETWORK)',
+            3: 'Error decodificando — codec no soportado por el navegador (MEDIA_ERR_DECODE)',
+            4: 'Formato no soportado por el navegador (MEDIA_ERR_SRC_NOT_SUPPORTED)',
+          };
+          msg = codes[e.code] || ('Code ' + e.code);
+        }
+        console.error('[media] video error:', msg, 'url:', url);
+        if (err && errDetail) {
+          err.style.display = 'block';
+          errDetail.innerHTML = `${msg}<br><br>URL: <code style="opacity:0.6">${url}</code><br><br>Si es .mov o .mkv, convertilo a .mp4 (H.264) antes de subir.`;
+          vid.style.display = 'none';
+        }
+      };
+
+      vid.onloadeddata = () => {
+        console.log('[media] video cargado:', url, 'duración:', vid.duration, 's');
+      };
+
+      if (url !== lastMediaUrl) {
+        vid.src = url;
+        lastMediaUrl = url;
+        vid.load();
+      }
+      if (data.autoplay !== false) {
+        const playPromise = vid.play();
+        if (playPromise && playPromise.catch) {
+          playPromise.catch((e) => {
+            console.warn('[media] autoplay bloqueado o error:', e);
+            // En algunas pantallas pueden requerir click para autoplay con sonido
+            // Como ya está muted, esto no debería pasar — pero por las dudas mostramos controls
+          });
+        }
+      }
+    }
+    showScene('media');
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  /* ────────────────  MESSAGE DISPATCH  ──────────────── */
+  function handleMessage(msg) {
+    if (!msg || !msg.tipo) return;
+    switch (msg.tipo) {
+      case 'idle':      renderIdle();          break;
+      case 'versiculo': renderVersiculo(msg);  break;
+      case 'letra':     renderLetra(msg);      break;
+      case 'media':     renderMedia(msg);      break;
+      default:          /* ignore unknown */   break;
+    }
+  }
+
+  /* ────────────────  WEBSOCKET + RECONNECT  ──────────────── */
+  let ws = null;
+  let reconnectTimer = null;
+
+  function setConn(state) {
+    conn.classList.toggle('on',  state === 'on');
+    conn.classList.toggle('off', state === 'off');
+  }
+
+  function connect() {
+    // Don't try to connect when running from file:// or in demo mode
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (!location.host) { setConn('off'); return; }
+
+    try {
+      ws = new WebSocket(proto + '//' + location.host + '/ws/publico');
+    } catch (e) {
+      scheduleReconnect();
+      return;
+    }
+
+    ws.addEventListener('open', () => {
+      setConn('on');
+    });
+
+    ws.addEventListener('message', (ev) => {
+      let data = null;
+      try { data = JSON.parse(ev.data); }
+      catch (e) { return; }
+      handleMessage(data);
+    });
+
+    ws.addEventListener('close', () => {
+      setConn('off');
+      scheduleReconnect();
+    });
+
+    ws.addEventListener('error', () => {
+      setConn('off');
+      try { ws.close(); } catch (e) {}
+    });
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      connect();
+    }, 2000);
+  }
+
+  /* ────────────────  FULLSCREEN ON CLICK  ──────────────── */
+  document.addEventListener('click', (e) => {
+    // Don't trigger fullscreen when interacting with demo controls
+    if (e.target.closest('.demo')) return;
+    const el = document.documentElement;
+    if (!document.fullscreenElement) {
+      (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || (() => {})).call(el);
+    }
+  });
+
+  /* ────────────────  MODO DEMO LOCAL (solo si NO hay backend)  ────────────────
+     Activado SOLO cuando ?demo en la URL o por toggle manual con [D].
+     En operación normal (con backend FastAPI) la pantalla obedece SIEMPRE
+     a rajatabla al operador. Cero rotación automática.
+  */
+  const params = new URLSearchParams(location.search);
+  const forceDemo = params.has('demo');
+
+  // El panel demo visual queda oculto por default. Solo aparece con ?demo o tecla D.
+  if (forceDemo) {
+    document.body.classList.add('demo-on');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'd' || e.key === 'D') {
+      document.body.classList.toggle('demo-on');
+    }
+  });
+
+  /* Si forzamos demo (?demo) o el usuario aprieta D, mostramos botones de
+     ensayo. Pero el setInterval de auto-rotación SOLO se arma cuando hay
+     forceDemo. En modo normal, ZERO timers, ZERO cycle. */
+  const songLines = [
+    "Señor mi Dios, al contemplar los cielos",
+    "El firmamento y las estrellas mil",
+    "Al oír tu voz en los potentes truenos",
+    "Y ver brillar al sol en su cenit",
+    "Mi corazón entona la canción",
+    "Cuán grande es Él, cuán grande es Él",
+    "Mi corazón entona la canción",
+    "Cuán grande es Él, cuán grande es Él",
+  ];
+
+  const demos = {
+    'idle': () => handleMessage({ tipo: 'idle', contenido: null }),
+    'versiculo': () => handleMessage({
+      tipo: 'versiculo',
+      referencia: 'Juan 3:16',
+      texto: 'Porque de tal manera amó Dios al mundo, que ha dado a su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna.',
+      version: 'RV1960'
+    }),
+    'letra-1': () => handleMessage({
+      tipo: 'letra',
+      cancion_titulo: 'Cuán grande es Él',
+      linea_actual:    songLines[0],
+      linea_anterior:  null,
+      linea_siguiente: songLines[1],
+      linea_index: 0,
+      total_lineas: songLines.length,
+    }),
+    'letra-4': () => handleMessage({
+      tipo: 'letra',
+      cancion_titulo: 'Cuán grande es Él',
+      linea_actual:    songLines[4],
+      linea_anterior:  songLines[3],
+      linea_siguiente: songLines[5],
+      linea_index: 4,
+      total_lineas: songLines.length,
+    }),
+    'letra-end': () => handleMessage({
+      tipo: 'letra',
+      cancion_titulo: 'Cuán grande es Él',
+      linea_actual:    songLines[songLines.length - 1],
+      linea_anterior:  songLines[songLines.length - 2],
+      linea_siguiente: null,
+      linea_index: songLines.length - 1,
+      total_lineas: songLines.length,
+    }),
+    'fullscreen': () => {
+      const el = document.documentElement;
+      (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el);
+    },
+  };
+
+  document.querySelectorAll('.demo button').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fn = demos[btn.dataset.demo];
+      if (fn) fn();
+    });
+  });
+
+  // SOLO arrancar auto-cycle si forceDemo (?demo) — modo ensayo offline
+  if (forceDemo) {
+    let step = 0;
+    const cycle = ['versiculo', 'letra-1', 'letra-4', 'letra-end', 'idle'];
+    setInterval(() => {
+      demos[cycle[step % cycle.length]]();
+      step++;
+    }, 3500);
+    setTimeout(() => demos.versiculo(), 1500);
+  }
+
+  /* ────────────────  BOOT  ──────────────── */
+  // Always try to connect; demo panel coexists and hides on success.
+  connect();
+
+})();
+</script>
+</body>
+</html>

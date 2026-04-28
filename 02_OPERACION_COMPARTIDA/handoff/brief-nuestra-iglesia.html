@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+<meta name="theme-color" content="#0f172a">
+<title>Discovery — Nuestra Iglesia</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    line-height: 1.55;
+    font-size: 16px;
+    padding-bottom: 120px;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    padding: 16px;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  }
+  header h1 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    color: #f1f5f9;
+    font-weight: 700;
+  }
+  header .meta {
+    font-size: 12px;
+    color: #94a3b8;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  header .meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .progress-bar {
+    height: 4px;
+    background: #334155;
+    margin-top: 12px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #06b6d4, #0ea5e9);
+    width: 0%;
+    transition: width .3s ease;
+  }
+  main { padding: 16px; max-width: 720px; margin: 0 auto; }
+  .intro {
+    background: #1e293b;
+    border-left: 4px solid #06b6d4;
+    padding: 14px 16px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  .intro strong { color: #06b6d4; }
+  details.section {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  details.section[open] {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.2);
+  }
+  details.section > summary {
+    padding: 14px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    list-style: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  details.section > summary::-webkit-details-marker { display: none; }
+  details.section > summary::before {
+    content: "▶";
+    color: #06b6d4;
+    font-size: 10px;
+    transition: transform .2s;
+  }
+  details.section[open] > summary::before { transform: rotate(90deg); }
+  details.section > summary .badge {
+    margin-left: auto;
+    background: #334155;
+    color: #94a3b8;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+  details.section > summary .badge.complete {
+    background: #064e3b;
+    color: #6ee7b7;
+  }
+  .section-body {
+    padding: 0 16px 16px;
+    border-top: 1px solid #334155;
+  }
+  .field { margin: 14px 0; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .field label .hint {
+    display: block;
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 400;
+    margin-top: 2px;
+    font-style: italic;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%;
+    padding: 10px 12px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #f1f5f9;
+    font-size: 15px;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none;
+    border-color: #06b6d4;
+    background: #1e293b;
+  }
+  .field textarea { min-height: 70px; resize: vertical; }
+  .photo-required {
+    background: rgba(245, 158, 11, 0.1);
+    border-left: 3px solid #f59e0b;
+    padding: 10px 12px;
+    margin: 12px 0;
+    font-size: 13px;
+    border-radius: 4px;
+    color: #fbbf24;
+  }
+  .photo-required::before { content: "📷 "; }
+  .note {
+    background: rgba(14, 165, 233, 0.08);
+    border-left: 3px solid #0ea5e9;
+    padding: 10px 12px;
+    margin: 12px 0;
+    font-size: 13px;
+    border-radius: 4px;
+    color: #7dd3fc;
+  }
+  .note::before { content: "💡 "; }
+  .alert-rojo {
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 3px solid #ef4444;
+    padding: 10px 12px;
+    margin: 12px 0;
+    font-size: 13px;
+    border-radius: 4px;
+    color: #fca5a5;
+  }
+  .pain-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 80px;
+    gap: 8px;
+    margin: 8px 0;
+  }
+  .pain-row select { padding: 8px; font-size: 13px; }
+  .pain-row input { padding: 8px; font-size: 13px; }
+  @media (max-width: 480px) {
+    .pain-row { grid-template-columns: 1fr; }
+  }
+  .footer-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0f172a;
+    border-top: 1px solid #334155;
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+    box-shadow: 0 -4px 12px rgba(0,0,0,.4);
+  }
+  .btn {
+    flex: 1;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: #06b6d4; color: #0f172a; }
+  .btn-secondary { background: #334155; color: #e2e8f0; }
+  .btn-danger { background: #7f1d1d; color: #fecaca; }
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #064e3b;
+    color: #6ee7b7;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.5);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+  }
+  .toast.show { opacity: 1; }
+  .recordatorios {
+    background: #1e293b;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 24px;
+    font-size: 13px;
+  }
+  .recordatorios h3 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #fbbf24;
+  }
+  .recordatorios ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .recordatorios li { margin-bottom: 6px; }
+  .competencia {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 14px;
+    font-size: 13px;
+  }
+  .competencia h3 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #c4b5fd;
+  }
+  .competencia table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .competencia th, .competencia td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+  }
+  .competencia th { color: #94a3b8; font-weight: 600; }
+  .competencia td { color: #cbd5e1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Discovery — Nuestra Iglesia</h1>
+  <div class="meta">
+    <span>📅 Sábado 10 AM</span>
+    <span>👤 Pastor Pablo</span>
+    <span id="completion-text">0% completado</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+</header>
+
+<main>
+
+<div class="intro">
+  <strong>Cómo usar este formulario en el celu:</strong><br>
+  Tocá cada sección para abrirla. Llená lo que vayas averiguando — guarda automático cada 5 segundos. Al final, "Descargar .md" baja todo en formato Markdown a tu celu.
+</div>
+
+<form id="formulario">
+
+<!-- SECCIÓN 1 -->
+<details class="section" data-section="1">
+  <summary>1. Equipo humano y roles <span class="badge" data-badge="1">0/8</span></summary>
+  <div class="section-body">
+    <div class="field"><label>¿Cuántas personas componen el equipo de medios?</label><input type="text" name="s1_equipo_medios"></div>
+    <div class="field"><label>¿Cuántas el equipo de TV/streaming?</label><input type="text" name="s1_equipo_tv"></div>
+    <div class="field"><label>¿Quién opera la pantalla gigante un domingo típico? <span class="hint">Nombre de la persona</span></label><input type="text" name="s1_operador_principal"></div>
+    <div class="field"><label>¿Es siempre la misma persona o rotan?</label><input type="text" name="s1_rotacion"></div>
+    <div class="field"><label>¿Qué nivel técnico tienen? <span class="hint">Autodidactas / curso formal / nada</span></label><input type="text" name="s1_nivel_tecnico"></div>
+    <div class="field"><label>¿Hay alguien con conocimiento de programación o redes?</label><input type="text" name="s1_programador"></div>
+    <div class="field"><label>¿Quién decide qué canciones se cantan y cuándo se carga el setlist?</label><input type="text" name="s1_decisor_setlist"></div>
+    <div class="field"><label>¿Cuándo se prepara el setlist? <span class="hint">Sábado / domingo a la mañana / sobre la marcha</span></label><input type="text" name="s1_preparacion_setlist"></div>
+  </div>
+</details>
+
+<!-- SECCIÓN 2 -->
+<details class="section" data-section="2">
+  <summary>2. PC operador y software actual <span class="badge" data-badge="2">0/14</span></summary>
+  <div class="section-body">
+    <div class="alert-rojo">⚠️ Crítico para Gemma 4 local. Anotar bien CPU + RAM + GPU.</div>
+
+    <div class="field"><label>Marca y modelo de la PC</label><input type="text" name="s2_pc_marca"></div>
+    <div class="field"><label>Sistema operativo y versión <span class="hint">Windows 10/11 / macOS / Linux</span></label><input type="text" name="s2_so"></div>
+    <div class="field"><label>Memoria RAM <span class="hint">Mínimo deseado: 8GB para Gemma 4 E4B, 16GB para correr todo cómodo</span></label><input type="text" name="s2_ram"></div>
+    <div class="field"><label>Procesador <span class="hint">Anotar generación: ej "Ryzen 5 5600", "Intel i5 12va gen"</span></label><input type="text" name="s2_cpu"></div>
+    <div class="field"><label>¿Tiene GPU dedicada? Marca, modelo y VRAM</label><input type="text" name="s2_gpu"></div>
+    <div class="field"><label>Espacio libre en disco <span class="hint">Gemma 4 + Freeshow ocupan ~15GB</span></label><input type="text" name="s2_disco"></div>
+    <div class="field"><label>¿Cuántas salidas de video tiene la PC? <span class="hint">HDMI / VGA / DisplayPort, cuántos puertos de cada uno</span></label><input type="text" name="s2_salidas_video"></div>
+    <div class="field"><label>¿Cuántos monitores usa el operador hoy? <span class="hint">Uno solo / monitor + pantalla gigante</span></label><input type="text" name="s2_monitores"></div>
+    <div class="field"><label>¿La PC se queda encendida 24/7 o se apaga entre cultos?</label><input type="text" name="s2_uptime"></div>
+    <div class="field"><label>Software de presentación que usan HOY <span class="hint">ProPresenter / EasyWorship / PowerPoint / OpenLP / Freeshow / otro</span></label><input type="text" name="s2_software_actual"></div>
+    <div class="field"><label>¿Versión y si es licencia paga o gratis?</label><input type="text" name="s2_software_version"></div>
+    <div class="field"><label>¿Hace cuánto lo usan? ¿Por qué eligieron ese?</label><textarea name="s2_software_eleccion"></textarea></div>
+    <div class="field"><label>¿Qué cosas les gustan de él?</label><textarea name="s2_software_pros"></textarea></div>
+    <div class="field"><label>¿Qué cosas les frustran?</label><textarea name="s2_software_contras"></textarea></div>
+
+    <div class="photo-required">Foto requerida: pantalla del software abierto + parte trasera de la PC (conexiones)</div>
+  </div>
+</details>
+
+<!-- SECCIÓN 3 -->
+<details class="section" data-section="3">
+  <summary>3. Textos bíblicos: formato actual <span class="badge" data-badge="3">0/9</span></summary>
+  <div class="section-body">
+    <div class="field"><label>¿Qué versión/traducción usan habitualmente? <span class="hint">RV1960 / NVI / NTV / DHH / otra</span></label><input type="text" name="s3_version_biblia"></div>
+    <div class="field"><label>¿Tienen la Biblia completa cargada en el software?</label><input type="text" name="s3_biblia_cargada"></div>
+    <div class="field"><label>¿Cómo la cargaron? <span class="hint">Importada / vino con el software / la tipearon a mano</span></label><input type="text" name="s3_carga_metodo"></div>
+    <div class="field"><label>¿En qué formato la guardan? <span class="hint">Archivo del software / Word / PDF / base de datos / otro</span></label><input type="text" name="s3_formato"></div>
+    <div class="field"><label>¿Tienen acceso al archivo fuente o solo está dentro del software?</label><input type="text" name="s3_archivo_fuente"></div>
+    <div class="field"><label>Cuando el Pastor cita un versículo en vivo, ¿cómo lo busca el operador?</label><textarea name="s3_busqueda_actual"></textarea></div>
+    <div class="field"><label>¿Cuánto tarda en aparecer un versículo no preparado? <span class="hint">CRONOMETRAR con celu durante un servicio o ensayo</span></label><input type="text" name="s3_tiempo_busqueda"></div>
+    <div class="field"><label>¿El Pastor avisa antes qué versículos va a citar o improvisa?</label><input type="text" name="s3_pastor_avisa"></div>
+    <div class="field"><label>¿Tienen lista de "versículos del culto" preparada antes?</label><input type="text" name="s3_lista_versiculos"></div>
+
+    <div class="photo-required">Foto/video requerida: una búsqueda real de un versículo midiendo tiempo con cronómetro</div>
+  </div>
+</details>
+
+<!-- SECCIÓN 4 -->
+<details class="section" data-section="4">
+  <summary>4. Canciones y letras <span class="badge" data-badge="4">0/10</span></summary>
+  <div class="section-body">
+    <div class="field"><label>¿Cuántas canciones cantan en un culto típico?</label><input type="text" name="s4_cantidad_canciones"></div>
+    <div class="field"><label>¿Tienen las letras cargadas o las tipean cada vez?</label><input type="text" name="s4_letras_cargadas"></div>
+    <div class="field"><label>¿Tienen licencia CCLI / SongSelect? <span class="hint">Sí / no — clave para legalidad</span></label><input type="text" name="s4_ccli"></div>
+    <div class="field"><label>Repertorio aproximado de canciones <span class="hint">10 / 50 / 200+</span></label><input type="text" name="s4_repertorio"></div>
+    <div class="field"><label>¿En qué formato guardan las letras? <span class="hint">Software / Word / cuaderno físico</span></label><input type="text" name="s4_formato_letras"></div>
+    <div class="field"><label>¿Quién las cargó? ¿Hace cuánto?</label><input type="text" name="s4_quien_cargo"></div>
+    <div class="field"><label>Hoy las letras avanzan: <span class="hint">Manualmente con espacio/click / automático por tiempo / no avanzan</span></label><input type="text" name="s4_avance"></div>
+    <div class="field"><label>Cuando avanzan, ¿hay animación o son cambios "duros"?</label><input type="text" name="s4_animacion"></div>
+    <div class="field"><label>¿El operador conoce las canciones de memoria o sigue de oído?</label><input type="text" name="s4_operador_conoce"></div>
+    <div class="field"><label>¿El equipo de músicos avisa por intercom cuándo cambia de estrofa?</label><input type="text" name="s4_intercom"></div>
+
+    <div class="note">Durante un ensayo si lo ves, anotá cuántas veces se "atrasa" la letra vs el cantante.</div>
+  </div>
+</details>
+
+<!-- SECCIÓN 5 -->
+<details class="section" data-section="5">
+  <summary>5. Audio (clave para Gemma 4) <span class="badge" data-badge="5">0/10</span></summary>
+  <div class="section-body">
+    <div class="alert-rojo">⚠️ Sin audio limpio del Pastor → no hay detección automática de versículos. Insistir en esta sección.</div>
+
+    <div class="field"><label>Marca y modelo de la consola de audio</label><input type="text" name="s5_consola"></div>
+    <div class="field"><label>¿Es analógica o digital?</label><input type="text" name="s5_consola_tipo"></div>
+    <div class="field"><label>¿Cuántos canales?</label><input type="text" name="s5_canales"></div>
+    <div class="field"><label>¿Qué tipo de micrófonos usa el Pastor? <span class="hint">Corbatero / vincha / mano</span></label><input type="text" name="s5_microfono_pastor"></div>
+    <div class="field"><label>¿El audio del Pastor sale por un canal independiente o mezclado con todo?</label><input type="text" name="s5_canal_pastor"></div>
+    <div class="field"><label>¿Hay salida AUX disponible que puedan rutear a la PC?</label><input type="text" name="s5_aux"></div>
+    <div class="field"><label>¿Hay tarjeta de audio USB / interfaz entre consola y PC?</label><input type="text" name="s5_interfaz_usb"></div>
+    <div class="field"><label>¿Cómo entra el audio a la PC del streaming hoy? <span class="hint">Cable directo / interfaz USB / no entra</span></label><input type="text" name="s5_audio_pc"></div>
+    <div class="field"><label>Distancia de la consola a la PC del operador <span class="hint">En metros</span></label><input type="text" name="s5_distancia"></div>
+    <div class="field"><label>¿Hay ruido de fondo significativo? <span class="hint">Banda tocando / aire acondicionado / eco</span></label><input type="text" name="s5_ruido"></div>
+
+    <div class="photo-required">Foto requerida: consola de audio + cualquier interfaz USB que tengan</div>
+  </div>
+</details>
+
+<!-- SECCIÓN 6 -->
+<details class="section" data-section="6">
+  <summary>6. Pantalla gigante y proyección <span class="badge" data-badge="6">0/8</span></summary>
+  <div class="section-body">
+    <div class="field"><label>¿Es pantalla LED, proyector, TV grande?</label><input type="text" name="s6_tipo_pantalla"></div>
+    <div class="field"><label>Tamaño aproximado / resolución <span class="hint">Si saben</span></label><input type="text" name="s6_resolucion"></div>
+    <div class="field"><label>¿Cómo se conecta a la PC? <span class="hint">HDMI directo / cable largo / extensor HDMI sobre red / wireless</span></label><input type="text" name="s6_conexion"></div>
+    <div class="field"><label>Distancia entre PC operador y pantalla <span class="hint">En metros</span></label><input type="text" name="s6_distancia"></div>
+    <div class="field"><label>¿Qué se ve cuando NO hay versículo o letra? <span class="hint">Logo / cámara en vivo / fondo estático / negro</span></label><input type="text" name="s6_idle"></div>
+    <div class="field"><label>¿Tiene buena visibilidad para todo el público?</label><input type="text" name="s6_visibilidad"></div>
+    <div class="field"><label>Estilo visual actual: ¿blanco sobre negro, otra paleta?</label><input type="text" name="s6_estilo"></div>
+    <div class="field"><label>Tipografía actual: ¿saben qué fuente usan?</label><input type="text" name="s6_tipografia"></div>
+
+    <div class="photo-required">Foto requerida: la pantalla en uso real durante un servicio (pedir si tienen)</div>
+  </div>
+</details>
+
+<!-- SECCIÓN 7 -->
+<details class="section" data-section="7">
+  <summary>7. Streaming YouTube + Facebook <span class="badge" data-badge="7">0/13</span></summary>
+  <div class="section-body">
+    <div class="field"><label>¿Streamean en vivo?</label><input type="text" name="s7_stream"></div>
+    <div class="field"><label>¿A qué plataformas? <span class="hint">YouTube / Facebook / ambas / otra</span></label><input type="text" name="s7_plataformas"></div>
+    <div class="field"><label>¿Streamean a las 2 simultáneamente o de a una?</label><input type="text" name="s7_simultaneo"></div>
+    <div class="field"><label>Si simultáneamente, ¿cómo lo hacen? <span class="hint">Restream / OBS multi-output / 2 PCs / otro</span></label><input type="text" name="s7_metodo_multi"></div>
+    <div class="field"><label>Software de streaming <span class="hint">OBS / vMix / StreamYard / nativo</span></label><input type="text" name="s7_software_stream"></div>
+    <div class="field"><label>¿La PC del streaming es la misma del operador de pantalla?</label><input type="text" name="s7_pc_compartida"></div>
+    <div class="field"><label>¿Cuántas cámaras usan?</label><input type="text" name="s7_camaras"></div>
+    <div class="field"><label>¿Quién opera el switcher?</label><input type="text" name="s7_switcher"></div>
+    <div class="field"><label>¿Tienen overlays o lower thirds? <span class="hint">Nombre del predicador, cita bíblica en pantalla del stream</span></label><input type="text" name="s7_overlays"></div>
+    <div class="field"><label>¿Bajan los videos para subirlos editados después o queda solo el live?</label><input type="text" name="s7_postproduccion"></div>
+    <div class="field"><label>¿Hacen clips/Reels del culto para redes?</label><input type="text" name="s7_clips"></div>
+    <div class="field"><label>Si los hacen: ¿quién, con qué herramienta, cuánto tiempo?</label><textarea name="s7_clips_proceso"></textarea></div>
+    <div class="field"><label>Internet de la iglesia <span class="hint">Fibra / cable / 4G y velocidad de subida estimada</span></label><input type="text" name="s7_internet"></div>
+  </div>
+</details>
+
+<!-- SECCIÓN 8 -->
+<details class="section" data-section="8">
+  <summary>8. Redes sociales de la iglesia <span class="badge" data-badge="8">0/9</span></summary>
+  <div class="section-body">
+    <div class="field"><label>Instagram <span class="hint">Link / handle</span></label><input type="text" name="s8_instagram"></div>
+    <div class="field"><label>Facebook <span class="hint">Link de la página</span></label><input type="text" name="s8_facebook"></div>
+    <div class="field"><label>YouTube <span class="hint">Canal</span></label><input type="text" name="s8_youtube"></div>
+    <div class="field"><label>TikTok <span class="hint">Si tienen</span></label><input type="text" name="s8_tiktok"></div>
+    <div class="field"><label>¿Quién maneja las redes?</label><input type="text" name="s8_responsable"></div>
+    <div class="field"><label>¿Con qué frecuencia publican?</label><input type="text" name="s8_frecuencia"></div>
+    <div class="field"><label>¿Qué publican? <span class="hint">Versículos / clips / anuncios / fotos</span></label><textarea name="s8_contenido"></textarea></div>
+    <div class="field"><label>¿Usan algún programador de posts? <span class="hint">Meta Business Suite / Buffer / Later / nada</span></label><input type="text" name="s8_scheduler"></div>
+    <div class="field"><label>¿Tienen identidad visual definida? <span class="hint">Logo, paleta, tipografía, manual de marca</span></label><textarea name="s8_identidad"></textarea></div>
+  </div>
+</details>
+
+<!-- SECCIÓN 9 -->
+<details class="section" data-section="9">
+  <summary>9. Dolor real (LLENAR DESPUÉS) <span class="badge" data-badge="9">0/3</span></summary>
+  <div class="section-body">
+    <div class="note">Esta sección la llenás VOS después de la reunión, con lo que el equipo dijo entre líneas. Si todos coinciden en una queja → es prioridad real. Si solo lo dice 1 persona → matiz pero no urgente.</div>
+
+    <div class="pain-row">
+      <input type="text" name="s9_dolor1_que" placeholder="Dolor mencionado">
+      <input type="text" name="s9_dolor1_quien" placeholder="Quién lo dijo">
+      <select name="s9_dolor1_grave"><option value="">Gravedad</option><option>🔴 Alta</option><option>🟡 Media</option><option>🟢 Baja</option></select>
+    </div>
+    <div class="pain-row">
+      <input type="text" name="s9_dolor2_que" placeholder="Dolor mencionado">
+      <input type="text" name="s9_dolor2_quien" placeholder="Quién lo dijo">
+      <select name="s9_dolor2_grave"><option value="">Gravedad</option><option>🔴 Alta</option><option>🟡 Media</option><option>🟢 Baja</option></select>
+    </div>
+    <div class="pain-row">
+      <input type="text" name="s9_dolor3_que" placeholder="Dolor mencionado">
+      <input type="text" name="s9_dolor3_quien" placeholder="Quién lo dijo">
+      <select name="s9_dolor3_grave"><option value="">Gravedad</option><option>🔴 Alta</option><option>🟡 Media</option><option>🟢 Baja</option></select>
+    </div>
+  </div>
+</details>
+
+<!-- SECCIÓN 10 -->
+<details class="section" data-section="10">
+  <summary>10. Restricciones y límites <span class="badge" data-badge="10">0/7</span></summary>
+  <div class="section-body">
+    <div class="field"><label>Presupuesto disponible para hardware nuevo <span class="hint">Si necesitamos mini-PC, tarjeta audio, etc.</span></label><input type="text" name="s10_presupuesto"></div>
+    <div class="field"><label>¿Hay alguien que se opondría a cambiar el software actual?</label><input type="text" name="s10_oposicion"></div>
+    <div class="field"><label>¿Quién tiene la última palabra técnica? <span class="hint">Pablo / líder de medios / nadie definido</span></label><input type="text" name="s10_decisor"></div>
+    <div class="field"><label>¿Hay reuniones de equipo de medios? ¿Cada cuánto?</label><input type="text" name="s10_reuniones"></div>
+    <div class="field"><label>¿Están dispuestos a aprender un software nuevo si es claramente mejor?</label><input type="text" name="s10_apertura"></div>
+    <div class="field"><label>Días/horarios disponibles para entrenamiento del equipo</label><input type="text" name="s10_disponibilidad"></div>
+    <div class="field"><label>¿Hay riesgo de que el operador principal renuncie o se vaya pronto?</label><input type="text" name="s10_riesgo_rotacion"></div>
+  </div>
+</details>
+
+<!-- NOTAS LIBRES -->
+<details class="section" data-section="notas">
+  <summary>📝 Notas libres + observaciones <span class="badge" data-badge="notas">opcional</span></summary>
+  <div class="section-body">
+    <div class="field"><label>Cualquier otra cosa que quieras anotar de la reunión</label><textarea name="notas_libres" style="min-height: 200px;"></textarea></div>
+  </div>
+</details>
+
+</form>
+
+<!-- COMPETENCIA / BENCHMARKING -->
+<div class="competencia">
+  <h3>🏛️ Qué usan las iglesias grandes en 2026 (referencia)</h3>
+  <p>Esto NO se lo muestres al equipo el sábado. Es para que vos sepas qué stack tiene la competencia y dónde nos paramos.</p>
+
+  <table>
+    <tr><th>Categoría</th><th>Lo que usan</th></tr>
+    <tr><td>Software presentación</td><td><b>ProPresenter</b> (líder, USD 29/mes) o <b>EasyWorship</b> (USD 299 una vez). Hillsong y Elevation usan ProPresenter en sus campus principales.</td></tr>
+    <tr><td>Detección bíblica IA</td><td><b>SmartVerses</b> (Whisper + LLM, integra con ProPresenter — USD 30-50/mes). <b>Spetra</b> (Tolulope Adeniyi, Nigeria, en desarrollo).</td></tr>
+    <tr><td>Sermon clips automáticos</td><td><b>Pulpit AI</b>, <b>Sermon Shots</b>, <b>Opus Clip</b>, <b>Choppity</b>. Generan Reels con captions, face tracking y música.</td></tr>
+    <tr><td>Social media + clips</td><td><b>ChurchSocial.ai</b> (transcribe + clips + posts a FB/IG/YT/TikTok), <b>Pastors.ai</b> (gratis, clips + bots), <b>Pulpit AI</b>.</td></tr>
+    <tr><td>AI assistants pastores</td><td><b>Pastors.ai</b>, <b>Church.tech</b>, <b>Pulpit AI</b> — chatbots para feligreses, generación de Bible studies, devocionales.</td></tr>
+    <tr><td>Streaming multi-plataforma</td><td><b>OBS</b> + <b>Restream</b> (SaaS) o <b>vMix</b> (pago). Hillsong usa vMix + producción broadcast. Iglesias chicas usan OBS gratis.</td></tr>
+    <tr><td>Tendencia 2026</td><td>IA local on-device (Gemma 4, Llama) ganando tracción por privacidad. Antes era todo cloud (OpenAI Whisper API). Esto es bueno para nosotros: estamos al frente de la tendencia.</td></tr>
+  </table>
+
+  <p style="margin-top:12px; color:#94a3b8; font-size:12px;">
+    <b>Cómo nos diferenciamos:</b> SmartVerses, Pulpit AI, ChurchSocial son cloud-based, suscripción mensual, en inglés mayormente. Lo nuestro es <b>local, gratis, español nativo, integrado punta a punta con stack existente</b>. Para iglesias chicas/medianas LATAM somos lo que falta en el mercado.
+  </p>
+</div>
+
+<!-- RECORDATORIOS -->
+<div class="recordatorios">
+  <h3>⚠️ Recordatorios sábado 10 AM</h3>
+  <ul>
+    <li>Llegá con <b>demo de Gemma 4 + Freeshow</b> corriendo en tu notebook (5 min de demo > 1 hora de explicación)</li>
+    <li>NO prometas IA en vivo hasta confirmar hardware (Sección 2). Si la PC es muy vieja, plan B es mini-PC dedicada</li>
+    <li>NO mezcles los 2 tracks: hoy es <b>iglesia</b>. Lo de redes personales de Pablo es <b>otra conversación</b>, no la inicies vos</li>
+    <li>Sos amigo del hermano de Pablo (Gastón). NO lo uses explícitamente. Si surge en charla, bien</li>
+    <li>Tono: <b>par técnico que viene a aportar</b>, no agencia que viene a vender</li>
+    <li>Llevá cuaderno físico para tomar notas. PC abierta solo cuando demostrás Freeshow</li>
+    <li>Pedí permiso explícito antes de grabar audio de la reunión</li>
+  </ul>
+</div>
+
+<div class="toast" id="toast">Guardado ✓</div>
+
+<div class="footer-bar">
+  <button type="button" class="btn btn-secondary" onclick="exportJSON()">💾 JSON</button>
+  <button type="button" class="btn btn-primary" onclick="downloadMarkdown()">⬇ Descargar .md</button>
+  <button type="button" class="btn btn-danger" onclick="resetForm()">🗑</button>
+</div>
+
+<script>
+  const STORAGE_KEY = 'discovery-iglesia-v1';
+  const form = document.getElementById('formulario');
+  const toast = document.getElementById('toast');
+  const progress = document.getElementById('progress');
+  const completionText = document.getElementById('completion-text');
+
+  // ----- Persistencia localStorage -----
+  function saveState() {
+    const data = {};
+    new FormData(form).forEach((value, key) => { data[key] = value; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    showToast('Guardado ✓');
+    updateProgress();
+  }
+
+  function loadState() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      Object.entries(data).forEach(([key, value]) => {
+        const field = form.elements[key];
+        if (field) field.value = value;
+      });
+    } catch (e) { console.error(e); }
+    updateProgress();
+  }
+
+  // Auto-save cada vez que cambia un campo (debounce 1.5s)
+  let saveTimer;
+  form.addEventListener('input', () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveState, 1500);
+  });
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  // ----- Progress + badges -----
+  function updateProgress() {
+    const sections = document.querySelectorAll('details.section');
+    let totalFields = 0, totalFilled = 0;
+
+    sections.forEach(section => {
+      const sectionId = section.dataset.section;
+      const fields = section.querySelectorAll('input, textarea, select');
+      let filled = 0;
+      fields.forEach(f => { if (f.value && f.value.trim() !== '') filled++; });
+      const badge = document.querySelector(`[data-badge="${sectionId}"]`);
+      if (badge && sectionId !== 'notas') {
+        badge.textContent = `${filled}/${fields.length}`;
+        if (filled === fields.length && fields.length > 0) badge.classList.add('complete');
+        else badge.classList.remove('complete');
+      }
+      if (sectionId !== 'notas') {
+        totalFields += fields.length;
+        totalFilled += filled;
+      }
+    });
+
+    const pct = totalFields ? Math.round((totalFilled / totalFields) * 100) : 0;
+    progress.style.width = pct + '%';
+    completionText.textContent = `${pct}% completado`;
+  }
+
+  // ----- Generar Markdown -----
+  function buildMarkdown() {
+    const data = {};
+    new FormData(form).forEach((value, key) => { data[key] = value || '_(sin completar)_'; });
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    const ts = new Date().toLocaleString('es-AR');
+
+    let md = `---
+proyecto: arnaldo
+tipo: caso-estudio (pro-bono / referidos)
+estado: discovery completado
+fecha_reunion: ${fecha}
+generado: ${ts}
+contacto: Pablo Ezequiel Tomé Pose Weninger (Pastor)
+relacion_personal: Arnaldo es amigo de Gastón (hermano de Pablo)
+---
+
+# Discovery — Nuestra Iglesia
+
+## Sección 1 — Equipo humano y roles
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Personas en equipo de medios | ${data.s1_equipo_medios} |
+| Personas en equipo TV/streaming | ${data.s1_equipo_tv} |
+| Operador principal pantalla gigante | ${data.s1_operador_principal} |
+| ¿Misma persona o rotan? | ${data.s1_rotacion} |
+| Nivel técnico | ${data.s1_nivel_tecnico} |
+| Programador o conocimiento de redes | ${data.s1_programador} |
+| Decisor del setlist | ${data.s1_decisor_setlist} |
+| Cuándo se prepara setlist | ${data.s1_preparacion_setlist} |
+
+## Sección 2 — PC operador y software actual
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Marca y modelo PC | ${data.s2_pc_marca} |
+| Sistema operativo | ${data.s2_so} |
+| RAM | ${data.s2_ram} |
+| CPU | ${data.s2_cpu} |
+| GPU | ${data.s2_gpu} |
+| Espacio libre disco | ${data.s2_disco} |
+| Salidas de video | ${data.s2_salidas_video} |
+| Monitores en uso hoy | ${data.s2_monitores} |
+| Uptime | ${data.s2_uptime} |
+| Software actual | ${data.s2_software_actual} |
+| Versión y licencia | ${data.s2_software_version} |
+| Cuándo y por qué eligieron | ${data.s2_software_eleccion} |
+| Pros del software actual | ${data.s2_software_pros} |
+| Contras del software actual | ${data.s2_software_contras} |
+
+## Sección 3 — Textos bíblicos
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Versión bíblica | ${data.s3_version_biblia} |
+| Biblia completa cargada | ${data.s3_biblia_cargada} |
+| Método de carga | ${data.s3_carga_metodo} |
+| Formato | ${data.s3_formato} |
+| Acceso al archivo fuente | ${data.s3_archivo_fuente} |
+| Búsqueda actual | ${data.s3_busqueda_actual} |
+| Tiempo medido búsqueda | ${data.s3_tiempo_busqueda} |
+| Pastor avisa o improvisa | ${data.s3_pastor_avisa} |
+| Lista versículos previa | ${data.s3_lista_versiculos} |
+
+## Sección 4 — Canciones y letras
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Cantidad por culto | ${data.s4_cantidad_canciones} |
+| Letras pre-cargadas | ${data.s4_letras_cargadas} |
+| Licencia CCLI | ${data.s4_ccli} |
+| Repertorio | ${data.s4_repertorio} |
+| Formato letras | ${data.s4_formato_letras} |
+| Quién cargó | ${data.s4_quien_cargo} |
+| Avance de letras | ${data.s4_avance} |
+| Animación | ${data.s4_animacion} |
+| Operador conoce canciones | ${data.s4_operador_conoce} |
+| Intercom con músicos | ${data.s4_intercom} |
+
+## Sección 5 — Audio (Gemma 4 input)
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Consola | ${data.s5_consola} |
+| Tipo (analog/digital) | ${data.s5_consola_tipo} |
+| Canales | ${data.s5_canales} |
+| Mic Pastor | ${data.s5_microfono_pastor} |
+| Canal del Pastor | ${data.s5_canal_pastor} |
+| Salida AUX | ${data.s5_aux} |
+| Interfaz USB | ${data.s5_interfaz_usb} |
+| Audio entra a PC | ${data.s5_audio_pc} |
+| Distancia consola-PC | ${data.s5_distancia} |
+| Ruido fondo | ${data.s5_ruido} |
+
+## Sección 6 — Pantalla gigante
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Tipo pantalla | ${data.s6_tipo_pantalla} |
+| Resolución | ${data.s6_resolucion} |
+| Conexión | ${data.s6_conexion} |
+| Distancia PC-pantalla | ${data.s6_distancia} |
+| Idle (sin contenido) | ${data.s6_idle} |
+| Visibilidad | ${data.s6_visibilidad} |
+| Estilo visual actual | ${data.s6_estilo} |
+| Tipografía actual | ${data.s6_tipografia} |
+
+## Sección 7 — Streaming
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Streamean | ${data.s7_stream} |
+| Plataformas | ${data.s7_plataformas} |
+| Simultáneo | ${data.s7_simultaneo} |
+| Método multi | ${data.s7_metodo_multi} |
+| Software stream | ${data.s7_software_stream} |
+| PC compartida con presentación | ${data.s7_pc_compartida} |
+| Cámaras | ${data.s7_camaras} |
+| Switcher operador | ${data.s7_switcher} |
+| Overlays | ${data.s7_overlays} |
+| Postproducción | ${data.s7_postproduccion} |
+| Hacen clips | ${data.s7_clips} |
+| Proceso clips | ${data.s7_clips_proceso} |
+| Internet | ${data.s7_internet} |
+
+## Sección 8 — Redes sociales iglesia
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Instagram | ${data.s8_instagram} |
+| Facebook | ${data.s8_facebook} |
+| YouTube | ${data.s8_youtube} |
+| TikTok | ${data.s8_tiktok} |
+| Responsable | ${data.s8_responsable} |
+| Frecuencia | ${data.s8_frecuencia} |
+| Contenido | ${data.s8_contenido} |
+| Programador posts | ${data.s8_scheduler} |
+| Identidad visual | ${data.s8_identidad} |
+
+## Sección 9 — Dolor real (post-reunión)
+
+| Dolor | Quién lo dijo | Gravedad |
+|-------|---------------|----------|
+| ${data.s9_dolor1_que} | ${data.s9_dolor1_quien} | ${data.s9_dolor1_grave} |
+| ${data.s9_dolor2_que} | ${data.s9_dolor2_quien} | ${data.s9_dolor2_grave} |
+| ${data.s9_dolor3_que} | ${data.s9_dolor3_quien} | ${data.s9_dolor3_grave} |
+
+## Sección 10 — Restricciones y límites
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| Presupuesto hardware | ${data.s10_presupuesto} |
+| Oposición a cambio | ${data.s10_oposicion} |
+| Decisor técnico | ${data.s10_decisor} |
+| Reuniones equipo | ${data.s10_reuniones} |
+| Apertura a software nuevo | ${data.s10_apertura} |
+| Disponibilidad entrenamiento | ${data.s10_disponibilidad} |
+| Riesgo rotación operador | ${data.s10_riesgo_rotacion} |
+
+## Notas libres
+
+${data.notas_libres}
+
+---
+
+## Próximos pasos checklist Arnaldo
+
+- [ ] Sumar todas las fotos a \`01_PROYECTOS/01_ARNALDO_AGENCIA/clientes/nuestra-iglesia/discovery/\`
+- [ ] Pasar audio de reunión (si grabé) a Whisper para tener transcripción literal
+- [ ] Marcar en cada sección con 🔴 / 🟡 / 🟢 las cosas críticas / importantes / nice-to-have
+- [ ] Decidir Fase 1 con info real (hardware permite Gemma 4 local? Si no, plan B: mini-PC USD 400-500)
+- [ ] Armar propuesta formal con \`/crear-plan\` archivada en \`02_OPERACION_COMPARTIDA/planes/\`
+- [ ] Dejar entidad \`nuestra-iglesia.md\` y \`pablo-tome-pastor.md\` en wiki Obsidian
+- [ ] Mensaje de seguimiento a Pablo el lunes con resumen + próximos pasos
+`;
+
+    return md;
+  }
+
+  function downloadMarkdown() {
+    const md = buildMarkdown();
+    const fecha = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `discovery-nuestra-iglesia-${fecha}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('📥 .md descargado');
+  }
+
+  function exportJSON() {
+    const data = {};
+    new FormData(form).forEach((value, key) => { data[key] = value; });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const fecha = new Date().toISOString().slice(0, 10);
+    a.download = `discovery-nuestra-iglesia-${fecha}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('📥 JSON descargado');
+  }
+
+  function resetForm() {
+    if (!confirm('¿Borrar todo lo cargado? Esto no se puede deshacer.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    form.reset();
+    updateProgress();
+    showToast('🗑 Formulario reseteado');
+  }
+
+  // Init
+  loadState();
+  form.addEventListener('input', updateProgress);
+</script>
+
+</body>
+</html>

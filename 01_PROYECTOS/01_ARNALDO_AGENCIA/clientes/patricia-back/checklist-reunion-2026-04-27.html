@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reunión Grupo Back — La Misionerita 14:30</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+  }
+  .hero {
+    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #f59e0b 100%);
+    color: white;
+  }
+  .card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(15, 23, 42, 0.04);
+    border: 1px solid #e5e7eb;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  textarea, input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: #0f172a;
+    background: #fafafa;
+    transition: border-color 0.15s;
+  }
+  textarea:focus, input[type="text"]:focus {
+    outline: none;
+    border-color: #7c3aed;
+    background: white;
+  }
+  textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+    margin-top: 12px;
+  }
+  .pregunta-box {
+    background: #f8fafc;
+    border-left: 4px solid #7c3aed;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    color: #475569;
+    font-style: italic;
+  }
+  .marca-card {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: #fafbfc;
+  }
+  .marca-card.confirmada {
+    border-style: solid;
+    border-color: #10b981;
+    background: #f0fdf4;
+  }
+  .marca-card.nueva {
+    border-color: #f59e0b;
+    background: #fffbeb;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-conf { background: #d1fae5; color: #065f46; }
+  .badge-nueva { background: #fef3c7; color: #92400e; }
+  .checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .checkbox-row:last-child { border-bottom: none; }
+  .checkbox-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 3px;
+    accent-color: #7c3aed;
+    flex-shrink: 0;
+  }
+  .checkbox-row label {
+    margin: 0;
+    font-weight: 500;
+    color: #334155;
+    flex: 1;
+    cursor: pointer;
+  }
+  .save-status {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: #10b981;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .save-status.show { opacity: 1; }
+  .btn-primary {
+    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+  }
+  .btn-secondary {
+    background: white;
+    color: #475569;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: 1.5px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+  }
+  .btn-danger {
+    background: white;
+    color: #dc2626;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: 1.5px solid #fecaca;
+    cursor: pointer;
+  }
+  .btn-danger:hover { background: #fef2f2; }
+
+  details {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: white;
+  }
+  details[open] { background: #faf5ff; border-color: #c4b5fd; }
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.95rem;
+  }
+  summary:hover { color: #7c3aed; }
+
+  .nicho-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 2px;
+    cursor: pointer;
+    border: 1.5px solid #e2e8f0;
+    background: white;
+    color: #475569;
+    user-select: none;
+  }
+  .nicho-tag.selected {
+    background: #ede9fe;
+    border-color: #7c3aed;
+    color: #6d28d9;
+  }
+
+  @media print {
+    body { background: white; }
+    .no-print { display: none !important; }
+    .card { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body class="py-4 sm:py-8 px-3 sm:px-6">
+
+<div class="max-w-3xl mx-auto">
+
+  <!-- HERO -->
+  <div class="hero rounded-2xl p-6 sm:p-8 mb-6">
+    <div class="flex items-center gap-2 text-purple-100 text-xs mb-2 font-medium">
+      <span>📋</span>
+      <span>Checklist de reunión · Grupo Back</span>
+    </div>
+    <h1 class="text-xl sm:text-2xl font-bold mb-2 leading-tight">
+      Reunión presencial — La Misionerita
+    </h1>
+    <p class="text-purple-100 text-sm sm:text-base">
+      🗓️ <strong>Lunes 27 abril 2026 · 14:30</strong> · con Hernán Weninger y Patricia Back
+    </p>
+    <div class="mt-4 bg-white/10 rounded-lg p-3 text-xs text-purple-50">
+      💡 <strong>Tip</strong>: Las respuestas se guardan automáticamente en este navegador. Al final apretá <strong>"Exportar para Arnaldo"</strong> y mandame el archivo o copiá el texto.
+    </div>
+  </div>
+
+  <!-- OBJETIVO DE LA REUNIÓN -->
+  <div class="card">
+    <h2>🎯 Objetivo de la reunión</h2>
+    <p class="text-slate-600 text-sm mb-2">
+      Cerrar el alcance del ecosistema digital de Grupo Back para poder cotizar y armar el contrato.
+    </p>
+    <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900">
+      <strong>Salida esperada:</strong> Lista cerrada de las 6 firmas + nichos + estructura legal + prioridades + acuerdo de plazos. Si todo cierra, podemos pasar a cotización + contrato esta misma semana.
+    </div>
+  </div>
+
+  <!-- BLOQUE 1 — LAS 6 FIRMAS -->
+  <div class="card">
+    <h2>1️⃣ Las 6 firmas del Grupo</h2>
+
+    <div class="pregunta-box">
+      "Confirmenme nombre comercial exacto de cada una. ¿Las que ya tenemos quedan así (Patricios, Inmobiliaria Back, La Misionerita)? ¿Cuáles son las 3 nuevas — qué hace cada una?"
+    </div>
+
+    <!-- 3 confirmadas -->
+    <div class="marca-card confirmada">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-bold text-emerald-900">🎉 Patricios</div>
+        <span class="badge badge-conf">Confirmada</span>
+      </div>
+      <label>¿El nombre queda como "Patricios" o cambia?</label>
+      <input type="text" id="m1-nombre" placeholder="ej: Patricios / Salón Patricios / etc." />
+      <label>Rubro / qué ofrece</label>
+      <input type="text" id="m1-rubro" value="Eventos y fiestas — alquiler salón" />
+      <label>¿Hay algo nuevo de esta marca que no estaba en la hoja de ruta?</label>
+      <textarea id="m1-extras" placeholder="Servicios nuevos, paquetes, cambios..."></textarea>
+    </div>
+
+    <div class="marca-card confirmada">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-bold text-emerald-900">🏡 Inmobiliaria Back</div>
+        <span class="badge badge-conf">Confirmada</span>
+      </div>
+      <label>¿El nombre queda como "Inmobiliaria Back"?</label>
+      <input type="text" id="m2-nombre" placeholder="ej: Inmobiliaria Back / otro" />
+      <label>Rubro / qué ofrece</label>
+      <input type="text" id="m2-rubro" value="Alquileres + venta de terrenos y lotes" />
+      <label>¿Cambios o agregados?</label>
+      <textarea id="m2-extras" placeholder="..."></textarea>
+    </div>
+
+    <div class="marca-card confirmada">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-bold text-emerald-900">🍽️ La Misionerita</div>
+        <span class="badge badge-conf">Confirmada</span>
+      </div>
+      <label>¿Nombre exacto?</label>
+      <input type="text" id="m3-nombre" placeholder="ej: La Misionerita / otro" />
+      <label>Rubro / qué ofrece</label>
+      <input type="text" id="m3-rubro" value="Restaurant + tours en colectivos" />
+      <label>¿Cambios o agregados?</label>
+      <textarea id="m3-extras" placeholder="..."></textarea>
+    </div>
+
+    <!-- 3 nuevas a definir -->
+    <div class="marca-card nueva">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-bold text-amber-900">❓ Marca nueva #4</div>
+        <span class="badge badge-nueva">A definir</span>
+      </div>
+      <label>Nombre comercial exacto</label>
+      <input type="text" id="m4-nombre" placeholder="ej: Back Eventos / Hospedajes Misionera / etc." />
+      <label>Rubro principal</label>
+      <input type="text" id="m4-rubro" placeholder="ej: hotelería, transporte, agro, construcción..." />
+      <label>¿Es un rubro nuevo o expansión de los existentes?</label>
+      <select id="m4-tipo" class="w-full p-2 border rounded-lg bg-white text-sm">
+        <option value="">Elegir...</option>
+        <option value="nuevo">Rubro completamente nuevo</option>
+        <option value="expansion">Expansión / sub-marca de uno existente</option>
+        <option value="mixto">Mixto</option>
+      </select>
+      <label>Qué servicios ofrece (lista corta)</label>
+      <textarea id="m4-servicios" placeholder="..."></textarea>
+    </div>
+
+    <div class="marca-card nueva">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-bold text-amber-900">❓ Marca nueva #5</div>
+        <span class="badge badge-nueva">A definir</span>
+      </div>
+      <label>Nombre comercial exacto</label>
+      <input type="text" id="m5-nombre" placeholder="..." />
+      <label>Rubro principal</label>
+      <input type="text" id="m5-rubro" placeholder="..." />
+      <label>¿Rubro nuevo o expansión?</label>
+      <select id="m5-tipo" class="w-full p-2 border rounded-lg bg-white text-sm">
+        <option value="">Elegir...</option>
+        <option value="nuevo">Rubro completamente nuevo</option>
+        <option value="expansion">Expansión / sub-marca de uno existente</option>
+        <option value="mixto">Mixto</option>
+      </select>
+      <label>Qué servicios ofrece</label>
+      <textarea id="m5-servicios" placeholder="..."></textarea>
+    </div>
+
+    <div class="marca-card nueva">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-bold text-amber-900">❓ Marca nueva #6</div>
+        <span class="badge badge-nueva">A definir</span>
+      </div>
+      <label>Nombre comercial exacto</label>
+      <input type="text" id="m6-nombre" placeholder="..." />
+      <label>Rubro principal</label>
+      <input type="text" id="m6-rubro" placeholder="..." />
+      <label>¿Rubro nuevo o expansión?</label>
+      <select id="m6-tipo" class="w-full p-2 border rounded-lg bg-white text-sm">
+        <option value="">Elegir...</option>
+        <option value="nuevo">Rubro completamente nuevo</option>
+        <option value="expansion">Expansión / sub-marca de uno existente</option>
+        <option value="mixto">Mixto</option>
+      </select>
+      <label>Qué servicios ofrece</label>
+      <textarea id="m6-servicios" placeholder="..."></textarea>
+    </div>
+
+    <details class="mt-4">
+      <summary>➕ ¿Y si terminan siendo más de 6?</summary>
+      <label>Anotá acá las firmas extra (si Patricia menciona alguna 7ª, 8ª...)</label>
+      <textarea id="m-extras-todas" placeholder="Marca extra: ... / rubro: ..."></textarea>
+    </details>
+  </div>
+
+  <!-- BLOQUE 2 — ESTRUCTURA LEGAL/MARCA -->
+  <div class="card">
+    <h2>2️⃣ Estructura legal / marca paraguas</h2>
+
+    <div class="pregunta-box">
+      "¿'Grupo Back' es el paraguas oficial (razón social) o solo nombre comercial del ecosistema? ¿Hay nombre definitivo ya para el sitio web? ¿Cada firma factura por separado o todas bajo un mismo CUIT?"
+    </div>
+
+    <label>¿"Grupo Back" es el nombre definitivo o cambia?</label>
+    <input type="text" id="legal-paraguas" placeholder="ej: Grupo Back / Grupo BSomething / decisión pendiente" />
+
+    <label>¿Es razón social oficial o solo marca comercial?</label>
+    <select id="legal-tipo" class="w-full p-2 border rounded-lg bg-white text-sm">
+      <option value="">Elegir...</option>
+      <option value="razon-social">Razón social oficial (1 CUIT)</option>
+      <option value="marca-comercial">Solo marca comercial (varios CUITs adentro)</option>
+      <option value="mixto">Mixto (algunas firmas comparten CUIT, otras no)</option>
+      <option value="pendiente">Aún a decidir</option>
+    </select>
+
+    <label>¿Cuántos CUITs distintos hay en total entre las 6 firmas?</label>
+    <input type="text" id="legal-cuits" placeholder="ej: 1 / 3 / 6" />
+
+    <label>¿Hay alguna firma que esté legalmente separada del resto (otro dueño, otra sociedad)?</label>
+    <textarea id="legal-separadas" placeholder="..."></textarea>
+
+    <label>Dominio web — ¿ya lo tienen comprado? ¿cuál?</label>
+    <input type="text" id="legal-dominio" placeholder="ej: grupoback.com.ar / pendiente / etc." />
+  </div>
+
+  <!-- BLOQUE 3 — OPERATIVO -->
+  <div class="card">
+    <h2>3️⃣ Operativo del día a día</h2>
+
+    <div class="pregunta-box">
+      "¿Las 6 firmas comparten el mismo número de WhatsApp, o algunas necesitan número propio? ¿Comparten oficina/equipo de atención, o cada una tiene su responsable?"
+    </div>
+
+    <label>WhatsApp — ¿1 número único para las 6 o algunas tienen propio?</label>
+    <select id="op-whatsapp" class="w-full p-2 border rounded-lg bg-white text-sm">
+      <option value="">Elegir...</option>
+      <option value="unico">Un solo número para todas</option>
+      <option value="multiple">Cada firma su propio número</option>
+      <option value="mixto">Mixto (algunas comparten, otras no)</option>
+    </select>
+
+    <label>Si hay varios números, ¿cuáles son?</label>
+    <textarea id="op-numeros" placeholder="ej: Patricios +54...., Inmo +54..., Misionerita +54..."></textarea>
+
+    <label>Equipo de atención — ¿quién responde mensajes hoy?</label>
+    <textarea id="op-equipo" placeholder="ej: Patricia, Hernán, recepcionista, vendedores..."></textarea>
+
+    <label>Asesor responsable de cada marca</label>
+    <textarea id="op-asesores" placeholder="Patricios → Juan / Inmo → Pedro / Misionerita → ..."></textarea>
+
+    <label>Oficina / sede — ¿operan todas en el mismo lugar?</label>
+    <textarea id="op-oficina" placeholder="ej: La Misionerita es el restaurant; Patricios funciona en otro local..."></textarea>
+
+    <label>Horarios de atención (por marca)</label>
+    <textarea id="op-horarios" placeholder="Patricios: lun-sáb 9-20 / Inmo: lun-vie 9-18 / Misionerita: ..."></textarea>
+  </div>
+
+  <!-- BLOQUE 4 — SISTEMAS ACTUALES -->
+  <div class="card">
+    <h2>4️⃣ Sistemas / herramientas actuales</h2>
+
+    <div class="pregunta-box">
+      "¿Hay nichos que ya tienen sistemas o web andando que respetar, o arrancamos todo desde cero? ¿Hay datos viejos para migrar?"
+    </div>
+
+    <label>¿Tienen sitio web actual? ¿Cuáles?</label>
+    <textarea id="sis-web" placeholder="ej: Patricios tiene Instagram nomás; Inmo tiene WordPress viejo en X URL..."></textarea>
+
+    <label>¿Usan algún CRM, planilla o sistema de gestión hoy?</label>
+    <textarea id="sis-crm" placeholder="ej: Excel para reservas, Google Sheets para inquilinos, Argentina.com para inmuebles..."></textarea>
+
+    <label>¿Hay base de datos histórica de clientes para migrar?</label>
+    <textarea id="sis-datos" placeholder="ej: 200 inquilinos en Excel, 50 eventos pasados con contactos..."></textarea>
+
+    <label>¿Usan algún sistema de facturación / cobros?</label>
+    <input type="text" id="sis-factura" placeholder="ej: AFIP monotributo, sistema X, Mercado Pago..." />
+
+    <label>¿Hay algo que YA funcione bien y NO debamos tocar?</label>
+    <textarea id="sis-no-tocar" placeholder="..."></textarea>
+  </div>
+
+  <!-- BLOQUE 5 — PRIORIDADES -->
+  <div class="card">
+    <h2>5️⃣ Prioridades y plazos</h2>
+
+    <div class="pregunta-box">
+      "De las 6 marcas, ¿cuál es la que más urge tener andando? Arrancamos por esa para que vean valor rápido."
+    </div>
+
+    <label>Ranking de urgencia (1 = más urgente)</label>
+    <textarea id="prio-ranking" placeholder="1. Patricios (porque está pasando temporada de eventos)&#10;2. Inmobiliaria&#10;3. ..."></textarea>
+
+    <label>¿Hay alguna fecha límite (ej: temporada, evento puntual)?</label>
+    <textarea id="prio-fechas" placeholder="ej: Patricios necesita estar listo antes de noviembre por temporada de fiestas..."></textarea>
+
+    <label>¿Hasta cuándo quieren tener TODO el ecosistema andando?</label>
+    <input type="text" id="prio-deadline" placeholder="ej: junio 2026 / sin apuro / etc." />
+
+    <label>Presupuesto — ¿hay rango cómodo o tope?</label>
+    <input type="text" id="prio-presupuesto" placeholder="ej: USD 2000-3000 / sin tope claro / pendiente..." />
+  </div>
+
+  <!-- BLOQUE 6 — IDENTIDAD VISUAL -->
+  <div class="card">
+    <h2>6️⃣ Identidad visual (rápido)</h2>
+
+    <p class="text-slate-500 text-xs mb-3">No hace falta cerrar todo acá — pero si Patricia tiene material a mano, anótalo.</p>
+
+    <label>¿Tienen logos hechos de las 6 marcas?</label>
+    <select id="vis-logos" class="w-full p-2 border rounded-lg bg-white text-sm">
+      <option value="">Elegir...</option>
+      <option value="todas">Todas las 6 tienen logo</option>
+      <option value="algunas">Algunas sí, otras no</option>
+      <option value="ninguna">Ninguna tiene logo formal</option>
+      <option value="paraguas">Solo Grupo Back tiene logo</option>
+    </select>
+
+    <label>Detalles de logos</label>
+    <textarea id="vis-logos-detalle" placeholder="ej: Patricios sí, Inmo no, Misionerita en proceso..."></textarea>
+
+    <label>Colores definidos por marca (si se acordaron)</label>
+    <textarea id="vis-colores" placeholder="ej: Patricios = rosa/dorado, Inmo = azul, Misionerita = ámbar..."></textarea>
+
+    <label>Tono de comunicación (formal / cálido / divertido / técnico)</label>
+    <textarea id="vis-tono" placeholder="..."></textarea>
+  </div>
+
+  <!-- BLOQUE 7 — TEMAS COMERCIALES IMPORTANTES -->
+  <div class="card">
+    <h2>7️⃣ Temas comerciales y contractuales</h2>
+
+    <p class="text-slate-500 text-xs mb-3">Cosas a charlar en persona — son las que definen si avanzamos.</p>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="com-1" />
+      <label for="com-1">Mencionar la <strong>cláusula de tratamiento de datos</strong> en el contrato (aislamiento físico, propiedad de los datos del cliente, Ley 25.326). Es argumento de venta — adelantarse a la objeción.</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="com-2" />
+      <label for="com-2">Aclarar que cotización va con el <strong>Cotizador formal de Arnaldo</strong>, no de palabra.</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="com-3" />
+      <label for="com-3">Plantear el <strong>flujo de fases</strong>: arranca por la marca prioritaria, no las 6 de una vez.</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="com-4" />
+      <label for="com-4">Confirmar <strong>cómo se factura</strong>: implementación única + mensual recurrente.</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="com-5" />
+      <label for="com-5">Aclarar que el <strong>alcance se cierra contractualmente</strong> — si después aparecen 7ª/8ª marca, va aparte.</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="com-6" />
+      <label for="com-6">Pedir <strong>quién es la persona de contacto técnico</strong> de su lado (Hernán o alguien más) para cargar contenido.</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="com-7" />
+      <label for="com-7">Si Patricia firma de palabra hoy → <strong>mandar contrato formal en 24-48hs</strong>.</label>
+    </div>
+
+    <label>Notas extra de la conversación comercial</label>
+    <textarea id="com-notas" placeholder="..."></textarea>
+  </div>
+
+  <!-- BLOQUE 8 — DECISIONES TOMADAS HOY -->
+  <div class="card">
+    <h2>8️⃣ ✅ Decisiones tomadas hoy</h2>
+    <p class="text-slate-500 text-xs mb-3">Resumen de lo que cerraron hoy en la reunión.</p>
+    <textarea id="decisiones" placeholder="ej: Las 6 firmas son X, Y, Z... / Patricia confirma alcance / Próximo paso = Arnaldo manda contrato esta semana..." rows="6"></textarea>
+  </div>
+
+  <!-- BLOQUE 9 — TODO POST-REUNIÓN -->
+  <div class="card">
+    <h2>9️⃣ 📌 Próximos pasos post-reunión</h2>
+    <p class="text-slate-500 text-xs mb-3">Lo que vos / Hernán / Patricia tienen que hacer después.</p>
+    <textarea id="todos" placeholder="• Arnaldo: cotizar con Cotizador y mandar antes del jueves&#10;• Hernán: pasar logos de las marcas que tengan&#10;• Patricia: confirmar dominio definitivo&#10;• ..." rows="8"></textarea>
+  </div>
+
+  <!-- ACCIONES -->
+  <div class="card no-print">
+    <h2>📤 Cuando termines</h2>
+    <p class="text-slate-600 text-sm mb-4">Apretá el botón de abajo para generar el resumen y mandármelo.</p>
+
+    <div class="flex flex-wrap gap-3">
+      <button class="btn-primary" onclick="exportarResumen()">
+        📋 Exportar para Arnaldo
+      </button>
+      <button class="btn-secondary" onclick="window.print()">
+        🖨️ Imprimir
+      </button>
+      <button class="btn-danger" onclick="limpiarTodo()">
+        🗑️ Limpiar todo
+      </button>
+    </div>
+
+    <div id="resumen-output" class="hidden mt-6">
+      <label class="text-base font-bold text-slate-900 mt-4">Resumen generado:</label>
+      <textarea id="resumen-texto" rows="20" class="font-mono text-xs"></textarea>
+      <div class="flex gap-2 mt-2">
+        <button class="btn-secondary" onclick="copiarResumen()">📋 Copiar al portapapeles</button>
+        <button class="btn-secondary" onclick="descargarResumen()">💾 Descargar .md</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="text-center text-xs text-slate-500 mt-6 pb-8">
+    <strong>Arnaldo Ayala</strong> · Estratega en IA y Marketing<br>
+    San Ignacio, Misiones · checklist generado 2026-04-27
+  </div>
+
+</div>
+
+<div class="save-status" id="save-status">💾 Guardado</div>
+
+<script>
+  const STORAGE_KEY = 'grupo-back-checklist-2026-04-27';
+
+  // Auto-save
+  function getAllInputs() {
+    const inputs = document.querySelectorAll('input[type="text"], input[type="checkbox"], textarea, select');
+    const data = {};
+    inputs.forEach(el => {
+      if (!el.id) return;
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    return data;
+  }
+
+  function saveAll() {
+    const data = getAllInputs();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    showSaveStatus();
+  }
+
+  function loadAll() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      Object.entries(data).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') {
+          el.checked = value;
+        } else {
+          el.value = value;
+        }
+      });
+    } catch (e) { console.error('Error loading:', e); }
+  }
+
+  let saveTimeout;
+  function showSaveStatus() {
+    const status = document.getElementById('save-status');
+    status.classList.add('show');
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => status.classList.remove('show'), 1200);
+  }
+
+  document.addEventListener('input', saveAll);
+  document.addEventListener('change', saveAll);
+  window.addEventListener('load', loadAll);
+
+  // Exportar
+  function val(id) {
+    const el = document.getElementById(id);
+    if (!el) return '';
+    return el.type === 'checkbox' ? (el.checked ? '✅' : '⬜') : (el.value || '_(vacío)_');
+  }
+
+  function exportarResumen() {
+    const fecha = new Date().toLocaleString('es-AR');
+    let md = `# Reunión Grupo Back — La Misionerita 2026-04-27 14:30\n\n`;
+    md += `_Generado: ${fecha}_\n\n`;
+    md += `**Asistentes**: Arnaldo Ayala + Hernán Weninger + Patricia Back (esperado)\n\n`;
+    md += `---\n\n## 1. Las 6 firmas\n\n`;
+
+    md += `### 🎉 Marca 1\n`;
+    md += `- Nombre: ${val('m1-nombre')}\n- Rubro: ${val('m1-rubro')}\n- Cambios/extras: ${val('m1-extras')}\n\n`;
+
+    md += `### 🏡 Marca 2\n`;
+    md += `- Nombre: ${val('m2-nombre')}\n- Rubro: ${val('m2-rubro')}\n- Cambios/extras: ${val('m2-extras')}\n\n`;
+
+    md += `### 🍽️ Marca 3\n`;
+    md += `- Nombre: ${val('m3-nombre')}\n- Rubro: ${val('m3-rubro')}\n- Cambios/extras: ${val('m3-extras')}\n\n`;
+
+    md += `### ❓ Marca 4 (nueva)\n`;
+    md += `- Nombre: ${val('m4-nombre')}\n- Rubro: ${val('m4-rubro')}\n- Tipo: ${val('m4-tipo')}\n- Servicios: ${val('m4-servicios')}\n\n`;
+
+    md += `### ❓ Marca 5 (nueva)\n`;
+    md += `- Nombre: ${val('m5-nombre')}\n- Rubro: ${val('m5-rubro')}\n- Tipo: ${val('m5-tipo')}\n- Servicios: ${val('m5-servicios')}\n\n`;
+
+    md += `### ❓ Marca 6 (nueva)\n`;
+    md += `- Nombre: ${val('m6-nombre')}\n- Rubro: ${val('m6-rubro')}\n- Tipo: ${val('m6-tipo')}\n- Servicios: ${val('m6-servicios')}\n\n`;
+
+    const extras = val('m-extras-todas');
+    if (extras && extras !== '_(vacío)_') {
+      md += `### Marcas extra (más de 6)\n${extras}\n\n`;
+    }
+
+    md += `---\n\n## 2. Estructura legal\n\n`;
+    md += `- Nombre paraguas definitivo: ${val('legal-paraguas')}\n`;
+    md += `- Tipo: ${val('legal-tipo')}\n`;
+    md += `- Cantidad de CUITs: ${val('legal-cuits')}\n`;
+    md += `- Firmas separadas legalmente: ${val('legal-separadas')}\n`;
+    md += `- Dominio: ${val('legal-dominio')}\n\n`;
+
+    md += `---\n\n## 3. Operativo\n\n`;
+    md += `- WhatsApp: ${val('op-whatsapp')}\n`;
+    md += `- Números: ${val('op-numeros')}\n`;
+    md += `- Equipo de atención: ${val('op-equipo')}\n`;
+    md += `- Asesores por marca: ${val('op-asesores')}\n`;
+    md += `- Oficina: ${val('op-oficina')}\n`;
+    md += `- Horarios: ${val('op-horarios')}\n\n`;
+
+    md += `---\n\n## 4. Sistemas actuales\n\n`;
+    md += `- Sitios web existentes: ${val('sis-web')}\n`;
+    md += `- CRM/sistemas de gestión: ${val('sis-crm')}\n`;
+    md += `- Datos para migrar: ${val('sis-datos')}\n`;
+    md += `- Facturación: ${val('sis-factura')}\n`;
+    md += `- No tocar: ${val('sis-no-tocar')}\n\n`;
+
+    md += `---\n\n## 5. Prioridades\n\n`;
+    md += `- Ranking urgencia:\n${val('prio-ranking')}\n\n`;
+    md += `- Fechas límite: ${val('prio-fechas')}\n`;
+    md += `- Deadline ecosistema completo: ${val('prio-deadline')}\n`;
+    md += `- Presupuesto comentado: ${val('prio-presupuesto')}\n\n`;
+
+    md += `---\n\n## 6. Identidad visual\n\n`;
+    md += `- Logos: ${val('vis-logos')}\n`;
+    md += `- Detalle logos: ${val('vis-logos-detalle')}\n`;
+    md += `- Colores: ${val('vis-colores')}\n`;
+    md += `- Tono: ${val('vis-tono')}\n\n`;
+
+    md += `---\n\n## 7. Comercial — checklist\n\n`;
+    md += `- ${val('com-1')} Mencionar cláusula tratamiento de datos\n`;
+    md += `- ${val('com-2')} Cotización formal con Cotizador Arnaldo\n`;
+    md += `- ${val('com-3')} Plantear flujo de fases (no 6 a la vez)\n`;
+    md += `- ${val('com-4')} Aclarar facturación (impl + mensual)\n`;
+    md += `- ${val('com-5')} Alcance cerrado contractualmente\n`;
+    md += `- ${val('com-6')} Persona contacto técnico de su lado\n`;
+    md += `- ${val('com-7')} Mandar contrato 24-48hs\n`;
+    md += `- Notas: ${val('com-notas')}\n\n`;
+
+    md += `---\n\n## 8. ✅ Decisiones cerradas hoy\n\n${val('decisiones')}\n\n`;
+    md += `---\n\n## 9. 📌 Próximos pasos\n\n${val('todos')}\n`;
+
+    document.getElementById('resumen-output').classList.remove('hidden');
+    document.getElementById('resumen-texto').value = md;
+    document.getElementById('resumen-output').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function copiarResumen() {
+    const ta = document.getElementById('resumen-texto');
+    ta.select();
+    document.execCommand('copy');
+    alert('✅ Copiado al portapapeles. Pegalo en el chat con Arnaldo.');
+  }
+
+  function descargarResumen() {
+    const texto = document.getElementById('resumen-texto').value;
+    const blob = new Blob([texto], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'reunion-grupo-back-2026-04-27.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function limpiarTodo() {
+    if (!confirm('¿Borrar TODO lo cargado? Esto no se puede deshacer.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+</script>
+
+</body>
+</html>

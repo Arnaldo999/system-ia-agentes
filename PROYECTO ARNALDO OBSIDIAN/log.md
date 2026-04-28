@@ -4,6 +4,43 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-27] ingest | Iglesia Nueva Vida — 2 entidades + playbook v1 + sesion raw 2026-04-26
+
+- **2 entidades nuevas**: [[wiki/entidades/iglesia-nueva-vida]] (cliente pro-bono), [[wiki/entidades/pablo-tome-pastor]] (pastor, lead pago redes sociales Track B)
+- **Playbook nuevo**: [[wiki/playbooks/sistema-presentacion-iglesia]] (v1) — patrón sistema proyección inteligente para cultos: FastAPI+Gemini2.5Flash+Whisper+WebSocket, 4 modos karaoke, Spotify-style lyrics
+- **Sesion raw**: `raw/arnaldo/sesion-2026-04-26-nuestra-iglesia.md` — decisiones arquitectónicas (Gemini cloud > Gemma local, Whisper acotado a transcripción), 8 bugs solucionados, datos de muestra cargados
+- Software commiteado en `01_PROYECTOS/01_ARNALDO_AGENCIA/clientes/nuestra-iglesia/software/`
+- Demo presencial: **sábado 2026-05-03 10 AM** con Pastor Pablo + equipo medios + TV
+
+## [2026-04-27] update | Grupo Back — sesión completa, alcance cerrado (7 firmas, 5 bots), roadmap v4 LIVE
+
+### Mañana (09:03–12:00)
+- Patricia confirma hoja de ruta vía Hernán. Ingesta wiki inicial (grupo-back, patricia-back, hernan-weninger).
+- Checklist HTML para reunión presencial armado: `clientes/patricia-back/checklist-reunion-2026-04-27.html`
+
+### Tarde — Reunión presencial en La Misionerita (14:30)
+- **7 firmas definitivas** cerradas: Rizoma Propiedades (ex "Inmobiliaria Back", alcance ampliado) + La Misionerita + Patricio's + La Martina Apart Hotel + Bocanada + Club Progreso + Fundación Misión Emprender
+- **5 bots WhatsApp** — 1 número por servicio (todos confirmados: Rizoma + Misionerita + Patricio's + Martina + Bocanada)
+- **Dominio**: `grupoback.com` propuesto (pendiente OK Patricia)
+- **Stack entregado al cliente**: WordPress (sitio+dominio+hosting) + VPS (servidor privado) + n8n (motor de automatizaciones) + Coolify (bots/CRM) + Airtable (BD central) + capas de seguridad (HTTPS, tokens, backups, aislamiento)
+- **Tiempos**: 5 a 10 días total el ecosistema completo (~2d Rizoma, ~1-2d Misionerita, ~1d resto)
+- **Roadmap v4 LIVE** → `agentes.arnaldoayalaestratega.cloud/propuestas/patricia-back/roadmap.html`
+  - Commits: `f864f33` v2 (7 firmas, herramientas, tiempos) → `54f8e57` (mapa SVG + n8n bloque) → `dae0ece` (footer `.com`, 5 bots badges)
+- **Mapa visual SVG embebido**: 2 vistas (Vista capas + Vista multi-marca), pedido de Hernán Weninger
+- **Plan formal**: `02_OPERACION_COMPARTIDA/planes/2026-04-27-grupo-back-ecosistema.md` estado Borrador
+- **4 reglas irrompibles nuevas** grabadas: no mencionar otros clientes en docs cliente-facing, eliminar obsoletos al reemplazar, footer `.com` (no `.cloud`), cláusula datos = argumento de venta
+- **Cesar Posada** footer corregido retroactivamente a `.com`
+
+## [2026-04-27] ingest | Grupo Back — cliente nuevo Arnaldo en descubrimiento
+
+- Patricia Back confirma hoja de ruta entregada (vía Hernán Weninger por WhatsApp).
+- Cambio de alcance: pasan de 3 marcas a 6 (3 nuevas pendientes de definir nicho exacto).
+- Arnaldo decide cerrar alcance ANTES de cotizar/contratar/codear. Orden: definir 6 firmas → cotizar (con Cotizador propio) → contrato (con cláusula de tratamiento de datos) → recién ahí `/crear-plan` técnico.
+- **3 entidades nuevas**: [[wiki/entidades/grupo-back]], [[wiki/entidades/patricia-back]], [[wiki/entidades/hernan-weninger]].
+- **Fuente**: [[wiki/fuentes/sesion-2026-04-27-grupo-back-confirmacion]] + raw en `raw/arnaldo/sesion-2026-04-27-grupo-back-confirmacion.md`.
+- Estado actual: `descubrimiento-en-curso`, esperando que Hernán confirme las 3 firmas nuevas + estructura legal.
+- Es el **primer cliente multi-marca/multi-rubro** del ecosistema Arnaldo. Requiere `/crear-plan` formal cuando se cierre alcance — NO improvisar.
+
 ## [2026-04-24] sesion-claude | Humanización v2 — typing indicator + splitter saludo + horarios + sanitización nombre
 
 - Sesión matutina ~3h (07:30→10:30 ART) con Arnaldo + Claude. Proyecto: compartido (Mica demo + Robert demo).

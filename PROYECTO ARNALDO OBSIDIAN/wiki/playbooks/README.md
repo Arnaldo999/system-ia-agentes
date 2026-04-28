@@ -11,7 +11,7 @@ ultima_actualizacion: 2026-04-24
 
 > **Qué es un playbook**: un patrón repetible destilado de **experiencia real** (no teoría). Cada vez que completás un trabajo del tipo X y aprendés algo, se **actualiza** el playbook correspondiente. Así el conocimiento se acumula en vez de perderse.
 
-## Los 6 playbooks activos
+## Los 7 playbooks activos
 
 | # | Playbook | Qué construye | Versión | Última iteración |
 |---|----------|---------------|---------|------------------|
@@ -21,6 +21,7 @@ ultima_actualizacion: 2026-04-24
 | 4 | [postgres-multi-tenant](postgres-multi-tenant.md) | BD Postgres aislada por cliente (workspaces) | v1 | 2026-04-24 |
 | 5 | [airtable-schema-setup](airtable-schema-setup.md) | Base Airtable con schema estándar para brandbook/CRM | v1 | 2026-04-24 |
 | 6 | [propuesta-cliente-coolify](propuesta-cliente-coolify.md) | Landing/propuesta pública en `clientes-publicos/{slug}/` | v1 | 2026-04-24 |
+| 7 | [sistema-presentacion-iglesia](sistema-presentacion-iglesia.md) | Sistema proyección inteligente para cultos (FastAPI+Gemini+Whisper+WS) | v1 | 2026-04-27 |
 
 ## Regla de uso
 

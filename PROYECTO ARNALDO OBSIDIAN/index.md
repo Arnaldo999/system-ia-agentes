@@ -1,14 +1,15 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-27 | Total páginas: 71 (2 fuentes + 23 entidades + **29 conceptos** + 8 síntesis + 1 mapa de prod + **8 playbooks** incluyendo README)
+Última actualización: 2026-04-27 | Total páginas: 75 (3 fuentes raw + 25 entidades + **29 conceptos** + 8 síntesis + 1 mapa de prod + **9 playbooks** incluyendo README)
 
-## Fuentes (2)
+## Fuentes (3)
 | Página | Resumen | Fecha | Proyecto | Tags |
 |--------|---------|-------|----------|------|
 | [[wiki/fuentes/sesion-2026-04-22]] | Sesión densa: CORS Maicol + Monitor Capa 1 + CRM v2 unificado Robert+Mica + audit Postgres + bug tokens .env | 2026-04-22 | compartido | cors, monitoreo, crm-v2, postgres, env-vars, telegram, coolify |
-| [[wiki/fuentes/sesion-2026-04-27-grupo-back-confirmacion]] | Patricia Back confirma hoja de ruta + expande alcance de 3 a 6 marcas. Ingesta entidades grupo-back, patricia-back, hernan-weninger | 2026-04-27 | arnaldo | grupo-back, descubrimiento, multi-marca |
+| [[wiki/fuentes/sesion-2026-04-27-grupo-back-confirmacion]] | Sesión completa (mañana+tarde): alcance cerrado 7 firmas, 5 bots 1nº/servicio, roadmap v4 LIVE, mapa visual SVG, herramientas WordPress+n8n+VPS+Coolify+Airtable, 4 reglas nuevas | 2026-04-27 | arnaldo | grupo-back, alcance-cerrado, multi-marca, roadmap, mapa-visual |
+| [[raw/arnaldo/sesion-2026-04-26-nuestra-iglesia]] | Sesión construcción Sistema Presentación Iglesia Nueva Vida v0.2. Decisiones: Gemini cloud > Gemma local, Whisper solo transcribe, 4 modos karaoke, Spotify-style lyrics. 8 bugs solucionados. | 2026-04-26 | arnaldo | iglesia, sistema-presentacion, fastapi, gemini, whisper, karaoke |
 
-## Entidades (23)
+## Entidades (25)
 
 ### Las 3 agencias del ecosistema
 | Página | Dueño | Estado |
@@ -28,12 +29,14 @@
 | [[wiki/entidades/cesar-posada]] | cliente nuevo de Arnaldo — agencia turismo (propuesta enviada 2026-04-22) | arnaldo |
 | [[wiki/entidades/patricia-back]] | persona / dueña Grupo Back (descubrimiento, hoja de ruta confirmada 2026-04-27) | arnaldo |
 | [[wiki/entidades/hernan-weninger]] | persona / coordinador Grupo Back (mano derecha de Patricia) | arnaldo |
+| [[wiki/entidades/pablo-tome-pastor]] | persona / pastor Iglesia Nueva Vida — pro-bono + lead pago redes sociales | arnaldo |
 
-### Marcas de clientes
+### Clientes / proyectos especiales
 | Página | Tipo | Proyecto |
 |--------|------|----------|
 | [[wiki/entidades/back-urbanizaciones]] | marca comercial (cliente Maicol) | arnaldo |
-| [[wiki/entidades/grupo-back]] | grupo empresarial multi-marca (6 firmas — descubrimiento en curso) | arnaldo |
+| [[wiki/entidades/grupo-back]] | grupo empresarial multi-marca (7 firmas — alcance cerrado, roadmap v4 LIVE) | arnaldo |
+| [[wiki/entidades/iglesia-nueva-vida]] | cliente pro-bono — sistema presentación inteligente (demo sábado 2026-05-03) | arnaldo |
 
 ### Productos / BDs modelo
 | Página | Tipo | Proyecto |
@@ -167,7 +170,7 @@
 
 ---
 
-## Playbooks (7) — patrones repetibles para construcción
+## Playbooks (8) — patrones repetibles para construcción
 
 > **LEER ANTES de arrancar un trabajo nuevo del tipo correspondiente.** Evita repetir errores ya resueltos.
 
@@ -180,6 +183,7 @@
 | [[wiki/playbooks/postgres-multi-tenant]] | BD Postgres aislada por cliente (workspaces) | v1 | robert |
 | [[wiki/playbooks/airtable-schema-setup]] | Base Airtable con schema estándar | v1 | arnaldo, mica |
 | [[wiki/playbooks/propuesta-cliente-coolify]] | Landing/propuesta pública en `clientes-publicos/{slug}/` | v1 | arnaldo |
+| [[wiki/playbooks/sistema-presentacion-iglesia]] | 🆕 Sistema proyección inteligente para cultos (FastAPI+Gemini+Whisper+WS) | v1 | arnaldo |
 
 Ver [[wiki/playbooks/README]] para reglas de uso y cómo evolucionan.
 
