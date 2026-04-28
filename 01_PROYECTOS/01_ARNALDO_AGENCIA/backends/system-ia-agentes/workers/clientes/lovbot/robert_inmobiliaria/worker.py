@@ -948,9 +948,9 @@ def _interpretar_respuesta(texto: str, opciones: dict, contexto: str = "") -> st
     opts_str = "\n".join([f"{k}: {v}" for k, v in opciones.items()])
     result = _llm(
         f"El usuario respondió: \"{texto}\"\n\nOpciones válidas:\n{opts_str}\n\n"
-        f"¿A cuál opción corresponde? Respondé SOLO con el número de la opción. "
+        f"¿A cuál opción corresponde? Responde SOLO con el número de la opción. "
         f"Si no corresponde a ninguna, respondé 'null'.",
-        system="Sos un clasificador. Respondé SOLO con el número o 'null'. Sin explicaciones."
+        system="Eres un clasificador. Responde SOLO con el número o 'null'. Sin explicaciones."
     )
     result = result.strip().strip('"').strip("'")
     return result if result in opciones else None
@@ -958,7 +958,7 @@ def _interpretar_respuesta(texto: str, opciones: dict, contexto: str = "") -> st
 
 def _gemini_calificar(sesion: dict) -> dict:
     zonas_str = "|".join(ZONAS_LIST)
-    prompt = f"""Sos un analista comercial inmobiliario senior de {NOMBRE_EMPRESA} en {CIUDAD}.
+    prompt = f"""Eres un analista comercial inmobiliario senior de {NOMBRE_EMPRESA} en {CIUDAD}.
 Tu trabajo es clasificar leads con precisión para que el asesor no pierda tiempo con curiosos
 y tampoco descarte leads tibios que pueden madurar.
 
@@ -1004,7 +1004,7 @@ Respuestas del lead:
 
 Devolvé SOLO el JSON, sin explicaciones."""
     try:
-        texto = _llm(prompt, system="Sos un analista comercial inmobiliario. Respondé SOLO con JSON válido, sin markdown ni explicaciones.")
+        texto = _llm(prompt, system="Eres un analista comercial inmobiliario. Responde SOLO con JSON válido, sin markdown ni explicaciones.")
         # Limpiar backticks si los hay
         if "```" in texto:
             texto = texto.split("```")[1] if texto.startswith("```") else texto.split("```")[0]
@@ -1139,13 +1139,13 @@ def _presentar_prop_breve(p: dict, idx: int, total: int) -> str:
 
     lineas = []
     if idx == 0:
-        lineas.append("Mirá, tengo esta opción que puede interesarte 👇\n")
+        lineas.append("Mira, tengo esta opción que puede interesarte 👇\n")
     else:
         lineas.append("También tengo esta 👇\n")
 
     lineas.append(f"🏡 *{titulo}*")
     if reservado:
-        lineas.append("⏳ _(Reservada — podés anotarte por si se libera)_")
+        lineas.append("⏳ _(Reservada — puedes anotarte por si se libera)_")
     partes = []
     if zona:  partes.append(f"📍 {zona}")
     if tipo:  partes.append(tipo)
@@ -1162,7 +1162,7 @@ def _presentar_prop_breve(p: dict, idx: int, total: int) -> str:
 
     restantes = total - idx - 1
     if restantes > 0:
-        lineas.append(f"\n¿Querés que te cuente más sobre esta, o te muestro otra opción?")
+        lineas.append(f"\n¿Quieres que te cuente más sobre esta, o te muestro otra opción?")
     else:
         lineas.append(f"\n¿Qué te parece esta opción?")
     return "\n".join(lineas)
@@ -1293,7 +1293,7 @@ _SUBNICHO_CONFIG = {
         "subniche": "agente_independiente",
         "label": "Agente Independiente",
         "empresa": "Lovbot — Agente Inteligente",
-        "intro": "🧑‍💼 *Agente Independiente*\n\nEsta demo muestra cómo el bot trabaja 24/7 por vos, califica leads y agenda citas mientras te enfocás en cerrar ventas.",
+        "intro": "🧑‍💼 *Agente Independiente*\n\nEsta demo muestra cómo el bot trabaja 24/7 por ti, califica leads y agenda citas mientras te enfocas en cerrar ventas.",
     },
     "3": {
         "subniche": "desarrolladora",
@@ -1418,11 +1418,11 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     forma_pago_actual = sesion.get("forma_pago", "")
     orden_bant = [
         ("nombre",      nombre,           "¿Con quién tengo el gusto de conversar?"),
-        ("ciudad",      ciudad,           f"¿De qué ciudad nos escribís? (saber la distancia a {CIUDAD} nos ayuda a filtrar opciones accesibles)"),
+        ("ciudad",      ciudad,           f"¿De qué ciudad nos escribes? (saber la distancia a {CIUDAD} nos ayuda a filtrar opciones accesibles)"),
         ("objetivo",    objetivo,         "¿La propiedad sería para vivir o más como inversión?"),
-        ("tipo",        tipo,             "¿Qué tipo de propiedad tenés en mente: casa, terreno, departamento...?"),
-        ("presupuesto", presupuesto,      f"¿Qué presupuesto aproximado manejás? (en {MONEDA}) ¿Contado o con crédito?"),
-        ("autoridad",   autoridad_actual, "¿La decisión la tomás vos o lo definís con pareja/socio/familia?"),
+        ("tipo",        tipo,             "¿Qué tipo de propiedad tienes en mente: casa, terreno, departamento...?"),
+        ("presupuesto", presupuesto,      f"¿Qué presupuesto aproximado manejas? (en {MONEDA}) ¿Contado o con crédito?"),
+        ("autoridad",   autoridad_actual, "¿La decisión la tomas tú o lo defines con pareja/socio/familia?"),
         ("urgencia",    urgencia,         "¿Ya estás buscando activamente o todavía explorando?"),
     ]
     siguiente_campo = None
@@ -1454,25 +1454,25 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     instruccion_step = {
         "inicio": (
             f"Es el PRIMER contacto. El cliente llegó desde un anuncio: '{ad_info}'. "
-            f"{'Ya tenemos su nombre (' + nombre + ') — saludalo por su nombre. ' if nombre else 'NO pidas el nombre todavía — vino de un ad. '}"
+            f"{'Ya tenemos su nombre (' + nombre + ') — salúdalo por su nombre. ' if nombre else 'NO pidas el nombre todavía — vino de un ad. '}"
             "Confirmá la información de la propiedad anunciada (precio, ubicación, "
             "highlights, disponibilidad). Después preguntá UNA cosa BANT — "
             "preferentemente '¿es para vivir o invertir?' (Need)."
             if tiene_ref else
-            f"Es el PRIMER contacto. {'Ya tenemos su nombre (' + nombre + ') — saludalo por su nombre. ' if nombre else ''}"
+            f"Es el PRIMER contacto. {'Ya tenemos su nombre (' + nombre + ') — salúdalo por su nombre. ' if nombre else ''}"
             f"Saludo cálido y UNA pregunta abierta de calificación. "
             "Ej: 'Hola, soy el asistente de Lovbot. ¿Estás buscando para vivir o invertir?' "
             f"{'' if nombre else 'NO pidas el nombre todavía — primero entendé qué busca. '}"
             "NO muestres propiedades hasta calificar Need + Budget."
         ),
         "subnicho": "DEPRECATED — este bot solo atiende clientes de un desarrollador. Avanzar a 'objetivo' directamente.",
-        "nombre": "Obtener el nombre del cliente con calidez. Explicá que es para llamarle bien durante la conversación.",
-        "email": "Pedir email de forma opcional. Explicá que es para enviarle fichas y novedades de propiedades antes de que salgan al público — valor concreto.",
-        "ciudad": f"Preguntar de qué ciudad es. Explicá que es para entender qué tan cerca está de los proyectos en {CIUDAD} y si puede visitarlos. Ej: 'Saber desde dónde escribís nos ayuda a entender qué opciones son más accesibles para vos. ¿De qué ciudad sos?'",
-        "objetivo": "Preguntar si es para vivir o invertir. Explicá que esto define qué tipo de propiedad tiene sentido mostrarle. Ej: 'Para filtrarte solo lo que encaja, ¿la propiedad sería para vivir vos, o la ves más como una inversión?'",
-        "tipo": "Preguntar tipo de propiedad con contexto. Ej: 'Contame un poco más — ¿tenés en mente algún tipo en particular? ¿Casa, terreno, departamento...?'",
-        "presupuesto": f"Preguntar presupuesto con empatía y razón clara. Ej: 'Para no hacerte perder el tiempo con opciones fuera de rango, ¿qué presupuesto aproximado manejás? ¿Sería al contado o con crédito?' — en {MONEDA}.",
-        "urgencia": "Preguntar timing con contexto. Ej: 'Dependiendo de cuándo querés concretar, podemos priorizar distintas opciones. ¿Ya estás buscando activamente o todavía explorando?'",
+        "nombre": "Obtener el nombre del cliente con calidez. Explica que es para llamarle bien durante la conversación.",
+        "email": "Pedir email de forma opcional. Explica que es para enviarle fichas y novedades de propiedades antes de que salgan al público — valor concreto.",
+        "ciudad": f"Preguntar de qué ciudad es. Explica que es para entender qué tan cerca está de los proyectos en {CIUDAD} y si puede visitarlos. Ej: 'Saber desde dónde escribes nos ayuda a entender qué opciones son más accesibles para ti. ¿De qué ciudad eres?'",
+        "objetivo": "Preguntar si es para vivir o invertir. Explica que esto define qué tipo de propiedad tiene sentido mostrarle. Ej: 'Para filtrarte solo lo que encaja, ¿la propiedad sería para vivir tú, o la ves más como una inversión?'",
+        "tipo": "Preguntar tipo de propiedad con contexto. Ej: 'Cuéntame un poco más — ¿tienes en mente algún tipo en particular? ¿Casa, terreno, departamento...?'",
+        "presupuesto": f"Preguntar presupuesto con empatía y razón clara. Ej: 'Para no hacerte perder el tiempo con opciones fuera de rango, ¿qué presupuesto aproximado manejas? ¿Sería al contado o con crédito?' — en {MONEDA}.",
+        "urgencia": "Preguntar timing con contexto. Ej: 'Dependiendo de cuándo quieres concretar, podemos priorizar distintas opciones. ¿Ya estás buscando activamente o todavía explorando?'",
         "calificado": "Datos completos. Mostrar propiedades encontradas o derivar al asesor según score.",
         "lista": "El cliente está viendo la lista de propiedades. Invitarlo a pedir más detalles de alguna. Si pregunta '#' o quiere hablar con alguien → ACCION: ir_asesor.",
         "ficha": "El cliente está viendo una ficha. Preguntarle si quiere agendar una visita o tiene preguntas.",
@@ -1493,19 +1493,19 @@ def _build_system_prompt(sesion: dict, referral: dict, telefono: str) -> str:
     if bot_ya_saludo:
         bloque_origen = f"""## 🔄 CONVERSACIÓN EN CURSO — NO VUELVAS A SALUDAR
 
-⚠️ IMPORTANTE: Vos YA saludaste antes (mirá el historial). NO repitas el saludo
+⚠️ IMPORTANTE: Ya saludaste antes (mira el historial). NO repitas el saludo
 de bienvenida ("Hola, bienvenido a Lovbot..."). NO te presentes de nuevo.
 
-Continuá la conversación natural desde donde quedó. Mirá el ÚLTIMO mensaje
+Continúa la conversación natural desde donde quedó. Mira el ÚLTIMO mensaje
 del cliente y respondé lo que corresponda según el flujo BANT.
 
 Si el último mensaje del cliente NO se entiende bien (audio mal transcrito,
 texto raro, "ok" suelto, "gracias", "muchas gracias"):
 - NO vuelvas a saludar
-- Asumí que es respuesta a tu última pregunta y continuá el flujo BANT
-- Si ya tenés el nombre del cliente → NUNCA lo vuelvas a pedir, independientemente del mensaje
-- Solo pedí el nombre si todavía no lo tenés Y tu última pregunta fue específicamente sobre el nombre
-- Si no es claro qué preguntaste, hacé la siguiente pregunta pendiente del BANT
+- Asume que es respuesta a tu última pregunta y continuá el flujo BANT
+- Si ya tienes el nombre del cliente → NUNCA lo vuelvas a pedir, independientemente del mensaje
+- Solo pide el nombre si todavía no lo tienes Y tu última pregunta fue específicamente sobre el nombre
+- Si no es claro qué preguntaste, haz la siguiente pregunta pendiente del BANT
 """
     elif tiene_ref:
         bloque_origen = f"""## 🎯 ORIGEN DEL LEAD: CASO A — VINO DESDE UN ANUNCIO ESPECÍFICO
@@ -1514,32 +1514,32 @@ Propiedad anunciada: '{ad_info}'
 ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
 
 📝 SALUDO PROFESIONAL Y CÁLIDO (en 2 mensajes cortos o uno mediano):
-- Saludá por nombre si lo tenés.
-- Confirmá la disponibilidad de ESA propiedad (precio, m², ubicación, highlight).
+- Saluda por nombre si lo tienes.
+- Confirma la disponibilidad de ESA propiedad (precio, m², ubicación, highlight).
 - Mencioná brevemente {NOMBRE_EMPRESA} ({CIUDAD}, desarrolladora propia).
-- Hacé UNA pregunta abierta para abrir conversación
+- Haz UNA pregunta abierta para abrir conversación
   (no listés opciones tipo menú).
 
 Ejemplo de tono:
 "¡Hola{saludo_pers}! 👋 Te confirmo que el {ad_info} sigue disponible.
 Soy el asistente virtual de *{NOMBRE_EMPRESA}*, desarrolladora propia
-en {CIUDAD}. ¿Lo estás viendo para vos / para tu familia, o como inversión?"
+en {CIUDAD}. ¿Lo estás viendo para ti / para tu familia, o como inversión?"
 
 REGLAS:
 - NO empieces preguntando datos personales en frío
 - Anclá toda la conversación en LA propiedad anunciada
 - Después calificá con BANT (Need → Budget → Authority → Timeline)
-- Si pide más opciones → ahí sí abrís catálogo filtrado (2-4 máx)"""
+- Si pide más opciones → ahí sí abres catálogo filtrado (2-4 máx)"""
     else:
         # Caso B: SIEMPRE pedimos el nombre al cliente. El nombre del perfil de
         # WhatsApp es poco confiable (puede ser apodo, nombre de empresa, etc.)
         # Si tenemos nombre del perfil, lo usamos como sugerencia para confirmar.
         if nombre:
             instruccion_nombre = (
-                f"Tenés '{nombre}' del perfil de WhatsApp del cliente, pero IGUAL DEBÉS CONFIRMAR "
+                f"Tienes '{nombre}' del perfil de WhatsApp del cliente, pero IGUAL DEBES CONFIRMAR "
                 f"su nombre preguntando: '¿Hablo con {nombre.split()[0]}, verdad? 😊' o "
                 f"'¿Con quién tengo el gusto de conversar?' — el nombre del perfil puede ser "
-                f"incorrecto o un apodo. Una vez que confirme, usalo en toda la conversación."
+                f"incorrecto o un apodo. Una vez que confirme, úsalo en toda la conversación."
             )
             nombre_primero = nombre.split()[0]
             ejemplo_saludo = f"""Ejemplo de tono cálido (NO copiar literal, adaptá):
@@ -1550,9 +1550,9 @@ en {zonas_breve or 'distintas zonas premium'}. Atendemos de {HORARIO_ATENCION} �
 
 ¿Hablo con {nombre_primero}, correcto?"
 
-→ Cuando confirme su nombre, saludalo por su nombre y preguntá Need:
-"¡Perfecto, [nombre]! Contame, ¿la propiedad sería para vos / tu familia,
-o buscás más una opción de inversión?"
+→ Cuando confirme su nombre, salúdalo por su nombre y preguntá Need:
+"¡Perfecto, [nombre]! Cuéntame, ¿la propiedad sería para ti / tu familia,
+o buscas más una opción de inversión?"
 """
         else:
             instruccion_nombre = (
@@ -1567,9 +1567,9 @@ en {zonas_breve or 'distintas zonas premium'}. Atendemos de {HORARIO_ATENCION} �
 
 Antes de seguir, *¿con quién tengo el gusto de conversar?* 😊"
 
-→ Cuando responda con su nombre, saludalo por su nombre y preguntá Need:
-"¡Genial [nombre]! Contame, ¿la propiedad sería para
-vos / tu familia, o buscás más una opción de inversión?"
+→ Cuando responda con su nombre, salúdalo por su nombre y preguntá Need:
+"¡Genial [nombre]! Cuéntame, ¿la propiedad sería para
+ti / tu familia, o buscas más una opción de inversión?"
 """
 
         bloque_origen = f"""## 📨 ORIGEN DEL LEAD: CASO B — GENÉRICO (sin anuncio previo)
@@ -1577,12 +1577,12 @@ vos / tu familia, o buscás más una opción de inversión?"
 ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
 
 📝 SALUDO PROFESIONAL DE BIENVENIDA (NO seas seco ni directo):
-1. Saludá cordialmente y agradecé el contacto.
-2. Presentate como asistente virtual de *{NOMBRE_EMPRESA}*.
-3. Mencioná brevemente qué es la empresa: una desarrolladora inmobiliaria
+1. Saluda cordialmente y agradecé el contacto.
+2. Preséntate como asistente virtual de *{NOMBRE_EMPRESA}*.
+3. Menciona brevemente qué es la empresa: una desarrolladora inmobiliaria
    en {CIUDAD}, con proyectos en {zonas_breve or 'distintas zonas'}.
-4. Mostrá disponibilidad genuina ("estoy para ayudarte / acompañarte").
-5. **SIEMPRE pedí o confirmá el nombre del cliente** — es OBLIGATORIO.
+4. Muestra disponibilidad genuina ("estoy para ayudarte / acompañarte").
+5. **SIEMPRE pide o confirma el nombre del cliente** — es OBLIGATORIO.
 
 🔑 NOMBRE DEL CLIENTE (OBLIGATORIO ANTES DE CONTINUAR):
 {instruccion_nombre}
@@ -1592,8 +1592,8 @@ ACCIÓN INICIAL OBLIGATORIA (si es el primer mensaje):
 REGLAS:
 - NO arranques con "Hola, soy el asistente. ¿Vivir o invertir?" (es seco)
 - SÍ presentá la empresa antes de calificar
-- SÍ pedí o confirmá el nombre SIEMPRE — es el primer paso del BANT
-- NO mostrés propiedades hasta tener al menos Need + Budget mínimo
+- SÍ pide o confirma el nombre SIEMPRE — es el primer paso del BANT
+- NO muestres propiedades hasta tener al menos Need + Budget mínimo
 - Una vez calificado → mostrar 2-4 opciones (no más)
 - Después de que confirme su nombre → SALUDALO POR SU NOMBRE y seguí el flujo"""
 
@@ -1614,7 +1614,7 @@ REGLAS:
         notas_str = f"\nNotas previas del bot: {notas_previas[:300]}" if notas_previas else ""
         nombre_para_saludo = nombre_corto_p or nombre or "[nombre]"
         cita_linea = (f"Si el lead ya tenía cita agendada ({cita_previa}), "
-                      "preguntá si está vinculado a esa visita."
+                      "pregunta si está vinculado a esa visita."
                       if cita_previa else "")
 
         bloque_recurrente = f"""
@@ -1629,18 +1629,18 @@ Este cliente ({nombre or 'sin nombre'}) ya está en la base de datos. Datos prev
 2. **NO le pidas datos que ya diste** (nombre, tipo, zona, presupuesto, etc.)
 3. **Hacé referencia a la búsqueda anterior** si tiene sentido.
    Ej: "La última vez estabas viendo {tipo or 'propiedades'} en {zona or 'la zona'}.
-        ¿Querés retomar por ahí o cambió algo?"
+        ¿¿Quieres retomar por ahí o cambió algo?"
 4. {cita_linea}
-5. Si era **caliente/tibio** previo y vuelve, asumí intención real → mostrá props
+5. Si era **caliente/tibio** previo y vuelve, asume intención real → muestra props
    actualizadas o ofrecé agendar directo.
-6. Si era **frío** previo, dale otra chance pero estate alerta a señales de curiosidad.
+6. Si era **frío** previo, dale otra oportunidad pero estate alerta a señales de curiosidad.
 """
 
     # ── Bloque SIGUIENTE PREGUNTA — determinista, elimina repetición ──────
     if bant_completo:
         bloque_siguiente = """## 🎯 SIGUIENTE ACCIÓN (determinista)
 
-✅ BANT COMPLETO — ya tenés todos los datos del lead.
+✅ BANT COMPLETO — ya tienes todos los datos del lead.
 → NO hagas más preguntas BANT.
 → Emití `ACCION: agendar` para conseguir la cita, sin texto conversacional adicional.
 """
@@ -1650,18 +1650,18 @@ Este cliente ({nombre or 'sin nombre'}) ya está en la base de datos. Datos prev
         es_primer_turno_saludo = (siguiente_campo == "nombre" and not bot_ya_saludo)
         if es_primer_turno_saludo:
             regla_1 = (
-                "1. En este PRIMER turno tenés que hacer DOS cosas en UN solo mensaje:\n"
+                "1. En este PRIMER turno tienes que hacer DOS cosas en UN solo mensaje:\n"
                 "   (a) Saludo completo: bienvenida + presentación de la empresa (nombre + ciudad + zonas + horario)\n"
                 "   (b) Confirmar/preguntar el nombre al final.\n"
                 "   El saludo completo es OBLIGATORIO antes de la pregunta. NO cortes corto."
             )
         else:
-            regla_1 = f"1. SOLO podés preguntar por **{siguiente_campo}**. Cualquier otra pregunta está PROHIBIDA."
+            regla_1 = f"1. SOLO puedes preguntar por **{siguiente_campo}**. Cualquier otra pregunta está PROHIBIDA."
 
         bloque_siguiente = f"""## 🎯 SIGUIENTE PREGUNTA (única permitida este turno)
 
 Campo a capturar: **{siguiente_campo}**
-Ejemplo de cómo formularla (adaptá con tu tono, NO copies literal):
+Ejemplo de cómo formularla (adapta con tu tono, NO copies literal):
   "{siguiente_pregunta_ejemplo}"
 
 🚫 REGLAS IRROMPIBLES DE ESTE TURNO:
@@ -1669,17 +1669,17 @@ Ejemplo de cómo formularla (adaptá con tu tono, NO copies literal):
 2. Si el lead ya respondió `{siguiente_campo}` en un turno anterior (ver DATOS YA CAPTURADOS),
    NO vuelvas a preguntarlo — avanzá al siguiente campo pendiente.
 3. Si el lead te pregunta algo (precio, ubicación, horario), respondé brevemente Y DESPUÉS
-   hacé la pregunta de **{siguiente_campo}** — una sola vez, sin reformular.
+   haz la pregunta de **{siguiente_campo}** — una sola vez, sin reformular.
 4. Si ya preguntaste **{siguiente_campo}** en el turno anterior del historial y el lead no
    respondió claramente, NO insistas — emití `ACCION: ir_asesor` o `ACCION: cerrar_curioso`.
 """
 
-    system = f"""Sos el asistente virtual de *{NOMBRE_EMPRESA}*, una agencia inmobiliaria en {CIUDAD}.
+    system = f"""Eres el asistente virtual de *{NOMBRE_EMPRESA}*, una agencia inmobiliaria en {CIUDAD}.
 El asesor humano se llama *{NOMBRE_ASESOR}*.
 
 ## TU MISIÓN — FILTRO PROFESIONAL BANT
 Calificar leads inmobiliarios usando metodología BANT (Budget, Authority, Need, Timeline)
-en menos de 2 minutos. NO sos un menú, sos un consultor que charla por WhatsApp.
+en menos de 2 minutos. NO eres un menú, eres un consultor que charla por WhatsApp.
 
 OBJETIVO: identificar 3 tipos de leads:
 🔥 CALIENTE → presupuesto claro + forma de pago definida + urgencia <3m → AGENDAR YA
@@ -1693,18 +1693,18 @@ OBJETIVO: identificar 3 tipos de leads:
 ## METODOLOGÍA BANT (orden estricto, una pregunta por turno)
 
 1. **NEED** (qué busca)
-   - "¿De qué ciudad nos escribís?" ← importante para saber si puede visitar
+   - "¿De qué ciudad nos escribes?" ← importante para saber si puede visitar
    - "¿Es para vivir o invertir?"
    - "¿Qué tipo de propiedad? (casa, departamento, terreno…)"
    - ⚠️ NO preguntes por zona interna de los proyectos — el lead no conoce las zonas
 
 2. **BUDGET** (filtro #1 de curiosos)
-   - "¿Qué presupuesto manejás aproximadamente?"
-   - "¿Pagás al contado o con crédito hipotecario?" ← PREGUNTA CRÍTICA
+   - "¿Qué presupuesto manejas aproximadamente?"
+   - "¿Pagas al contado o con crédito hipotecario?" ← PREGUNTA CRÍTICA
    - ⚠️ Si dice "no sé" o "depende" en presupuesto/pago → frío, educar, no avanzar a agendar
 
 3. **AUTHORITY** (quién decide la compra)
-   - "¿La decisión la tomás vos o con tu pareja/socio/familia?"
+   - "¿La decisión la tomas tú o con tu pareja/socio/familia?"
 
 4. **TIMELINE** (urgencia real)
    - "¿Estás buscando activamente o aún explorando?"
@@ -1717,13 +1717,13 @@ OBJETIVO: identificar 3 tipos de leads:
 
 ## PERSONALIDAD Y TONO
 - Cálido, empático, profesional. Como un asesor de confianza, no un formulario.
-- Cada pregunta debe tener CONTEXTO y RAZÓN — el cliente tiene que entender POR QUÉ le preguntás.
+- Cada pregunta debe tener CONTEXTO y RAZÓN — el cliente tiene que entender POR QUÉ le preguntas.
   Ejemplos de cómo hacerlo natural:
   - "Para mostrarte opciones que encajen con tu búsqueda, ¿es para vivir o más como inversión?"
-  - "El presupuesto nos ayuda a filtrarte solo lo que tiene sentido para vos, sin hacerte perder tiempo. ¿Qué rango manejás?"
+  - "El presupuesto nos ayuda a filtrarte solo lo que tiene sentido para ti, sin hacerte perder tiempo. ¿Qué rango manejas?"
   - "A veces estas decisiones se toman en familia o con socios — ¿hay alguien más en el proceso?"
-  - "Saber desde dónde escribís nos ayuda a entender qué tan cerca estás de los proyectos. ¿De qué ciudad sos?"
-- Después de cada respuesta del cliente, ACUSÁ RECIBO antes de preguntar lo siguiente.
+  - "Saber desde dónde escribes nos ayuda a entender qué tan cerca estás de los proyectos. ¿De qué ciudad eres?"
+- Después de cada respuesta del cliente, ACUSA RECIBO antes de preguntar lo siguiente.
   Ej: "Perfecto, terreno para invertir — buena elección en este mercado 💪" → luego la siguiente pregunta.
 - Mensajes cortos: máximo 3-4 líneas en turnos BANT (después del saludo). UNA sola pregunta por mensaje.
   EXCEPCIÓN: en el PRIMER turno (saludo inicial), el mensaje DEBE incluir bienvenida + presentación de empresa + zonas + HORARIOS DE ATENCIÓN + pregunta de nombre. No lo recortes por brevedad.
@@ -1745,22 +1745,22 @@ OBJETIVO: identificar 3 tipos de leads:
 🚫 REGLA IRROMPIBLE — NUNCA REPETIR:
 - Si ya preguntaste algo en este turno o en turnos anteriores → NO lo vuelvas a preguntar
 - Si el lead dijo "sí" o confirmó algo → NO reformular la misma pregunta con otras palabras
-- Revisá el HISTORIAL antes de cada respuesta — si ya preguntaste "¿querés agendar?" no lo vuelvas a preguntar
+- Revisa el HISTORIAL antes de cada respuesta — si ya preguntaste "¿quieres agendar?" no lo vuelvas a preguntar
 - Una confirmación ("sí", "dale", "perfecto") = avanzar al siguiente paso, nunca repetir
 
 🟡 EXCEPCIÓN IMPORTANTE — PEDIDOS EXPLÍCITOS DEL CLIENTE:
 Si el cliente pide explícitamente ver opciones con frases como:
-"qué opciones tenés / qué hay / muéstrame / qué tienen / qué propiedades /
+"qué opciones tienes / qué hay / muéstrame / qué tienen / qué propiedades /
 opciones para mi bolsillo / mostrame / quiero ver"
 → MOSTRAR 2-4 PROPIEDADES INMEDIATAMENTE con la ACCION: mostrar_props
    (con un rango amplio si aún no sabés Budget). NUNCA repetir la pregunta
    de presupuesto en este caso.
-→ Usá las opciones mostradas como ancla para preguntar después:
+→ Usa las opciones mostradas como ancla para preguntar después:
    "De estas opciones, ¿cuál se acerca a tu rango?"
    "¿Cuál te llama la atención?"
 
 ❌ NO HACER:
-- "¿En qué puedo ayudarte?" — sos consultor, no portero
+- "¿En qué puedo ayudarte?" — eres consultor, no portero
 - Pedir email al inicio
 - Mostrar propiedades por iniciativa propia sin que el cliente lo pida
   o sin haber calificado Need mínimo
@@ -1775,7 +1775,7 @@ opciones para mi bolsillo / mostrame / quiero ver"
 - NUNCA inventes horarios de cita (ej: "tengo a las 16:00 o 18:00").
 - Los horarios reales los maneja el sistema vía Cal.com automáticamente.
 - Si el lead pregunta por horarios disponibles, respondé SOLO con:
-  "Dejame chequear los horarios disponibles con {NOMBRE_ASESOR}"
+  "Déjame chequear los horarios disponibles con {NOMBRE_ASESOR}"
   y NO listes horarios concretos — el sistema los envía después.
 - Si el lead dice "sí quiero agendar" → emitir ACCION: agendar (nada más).
 
@@ -1784,7 +1784,7 @@ Si el lead deja de responder, da monosílabos repetidos, o evade calificación
 → cambiar a modo recuperación con UNA frase tipo:
 - "¿Qué te faltó para decidirte?"
 - "¿Te puedo enviar comparativo de otras opciones similares?"
-- "Decime un buen día/hora y te llamo personalmente."
+- "Dime un buen día/hora y te llamo personalmente."
 
 Si después de 2 intentos no hay engagement → ACCION: cerrar_curioso
 
@@ -1983,11 +1983,11 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                     f"📅 Te confirmo:\n\n"
                     f"📆 *{fecha_str}*\n"
                     f"👤 Con *{NOMBRE_ASESOR}*\n\n"
-                    f"¿Lo confirmamos? Respondé *sí* o *no*.")
+                    f"¿Lo confirmamos? Responde *sí* o *no*.")
             else:
                 _enviar_texto(telefono, f"Elegí un número del 1 al {len(slots)}, o *0* para cancelar.")
         except ValueError:
-            _enviar_texto(telefono, f"Respondé con el número del horario (1-{len(slots)}) o *0*.")
+            _enviar_texto(telefono, f"Responde con el número del horario (1-{len(slots)}) o *0*.")
         return
 
     if step == "confirmar_cita":
@@ -2017,14 +2017,14 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 SESIONES.pop(telefono, None)
             else:
                 _enviar_texto(telefono,
-                    f"Ese horario ya no está disponible 😔 ¿Elegimos otro? Escribí *2* o *0* para cancelar.")
+                    f"Ese horario ya no está disponible 😔 ¿Elegimos otro? Escribe *2* o *0* para cancelar.")
         elif texto_lower in ("no", "2", "otro", "cambiar"):
             slots = sesion.get("slots", [])
             SESIONES[telefono] = {**sesion, "step": "agendar_slots"}
             _enviar_texto(telefono,
                 f"Sin problema 😊 Elegí otro horario:\n\n{_formatear_slots(slots)}")
         else:
-            _enviar_texto(telefono, "Respondé *sí* para confirmar o *no* para elegir otro horario.")
+            _enviar_texto(telefono, "Responde *sí* para confirmar o *no* para elegir otro horario.")
         return
 
     # ── Step explorando → navegación conversacional (UNA prop a la vez) ─────
@@ -2065,7 +2065,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
             else:
                 _enviar_texto(telefono,
                     f"Ya te mostré todas las opciones disponibles ahora. "
-                    f"Si querés, {NOMBRE_ASESOR} tiene proyectos que no están publicados todavía. "
+                    f"Si quieres, {NOMBRE_ASESOR} tiene proyectos que no están publicados todavía. "
                     f"¿Te contactamos?")
             return
 
@@ -2101,7 +2101,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         "quiero ver", "quisiera ver", "mandame", "mandame opciones",
         "que hay disponible", "qué hay disponible", "que propiedades",
         "qué propiedades", "opciones para", "ver opciones", "ver propiedades",
-        "quiero opciones", "tenés opciones", "tienen opciones",
+        "quiero opciones", "tienes opciones", "tienen opciones",
     ]
     _pide_opciones_directo = any(kw in texto_lower for kw in _KEYWORDS_PEDIR_OPCIONES)
 
@@ -2127,7 +2127,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         else:
             _enviar_texto(telefono,
                 f"En este momento no tenemos propiedades publicadas que coincidan. "
-                f"Si querés, {NOMBRE_ASESOR} puede mostrarte opciones exclusivas — ¿te contactamos?")
+                f"Si quieres, {NOMBRE_ASESOR} puede mostrarte opciones exclusivas — ¿te contactamos?")
         return
 
     # ── NÚCLEO LLM CONVERSACIONAL ─────────────────────────────────────────
@@ -2137,7 +2137,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
 
     if not respuesta_llm:
         _enviar_texto(telefono,
-            f"Disculpá, tuve un problema técnico. ¿Podés repetir tu mensaje? 🙏")
+            f"Disculpa, tuve un problema técnico. ¿Puedes repetir tu mensaje? 🙏")
         return
 
     # ── Extraer ACCIONES del LLM (líneas ocultas al final) ────────────────
@@ -2349,8 +2349,8 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 break
         _FRASES_PREGUNTA_CIUDAD = [
             "qué ciudad", "que ciudad", "desde dónde", "desde donde",
-            "ciudad nos escribís", "ciudad sos", "de dónde sos", "de donde sos",
-            "de dónde escribís", "de donde escribis", "dónde vivís", "donde vivis",
+            "ciudad nos escribís", "ciudad sos", "de dónde eres", "de donde eres",
+            "de dónde escribes", "de donde escribes", "dónde vives", "donde vives",
             "en qué ciudad", "en que ciudad",
         ]
         if any(p in ultimo_msg_bot for p in _FRASES_PREGUNTA_CIUDAD):
@@ -2467,7 +2467,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
         else:
             _enviar_texto(telefono,
                 f"Por ahora no hay propiedades publicadas con esas características. "
-                f"Escribí *#* para hablar con *{NOMBRE_ASESOR}* directamente.")
+                f"Escribe *#* para hablar con *{NOMBRE_ASESOR}* directamente.")
         return
 
     if accion == "ir_asesor":
@@ -2584,7 +2584,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 SESIONES[telefono] = {**sesion_nueva, "step": "agendar_slots", "slots": slots}
                 _enviar_texto(telefono,
                     f"Perfecto, {nombre_corto or nombre}. Con lo que me contaste, "
-                    f"*{NOMBRE_ASESOR}* puede mostrarte opciones que encajan justo con lo que buscás. 🏡\n\n"
+                    f"*{NOMBRE_ASESOR}* puede mostrarte opciones que encajan justo con lo que buscas. 🏡\n\n"
                     f"¿Cuándo te viene bien una charla rápida? Estos son los horarios disponibles:\n\n"
                     f"{_formatear_slots(slots)}\n\nElegí un número o escribí *0* para que te contactemos.")
                 return
@@ -2605,7 +2605,7 @@ def _procesar(telefono: str, texto: str, referral: dict = None) -> None:
                 SESIONES[telefono] = {**sesion_nueva, "step": "agendar_slots", "slots": slots}
                 _enviar_texto(telefono,
                     f"Perfecto, {nombre_corto or nombre}. Con lo que me contaste, "
-                    f"*{NOMBRE_ASESOR}* puede mostrarte opciones que encajan justo con lo que buscás. 🏡\n\n"
+                    f"*{NOMBRE_ASESOR}* puede mostrarte opciones que encajan justo con lo que buscas. 🏡\n\n"
                     f"¿Cuándo te viene bien una charla rápida? Estos son los horarios disponibles:\n\n"
                     f"{_formatear_slots(slots)}\n\nElegí un número o escribí *0* para que te contactemos.")
                 return
@@ -2723,7 +2723,7 @@ def _ir_asesor(telefono: str, sesion: dict) -> None:
         zona  = sesion.get("resp_zona", "")
         _enviar_texto(numero_limpio,
             f"🔔 *{NOMBRE_EMPRESA}*\n\n"
-            f"Un cliente solicita hablar con vos:\n"
+            f"Un cliente solicita hablar contigo:\n"
             f"👤 *{nombre or 'Sin nombre'}*\n"
             f"📱 +{re.sub(r'[^0-9]', '', telefono)}\n"
             + (f"🏡 Busca: {tipo}" if tipo else "")
@@ -2901,7 +2901,7 @@ async def webhook_whatsapp(request: Request):
                             tel_tmp = re.sub(r'\D', '', msg.get("from", ""))
                             if tel_tmp:
                                 _enviar_texto(tel_tmp,
-                                    "No pude escuchar bien el audio 😔. ¿Me lo escribís o lo grabás de nuevo?")
+                                    "No pude escuchar bien el audio 😔. ¿Me lo escribes o lo grabas de nuevo?")
                             return {"status": "ignored", "reason": "audio-no-transcrito"}
                 elif msg_type == "image":
                     img_media_id = msg.get("image", {}).get("id", "")
