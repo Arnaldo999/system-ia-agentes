@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRM — Rizoma Propiedades</title>
+  <title>CRM — P. Back Argentina</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -16,9 +16,9 @@
           heading: ['Manrope', 'Inter', 'sans-serif'],
         },
         colors: {
-          sidebar:  { DEFAULT: '#0f172a', hover: '#1e293b', active: '#1d4ed8', text: '#94a3b8', 'text-active': '#ffffff' },
-          primary:  { DEFAULT: '#0369a1', hover: '#0284c7' },
-          accent:   '#0ea5e9',
+          sidebar:  { DEFAULT: '#0f172a', hover: '#1e293b', active: '#6d28d9', text: '#c4b5fd', 'text-active': '#ffffff' },
+          primary:  { DEFAULT: '#7c3aed', hover: '#6d28d9' },
+          accent:   '#ec4899',
           ok:       '#10b981',
           'ok-bg':  '#d1fae5',
           info:     '#0369a1',
@@ -540,9 +540,9 @@
 ════════════════════════════════════════════════ -->
 <div id="login-screen" style="display:none; position:fixed; inset:0; background:#0f172a; z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
   <div style="background:white; border-radius:20px; padding:48px 40px; width:100%; max-width:380px; box-shadow:0 25px 60px rgba(0,0,0,.4); text-align:center;">
-    <div style="width:56px; height:56px; background:#0ea5e9; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:900; color:white; margin:0 auto 20px; font-family:'Manrope',sans-serif;">R</div>
-    <h1 style="font-family:'Manrope',sans-serif; font-size:1.4rem; font-weight:800; color:#0f172a; margin-bottom:4px;">Rizoma Propiedades</h1>
-    <p style="font-size:0.82rem; color:#64748b; margin-bottom:28px; font-family:'Inter',sans-serif;">CRM · P. Back Argentina</p>
+    <div style="width:56px; height:56px; background:linear-gradient(135deg,#7c3aed,#ec4899); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:900; color:white; margin:0 auto 20px; font-family:'Manrope',sans-serif;">PB</div>
+    <h1 style="font-family:'Manrope',sans-serif; font-size:1.4rem; font-weight:800; color:#0f172a; margin-bottom:4px;">P. Back Argentina</h1>
+    <p style="font-size:0.82rem; color:#64748b; margin-bottom:28px; font-family:'Inter',sans-serif;">CRM · Ecosistema Digital</p>
     <p style="font-size:0.88rem; font-weight:600; color:#0f172a; text-align:left; margin-bottom:8px; font-family:'Inter',sans-serif;">PIN de acceso</p>
     <input
       id="login-pin"
@@ -551,16 +551,16 @@
       maxlength="4"
       placeholder="• • • •"
       style="width:100%; border:2px solid #e2e8f0; border-radius:12px; padding:14px 16px; font-size:1.5rem; text-align:center; letter-spacing:0.5em; outline:none; font-family:'Inter',sans-serif; color:#0f172a; transition:border-color .2s; margin-bottom:8px;"
-      onfocus="this.style.borderColor='#0ea5e9'"
+      onfocus="this.style.borderColor='#7c3aed'"
       onblur="this.style.borderColor='#e2e8f0'"
     />
     <p id="login-error" style="display:none; color:#ef4444; font-size:0.82rem; margin-bottom:12px; font-family:'Inter',sans-serif;"></p>
     <button
       id="login-btn"
       onclick="doLogin()"
-      style="width:100%; background:#0369a1; color:white; border:none; border-radius:12px; padding:14px; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:background .2s; margin-top:4px;"
-      onmouseover="this.style.background='#0284c7'"
-      onmouseout="this.style.background='#0369a1'"
+      style="width:100%; background:#7c3aed; color:white; border:none; border-radius:12px; padding:14px; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:background .2s; margin-top:4px;"
+      onmouseover="this.style.background='#6d28d9'"
+      onmouseout="this.style.background='#7c3aed'"
     >Ingresar al CRM</button>
     <p style="margin-top:20px; font-size:0.75rem; color:#94a3b8; font-family:'Inter',sans-serif;">
       🔒 Acceso protegido · Sesión de 8 horas
@@ -583,10 +583,10 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div class="flex items-center gap-3 px-1">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-2xl font-extrabold" style="background:#0ea5e9;color:white">R</div>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-extrabold" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white">PB</div>
         <div>
-          <p class="text-white font-extrabold font-heading text-[1rem] leading-tight">Rizoma</p>
-          <p class="text-sidebar-text text-[0.72rem] font-semibold tracking-widest uppercase">Propiedades</p>
+          <p class="text-white font-extrabold font-heading text-[1rem] leading-tight">P. Back Argentina</p>
+          <p class="text-sidebar-text text-[0.72rem] font-semibold tracking-widest uppercase">Ecosistema Digital</p>
         </div>
       </div>
     </div>
@@ -614,8 +614,8 @@
       <div class="flex items-center gap-4">
         <span class="text-sm text-txt-muted" id="last-sync">Cargando...</span>
         <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background:#0369a1">R</div>
-          <span class="text-sm font-semibold text-txt hidden sm:block">Equipo Rizoma</span>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background:linear-gradient(135deg,#7c3aed,#ec4899)">PB</div>
+          <span class="text-sm font-semibold text-txt hidden sm:block">Patricia Back</span>
         </div>
       </div>
     </header>
@@ -625,11 +625,11 @@
       <div class="section-hero">
         <div class="section-title">
           <div class="sub">Resumen general</div>
-          <h1>Dashboard <span class="text-txt-muted opacity-50">Rizoma</span></h1>
+          <h1>Dashboard <span class="text-txt-muted opacity-50">P. Back Argentina</span></h1>
         </div>
         <button class="btn btn-outline" onclick="loadAll()">↻ Actualizar</button>
       </div>
-      <p class="text-xs text-txt-muted font-bold uppercase tracking-widest mb-3">Propiedades</p>
+      <p class="text-xs text-txt-muted font-bold uppercase tracking-widest mb-3">Propiedades (Rizoma)</p>
       <div class="stats-grid">
         <div class="stat-card green"><div class="num" id="d-disponibles">—</div><div class="lbl">✅ Disponibles</div></div>
         <div class="stat-card red"><div class="num" id="d-nodisponibles">—</div><div class="lbl">❌ No disponibles</div></div>
