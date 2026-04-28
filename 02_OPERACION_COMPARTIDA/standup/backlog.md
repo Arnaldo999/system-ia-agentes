@@ -1,7 +1,7 @@
 # Backlog consolidado
 
-**Última actualización**: 2026-04-24 13:25 ART
-**Total items abiertos**: 12 (1 🔴 + 4 🟠 + 4 🟡 + 3 🟢)
+**Última actualización**: 2026-04-27 23:59 ART
+**Total items abiertos**: 19 (1 🔴 + 4 🟠 + 9 🟡 + 5 🟢)
 
 > Fuente única de verdad para TODOs abiertos del ecosistema. Se actualiza con `/cierre`.
 
@@ -30,7 +30,7 @@
 
 ---
 
-## 🟡 Medios (4)
+## 🟡 Medios (9)
 
 - [ ] **Configuración horarios por cliente via env var** | proyecto: compartido | origen: `memory/ESTADO_ACTUAL.md` | detectado: 2026-04-24
   - Hoy `HORARIO_ATENCION` hardcoded por worker. A futuro: env var `INMO_{CLIENTE}_HORARIO` o campo Airtable/Postgres.
@@ -44,9 +44,24 @@
 - [ ] **Onboarding Cesar Posada (turismo)** | proyecto: arnaldo | origen: `memory/ESTADO_ACTUAL.md` | detectado: 2026-04-22
   - Propuesta enviada, brief pendiente. Cuando devuelva el brief: crear base Airtable turismo + worker en `workers/clientes/arnaldo/cesar-posada/`.
 
+- [ ] **Avisar a Mica — social worker foco inmobiliaria activo** | proyecto: arnaldo | detectado: 2026-04-27
+  - Mica no sabe que sus cuentas tienen `SOCIAL_AGENCIA_VERTICAL_FOCO=inmobiliaria` activo. Mensaje listo, falta enviarlo. Incluir instrucciones para desactivar.
+
+- [ ] **CRM Jurídico Mica — SMTP real** | proyecto: mica | detectado: 2026-04-27
+  - Emails actualmente son preview HTML. Falta conectar SMTP real para enviar comunicaciones desde el CRM.
+
+- [ ] **CRM Jurídico Mica — Excel Boletín INPI** | proyecto: mica | detectado: 2026-04-27
+  - Mica necesita subir Excel del Boletín de Marcas para análisis automático de oposiciones.
+
+- [ ] **CRM Jurídico Mica — Bot WhatsApp captación leads** | proyecto: mica | detectado: 2026-04-27
+  - Leads entran manualmente hoy. Necesita bot de captación para automatizar el ingreso.
+
+- [ ] **CRM Jurídico Mica — n8n recordatorios vencimientos INPI** | proyecto: mica | detectado: 2026-04-27
+  - Vencimientos de trámites INPI sin alertas automáticas. Necesita workflow n8n con envío email N días antes.
+
 ---
 
-## 🟢 Bajos (3)
+## 🟢 Bajos (5)
 
 - [ ] **20 posts educativos pre-cargados Back Urbanizaciones** | proyecto: arnaldo | origen: `memory/ESTADO_ACTUAL.md` | detectado: 2026-04-24
   - Rotación manual vs automática para alimentar el worker social. No urgente, el worker puede generar on-demand.
@@ -57,17 +72,21 @@
 - [ ] **Embedded signup Mica: migrar número a Meta Cloud** | proyecto: mica | origen: `memory/ESTADO_ACTUAL.md` | detectado: 2026-04-21
   - Bloqueado por ventana 24-72h de desconexión del número de Evolution. No urgente.
 
+- [ ] **CRM Jurídico Mica — CRUD completo desde UI** | proyecto: mica | detectado: 2026-04-27
+  - Editar/eliminar registros aún no conectados a API desde el frontend.
+
 ---
 
 ## Por proyecto
 
-### Arnaldo (5 items)
+### Arnaldo (6 items)
 
 1. 🔴 DMs Messenger Maicol no llegan al webhook
 2. 🟠 Maicol conectar IG a Page FB
 3. 🟠 Migración System User Admin Maicol (deadline 2026-04-30)
-4. 🟡 Onboarding Cesar Posada (esperando brief)
-5. 🟢 20 posts educativos Back Urbanizaciones
+4. 🟡 Avisar a Mica foco social inmobiliaria activo
+5. 🟡 Onboarding Cesar Posada (esperando brief)
+6. 🟢 20 posts educativos Back Urbanizaciones
 
 ### Robert (3 items)
 
@@ -75,10 +94,15 @@
 2. 🟠 `waba_clients` en seed SQL modelo
 3. 🟡 Info Robert sobre lead.center + Zapier
 
-### Mica (2 items)
+### Mica (7 items)
 
 1. 🟠 Validación visual CRM v3 (compartida con Robert)
-2. 🟢 Embedded signup: migrar número a Meta Cloud
+2. 🟡 CRM Jurídico — SMTP real
+3. 🟡 CRM Jurídico — Excel Boletín INPI
+4. 🟡 CRM Jurídico — Bot WhatsApp captación
+5. 🟡 CRM Jurídico — n8n recordatorios vencimientos
+6. 🟢 CRM Jurídico — CRUD completo desde UI
+7. 🟢 Embedded signup: migrar número a Meta Cloud
 
 ### Global / Compartido (3 items)
 

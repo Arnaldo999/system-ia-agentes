@@ -1,15 +1,17 @@
 # Índice de la Wiki — Ecosistema Arnaldo Ayala
 
-Última actualización: 2026-04-27 | Total páginas: 75 (3 fuentes raw + 25 entidades + **29 conceptos** + 8 síntesis + 1 mapa de prod + **9 playbooks** incluyendo README)
+Última actualización: 2026-04-27 | Total páginas: 80 (5 fuentes raw + 26 entidades + **31 conceptos** + 8 síntesis + 1 mapa de prod + **9 playbooks** incluyendo README)
 
-## Fuentes (3)
+## Fuentes (5)
 | Página | Resumen | Fecha | Proyecto | Tags |
 |--------|---------|-------|----------|------|
 | [[wiki/fuentes/sesion-2026-04-22]] | Sesión densa: CORS Maicol + Monitor Capa 1 + CRM v2 unificado Robert+Mica + audit Postgres + bug tokens .env | 2026-04-22 | compartido | cors, monitoreo, crm-v2, postgres, env-vars, telegram, coolify |
 | [[wiki/fuentes/sesion-2026-04-27-grupo-back-confirmacion]] | Sesión completa (mañana+tarde): alcance cerrado 7 firmas, 5 bots 1nº/servicio, roadmap v4 LIVE, mapa visual SVG, herramientas WordPress+n8n+VPS+Coolify+Airtable, 4 reglas nuevas | 2026-04-27 | arnaldo | grupo-back, alcance-cerrado, multi-marca, roadmap, mapa-visual |
 | [[raw/arnaldo/sesion-2026-04-26-nuestra-iglesia]] | Sesión construcción Sistema Presentación Iglesia Nueva Vida v0.2. Decisiones: Gemini cloud > Gemma local, Whisper solo transcribe, 4 modos karaoke, Spotify-style lyrics. 8 bugs solucionados. | 2026-04-26 | arnaldo | iglesia, sistema-presentacion, fastapi, gemini, whisper, karaoke |
+| [[raw/mica/sesion-2026-04-27-crm-juridico-v2]] | CRM Jurídico v2 Mica: 11 commits — filtración leads, modal aceptar propuesta, socios dinámicos, upload real, fix reverse-link, dashboard 2 col, dark mode. Tabla Socios_Marca nueva. | 2026-04-27 | mica | crm-juridico, inpi, marcas, airtable, upload, dark-mode, socios |
+| [[raw/arnaldo/sesion-2026-04-27-social-foco-inmobiliaria]] | Pivote estratégico: social worker rotación temática 7 días para vertical inmobiliaria. `SOCIAL_AGENCIA_VERTICAL_FOCO=inmobiliaria` en Coolify. Aplica Arnaldo + Mica. | 2026-04-27 | arnaldo | social-worker, inmobiliaria, vertical, coolify, env-var |
 
-## Entidades (25)
+## Entidades (26)
 
 ### Las 3 agencias del ecosistema
 | Página | Dueño | Estado |
@@ -49,6 +51,7 @@
 |--------|------|----------|
 | [[wiki/entidades/crm-v2-modelo-robert]] | Frontend HTML CRM modelo Lovbot (`crm.lovbot.ai/dev/crm-v2`) | robert |
 | [[wiki/entidades/crm-v2-modelo-mica]] | Frontend HTML CRM modelo System IA (`/system-ia/dev/crm-v2`) | mica |
+| [[wiki/entidades/crm-juridico-v2-mica]] | CRM Estudio Marcas INPI (Mica) — Airtable `appSjeRUoBGZo5DtO` + FastAPI router juridico | mica |
 
 ### Productos / Paneles Gestión (admin de tenants/clientes)
 | Página | Tipo | Proyecto |
@@ -75,7 +78,7 @@
 | [[wiki/entidades/coolify-robert]] | orquestador | robert |
 | [[wiki/entidades/easypanel-mica]] | orquestador | mica |
 
-## Conceptos (27)
+## Conceptos (31)
 
 ### Reglas transversales (leer PRIMERO)
 | Página | Resumen breve | Proyectos |
@@ -141,6 +144,12 @@
 | Página | Resumen breve | Proyectos |
 |--------|--------------|-----------|
 | [[wiki/conceptos/crm-agencia-lovbot]] | 📋 CRM propio Robert+Arnaldo para gestionar leads agencia (landing + bot WhatsApp). Storage: Postgres Hetzner (NO Supabase). Status: pendiente | robert |
+
+### Patrones técnicos CRM
+| Página | Resumen breve | Proyectos |
+|--------|--------------|-----------|
+| [[wiki/conceptos/airtable-reverse-link-pattern]] | ⚠️ `filterByFormula` falla en linked records → leer array reverse-link del padre + GET individual hijos | arnaldo, mica |
+| [[wiki/conceptos/fastapi-upload-attachment-pipeline]] | Browser → multipart `/crm/upload` → static `/uploads/` → URL pública → Airtable `multipleAttachments` | arnaldo, mica |
 
 ### Operación / Reglas del repo
 | Página | Resumen breve | Proyectos |

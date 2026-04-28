@@ -4,6 +4,29 @@
 <!-- Parseable: grep "^## \[" log.md | tail -10 -->
 <!-- Tipos de operacion: init, ingest, query, lint, update, sesion-claude -->
 
+## [2026-04-27] sesion-claude | CRM Jurídico v2 Mica — iteración intensiva (11 commits)
+
+- Filtración Leads (activos/nutrición) + Propuestas (para hacer/enviadas).
+- Modal Aceptar Propuesta: titular + N socios dinámicos + Nota Poder.
+- Tabla nueva `Socios_Marca` (`tblX4NQCEzFZRwEar`) con 15 campos.
+- Upload real archivos → Airtable `multipleAttachments` via URL pública.
+- Fix `filterByFormula` linked records → patrón reverse-link documentado.
+- Dashboard 2 columnas (verde con plazo / azul sin plazo) + 8 cards sección.
+- Modo oscuro/claro: CSS vars + localStorage + auto-detect SO.
+- **Fuente raw**: `raw/mica/sesion-2026-04-27-crm-juridico-v2.md`
+- **Entidad nueva**: [[wiki/entidades/crm-juridico-v2-mica]]
+- **Conceptos nuevos**: [[wiki/conceptos/airtable-reverse-link-pattern]], [[wiki/conceptos/fastapi-upload-attachment-pipeline]]
+- Commits: `73802e7` → `a4a741f`
+
+## [2026-04-27] sesion-claude | Social worker — pivote vertical inmobiliaria (Arnaldo + Mica)
+
+- Cuentas agencia de Arnaldo + Mica publican contenido posicionado en inmobiliarias.
+- `workers/social/worker.py`: rotación 7 temas semanales + helper `_es_cuenta_agencia()` + bloque CTA.
+- Env var `SOCIAL_AGENCIA_VERTICAL_FOCO=inmobiliaria` seteada en Coolify Arnaldo.
+- Test E2E confirmado. Desactivar: setear vacío + restart.
+- **Fuente raw**: `raw/arnaldo/sesion-2026-04-27-social-foco-inmobiliaria.md`
+- Commit: `5a2f120`
+
 ## [2026-04-27] ingest | Iglesia Nueva Vida — 2 entidades + playbook v1 + sesion raw 2026-04-26
 
 - **2 entidades nuevas**: [[wiki/entidades/iglesia-nueva-vida]] (cliente pro-bono), [[wiki/entidades/pablo-tome-pastor]] (pastor, lead pago redes sociales Track B)
