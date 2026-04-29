@@ -1339,11 +1339,11 @@ FILOSOFÍA DE CONTENIDO (OBLIGATORIA):
 
 Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
 
-1. INSTAGRAM: Hook irresistible en primera línea, viñetas con emojis con tips prácticos y accionables, 150-200 palabras. CTA final: invitar a SEGUIR la cuenta y/o dar LIKE. 6-8 hashtags al final.
+1. INSTAGRAM: Hook irresistible en primera línea, viñetas con emojis con tips prácticos y accionables, 150-200 palabras. CTA final: hacé una pregunta directa al lector relacionada al tema (ej: "¿Tu inmobiliaria pasa por esto? Contanos abajo 👇") para provocar comentarios. Luego invitá a SEGUIR la cuenta. Hashtags obligatorios al final — usá EXACTAMENTE estos 5 fijos más 3 variables del tema: #inmobiliaria #agenteinmobiliario #automatizacionIA #crmInmobiliario #whatsappbusiness
 |||
-2. LINKEDIN: Apertura con dato real o reflexión del sector, desarrollo con insights accionables (problema → solución → resultado), cierre con pregunta que genere debate, 300-400 palabras, máx 2 emojis. CTA final: invitar a CONECTAR y/o COMENTAR con su experiencia. 3-4 hashtags profesionales.
+2. LINKEDIN: Apertura con dato real o reflexión del sector, desarrollo con insights accionables (problema → solución → resultado), cierre con pregunta que genere debate genuino entre profesionales del rubro (ej: "¿Cuántos leads perdés por mes fuera de horario? Dejá tu número en comentarios."), 300-400 palabras, máx 2 emojis. CTA final: invitar a COMENTAR con su experiencia. Hashtags: #inmobiliaria #proptech #automatizacion #crmInmobiliario
 |||
-3. FACEBOOK: Storytelling cercano como si hablaras con un amigo emprendedor, incluye un tip útil o historia de transformación real, 200-250 palabras, máx 3 emojis. CTA final: invitar a DAR LIKE, COMPARTIR con alguien que lo necesite y/o SEGUIR la página."""
+3. FACEBOOK: Storytelling cercano como si hablaras con un dueño de inmobiliaria amigo, incluye un tip útil o historia de transformación real, 200-250 palabras, máx 3 emojis. CTA final: hacé una pregunta que invite a responder en comentarios (ej: "¿Cuántas consultas perdés por día fuera de horario?"), luego invitá a COMPARTIR con un colega del rubro."""
 
         texto_raw = _call_gemini_text(prompt_txt, timeout=60)
         partes = texto_raw.split("|||")
