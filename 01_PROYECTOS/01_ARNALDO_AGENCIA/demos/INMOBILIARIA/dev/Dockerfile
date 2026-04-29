@@ -4,6 +4,10 @@ FROM nginx:alpine
 COPY crm-v2.html /usr/share/nginx/html/dev/crm-v2.html
 COPY js /usr/share/nginx/html/dev/js
 
+# Favicon estático LovBot (fallback; el JS lo sobreescribe con el logo del tenant)
+COPY favicon.png /usr/share/nginx/html/favicon.png
+COPY favicon.png /usr/share/nginx/html/dev/favicon.png
+
 # Catch-all: crm.lovbot.ai/ sirve directo el CRM v2
 COPY crm-v2.html /usr/share/nginx/html/index.html
 
