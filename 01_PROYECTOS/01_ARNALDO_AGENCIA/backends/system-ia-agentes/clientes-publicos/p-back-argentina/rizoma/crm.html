@@ -1224,10 +1224,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
         <!-- Dropdown menu -->
         <div class="pb-switcher__menu" id="switcher-menu" style="display:none">
           <div class="pb-switcher__menu-head">Servicios del ecosistema</div>
-          <!-- Rizoma -->
+          <!-- Rizoma: flyer horizontal → mostrar solo esquina sup-derecha donde está el logo -->
           <button class="pb-switcher__opt is-active" onclick="selectFirma('rizoma')">
-            <img src="/propuestas/p-back-argentina/logos/rizoma.jpg" alt="Rizoma Propiedades" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🏡</span>'"
-              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(14,165,233,0.3);" />
+            <div style="width:36px;height:36px;border-radius:8px;background:#1e1a14;overflow:hidden;flex-shrink:0;border:1px solid rgba(14,165,233,0.25);display:flex;align-items:center;justify-content:center;">
+              <img src="/propuestas/p-back-argentina/logos/rizoma.jpg" alt="Rizoma"
+                style="width:72px;height:72px;object-fit:cover;object-position:82% 8%;margin-left:18px;margin-top:-8px;" />
+            </div>
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">Rizoma Propiedades</span>
               <span class="pb-switcher__opt-rubro">Inmobiliaria · Toda Misiones</span>
@@ -1235,10 +1237,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
             <span class="pb-switcher__check" id="check-rizoma">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
-          <!-- La Misionerita -->
+          <!-- La Misionerita: logo circular sobre transparente -->
           <button class="pb-switcher__opt" onclick="selectFirma('misionerita')">
-            <img src="/propuestas/p-back-argentina/logos/misionerita.jpg" alt="La Misionerita" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🍽️</span>'"
-              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(245,158,11,0.3);" />
+            <div style="width:36px;height:36px;border-radius:8px;background:#fff;overflow:hidden;flex-shrink:0;border:1px solid rgba(245,158,11,0.3);display:flex;align-items:center;justify-content:center;">
+              <img src="/propuestas/p-back-argentina/logos/misionerita.jpg" alt="La Misionerita"
+                style="width:34px;height:34px;object-fit:contain;" />
+            </div>
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">La Misionerita</span>
               <span class="pb-switcher__opt-rubro">Restaurant + parador turístico</span>
@@ -1246,10 +1250,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
             <span class="pb-switcher__check" id="check-misionerita" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
-          <!-- Patricio's -->
+          <!-- Patricio's: fondo negro — mostrar sobre fondo oscuro sin borde blanco -->
           <button class="pb-switcher__opt" onclick="selectFirma('patricios')">
-            <img src="/propuestas/p-back-argentina/logos/patricios.jpg" alt="Patricio's" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🎉</span>'"
-              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(236,72,153,0.3);" />
+            <div style="width:36px;height:36px;border-radius:8px;background:#111;overflow:hidden;flex-shrink:0;border:1px solid rgba(236,72,153,0.25);display:flex;align-items:center;justify-content:center;">
+              <img src="/propuestas/p-back-argentina/logos/patricios.jpg" alt="Patricio's"
+                style="width:34px;height:34px;object-fit:contain;" />
+            </div>
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">Patricio's</span>
               <span class="pb-switcher__opt-rubro">Resto-bar + salones de eventos</span>
@@ -1257,10 +1263,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
             <span class="pb-switcher__check" id="check-patricios" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
-          <!-- La Martina -->
+          <!-- La Martina: logo circular sobre blanco -->
           <button class="pb-switcher__opt" onclick="selectFirma('lamartina')">
-            <img src="/propuestas/p-back-argentina/logos/martina.jpg" alt="La Martina" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🏨</span>'"
-              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(20,184,166,0.3);" />
+            <div style="width:36px;height:36px;border-radius:8px;background:#fff;overflow:hidden;flex-shrink:0;border:1px solid rgba(20,184,166,0.3);display:flex;align-items:center;justify-content:center;">
+              <img src="/propuestas/p-back-argentina/logos/martina.jpg" alt="La Martina"
+                style="width:34px;height:34px;object-fit:contain;" />
+            </div>
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">La Martina Apart Hotel</span>
               <span class="pb-switcher__opt-rubro">Hospedaje · San Ignacio</span>
@@ -1268,10 +1276,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
             <span class="pb-switcher__check" id="check-lamartina" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
-          <!-- Bocanada -->
+          <!-- Bocanada: logo circular sobre blanco -->
           <button class="pb-switcher__opt" onclick="selectFirma('bocanada')">
-            <img src="/propuestas/p-back-argentina/logos/bocanada.jpg" alt="Bocanada" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🥖</span>'"
-              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(249,115,22,0.3);" />
+            <div style="width:36px;height:36px;border-radius:8px;background:#fff;overflow:hidden;flex-shrink:0;border:1px solid rgba(249,115,22,0.3);display:flex;align-items:center;justify-content:center;">
+              <img src="/propuestas/p-back-argentina/logos/bocanada.jpg" alt="Bocanada"
+                style="width:34px;height:34px;object-fit:contain;" />
+            </div>
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">Bocanada</span>
               <span class="pb-switcher__opt-rubro">Panadería · pastelería · catering</span>
@@ -1279,10 +1289,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
             <span class="pb-switcher__check" id="check-bocanada" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
-          <!-- Club Progreso -->
+          <!-- Club Progreso: escudo sobre blanco -->
           <button class="pb-switcher__opt" onclick="selectFirma('progreso')">
-            <img src="/propuestas/p-back-argentina/logos/progreso.jpg" alt="Club Progreso" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>⚽</span>'"
-              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(22,163,74,0.3);" />
+            <div style="width:36px;height:36px;border-radius:8px;background:#fff;overflow:hidden;flex-shrink:0;border:1px solid rgba(22,163,74,0.3);display:flex;align-items:center;justify-content:center;">
+              <img src="/propuestas/p-back-argentina/logos/progreso.jpg" alt="Club Progreso"
+                style="width:34px;height:34px;object-fit:contain;" />
+            </div>
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">Club Progreso</span>
               <span class="pb-switcher__opt-rubro">Club de fútbol</span>
@@ -1290,10 +1302,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
             <span class="pb-switcher__check" id="check-progreso" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
-          <!-- Fundación -->
+          <!-- Fundación: logo circular sobre blanco celeste -->
           <button class="pb-switcher__opt" onclick="selectFirma('fundacion')">
-            <img src="/propuestas/p-back-argentina/logos/fundacion.jpg" alt="Fundación Misión Emprender" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>💡</span>'"
-              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(99,102,241,0.3);" />
+            <div style="width:36px;height:36px;border-radius:8px;background:#e0f7fa;overflow:hidden;flex-shrink:0;border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;justify-content:center;">
+              <img src="/propuestas/p-back-argentina/logos/fundacion.jpg" alt="Fundación Misión Emprender"
+                style="width:34px;height:34px;object-fit:contain;" />
+            </div>
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">Fundación Misión Emprender</span>
               <span class="pb-switcher__opt-rubro">Educativa · cursos y talleres</span>
@@ -2427,12 +2441,27 @@ function showSoonPanel(id, f) {
     soonEl.className = 'panel';
     document.querySelector('.main-wrapper').appendChild(soonEl);
   }
-  const logoHtml = f.logo
-    ? '<img src="' + f.logo + '" alt="' + f.name + '" onerror="this.style.display=\'none\'" '
-      + 'style="max-height:80px;max-width:200px;object-fit:contain;margin-bottom:20px;border-radius:8px;">'
-    : '<div style="width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,' + f.color + '33,' + f.color + '11);'
-      + 'display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:20px;">'
-      + (['rizoma','progreso'].includes(id) ? (id==='rizoma'?'🏡':'⚽') : '🏢') + '</div>';
+  // Logo adaptado por firma según tipo de imagen
+  let logoHtml;
+  if (id === 'rizoma') {
+    // Flyer horizontal — recortar solo el isotipo (esquina sup-derecha)
+    logoHtml = '<div style="width:160px;height:70px;border-radius:10px;background:#1e1a14;overflow:hidden;margin-bottom:20px;position:relative;">'
+      + '<img src="' + f.logo + '" alt="Rizoma" onerror="this.parentElement.innerHTML=\'🏡\'" '
+      + 'style="position:absolute;width:340px;height:auto;right:-8px;top:-12px;object-fit:cover;" /></div>';
+  } else if (id === 'patricios') {
+    // Fondo negro — mantener fondo oscuro
+    logoHtml = '<div style="background:#111;border-radius:12px;padding:10px 16px;display:inline-block;margin-bottom:20px;">'
+      + '<img src="' + f.logo + '" alt="' + f.name + '" onerror="this.parentElement.innerHTML=\'🎉\'" '
+      + 'style="max-height:80px;max-width:200px;object-fit:contain;display:block;" /></div>';
+  } else if (f.logo) {
+    // Logos circulares / escudos — fondo blanco limpio
+    logoHtml = '<div style="background:#fff;border-radius:12px;padding:8px;display:inline-block;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);">'
+      + '<img src="' + f.logo + '" alt="' + f.name + '" onerror="this.parentElement.innerHTML=\'⭐\'" '
+      + 'style="max-height:90px;max-width:200px;object-fit:contain;display:block;" /></div>';
+  } else {
+    logoHtml = '<div style="width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,' + f.color + '33,' + f.color + '11);'
+      + 'display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:20px;">⭐</div>';
+  }
 
   soonEl.innerHTML = '<div style="min-height:60vh;display:flex;justify-content:center;align-items:flex-start;padding:48px 16px;">'
     + '<div style="max-width:580px;width:100%;border:1px solid ' + f.color + '33;border-radius:20px;padding:40px 44px;'
