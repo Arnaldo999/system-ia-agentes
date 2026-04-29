@@ -735,7 +735,7 @@
           <div class="sh-title">Leads</div>
           <div class="sh-sub">Consultas que llegan vía publicidad, web, referidos</div>
         </div>
-        <button class="btn btn-primary" onclick="alert('Form pendiente')">+ Nuevo Lead</button>
+        <button class="btn btn-primary" onclick="abrirNuevoLead()">+ Nuevo Lead</button>
       </div>
       <div id="leadsList"></div>
     </section>
@@ -1335,6 +1335,66 @@
       <button class="btn btn-primary" onclick="nf_enviar()" style="font-size: 14px; padding: 11px 22px;">
         🚀 Enviar recordatorio
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL — NUEVO LEAD -->
+<div id="modalNuevoLead" class="modal-bg">
+  <div class="modal" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">📞 Nuevo Lead</h3>
+      <button class="modal-close" onclick="closeModal('modalNuevoLead')">✕</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px;">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label class="form-label">Nombre completo *</label>
+        <input id="nl_nombre" class="form-control" placeholder="ej: Juan García">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono WhatsApp</label>
+        <input id="nl_telefono" class="form-control" placeholder="+5491155556666">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="nl_email" class="form-control" type="email" placeholder="juan@empresa.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Empresa / Razón Social</label>
+        <input id="nl_empresa" class="form-control" placeholder="ej: Cafetería Luna SRL">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fuente</label>
+        <select id="nl_fuente" class="form-control">
+          <option value="Web orgánica">Web orgánica</option>
+          <option value="Referido">Referido</option>
+          <option value="Instagram">Instagram</option>
+          <option value="WhatsApp directo">WhatsApp directo</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Marca a registrar</label>
+        <input id="nl_marca" class="form-control" placeholder="ej: CAFETERÍA LUNA">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Clase/s NIZA</label>
+        <input id="nl_clases" class="form-control" placeholder="ej: 43">
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label class="form-label">Descripción del servicio/producto</label>
+        <input id="nl_descripcion" class="form-control" placeholder="ej: servicios de cafetería y restauración">
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label class="form-label">Notas internas</label>
+        <textarea id="nl_notas" class="form-control" rows="2" placeholder="Observaciones del primer contacto..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top: 18px;">
+      <button class="btn" onclick="closeModal('modalNuevoLead')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearNuevoLead()" style="font-size: 14px; padding: 11px 22px;">✅ Crear Lead</button>
     </div>
   </div>
 </div>
@@ -2384,6 +2444,52 @@ async function toggleDatosListos(marcaId, listo, recargar = true) {
       DATA.marcas[idx]['Datos Listos para INPI'] = !!listo;
     }
   }
+}
+
+function abrirNuevoLead() {
+  ['nl_nombre','nl_telefono','nl_email','nl_empresa','nl_marca','nl_clases','nl_descripcion','nl_notas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('modalNuevoLead').classList.add('active');
+}
+
+async function crearNuevoLead() {
+  const nombre = document.getElementById('nl_nombre').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio'); return; }
+
+  const payload = {
+    'Nombre': nombre,
+    'Estado': 'Nuevo',
+    'Fecha Contacto': new Date().toISOString().split('T')[0],
+  };
+  const telefono = document.getElementById('nl_telefono').value.trim();
+  const email    = document.getElementById('nl_email').value.trim();
+  const empresa  = document.getElementById('nl_empresa').value.trim();
+  const marca    = document.getElementById('nl_marca').value.trim();
+  const clases   = document.getElementById('nl_clases').value.trim();
+  const desc     = document.getElementById('nl_descripcion').value.trim();
+  const notas    = document.getElementById('nl_notas').value.trim();
+  const fuente   = document.getElementById('nl_fuente').value;
+
+  if (telefono) payload['Teléfono WhatsApp'] = telefono;
+  if (email)    payload['Email'] = email;
+  if (empresa)  payload['Empresa'] = empresa;
+  if (marca)    payload['Marca'] = marca;
+  if (clases)   payload['Clases Niza'] = clases;
+  if (desc)     payload['Descripción Servicio/Producto'] = desc;
+  if (notas)    payload['Notas'] = notas;
+  if (fuente)   payload['Fuente'] = fuente;
+
+  const r = await api('/crm/leads', { method: 'POST', body: JSON.stringify(payload) });
+  if (!r) { alert('Error al crear el lead. Revisá la consola.'); return; }
+
+  closeModal('modalNuevoLead');
+  const leads = await api('/crm/leads');
+  DATA.leads = leads?.leads || [];
+  renderLeads();
+  updateBadges();
+  alert(`✅ Lead "${nombre}" creado correctamente.`);
 }
 
 function renderLeads() {
