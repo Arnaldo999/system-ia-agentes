@@ -179,7 +179,7 @@ app.include_router(
 import pathlib
 _static_dir = pathlib.Path(__file__).parent / "clientes-publicos"
 if _static_dir.exists():
-    app.mount("/propuestas", StaticFiles(directory=str(_static_dir)), name="propuestas")
+    app.mount("/propuestas", StaticFiles(directory=str(_static_dir), html=True), name="propuestas")
 
 
 # ── Uploads — archivos subidos por usuarios (Nota Poder, DNI, Logo, etc.) ────
