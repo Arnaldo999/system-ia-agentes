@@ -181,18 +181,6 @@ _static_dir = pathlib.Path(__file__).parent / "clientes-publicos"
 if _static_dir.exists():
     app.mount("/propuestas", StaticFiles(directory=str(_static_dir)), name="propuestas")
 
-# ── Archivos estáticos — Demos SYSTEM-IA (CRMs HTML servidos desde Coolify) ──
-# Sirve los CRMs demo de Mica (jurídico, inmobiliario, etc.) desde el backend
-# Coolify Arnaldo, evitando depender de Vercel para nuevos demos.
-# Path: backends/system-ia-agentes/demos-system-ia/  (DENTRO del Dockerfile WORKDIR)
-# URL final: https://agentes.arnaldoayalaestratega.cloud/system-ia/dev/<archivo>.html
-_systemia_demo_dir = pathlib.Path(__file__).parent / "demos-system-ia"
-if _systemia_demo_dir.exists():
-    app.mount(
-        "/system-ia",
-        StaticFiles(directory=str(_systemia_demo_dir), html=True),
-        name="system-ia-demos",
-    )
 
 # ── Uploads — archivos subidos por usuarios (Nota Poder, DNI, Logo, etc.) ────
 # Sirve los archivos que se suben al CRM jurídico para que Airtable pueda
