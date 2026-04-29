@@ -110,7 +110,7 @@ app = FastAPI(
         "Backend de automatizaciones IA para la agencia System IA. "
         "Arquitectura: clientes/ (producción) · demos/ (presentaciones) · social/ (System IA)"
     ),
-    version="3.0.0"
+    version="3.0.1"
 )
 
 app.add_middleware(
