@@ -1407,16 +1407,7 @@
       <button class="modal-close" onclick="closeModal('modalPrepararPropuesta')">✕</button>
     </div>
 
-    <div style="padding: 14px 18px; background: var(--accent-light); border-radius: 10px; margin-bottom: 18px; font-size: 13px; color: var(--text);">
-      💡 Cargá la cotización y adjuntá el archivo PDF. Después la podés enviar al cliente.
-    </div>
-
     <div id="pp_marcaInfo" style="padding: 12px 16px; background: var(--surface-2); border-radius: 10px; margin-bottom: 18px; font-size: 14px; color: var(--text); font-weight: 600;"></div>
-
-    <div class="form-row" style="margin-bottom: 16px;">
-      <label>💰 Cotización en ARS *</label>
-      <input type="number" id="pp_cotizacion" class="form-control" placeholder="ej: 150000" min="0">
-    </div>
 
     <div class="form-row" style="margin-bottom: 8px;">
       <label>📎 Archivo de propuesta (PDF o imagen)</label>
@@ -2771,7 +2762,6 @@ function prepararYEnviarPropuesta(propuestaId) {
   pp_propuestaId = propuestaId;
 
   document.getElementById('pp_marcaInfo').textContent = `📄 ${p['Marca']} — ${nombreCliente(p['Cliente'])}`;
-  document.getElementById('pp_cotizacion').value = p['Cotización (ARS)'] || '';
   document.getElementById('pp_archivoUrl').value = '';
   document.getElementById('pp_archivoLabel').textContent = 'Ningún archivo seleccionado';
 
@@ -2814,22 +2804,18 @@ async function pp_uploadArchivo(input) {
 }
 
 async function pp_confirmar() {
-  const cotiz = document.getElementById('pp_cotizacion').value;
-  if (!cotiz || isNaN(parseInt(cotiz))) {
-    alert('Ingresá una cotización válida en ARS');
+  const archivoUrl = document.getElementById('pp_archivoUrl').value;
+  if (!archivoUrl) {
+    alert('Adjuntá el archivo de propuesta antes de enviar');
     return;
   }
-  const archivoUrl = document.getElementById('pp_archivoUrl').value;
   const hoy = new Date().toISOString().split('T')[0];
 
   const payload = {
     'Estado': 'Pendiente',
-    'Cotización (ARS)': parseInt(cotiz),
     'Fecha Envío': hoy,
+    'Archivo Propuesta URL': archivoUrl,
   };
-  if (archivoUrl) {
-    payload['Archivo Propuesta URL'] = archivoUrl;
-  }
 
   await api(`/crm/propuestas/${pp_propuestaId}`, {
     method: 'PATCH',
