@@ -97,47 +97,47 @@ _ROTACION_TEMAS = {
 
 
 _ROTACION_TEMAS_INMOBILIARIA = {
-    0: {  # Lunes
+    0: {  # Lunes — ESTILO: drone/fotografía aérea realista
         "tema": "Cómo elegir el lote ideal en Misiones",
         "angulo": "Los 3 factores que nadie te cuenta antes de comprar",
         "idea_central": "Ubicación, servicios y documentación legal son los pilares para elegir bien. Un lote con mensura, agua y luz ya instalados vale más y te ahorra problemas futuros.",
-        "prompt_imagen": "aerial view of green land lots in Misiones Argentina, urban planning, marked terrain parcels, lush vegetation, professional real estate photo, no text in image",
+        "prompt_imagen": "stunning aerial drone photography of green land parcels in Misiones Argentina jungle, golden hour lighting, lush subtropical forest, survey markers visible, hyper-realistic photo style, cinematic composition, no text in image",
     },
-    1: {  # Martes
+    1: {  # Martes — ESTILO: minimalista bold, un solo color de acento
         "tema": "Invertir en terrenos: por qué el suelo siempre sube",
         "angulo": "La tierra no se deprecia — y en Misiones menos",
         "idea_central": "Mientras los ahorros pierden valor frente a la inflación, la tierra en zonas de crecimiento como Misiones históricamente se revaloriza. Un lote hoy puede valer el doble en 5 años.",
-        "prompt_imagen": "land value growth concept, green terrain in Misiones Argentina, investment arrow going up, professional flat design illustration, no text in image",
+        "prompt_imagen": "ultra minimalist composition, pure white background, single bold green upward arrow made of stacked land terrain layers, strong geometric shapes, luxury real estate brand aesthetic, clean modern design, no text in image",
     },
-    2: {  # Miércoles
+    2: {  # Miércoles — ESTILO: fotografía warmtone, personas reales
         "tema": "Financiar tu lote en cuotas: todo lo que necesitás saber",
         "angulo": "Ya no hace falta tener todo el dinero junto",
         "idea_central": "Con planes de hasta 120 cuotas mensuales accesibles, hoy es posible comprar tu terreno pagando menos que un alquiler. Sin banco, sin garante, directo con la desarrolladora.",
-        "prompt_imagen": "family signing land purchase agreement, happy couple with keys, modern real estate office, Misiones Argentina landscape background, flat design colorful, no text in image",
+        "prompt_imagen": "warm cinematic photography style, happy latin couple holding house keys outdoors in Misiones Argentina nature, golden sunset backlighting, shallow depth of field, authentic joyful emotion, film grain texture, no text in image",
     },
-    3: {  # Jueves
+    3: {  # Jueves — ESTILO: dark elegante, tonos noche azul marino
         "tema": "Qué documentación revisar antes de comprar un lote",
         "angulo": "Evitá sorpresas legales que pueden costarte caro",
         "idea_central": "Mensura aprobada, escritura libre de deudas y habilitación municipal son los documentos clave. Un lote sin estos papeles puede convertirse en un dolor de cabeza legal.",
-        "prompt_imagen": "legal documents for land purchase, notary signing papers, terrain map and title deed, professional clean illustration, no text in image",
+        "prompt_imagen": "dark navy blue background, elegant legal documents and land title deed rendered as glowing neon outlines, checklist with golden checkmarks, luxury dark aesthetic, sophisticated premium feel, cinematic lighting, no text in image",
     },
-    4: {  # Viernes
+    4: {  # Viernes — ESTILO: mapa ilustrado artístico, acuarela
         "tema": "Zonas de mayor crecimiento en Misiones para invertir",
         "angulo": "San Ignacio, Apóstoles, Gdor. Roca: ¿cuál es mejor?",
         "idea_central": "Cada zona tiene su perfil de inversión. San Ignacio crece por turismo, Apóstoles por comercio, Gdor. Roca por expansión urbana. Elegir bien la zona puede duplicar tu inversión.",
-        "prompt_imagen": "map of Misiones Argentina highlighting growth zones, urban expansion aerial view, green landscape with new housing developments, professional illustration, no text in image",
+        "prompt_imagen": "artistic watercolor illustrated map of Misiones Argentina province, vibrant green and blue tones, hand-drawn style with highlighted growth zones glowing in gold, jungle and rivers texture, editorial travel magazine style, no text in image",
     },
-    5: {  # Sábado
+    5: {  # Sábado — ESTILO: split screen dramático, antes/después
         "tema": "Construir o guardar: qué hacer con tu lote",
         "angulo": "Dos estrategias válidas según tu objetivo",
         "idea_central": "Si comprás para vivir, planificá la construcción por etapas. Si comprás para invertir, simplemente mantenerlo algunos años puede multiplicar tu capital sin hacer nada.",
-        "prompt_imagen": "split view of empty land lot vs modern house built on similar lot, investment concept, Misiones Argentina green landscape, flat design illustration, no text in image",
+        "prompt_imagen": "dramatic split screen composition, left side raw empty jungle land lot at dusk moody lighting, right side beautiful modern house at same location bright daylight, strong center dividing line, cinematic contrast photography style, no text in image",
     },
-    6: {  # Domingo
+    6: {  # Domingo — ESTILO: emocional lifestyle, familia warmtone
         "tema": "El sueño de la casa propia empieza por el terreno",
         "angulo": "Antes de construir, primero necesitás el suelo",
         "idea_central": "La mayoría posterga comprar el terreno esperando tener todo el dinero. Pero con financiamiento en cuotas, el primer paso es más accesible de lo que pensás.",
-        "prompt_imagen": "happy family standing on their empty land lot, Misiones Argentina nature background, sunset warm light, dream home concept, flat design colorful, no text in image",
+        "prompt_imagen": "emotional lifestyle photography, latin family with children standing together on their land lot at golden hour sunset, Misiones Argentina lush background, arms wide open joyful pose, warm orange and green tones, candid authentic moment, no text in image",
     },
 }
 
@@ -155,57 +155,57 @@ _ROTACION_TEMAS_AGENCIA_INMOBILIARIA = {
         "tema": "5 cosas que la IA ya hace por negocios mientras el dueño duerme",
         "angulo": "La automatización no es ciencia ficción — ya está pasando en tu competencia",
         "idea_central": "Responder WhatsApp, agendar citas, enviar recordatorios, actualizar el CRM y publicar en redes: todo esto ya lo hace la IA en automatico. El dueño que lo implementó primero tiene ventaja sobre los que aún lo están pensando.",
-        "prompt_imagen": "AI robot working on laptop at night, automated workflows glowing on screen, peaceful office, modern flat design colorful, no text in image",
+        "prompt_imagen": "dark cinematic scene, glowing AI robot silhouette working alone at desk in dark office at 3am, neon blue and purple light reflections on screens showing dashboards, dramatic moody atmosphere, hyper-realistic render style, no text in image",
         "story_texto": "¿Sabías que la IA ya trabaja mientras dormís? 🤖\n5 tareas que automatiza sola 👇",
-        "story_prompt_imagen": "AI robot working at night, glowing digital workflows, dark background with neon accents, minimal flat design, no text in image",
+        "story_prompt_imagen": "dark moody AI robot at night desk, neon purple glow, cinematic dramatic lighting, no text in image",
     },
     1: {  # Martes — Inmobiliaria (problema → solución)
         "tema": "Tu inmobiliaria atendiendo consultas en WhatsApp 24/7",
         "angulo": "El 70% de los compradores consulta fuera del horario de oficina y nunca te enterás",
         "idea_central": "Un asistente inteligente en WhatsApp responde en segundos cualquier consulta sobre propiedades, califica al lead (BANT) y avisa solo cuando ya está listo para visitar. Tu inmobiliaria deja de perder leads que llegan a las 22hs.",
-        "prompt_imagen": "real estate agent looking at smartphone WhatsApp chat with automated AI replies about property listings, modern office background, business automation, flat design colorful, no text in image",
+        "prompt_imagen": "ultra realistic photography style, close-up of real estate agent hands holding smartphone showing WhatsApp green chat bubbles with instant AI responses, blurred modern office background bokeh, shallow depth of field, professional business photography, no text in image",
         "story_texto": "¿Tu inmobiliaria pierde leads a las 22hs? 🏠\nEl bot de WhatsApp los atiende por vos ✅",
-        "story_prompt_imagen": "smartphone WhatsApp chat with real estate AI bot replying at night, dark background, neon green chat bubbles, minimal flat design, no text in image",
+        "story_prompt_imagen": "close-up smartphone WhatsApp green chat bubbles glowing at night, dark background, realistic photo style, no text in image",
     },
     2: {  # Miércoles — Humor / meme IA (viralidad, shares)
         "tema": "La cara del vendedor que aún responde WhatsApp a mano en 2025",
         "angulo": "Hay dos tipos de agentes inmobiliarios: los que automatizan y los que se quedan sin clientes",
         "idea_central": "Mientras un corredor tarda 3 horas en responder, el bot de la competencia ya agendó la visita, mandó las fotos y metió el lead en el CRM. En serio: ¿cuánto tiempo más vas a seguir respondiendo a mano?",
-        "prompt_imagen": "exhausted businessman drowning in WhatsApp messages on many phones, comic style illustration, funny relatable business concept, colorful flat design, no text in image",
+        "prompt_imagen": "bold comic book pop art style, stressed cartoon businessman with wild hair buried under avalanche of giant smartphones all showing WhatsApp notifications, exaggerated panic expression, bright yellow red blue colors, thick black outlines, halftone dots background, humorous illustration, no text in image",
         "story_texto": "Tipo respondiendo WhatsApp a mano en 2025... 😅\n¿Te sentís identificado? 👇",
-        "story_prompt_imagen": "funny exhausted person surrounded by dozens of phones with WhatsApp notifications, comic style, colorful flat design, no text in image",
+        "story_prompt_imagen": "pop art comic style, cartoon person drowning in phone notifications, bold colors, thick outlines, funny expression, no text in image",
     },
     3: {  # Jueves — Inmobiliaria (caso práctico / números)
         "tema": "Lead frío a visita confirmada en menos de 5 minutos",
         "angulo": "Los compradores se van con la primera inmobiliaria que les responde rápido",
         "idea_central": "WhatsApp + agendamiento conectados: el lead llega, el bot lo califica, le manda fotos de propiedades que coinciden con su búsqueda y le abre la agenda del corredor para reservar visita. Todo automático. El corredor recibe la notificación cuando la visita ya está cerrada.",
-        "prompt_imagen": "split screen showing WhatsApp chat on left with AI calendar booking on right, real estate property listings flowing through, modern automation concept, flat design colorful, no text in image",
+        "prompt_imagen": "ultra minimalist design, pure black background, single bold white stopwatch showing 5 minutes, thin neon green line connecting WhatsApp icon to calendar icon, elegant luxury tech aesthetic, Swiss design inspired, stark contrast, no text in image",
         "story_texto": "De lead frío a visita confirmada en 5 min ⏱️\nAsí funciona el bot inmobiliario 👇",
-        "story_prompt_imagen": "fast timer with WhatsApp chat converting to calendar booking, real estate concept, modern flat design, no text in image",
+        "story_prompt_imagen": "minimalist black background, glowing stopwatch 5 minutes, neon green connecting line, elegant luxury design, no text in image",
     },
     4: {  # Viernes — Reflexión / opinión IA (debate)
         "tema": "¿La IA va a reemplazar a los agentes inmobiliarios?",
         "angulo": "La respuesta honesta que nadie del sector quiere dar",
         "idea_central": "No va a reemplazar al buen corredor — pero sí va a dejar sin trabajo al que no sepa usarla. La IA automatiza lo repetitivo (responder, agendar, seguir). El corredor que la adopte va a cerrar 3 veces más operaciones con el mismo tiempo. El que no, va a competir contra eso.",
-        "prompt_imagen": "human hand shaking robot hand, real estate building in background, collaboration concept, modern professional flat design colorful, no text in image",
+        "prompt_imagen": "cinematic dramatic photography, close-up of human hand and robotic hand about to shake hands, epic backlighting with rays of light, deep shadows and highlights, moody cinematic color grade teal and orange, photorealistic render, powerful symbolic composition, no text in image",
         "story_texto": "¿La IA reemplaza a los corredores? 🤔\nNuestra opinión honesta 👇",
-        "story_prompt_imagen": "human and robot collaboration concept, handshake, real estate background, modern flat design, no text in image",
+        "story_prompt_imagen": "dramatic cinematic human vs robot handshake, epic lighting, teal and orange color grade, no text in image",
     },
     5: {  # Sábado — Detrás de escena / humanizar
         "tema": "Cómo construimos un sistema de automatización para una inmobiliaria en 5 días",
         "angulo": "El proceso real, sin filtros: qué se configura, qué falla, qué termina funcionando",
         "idea_central": "Día 1: relevamiento del flujo de leads. Día 2: configuración del bot WhatsApp + BANT. Día 3: conexión con CRM y calendario. Día 4: pruebas con leads reales. Día 5: el corredor recibe su primer lead calificado automáticamente. Así se hace.",
-        "prompt_imagen": "developer team building real estate automation system, whiteboard with workflow diagram, laptop screens with code and chat, behind the scenes concept, flat design colorful, no text in image",
+        "prompt_imagen": "authentic behind the scenes warmtone photography, candid shot of small tech team around a table with laptops and coffee cups, sticky notes on whiteboard, casual creative workspace vibe, warm amber light, film grain, lifestyle editorial style, no text in image",
         "story_texto": "Así construimos un bot inmobiliario en 5 días 🛠️\nDía a día sin filtros 👇",
-        "story_prompt_imagen": "day by day process building automation system, calendar with 5 days marked, tools and gears, flat design colorful, no text in image",
+        "story_prompt_imagen": "warmtone candid team working at table, coffee and laptops, cozy workspace, film grain editorial style, no text in image",
     },
     6: {  # Domingo — Pregunta a la audiencia (interacción)
         "tema": "¿Cuántos leads perdés por mes fuera de horario?",
         "angulo": "La pregunta que toda inmobiliaria debería hacerse antes del lunes",
         "idea_central": "Hacé el cálculo: consultas promedio por día × días del mes × porcentaje fuera de horario. Para la mayoría de las agencias el número supera los 100 leads perdidos al mes. ¿Cuál es tu número? Dejalo en los comentarios — te respondemos con el cálculo de lo que podrías recuperar.",
-        "prompt_imagen": "real estate agent counting lost leads on fingers, question marks floating around, thoughtful business concept, flat design colorful, no text in image",
+        "prompt_imagen": "bold typographic art style, giant oversized question mark as main subject, deep purple gradient background, small real estate house and phone icons orbiting around it, neon yellow accent highlights, modern graphic design poster aesthetic, strong visual hierarchy, no text in image",
         "story_texto": "¿Cuántos leads perdés por mes? 🤔\nHacé el cálculo y contanos 👇",
-        "story_prompt_imagen": "question mark with real estate icons around, colorful minimal flat design, curiosity concept, no text in image",
+        "story_prompt_imagen": "bold oversized question mark, deep purple gradient, neon yellow accents, graphic poster style, no text in image",
     },
 }
 
