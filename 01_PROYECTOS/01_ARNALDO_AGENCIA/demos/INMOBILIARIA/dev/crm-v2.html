@@ -6494,6 +6494,10 @@ function aplicarLogo(val) {
   if (!val) return;
   if (val.startsWith('http') || val.startsWith('data:')) {
     icon.innerHTML = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="_imgErr(this)">`;
+    // Favicon dinámico — logo del cliente en la pestaña
+    let fav = document.querySelector("link[rel='icon']");
+    if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
+    fav.href = val;
   } else {
     icon.textContent = val;
   }
