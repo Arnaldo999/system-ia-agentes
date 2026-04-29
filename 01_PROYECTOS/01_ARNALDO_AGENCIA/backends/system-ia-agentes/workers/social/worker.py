@@ -151,47 +151,61 @@ _ROTACION_TEMAS_INMOBILIARIA = {
 # inmobiliarias, énfasis en WhatsApp + agendamientos + CRM personalizado".
 # Aplica a tenants de Mica (System IA) y de Arnaldo Ayala.
 _ROTACION_TEMAS_AGENCIA_INMOBILIARIA = {
-    0: {  # Lunes — WhatsApp
+    0: {  # Lunes — IA educativo (alcance nuevo público)
+        "tema": "5 cosas que la IA ya hace por negocios mientras el dueño duerme",
+        "angulo": "La automatización no es ciencia ficción — ya está pasando en tu competencia",
+        "idea_central": "Responder WhatsApp, agendar citas, enviar recordatorios, actualizar el CRM y publicar en redes: todo esto ya lo hace la IA en automatico. El dueño que lo implementó primero tiene ventaja sobre los que aún lo están pensando.",
+        "prompt_imagen": "AI robot working on laptop at night, automated workflows glowing on screen, peaceful office, modern flat design colorful, no text in image",
+        "story_texto": "¿Sabías que la IA ya trabaja mientras dormís? 🤖\n5 tareas que automatiza sola 👇",
+        "story_prompt_imagen": "AI robot working at night, glowing digital workflows, dark background with neon accents, minimal flat design, no text in image",
+    },
+    1: {  # Martes — Inmobiliaria (problema → solución)
         "tema": "Tu inmobiliaria atendiendo consultas en WhatsApp 24/7",
-        "angulo": "El 70% de los compradores te consulta fuera del horario de oficina y nunca te enteras",
-        "idea_central": "Un asistente inteligente en WhatsApp responde en segundos cualquier consulta sobre tus propiedades, califica al lead (BANT), y te avisa solo cuando ya está listo para visitar. Tu inmobiliaria deja de perder leads que llegan a las 22hs.",
+        "angulo": "El 70% de los compradores consulta fuera del horario de oficina y nunca te enterás",
+        "idea_central": "Un asistente inteligente en WhatsApp responde en segundos cualquier consulta sobre propiedades, califica al lead (BANT) y avisa solo cuando ya está listo para visitar. Tu inmobiliaria deja de perder leads que llegan a las 22hs.",
         "prompt_imagen": "real estate agent looking at smartphone WhatsApp chat with automated AI replies about property listings, modern office background, business automation, flat design colorful, no text in image",
+        "story_texto": "¿Tu inmobiliaria pierde leads a las 22hs? 🏠\nEl bot de WhatsApp los atiende por vos ✅",
+        "story_prompt_imagen": "smartphone WhatsApp chat with real estate AI bot replying at night, dark background, neon green chat bubbles, minimal flat design, no text in image",
     },
-    1: {  # Martes — Agendamiento
-        "tema": "Agendamiento automático de visitas a propiedades",
-        "angulo": "Cuántas visitas perdiste por no coordinar a tiempo con el corredor disponible",
-        "idea_central": "El cliente elige día y hora desde el chat, el sistema verifica la agenda de tu equipo y confirma automáticamente. Sin idas y vueltas. La visita queda agendada en Google Calendar de tu corredor con recordatorio y dirección de la propiedad.",
-        "prompt_imagen": "calendar app showing automated property visit booking, real estate agent confirming appointment on phone, clean professional UI, flat design colorful, no text in image",
+    2: {  # Miércoles — Humor / meme IA (viralidad, shares)
+        "tema": "La cara del vendedor que aún responde WhatsApp a mano en 2025",
+        "angulo": "Hay dos tipos de agentes inmobiliarios: los que automatizan y los que se quedan sin clientes",
+        "idea_central": "Mientras un corredor tarda 3 horas en responder, el bot de la competencia ya agendó la visita, mandó las fotos y metió el lead en el CRM. En serio: ¿cuánto tiempo más vas a seguir respondiendo a mano?",
+        "prompt_imagen": "exhausted businessman drowning in WhatsApp messages on many phones, comic style illustration, funny relatable business concept, colorful flat design, no text in image",
+        "story_texto": "Tipo respondiendo WhatsApp a mano en 2025... 😅\n¿Te sentís identificado? 👇",
+        "story_prompt_imagen": "funny exhausted person surrounded by dozens of phones with WhatsApp notifications, comic style, colorful flat design, no text in image",
     },
-    2: {  # Miércoles — CRM personalizado
-        "tema": "CRM inmobiliario personalizado: dejá de perder leads en planillas",
-        "angulo": "El 80% de tus oportunidades se enfría porque nadie hizo seguimiento a tiempo",
-        "idea_central": "Un CRM hecho a medida de tu inmobiliaria sigue cada lead desde la primera consulta hasta la firma de la reserva. Filtros por zona, presupuesto, tipo de propiedad. Recordatorios automáticos por WhatsApp al cliente. Vos mirás el dashboard, el sistema mueve los leads.",
-        "prompt_imagen": "real estate CRM dashboard with property leads pipeline, automated lead cards moving through stages, modern interface, flat design colorful, no text in image",
-    },
-    3: {  # Jueves — Combo WhatsApp + Agenda
+    3: {  # Jueves — Inmobiliaria (caso práctico / números)
         "tema": "Lead frío a visita confirmada en menos de 5 minutos",
         "angulo": "Los compradores se van con la primera inmobiliaria que les responde rápido",
-        "idea_central": "WhatsApp + agendamiento conectados: el lead llega, el bot lo califica, le manda fotos de propiedades que coinciden con su búsqueda y le abre la agenda del corredor para que reserve visita. Todo automático. El corredor recibe el dato cuando ya está cerrada la visita.",
+        "idea_central": "WhatsApp + agendamiento conectados: el lead llega, el bot lo califica, le manda fotos de propiedades que coinciden con su búsqueda y le abre la agenda del corredor para reservar visita. Todo automático. El corredor recibe la notificación cuando la visita ya está cerrada.",
         "prompt_imagen": "split screen showing WhatsApp chat on left with AI calendar booking on right, real estate property listings flowing through, modern automation concept, flat design colorful, no text in image",
+        "story_texto": "De lead frío a visita confirmada en 5 min ⏱️\nAsí funciona el bot inmobiliario 👇",
+        "story_prompt_imagen": "fast timer with WhatsApp chat converting to calendar booking, real estate concept, modern flat design, no text in image",
     },
-    4: {  # Viernes — Caso de uso real / testimonios
-        "tema": "Cómo una inmobiliaria pasó de 30 a 100 visitas mensuales sin contratar nadie",
-        "angulo": "El secreto está en automatizar lo repetitivo y dejar que el corredor cierre",
-        "idea_central": "Implementar WhatsApp inteligente + CRM personalizado + agenda automática libera al equipo del 70% de tareas repetitivas. Los corredores dejan de coordinar visitas por chat y se dedican solo a cerrar. Mismas personas, 3x más visitas.",
-        "prompt_imagen": "happy real estate team in modern office celebrating sales results, growth chart on screen behind, automated tools concept, flat design colorful, no text in image",
+    4: {  # Viernes — Reflexión / opinión IA (debate)
+        "tema": "¿La IA va a reemplazar a los agentes inmobiliarios?",
+        "angulo": "La respuesta honesta que nadie del sector quiere dar",
+        "idea_central": "No va a reemplazar al buen corredor — pero sí va a dejar sin trabajo al que no sepa usarla. La IA automatiza lo repetitivo (responder, agendar, seguir). El corredor que la adopte va a cerrar 3 veces más operaciones con el mismo tiempo. El que no, va a competir contra eso.",
+        "prompt_imagen": "human hand shaking robot hand, real estate building in background, collaboration concept, modern professional flat design colorful, no text in image",
+        "story_texto": "¿La IA reemplaza a los corredores? 🤔\nNuestra opinión honesta 👇",
+        "story_prompt_imagen": "human and robot collaboration concept, handshake, real estate background, modern flat design, no text in image",
     },
-    5: {  # Sábado — Costo de no automatizar
-        "tema": "Cuánto te cuesta NO tener tu WhatsApp inmobiliario automatizado",
-        "angulo": "El cálculo concreto de leads perdidos por mes",
-        "idea_central": "10 leads que llegan fuera de horario × 4 días/semana × 4 semanas = 160 leads/mes. Si solo 1 de cada 10 cerraba una operación, son 16 ventas perdidas. Automatizar el WhatsApp + agendamiento te recupera ese pipeline en menos de 30 días.",
-        "prompt_imagen": "calculator and notebook with money loss diagram, real estate icons, business cost analysis, professional concept, flat design colorful, no text in image",
+    5: {  # Sábado — Detrás de escena / humanizar
+        "tema": "Cómo construimos un sistema de automatización para una inmobiliaria en 5 días",
+        "angulo": "El proceso real, sin filtros: qué se configura, qué falla, qué termina funcionando",
+        "idea_central": "Día 1: relevamiento del flujo de leads. Día 2: configuración del bot WhatsApp + BANT. Día 3: conexión con CRM y calendario. Día 4: pruebas con leads reales. Día 5: el corredor recibe su primer lead calificado automáticamente. Así se hace.",
+        "prompt_imagen": "developer team building real estate automation system, whiteboard with workflow diagram, laptop screens with code and chat, behind the scenes concept, flat design colorful, no text in image",
+        "story_texto": "Así construimos un bot inmobiliario en 5 días 🛠️\nDía a día sin filtros 👇",
+        "story_prompt_imagen": "day by day process building automation system, calendar with 5 days marked, tools and gears, flat design colorful, no text in image",
     },
-    6: {  # Domingo — Vender el sistema (CTA claro)
-        "tema": "Sistema completo para tu inmobiliaria: WhatsApp + Agendamiento + CRM",
-        "angulo": "Una sola implementación, tres herramientas que se hablan entre sí",
-        "idea_central": "No se trata de instalar 3 apps separadas que después no se conectan. El sistema es UNO: el bot de WhatsApp alimenta el CRM, el CRM dispara recordatorios, el agendamiento se sincroniza solo. Implementación en 1 semana, primera operación cerrada en menos de 30 días.",
-        "prompt_imagen": "integrated system diagram showing WhatsApp + Calendar + CRM connected, real estate property in center, modern flat design colorful illustration, no text in image",
+    6: {  # Domingo — Pregunta a la audiencia (interacción)
+        "tema": "¿Cuántos leads perdés por mes fuera de horario?",
+        "angulo": "La pregunta que toda inmobiliaria debería hacerse antes del lunes",
+        "idea_central": "Hacé el cálculo: consultas promedio por día × días del mes × porcentaje fuera de horario. Para la mayoría de las agencias el número supera los 100 leads perdidos al mes. ¿Cuál es tu número? Dejalo en los comentarios — te respondemos con el cálculo de lo que podrías recuperar.",
+        "prompt_imagen": "real estate agent counting lost leads on fingers, question marks floating around, thoughtful business concept, flat design colorful, no text in image",
+        "story_texto": "¿Cuántos leads perdés por mes? 🤔\nHacé el cálculo y contanos 👇",
+        "story_prompt_imagen": "question mark with real estate icons around, colorful minimal flat design, curiosity concept, no text in image",
     },
 }
 
@@ -1130,6 +1144,53 @@ def _publicar_facebook(texto: str, imagen_url: str, page_id: str, token: str) ->
         return {"success": False, "error": str(e)}
 
 
+def _publicar_story_instagram(imagen_url: str, ig_id: str, token: str) -> dict:
+    """Publica una Story en Instagram Business (solo imagen, sin stickers via API)."""
+    if not ig_id or not token:
+        return {"success": False, "error": "Falta ig_id o token"}
+    try:
+        r1 = req.post(
+            f"https://graph.facebook.com/v22.0/{ig_id}/media",
+            params={"access_token": token},
+            json={"image_url": imagen_url, "media_type": "STORIES"},
+            timeout=30,
+        )
+        if not r1.ok:
+            return {"success": False, "error": f"{r1.status_code}: {r1.text[:500]}"}
+        container_id = r1.json()["id"]
+        time.sleep(5)
+        r2 = req.post(
+            f"https://graph.facebook.com/v22.0/{ig_id}/media_publish",
+            params={"access_token": token},
+            json={"creation_id": container_id},
+            timeout=30,
+        )
+        if not r2.ok:
+            return {"success": False, "error": f"{r2.status_code}: {r2.text[:500]}"}
+        return {"success": True, "post_id": r2.json().get("id", "")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _publicar_story_facebook(imagen_url: str, page_id: str, token: str) -> dict:
+    """Publica una Story en Facebook Page."""
+    if not page_id or not token:
+        return {"success": False, "error": "Falta page_id o token"}
+    try:
+        page_token = _get_facebook_page_token(page_id, token)
+        r = req.post(
+            f"https://graph.facebook.com/v22.0/{page_id}/photo_stories",
+            params={"access_token": page_token},
+            json={"url": imagen_url},
+            timeout=30,
+        )
+        if not r.ok:
+            return {"success": False, "error": f"{r.status_code}: {r.text[:500]}"}
+        return {"success": True, "post_id": r.json().get("post_id") or r.json().get("id", "")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 def _publicar_linkedin_texto(
     texto: str, li_token: str = None, li_person: str = None
 ) -> dict:
@@ -1441,9 +1502,27 @@ Crea 3 posts únicos y diferenciados. Separa EXACTAMENTE con: |||
         if not res.get("success"):
             errores.append(f"{red}: {res.get('error', 'error desconocido')}")
 
+    # ── 4b. Publicar Stories (IG + FB) ───────────────────────────────────────
+    res_story_ig = {"success": False, "error": "skipped"}
+    res_story_fb = {"success": False, "error": "skipped"}
+    story_prompt = rotacion.get("story_prompt_imagen", "")
+    if story_prompt and imagen_url:
+        try:
+            b64_story, mime_story = _generar_imagen_interna(story_prompt, max_intentos=3, espera=15)
+            story_img_url = _subir_cloudinary(b64_story, mime_story)
+            if story_img_url:
+                res_story_ig = _publicar_story_instagram(story_img_url, ig_id, token)
+                res_story_fb = _publicar_story_facebook(story_img_url, page_id, token)
+            else:
+                res_story_ig = {"success": False, "error": "Cloudinary story upload failed"}
+                res_story_fb = {"success": False, "error": "Cloudinary story upload failed"}
+        except Exception as e:
+            res_story_ig = {"success": False, "error": str(e)}
+            res_story_fb = {"success": False, "error": str(e)}
+
     # ── 5. Notificación WhatsApp ─────────────────────────────────────────────
-    redes_ok = [r for r, v in [("IG ✅", res_ig), ("LI perfil ✅", res_li), ("FB ✅", res_fb)] if v.get("success")]
-    redes_fail = [r for r, v in [("IG ❌", res_ig), ("LI perfil ❌", res_li), ("FB ❌", res_fb)] if not v.get("success")]
+    redes_ok = [r for r, v in [("IG ✅", res_ig), ("LI perfil ✅", res_li), ("FB ✅", res_fb), ("Story IG ✅", res_story_ig), ("Story FB ✅", res_story_fb)] if v.get("success")]
+    redes_fail = [r for r, v in [("IG ❌", res_ig), ("LI perfil ❌", res_li), ("FB ❌", res_fb), ("Story IG ❌", res_story_ig), ("Story FB ❌", res_story_fb)] if not v.get("success")]
 
     msg_wa = (
         f"{'✅' if not redes_fail else '⚠️'} *Post completado*\n\n"
