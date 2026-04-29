@@ -3171,16 +3171,37 @@ function renderAnalisis() {
           ${btnIcon('🗑️','Eliminar','todoPendiente()')}
         </div>
       </div>
-      <div class="pizarra-section-label">Análisis de Confundibilidad</div>
-      <div class="pizarra-section-sub">Los socios escriben aquí las marcas similares que detectan en el Boletín del INPI (nombre, clase, limitaciones).</div>
-      <textarea class="pizarra-textarea" id="analisisTexto_${a.id}">${a['Análisis de Confundibilidad'] || ''}</textarea>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;">
 
-      <div class="pizarra-section-label" style="margin-top: 18px;">Marcas a Comunicar</div>
-      <div class="pizarra-section-sub">El dueño del estudio decide qué marcas finalmente se comunican a los clientes para que decidan oponerse.</div>
-      <textarea class="pizarra-textarea" id="marcasComunicarTexto_${a.id}">${a['Marcas a Comunicar'] || ''}</textarea>
+        <!-- COLUMNA IZQUIERDA: área de escritura (se vacía al guardar) -->
+        <div>
+          <div class="pizarra-section-label">✏️ Análisis de Confundibilidad</div>
+          <div class="pizarra-section-sub">Escribí las marcas similares del Boletín. Al guardar pasan al costado y este espacio se vacía.</div>
+          <textarea class="pizarra-textarea" id="analisisTexto_${a.id}" placeholder="Ej: MARCA X — Clase 43 — servicios de cafetería&#10;MARCA Y — Clase 43 — restauración..."></textarea>
 
-      <div style="margin-top: 12px; display:flex; justify-content:flex-end;">
-        <button class="btn btn-sm btn-primary" onclick="guardarAnalisis('${a.id}')">💾 Guardar cambios</button>
+          <div class="pizarra-section-label" style="margin-top: 14px;">✏️ Marcas a Comunicar</div>
+          <div class="pizarra-section-sub">Las marcas que el estudio decide comunicar a los clientes.</div>
+          <textarea class="pizarra-textarea" id="marcasComunicarTexto_${a.id}" placeholder="Ej: MARCA X (cliente Juan García — oponerse antes del 15/05)"></textarea>
+
+          <div style="margin-top: 10px; display:flex; justify-content:flex-end;">
+            <button class="btn btn-sm btn-primary" onclick="guardarAnalisis('${a.id}')">💾 Guardar y registrar</button>
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: historial guardado (fijo pero editable) -->
+        <div>
+          <div class="pizarra-section-label">📋 Registrado</div>
+          <div class="pizarra-section-sub">Lo que quedó guardado. Podés editarlo directamente.</div>
+          <div id="analisisGuardado_${a.id}"
+               contenteditable="true"
+               style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 12px; font-size: 12.5px; line-height: 1.6; color: var(--text); min-height: 120px; white-space: pre-wrap; outline: none;"
+               onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+          >${(a['Análisis de Confundibilidad'] || '') + (a['Marcas a Comunicar'] ? '\n\n— Marcas a comunicar —\n' + a['Marcas a Comunicar'] : '')}</div>
+          <div style="margin-top: 10px; display:flex; justify-content:flex-end;">
+            <button class="btn btn-sm" onclick="guardarRegistrado('${a.id}')">💾 Guardar edición</button>
+          </div>
+        </div>
+
       </div>
 
       <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; padding: 14px; background: var(--accent-light); border-radius: 10px; align-items: center; justify-content: space-between;">
@@ -3198,23 +3219,56 @@ async function guardarAnalisis(analisisId) {
   const textoAnalisis = document.getElementById(`analisisTexto_${analisisId}`)?.value || '';
   const textoMarcas   = document.getElementById(`marcasComunicarTexto_${analisisId}`)?.value || '';
 
+  if (!textoAnalisis && !textoMarcas) { alert('Escribí algo antes de guardar.'); return; }
+
+  // Construir texto que va al panel derecho (acumulativo)
+  const item = findById(DATA.analisis, analisisId);
+  const prevRegistrado = document.getElementById(`analisisGuardado_${analisisId}`)?.innerText?.trim() || '';
+  const nuevo = [textoAnalisis, textoMarcas ? '— Marcas a comunicar —\n' + textoMarcas : ''].filter(Boolean).join('\n\n');
+  const acumulado = prevRegistrado ? prevRegistrado + '\n\n' + nuevo : nuevo;
+
   const r = await api(`/crm/analisis/${analisisId}`, {
     method: 'PATCH',
     body: JSON.stringify({
-      'Análisis de Confundibilidad': textoAnalisis,
-      'Marcas a Comunicar': textoMarcas,
+      'Análisis de Confundibilidad': acumulado,
+      'Marcas a Comunicar': '',
     }),
   });
 
   if (!r) { alert('Error al guardar. Revisá la consola.'); return; }
 
-  // Actualizar DATA local sin re-render completo
+  // Actualizar panel derecho con texto acumulado
+  const panelDerecho = document.getElementById(`analisisGuardado_${analisisId}`);
+  if (panelDerecho) panelDerecho.innerText = acumulado;
+
+  // Vaciar textareas
+  const taAnalisis = document.getElementById(`analisisTexto_${analisisId}`);
+  const taMarcas   = document.getElementById(`marcasComunicarTexto_${analisisId}`);
+  if (taAnalisis) taAnalisis.value = '';
+  if (taMarcas)   taMarcas.value = '';
+
+  if (item) { item['Análisis de Confundibilidad'] = acumulado; item['Marcas a Comunicar'] = ''; }
+}
+
+async function guardarRegistrado(analisisId) {
+  const panelDerecho = document.getElementById(`analisisGuardado_${analisisId}`);
+  const texto = panelDerecho?.innerText?.trim() || '';
+
+  const r = await api(`/crm/analisis/${analisisId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ 'Análisis de Confundibilidad': texto }),
+  });
+
+  if (!r) { alert('Error al guardar. Revisá la consola.'); return; }
+
   const item = findById(DATA.analisis, analisisId);
-  if (item) {
-    item['Análisis de Confundibilidad'] = textoAnalisis;
-    item['Marcas a Comunicar'] = textoMarcas;
+  if (item) item['Análisis de Confundibilidad'] = texto;
+
+  // Feedback visual breve
+  if (panelDerecho) {
+    panelDerecho.style.borderColor = 'var(--green)';
+    setTimeout(() => { panelDerecho.style.borderColor = 'var(--border)'; }, 1200);
   }
-  alert('✅ Análisis guardado correctamente.');
 }
 
 function renderTurnos() {
