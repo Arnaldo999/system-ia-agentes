@@ -1224,9 +1224,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
         <!-- Dropdown menu -->
         <div class="pb-switcher__menu" id="switcher-menu" style="display:none">
           <div class="pb-switcher__menu-head">Servicios del ecosistema</div>
-          <!-- Rizoma — sin logo propio todavía -->
+          <!-- Rizoma -->
           <button class="pb-switcher__opt is-active" onclick="selectFirma('rizoma')">
-            <div style="width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#0ea5e9,#0369a1);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">🏡</div>
+            <img src="/propuestas/p-back-argentina/logos/rizoma.jpg" alt="Rizoma Propiedades" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🏡</span>'"
+              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(14,165,233,0.3);" />
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">Rizoma Propiedades</span>
               <span class="pb-switcher__opt-rubro">Inmobiliaria · Toda Misiones</span>
@@ -1278,9 +1279,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
             <span class="pb-switcher__check" id="check-bocanada" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
-          <!-- Club Progreso — logo pendiente -->
+          <!-- Club Progreso -->
           <button class="pb-switcher__opt" onclick="selectFirma('progreso')">
-            <div style="width:30px;height:30px;border-radius:7px;background:rgba(22,163,74,0.15);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">⚽</div>
+            <img src="/propuestas/p-back-argentina/logos/progreso.jpg" alt="Club Progreso" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>⚽</span>'"
+              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(22,163,74,0.3);" />
             <span class="pb-switcher__opt-text">
               <span class="pb-switcher__opt-name">Club Progreso</span>
               <span class="pb-switcher__opt-rubro">Club de fútbol</span>
@@ -2338,7 +2340,7 @@ const LOGOS_BASE = (() => {
 const FIRMAS_CONFIG = {
   rizoma:      { name:'Rizoma Propiedades', rubro:'Inmobiliaria · Toda Misiones',
                  color:'#0ea5e9', colorLight:'#7dd3fc', soon:false,
-                 logo: null,  // sin logo propio todavía — usa badge PB
+                 logo: LOGOS_BASE + '/rizoma.jpg',
                  soonLabel:'CRM · Inmobiliaria', soonBadgeBg:'rgba(14,165,233,0.14)', soonBadgeColor:'#7dd3fc' },
   misionerita: { name:'La Misionerita', rubro:'Restaurant + parador turístico',
                  color:'#f59e0b', colorLight:'#fcd34d', soon:true,
@@ -2358,7 +2360,7 @@ const FIRMAS_CONFIG = {
                  soonLabel:'CRM · Pedidos', soonBadgeBg:'rgba(249,115,22,0.14)', soonBadgeColor:'#fdba74' },
   progreso:    { name:'Club Progreso', rubro:'Club de fútbol',
                  color:'#16a34a', colorLight:'#86efac', soon:true,
-                 logo: null,  // logo pendiente
+                 logo: LOGOS_BASE + '/progreso.jpg',
                  soonLabel:'Blog informativo', soonBadgeBg:'rgba(22,163,74,0.14)', soonBadgeColor:'#86efac' },
   fundacion:   { name:'Fundación Misión Emprender', rubro:'Educativa · cursos y talleres',
                  color:'#6366f1', colorLight:'#a5b4fc', soon:true,
