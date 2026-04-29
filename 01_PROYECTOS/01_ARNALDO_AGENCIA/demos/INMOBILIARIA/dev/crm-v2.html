@@ -5268,6 +5268,11 @@ async function initTenant() {
     if (topUsuario) topUsuario.textContent = t.nombre;
     if (topAvatar) topAvatar.textContent = t.nombre.substring(0,2).toUpperCase();
     if (t.logo_url) aplicarLogo(t.logo_url);
+    if (t.logo_url) {
+      let favicon = document.querySelector("link[rel='icon']");
+      if (!favicon) { favicon = document.createElement('link'); favicon.rel = 'icon'; document.head.appendChild(favicon); }
+      favicon.href = t.logo_url;
+    }
     if (t.color_primario) document.documentElement.style.setProperty('--accent', t.color_primario);
 
     // Saludo dinámico en el panel de inicio
