@@ -1224,65 +1224,77 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
         <!-- Dropdown menu -->
         <div class="pb-switcher__menu" id="switcher-menu" style="display:none">
           <div class="pb-switcher__menu-head">Servicios del ecosistema</div>
+          <!-- Rizoma — sin logo propio todavía -->
           <button class="pb-switcher__opt is-active" onclick="selectFirma('rizoma')">
-            <span class="pb-switcher__opt-dot" style="background:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,0.15)"></span>
+            <div style="width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#0ea5e9,#0369a1);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">🏡</div>
             <span class="pb-switcher__opt-text">
-              <span class="pb-switcher__opt-name">🏡 RIZOMA PROPIEDADES</span>
-              <span class="pb-switcher__opt-rubro">Inmobiliaria</span>
+              <span class="pb-switcher__opt-name">Rizoma Propiedades</span>
+              <span class="pb-switcher__opt-rubro">Inmobiliaria · Toda Misiones</span>
             </span>
             <span class="pb-switcher__check" id="check-rizoma">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
+          <!-- La Misionerita -->
           <button class="pb-switcher__opt" onclick="selectFirma('misionerita')">
-            <span class="pb-switcher__opt-dot" style="background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.15)"></span>
+            <img src="/propuestas/p-back-argentina/logos/misionerita.jpg" alt="La Misionerita" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🍽️</span>'"
+              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(245,158,11,0.3);" />
             <span class="pb-switcher__opt-text">
-              <span class="pb-switcher__opt-name">🍽️ LA MISIONERITA</span>
-              <span class="pb-switcher__opt-rubro">Restaurant + parador</span>
+              <span class="pb-switcher__opt-name">La Misionerita</span>
+              <span class="pb-switcher__opt-rubro">Restaurant + parador turístico</span>
             </span>
             <span class="pb-switcher__check" id="check-misionerita" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
+          <!-- Patricio's -->
           <button class="pb-switcher__opt" onclick="selectFirma('patricios')">
-            <span class="pb-switcher__opt-dot" style="background:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,0.15)"></span>
+            <img src="/propuestas/p-back-argentina/logos/patricios.jpg" alt="Patricio's" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🎉</span>'"
+              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(236,72,153,0.3);" />
             <span class="pb-switcher__opt-text">
-              <span class="pb-switcher__opt-name">🎉 PATRICIO'S</span>
-              <span class="pb-switcher__opt-rubro">Resto-bar + salones</span>
+              <span class="pb-switcher__opt-name">Patricio's</span>
+              <span class="pb-switcher__opt-rubro">Resto-bar + salones de eventos</span>
             </span>
             <span class="pb-switcher__check" id="check-patricios" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
+          <!-- La Martina -->
           <button class="pb-switcher__opt" onclick="selectFirma('lamartina')">
-            <span class="pb-switcher__opt-dot" style="background:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,0.15)"></span>
+            <img src="/propuestas/p-back-argentina/logos/martina.jpg" alt="La Martina" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🏨</span>'"
+              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(20,184,166,0.3);" />
             <span class="pb-switcher__opt-text">
-              <span class="pb-switcher__opt-name">🏨 LA MARTINA APART HOTEL</span>
-              <span class="pb-switcher__opt-rubro">Apart hotel · San Ignacio</span>
+              <span class="pb-switcher__opt-name">La Martina Apart Hotel</span>
+              <span class="pb-switcher__opt-rubro">Hospedaje · San Ignacio</span>
             </span>
             <span class="pb-switcher__check" id="check-lamartina" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
+          <!-- Bocanada -->
           <button class="pb-switcher__opt" onclick="selectFirma('bocanada')">
-            <span class="pb-switcher__opt-dot" style="background:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,0.15)"></span>
+            <img src="/propuestas/p-back-argentina/logos/bocanada.jpg" alt="Bocanada" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>🥖</span>'"
+              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(249,115,22,0.3);" />
             <span class="pb-switcher__opt-text">
-              <span class="pb-switcher__opt-name">🥖 BOCANADA</span>
-              <span class="pb-switcher__opt-rubro">Panadería · catering</span>
+              <span class="pb-switcher__opt-name">Bocanada</span>
+              <span class="pb-switcher__opt-rubro">Panadería · pastelería · catering</span>
             </span>
             <span class="pb-switcher__check" id="check-bocanada" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
+          <!-- Club Progreso — logo pendiente -->
           <button class="pb-switcher__opt" onclick="selectFirma('progreso')">
-            <span class="pb-switcher__opt-dot" style="background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,0.15)"></span>
+            <div style="width:30px;height:30px;border-radius:7px;background:rgba(22,163,74,0.15);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">⚽</div>
             <span class="pb-switcher__opt-text">
-              <span class="pb-switcher__opt-name">⚽ CLUB PROGRESO</span>
+              <span class="pb-switcher__opt-name">Club Progreso</span>
               <span class="pb-switcher__opt-rubro">Club de fútbol</span>
             </span>
             <span class="pb-switcher__check" id="check-progreso" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
           </button>
+          <!-- Fundación -->
           <button class="pb-switcher__opt" onclick="selectFirma('fundacion')">
-            <span class="pb-switcher__opt-dot" style="background:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,0.15)"></span>
+            <img src="/propuestas/p-back-argentina/logos/fundacion.jpg" alt="Fundación Misión Emprender" onerror="this.outerHTML='<span style=\'font-size:1.2rem\'>💡</span>'"
+              style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;border:1px solid rgba(99,102,241,0.3);" />
             <span class="pb-switcher__opt-text">
-              <span class="pb-switcher__opt-name">💡 FUNDACIÓN MISIÓN EMPRENDER</span>
-              <span class="pb-switcher__opt-rubro">Educativa · cursos</span>
+              <span class="pb-switcher__opt-name">Fundación Misión Emprender</span>
+              <span class="pb-switcher__opt-rubro">Educativa · cursos y talleres</span>
             </span>
             <span class="pb-switcher__check" id="check-fundacion" style="display:none">✓</span>
             <span class="pb-switcher__opt-arrow">→</span>
@@ -2316,21 +2328,42 @@ async function guardarTasacion() {
 }
 
 // ── Firma Switcher ────────────────────────────────────────────────────────────
+const LOGOS_BASE = (() => {
+  const h = window.location.hostname;
+  if (h.includes('arnaldoayalaestratega') || h.includes('pbackargentina'))
+    return 'https://agentes.arnaldoayalaestratega.cloud/propuestas/p-back-argentina/logos';
+  return '/propuestas/p-back-argentina/logos'; // fallback relativo
+})();
+
 const FIRMAS_CONFIG = {
-  rizoma:      { name:'🏡 Rizoma Propiedades', rubro:'Inmobiliaria', color:'#0ea5e9', colorLight:'#7dd3fc', soon:false,
-                 soonEmoji:'🏡', soonLabel:'CRM · Inmobiliaria', soonBadgeBg:'rgba(14,165,233,0.14)', soonBadgeColor:'#7dd3fc' },
-  misionerita: { name:'🍽️ La Misionerita', rubro:'Restaurant + parador', color:'#f59e0b', colorLight:'#fcd34d', soon:true,
-                 soonEmoji:'🍽️', soonLabel:'CRM · Reservas', soonBadgeBg:'rgba(245,158,11,0.14)', soonBadgeColor:'#fcd34d' },
-  patricios:   { name:'🎉 Patricio\'s', rubro:'Resto-bar + salones', color:'#ec4899', colorLight:'#f9a8d4', soon:true,
-                 soonEmoji:'🎉', soonLabel:'CRM · Salones', soonBadgeBg:'rgba(236,72,153,0.14)', soonBadgeColor:'#f9a8d4' },
-  lamartina:   { name:'🏨 La Martina Apart', rubro:'Apart hotel · San Ignacio', color:'#14b8a6', colorLight:'#5eead4', soon:true,
-                 soonEmoji:'🏨', soonLabel:'CRM · Hospedaje', soonBadgeBg:'rgba(20,184,166,0.14)', soonBadgeColor:'#5eead4' },
-  bocanada:    { name:'🥖 Bocanada', rubro:'Panadería · catering', color:'#f97316', colorLight:'#fdba74', soon:true,
-                 soonEmoji:'🥖', soonLabel:'CRM · Pedidos', soonBadgeBg:'rgba(249,115,22,0.14)', soonBadgeColor:'#fdba74' },
-  progreso:    { name:'⚽ Club Progreso', rubro:'Club de fútbol', color:'#16a34a', colorLight:'#86efac', soon:true,
-                 soonEmoji:'⚽', soonLabel:'Blog informativo', soonBadgeBg:'rgba(22,163,74,0.14)', soonBadgeColor:'#86efac' },
-  fundacion:   { name:'💡 Fdación Emprender', rubro:'Educativa · cursos', color:'#6366f1', colorLight:'#a5b4fc', soon:true,
-                 soonEmoji:'💡', soonLabel:'Blog + Calendario', soonBadgeBg:'rgba(99,102,241,0.14)', soonBadgeColor:'#a5b4fc' },
+  rizoma:      { name:'Rizoma Propiedades', rubro:'Inmobiliaria · Toda Misiones',
+                 color:'#0ea5e9', colorLight:'#7dd3fc', soon:false,
+                 logo: null,  // sin logo propio todavía — usa badge PB
+                 soonLabel:'CRM · Inmobiliaria', soonBadgeBg:'rgba(14,165,233,0.14)', soonBadgeColor:'#7dd3fc' },
+  misionerita: { name:'La Misionerita', rubro:'Restaurant + parador turístico',
+                 color:'#f59e0b', colorLight:'#fcd34d', soon:true,
+                 logo: LOGOS_BASE + '/misionerita.jpg',
+                 soonLabel:'CRM · Reservas', soonBadgeBg:'rgba(245,158,11,0.14)', soonBadgeColor:'#fcd34d' },
+  patricios:   { name:"Patricio's", rubro:'Resto-bar + salones de eventos',
+                 color:'#ec4899', colorLight:'#f9a8d4', soon:true,
+                 logo: LOGOS_BASE + '/patricios.jpg',
+                 soonLabel:'CRM · Salones', soonBadgeBg:'rgba(236,72,153,0.14)', soonBadgeColor:'#f9a8d4' },
+  lamartina:   { name:'La Martina Apart Hotel', rubro:'Hospedaje · San Ignacio',
+                 color:'#14b8a6', colorLight:'#5eead4', soon:true,
+                 logo: LOGOS_BASE + '/martina.jpg',
+                 soonLabel:'CRM · Hospedaje', soonBadgeBg:'rgba(20,184,166,0.14)', soonBadgeColor:'#5eead4' },
+  bocanada:    { name:'Bocanada', rubro:'Panadería · pastelería · catering',
+                 color:'#f97316', colorLight:'#fdba74', soon:true,
+                 logo: LOGOS_BASE + '/bocanada.jpg',
+                 soonLabel:'CRM · Pedidos', soonBadgeBg:'rgba(249,115,22,0.14)', soonBadgeColor:'#fdba74' },
+  progreso:    { name:'Club Progreso', rubro:'Club de fútbol',
+                 color:'#16a34a', colorLight:'#86efac', soon:true,
+                 logo: null,  // logo pendiente
+                 soonLabel:'Blog informativo', soonBadgeBg:'rgba(22,163,74,0.14)', soonBadgeColor:'#86efac' },
+  fundacion:   { name:'Fundación Misión Emprender', rubro:'Educativa · cursos y talleres',
+                 color:'#6366f1', colorLight:'#a5b4fc', soon:true,
+                 logo: LOGOS_BASE + '/fundacion.jpg',
+                 soonLabel:'Blog + Calendario', soonBadgeBg:'rgba(99,102,241,0.14)', soonBadgeColor:'#a5b4fc' },
 };
 let _activeFirma = 'rizoma';
 
@@ -2392,19 +2425,26 @@ function showSoonPanel(id, f) {
     soonEl.className = 'panel';
     document.querySelector('.main-wrapper').appendChild(soonEl);
   }
-  soonEl.innerHTML = '<div style="min-height:60vh;display:flex;justify-content:center;align-items:flex-start;padding:48px 0;">'
-    + '<div style="max-width:580px;width:100%;border:1px solid ' + f.color + '33;border-radius:20px;padding:48px;'
-    + 'background:linear-gradient(135deg,' + f.color + '11,' + f.color + '05);box-shadow:0 1px 2px rgba(15,23,42,.04);">'
-    + '<div style="font-size:48px;margin-bottom:16px;">' + f.soonEmoji + '</div>'
-    + '<div style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:' + f.color + ';margin-bottom:8px;">' + f.rubro + '</div>'
-    + '<h1 style="font-family:\'Manrope\',sans-serif;font-weight:800;font-size:2rem;color:#0f172a;margin:0 0 16px;letter-spacing:-.02em;">' + f.name + '</h1>'
-    + '<div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 10px;background:#f1f5f9;border-radius:999px;font-size:13px;font-weight:600;color:#334155;margin-bottom:16px;">'
-    + '<span style="width:8px;height:8px;background:' + f.color + ';border-radius:999px;display:inline-block"></span>'
+  const logoHtml = f.logo
+    ? '<img src="' + f.logo + '" alt="' + f.name + '" onerror="this.style.display=\'none\'" '
+      + 'style="max-height:80px;max-width:200px;object-fit:contain;margin-bottom:20px;border-radius:8px;">'
+    : '<div style="width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,' + f.color + '33,' + f.color + '11);'
+      + 'display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:20px;">'
+      + (['rizoma','progreso'].includes(id) ? (id==='rizoma'?'🏡':'⚽') : '🏢') + '</div>';
+
+  soonEl.innerHTML = '<div style="min-height:60vh;display:flex;justify-content:center;align-items:flex-start;padding:48px 16px;">'
+    + '<div style="max-width:580px;width:100%;border:1px solid ' + f.color + '33;border-radius:20px;padding:40px 44px;'
+    + 'background:linear-gradient(135deg,' + f.color + '0d,' + f.color + '04 60%,#fff);box-shadow:0 1px 3px rgba(15,23,42,.06);">'
+    + logoHtml
+    + '<div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:' + f.color + ';margin-bottom:6px;">' + f.rubro + '</div>'
+    + '<h1 style="font-family:\'Manrope\',sans-serif;font-weight:800;font-size:1.9rem;color:#0f172a;margin:0 0 14px;letter-spacing:-.02em;line-height:1.1;">' + f.name + '</h1>'
+    + '<div style="display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 10px;background:#f1f5f9;border-radius:999px;font-size:13px;font-weight:600;color:#334155;margin-bottom:20px;">'
+    + '<span style="width:7px;height:7px;background:' + f.color + ';border-radius:999px;display:inline-block;flex-shrink:0"></span>'
     + f.soonLabel
-    + '<span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:' + f.soonBadgeBg + ';color:' + f.color + ';margin-left:4px;">Próximamente</span>'
+    + '<span style="font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:' + f.soonBadgeBg + ';color:' + f.color + ';margin-left:2px;">Próximamente</span>'
     + '</div>'
-    + '<p style="font-size:14px;color:#475569;line-height:1.55;max-width:440px;margin:0 0 24px;">'
-    + 'Este módulo está en planificación. Se habilitará en la próxima etapa del ecosistema P. Back Argentina.'
+    + '<p style="font-size:13.5px;color:#475569;line-height:1.6;max-width:440px;margin:0 0 28px;">'
+    + 'Este módulo está en planificación y se habilitará en la próxima etapa del ecosistema P. Back Argentina.'
     + '</p>'
     + '<button onclick="window.open(\'https://agentes.arnaldoayalaestratega.cloud/propuestas/patricia-back/roadmap.html\')"'
     + ' style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:8px;'
