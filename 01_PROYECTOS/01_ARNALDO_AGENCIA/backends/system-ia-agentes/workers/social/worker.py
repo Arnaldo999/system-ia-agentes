@@ -1375,7 +1375,12 @@ Reglas duras:
 
     # ── 1. Generar textos IA ─────────────────────────────────────────────────
     try:
+        from datetime import date as _date
+        hoy = _date.today()
+        anio_actual = hoy.year
+
         prompt_txt = f"""Eres el Copywriter jefe de una agencia de automatizaciones IA para LATAM.
+FECHA ACTUAL: {hoy.strftime("%d/%m/%Y")} — año {anio_actual}. NUNCA menciones un año anterior a {anio_actual} como "actual" o "hoy".
 
 BRANDBOOK:
 - Industria: {marca.get("Industria", "Automatización IA")}
