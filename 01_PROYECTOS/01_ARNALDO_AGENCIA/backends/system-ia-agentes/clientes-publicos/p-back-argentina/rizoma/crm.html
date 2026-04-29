@@ -1132,7 +1132,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 ════════════════════════════════════════════════ -->
 <div id="login-screen" style="display:none; position:fixed; inset:0; background:#0f172a; z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
   <div style="background:white; border-radius:20px; padding:48px 40px; width:100%; max-width:380px; box-shadow:0 25px 60px rgba(0,0,0,.4); text-align:center;">
-    <div style="width:56px; height:56px; background:linear-gradient(135deg,#7c3aed,#ec4899); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:900; color:white; margin:0 auto 20px; font-family:'Manrope',sans-serif;">PB</div>
+    <div style="width:96px;height:96px;border-radius:16px;background:#0d1117;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;overflow:hidden;box-shadow:0 8px 24px rgba(124,58,237,0.35);">
+      <img src="/propuestas/p-back-argentina/logos/p-back-argentina.png" alt="P. Back Argentina"
+        style="width:80px;height:80px;object-fit:contain;" onerror="this.parentElement.innerHTML='<span style=\'font-size:2.2rem\'>🅿️</span>'" />
+    </div>
     <h1 style="font-family:'Manrope',sans-serif; font-size:1.4rem; font-weight:800; color:#0f172a; margin-bottom:4px;">P. Back Argentina</h1>
     <p style="font-size:0.82rem; color:#64748b; margin-bottom:28px; font-family:'Inter',sans-serif;">CRM · Ecosistema Digital</p>
     <p style="font-size:0.88rem; font-weight:600; color:#0f172a; text-align:left; margin-bottom:8px; font-family:'Inter',sans-serif;">PIN de acceso</p>
@@ -1177,8 +1180,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     <!-- HEADER con logo PB + 7 chips de color -->
     <div class="pb-header">
       <div class="pb-header__top">
-        <!-- Badge PB con gradiente -->
-        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#7c3aed 0%,#ec4899 100%);display:flex;align-items:center;justify-content:center;color:white;font-family:'Manrope',sans-serif;font-weight:900;font-size:17.6px;letter-spacing:-0.04em;box-shadow:0 8px 22px -8px rgba(124,58,237,0.55),inset 0 1px 0 rgba(255,255,255,0.18);flex-shrink:0;">PB</div>
+        <!-- Logo P. Back Argentina real -->
+        <div style="width:44px;height:44px;border-radius:12px;background:#0d1117;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px -8px rgba(124,58,237,0.55);flex-shrink:0;overflow:hidden;">
+          <img src="/propuestas/p-back-argentina/logos/p-back-argentina.png" alt="P. Back Argentina"
+            style="width:38px;height:38px;object-fit:contain;"
+            onerror="this.parentElement.style.background='linear-gradient(135deg,#7c3aed,#ec4899)';this.outerHTML='<span style=\'color:white;font-family:Manrope,sans-serif;font-weight:900;font-size:14px;\'>PB</span>'" />
+        </div>
         <div class="pb-header__text">
           <div class="pb-header__name">P. Back Argentina</div>
           <div class="pb-header__sub">ECOSISTEMA DIGITAL</div>
@@ -1350,7 +1357,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     <!-- FOOTER con usuario + acciones -->
     <div class="pb-footer">
       <div class="pb-user">
-        <div class="pb-avatar">PB</div>
+        <div class="pb-avatar" style="background:#0d1117;padding:2px;">
+          <img src="/propuestas/p-back-argentina/logos/p-back-argentina.png" alt="PB"
+            style="width:100%;height:100%;object-fit:contain;border-radius:999px;"
+            onerror="this.parentElement.textContent='PB';this.parentElement.style.background='linear-gradient(135deg,#7c3aed,#ec4899)';" />
+        </div>
         <div class="pb-user__text">
           <div class="pb-user__name">Patricia Back</div>
           <div class="pb-user__role">Directora · Posadas</div>
@@ -1375,7 +1386,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
       <div class="flex items-center gap-4">
         <span class="text-sm text-txt-muted" id="last-sync">Cargando...</span>
         <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background:linear-gradient(135deg,#7c3aed,#ec4899)">PB</div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden" style="background:#0d1117;box-shadow:0 0 0 2px rgba(124,58,237,0.4);">
+            <img src="/propuestas/p-back-argentina/logos/p-back-argentina.png" alt="PB" style="width:26px;height:26px;object-fit:contain;" onerror="this.parentElement.textContent='PB';this.parentElement.style.background='linear-gradient(135deg,#7c3aed,#ec4899)';" />
+          </div>
           <span class="text-sm font-semibold text-txt hidden sm:block">Patricia Back</span>
         </div>
       </div>
